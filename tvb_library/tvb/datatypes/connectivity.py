@@ -752,3 +752,64 @@ class Connectivity(HasTraits):
     def horizon(self):
         "The horizon is the maximum number of steps required in memory for simulation."
         return self._horizon
+
+    def set_centres(self, centres, expected_number_of_nodes):
+        # Fill positions
+        if centres is None:
+            raise Exception("Region centres are required for Connectivity Regions! "
+                            "We expect a file that contains *centres* inside the uploaded ZIP.")
+        if expected_number_of_nodes < 2:
+            raise Exception("A connectivity with at least 2 nodes is expected")
+
+        self.centres = centres
+
+    def set_region_labels(self, region_labels):
+        if region_labels is not None:
+            self.region_labels = region_labels
+
+    def set_weights(self, weights, expected_number_of_nodes):
+        if weights is not None:
+            if weights.shape != (expected_number_of_nodes, expected_number_of_nodes):
+                raise Exception("Unexpected shape for weights matrix! "
+                                "Should be %d x %d " % (expected_number_of_nodes, expected_number_of_nodes))
+            self.weights = weights
+
+    def set_tract_lengths(self, tract_lengths, expected_number_of_nodes):
+        # Fill and check tracts. Allow empty files for tracts, they will be computed by tvb-library.
+        if tract_lengths is not None:
+            if tract_lengths.size != 0:
+                if numpy.any([x < 0 for x in tract_lengths.flatten()]):
+                    raise Exception("Negative values are not accepted in tracts matrix! "
+                                    "Please check your file, and use values >= 0")
+                if tract_lengths.shape != (expected_number_of_nodes, expected_number_of_nodes):
+                    raise Exception("Unexpected shape for tracts matrix! "
+                                    "Should be %d x %d " % (expected_number_of_nodes, expected_number_of_nodes))
+        self.tract_lengths = tract_lengths
+
+    def set_orientations(self, orientations, expected_number_of_nodes):
+        if orientations is not None:
+            if len(orientations) != expected_number_of_nodes:
+                raise Exception("Invalid size for vector orientation. "
+                                "Expected the same as region-centers number %d" % expected_number_of_nodes)
+            self.orientations = orientations
+
+    def set_areas(self, areas, expected_number_of_nodes):
+        if areas is not None:
+            if len(areas) != expected_number_of_nodes:
+                raise Exception("Invalid size for vector areas. "
+                                "Expected the same as region-centers number %d" % expected_number_of_nodes)
+            self.areas = areas
+
+    def set_cortical(self, cortical, expected_number_of_nodes):
+        if cortical is not None:
+            if len(cortical) != expected_number_of_nodes:
+                raise Exception("Invalid size for vector cortical. "
+                                "Expected the same as region-centers number %d" % expected_number_of_nodes)
+            self.cortical = cortical
+
+    def set_hemispheres(self, hemispheres, expected_number_of_nodes):
+        if hemispheres is not None:
+            if len(hemispheres) != expected_number_of_nodes:
+                raise Exception("Invalid size for vector hemispheres. "
+                                "Expected the same as region-centers number %d" % expected_number_of_nodes)
+            self.hemispheres = hemispheres

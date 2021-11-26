@@ -40,7 +40,6 @@ from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesVolumeIndex
 from tvb.adapters.datatypes.db.volume import VolumeIndex
-from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporter
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import TraitUploadField
@@ -143,26 +142,15 @@ class BIDSImporter(ABCUploader):
 
                 connectivity = Connectivity()
 
-                expected_number_of_nodes = ZIPConnectivityImporter.check_centres(centres)
-                connectivity.centres = centres
-
-                if labels_vector is not None:
-                    connectivity.region_labels = labels_vector
-
-                # Fill and check weights
-                if weights_matrix is not None:
-                    if weights_matrix.shape != (expected_number_of_nodes, expected_number_of_nodes):
-                        raise Exception("Unexpected shape for weights matrix! "
-                                        "Should be %d x %d " % (expected_number_of_nodes, expected_number_of_nodes))
-                    connectivity.weights = weights_matrix
-
-                ZIPConnectivityImporter.check_tracts(tracts_matrix, expected_number_of_nodes)
-                connectivity.tract_lengths = tracts_matrix
-
+                expected_number_of_nodes = len(centres)
+                connectivity.set_centres(centres, expected_number_of_nodes)
+                connectivity.set_region_labels(labels_vector)
+                connectivity.set_weights(weights_matrix, expected_number_of_nodes)
+                connectivity.set_tract_lengths(tracts_matrix, expected_number_of_nodes)
                 connectivity.configure()
+
                 connectivity_index = self.store_complete(connectivity)
                 self._capture_operation_results([connectivity_index])
-                connectivity_index.fk_from_operation = self.operation_id
                 dao.store_entity(connectivity_index)
 
             ts_folder = os.path.join(subject_folder, self.TS_TOKEN)
@@ -186,10 +174,11 @@ class BIDSImporter(ABCUploader):
                     ts.time = ts_times_data
                     ts.connectivity = connectivity
 
+                    self.generic_attributes.user_tag_1 = tsv_ts_file_name
                     ts.configure()
-                    ts_index = self.store_complete(ts)
+                    ts_index = self.store_complete(ts, self.generic_attributes)
+                    ts_index.fixed_generic_attributes = True
                     self._capture_operation_results([ts_index])
-                    ts_index.fk_from_operation = self.operation_id
                     dao.store_entity(ts_index)
 
             spatial_folder = os.path.join(subject_folder, self.SPATIAL_TOKEN)
@@ -205,8 +194,9 @@ class BIDSImporter(ABCUploader):
                     pearson_correlation.array_data = fc_data
                     pearson_correlation.source = ts
 
+                    self.generic_attributes.user_tag_1 = tsv_spatial_file_name
                     pearson_correlation.configure()
-                    pearson_correlation_index = self.store_complete(pearson_correlation)
+                    pearson_correlation_index = self.store_complete(pearson_correlation, self.generic_attributes)
+                    pearson_correlation_index.fixed_generic_attributes = True
                     self._capture_operation_results([pearson_correlation_index])
-                    pearson_correlation_index.fk_from_operation = self.operation_id
                     dao.store_entity(pearson_correlation_index)
