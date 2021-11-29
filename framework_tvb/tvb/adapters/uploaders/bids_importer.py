@@ -115,88 +115,102 @@ class BIDSImporter(ABCUploader):
         for subject_folder in subject_folders:
             net_folder = os.path.join(subject_folder, self.NET_TOKEN)
             if os.path.exists(net_folder):
-                weights_matrix = None
-                tracts_matrix = None
-                centres = None
-                labels_vector = None
-
-                for net_file_name in os.listdir(net_folder):
-                    net_file_path = os.path.join(net_folder, net_file_name)
-
-                    if net_file_name.endswith('weights.tsv'):
-                        weights_matrix = self.read_list_data(net_file_path)
-                    elif net_file_name.endswith('distances.tsv'):
-                        tracts_matrix = self.read_list_data(net_file_path)
-                    elif net_file_name.endswith('weights.json'):
-                        with open(net_file_path) as json_file:
-                            json_dict = json.load(json_file)
-                            labels_path = json_dict['CoordsRows'][0]
-                            centres_path = json_dict['CoordsRows'][1]
-
-                            dir_path = os.path.dirname(net_file_path)
-                            labels_path = os.path.join(dir_path, labels_path).replace('.json', '.tsv')
-                            centres_path = os.path.join(dir_path, centres_path).replace('.json', '.tsv')
-
-                            centres = self.read_list_data(centres_path)
-                            labels_vector = self.read_list_data(labels_path, dtype=numpy.str, usecols=[0])
-
-                connectivity = Connectivity()
-
-                expected_number_of_nodes = len(centres)
-                connectivity.set_centres(centres, expected_number_of_nodes)
-                connectivity.set_region_labels(labels_vector)
-                connectivity.set_weights(weights_matrix, expected_number_of_nodes)
-                connectivity.set_tract_lengths(tracts_matrix, expected_number_of_nodes)
-                connectivity.configure()
-
-                connectivity_index = self.store_complete(connectivity)
-                self._capture_operation_results([connectivity_index])
-                dao.store_entity(connectivity_index)
+                connectivity = self.__build_connectivity(net_folder)
 
             ts_folder = os.path.join(subject_folder, self.TS_TOKEN)
             if os.path.exists(ts_folder):
-                tsv_ts_files = filter(lambda x: x.endswith('.tsv'), os.listdir(ts_folder))
-                for tsv_ts_file_name in tsv_ts_files:
-                    tsv_ts_file = os.path.join(ts_folder, tsv_ts_file_name)
-                    ts_array_data = self.read_list_data(tsv_ts_file)
-                    ts_array_data = ts_array_data.reshape((len(ts_array_data), 1, len(ts_array_data[0]), 1))
-
-                    json_ts_file = tsv_ts_file.replace('.tsv', '.json')
-                    with open(json_ts_file) as json_ts:
-                        ts_time_file = json.load(json_ts)['CoordsRows'][0]
-
-                    dir_path = os.path.dirname(json_ts_file)
-                    ts_time_file = os.path.join(dir_path, ts_time_file).replace('.json', '.tsv')
-                    ts_times_data = self.read_list_data(ts_time_file)
-
-                    ts = TimeSeriesRegion()
-                    ts.data = ts_array_data
-                    ts.time = ts_times_data
-                    ts.connectivity = connectivity
-
-                    self.generic_attributes.user_tag_1 = tsv_ts_file_name
-                    ts.configure()
-                    ts_index = self.store_complete(ts, self.generic_attributes)
-                    ts_index.fixed_generic_attributes = True
-                    self._capture_operation_results([ts_index])
-                    dao.store_entity(ts_index)
+                ts = self.__build_time_series(ts_folder, connectivity)
 
             spatial_folder = os.path.join(subject_folder, self.SPATIAL_TOKEN)
             if os.path.exists(spatial_folder):
-                tsv_spatial_files = filter(lambda x: x.endswith('.tsv'), os.listdir(spatial_folder))
+                self.__build_functional_connectivity(spatial_folder, ts)
 
-                for tsv_spatial_file_name in tsv_spatial_files:
-                    tsv_spatial_file = os.path.join(spatial_folder, tsv_spatial_file_name)
-                    fc_data = self.read_list_data(tsv_spatial_file)
-                    fc_data = fc_data.reshape((fc_data.shape[0], fc_data.shape[1], 1, 1))
+    def __build_connectivity(self, net_folder):
+        weights_matrix = None
+        tracts_matrix = None
+        centres = None
+        labels_vector = None
 
-                    pearson_correlation = CorrelationCoefficients()
-                    pearson_correlation.array_data = fc_data
-                    pearson_correlation.source = ts
+        for net_file_name in os.listdir(net_folder):
+            net_file_path = os.path.join(net_folder, net_file_name)
 
-                    self.generic_attributes.user_tag_1 = tsv_spatial_file_name
-                    pearson_correlation.configure()
-                    pearson_correlation_index = self.store_complete(pearson_correlation, self.generic_attributes)
-                    pearson_correlation_index.fixed_generic_attributes = True
-                    self._capture_operation_results([pearson_correlation_index])
-                    dao.store_entity(pearson_correlation_index)
+            if net_file_name.endswith('weights.tsv'):
+                weights_matrix = self.read_list_data(net_file_path)
+            elif net_file_name.endswith('distances.tsv'):
+                tracts_matrix = self.read_list_data(net_file_path)
+            elif net_file_name.endswith('weights.json'):
+                with open(net_file_path) as json_file:
+                    json_dict = json.load(json_file)
+                    labels_path = json_dict['CoordsRows'][0]
+                    centres_path = json_dict['CoordsRows'][1]
+
+                    dir_path = os.path.dirname(net_file_path)
+                    labels_path = os.path.join(dir_path, labels_path).replace('.json', '.tsv')
+                    centres_path = os.path.join(dir_path, centres_path).replace('.json', '.tsv')
+
+                    centres = self.read_list_data(centres_path)
+                    labels_vector = self.read_list_data(labels_path, dtype=numpy.str, usecols=[0])
+
+        connectivity = Connectivity()
+
+        expected_number_of_nodes = len(centres)
+        connectivity.set_centres(centres, expected_number_of_nodes)
+        connectivity.set_region_labels(labels_vector)
+        connectivity.set_weights(weights_matrix, expected_number_of_nodes)
+        connectivity.set_tract_lengths(tracts_matrix, expected_number_of_nodes)
+        connectivity.configure()
+
+        connectivity_index = self.store_complete(connectivity)
+        self._capture_operation_results([connectivity_index])
+        dao.store_entity(connectivity_index)
+
+        return connectivity
+
+    def __build_time_series(self, ts_folder, connectivity):
+        tsv_ts_files = filter(lambda x: x.endswith('.tsv'), os.listdir(ts_folder))
+        ts = None
+        for tsv_ts_file_name in tsv_ts_files:
+            tsv_ts_file = os.path.join(ts_folder, tsv_ts_file_name)
+            ts_array_data = self.read_list_data(tsv_ts_file)
+            ts_array_data = ts_array_data.reshape((len(ts_array_data), 1, len(ts_array_data[0]), 1))
+
+            json_ts_file = tsv_ts_file.replace('.tsv', '.json')
+            with open(json_ts_file) as json_ts:
+                ts_time_file = json.load(json_ts)['CoordsRows'][0]
+
+            dir_path = os.path.dirname(json_ts_file)
+            ts_time_file = os.path.join(dir_path, ts_time_file).replace('.json', '.tsv')
+            ts_times_data = self.read_list_data(ts_time_file)
+
+            ts = TimeSeriesRegion()
+            ts.data = ts_array_data
+            ts.time = ts_times_data
+            ts.connectivity = connectivity
+
+            self.generic_attributes.user_tag_1 = tsv_ts_file_name
+            ts.configure()
+            ts_index = self.store_complete(ts, self.generic_attributes)
+            ts_index.fixed_generic_attributes = True
+            self._capture_operation_results([ts_index])
+            dao.store_entity(ts_index)
+
+        return ts
+
+    def __build_functional_connectivity(self, spatial_folder, ts):
+        tsv_spatial_files = filter(lambda x: x.endswith('.tsv'), os.listdir(spatial_folder))
+
+        for tsv_spatial_file_name in tsv_spatial_files:
+            tsv_spatial_file = os.path.join(spatial_folder, tsv_spatial_file_name)
+            fc_data = self.read_list_data(tsv_spatial_file)
+            fc_data = fc_data.reshape((fc_data.shape[0], fc_data.shape[1], 1, 1))
+
+            pearson_correlation = CorrelationCoefficients()
+            pearson_correlation.array_data = fc_data
+            pearson_correlation.source = ts
+
+            self.generic_attributes.user_tag_1 = tsv_spatial_file_name
+            pearson_correlation.configure()
+            pearson_correlation_index = self.store_complete(pearson_correlation, self.generic_attributes)
+            pearson_correlation_index.fixed_generic_attributes = True
+            self._capture_operation_results([pearson_correlation_index])
+            dao.store_entity(pearson_correlation_index)
