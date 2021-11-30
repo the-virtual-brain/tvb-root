@@ -1,6 +1,6 @@
 <!--! used to draw a page that associates something for a connectivity node -->
 <div id="main" class="columnized colscheme-2-even">
-    <link rel="stylesheet" type="text/css" href="/static/style/section_stimulus.css?{{ currentVersionJS }}"/>
+    <link rel="stylesheet" type="text/css" href="{{ deploy_context | safe }}/static/style/section_stimulus.css?{{ currentVersionJS }}"/>
 
     <section class="configure-stimulus-equation view-column col-2">
         <h4><mark>Select</mark> Connectivity Region</h4>
@@ -8,8 +8,8 @@
         {% include 'visualizers/connectivity/left_template_connectivity_view.html' %}
     </section>
 
-    <script type="text/javascript" src="/static/js/region_associator.js?{{ currentVersionJS }}"></script>
-    <script type="text/javascript" src="/static_view/connectivity/scripts/matrixScript.js?{{ currentVersionJS }}" ></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/region_associator.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static_view/connectivity/scripts/matrixScript.js?{{ currentVersionJS }}" ></script>
 
     <section class="configure-stimulus-shape view-column col-1">
 
@@ -47,6 +47,11 @@
                     <button class="action action-confirm">
                     	Submit {{ sumbitText }}
                     </button>
+                </li>
+                <li>
+                    <a href="{{ deploy_context | safe }}/burst" class="action action-cancel">
+                        Cancel
+                    </a>
                 </li>
 	        </ul>
 	       </div>

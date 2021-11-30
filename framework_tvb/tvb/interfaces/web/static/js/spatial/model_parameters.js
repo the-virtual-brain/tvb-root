@@ -4,7 +4,7 @@
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
  *
- * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ * (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
  *
  * This program is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software Foundation,
@@ -49,7 +49,8 @@ function MP_applyEquationForParameter() {
         type:'POST',
         url:url,
         success:function (data) {
-            $("#div_spatial_model_params").empty().append(data);
+            const spatial_div = $("#div_spatial_model_params");
+            renderWithMathjax(spatial_div, data, true);
             MP_displayFocalPoints();
         }
     });
@@ -138,7 +139,8 @@ function setModelParam(methodToCall, currentModelParam) {
         url: url,
         type: 'POST',
         success: function (data) {
-            $("#div_spatial_model_params").empty().append(data);
+            const spatial_model_div = $("#div_spatial_model_params");
+            renderWithMathjax(spatial_model_div, data, true)
             MP_displayFocalPoints();
         }
     })
@@ -206,6 +208,6 @@ function plotEquation(subformDiv = null) {
     });
 }
 
-function prepareRefreshSubformUrl(currentElem, elementType, subformDiv) {
-    return refreshBaseUrl + '/refresh_subform/' + currentElem.value + '/' + elementType;
+function prepareRefreshSubformUrl(currentElem, subformDiv) {
+    return refreshBaseUrl + '/refresh_subform/' + currentElem.value;
 }

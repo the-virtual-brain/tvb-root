@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -33,23 +33,16 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import os
 import pytest
-import tvb_data
-from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
-from tvb.adapters.analyzers.bct_clustering_adapters import TransitivityBinaryDirected
+
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
-from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.load import get_filtered_datatypes
-from tvb.core.neocom import h5
-from tvb.core.entities.model.model_operation import *
-from tvb.core.entities.model.model_datatype import *
-from tvb.core.entities.storage import dao
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.factory import StaticFiltersFactory
-from tvb.core.services.operation_service import OperationService
+from tvb.core.entities.load import get_filtered_datatypes
+from tvb.core.entities.model.model_datatype import *
+from tvb.core.entities.model.model_operation import *
+from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
 from tvb.core.services.project_service import ProjectService
-from tvb.core.utils import no_matlab
 from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
@@ -97,7 +90,7 @@ class TestProjectStructure(TransactionalTestCase):
         When changing the visibility for an operation that belongs to an operation group, we
         should also change the visibility for the entire group of operations.
         """
-        group = datatype_group_factory()
+        group, _ = datatype_group_factory()
         list_of_operations = dao.get_operations_in_group(group.id)
         for operation in list_of_operations:
             assert operation.visible, "The operation should be visible."
@@ -110,7 +103,7 @@ class TestProjectStructure(TransactionalTestCase):
         """
         Tests if the visibility for an operation group is set correct.
         """
-        group = datatype_group_factory()
+        group, _ = datatype_group_factory()
         list_of_operations = dao.get_operations_in_group(group.id)
         for operation in list_of_operations:
             assert operation.visible, "The operation should be visible."
@@ -165,7 +158,7 @@ class TestProjectStructure(TransactionalTestCase):
         """
         Tests if a datatype is group.
         """
-        group = datatype_group_factory()
+        group, _ = datatype_group_factory()
         dt_group = dao.get_generic_entity(DataTypeGroup, group.id)[0]
         is_dt_group = self.project_service.is_datatype_group(dt_group.gid)
         assert is_dt_group, "The datatype should be a datatype group."
@@ -175,7 +168,7 @@ class TestProjectStructure(TransactionalTestCase):
 
     def test_count_datatypes_in_group(self, datatype_group_factory):
         """ Test that counting dataTypes is correct. Happy flow."""
-        group = datatype_group_factory()
+        group, _ = datatype_group_factory()
         count = dao.count_datatypes_in_group(group.id)
         assert count == group.count_results
         assert count == 6
@@ -200,7 +193,7 @@ class TestProjectStructure(TransactionalTestCase):
         """
         Check if the visibility for a datatype from a datatype group is set correct.
         """
-        group = datatype_group_factory()
+        group, _ = datatype_group_factory()
         datatypes = dao.get_datatypes_from_datatype_group(group.id)
         assert datatypes[0].visible, "The data type should be visible."
         assert datatypes[1].visible, "The data type should be visible."
@@ -218,7 +211,7 @@ class TestProjectStructure(TransactionalTestCase):
         """
         Check if the visibility for a datatype group is set correct.
         """
-        group = datatype_group_factory()
+        group, _ = datatype_group_factory()
         dt_group = dao.get_generic_entity(DataTypeGroup, group.id)[0]
         datatypes = dao.get_datatypes_from_datatype_group(dt_group.id)
 
@@ -239,7 +232,7 @@ class TestProjectStructure(TransactionalTestCase):
         """
         Validate that we can retrieve all DTs from a DT_Group
         """
-        group = datatype_group_factory()
+        group, _ = datatype_group_factory()
         exp_datatypes = dao.get_datatypes_from_datatype_group(group.id)
         datatypes = self.project_service.get_datatypes_from_datatype_group(group.id)
         assert len(datatypes) == group.count_results, "There should be 10 datatypes into the datatype group."
@@ -260,33 +253,6 @@ class TestProjectStructure(TransactionalTestCase):
             assert expected.invalid == actual.invalid, "The invalid field value is not correct."
             assert expected.is_nan == actual.is_nan, "The is_nan field value is not correct."
 
-    @pytest.mark.skipif(no_matlab(), reason="Matlab or Octave not installed!")
-    def test_get_inputs_for_operation(self):
-        """
-        Tests method get_datatype_and_datatypegroup_inputs_for_operation.
-        Verifies filters' influence over results is as expected
-        """
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
-        conn = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
-        view_model = BaseBCTModel()
-        view_model.connectivity = conn.gid
-        adapter = ABCAdapter.build_adapter_from_class(TransitivityBinaryDirected)
-        result = OperationService().fire_operation(adapter, self.test_user, self.test_project.id,
-                                                   view_model=view_model)
-
-        conn.visible = False
-        dao.store_entity(conn)
-        operation = dao.get_operation_by_id(result.id)
-
-        inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid,
-                                                                                          self.relevant_filter)
-        assert len(inputs) == 0
-
-        inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid,
-                                                                                          self.full_filter)
-        assert len(inputs) == 1, "Incorrect number of inputs."
-        assert conn.id == inputs[0].id, "Retrieved wrong input dataType."
-
     def test_remove_datatype(self, array_factory):
         """
         Tests the deletion of a datatype.
@@ -300,42 +266,20 @@ class TestProjectStructure(TransactionalTestCase):
         self.project_service.remove_datatype(self.test_project.id, dt_list[0].gid)
         self._check_if_datatype_was_removed(dt_list[0])
 
-    def test_remove_datatype_from_group(self, datatype_group_factory, project_factory, user_factory):
-        """
-        Tests the deletion of a datatype group.
-        """
-        user = user_factory()
-        project = project_factory(user)
-        group = datatype_group_factory(project=project)
-
-        datatype_group = dao.get_generic_entity(DataTypeGroup, group.id)[0]
-        datatypes = dao.get_datatypes_from_datatype_group(group.id)
-        datatype_measure = dao.get_generic_entity(DatatypeMeasureIndex, datatypes[0].gid, "fk_source_gid")[0]
-
-        # When trying to delete one entity in a group the entire group will be removed
-        #  First remove the DTMeasures, to avoid FK failures
-        self.project_service.remove_datatype(project.id, datatype_measure.gid)
-        self.project_service.remove_datatype(project.id, datatypes[0].gid)
-        self._check_if_datatype_was_removed(datatypes[0])
-        self._check_if_datatype_was_removed(datatypes[1])
-        self._check_if_datatype_was_removed(datatype_group)
-        self._check_if_datatype_was_removed(datatype_measure)
-        self._check_datatype_group_removed(group.id, datatype_group.fk_operation_group)
-
     def test_remove_datatype_group(self, datatype_group_factory, project_factory, user_factory):
         """
         Tests the deletion of a datatype group.
         """
         user = user_factory()
         project = project_factory(user)
-        group = datatype_group_factory(project=project)
+        group, _ = datatype_group_factory(project=project)
 
         datatype_groups = self.get_all_entities(DataTypeGroup)
         datatypes = dao.get_datatypes_from_datatype_group(group.id)
         assert 2 == len(datatype_groups)
 
-        self.project_service.remove_datatype(project.id, datatype_groups[1].gid)
-        self.project_service.remove_datatype(project.id, datatype_groups[0].gid)
+        self.project_service.remove_datatype(project.id, datatype_groups[1].gid, skip_validation=True)
+        self.project_service.remove_datatype(project.id, datatype_groups[0].gid, skip_validation=True)
         self._check_if_datatype_was_removed(datatypes[0])
         self._check_if_datatype_was_removed(datatypes[1])
         self._check_if_datatype_was_removed(datatype_groups[0])
@@ -344,16 +288,16 @@ class TestProjectStructure(TransactionalTestCase):
 
     @pytest.fixture()
     def array_factory(self, operation_factory, connectivity_index_factory):
-        def _create_measure(conn, op, op_dir, project_id):
+        def _create_measure(conn, op, project):
             conn_measure = ConnectivityMeasure()
             conn_measure.connectivity = h5.load_from_index(conn)
             conn_measure.array_data = numpy.array(conn.number_of_regions)
 
-            conn_measure_db = h5.store_complete(conn_measure, op_dir)
+            conn_measure_db = h5.store_complete(conn_measure, op.id, project.name)
             conn_measure_db.fk_from_operation = op.id
             dao.store_entity(conn_measure_db)
 
-            count = dao.count_datatypes(project_id, DataTypeMatrix)
+            count = dao.count_datatypes(project.id, DataTypeMatrix)
             return count
 
         def build(project):
@@ -362,15 +306,14 @@ class TestProjectStructure(TransactionalTestCase):
 
             op = operation_factory(test_project=project)
             conn = connectivity_index_factory(op=op)
-            storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
 
-            count = _create_measure(conn, op, storage_path, project.id)
+            count = _create_measure(conn, op, project)
             assert count == 1
 
-            count = _create_measure(conn, op, storage_path, project.id)
+            count = _create_measure(conn, op, project)
             assert count == 2
 
-            count = _create_measure(conn, op, storage_path, project.id)
+            count = _create_measure(conn, op, project)
             assert count == 3
 
             return get_filtered_datatypes(project.id, DataTypeMatrix)[0]

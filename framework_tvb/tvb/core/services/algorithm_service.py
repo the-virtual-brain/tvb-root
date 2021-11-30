@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -39,17 +39,17 @@ import os
 from inspect import getmro
 
 from tvb.basic.logger.builder import get_logger
-from tvb.core import utils
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcuploader import ABCUploaderForm
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain, InvalidFilterChainInput
 from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, TraitUploadField, TEMPORARY_PREFIX
 from tvb.core.services.exceptions import OperationException
+from tvb.core.utils import date2string
+from tvb.storage.storage_interface import StorageInterface
 
 
 class AlgorithmService(object):
@@ -59,7 +59,7 @@ class AlgorithmService(object):
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
-        self.file_helper = FilesHelper()
+        self.storage_interface = StorageInterface()
 
     @staticmethod
     def get_category_by_id(identifier):
@@ -100,7 +100,7 @@ class AlgorithmService(object):
         if dt[5]:
             display_name += ' - From: ' + str(dt[5])
         else:
-            display_name += utils.date2string(dt[4])
+            display_name += date2string(dt[4])
         if dt[6]:
             display_name += ' - ' + str(dt[6])
         display_name += ' - ID:' + str(dt[0])
@@ -110,6 +110,10 @@ class AlgorithmService(object):
     def fill_selectfield_with_datatypes(self, field, project_id, extra_conditions=None):
         # type: (TraitDataTypeSelectField, int, list) -> None
         filtering_conditions = FilterChain()
+
+        if field.conditions is not None:
+            filtering_conditions.operator_between_fields = field.conditions.operator_between_fields
+
         filtering_conditions += field.conditions
         filtering_conditions += extra_conditions
         datatypes, _ = dao.get_values_of_datatype(project_id, field.datatype_index, filtering_conditions)
@@ -146,9 +150,9 @@ class AlgorithmService(object):
                 file_name = None
                 if hasattr(field, 'file') and field.file is not None:
                     project = dao.get_project_by_id(project_id)
-                    temporary_storage = self.file_helper.get_project_folder(project, self.file_helper.TEMP_FOLDER)
+                    temporary_storage = self.storage_interface.get_temp_folder(project.name)
                     try:
-                        uq_name = utils.date2string(datetime.now(), True) + '_' + str(0)
+                        uq_name = date2string(datetime.now(), True) + '_' + str(0)
                         file_name = TEMPORARY_PREFIX + uq_name + '_' + field.filename
                         file_name = os.path.join(temporary_storage, file_name)
 
@@ -156,7 +160,7 @@ class AlgorithmService(object):
                             file_obj.write(field.file.read())
                     except Exception as excep:
                         # TODO: is this handled properly?
-                        self.file_helper.remove_files([file_name])
+                        self.storage_interface.remove_files([file_name])
                         excep.message = 'Could not continue: Invalid input files'
                         raise excep
                 post_data[form_field.name] = file_name
@@ -196,13 +200,12 @@ class AlgorithmService(object):
         return dao.get_algorithm_by_module(module, classname)
 
     @staticmethod
-    def create_link(data_ids, project_id):
+    def create_link(data_id, project_id):
         """
         For a list of dataType IDs and a project id create all the required links.
         """
-        for data in data_ids:
-            link = Links(data, project_id)
-            dao.store_entity(link)
+        link = Links(data_id, project_id)
+        dao.store_entity(link)
 
     @staticmethod
     def remove_link(dt_id, project_id):

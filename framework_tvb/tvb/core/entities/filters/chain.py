@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
-# analysers necessary to run brain-simulations. You can use it stand alone or
-# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
+# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -48,7 +48,8 @@ In order to define a default filter, from the adapter interface add::
 """
 import importlib
 import json
-import datetime
+from datetime import datetime
+
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.filters.exceptions import *
 
@@ -118,7 +119,7 @@ class FilterChain(object):
         new_values.extend(other.values)
         operations = self.operations[:]
         operations.extend(other.operations)
-        return FilterChain(new_display_name, new_fields, new_values, operations, 'and')
+        return FilterChain(new_display_name, new_fields, new_values, operations, self.operator_between_fields)
 
     def __str__(self):
         return self.__class__.__name__ + "(fields=%s, operations=%s, values=%s, operator_between_fields=%s)" % (
@@ -185,8 +186,7 @@ class FilterChain(object):
                            values=filter_dictionary[KEY_VALUES], operations=filter_dictionary[KEY_OPERATIONS],
                            operator_between_fields=filter_dictionary[KEY_OPERATOR])
 
-    def get_python_filter_equivalent(self, datatype_to_check=None, algorithm_to_check=None,
-                                     algocategory_to_check=None, operation_to_check=None):
+    def get_python_filter_equivalent(self, datatype_to_check=None):
         """
         Python evaluate of the filter against a current given DataType
         Check a filter instance next to a given input.
@@ -296,7 +296,7 @@ class FilterChain(object):
             result = result + field
             result = result + operation
             prepared_value = self.__prepare_filter_string(str(value))
-            if isinstance(value, (str, datetime.datetime)):
+            if isinstance(value, (str, datetime)):
                 if prepared_value == str(value):
                     # It was just a regular string, need to add quotes so it's not evaluated to a variable
                     prepared_value = '"' + prepared_value + '"'

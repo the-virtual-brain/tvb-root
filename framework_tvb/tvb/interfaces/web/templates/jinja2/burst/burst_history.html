@@ -1,6 +1,6 @@
 <div>
     <h4>History</h4>
-    <a href="#" title="Import simulation from ZIP " class="column-control action-big-upload" onclick="showOverlay('/burst/get_upload_overlay', true);">Import</a>
+    <a href="#" title="Import simulation from ZIP " class="column-control action-big-upload" onclick="showOverlay(deploy_context + '/burst/get_upload_overlay', true);">Import</a>
     <a href="#" title="Prepare a new simulation " class="column-control action action-big-new" onclick="resetToNewBurst();">New</a>
 
     <ul class="burst-list" id="burst-history">
@@ -9,8 +9,8 @@
                 id='burst_id_{{ burst.id }}'>
                 <a href="#" onclick="changeBurstHistory({{ burst.id }}, true); loadBurstReadOnly({{ burst.id }}, '{{ first_fragment_url }}');" title="Load this simulation">{{ burst.name }}</a>
                 <nav class="inline-menu inline-hover-menu">
-                    <button class="action action-edit action-menu">Edit</button>
-                    <div class="extension">
+                    <button id="action_menu_{{ burst.id }}" class="action action-edit action-menu">Edit</button>
+                    <div id="extension_{{ burst.id }}" class="extension">
                         <div class="dropdown-pane">
                             <p class="burst-prop-state"></p>
 
@@ -27,10 +27,15 @@
                             <p><button class="action action-copy" onclick="copyBurst({{ burst.id }}, '{{ first_fragment_url }}')" title="Create a copy of the current simulation configuration.">
                                 Copy</button></p>
                             {% if burst.range1 == None %}
-                                <p><button class="action action-copy" onclick="branchBurst({{ burst.id }}, '{{ first_fragment_url }}')" title="Create a branch of the current simulation configuration.">
-                                    Branch</button></p>
+                                {% if burst.status == 'finished' %}
+                                    <p><button class="action action-copy" onclick="branchBurst({{ burst.id }}, '{{ first_fragment_url }}')" title="Create a branch of the current simulation configuration.">
+                                        Branch</button></p>
+                                {% else %}
+                                    <p><button class="action action-copy action-idle" title="Cannot branch current burst because simulation is still running or an error occured." disabled="disabled">
+                                        Branch</button></p>
+                                {% endif %}
                             {% endif %}
-                            <p><button class="action action-export" onclick="window.location='/burst/export/{{ burst.id }}'; return false;"
+                            <p><button class="action action-export" onclick="window.location='{{ deploy_context | safe }}/burst/export/{{ burst.id }}'; return false;"
                                         title="Export simulation as ZIP, for later import or use in command line">
                                 Export ZIP</button></p>
 
@@ -72,3 +77,19 @@
         {% endfor %}
     </ul>
 </div>
+
+<script>
+    $("nav.inline-hover-menu .extension").each(function () {
+        $(this).siblings().click($(this),function (clickHandler) {
+            clickHandler.data.css('display', 'block')
+        })
+        $(this).hover(function () {
+            $(this).css('display', 'block')
+        }, function () {
+            $(this).css('display', 'none')
+            {% if fromInit is defined and fromInit%}
+            $(this).siblings().trigger('click')
+            {% endif %}
+        })
+    })
+</script>

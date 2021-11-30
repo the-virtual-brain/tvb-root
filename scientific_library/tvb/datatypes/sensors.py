@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -38,14 +38,13 @@ The Sensors dataType.
 """
 
 import re
-from enum import Enum
-
 import numpy
+
 from tvb.basic.readers import FileReader, try_get_absolute_path
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int, TVBEnum, Final
 
 
-class SensorTypes(Enum):
+class SensorTypesEnum(TVBEnum):
     TYPE_EEG = "EEG"
     TYPE_MEG = "MEG"
     TYPE_INTERNAL = "Internal"
@@ -194,7 +193,7 @@ class SensorsEEG(Sensors):
         file columns: labels, x, y, z
 
     """
-    sensors_type = Attr(str, default=SensorTypes.TYPE_EEG.value)
+    sensors_type = Final(field_type=str, default=SensorTypesEnum.TYPE_EEG.value)
 
     has_orientation = Attr(bool, default=False)
 
@@ -212,7 +211,7 @@ class SensorsMEG(Sensors):
         file columns: labels, x, y, z,   dx, dy, dz
 
     """
-    sensors_type = Attr(str, default=SensorTypes.TYPE_MEG.value)
+    sensors_type = Final(field_type=str, default=SensorTypesEnum.TYPE_MEG.value)
 
     orientations = NArray(label="Sensor orientations",
                           doc="An array representing the orientation of the MEG SQUIDs")
@@ -234,7 +233,7 @@ class SensorsInternal(Sensors):
     """
     Sensors inside the brain...
     """
-    sensors_type = Attr(str, default=SensorTypes.TYPE_INTERNAL.value)
+    sensors_type = Final(field_type=str, default=SensorTypesEnum.TYPE_INTERNAL.value)
 
     @classmethod
     def from_file(cls, source_file="seeg_39.txt.bz2"):
@@ -272,10 +271,10 @@ def make_sensors(sensors_type):
     :param sensors_type: one of the supported subtypes
     :return: Instance of the corresponding sensors class, or None
     """
-    if sensors_type == SensorTypes.TYPE_EEG.value:
+    if sensors_type == SensorTypesEnum.TYPE_EEG.value:
         return SensorsEEG()
-    elif sensors_type == SensorTypes.TYPE_MEG.value:
+    elif sensors_type == SensorTypesEnum.TYPE_MEG.value:
         return SensorsMEG()
-    elif sensors_type == SensorTypes.TYPE_INTERNAL.value:
+    elif sensors_type == SensorTypesEnum.TYPE_INTERNAL.value:
         return SensorsInternal()
     return None

@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,14 +36,14 @@ Test history in simulator.
 """
 
 import numpy
-from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.basic.neotraits.api import List
 from tvb.datatypes.connectivity import Connectivity
-from tvb.simulator.coupling import Coupling, SparseCoupling
+from tvb.simulator.coupling import SparseCoupling
 from tvb.simulator.integrators import Identity
 from tvb.simulator.models.base import Model
 from tvb.simulator.monitors import Raw
 from tvb.simulator.simulator import Simulator
+from tvb.tests.library.base_testcase import BaseTestCase
 
 
 class IdCoupling(SparseCoupling):
@@ -69,6 +69,7 @@ class Sum(Model):
 
 
 class TestsExactPropagation(BaseTestCase):
+
     def build_simulator(self, n=4):
 
         self.conn = numpy.zeros((n, n))  # , numpy.int32)
@@ -86,10 +87,12 @@ class TestsExactPropagation(BaseTestCase):
             integrator=Identity(dt=1.0),
             initial_conditions=numpy.ones((n * n, 1, n, 1)),
             simulation_length=10.0,
-            connectivity=Connectivity(region_labels=numpy.array(['']),weights=self.conn, tract_lengths=self.dist, speed=numpy.array([1.0]), centres=numpy.array([0.0])),
+            connectivity=Connectivity(region_labels=numpy.array(['']), weights=self.conn, tract_lengths=self.dist,
+                                      speed=numpy.array([1.0]), centres=numpy.array([0.0])),
             model=Sum(),
             monitors=(Raw(),),
         )
+
         self.sim.configure()
 
     def test_propagation(self):

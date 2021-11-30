@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,10 +36,11 @@ from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, ForeignKey, String
 from tvb.adapters.datatypes.h5.annotation_h5 import ConnectivityAnnotations
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.basic.profile import TvbProfile
 from tvb.core.entities.model.model_datatype import DataType
 
-ICON_TVB = "/static/style/nodes/nodeRoot.png"
-ICON_FOLDER = "/static/style/nodes/nodeFolder.png"
+ICON_TVB = TvbProfile.current.web.DEPLOY_CONTEXT + "/static/style/nodes/nodeRoot.png"
+ICON_FOLDER = TvbProfile.current.web.DEPLOY_CONTEXT + "/static/style/nodes/nodeFolder.png"
 NODE_ID_TVB = "node_tvb_"
 NODE_ID_TVB_ROOT = "node_tvb_root_"
 NODE_ID_BRCO = "node_brco_"

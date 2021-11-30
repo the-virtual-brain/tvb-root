@@ -4,7 +4,7 @@
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
  *
- * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ * (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
  *
  * This program is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software Foundation,
@@ -257,7 +257,7 @@ function setSurfaceStimParamAndRedrawChart(methodToCall, fieldName, fieldValue) 
     let current_param = prepareUrlParam(fieldName, fieldValue);
     let url = refreshBaseUrl + '/' + methodToCall + '?' + current_param;
     $.ajax({
-        url: url,
+        url: deploy_context + url,
         type: 'POST',
         success: function () {
             plotEquations()
@@ -345,6 +345,6 @@ function plotEquation(subformDiv = 'temporal_params') {
     });
 }
 
-function prepareRefreshSubformUrl(currentElem, elementType, subformDiv) {
-    return refreshBaseUrl + '/refresh_subform/' + subformDiv + '/' + currentElem.value + '/' + elementType;
+function prepareRefreshSubformUrl(currentElem, subformDiv) {
+    return refreshBaseUrl + '/refresh_subform/' + subformDiv + '/' + currentElem.value;
 }

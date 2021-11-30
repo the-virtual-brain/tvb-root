@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,12 +36,15 @@ Benchmark GPUs.
 import time
 import numpy
 import math
+from randomstate.prng.xorshift128 import xorshift128
+from datetime import datetime, timedelta
+
 from numba import cuda, int32, float32
 from tvb.simulator._numba.coupling import cu_delay_cfun, next_pow_of_2
 from tvb.simulator._numba.util import cu_expr
 from tvb.simulator.async import AsyncResult
-from randomstate.prng.xorshift128 import xorshift128
-import datetime
+
+
 
 
 cuda.detect()
@@ -128,7 +131,7 @@ if __name__ == '__main__':
     print 'buf dims', buf.shape
     # begin
     tic = time.time()
-    print datetime.datetime.now().isoformat(' ')
+    print datetime.now().isoformat(' ')
     for i in range(n_iter):
         noise = async_noise.get().astype('f')
         kernel[(n_thread_per_block, ), (n_block,)](
@@ -137,7 +140,7 @@ if __name__ == '__main__':
         if i%10==1:
             pct = i * 1e2 / n_iter
             tta = (time.time() - tic) / pct * (100 - pct)
-            eta = (datetime.datetime.now() + datetime.timedelta(seconds=tta)).isoformat(' ')
+            eta = (datetime.now() + timedelta(seconds=tta)).isoformat(' ')
             print 'Step %d of %d, %02.2f %% done, ETA %s' % (i, n_iter, pct, eta)
     toc = time.time() - tic
     print toc

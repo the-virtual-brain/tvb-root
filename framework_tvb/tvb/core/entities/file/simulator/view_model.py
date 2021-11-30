@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -26,8 +26,8 @@
 #       The Virtual Brain: a simulator of primate brain network dynamics.
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
-#
-from tvb.basic.neotraits.api import Attr, List
+
+from tvb.basic.neotraits.api import Attr, List, EnumAttr, TupleEnum
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
@@ -66,7 +66,6 @@ class MultiplicativeNoiseViewModel(NoiseViewModel, Multiplicative):
 
     def __init__(self):
         super(MultiplicativeNoiseViewModel, self).__init__()
-        self.b = type(self.b)()
 
 
 class IntegratorViewModel(ViewModel, Integrator):
@@ -163,6 +162,21 @@ class Dop853StochasticViewModel(IntegratorStochasticViewModel, Dop853Stochastic)
     @property
     def linked_has_traits(self):
         return Dop853Stochastic
+
+
+class IntegratorViewModelsEnum(TupleEnum):
+    HEUN = (HeunDeterministicViewModel, "Heun")
+    STOCHASTIC_HEUN = (HeunStochasticViewModel, "Stochastic Heun")
+    EULER = (EulerDeterministicViewModel, "Euler")
+    EULER_MARUYAMA = (EulerStochasticViewModel, "Euler-Maruyama")
+    RUNGE_KUTTA = (RungeKutta4thOrderDeterministicViewModel, "Runge-Kutta 4Th Order")
+    DIFFERENCE_EQUATION = (IdentityViewModel, "Difference equation")
+    VARIABLE_ORDER_ADAMS = (VODEViewModel, "Variable-Order Adams (BDF)")
+    STOCHASTIC_VARIABLE_ODER_ADAMS = (VODEStochasticViewModel, "Stochastic variable-order Adams (BDF)")
+    DOPRI_5 = (Dopri5ViewModel, "Dormand-Prince, order (4, 5)")
+    DOPRI_5_STOCHASTIC = (Dopri5StochasticViewModel, "Stochastic Dormand-Prince, order (4, 5)")
+    DOP_853 = (Dop853ViewModel, "Dormand-Prince, order 8 (5, 3)")
+    DOP_853_STOCHASTIC = (Dop853StochasticViewModel, "Stochastic Dormand-Prince, order 8 (5, 3)")
 
 
 class MonitorViewModel(ViewModel, Monitor):
@@ -279,7 +293,6 @@ class BoldViewModel(MonitorViewModel, Bold):
 
     def __init__(self):
         super(BoldViewModel, self).__init__()
-        self.hrf_kernel = type(self.hrf_kernel)()
 
 
 class BoldRegionROIViewModel(BoldViewModel, BoldRegionROI):
@@ -350,10 +363,10 @@ class SimulatorAdapterModel(ViewModel, Simulator):
         required=False
     )
 
-    integrator = Attr(
-        field_type=IntegratorViewModel,
+    integrator = EnumAttr(
+        field_type=IntegratorViewModelsEnum,
         label=Simulator.integrator.label,
-        default=HeunDeterministicViewModel(),
+        default=IntegratorViewModelsEnum.HEUN.instance,
         required=Simulator.integrator.required,
         doc=Simulator.integrator.doc
     )

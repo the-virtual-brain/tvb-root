@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -27,15 +27,36 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.adapters.simulator.subforms_mapping import SubformsEnum, get_ui_name_to_equation_dict
+
 from tvb.datatypes.equations import *
-from tvb.core.neotraits.forms import Form, FloatField, StrField
+from tvb.core.neotraits.forms import Form, FloatField, LabelField
 from tvb.basic.neotraits.api import Float
 
 
-def get_ui_name_for_equation(equation_class):
-    equation_to_ui_name = dict((v, k) for k, v in get_ui_name_to_equation_dict().items())
-    return equation_to_ui_name.get(equation_class)
+class SpatialEquationsEnum(EquationsEnum):
+    GAUSSIAN = (Gaussian, "Gaussian")
+    MEXICAN_HAT = (DoubleGaussian, "Mexican-hat")
+    SIGMOID = (Sigmoid, "Sigmoid")
+    DISCRETE = (DiscreteEquation, "Discrete Equation")
+
+
+class TemporalEquationsEnum(EquationsEnum):
+    LINEAR = (Linear, "Linear")
+    GAUSSIAN = (Gaussian, "Gaussian")
+    MEXICAN_HAT = (DoubleGaussian, "Mexican-hat")
+    SIGMOID = (Sigmoid, "Sigmoid")
+    GENERALIZEDSIGMOID = (GeneralizedSigmoid, "GeneralizedSigmoid")
+    SINUSOID = (Sinusoid, "Sinusoid")
+    COSINE = (Cosine, "Cosine")
+    ALPHA = (Alpha, "Alpha")
+    PULSETRAIN = (PulseTrain, "PulseTrain")
+
+
+class BoldMonitorEquationsEnum(EquationsEnum):
+    Gamma_KERNEL = (Gamma, "Hrf Kernel: Gamma Kernel")
+    DOUBLE_EXPONENTIAL_KERNEL = (DoubleExponential, "Hrf Kernel: Difference of Exponentials")
+    VOLTERRA_KERNEL = (FirstOrderVolterra, "Hrf Kernel: Volterra Kernel")
+    MOG_KERNEL = (MixtureOfGammas, "Hrf Kernel: Mixture Of Gammas")
 
 
 def get_ui_name_to_monitor_equation_dict():
@@ -75,14 +96,15 @@ def get_form_for_equation(equation_class):
 class EquationForm(Form):
 
     def get_subform_key(self):
-        return SubformsEnum.EQUATION.name
+        return 'EQUATION'
 
     def get_traited_equation(self):
         return Equation
 
     def __init__(self):
         super(EquationForm, self).__init__()
-        self.equation = StrField(self.get_traited_equation().equation, disabled=True)
+        traited_equation = self.get_traited_equation().equation
+        self.equation = LabelField(traited_equation, traited_equation.doc)
         for param_key, param in self.get_traited_equation().parameters.default().items():
             setattr(self, param_key, FloatField(Float(label=param_key, default=param), name=param_key))
 

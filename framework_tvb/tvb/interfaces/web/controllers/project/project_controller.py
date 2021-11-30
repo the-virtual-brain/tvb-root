@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,35 +35,35 @@ This represents the Controller part (from MVC).
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-import shutil
-
 import cherrypy
 import formencode
-import tvb.core.entities.model.model_operation as model
 from cherrypy.lib.static import serve_file
 from formencode import validators
 from simplejson import JSONEncoder
+
+import tvb.core.entities.model.model_operation as model
+from tvb.adapters.creators.tumor_dataset_creator import TumorDatasetCreator
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.entities.load import load_entity_by_gid
-from tvb.core.entities.file.data_encryption_handler import DataEncryptionHandler
+from tvb.core.entities.storage import dao
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.services.exceptions import ServicesBaseException, ProjectServiceException
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.operation_service import OperationService
-from tvb.core.services.project_service import ProjectService
-from tvb.core.utils import string2bool
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment
 from tvb.interfaces.web.controllers.decorators import settings, check_user, handle_error
 from tvb.interfaces.web.controllers.flow_controller import FlowController
-from tvb.interfaces.web.entities.context_simulator import SimulatorContext
 from tvb.interfaces.web.entities.context_overlay import OverlayTabDefinition
+from tvb.interfaces.web.entities.context_simulator import SimulatorContext
+from tvb.storage.h5.utils import string2bool
+from tvb.storage.storage_interface import StorageInterface
 
 
 @traced('generate_call_out_control', exclude=True)
@@ -81,7 +81,6 @@ class ProjectController(BaseController):
     def __init__(self):
         super(ProjectController, self).__init__()
         self.flow_controller = FlowController()
-        self.file_helper = FilesHelper()
 
     @expose_page
     @settings
@@ -91,7 +90,7 @@ class ProjectController(BaseController):
         """
         current_project = common.get_current_project()
         if current_project is None:
-            raise cherrypy.HTTPRedirect("/project/viewall")
+            self.redirect("/project/viewall")
         template_specification = dict(mainContent="project/project_submenu", title="TVB Project Menu")
         return self.fill_default_attributes(template_specification)
 
@@ -103,7 +102,7 @@ class ProjectController(BaseController):
         """
         page = int(page)
         if cherrypy.request.method == 'POST' and create:
-            raise cherrypy.HTTPRedirect('/project/editone')
+            self.redirect('/project/editone')
         current_user_id = common.get_logged_user().id
 
         ## Select project if user choose one.
@@ -137,7 +136,7 @@ class ProjectController(BaseController):
         except ServicesBaseException as excep:
             self.logger.warning(excep.message)
             common.set_error_message(excep.message)
-        raise cherrypy.HTTPRedirect('/project/viewall')
+        self.redirect('/project/viewall')
 
     def _remove_project(self, project_id):
         """Private method for removing project."""
@@ -159,10 +158,10 @@ class ProjectController(BaseController):
         new entity, otherwise we are to edit and existent one.
         """
         if cherrypy.request.method == 'POST' and cancel:
-            raise cherrypy.HTTPRedirect('/project')
+            self.redirect('/project')
         if cherrypy.request.method == 'POST' and delete:
             self._remove_project(project_id)
-            raise cherrypy.HTTPRedirect('/project/viewall')
+            self.redirect('/project/viewall')
 
         current_user = common.get_logged_user()
         is_create = False
@@ -188,19 +187,19 @@ class ProjectController(BaseController):
             if cherrypy.request.method == 'POST' and save:
                 data = EditForm().to_python(data)
                 saved_project = self.project_service.store_project(current_user, is_create, project_id, **data)
-                if DataEncryptionHandler.encryption_enabled() and is_create:
-                    project_folder = self.file_helper.get_project_folder(saved_project)
-                    DataEncryptionHandler.sync_folders(project_folder)
-                    shutil.rmtree(project_folder)
+                if StorageInterface.encryption_enabled() and is_create:
+                    project_folder = self.storage_interface.get_project_folder(saved_project.name)
+                    self.storage_interface.sync_folders(project_folder)
+                    self.storage_interface.remove_folder(project_folder)
                 self._mark_selected(saved_project)
-                raise cherrypy.HTTPRedirect('/project/viewall')
+                self.redirect('/project/viewall')
         except formencode.Invalid as excep:
             self.logger.debug(str(excep))
             template_specification[common.KEY_ERRORS] = excep.unpack_errors()
         except ProjectServiceException as excep:
             self.logger.debug(str(excep))
             common.set_error_message(excep.message)
-            raise cherrypy.HTTPRedirect('/project/viewall')
+            self.redirect('/project/viewall')
 
         all_users, members, pages = self.user_service.get_users_for_project(current_user.username, project_id)
         template_specification['usersList'] = all_users
@@ -247,7 +246,7 @@ class ProjectController(BaseController):
         Display table of operations for a given project selected
         """
         if (project_id is None) or (not int(project_id)):
-            raise cherrypy.HTTPRedirect('/project')
+            self.redirect('/project')
 
         ## Toggle filters
         filters = self.__get_operations_filters()
@@ -286,7 +285,9 @@ class ProjectController(BaseController):
         Returns the content of a confirmation dialog, with a given question. 
         """
         self.update_operations_count()
-        return {'selectedProject': common.get_current_project()}
+        template = {'selectedProject': common.get_current_project()}
+        template = self.fill_default_attributes(template)
+        return template
 
     def __get_operations_filters(self):
         """
@@ -355,7 +356,8 @@ class ProjectController(BaseController):
                                   "isGroup": is_group,
                                   "isRelevant": is_relevant,
                                   "nodeType": 'datatype',
-                                  "backPageIdentifier": back_page}
+                                  "backPageIdentifier": back_page,
+                                  "canEncrypt": TvbProfile.current.web.ENCRYPT_STORAGE}
         template_specification.update(linkable_projects_dict)
 
         overlay_class = "can-browse editor-node node-type-" + str(current_type).lower()
@@ -510,7 +512,7 @@ class ProjectController(BaseController):
         try:
             int(project_id)
         except (ValueError, TypeError):
-            raise cherrypy.HTTPRedirect('/project')
+            self.redirect('/project')
 
         if first_level is None or second_level is None:
             first_level, second_level = self.get_project_structure_grouping()
@@ -519,11 +521,15 @@ class ProjectController(BaseController):
         self._mark_selected(selected_project)
         data = self.project_service.get_filterable_meta()
         filters = StaticFiltersFactory.build_datatype_filters(selected=visibility_filter)
+        tumor_creator_algorithm = dao.get_algorithm_by_module(TumorDatasetCreator.__module__,
+                                                              TumorDatasetCreator.__name__)
+
         template_specification = dict(mainContent="project/structure",
                                       title=selected_project.name,
                                       project=selected_project, data=data,
                                       firstLevelSelection=first_level, secondLevelSelection=second_level,
-                                      filterInputValue=filter_input, filters=filters)
+                                      filterInputValue=filter_input, filters=filters,
+                                      tumorCreatorAlgorithmId=tumor_creator_algorithm.id)
         return self.fill_default_attributes(template_specification, 'data')
 
     @expose_fragment("overlay")
@@ -567,7 +573,7 @@ class ProjectController(BaseController):
         """ 
         Start Upload mechanism
         """
-        success_link = "/project/editstructure/" + str(project_id)
+        success_link = self.build_path("/project/editstructure/" + str(project_id))
         # do not allow GET
         if cherrypy.request.method != 'POST' or cancel:
             raise cherrypy.HTTPRedirect(success_link)
@@ -613,18 +619,11 @@ class ProjectController(BaseController):
     @cherrypy.expose
     @handle_error(redirect=False)
     @check_user
-    def createlink(self, link_data, project_id, is_group):
+    def createlink(self, link_data, project_id):
         """
-        Delegate the creation of the actual link to the flow service.
+        Delegate the creation of the actual link to the algorithm service.
         """
-        if not string2bool(str(is_group)):
-            self.algorithm_service.create_link([link_data], project_id)
-        else:
-            all_data = self.project_service.get_datatype_in_group(link_data)
-            # Link all Dts in group and the DT_Group entity
-            data_ids = [data.id for data in all_data]
-            data_ids.append(int(link_data))
-            self.algorithm_service.create_link(data_ids, project_id)
+        self.algorithm_service.create_link(link_data, project_id)
 
     @cherrypy.expose
     @handle_error(redirect=False)
@@ -679,14 +678,15 @@ class ProjectController(BaseController):
     @cherrypy.expose
     @handle_error(redirect=False)
     @check_user
-    def downloaddatatype(self, data_gid, export_module):
+    def downloaddatatype(self, data_gid, export_module, **data):
         """ Export the data to a default path of TVB_STORAGE/PROJECTS/project_name """
         current_prj = common.get_current_project()
         # Load data by GID
         entity = load_entity_by_gid(data_gid)
         # Do real export
         export_mng = ExportManager()
-        file_name, file_path, delete_file = export_mng.export_data(entity, export_module, current_prj)
+        file_name, file_path, delete_file = export_mng.export_data(entity, export_module, current_prj,
+                                                                   data.get('exporter_key'))
         if delete_file:
             # We force parent folder deletion because export process generated it.
             self.mark_file_for_delete(file_path, True)

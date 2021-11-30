@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -77,7 +77,7 @@ class SettingsController(UserController):
                     thread.start()
                     common.add2session(common.KEY_IS_RESTART, True)
                     common.set_important_message('Please wait until TVB is restarted properly!')
-                    raise cherrypy.HTTPRedirect('/tvb')
+                    self.redirect('/tvb')
                 # Here we will leave the same settings page to be displayed.
                 # It will continue reloading when CherryPy restarts.
             except formencode.Invalid as excep:

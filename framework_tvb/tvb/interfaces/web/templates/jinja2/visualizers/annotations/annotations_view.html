@@ -30,8 +30,8 @@
     </div>
 
 
-    <script type="text/javascript" src="/static/js/base_vertice_pick.js?{{ currentVersionJS }}"></script>
-    <script type="text/javascript" src="/static_view/annotations/annotations.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/base_vertice_pick.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static_view/annotations/annotations.js?{{ currentVersionJS }}"></script>
 
     <script type="text/javascript">
         $(document).ready(function () {

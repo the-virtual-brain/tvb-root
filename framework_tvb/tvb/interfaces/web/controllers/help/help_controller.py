@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -65,6 +65,6 @@ class HelpController(BaseController):
         template_specification = self.fill_overlay_attributes(None, "TVB", "Online-Help", "help/online_help", "help")
 
         # Add URL of the help page
-        template_specification["helpURL"] = self.config.get_help_url(section, subsection)
+        template_specification["helpURL"] = self.build_path(self.config.get_help_url(section, subsection))
 
         return self.fill_default_attributes(template_specification)

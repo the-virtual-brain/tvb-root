@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -39,12 +39,11 @@ import tvb_data.surfaceData
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.basic.neotraits.ex import TraitValueError
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
 from tvb.core.services.exceptions import OperationException
-from tvb.datatypes.surfaces import CORTICAL
+from tvb.datatypes.surfaces import SurfaceTypesEnum
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -76,9 +75,9 @@ class TestRegionMappingImporter(BaseTestCase):
         self.connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
         field = FilterChain.datatype + '.surface_type'
-        filters = FilterChain('', [field], [CORTICAL], ['=='])
+        filters = FilterChain('', [field], [SurfaceTypesEnum.CORTICAL_SURFACE.value], ['=='])
         cortex = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
-        TestFactory.import_surface_zip(self.test_user, self.test_project, cortex, CORTICAL)
+        TestFactory.import_surface_zip(self.test_user, self.test_project, cortex, SurfaceTypesEnum.CORTICAL_SURFACE)
         self.surface = TestFactory.get_entity(self.test_project, SurfaceIndex, filters)
 
     def teardown_method(self):
@@ -86,7 +85,6 @@ class TestRegionMappingImporter(BaseTestCase):
         Clean-up tests data
         """
         self.clean_database()
-        FilesHelper().remove_project_structure(self.test_project.name)
 
     def test_import_no_surface_or_connectivity(self):
         """

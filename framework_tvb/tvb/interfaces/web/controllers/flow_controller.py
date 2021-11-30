@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -47,7 +47,6 @@ from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
@@ -57,7 +56,9 @@ from tvb.core.neotraits.view_model import DataTypeGidAttr
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1, RANGE_PARAMETER_2
 from tvb.core.services.project_service import ProjectService
-from tvb.core.utils import url2path, string2bool
+from tvb.core.utils import url2path
+from tvb.storage.storage_interface import StorageInterface
+from tvb.storage.h5.utils import string2bool
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
@@ -89,7 +90,6 @@ class FlowController(BaseController):
     def __init__(self):
         BaseController.__init__(self)
         self.context = SelectedAdapterContext()
-        self.files_helper = FilesHelper()
         self.operation_services = OperationService()
         self.simulator_controller = SimulatorController()
 
@@ -100,7 +100,7 @@ class FlowController(BaseController):
             if len(adapter_group.children) > 1:
                 ids = [str(child.id) for child in adapter_group.children]
                 ids = ','.join(ids)
-                adapter_link = '/flow/show_group_of_algorithms/' + str(analyze_category.id) + "/" + ids
+                adapter_link = self.build_path('/flow/show_group_of_algorithms/' + str(analyze_category.id) + "/" + ids)
             else:
                 adapter_link = self.get_url_adapter(analyze_category.id, adapter_group.children[0].id)
 
@@ -129,7 +129,7 @@ class FlowController(BaseController):
             message = 'Could not load analyzers!'
             common.set_warning_message(message)
             self.logger.warning(message)
-            raise cherrypy.HTTPRedirect('/tvb')
+            self.redirect('/tvb')
 
     @expose_page
     @settings
@@ -157,7 +157,7 @@ class FlowController(BaseController):
             back_page_link = '/project/viewoperations/' + str(project.id)
         else:
             back_page_link = '/project/editstructure/' + str(project.id)
-        return back_page_link
+        return BaseController.build_path(back_page_link)
 
     @expose_page
     @settings
@@ -216,7 +216,7 @@ class FlowController(BaseController):
         back_page_link = self._compute_back_link(back_page, project)
 
         if algorithm is None:
-            raise cherrypy.HTTPRedirect("/tvb?error=True")
+            self.redirect("/tvb?error=True")
 
         if cherrypy.request.method == 'POST' and cancel:
             raise cherrypy.HTTPRedirect(back_page_link)
@@ -231,7 +231,7 @@ class FlowController(BaseController):
             template_specification = self.get_template_for_adapter(project.id, step_key, algorithm,
                                                                    submit_link, is_burst=is_burst)
         if template_specification is None:
-            raise cherrypy.HTTPRedirect('/tvb')
+            self.redirect('/tvb')
 
         if KEY_CONTROLLS not in template_specification:
             template_specification[KEY_CONTROLLS] = None
@@ -398,8 +398,8 @@ class FlowController(BaseController):
         algorithm = self.algorithm_service.get_algorithm_by_identifier(algo_id)
         adapter_instance = ABCAdapter.build_adapter(algorithm)
         entity = load_entity_by_gid(entity_gid)
-        storage_path = self.files_helper.get_project_folder(entity.parent_operation.project,
-                                                            str(entity.fk_from_operation))
+        storage_path = StorageInterface().get_project_folder(entity.parent_operation.project.name,
+                                                             str(entity.fk_from_operation))
         adapter_instance.storage_path = storage_path
         method = getattr(adapter_instance, method_name)
         if kwargs:
@@ -490,7 +490,7 @@ class FlowController(BaseController):
 
         algorithm = self.algorithm_service.get_algorithm_by_identifier(algorithm_id)
         if is_upload:
-            submit_link = "/project/launchloader/" + str(project_id) + "/" + str(algorithm_id)
+            submit_link = BaseController.build_path("/project/launchloader/" + str(project_id) + "/" + str(algorithm_id))
         else:
             submit_link = self.get_url_adapter(algorithm.fk_category, algorithm.id, back_page)
 
@@ -514,7 +514,7 @@ class FlowController(BaseController):
         # Display the inputs tree for the current op
         category_id = operation.algorithm.fk_category
         algo_id = operation.fk_from_algo
-        raise cherrypy.HTTPRedirect("/flow/" + str(category_id) + "/" + str(algo_id))
+        self.redirect("/flow/" + str(category_id) + "/" + str(algo_id))
 
     @cherrypy.expose
     @handle_error(redirect=True)
@@ -533,7 +533,7 @@ class FlowController(BaseController):
             operation = OperationService.load_operation(int(first_op.id))
         self.simulator_controller.copy_simulator_configuration(operation.burst.id)
 
-        raise cherrypy.HTTPRedirect("/burst/")
+        self.redirect("/burst/")
 
     @expose_json
     def cancel_or_remove_operation(self, operation_id, is_group, remove_after_stop=False):

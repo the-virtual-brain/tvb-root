@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -47,6 +47,7 @@ from keycloak.exceptions import KeycloakError
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.services.authorization import AuthorizationManager
+from tvb.storage.kube.kube_notifier import KubeNotifier
 from tvb.core.utils import TVBJSONEncoder
 from tvb.interfaces.web.controllers import common
 
@@ -158,7 +159,7 @@ def handle_error(redirect):
 
                 if redirect:
                     common.set_error_message(str(ex))
-                    raise cherrypy.HTTPRedirect(ex.redirect_url)
+                    raise cherrypy.HTTPRedirect(TvbProfile.current.web.DEPLOY_CONTEXT + ex.redirect_url)
                 else:
                     raise cherrypy.HTTPError(ex.status, str(ex))
 
@@ -167,7 +168,7 @@ def handle_error(redirect):
                     raise
                 else:
                     log = get_logger(_LOGGER_NAME)
-                    log.warn('Redirect converted to error: ' + str(ex))
+                    log.warning('Redirect converted to error: ' + str(ex))
                     # should we do this? Are browsers following redirects in ajax?
                     raise cherrypy.HTTPError(500, str(ex))
 
@@ -179,7 +180,7 @@ def handle_error(redirect):
                     # set a default error message if one has not been set already
                     if not common.has_error_message():
                         common.set_error_message("An unexpected exception appeared. Please check the log files.")
-                    raise cherrypy.HTTPRedirect("/tvb?error=True")
+                    raise cherrypy.HTTPRedirect(TvbProfile.current.web.DEPLOY_CONTEXT + "/tvb?error=True")
                 else:
                     raise
 
@@ -198,7 +199,23 @@ def check_user(func):
         if hasattr(cherrypy, common.KEY_SESSION):
             if common.get_logged_user():
                 return func(*a, **b)
-        raise common.NotAuthenticated('Login Required!', redirect_url='/user')
+        raise common.NotAuthenticated('Login Required!', redirect_url=TvbProfile.current.web.DEPLOY_CONTEXT + '/user')
+
+    return deco
+
+
+def check_kube_user(func):
+    @wraps(func)
+    def deco(*a, **b):
+        authorization = cherrypy.request.headers["Authorization"] if "Authorization" in cherrypy.request.headers \
+            else None
+        if not authorization:
+            raise cherrypy.HTTPError(HTTPStatus.UNAUTHORIZED, "Token is missing")
+        try:
+            KubeNotifier.fetch_endpoints({"Authorization": authorization})
+            return func(*a, **b)
+        except Exception as e:
+            raise cherrypy.HTTPError(HTTPStatus.UNAUTHORIZED, e)
 
     return deco
 
@@ -240,7 +257,7 @@ def check_admin(func):
             user = common.get_logged_user()
             if user is not None and user.is_administrator() or TvbProfile.is_first_run():
                 return func(*a, **b)
-        raise common.NotAuthenticated('Only Administrators can access this application area!', redirect_url='/tvb')
+        raise common.NotAuthenticated('Only Administrators can access this application area!', redirect_url=TvbProfile.current.web.DEPLOY_CONTEXT + '/tvb')
 
     return deco
 
@@ -255,7 +272,7 @@ def context_selected(func):
         if hasattr(cherrypy, common.KEY_SESSION):
             if common.KEY_PROJECT in cherrypy.session:
                 return func(*a, **b)
-        raise common.NotAllowed('You should first select a Project!', redirect_url='/project/viewall')
+        raise common.NotAllowed('You should first select a Project!', redirect_url=TvbProfile.current.web.DEPLOY_CONTEXT + '/project/viewall')
 
     return deco
 
@@ -270,7 +287,7 @@ def settings(func):
     def deco(*a, **b):
         if not TvbProfile.is_first_run():
             return func(*a, **b)
-        raise common.NotAllowed('You should first set up tvb', redirect_url='/settings/settings')
+        raise common.NotAllowed('You should first set up tvb', redirect_url=TvbProfile.current.web.DEPLOY_CONTEXT + '/settings/settings')
 
     return deco
 

@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -93,13 +93,13 @@ class Hopfield(Model):
 
     # Define traited attributes for this model, these represent possible kwargs.
     taux = NArray(
-        label=":math:`\\tau_{x}`",
+        label=r":math:`\tau_{x}`",
         default=numpy.array([1.]),
         domain=Range(lo=0.01, hi=100., step=0.01),
         doc="""The fast time-scale for potential calculus :math:`x`, state-variable of the model.""")
 
     tauT = NArray(
-        label=":math:`\\tau_{\\theta}`",
+        label=r":math:`\tau_{\theta}`",
         default=numpy.array([5.]),
         domain=Range(lo = 0.01, hi = 100., step = 0.01),
         doc="""The slow time-scale for threshold calculus :math:`\\theta`, state-variable of the model.""")

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -27,19 +27,10 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from collections import OrderedDict
-from tvb.datatypes.surfaces import CORTICAL, INNER_SKULL, OUTER_SKIN, OUTER_SKULL, EEG_CAP, FACE, WHITE_MATTER, Surface
-from sqlalchemy import Column, Integer, ForeignKey, String, Float, Boolean
-from tvb.core.entities.model.model_datatype import DataType
 
-ALL_SURFACES_SELECTION = OrderedDict()
-ALL_SURFACES_SELECTION['Cortical Surface'] = CORTICAL
-ALL_SURFACES_SELECTION['Brain Skull'] = INNER_SKULL
-ALL_SURFACES_SELECTION['Skull Skin'] = OUTER_SKULL
-ALL_SURFACES_SELECTION['Skin Air'] = OUTER_SKIN
-ALL_SURFACES_SELECTION['EEG Cap'] = EEG_CAP
-ALL_SURFACES_SELECTION['Face Surface'] = FACE
-ALL_SURFACES_SELECTION['White Matter Surface'] = WHITE_MATTER
+from tvb.datatypes.surfaces import Surface
+from sqlalchemy import Column, Integer, ForeignKey, Float, Boolean, String
+from tvb.core.entities.model.model_datatype import DataType
 
 
 class SurfaceIndex(DataType):

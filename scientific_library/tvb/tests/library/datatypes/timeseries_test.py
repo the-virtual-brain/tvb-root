@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -63,7 +63,7 @@ class TestTimeseries(BaseTestCase):
         data = numpy.random.random((10, 10))
         dt = time_series.TimeSeriesEEG(data=data, sensors=SensorsEEG())
         assert dt.data.shape == (10, 10)
-        assert ('Time', '1', 'EEG Sensor', '1') == dt.labels_ordering
+        assert ("Time", "SV", "EEG Sensor", "Mode") == dt.labels_ordering
         assert dt.sample_period == 1.0
         assert dt.sample_rate == 1000
         assert dt.sensors is not None
@@ -74,7 +74,7 @@ class TestTimeseries(BaseTestCase):
         data = numpy.random.random((10, 10))
         dt = time_series.TimeSeriesMEG(data=data, sensors=SensorsMEG(orientations=numpy.array([])))
         assert dt.data.shape == (10, 10)
-        assert ('Time', '1', 'MEG Sensor', '1') == dt.labels_ordering
+        assert ("Time", "SV", "MEG Sensor", "Mode") == dt.labels_ordering
         assert dt.sample_period == 1.0
         assert dt.sample_rate == 1000
         assert dt.sensors is not None

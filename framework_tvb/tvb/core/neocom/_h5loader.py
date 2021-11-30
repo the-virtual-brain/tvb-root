@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -27,30 +27,21 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+from datetime import datetime
 import os
 import typing
 import uuid
-from datetime import datetime
-from uuid import UUID
 
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import HasTraits
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.storage import dao
 from tvb.core.neocom._registry import Registry
 from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.neotraits.view_model import ViewModel
-from tvb.core.utils import date2string, string2date
-
-H5_EXTENSION = '.h5'
-H5_FILE_NAME_STRUCTURE = '{}_{}.h5'
-
-
-def get_h5_filename(class_name, gid):
-    # type: (str, UUID) -> str
-    return H5_FILE_NAME_STRUCTURE.format(class_name, gid.hex)
+from tvb.core.utils import string2date, date2string
+from tvb.storage.storage_interface import StorageInterface
 
 
 class Loader(object):
@@ -98,7 +89,7 @@ class DirLoader(object):
     def _locate(self, gid):
         # type: (uuid.UUID) -> str
         for fname in os.listdir(self.base_dir):
-            if fname.endswith(gid.hex + H5_EXTENSION):
+            if fname.endswith(gid.hex + StorageInterface.TVB_STORAGE_FILE_EXTENSION):
                 fpath = os.path.join(self.base_dir, fname)
                 return fpath
         raise IOError('could not locate h5 with gid {}'.format(gid))
@@ -179,14 +170,14 @@ class DirLoader(object):
 
         if isinstance(gid, str):
             gid = uuid.UUID(gid)
-        fname = get_h5_filename(self._get_has_traits_classname(has_traits_class), gid)
+        fname = StorageInterface().get_filename(self._get_has_traits_classname(has_traits_class), gid)
         return os.path.join(self.base_dir, fname)
 
     def find_file_for_has_traits_type(self, has_traits_class):
 
         filename_prefix = self._get_has_traits_classname(has_traits_class)
         for fname in os.listdir(self.base_dir):
-            if fname.startswith(filename_prefix) and fname.endswith(H5_EXTENSION):
+            if fname.startswith(filename_prefix) and fname.endswith(StorageInterface.TVB_STORAGE_FILE_EXTENSION):
                 return fname
         raise IOError('could not locate h5 for {}'.format(has_traits_class.__name__))
 
@@ -194,7 +185,7 @@ class DirLoader(object):
 class TVBLoader(object):
 
     def __init__(self, registry):
-        self.file_handler = FilesHelper()
+        self.storage_interface = StorageInterface()
         self.registry = registry
 
     def path_for_stored_index(self, dt_index_instance):
@@ -206,19 +197,19 @@ class TVBLoader(object):
         else:
             op_id = dt_index_instance.fk_from_operation
         operation = dao.get_operation_by_id(op_id)
-        operation_folder = self.file_handler.get_project_folder(operation.project, str(operation.id))
+        operation_folder = self.storage_interface.get_project_folder(operation.project.name, str(operation.id))
 
         gid = uuid.UUID(dt_index_instance.gid)
         h5_file_class = self.registry.get_h5file_for_index(dt_index_instance.__class__)
-        fname = get_h5_filename(h5_file_class.file_name_base(), gid)
+        fname = self.storage_interface.get_filename(h5_file_class.file_name_base(), gid)
 
         return os.path.join(operation_folder, fname)
 
-    def path_for(self, operation_dir, h5_file_class, gid, dt_class=None):
-        if isinstance(gid, str):
-            gid = uuid.UUID(gid)
-        fname = get_h5_filename(dt_class or h5_file_class.file_name_base(), gid)
-        return os.path.join(operation_dir, fname)
+    def path_for(self, op_id, h5_file_class, gid, project_name, dt_class):
+        return self.storage_interface.path_for(op_id, h5_file_class, gid, project_name, dt_class)
+
+    def path_by_dir(self, base_dir, h5_file_class, gid, dt_class):
+        return self.storage_interface.path_by_dir(base_dir, h5_file_class, gid, dt_class)
 
     def load_from_index(self, dt_index):
         # type: (DataType) -> HasTraits

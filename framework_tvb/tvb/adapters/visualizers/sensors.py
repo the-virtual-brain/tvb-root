@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -45,7 +45,7 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.sensors import SensorsInternal, SensorsEEG, SensorsMEG, Sensors
-from tvb.datatypes.surfaces import Surface, CORTICAL, EEG_CAP
+from tvb.datatypes.surfaces import Surface, SurfaceTypesEnum
 
 LOG = get_logger(__name__)
 
@@ -205,7 +205,8 @@ class SensorsViewer(ABCDisplayer):
 
         params = prepare_sensors_as_measure_points_params(internal_sensors)
 
-        shell_surface = ensure_shell_surface(self.current_project_id, shell_surface, CORTICAL)
+        shell_surface = ensure_shell_surface(self.current_project_id, shell_surface,
+                                             SurfaceTypesEnum.CORTICAL_SURFACE.value)
 
         params['shellObject'] = self.prepare_shell_surface_params(shell_surface, SurfaceURLGenerator)
 
@@ -215,7 +216,7 @@ class SensorsViewer(ABCDisplayer):
     def _params_eeg_sensors(self, eeg_sensors, eeg_cap=None, shell_surface=None):
 
         if eeg_cap is None:
-            eeg_cap = ensure_shell_surface(self.current_project_id, eeg_cap, EEG_CAP)
+            eeg_cap = ensure_shell_surface(self.current_project_id, eeg_cap, SurfaceTypesEnum.EEG_CAP_SURFACE.value)
 
         params = prepare_mapped_sensors_as_measure_points_params(eeg_sensors, eeg_cap, self.stored_adapter.id)
 

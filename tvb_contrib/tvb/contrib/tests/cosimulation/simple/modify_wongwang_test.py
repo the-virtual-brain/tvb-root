@@ -4,7 +4,7 @@
 #  TheVirtualBrain-Contributors Package. This package holds simulator extensions.
 #  See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,12 +36,12 @@ import operator
 import tvb.simulator.lab as lab
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.contrib.tests.cosimulation.parallel.ReducedWongWang import ReducedWongWangProxy
-
 from tvb.contrib.cosimulation.cosim_monitors import RawCosim, CosimCoupling
 from tvb.contrib.cosimulation.cosimulator import CoSimulator
 
 
 SIMULATION_LENGTH = 3.0
+
 
 class TestModifyWongWang(BaseTestCase):
     """
@@ -86,7 +86,8 @@ class TestModifyWongWangSimple(TestModifyWongWang):
         init = np.concatenate((np.random.random_sample((385, 1, 76, 1)),
                                np.random.random_sample((385, 1, 76, 1))), axis=1)
         np.random.seed(42)
-        result_2 = self._reference_simulation(model_class=ReducedWongWangProxy, simulator=CoSimulator, init=init)[5]
+        result_2 = self._reference_simulation(model_class=ReducedWongWangProxy, simulator=CoSimulator,
+                                              init=init)[5]
         np.testing.assert_array_equal(result, result_2)
 
     def test_with_proxy(self):

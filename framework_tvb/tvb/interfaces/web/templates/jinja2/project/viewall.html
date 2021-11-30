@@ -80,7 +80,7 @@
                             <td class="owner">{{ proj.administrator.display_name }}</td>
 
                             <td class="ops" tabindex='3' onkeypress="redirectToHrefChild(this)">
-                                <a href="/project/viewoperations/{{ proj.id }}" title="Manage operations..."
+                                <a href="{{ deploy_context | safe }}/project/viewoperations/{{ proj.id }}" title="Manage operations..."
                                    class="action action-view" tabindex="-1">Operations</a>
                                 <ul>
                                     <li class="ops-finished {{ 'ops-zero' if (proj.operations_finished | int)==0 else '' }}"
@@ -97,7 +97,7 @@
                             </td>
 
                             <td class="data" tabindex='4' onkeypress="redirectToHrefChild(this)">
-                                <a href="/project/editstructure/{{ proj.id }}" title="View/Edit data structure..."
+                                <a href="{{deploy_context}}/project/editstructure/{{ proj.id }}" title="View/Edit data structure..."
                                    class="action action-view" tabindex="-1">Project Data</a>
                             </td>
 

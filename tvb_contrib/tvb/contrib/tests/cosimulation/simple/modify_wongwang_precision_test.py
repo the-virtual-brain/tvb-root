@@ -4,7 +4,7 @@
 #  TheVirtualBrain-Contributors Package. This package holds simulator extensions.
 #  See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,12 +36,11 @@ import operator
 import tvb.simulator.lab as lab
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.contrib.tests.cosimulation.parallel.ReducedWongWang import ReducedWongWangProxy
-
 from tvb.contrib.cosimulation.cosim_monitors import RawCosim
 from tvb.contrib.cosimulation.cosimulator import CoSimulator
 
-
 SIMULATION_LENGTH = 3.0
+
 
 class TestModifyWongWang(BaseTestCase):
     """
@@ -66,7 +65,7 @@ class TestModifyWongWang(BaseTestCase):
 
         return model, connectivity, coupling, init, integrator, monitors
 
-    def _reference_simulation(self,simulator=lab.simulator.Simulator):
+    def _reference_simulation(self, simulator=lab.simulator.Simulator):
         model, connectivity, coupling, init, integrator, monitors = self._prepare_reference_simulation()
         # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
         sim = simulator(model=model,
@@ -80,6 +79,7 @@ class TestModifyWongWang(BaseTestCase):
         result_all = sim.run(simulation_length=SIMULATION_LENGTH)
         result = result_all[0][1][:,:,0,0]
         return connectivity, coupling, integrator, monitors, sim, result, result_all
+
 
 class TestModifyWongWangRate(TestModifyWongWang):
     """

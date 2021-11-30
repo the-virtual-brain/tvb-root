@@ -4,7 +4,7 @@
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
  *
- * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ * (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
  *
  * This program is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software Foundation,
@@ -65,7 +65,7 @@ function ANN_Displayer(treeDataUrl, triangleToRegionUrl, activationPatternsUrl, 
                 "theme": "default",
                 "dots": true,
                 "icons": true,
-                "url": "/static/jquery/jstree-theme/style.css"
+                "url": deploy_context + "/static/jquery/jstree-theme/style.css"
             },
             "json_data": {
                 "ajax": {

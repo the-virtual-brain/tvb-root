@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,7 +34,6 @@ from datetime import datetime
 
 from tvb.basic.logger.builder import get_logger
 from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
@@ -49,6 +48,7 @@ from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import DirLoader
 from tvb.core.services.import_service import ImportService
 from tvb.core.utils import format_bytes_human, format_timedelta
+from tvb.storage.storage_interface import StorageInterface
 
 MAX_BURSTS_DISPLAYED = 50
 STATUS_FOR_OPERATION = {
@@ -66,9 +66,9 @@ class BurstService(object):
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
-        self.files_helper = FilesHelper()
+        self.storage_interface = StorageInterface()
 
-    def mark_burst_finished(self, burst_entity, burst_status=None, error_message=None):
+    def mark_burst_finished(self, burst_entity, burst_status=None, error_message=None, store_h5_file=True):
         """
         Mark Burst status field.
         Also compute 'weight' for current burst: no of operations inside, estimate time on disk...
@@ -97,14 +97,16 @@ class BurstService(object):
             burst_entity.error_message = error_message
             burst_entity.finish_time = datetime.now()
             dao.store_entity(burst_entity)
-            self.update_burst_configuration_h5(burst_entity)
+            if store_h5_file:
+                self.store_burst_configuration(burst_entity)
         except Exception:
             self.logger.exception("Could not correctly update Burst status and meta-data!")
             burst_entity.status = burst_status
             burst_entity.error_message = "Error when updating Burst Status"
             burst_entity.finish_time = datetime.now()
             dao.store_entity(burst_entity)
-            self.update_burst_configuration_h5(burst_entity)
+            if store_h5_file:
+                self.store_burst_configuration(burst_entity)
 
     def persist_operation_state(self, operation, operation_status, message=None):
         """
@@ -115,6 +117,7 @@ class BurstService(object):
         :return: operation instance changed
         """
         operation.mark_complete(operation_status, message)
+        operation.queue_full = False
         operation = dao.store_entity(operation)
         # update burst also
         burst_config = self.get_burst_for_operation_id(operation.id)
@@ -135,7 +138,7 @@ class BurstService(object):
         burst = dao.get_burst_by_id(burst_id)
         burst.name = new_name
         dao.store_entity(burst)
-        self.update_burst_configuration_h5(burst)
+        self.store_burst_configuration(burst)
 
     @staticmethod
     def get_available_bursts(project_id):
@@ -186,17 +189,16 @@ class BurstService(object):
         burst = dao.store_entity(burst)
         return burst
 
-    def update_burst_configuration_h5(self, burst_configuration):
-        # type: (BurstConfiguration) -> None
-        project = dao.get_project_by_id(burst_configuration.fk_project)
-        storage_path = self.files_helper.get_project_folder(project, str(burst_configuration.fk_simulation))
-        self.store_burst_configuration(burst_configuration, storage_path)
-
     @staticmethod
     def load_burst_configuration(burst_config_id):
         # type: (int) -> BurstConfiguration
         burst_config = dao.get_burst_by_id(burst_config_id)
         return burst_config
+
+    @staticmethod
+    def remove_burst_configuration(burst_config_id):
+        # type: (int) -> None
+        dao.remove_entity(BurstConfiguration, burst_config_id)
 
     @staticmethod
     def prepare_burst_for_pse(burst_config):
@@ -214,8 +216,9 @@ class BurstService(object):
         return dao.store_entity(burst_config)
 
     @staticmethod
-    def store_burst_configuration(burst_config, storage_path):
-        bc_path = h5.path_for(storage_path, BurstConfigurationH5, burst_config.gid)
+    def store_burst_configuration(burst_config):
+        project = dao.get_project_by_id(burst_config.fk_project)
+        bc_path = h5.path_for(burst_config.fk_simulation, BurstConfigurationH5, burst_config.gid, project.name)
         with BurstConfigurationH5(bc_path) as bc_h5:
             bc_h5.store(burst_config)
 
@@ -332,18 +335,26 @@ class BurstService(object):
                                      range_values=range_values)
         metric_operation.visible = False
         metric_operation = dao.store_entity(metric_operation)
-        op_dir = FilesHelper().get_project_folder(operation.project, str(metric_operation.id))
+        op_dir = StorageInterface().get_project_folder(operation.project.name, str(metric_operation.id))
         return op_dir, metric_operation
+
+    @staticmethod
+    def get_range_param_by_name(param_name, all_range_parameters):
+        for range_param in all_range_parameters:
+            if param_name == range_param.name:
+                return range_param
+
+        return None
 
     @staticmethod
     def handle_range_params_at_loading(burst_config, all_range_parameters):
         param1, param2 = None, None
         if burst_config.range1:
             param1 = RangeParameter.from_json(burst_config.range1)
-            param1.fill_from_default(all_range_parameters[param1.name])
+            param1.fill_from_default(BurstService.get_range_param_by_name(param1.name, all_range_parameters))
             if burst_config.range2 is not None:
                 param2 = RangeParameter.from_json(burst_config.range2)
-                param2.fill_from_default(all_range_parameters[param2.name])
+                param2.fill_from_default(BurstService.get_range_param_by_name(param2.name, all_range_parameters))
 
         return param1, param2
 
@@ -353,7 +364,7 @@ class BurstService(object):
         count = dao.count_bursts_with_name(burst_config.name, burst_config.fk_project)
         burst_config_copy.name = burst_name_format.format(burst_config.name, count + 1)
 
-        storage_path = self.files_helper.get_project_folder(project, str(burst_config.fk_simulation))
+        storage_path = self.storage_interface.get_project_folder(project.name, str(burst_config.fk_simulation))
         simulator = h5.load_view_model(burst_config.simulator_gid, storage_path)
         simulator.generic_attributes = GenericAttributes()
         return simulator, burst_config_copy

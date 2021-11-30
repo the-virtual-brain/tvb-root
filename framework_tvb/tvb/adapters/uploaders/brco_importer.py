@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -102,7 +102,7 @@ class BRCOImporter(ABCUploader):
             result_ht.set_annotations(annotations)
             result_ht.connectivity = conn
 
-            result = h5.store_complete(result_ht, self.storage_path)
+            result = self.store_complete(result_ht)
             return result
         except Exception as excep:
             self.log.exception("Could not process Connectivity Annotations")

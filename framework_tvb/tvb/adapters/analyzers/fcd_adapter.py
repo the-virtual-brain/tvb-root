@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
-# analysers necessary to run brain-simulations. You can use it stand alone or
-# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
+# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -216,7 +216,7 @@ class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
 
         # Create an index for the computed fcd.
         fcd_index = FcdIndex()
-        fcd_h5_path = h5.path_for(self.storage_path, FcdH5, fcd_index.gid)
+        fcd_h5_path = self.path_for(FcdH5, fcd_index.gid)
         with FcdH5(fcd_h5_path) as fcd_h5:
             self._populate_fcd_h5(fcd_h5, fcd, fcd_index.gid, self.input_time_series_index.gid,
                                   view_model.sw, view_model.sp)
@@ -225,7 +225,7 @@ class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
 
         if np.amax(fcd_segmented) == 1.1:
             result_fcd_segmented_index = FcdIndex()
-            result_fcd_segmented_h5_path = h5.path_for(self.storage_path, FcdH5, result_fcd_segmented_index.gid)
+            result_fcd_segmented_h5_path = self.path_for(FcdH5, result_fcd_segmented_index.gid)
             with FcdH5(result_fcd_segmented_h5_path) as result_fcd_segmented_h5:
                 self._populate_fcd_h5(result_fcd_segmented_h5, fcd_segmented,
                                       result_fcd_segmented_index.gid,
@@ -245,7 +245,7 @@ class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
                         measure.array_data = cm_data
                         measure.title = "Epoch # %d, eigenvalue = %s, variable = %s, " \
                                         "mode = %s." % (ep, eigval_dict[mode][var][ep][eig], var, mode)
-                        cm_index = h5.store_complete(measure, self.storage_path)
+                        cm_index = self.store_complete(measure)
                         result.append(cm_index)
         return result
 

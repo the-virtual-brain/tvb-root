@@ -1,6 +1,6 @@
 <section  class="select-regions view-column col-1">
 
-    <script type="text/javascript" src="/static/js/spatial/stimulus_region.js"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/spatial/stimulus_region.js"></script>
     {% include 'spatial/refreshBaseUrl_initializer.html' %}
 
 	<h4><mark>Select</mark> Regions</h4>
@@ -9,7 +9,7 @@
 
 	{% include 'visualizers/connectivity/left_template_connectivity_view.html' %}
 
-	<script type="text/javascript" src="/static/js/region_associator.js?{{ currentVersionJS }}"></script>
+	<script type="text/javascript" src="{{ deploy_context | safe }}/static/js/region_associator.js?{{ currentVersionJS }}"></script>
 
     <script type="text/javascript">
         $(document).ready(function() {

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,10 +35,10 @@
 import os
 import tvb_data.surfaceData
 import tvb_data.regionMapping
+
 from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.datatypes.surfaces import CORTICAL
+from tvb.datatypes.surfaces import SurfaceTypesEnum
 from tvb.adapters.visualizers.brain import BrainViewer, DualBrainViewer, ConnectivityIndex
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -54,7 +54,7 @@ class TestBrainViewer(TransactionalTestCase):
     EXPECTED_EXTRA_KEYS = ['urlMeasurePointsLabels', 'urlMeasurePoints', 'pageSize', 'shellObject',
                            'extended_view', 'legendLabels', 'labelsStateVar', 'labelsModes', 'title']
 
-    face = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+    cortex = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
     region_mapping_path = os.path.join(os.path.dirname(tvb_data.regionMapping.__file__), 'regionMapping_16k_76.txt')
 
     def transactional_setup_method(self):
@@ -71,7 +71,8 @@ class TestBrainViewer(TransactionalTestCase):
         connectivity_idx = TestFactory.get_entity(self.test_project, ConnectivityIndex)
         assert connectivity_idx is not None
 
-        self.face_surface = TestFactory.import_surface_zip(self.test_user, self.test_project, self.face, CORTICAL)
+        self.face_surface = TestFactory.import_surface_zip(self.test_user, self.test_project, self.cortex,
+                                                           SurfaceTypesEnum.CORTICAL_SURFACE)
 
         region_mapping = TestFactory.import_region_mapping(self.test_user, self.test_project,
                                                            self.region_mapping_path, self.face_surface.gid,
@@ -79,18 +80,12 @@ class TestBrainViewer(TransactionalTestCase):
         self.connectivity = h5.load_from_index(connectivity_idx)
         self.region_mapping = h5.load_from_index(region_mapping)
 
-    def transactional_teardown_method(self):
-        """
-        Clean-up tests data
-        """
-        FilesHelper().remove_project_structure(self.test_project.name)
-
     def test_launch(self, time_series_region_index_factory):
         """
         Check that all required keys are present in output from BrainViewer launch.
         """
         time_series_index = time_series_region_index_factory(self.connectivity, self.region_mapping,
-                                                             self.test_user, self.test_project)
+                                                             test_user=self.test_user, test_project=self.test_project)
         viewer = BrainViewer()
         viewer.current_project_id = self.test_project.id
         view_model = viewer.get_view_model_class()()
@@ -107,33 +102,19 @@ class TestBrainViewer(TransactionalTestCase):
         Brainviewer should know required memory so expect positive number and not -1.
         """
         time_series_index = time_series_region_index_factory(self.connectivity, self.region_mapping,
-                                                             self.test_user, self.test_project)
+                                                             test_user=self.test_user, test_project=self.test_project)
         viewer = BrainViewer()
         viewer.current_project_id = self.test_project.id
         view_model = viewer.get_view_model_class()()
         view_model.time_series = time_series_index.gid
         assert viewer.get_required_memory_size(view_model) > 0
 
-    def test_generate_preview(self, time_series_region_index_factory):
-        """
-        Check that all required keys are present in preview generate by BrainViewer.
-        """
-        time_series_index = time_series_region_index_factory(self.connectivity, self.region_mapping,
-                                                             self.test_user, self.test_project)
-        viewer = BrainViewer()
-        viewer.current_project_id = self.test_project.id
-        view_model = viewer.get_view_model_class()()
-        view_model.time_series = time_series_index.gid
-        result = viewer.generate_preview(view_model, figure_size=(500, 200))
-        for key in TestBrainViewer.EXPECTED_KEYS:
-            assert key in result and result[key] is not None, key
-
     def test_launch_eeg(self, time_series_region_index_factory):
         """
         Tests successful launch of a BrainEEG and that all required keys are present in returned template dictionary
         """
         time_series_index = time_series_region_index_factory(self.connectivity, self.region_mapping,
-                                                             self.test_user, self.test_project)
+                                                             test_user=self.test_user, test_project=self.test_project)
         viewer = DualBrainViewer()
         viewer.current_project_id = self.test_project.id
         view_model = viewer.get_view_model_class()()

@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -480,7 +480,7 @@ class TimeSeriesInteractive(HasTraits):
             self.ts_ax.autoscale(enable=True, axis='both', tight=True)
 
         self.ts_ax.set_yticks(offset)
-        self.ts_ax.set_yticklabels(self.labels, fontsize=10)
+        self.ts_ax.set_yticklabels(self.labels[:self.first_n], fontsize=10) #JC: fix labels error
         # import pdb; pdb.set_trace()
 
         # Light gray guidelines
