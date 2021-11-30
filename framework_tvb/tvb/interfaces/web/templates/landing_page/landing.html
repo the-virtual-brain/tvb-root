@@ -4,22 +4,22 @@
     <link rel="shortcut icon" href="/static/style/img/favicon.ico"/>
     <meta charset="UTF-8">
     <link rel="stylesheet" type="text/css" href="/static/style/base.css"/>
-    <link rel="stylesheet" type="text/css" href="/static/style/section_user.css?"/>
+    <link rel="stylesheet" type="text/css" href="/static/style/section_user.css"/>
     <title>The Virtual Brain</title>
 </head>
 <body id="s-user" class="user-authorized style-default v-odinson">
 <div id="main">
-    <section class="profile">
+    <section class="sites">
         <h2>
-            <mark>Deployment</mark>
-            Site
+            <mark>TVB - EBRAINS</mark> Deployment Sites
         </h2>
         {% for app in apps %}
-        <button onclick="go_to_selected_site('{{ app.link }}')">{{ app.label }}</button>
-        <dl>
-            <dt></dt>
-            <dd></dd>
-        </dl>
+            <dl>
+                <dt><input type="button" value="{{ app.label }}"
+                           onclick="go_to_selected_site('{{ app.url }}')"
+                           title="{{ app.description }}"/></dt>
+                <dd>{{ app.description }}</dd>
+            </dl>
         {% endfor %}
     </section>
     <script type="text/javascript">

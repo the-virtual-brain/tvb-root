@@ -1,0 +1,17 @@
+no_of_options=4
+
+0.option.label=TVB @ CSCS
+0.option.description= Latest stable version of TVB Distribution, deployed in Zurich at CSCS
+0.option.url=https://thevirtualbrain.apps.hbp.eu/
+
+1.option.label=TVB @ Juelich
+1.option.description= Latest stable version of TVB Distribution, deployed in Juelich, with a separate storage from CSCS
+1.option.url=https://thevirtualbrain.apps.jsc.hbp.eu/
+
+2.option.label=TVB & Pipeline
+2.option.description= Prototype version of TVB, featuring a new web page for integrating the images preprocessing pipeline running on HPC
+2.option.url=https://pipeline-tvb.apps.hbp.eu/
+
+3.option.label=TVB on HPC
+3.option.description= Prototype version of TVB using encrypted backend and pushing high demanding jobs on an HPC
+3.option.url=https://tvb-hpc.apps.hbp.eu/
