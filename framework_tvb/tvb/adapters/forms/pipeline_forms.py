@@ -36,7 +36,7 @@ from tvb.core.neotraits.forms import Form, SelectField, IntField, StrField
 from tvb.core.neotraits.view_model import Str
 from tvb.basic.neotraits.api import EnumAttr, TVBEnum, Int, TupleEnum, HasTraits, Attr
 from tvb.core.pipeline.analysis_levels import PreprocAnalysisLevel, ParticipantAnalysisLevel, GroupAnalysisLevel, \
-    ParcellationOptionsEnum, TemplateRegOptionsEnum
+    TemplateRegOptionsEnum
 
 
 class PipelineForm(Form):
@@ -45,36 +45,19 @@ class PipelineForm(Form):
         return "PIPELINE"
 
 
-class CommonPipelineForm(PipelineForm):
+class PreprocPipelineForm(PipelineForm):
     """
-    Contains options that are relevant to both 'preproc' level and 'participant' level
+    Contains options that are relevant only for the 'preproc' analysis level
     """
 
-    def __init__(self):
-        super(CommonPipelineForm, self).__init__()
-        self.t1w_preproc_path = StrField(Attr(field_type=str, label='t1w preproc', required=False,
-                                              doc="""Provide a path by which pre-processed T1-weighted image data may
-                                              be found for the processed participant(s) / session(s) """),
-                                         name="t1w_preproc")
 
-    def fill_trait(self, datatype):
-        datatype.parameters['t1w_preproc_path'] = self.t1w_preproc_path.value
-
-    def fill_from_trait(self, trait):
-        self.t1w_preproc_path.data = trait.parameters['t1w_preproc_path']
-
-
-class ParticipantPipelineForm(CommonPipelineForm):
+class ParticipantPipelineForm(PipelineForm):
     """
     Contains options that are relevant only for the 'participant' analysis level
     """
 
     def __init__(self):
         super(ParticipantPipelineForm, self).__init__()
-
-        self.parcellation = SelectField(EnumAttr(label="Select Parcellation", default=ParcellationOptionsEnum.AAL_PARC,
-                                                 doc="""The choice of connectome parcellation scheme (compulsory for 
-                                                 participant-level analysis)"""), name='parcellation')
 
         self.stream_lines = IntField(Int(label="Number of stream lines", required=False, default=1,
                                          doc="""The number of streamlines to generate for each subject (will be 
@@ -85,14 +68,10 @@ class ParticipantPipelineForm(CommonPipelineForm):
                                                   template space."""), name="template_reg")
 
     def fill_trait(self, datatype):
-        datatype.parameters['t1w_preproc_path'] = self.t1w_preproc_path.value
-        datatype.parameters['parcellation'] = self.parcellation.value
         datatype.parameters['stream_lines'] = self.stream_lines.value
         datatype.parameters['template_reg'] = self.template_reg.value
 
     def fill_from_trait(self, trait):
-        self.t1w_preproc_path.data = trait.parameters['t1w_preproc_path']
-        self.parcellation.data = trait.parameters['parcellation']
         self.stream_lines.data = trait.parameters['stream_lines']
         self.template_reg.data = trait.parameters['template_reg']
 
@@ -129,7 +108,7 @@ class IPPipelineAnalysisLevelsEnum(TupleEnum):
 
 def get_form_for_analysis_level(analysis_level):
     al_form = {
-        PreprocAnalysisLevel: CommonPipelineForm,
+        PreprocAnalysisLevel: PreprocPipelineForm,
         ParticipantAnalysisLevel: ParticipantPipelineForm,
         GroupAnalysisLevel: GroupPipelineForm
     }
