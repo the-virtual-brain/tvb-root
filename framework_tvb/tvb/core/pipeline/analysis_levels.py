@@ -38,22 +38,6 @@ from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range, TVBEnum
 from tvb.core.neotraits.traits_with_parameters import TraitsWithParameters
 
 
-class ParcellationOptionsEnum(str, TVBEnum):
-    AAL_PARC = "aal"
-    AAL2_PARC = "aal2"
-    BRAINNETOME_PARC = "brainnetome246fs"
-    CRADDOCK200_PARC = "craddock200"
-    CRADDOCK400_PARC = "craddock400"
-    DESIKAN_PARC = "desikan"
-    DESTRIEUX_PARC = "destrieux"
-    HCPMMP1_PARC = "hcpmmp1"
-    PERRY512_PARC = "perry512"
-    YEO7fs_PARC = "yeo7fs"
-    YEO7mni_PARC = "yeo7mni"
-    YEO17fs_PARC = "yeo17fs"
-    YEO17mni_PARC = "yeo17mni"
-
-
 class TemplateRegOptionsEnum(str, TVBEnum):
     ANTS_TEMPLATE_REG = "ants"
     FSL_TEMPLATE_REG = "fsl"
@@ -67,7 +51,7 @@ class PreprocAnalysisLevel(PipelineAnalysisLevel):
     parameters = Attr(
         field_type=dict,
         label="Linear Parameters",
-        default=lambda: {"t1w_preproc_path": ""})
+        default=lambda: {})
 
     def __str__(self):
         return "preproc"
@@ -77,7 +61,7 @@ class ParticipantAnalysisLevel(PipelineAnalysisLevel):
     parameters = Attr(
         field_type=dict,
         label="Linear Parameters",
-        default=lambda: {"t1w_preproc_path": "", "parcellation": ParcellationOptionsEnum.AAL_PARC, "stream_lines": 1,
+        default=lambda: {"streamlines": 1,
                          "template_reg": TemplateRegOptionsEnum.ANTS_TEMPLATE_REG})
 
     def __str__(self):

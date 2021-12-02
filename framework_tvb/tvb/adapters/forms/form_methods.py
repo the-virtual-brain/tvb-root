@@ -36,8 +36,7 @@ Dict to be used to rerender subforms when a parent form is refreshed.
 
 from tvb.adapters.forms.equation_forms import get_form_for_equation, SpatialEquationsEnum, TemporalEquationsEnum, \
     SurfaceModelEquationsEnum
-from tvb.adapters.forms.pipeline_forms import CommonPipelineForm, ParticipantPipelineForm, GroupPipelineForm, \
-    IPPipelineAnalysisLevelsEnum, get_form_for_analysis_level
+from tvb.adapters.forms.pipeline_forms import IPPipelineAnalysisLevelsEnum, get_form_for_analysis_level
 
 SPATIAL_EQ_KEY = "SPATIAL_EQ"
 TEMPORAL_EQ_KEY = "TEMPORAL_EQ"
