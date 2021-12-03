@@ -270,3 +270,48 @@ class ModelNumbaDfun(Model):
     @property
     def spatial_param_reshape(self):
         return -1,
+
+
+class DfunSymGen(dict):
+    "Support generating dfuns symbolically."
+
+    def __init__(self):
+        self.symbols = []
+
+    def __setitem__(self, key, val):
+        dict.__setitem__(self, key, val)
+        self.symbols.append(key)
+
+    def __getitem__(self, key):
+        import sympy
+        if key not in self:
+            if key in dir(sympy):
+                obj = getattr(sympy, key)
+            else:
+                obj = sympy.Symbol(key)
+            self.__setitem__(key, obj)
+        return super().__getitem__(key)
+
+
+class DfunMeta(type):
+    "Metaclass for generating symbolic dfuns."
+
+    @classmethod
+    def __prepare__(metacls, name, bases, **kwds):
+        return DfunSymGen()
+
+    def __new__(cls, name, bases, classdict):
+        result = type.__new__(cls, name, bases, dict(classdict))
+        result.symbols = classdict.symbols
+        return result
+
+
+def _sym_dfun_example():
+    # TODO place in tests
+    class Montbrio(metaclass=DfunMeta):
+        dr = 1/tau * ( Delta / (pi * tau) + 2 * V * r)
+        dV = 1/tau * ( V**2 - pi**2 * tau**2 * r**2 + eta + J * tau * r + I + cr * Coupling_Term_r + cv * Coupling_Term_V)
+    m = Montbrio()
+    print(m.dr)
+    print(m.dV)
+    print(m.symbols)
