@@ -248,8 +248,11 @@ class ProjectController(BaseController):
         if (project_id is None) or (not int(project_id)):
             self.redirect('/project')
 
-        auth_token = common.get_from_session(common.KEY_AUTH_TOKEN)
-        HPCOperationService.check_operations_job(auth_token, algos=["IPPipelineCreator"])
+        if TvbProfile.current.hpc.IS_HPC_RUN:
+            auth_token = common.get_from_session(common.KEY_AUTH_TOKEN)
+            current_user = common.get_logged_user()
+            HPCOperationService.check_operations_job(auth_token=auth_token, algos=["IPPipelineCreator"],
+                                                     current_user_id=current_user.id)
 
         ## Toggle filters
         filters = self.__get_operations_filters()

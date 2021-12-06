@@ -85,11 +85,14 @@ class HPCPipelineClient(HPCClient):
             raise TVBException(
                 "Arguments file for the pipeline script was not found in the operation folder for operation {}".format(
                     operation.id))
-        return [pipeline_data_zip, args_file]
+
+        json_parser = os.path.join(os.environ[HPCClient.TVB_BIN_ENV_KEY], HPCPipelineClient.SCRIPT_FOLDER_NAME,
+                                   HPCSettings.HPC_PIPELINE_JSON_PARSER)
+        return [pipeline_data_zip, args_file, json_parser]
 
     @staticmethod
-    def _configure_job(operation_id, mode):
-        # type: (int, int) -> (dict, str)
+    def _configure_job(operation_id, mode, container_store):
+        # type: (int, int, str) -> (dict, str)
         bash_entrypoint = os.path.join(os.environ[HPCClient.TVB_BIN_ENV_KEY], HPCPipelineClient.SCRIPT_FOLDER_NAME,
                                        HPCSettings.HPC_PIPELINE_LAUNCHER_SH_SCRIPT)
 
@@ -98,7 +101,7 @@ class HPCPipelineClient(HPCClient):
         my_job = {HPCSettings.UNICORE_JOB_NAME: 'PipelineProcessing_{}'.format(operation_id),
                   HPCSettings.UNICORE_RESOURCER_KEY: {'Runtime': '23h'},
                   HPCSettings.UNICORE_EXE_KEY: 'sh ' + os.path.basename(bash_entrypoint),
-                  HPCSettings.UNICORE_ARGS_KEY: ['-m {}'.format(mode), '-p $PWD']}
+                  HPCSettings.UNICORE_ARGS_KEY: ['-m {}'.format(mode), '-p $PWD', '-c {}'.format(container_store)]}
 
         # TODO: Maybe take HPC Project also from GUI?
         if HPCClient.CSCS_PROJECT in os.environ:
@@ -109,8 +112,21 @@ class HPCPipelineClient(HPCClient):
     @staticmethod
     def _launch_job_with_pyunicore(operation, authorization_token):
         # type: (Operation, str) -> Job
+        site_client = HPCClient._build_unicore_client(authorization_token,
+                                                      unicore_client._HBP_REGISTRY_URL,
+                                                      TvbProfile.current.hpc.HPC_COMPUTE_SITE)
+
+        # TODO: Should we run these steps or these will be run from sh script?
+        try:
+            user = site_client.access_info()['xlogin']['UID']
+            LOGGER.info("User {} was fetched for containerstore".format(user))
+        except KeyError:
+            LOGGER.info("User cannot be fetched")
+            raise TVBException("User cannot be fetched to compute containerstore")
+        containers_store = '/scratch/snx3000/{}/containerstore'.format(user)
+
         LOGGER.info("Prepare job configuration for operation: {}".format(operation.id))
-        job_config, job_script = HPCPipelineClient._configure_job(operation.id, 4)
+        job_config, job_script = HPCPipelineClient._configure_job(operation.id, 12, containers_store)
 
         LOGGER.info("Prepare input files: pipeline input data zip file and pipeline arguments json file. ")
         inputs = HPCPipelineClient._prepare_input(operation)
@@ -121,34 +137,33 @@ class HPCPipelineClient(HPCClient):
                                                auth_token=authorization_token, inputs_subfolder=None)
         mount_point = job.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]
 
-        site_client = HPCClient._build_unicore_client(authorization_token,
-                                                      unicore_client._HBP_REGISTRY_URL,
-                                                      TvbProfile.current.hpc.HPC_COMPUTE_SITE)
-
-        # TODO: Should we run these steps or these will be run from sh script?
         zip_path = os.path.join(mount_point, IPPipelineCreatorModel.PIPELINE_DATASET_FILE)
-        unzip_path = os.path.join(mount_point, 'Demo_data_pipeline_CON03')
+        unzip_path = os.path.join(mount_point, 'input-data')
         unzip_archive = site_client.execute('unzip {} -d {}'.format(zip_path, unzip_path))
         unzip_mount_point = unzip_archive.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]
         LOGGER.info("Unzip mount point: {}".format(unzip_mount_point))
         HPCPipelineClient._poll_job(unzip_archive)
 
         script_path = os.path.join(mount_point, HPCSettings.HPC_PIPELINE_LAUNCHER_SH_SCRIPT)
-        install_datalad = site_client.execute('sh {} -m 0 -p {}'.format(script_path, os.path.normpath(mount_point)))
+
+        install_datalad = site_client.execute(
+            'sh {} -m 0 -p {} -c {}'.format(script_path, os.path.normpath(mount_point), containers_store))
         install_datalad_mount_point = install_datalad.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]
         LOGGER.info("Insall datalad mount point: {}".format(install_datalad_mount_point))
         HPCPipelineClient._poll_job(install_datalad)
         HPCPipelineClient._transfer_logs(site_client, install_datalad, job, 'install_datalad')
 
-        pull_fmri = site_client.execute('sh {} -m 11 -p {}'.format(script_path, os.path.normpath(mount_point)))
-        pull_fmri_mount_point = pull_fmri.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]
-        LOGGER.info("Pull fmri mount point: {}".format(pull_fmri_mount_point))
-        HPCPipelineClient._poll_job(pull_fmri)
-        HPCPipelineClient._transfer_logs(site_client, pull_fmri, job, 'pull_fmri')
+        pull_containers = site_client.execute(
+            'sh {} -m 1 -p . -c {}'.format(script_path, containers_store))
+        pull_containers_mount_point = pull_containers.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]
+        LOGGER.info("Pull containers mount point: {}".format(pull_containers_mount_point))
+        HPCPipelineClient._poll_job(pull_containers)
+        HPCPipelineClient._transfer_logs(site_client, pull_containers, job, 'pull_containers')
 
-        create_datasets = site_client.execute('sh {} -m 2 -p {}'.format(script_path, os.path.normpath(mount_point)))
+        create_datasets = site_client.execute(
+            'sh {} -m 11 -p {} -c {}'.format(script_path, os.path.normpath(mount_point), containers_store))
         create_datasets_mount_point = create_datasets.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]
-        LOGGER.info("Pull fmri mount point: {}".format(create_datasets_mount_point))
+        LOGGER.info("Create datasets mount point: {}".format(create_datasets_mount_point))
         HPCPipelineClient._poll_job(create_datasets)
         HPCPipelineClient._transfer_logs(site_client, create_datasets, job, 'create_datasets')
 

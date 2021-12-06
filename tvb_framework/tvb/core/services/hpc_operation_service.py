@@ -150,7 +150,7 @@ class HPCOperationService(object):
 
         except OperationException as exception:
             HPCOperationService.LOGGER.error(exception)
-            HPCOperationService._operation_error(operation)
+            HPCOperationService._operation_error(operation, auth_token)
 
         # finally:
         #     if storage_interface.encryption_enabled():
@@ -182,8 +182,8 @@ class HPCOperationService(object):
             HPCOperationService._pipeline_operation_finished(operation, auth_token)
 
     @staticmethod
-    def check_operations_job(auth_token=HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY, algos=None):
-        operations = dao.get_operations_for_hpc_job(algos)
+    def check_operations_job(auth_token=HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY, algos=None, current_user_id=None):
+        operations = dao.get_operations_for_hpc_job(algos, current_user_id)
         if operations is None or len(operations) == 0:
             return
 

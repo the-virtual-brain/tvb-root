@@ -127,17 +127,19 @@ class OperationDAO(RootDAO):
             self.logger.exception(excep)
             return None
 
-    def get_operations_for_hpc_job(self, algos_list=None):
+    def get_operations_for_hpc_job(self, algos_list=None, current_user_id=None):
         status = [STATUS_PENDING, STATUS_STARTED]
         if algos_list is None:
             algos_list = ["SimulatorAdapter"]
         queue_full = False
         try:
-            result = self.session.query(Operation).join(Algorithm) \
+            result_query = self.session.query(Operation).join(Algorithm) \
                 .filter(Algorithm.classname.in_(algos_list)) \
                 .filter(Operation.status.in_(status)) \
-                .filter(Operation.queue_full == queue_full).all()
-            return result
+                .filter(Operation.queue_full == queue_full)
+            if current_user_id is not None:
+                result_query = result_query.filter(Operation.fk_launched_by == current_user_id)
+            return result_query.all()
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
             return None

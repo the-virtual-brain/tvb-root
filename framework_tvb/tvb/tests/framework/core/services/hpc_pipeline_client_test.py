@@ -27,13 +27,43 @@ def test_hpc_pipeline(operation_factory):
 
     args_file = os.path.join(storage_path, IPPipelineCreatorModel.PIPELINE_CONFIG_FILE)
     with open(args_file, "w") as outfile:
-        json.dump({"dummy_key": "dummy_value"}, outfile)
+        json.dump({
+            "mri_data": "pipeline_dataset.zip",
+            "participant_label": "sub-CON03",
+            "session_label": "ses-postop",
+            "task-label": "rest",
+            "parcellation": "destrieux",
+            "nr_of_cpus": 1,
+            "estimated_time": '10:00:00',
+            "mrtrix": True,
+            "mrtrix_parameters": {
+                "output_verbosity": "2",
+                "analysis_level": "preproc",
+                "analysis_level_config": {
+                    "streamlines": 5,
+                    "template_reg": "ants"
+                }
+            },
+            "fmriprep": True,
+            "fmriprep_parameters": {
+                "analysis_level": "participant",
+                "analysis_level_config": {
+                    "skip_bids_validation": False,
+                    "anat-only": True,
+                    "fs-no-reconall": True
+                }
+            },
+            "freesurfer": False,
+            "tvbconverter": True
+        }
+
+            , outfile)
 
     # Add correct path to tvb_bin folder and a valid ebrains auth token
     os.environ[HPCClient.TVB_BIN_ENV_KEY] = "/Users/bvalean/WORK/tvb-root/tvb_bin"
     os.environ[HPCClient.CSCS_PROJECT] = "ich012"
     os.environ.setdefault(HPCClient.CSCS_LOGIN_TOKEN_ENV_KEY,
-                          'eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJfNkZVSHFaSDNIRmVhS0pEZDhXcUx6LWFlZ3kzYXFodVNJZ1RXaTA1U2k0In0.eyJleHAiOjE2Mzc5MTQxODIsImlhdCI6MTYzNzMwOTM4NCwiYXV0aF90aW1lIjoxNjM3MzA5MzgyLCJqdGkiOiI1MzQwMWFiZi1jMWYzLTQ5OGQtODBjNC1mMGEwOTAzYzNhMjkiLCJpc3MiOiJodHRwczovL2lhbS5lYnJhaW5zLmV1L2F1dGgvcmVhbG1zL2hicCIsImF1ZCI6WyJyZWFsbS1tYW5hZ2VtZW50IiwianVweXRlcmh1YiIsImp1cHl0ZXJodWItanNjIiwieHdpa2kiLCJ0ZWFtIiwiZ3JvdXAiXSwic3ViIjoiMjZhNTBmYzgtZGQ4OC00NDFlLWFiNzItZTBmYTE3ZjNjZmI3IiwidHlwIjoiQmVhcmVyIiwiYXpwIjoidHZiLXdlYiIsIm5vbmNlIjoiZDY1ODcyZTEtNTJhYi00M2RiLTgyMGEtYzAxNmM5YjZmOGI3Iiwic2Vzc2lvbl9zdGF0ZSI6IjIxMDYxZDdmLTgwNTgtNGEwYy1hY2Y3LTc5ZmQ4Zjg2Y2RjZSIsImFjciI6IjAiLCJhbGxvd2VkLW9yaWdpbnMiOlsiaHR0cDovL2xvY2FsaG9zdDo4MDgwIiwiaHR0cHM6Ly90dmItdGVzdC5hcHBzLmhicC5ldSIsImh0dHA6Ly90dmItZ3VpLXJvdXRlLXR2Yi5hcHBzLWRldi5oYnAuZXUiLCJodHRwczovL3RoZXZpcnR1YWxicmFpbi5hcHBzLmpzYy5oYnAuZXUiLCJodHRwczovL3RoZXZpcnR1YWxicmFpbi5hcHBzLWRldi5oYnAuZXUiLCJodHRwczovL3RoZXZpcnR1YWxicmFpbi5hcHBzLmhicC5ldSJdLCJzY29wZSI6InByb2ZpbGUgcm9sZXMgZW1haWwgb3BlbmlkIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsIm5hbWUiOiJWYWxlYW4gQm9nZGFuIiwibWl0cmVpZC1zdWIiOiIzMDg1OTYiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJidmFsZWFuIiwiZ2l2ZW5fbmFtZSI6IlZhbGVhbiIsImZhbWlseV9uYW1lIjoiQm9nZGFuIiwiZW1haWwiOiJib2dkYW4udmFsZWFuQGNvZGVtYXJ0LnJvIn0.OAobjT7Sblz3hSvA_hiOxmOpIkSnA2YYGIdxqEe1ppCDE8mHaW8N8Czpl4WQImpsPrf3-Mc6nEarF1AU9FZGYN3ngeC9Jt-oY9CpB0nDXtLzyxG83eC5vxuyXglz6uUeKssm3zuLpxw1BWVPJwrRT3KgsSnMggGHNiYSgckLBAFRg23CJfwwVuX76w_oHSd4VnjLyS9O38cP3oE4FwcCtJVjJN4scOQQpjhWW3zevhDEgiFl7uNs8cOLl_cqfMe9jNj-874ToM3BCc84_zeYhtq3063Zs2NSArsDlBW0GaLf9ttmbQOpYyj-GS-j3iHEkZlgQo759yF9rEf_G-aWcA')
+                          'eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJfNkZVSHFaSDNIRmVhS0pEZDhXcUx6LWFlZ3kzYXFodVNJZ1RXaTA1U2k0In0.eyJleHAiOjE2MzkwNjM1NDIsImlhdCI6MTYzODc4MjA5MSwiYXV0aF90aW1lIjoxNjM4NDU4NzQzLCJqdGkiOiJhYzVkMGNlMy0zZDRkLTQ1ZDQtOWFiZS0xY2Q2ZDY5N2MxYmUiLCJpc3MiOiJodHRwczovL2lhbS5lYnJhaW5zLmV1L2F1dGgvcmVhbG1zL2hicCIsImF1ZCI6WyJyZWFsbS1tYW5hZ2VtZW50IiwianVweXRlcmh1YiIsImp1cHl0ZXJodWItanNjIiwieHdpa2kiLCJ0ZWFtIiwiZ3JvdXAiXSwic3ViIjoiMjZhNTBmYzgtZGQ4OC00NDFlLWFiNzItZTBmYTE3ZjNjZmI3IiwidHlwIjoiQmVhcmVyIiwiYXpwIjoidHZiLXdlYiIsIm5vbmNlIjoiNGIxMGRkZTEtNGU1Ny00Mjc0LWEzNzEtODFjNjFhZTIxZmZhIiwic2Vzc2lvbl9zdGF0ZSI6IjZjMjRkNmI5LTI3YjEtNGY4Yi05OGE5LWJjNzdiOWY5ZTcyZiIsImFjciI6IjAiLCJhbGxvd2VkLW9yaWdpbnMiOlsiaHR0cHM6Ly9waXBlbGluZS10dmIuYXBwcy5oYnAuZXUiLCJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJodHRwczovL3R2Yi10ZXN0LmFwcHMuaGJwLmV1IiwiaHR0cHM6Ly90dmItcGlwZWxpbmUuYXBwcy5oYnAuZXUiLCJodHRwczovL3R2Yi1ocGMuYXBwcy5oYnAuZXUiLCJodHRwOi8vdHZiLWd1aS1yb3V0ZS10dmIuYXBwcy1kZXYuaGJwLmV1IiwiaHR0cHM6Ly90aGV2aXJ0dWFsYnJhaW4uYXBwcy5qc2MuaGJwLmV1IiwiaHR0cHM6Ly90aGV2aXJ0dWFsYnJhaW4uYXBwcy1kZXYuaGJwLmV1IiwiaHR0cHM6Ly90aGV2aXJ0dWFsYnJhaW4uYXBwcy5oYnAuZXUiXSwic2NvcGUiOiJwcm9maWxlIHJvbGVzIGVtYWlsIG9wZW5pZCIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJuYW1lIjoiVmFsZWFuIEJvZ2RhbiIsIm1pdHJlaWQtc3ViIjoiMzA4NTk2IiwicHJlZmVycmVkX3VzZXJuYW1lIjoiYnZhbGVhbiIsImdpdmVuX25hbWUiOiJWYWxlYW4iLCJmYW1pbHlfbmFtZSI6IkJvZ2RhbiIsImVtYWlsIjoiYm9nZGFuLnZhbGVhbkBjb2RlbWFydC5ybyJ9.qRM-OCnOqtOAQ2oOTfmkLq9piy-NaUNM7ThiZ-SEYBBrxwIpI6yrGe7ORZgNnXqCUaVnzuKsdYReG878-DYGxl7FCDey7MkD0mbz7rJNeq_v44mFMoN017N99AywSWYZNlipSUzEIXJHyRKHB_Rszjw9foNwwOyskUkX9xNiOtPAQbrOreo3l_hiPcZTBSh8q8ePTjPIsPCjNR0SaYVDovl2_MTiqkMqEsn_DCFY0yPnv7hO6QNQZiQAWTXYXBdvbK-53JAbwgMZLXjl9sFey27Eey1Piih5Q7wc3f6PnYxfQv_RL5rghL4jALY8_NC7yQTCTdxpixI-A3fsze0-TQ')
     TvbProfile.current.hpc.HPC_COMPUTE_SITE = 'DAINT-CSCS'
 
     hpc_pipeline_client = HPCPipelineClient()
