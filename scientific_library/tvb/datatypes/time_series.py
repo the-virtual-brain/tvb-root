@@ -84,12 +84,15 @@ class TimeSeries(HasTraits):
 
     @property
     def sample_rate(self):
-        """:returns samples per second [kHz] """
-        if self.sample_period_unit in ("ms", "msec"):
+        """:returns samples per second [Hz] """
+        if self.sample_period_unit in ("s", "sec"):
+            return 1.0 / self.sample_period
+        elif self.sample_period_unit in ("ms", "msec"):
             return 1000.0 / self.sample_period
-        if self.sample_period_unit in ("us", "usec"):
+        elif self.sample_period_unit in ("us", "usec"):
             return 1000000.0 / self.sample_period
-        return 1.0 / self.sample_period
+        else:
+            raise ValueError(f"{self.sample_period_unit} is not a recognized time unit")
 
     def summary_info(self):
         """
