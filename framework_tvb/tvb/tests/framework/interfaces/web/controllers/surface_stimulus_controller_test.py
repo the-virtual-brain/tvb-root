@@ -35,7 +35,7 @@
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.interfaces.web.controllers.common import get_from_session
 from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import SurfaceStimulusController
-from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import KEY_SURFACE_STIMULI
+from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import KEY_SURFACE_STIMULUS
 
 
 class TestSurfaceStimulusController(BaseTransactionalControllerTest):
@@ -61,7 +61,7 @@ class TestSurfaceStimulusController(BaseTransactionalControllerTest):
     def test_step_2(self, surface_index_factory):
         surface_index, _ = surface_index_factory()
         self.surface_s_c.step_1_submit(1, 1)
-        context = get_from_session(KEY_SURFACE_STIMULI)
+        context = get_from_session(KEY_SURFACE_STIMULUS)
         context.surface = surface_index.gid
         result_dict = self.surface_s_c.step_2()
         expected_keys = ['urlVerticesPick', 'urlVertices', 'urlTrianglesPick', 'urlTriangles',

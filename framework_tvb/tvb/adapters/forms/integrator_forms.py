@@ -73,8 +73,10 @@ class NoiseTypesEnum(TupleEnum):
 
 class IntegratorForm(Form):
 
-    def get_subform_key(self):
+    @staticmethod
+    def get_subform_key():
         return 'INTEGRATOR'
+
     def __init__(self, is_dt_disabled=False):
         super(IntegratorForm, self).__init__()
         self.is_dt_disabled = is_dt_disabled

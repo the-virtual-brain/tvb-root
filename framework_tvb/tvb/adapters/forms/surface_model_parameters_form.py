@@ -45,9 +45,14 @@ class SurfaceModelEquationsEnum(TupleEnum):
     SIGMOID = (Sigmoid, "Sigmoid")
 
 
+### SESSION KEY for ContextModelParameter entity.
+KEY_CONTEXT_MPS = "ContextForModelParametersOnSurface"
+
+
 class SurfaceModelParametersForm(ABCAdapterForm):
     NAME_EQATION_PARAMS_DIV = 'equation_params'
     default_equation = SurfaceModelEquationsEnum.GAUSSIAN
+    equation_field_label = 'Equation'
 
     def __init__(self, model_params):
         super(SurfaceModelParametersForm, self).__init__()
@@ -56,9 +61,9 @@ class SurfaceModelParametersForm(ABCAdapterForm):
         model_mathjax_representations = [param.label for param in model_params]
         self.model_param = DynamicSelectField(Str(label='Model parameter'), choices=model_labels, name='model_param',
                                               ui_values=model_mathjax_representations)
-        self.equation = SelectField(EnumAttr(label='Equation', default=self.default_equation),
-                                    name='equation',
-                                    subform=get_form_for_equation(self.default_equation.value))
+        self.equation = SelectField(EnumAttr(label=self.equation_field_label, default=self.default_equation),
+                                    name='equation', subform=get_form_for_equation(self.default_equation.value),
+                                    session_key=KEY_CONTEXT_MPS)
 
     @staticmethod
     def get_required_datatype():

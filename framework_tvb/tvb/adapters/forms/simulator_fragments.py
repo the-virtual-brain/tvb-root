@@ -53,7 +53,6 @@ from tvb.core.services.burst_service import BurstService
 from tvb.datatypes.surfaces import SurfaceTypesEnum
 
 
-
 class SimulatorSurfaceFragment(ABCAdapterForm):
     def __init__(self):
         super(SimulatorSurfaceFragment, self).__init__()

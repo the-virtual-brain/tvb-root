@@ -166,6 +166,26 @@ class TupleEnum(TVBEnum):
         return self.value()
 
 
+class SubformEnum(TupleEnum):
+
+    @classmethod
+    def __get_enum_subclasses(cls):
+        return set(cls.__subclasses__()).union(
+            [s for c in cls.__subclasses__() for s in c.__get_enum_subclasses()])
+
+
+    @classmethod
+    def get_enum_members(cls):
+        enum_subclasses = cls.__get_enum_subclasses()
+        enum_members = []
+        for enum_clz in enum_subclasses:
+            enum_members.extend(list(enum_clz))
+        return enum_members
+
+
+
+
+
 @add_metaclass(MetaType)
 class HasTraits(object):
 

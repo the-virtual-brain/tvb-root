@@ -39,22 +39,17 @@ import cherrypy
 from tvb.adapters.forms.equation_forms import get_form_for_equation
 from tvb.adapters.forms.equation_plot_forms import EquationPlotForm
 from tvb.adapters.forms.model_forms import get_model_to_form_dict
-from tvb.adapters.forms.surface_model_parameters_form import SurfaceModelEquationsEnum, SurfaceModelParametersForm
-from tvb.basic.neotraits.api import Float, EnumAttr, TupleEnum, TVBEnum
+from tvb.adapters.forms.surface_model_parameters_form import SurfaceModelParametersForm, KEY_CONTEXT_MPS
 from tvb.core.entities import load
 from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
-from tvb.interfaces.web.controllers.decorators import expose_page, expose_fragment, handle_error, check_user, \
-    using_template
+from tvb.interfaces.web.controllers.decorators import expose_page, expose_fragment, handle_error, check_user
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorWizzardURLs
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
 from tvb.interfaces.web.entities.context_model_parameters import SurfaceContextModelParameters
 from tvb.interfaces.web.entities.context_simulator import SimulatorContext
-
-### SESSION KEY for ContextModelParameter entity.
-KEY_CONTEXT_MPS = "ContextForModelParametersOnSurface"
 
 
 @traced
@@ -171,18 +166,6 @@ class SurfaceModelParametersController(SpatioTemporalController):
 
         template_specification = self._prepare_reload(context)
         return self.fill_default_attributes(template_specification)
-
-    @cherrypy.expose
-    @using_template("form_fields/form_field")
-    @handle_error(redirect=False)
-    @check_user
-    def refresh_subform(self, equation):
-        eq_class = TVBEnum.string_to_enum(list(SurfaceModelEquationsEnum), equation).value
-        context = common.get_from_session(KEY_CONTEXT_MPS)
-        context.current_equation = eq_class()
-
-        eq_params_form = get_form_for_equation(eq_class)()
-        return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
 
     @cherrypy.expose
     def set_equation_param(self, **param):

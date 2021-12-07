@@ -47,7 +47,8 @@ def get_form_for_noise(noise_class):
 
 class NoiseForm(FormWithRanges):
 
-    def get_subform_key(self):
+    @staticmethod
+    def get_subform_key():
         return 'NOISE'
 
     def __init__(self):

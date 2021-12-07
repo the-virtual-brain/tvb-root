@@ -43,6 +43,7 @@ from tvb.core.adapters.abcadapter import ABCAdapterForm, AdapterLaunchModeEnum, 
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import FormField, TraitDataTypeSelectField, SelectField, StrField
+from tvb.core.neotraits.spatial_model import SpatialModel
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr, Str
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.patterns import StimuliSurface, StimuliRegion
@@ -61,7 +62,7 @@ class StimulusSurfaceSelectorForm(ABCAdapterForm):
         return {'adapter_form': self, 'legend': 'Loaded stimulus'}
 
 
-class SurfaceStimulusCreatorModel(ViewModel, StimuliSurface):
+class SurfaceStimulusCreatorModel(ViewModel, StimuliSurface, SpatialModel):
     spatial = EnumAttr(field_type=SpatialEquationsEnum, label="Spatial Equation",
                        default=SpatialEquationsEnum.SIGMOID.instance)
     temporal = EnumAttr(field_type=TemporalEquationsEnum, label="Temporal Equation",
@@ -77,6 +78,17 @@ class SurfaceStimulusCreatorModel(ViewModel, StimuliSurface):
         required=False
     )
 
+    @staticmethod
+    def get_equation_information():
+        return {
+            SurfaceStimulusCreatorModel.spatial.label: 'spatial',
+            SurfaceStimulusCreatorModel.temporal.label: 'temporal'
+        }
+
+
+KEY_REGION_STIMULUS = "stim-region"
+KEY_SURFACE_STIMULUS = "stim-surface"
+
 
 class SurfaceStimulusCreatorForm(ABCAdapterForm):
     NAME_SPATIAL_PARAMS_DIV = 'spatial_params'
@@ -90,9 +102,11 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
         self.surface = TraitDataTypeSelectField(SurfaceStimulusCreatorModel.surface, name='surface',
                                                 conditions=self.get_filters())
         self.spatial = SelectField(SurfaceStimulusCreatorModel.spatial, name='spatial',
-                                   subform=get_form_for_equation(self.default_spatial.value))
+                                   subform=get_form_for_equation(self.default_spatial.value),
+                                   session_key=KEY_SURFACE_STIMULUS)
         self.temporal = SelectField(SurfaceStimulusCreatorModel.temporal, name='temporal',
-                                    subform=get_form_for_equation(self.default_temporal.value))
+                                    subform=get_form_for_equation(self.default_temporal.value),
+                                    session_key=KEY_SURFACE_STIMULUS)
 
         del self.spatial.choices[-1]
 
@@ -205,7 +219,7 @@ class StimulusRegionSelectorForm(ABCAdapterForm):
         return {'adapter_form': self, 'legend': 'Loaded stimulus'}
 
 
-class RegionStimulusCreatorModel(ViewModel, StimuliRegion):
+class RegionStimulusCreatorModel(ViewModel, StimuliRegion, SpatialModel):
     temporal = EnumAttr(field_type=TemporalEquationsEnum, label="Temporal Equation",
                         default=TemporalEquationsEnum.PULSETRAIN.instance)
 
@@ -220,6 +234,12 @@ class RegionStimulusCreatorModel(ViewModel, StimuliRegion):
         required=False
     )
 
+    @staticmethod
+    def get_equation_information():
+        return {
+            RegionStimulusCreatorModel.temporal.label: 'temporal'
+        }
+
 
 class RegionStimulusCreatorForm(ABCAdapterForm):
     NAME_TEMPORAL_PARAMS_DIV = 'temporal_params'
@@ -229,7 +249,8 @@ class RegionStimulusCreatorForm(ABCAdapterForm):
         super(RegionStimulusCreatorForm, self).__init__()
         self.connectivity = TraitDataTypeSelectField(RegionStimulusCreatorModel.connectivity, name='connectivity')
         self.temporal = SelectField(RegionStimulusCreatorModel.temporal, name='temporal',
-                                    subform=get_form_for_equation(self.default_temporal.value))
+                                    subform=get_form_for_equation(self.default_temporal.value),
+                                    session_key=KEY_REGION_STIMULUS)
 
     @staticmethod
     def get_view_model():
