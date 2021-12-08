@@ -91,17 +91,23 @@ class HPCPipelineClient(HPCClient):
         return [pipeline_data_zip, args_file, json_parser]
 
     @staticmethod
-    def _configure_job(operation_id, mode, container_store):
-        # type: (int, int, str) -> (dict, str)
+    def _configure_job(operation_id, mode, container_store, working_dir="$PWD", custom_exe_path=None):
+        # type: (int, int, str, str, str) -> (dict, str)
         bash_entrypoint = os.path.join(os.environ[HPCClient.TVB_BIN_ENV_KEY], HPCPipelineClient.SCRIPT_FOLDER_NAME,
                                        HPCSettings.HPC_PIPELINE_LAUNCHER_SH_SCRIPT)
+        executable = os.path.basename(bash_entrypoint)
+        if custom_exe_path is not None:
+            bash_entrypoint = custom_exe_path
+            executable = custom_exe_path
 
         # Build job configuration JSON
         # TODO: correct parameters for pipeline to be added (mode, args for containers etc)
-        my_job = {HPCSettings.UNICORE_JOB_NAME: 'PipelineProcessing_{}'.format(operation_id),
+        my_job = {HPCSettings.UNICORE_JOB_NAME: 'PipelineProcessing_{}_{}'.format(mode, operation_id),
                   HPCSettings.UNICORE_RESOURCER_KEY: {'Runtime': '23h'},
-                  HPCSettings.UNICORE_EXE_KEY: 'sh ' + os.path.basename(bash_entrypoint),
-                  HPCSettings.UNICORE_ARGS_KEY: ['-m {}'.format(mode), '-p $PWD', '-c {}'.format(container_store)]}
+                  HPCSettings.UNICORE_EXE_KEY: 'sh ' + executable,
+                  HPCSettings.UNICORE_ARGS_KEY: ['-m {}'.format(mode),
+                                                 '-p {}'.format(working_dir),
+                                                 '-c {}'.format(container_store)]}
 
         # TODO: Maybe take HPC Project also from GUI?
         if HPCClient.CSCS_PROJECT in os.environ:
@@ -111,7 +117,7 @@ class HPCPipelineClient(HPCClient):
 
     @staticmethod
     def _launch_job_with_pyunicore(operation, authorization_token):
-        # type: (Operation, str) -> Job
+        # type: (Operation, str) -> list[Job]
         site_client = HPCClient._build_unicore_client(authorization_token,
                                                       unicore_client._HBP_REGISTRY_URL,
                                                       TvbProfile.current.hpc.HPC_COMPUTE_SITE)
@@ -126,7 +132,7 @@ class HPCPipelineClient(HPCClient):
         containers_store = '/scratch/snx3000/{}/containerstore'.format(user)
 
         LOGGER.info("Prepare job configuration for operation: {}".format(operation.id))
-        job_config, job_script = HPCPipelineClient._configure_job(operation.id, 12, containers_store)
+        job_config, job_script = HPCPipelineClient._configure_job(operation.id, 9, containers_store)
 
         LOGGER.info("Prepare input files: pipeline input data zip file and pipeline arguments json file. ")
         inputs = HPCPipelineClient._prepare_input(operation)
@@ -168,13 +174,20 @@ class HPCPipelineClient(HPCClient):
         HPCPipelineClient._transfer_logs(site_client, create_datasets, job, 'create_datasets')
 
         try:
-            LOGGER.info("Start unicore job")
+            LOGGER.info("Start unicore job1")
             job.start()
-            LOGGER.info("Job has started")
+            LOGGER.info("Job1 has started")
+            job_config2, _ = HPCPipelineClient._configure_job(operation.id, 10, containers_store,
+                                                              working_dir=os.path.normpath(mount_point),
+                                                              custom_exe_path=script_path)
+            job2 = HPCClient._prepare_pyunicore_job(operation=operation, job_inputs=[], job_script=None,
+                                                   job_config=job_config2,
+                                                   auth_token=authorization_token, inputs_subfolder=None)
+
         except Exception as e:
             LOGGER.error('Cannot start unicore job for operation {}'.format(operation.id), e)
             raise TVBException(e)
-        return job
+        return [job, job2]
 
     @staticmethod
     def _transfer_logs(site_client, from_job, to_job, files_prefix, to_folder='intermediary_logs'):

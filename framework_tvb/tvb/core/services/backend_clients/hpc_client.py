@@ -165,7 +165,8 @@ class HPCClient(BackendClient):
         job = Job(pyunicore_client.transport, job_url)
 
         working_dir = job.working_dir
-        HPCClient._upload_file_with_pyunicore(working_dir, job_script, None)
+        if job_script is not None:
+            HPCClient._upload_file_with_pyunicore(working_dir, job_script, None)
         for input_file in inputs:
             HPCClient._upload_file_with_pyunicore(working_dir, input_file, inputs_subfolder)
         return job
