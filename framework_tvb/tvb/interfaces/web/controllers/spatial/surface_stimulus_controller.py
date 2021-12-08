@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,15 +35,13 @@
 """
 
 import json
-
 import cherrypy
 import numpy
+
 from tvb.adapters.creators.stimulus_creator import *
 from tvb.adapters.datatypes.h5.patterns_h5 import StimuliSurfaceH5
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
-from tvb.adapters.simulator.subform_helper import SubformHelper
-from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict
-from tvb.basic.neotraits.api import Float
+from tvb.basic.neotraits.api import Float, TVBEnum
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
 from tvb.core.neocom import h5
@@ -54,8 +52,8 @@ from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, 
     handle_error, check_user
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
 
-LOAD_EXISTING_URL = '/spatial/stimulus/surface/load_surface_stimulus'
-RELOAD_DEFAULT_PAGE_URL = '/spatial/stimulus/surface/reload_default'
+LOAD_EXISTING_URL = SpatioTemporalController.build_path('/spatial/stimulus/surface/load_surface_stimulus')
+RELOAD_DEFAULT_PAGE_URL = SpatioTemporalController.build_path('/spatial/stimulus/surface/reload_default')
 CHUNK_SIZE = 20
 
 KEY_SURFACE_STIMULI = "stim-surface"
@@ -112,16 +110,16 @@ class SurfaceStimulusController(SpatioTemporalController):
     @using_template('form_fields/form_field')
     @handle_error(redirect=False)
     @check_user
-    def refresh_subform(self, subform_div, equation, mapping_key):
+    def refresh_subform(self, subform_div, equation):
         # TODO: nicer way to differentiate between temporal and spatial equations
-        eq_class = get_ui_name_to_equation_dict().get(equation)
+        eq_class = TVBEnum.string_to_enum(list(TemporalEquationsEnum), equation).value
         current_surface_stim = common.get_from_session(KEY_SURFACE_STIMULI)
         if 'temporal' in subform_div:
             current_surface_stim.temporal = eq_class()
         else:
             current_surface_stim.spatial = eq_class()
 
-        eq_params_form = SubformHelper.get_subform_for_field_value(equation, mapping_key)
+        eq_params_form = get_form_for_equation(eq_class)()
         return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
 
     @cherrypy.expose
@@ -190,7 +188,7 @@ class SurfaceStimulusController(SpatioTemporalController):
         template_specification['mainContent'] = 'spatial/stimulus_surface_step1_main'
         template_specification['baseUrl'] = self.base_url
         template_specification['spatialFieldsPrefixes'] = json.dumps(self.plotted_equation_prefixes)
-        template_specification['next_step_url'] = '/spatial/stimulus/surface/step_1_submit'
+        template_specification['next_step_url'] = self.build_path('/spatial/stimulus/surface/step_1_submit')
         template_specification['definedFocalPoints'] = current_surface_stim.focal_points_triangles.tolist()
         template_specification = self._add_extra_fields_to_interface(template_specification)
         return self.fill_default_attributes(template_specification)
@@ -207,7 +205,7 @@ class SurfaceStimulusController(SpatioTemporalController):
         surface_stim_selector_form.surface_stimulus.data = current_surface_stim.gid.hex
         template_specification['surfaceStimulusSelectForm'] = self.render_adapter_form(surface_stim_selector_form)
         template_specification['mainContent'] = 'spatial/stimulus_surface_step2_main'
-        template_specification['next_step_url'] = '/spatial/stimulus/surface/step_2_submit'
+        template_specification['next_step_url'] = self.build_path('/spatial/stimulus/surface/step_2_submit')
         template_specification['loadExistentEntityUrl'] = LOAD_EXISTING_URL
         template_specification['resetToDefaultUrl'] = RELOAD_DEFAULT_PAGE_URL
         template_specification['surfaceGID'] = current_surface_stim.surface.hex
@@ -243,8 +241,8 @@ class SurfaceStimulusController(SpatioTemporalController):
 
     def _reset_session_stimuli(self):
         new_surface_stim = SurfaceStimulusCreatorModel()
-        new_surface_stim.temporal = SurfaceStimulusCreatorForm.default_temporal()
-        new_surface_stim.spatial = SurfaceStimulusCreatorForm.default_spatial()
+        new_surface_stim.temporal = SurfaceStimulusCreatorForm.default_temporal.instance
+        new_surface_stim.spatial = SurfaceStimulusCreatorForm.default_spatial.instance
         self._reset_focal_points(new_surface_stim)
         common.add2session(KEY_SURFACE_STIMULI, new_surface_stim)
         common.add2session(KEY_TMP_FORM, EquationTemporalPlotForm())
@@ -334,7 +332,7 @@ class SurfaceStimulusController(SpatioTemporalController):
             min_time = common.get_from_session(KEY_TMP_FORM).min_tmp_x.value or 0
             max_time = common.get_from_session(KEY_TMP_FORM).max_tmp_x.value or 100
 
-            stimuli_surface = SurfaceStimulusCreator.prepare_stimuli_surface_from_view_model(current_surface_stim, True)
+            stimuli_surface = SurfaceStimulusCreator().prepare_stimuli_surface_from_view_model(current_surface_stim, True)
             stimuli_surface.configure_space()
             time = numpy.arange(min_time, max_time, 1)
             time = time[numpy.newaxis, :]

@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -393,24 +393,22 @@ class LarterBreakspear(Model):
 
     # NOTE: the values were not in the article.
     QV_max = NArray(
-        label=":math:`Q_{max}`",
+        label=":math:`QV_{max}`",
         default=numpy.array([1.0]),
         domain=Range(lo=0.1, hi=1., step=0.001),
         doc="""Maximal firing rate for excitatory populations (kHz)""")
 
     QZ_max = NArray(
-        label=":math:`Q_{max}`",
+        label=":math:`QZ_{max}`",
         default=numpy.array([1.0]),
         domain=Range(lo=0.1, hi=1., step=0.001),
         doc="""Maximal firing rate for excitatory populations (kHz)""")
-
 
     t_scale = NArray(
         label=":math:`t_{scale}`",
         default=numpy.array([1.0]),
         domain=Range(lo=0.1, hi=1., step=0.001),
         doc="""Time scale factor""")
-
 
     variables_of_interest = List(
         of=str,
@@ -420,7 +418,7 @@ class LarterBreakspear(Model):
         doc="""This represents the default state-variables of this Model to be
         monitored. It can be overridden for each Monitor if desired.""")
 
-    #Informational attribute, used for phase-plane and initial()
+    # Informational attribute, used for phase-plane and initial()
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
         default={

@@ -1,10 +1,10 @@
 <div class="view-column col-1">
 
-    <script type="text/javascript" src="/static/js/d3.v3.js"></script>
-    <script type="text/javascript" src="/static/js/tvbviz.js?{{ currentVersionJS }}"></script>
-    <script type="text/javascript" src="/static/js/matrix_view.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/d3.v3.js"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/tvbviz.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/matrix_view.js?{{ currentVersionJS }}"></script>
 
-    <link rel="stylesheet" href="/static/style/subsection_svg.css?{{ currentVersionJS }}" type="text/css"/>
+    <link rel="stylesheet" href="{{ deploy_context | safe }}/static/style/subsection_svg.css?{{ currentVersionJS }}" type="text/css"/>
 
     <h4>{{ title }}</h4>
     <div id="svg-viewer"></div>
@@ -12,6 +12,13 @@
     {% if has_complex_numbers %}
         <div class="matrix-info">
             <p>Matrix <span><b>has complex numbers!</b></span> Here we only display the real part.</p>
+        </div>
+    {% endif %}
+
+        {% if has_infinite_values %}
+        <div class="matrix-info">
+            <p>Matrix <span><b>has infinite values!</b></span> Positive infinite values were replaced with a very big number
+                and negative infinite values were replaced with a very small number before displaying the matrix.</p>
         </div>
     {% endif %}
 

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -33,6 +33,7 @@
 """
 import os
 import tvb_data.obj
+
 from tvb.adapters.uploaders.obj_importer import ObjSurfaceImporter
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.config import stored
@@ -40,7 +41,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.core.services.operation_service import OperationService
 from tvb.core.utils import get_matlab_executable
 from tvb.core.entities.storage import dao
-from tvb.datatypes.surfaces import EEG_CAP, FACE
+from tvb.datatypes.surfaces import SurfaceTypesEnum
 
 DATA_FILE_EEG_CAP = os.path.join(os.path.dirname(tvb_data.obj.__file__), "eeg_cap.obj")
 DATA_FILE_FACE = os.path.join(os.path.dirname(tvb_data.obj.__file__), "face_surface.obj")
@@ -64,10 +65,12 @@ def update():
                 user = dao.get_system_user()
                 adapter = ObjSurfaceImporter()
                 OperationService().fire_operation(adapter, user, project.id, visible=False,
-                                                  surface_type=EEG_CAP, data_file=DATA_FILE_EEG_CAP)
+                                                  surface_type=SurfaceTypesEnum.EEG_CAP_SURFACE.value,
+                                                  data_file=DATA_FILE_EEG_CAP)
                 adapter = ObjSurfaceImporter()
                 OperationService().fire_operation(adapter, user, project.id, visible=False,
-                                                  surface_type=FACE, data_file=DATA_FILE_FACE)
+                                                  surface_type=SurfaceTypesEnum.FACE_SURFACE.value,
+                                                  data_file=DATA_FILE_FACE)
             except Exception as excep:
                 LOGGER.exception(excep)
 

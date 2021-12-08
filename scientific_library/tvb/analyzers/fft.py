@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -37,6 +37,7 @@ Calculate an FFT on a TimeSeries DataType and return a FourierSpectrum DataType.
 
 import numpy
 import scipy.signal
+
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.info import narray_describe
 from tvb.datatypes.spectral import FourierSpectrum
@@ -50,6 +51,8 @@ SUPPORTED_WINDOWING_FUNCTIONS = {
     'blackman': numpy.blackman,
     'hanning': numpy.hanning
 }
+
+
 
 """
 A module for calculating the FFT of a TimeSeries object of TVB and returning
@@ -110,7 +113,7 @@ def compute_fast_fourier_transform(time_series, segment_length, window_function,
 
     # Apply windowing function
     if window_function is not None:
-        wf = SUPPORTED_WINDOWING_FUNCTIONS[window_function]
+        wf = SUPPORTED_WINDOWING_FUNCTIONS[window_function.value]
         window_mask = numpy.reshape(wf(int(seg_tpts)),
                                     (int(seg_tpts), 1, 1, 1, 1))
         ts = ts * window_mask

@@ -4,7 +4,7 @@
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
  *
- * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ * (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
  *
  * This program is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software Foundation,
@@ -53,7 +53,6 @@ function displayMessage(msg, className) {
             messageDivParent.removeClass('no-message');
             messageDivParent[0].className = 'generic-message ' + className;
         }
-        // else we are in the portlets
     }
 }
 
@@ -134,11 +133,19 @@ function fireOnClick(redirectElem) {
     }
 }
 
+// ---------- Function for rendering HTML elements with Mathjax
+function renderWithMathjax(element, elementToAppend, empty=false){
+    if(empty){
+        element.empty();
+    }
+    element.append(elementToAppend);
+    MathJax.Hub.Queue(["Typeset", MathJax.Hub, element.id]);
+}
 
 // ---------- Function on the top left call-out
 function updateCallOutProject() {
     doAjaxCall({
-        async: false,
+        async: true,
         type: 'GET',
         url: "/project/generate_call_out_control/",
         success: function (r) {
@@ -372,7 +379,7 @@ function settingsPageInitialize() {
 // ---------------------------------------------------------
 
 function viewProject(projectId, formId) {
-    document.getElementById(formId).action = "/project/editone/" + projectId;
+    document.getElementById(formId).action = deploy_context + "/project/editone/" + projectId;
     document.getElementById(formId).submit();
 }
 
@@ -383,12 +390,12 @@ function selectProject(projectId, formId) {
 }
 
 function exportProject(projectId) {
-    window.location = "/project/downloadproject/?project_id=" + projectId
+    window.location = deploy_context + "/project/downloadproject/?project_id=" + projectId
 }
 
 function removeProject(projectId, formId) {
     const form = document.getElementById(formId);
-    form.action = "/project/editone/" + projectId + "/?delete=Delete";
+    form.action = deploy_context + "/project/editone/" + projectId + "/?delete=Delete";
     form.submit();
 }
 
@@ -510,7 +517,7 @@ function overlayRemoveEntity(projectId, dataGid, backPage) {
  * Used from Operation-Overlay and View All Operations button/each row.
  */
 function reloadOperation(operationId, formId) {
-    document.getElementById(formId).action = "/flow/reloadoperation/" + operationId;
+    document.getElementById(formId).action = deploy_context + "/flow/reloadoperation/" + operationId;
     document.getElementById(formId).submit();
 }
 
@@ -520,7 +527,7 @@ function reloadOperation(operationId, formId) {
  * burst page with that given burst as the selected one.
  */
 function reloadBurstOperation(operationId, isGroup, formId) {
-    document.getElementById(formId).action = "/flow/reload_burst_operation/" + operationId + '/' + isGroup;
+    document.getElementById(formId).action = deploy_context + "/flow/reload_burst_operation/" + operationId + '/' + isGroup;
     document.getElementById(formId).submit();
 }
 
@@ -589,7 +596,7 @@ function setOperationRelevant(operationGID, isGroup, toBeRelevant, submitFormId)
 
 function cancelOrRemoveOperation(operationId, isGroup, removeAfter) {
 
-    let urlBase = "/flow/cancel_or_remove_operation/"+ operationId + '/' + isGroup;
+    let urlBase = "/flow/cancel_or_remove_operation/" + operationId + '/' + isGroup;
     if (removeAfter) {
         urlBase += '/True';
     }
@@ -671,7 +678,7 @@ function showOverlay(url, allowClose, message_data) {
     $.ajax({
         async: false,
         type: 'GET',
-        url: url,
+        url: deploy_context + url,
         dataType: 'html',
         cache: true,
         data: message_data,
@@ -796,8 +803,10 @@ function showQuestionOverlay(question, yesCallback, noCallback) {
         noCallback = 'closeOverlay()';
     }
     const url = "/project/show_confirmation_overlay";
-    const data = {'yes_action': yesCallback,
-                  'no_action': noCallback};
+    const data = {
+        'yes_action': yesCallback,
+        'no_action': noCallback
+    };
     if (question !== null) {
         data['question'] = question;
     }
@@ -903,7 +912,7 @@ function zoomInFigure(figure_id) {
 
 
 function displayFiguresForSession(selected_session) {
-    const actionUrl = "/project/figure/displayresultfigures/" + selected_session;
+    const actionUrl = deploy_context + "/project/figure/displayresultfigures/" + selected_session;
     const myForm = document.createElement("form");
     myForm.method = "POST";
     myForm.action = actionUrl;
@@ -969,7 +978,7 @@ function doAjaxCall(params) {
 
     // Do AJAX call
     $.ajax({
-        url: params.url,
+        url: deploy_context + params.url,
         type: params.type,
         async: params.async,
         success: [onSuccess, closeOverlay],
@@ -1109,7 +1118,7 @@ function HLPR_fetchNdArray(binary_url, onload, kwargs) {
 // -------------End Binary transport parsing ----------------------------------
 
 function checkArg(arg, def) {
-    return ( typeof arg === 'undefined' ? def : arg);
+    return (typeof arg === 'undefined' ? def : arg);
 }
 
 /**
@@ -1197,13 +1206,17 @@ function prepareUrlParam(paramName, paramValue) {
 }
 
 function refreshSubform(currentElem, elementType, subformDiv) {
-    let url = prepareRefreshSubformUrl(currentElem, elementType, subformDiv);
+    let url = prepareRefreshSubformUrl(currentElem, subformDiv);
+    if (url.startsWith('/')) {
+        url = deploy_context + url
+    }
+
     $.ajax({
         url: url,
         type: 'POST',
         success: function (r) {
-            $('#' + subformDiv).html(r);
-            MathJax.Hub.Queue(["Typeset", MathJax.Hub, subformDiv]);
+            const subform = $('#' + subformDiv);
+            renderWithMathjax(subform, r, true);
             setEventsOnFormFields(elementType, subformDiv);
             setupMenuEvents();
             plotEquation(subformDiv);

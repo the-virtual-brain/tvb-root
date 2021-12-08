@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -27,27 +27,24 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
+from datetime import datetime
 import importlib
-import os.path
 import typing
 import uuid
-from datetime import datetime
-
 import numpy
 import scipy.sparse
+
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits.api import Final
-from tvb.basic.neotraits.api import HasTraits, Attr, List, NArray, Range
+from tvb.basic.neotraits.api import HasTraits, TupleEnum, Attr, List, NArray, Range, EnumAttr, Final, TVBEnum
 from tvb.basic.neotraits.ex import TraitFinalAttributeError
-from tvb.core.entities.file.exceptions import MissingDataSetException
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.neotraits.h5 import EquationScalar, SparseMatrix, ReferenceList
-from tvb.core.neotraits.h5 import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json, JsonRange
+from tvb.core.neotraits.h5 import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json, JsonRange, Enum
 from tvb.core.neotraits.view_model import DataTypeGidAttr
-from tvb.core.utils import date2string, string2date
-from tvb.datatypes.equations import Equation
+from tvb.core.utils import string2date, date2string
+from tvb.datatypes.equations import Equation, EquationsEnum
+from tvb.storage.h5.file.exceptions import MissingDataSetException
+from tvb.storage.storage_interface import StorageInterface
 
 LOGGER = get_logger(__name__)
 
@@ -64,8 +61,7 @@ class H5File(object):
     def __init__(self, path):
         # type: (str) -> None
         self.path = path
-        storage_path, file_name = os.path.split(path)
-        self.storage_manager = HDF5StorageManager(storage_path, file_name)
+        self.storage_manager = StorageInterface.get_storage_manager(self.path)
         # would be nice to have an opened state for the chunked api instead of the close_file=False
 
         # common scalar headers
@@ -89,8 +85,10 @@ class H5File(object):
         self.parent_burst = Uuid(Attr(uuid.UUID, required=False), self, name='parent_burst')
         self.visible = Scalar(Attr(bool), self, name='visible')
         self.metadata_cache = None
+        # Keep a list with datasets for which we should write metadata before closing the file
+        self.expandable_datasets = []
 
-        if not self.storage_manager.is_valid_hdf5_file():
+        if not self.storage_manager.is_valid_tvb_file():
             self.written_by.store(self.get_class_path())
             self.is_new_file = True
 
@@ -122,6 +120,8 @@ class H5File(object):
         self.close()
 
     def close(self):
+        for dataset in self.expandable_datasets:
+            self.storage_manager.set_metadata(dataset.meta.to_dict(), dataset.field_name)
         self.storage_manager.close_file()
 
     def store(self, datatype, scalars_only=False, store_references=True):
@@ -255,20 +255,11 @@ class H5File(object):
 
     @staticmethod
     def get_metadata_param(path, param):
-        base_dir, fname = os.path.split(path)
-        storage_manager = HDF5StorageManager(base_dir, fname)
-        meta = storage_manager.get_metadata()
+        meta = StorageInterface.get_storage_manager(path).get_metadata()
         return meta.get(param)
 
     def store_metadata_param(self, key, value):
         self.storage_manager.set_metadata({key: value})
-
-    @staticmethod
-    def remove_metadata_param(file_path, param, dataset_name='', where=HDF5StorageManager.ROOT_NODE_PATH):
-        base_dir, fname = os.path.split(file_path)
-        storage_manager = HDF5StorageManager(base_dir, fname)
-        if param in storage_manager.get_metadata(dataset_name=dataset_name, where=where):
-            storage_manager.remove_metadata(param, dataset_name=dataset_name, where=where)
 
     @staticmethod
     def h5_class_from_file(path):
@@ -322,14 +313,21 @@ class ViewModelH5(H5File):
                     continue
                 elif attr.field_type is uuid.UUID:
                     ref = Uuid(attr, self)
-                elif issubclass(attr.field_type, Equation):
+                elif issubclass(attr.field_type, (Equation, EquationsEnum)):
                     ref = EquationScalar(attr, self)
                 elif attr.field_type is Range:
                     ref = JsonRange(attr, self)
-                elif isinstance(attr, Final) and attr.field_type == dict:
-                    ref = JsonFinal(attr, self)
-                elif issubclass(attr.field_type, HasTraits):
+                elif isinstance(attr, Final):
+                    if attr.field_type == dict:
+                        ref = JsonFinal(attr, self)
+                    elif attr.field_type == list:
+                        ref = Json(attr, self)
+                    else:
+                        ref = Scalar(attr, self)
+                elif issubclass(attr.field_type, (HasTraits, TupleEnum)):
                     ref = Reference(attr, self)
+                elif issubclass(attr.field_type, TVBEnum):
+                    ref = Enum(attr, self)
                 else:
                     ref = Scalar(attr, self)
             else:

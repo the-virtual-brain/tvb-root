@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -169,7 +169,6 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
         conditions when the simulation isn't started from an explicit history,
         it is also provides the default range of phase-plane plots.""")
 
-
     variables_of_interest = List(
         of=str,
         label="Variables watched by Monitors",
@@ -253,7 +252,6 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
         Include equations here...
 
         """
-
         newaxis = numpy.newaxis
         trapz = scipy_integrate_trapz
 

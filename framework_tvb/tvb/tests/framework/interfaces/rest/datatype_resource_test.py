@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Scientific Package. This package holds all simulators, and
-# analysers necessary to run brain-simulations. You can use it stand alone or
-# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
+# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -29,10 +29,12 @@
 #
 
 import os
+
+import flask
 import pytest
 import tvb_data
+
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.utils import no_matlab
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.resources.datatype.datatype_resource import RetrieveDatatypeResource, \
@@ -71,6 +73,11 @@ class TestDatatypeResource(RestResourceTest):
 
         # Mock flask.send_file to behave like send_file_dummy
         mocker.patch('flask.send_file', send_file_dummy)
+
+        # Mock flask.request.files
+        request_mock = mocker.patch.object(flask, 'request', spec={})
+        request_mock.files = {}
+
         result = self.retrieve_resource.get(datatype_gid=datatypes_in_project[0].gid)
 
         assert type(result) is tuple
@@ -91,6 +98,3 @@ class TestDatatypeResource(RestResourceTest):
         result = self.get_operations_resource.get(datatype_gid=datatypes_in_project[0].gid)
         assert type(result) is list
         assert len(result) > 3
-
-    def transactional_teardown_method(self):
-        FilesHelper().remove_project_structure(self.test_project.name)

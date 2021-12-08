@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -33,27 +33,22 @@
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
 
-from tvb.adapters.uploaders.gifti.parser import GIFTIParser, OPTION_READ_METADATA
+from tvb.adapters.uploaders.gifti.parser import GIFTIParser
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits.api import Attr
+from tvb.basic.neotraits.api import Attr, EnumAttr
 from tvb.core.adapters.exceptions import LaunchException, ParseException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
-from tvb.adapters.datatypes.db.surface import SurfaceIndex, ALL_SURFACES_SELECTION
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.neotraits.forms import SelectField, TraitUploadField, BoolField
-from tvb.core.neocom import h5
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str
+from tvb.datatypes.surfaces import SurfaceTypesEnum
 
 
 class GIFTISurfaceImporterModel(UploaderViewModel):
-    KEY_OPTION_READ_METADATA = 'Specified in the file metadata'
-    surface_types = ALL_SURFACES_SELECTION.copy()
-    surface_types[KEY_OPTION_READ_METADATA] = OPTION_READ_METADATA
-
-    file_type = Str(
+    file_type = EnumAttr(
         label='Specify file type : ',
-        choices=tuple(surface_types.values()),
-        default=tuple(surface_types.values())[0]
+        default=SurfaceTypesEnum.CORTICAL_SURFACE
     )
 
     data_file = Str(
@@ -78,8 +73,7 @@ class GIFTISurfaceImporterForm(ABCUploaderForm):
     def __init__(self):
         super(GIFTISurfaceImporterForm, self).__init__()
 
-        self.file_type = SelectField(GIFTISurfaceImporterModel.file_type, name='file_type',
-                                     choices=GIFTISurfaceImporterModel.surface_types)
+        self.file_type = SelectField(GIFTISurfaceImporterModel.file_type, name='file_type')
         self.data_file = TraitUploadField(GIFTISurfaceImporterModel.data_file, '.gii', 'data_file')
         self.data_file_part2 = TraitUploadField(GIFTISurfaceImporterModel.data_file_part2, '.gii', 'data_file_part2')
         self.should_center = BoolField(GIFTISurfaceImporterModel.should_center, name='should_center')
@@ -116,7 +110,7 @@ class GIFTISurfaceImporter(ABCUploader):
         """
         Execute import operations:
         """
-        parser = GIFTIParser(self.storage_path, self.operation_id)
+        parser = GIFTIParser(self.operation_id)
         try:
             surface = parser.parse(view_model.data_file, view_model.data_file_part2, view_model.file_type,
                                    should_center=view_model.should_center)
@@ -126,7 +120,7 @@ class GIFTISurfaceImporter(ABCUploader):
 
             if validation_result.warnings:
                 self.add_operation_additional_info(validation_result.summary())
-            surface_idx = h5.store_complete(surface, self.storage_path)
+            surface_idx = self.store_complete(surface)
             return [surface_idx]
         except ParseException as excep:
             logger = get_logger(__name__)

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -43,7 +43,6 @@ from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql import text
 from sqlalchemy.sql.expression import desc, cast
 from sqlalchemy.types import Text
-from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_operation import Operation, AlgorithmCategory, Algorithm, OperationGroup
 from tvb.core.entities.storage.root_dao import RootDAO, DEFAULT_PAGE_SIZE
@@ -64,7 +63,6 @@ class DatatypeDAO(RootDAO):
                                           ).filter(OperationGroup.fk_launched_in == project_id).order_by(DataTypeGroup.id)
         return query.all()
 
-
     def get_datatypegroup_by_op_group_id(self, operation_group_id):
         """
         Returns the DataTypeGroup corresponding to a certain OperationGroup.
@@ -72,9 +70,11 @@ class DatatypeDAO(RootDAO):
         try:
             result = self.session.query(DataTypeGroup).filter_by(fk_operation_group=operation_group_id).one()
             return result
+        except NoResultFound:
+            self.logger.debug("No operation group was found for operation group id = {}".format(operation_group_id))
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
-            return None
+        return None
 
     def get_datatype_group_by_gid(self, datatype_group_gid):
         """
@@ -563,6 +563,25 @@ class DatatypeDAO(RootDAO):
             self.logger.exception(ex)
             hdd_size = 0
         return hdd_size
+
+    def get_datatype_measure_group_from_ts_from_pse(self, ts_gid, datatype_measure_class):
+        """
+        Having a Time Series that was part of a pse, this method should return the datatype group of a datatype measure
+        that was part of the same pse
+        """
+        try:
+            datatype_measures = self.session.query(datatype_measure_class).filter_by(fk_source_gid=ts_gid).all()
+            datatype_group = None
+            for dt_measure in datatype_measures:
+                if dt_measure.fk_datatype_group is not None:
+                    datatype_group = self.get_datatypegroup_by_op_group_id(
+                        dt_measure.parent_operation.fk_operation_group)
+                    break
+
+        except SQLAlchemyError as ex:
+            self.logger.exception(ex)
+            datatype_group = None
+        return datatype_group
 
 
     ##########################################################################

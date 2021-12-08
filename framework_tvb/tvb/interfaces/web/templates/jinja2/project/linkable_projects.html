@@ -25,7 +25,7 @@
                     {% for prj in projectsforlink %}
                         <li>
                             <button class="action action-link"
-                                    onclick="createLink('{{ datatype_id }}', '{{ prj }}' , '{{ isGroup }}');
+                                    onclick="createLink('{{ datatype_id }}', '{{ prj }}');
                                             updateLinkableProjects('{{ datatype_id }}', '{{ isGroup }}', '{{ entity_gid }}');">
                                 Link into project: "{{ projectsforlink[prj] }}"
                             </button>

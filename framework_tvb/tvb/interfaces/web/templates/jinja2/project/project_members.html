@@ -4,7 +4,7 @@
                {{ ("checked='checked'") | safe if user.id in usersMembers }}
                {{ ("disabled='disabled'") | safe if not editUsersEnabled  }} />
         {{ user.display_name }}
-        <img src="/static/style/img/role/{{ user.role | lower }}.png" alt="{{ user.role }}" class="userRole"/>
+        <img src="{{ deploy_context | safe }}/static/style/img/role/{{ user.role | lower }}.png" alt="{{ user.role }}" class="userRole"/>
         <br/>
     </span>
 {% endfor %}

@@ -1,10 +1,10 @@
 /**
- * TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+ * TheVirtualBrain-Framework Package. This package holds all Data Management, and
  * Web-UI helpful to run brain-simulations. To use it, you also need do download
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
  *
- * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ * (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
  *
  * This program is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software Foundation,
@@ -32,7 +32,7 @@
 /* !-------------------------------------------- */
 
 /* :not is only needed to raise specificity here */
-#main:not(.portlet-frame) {
+#main{
 right: 15px;
 }
 
@@ -46,12 +46,12 @@ margin-right: 1%;
 width: 43%;
 }
 
-/* Special rule as the PSE column gets injected dynamically BEFORE the usual portlet column which receives :last-child */
+/* Special rule as the PSE column gets injected dynamically  */
 #main.colscheme-3-1st-narrow .view-column.parameter-space-exploration {
 margin-right: 0;
 }
 
-/* --- Maximizing the Portlet/PSE column */
+/* --- Maximizing the PSE column */
 #s-burst #main.is-maximized .view-column.edit-simulator {
 display: none;
 }
@@ -315,234 +315,6 @@ width: 100%;
 }
 
 /* !-------------------------------------------- */
-/* !COMPONENT: Portlet viewers */
-/* !-------------------------------------------- */
-
-.view-portlets .flex-wrapper {
-display: -webkit-box;
-height: 100%;
-width: 100%; /* not really needed, maybe just to be safe for the epic maximizer function */
--webkit-box-orient: vertical;
--webkit-box-pack: justify;
-}
-
-.view-portlets .flex-wrapper h4 {
--webkit-box-flex: 0;
-}
-
-.view-portlets .flex-wrapper .toolbar-inline {
--webkit-box-flex: 0;
-}
-
-.view-portlets .flex-wrapper .portlet-container {
--webkit-box-flex: 1;
-}
-
-/* Move the Burst results tab to the right */
-.view-portlets .tabswitcher li:last-child {
-float: right;
-left: -10px;
-}
-
-.view-portlets .portlet {
-border: 2px solid rgba(0, 0, 0, 0.2);
-float: left;
-min-height: 300px;
-overflow: hidden;
-position: relative;
--webkit-box-sizing: border-box;
--moz-box-sizing: border-box;
-}
-
-#main .view-portlets .portlet h5,
-#main .view-portlets .portlet .action {
-font-size: 12px;
-position: absolute;
--webkit-box-sizing: border-box;
--moz-box-sizing: border-box;
-}
-
-.view-portlets .portlet h5 {
-background: rgba(250, 247, 228, 0.5);
-min-height: 32px;
-padding: 2px 45px 2px 8px;
-right: 0;
-top: 0;
-width: 100%;
-}
-
-/* Special action button case: Only icon, no text */
-.view-portlets .portlet .action {
-bottom: auto;
-right: 1px;
-text-indent: -1000em;
-top: 2px;
-width: 20px;
-}
-
-/* 1 portlet */
-.view-portlets .portlet-container.visible-1 .portlet {
-height: 100%;
-width: 100%;
-}
-
-/* 1 portlet on top, 1 on bottom */
-.view-portlets .portlet-container.visible-1-1 .portlet {
-height: 50%;
-width: 100%;
-}
-
-/* 1 portlet on top, 2 on bottom */
-.view-portlets .portlet-container.visible-1-2 .portlet {
-height: 50%;
-width: 50%;
-}
-
-.view-portlets .portlet-container.visible-1-2 .portlet-0 {
-width: 100%;
-}
-
-/* 2 portlets on top, 1 on bottom */
-.view-portlets .portlet-container.visible-2-1 .portlet {
-height: 50%;
-width: 50%;
-}
-
-.view-portlets .portlet-container.visible-2-1 .portlet-2 {
-width: 100%;
-}
-
-/* 2 portlet on top, 2 on bottom */
-.view-portlets .portlet-container.visible-2-2 .portlet {
-height: 50%;
-width: 50%;
-}
-
-/* --- Portlet mode: Setting up portlet types */
-.view-portlets .portlet-container.portlet-edit .portlet {
-border-color: transparent;
--webkit-box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.4), inset -1px -1px 1px rgba(250, 247, 228, 0.4);
--moz-box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.4), inset -1px -1px 1px rgba(250, 247, 228, 0.4);
-box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.4), inset -1px -1px 1px rgba(250, 247, 228, 0.4);
-}
-
-.view-portlets .portlet-container.portlet-edit .portlet dt, 
-.view-portlets .portlet-container.portlet-edit .portlet dd {
-border: none;
-float: none;
-margin-bottom: 0;
-padding: 10px 0 5px 0;
-width: 100%;
-}
-
-.view-portlets .portlet-container.portlet-edit .portlet dd {
-padding-top: 0;
-}
-
-/* --- Portlet mode: Preview */
-.view-portlets .portlet-container.portlet-preview .portlet {
-background-position: center 0, center center;
-background-repeat: no-repeat, no-repeat;
-background-size: 100%, contain;
-}
-
-.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-brainv {
-background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/brainv.png");
-background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/brainv.png");
-}
-.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-ccwd {
-background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/ccwd.png");
-background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/ccwd.png");
-}
-.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-nbcb {
-background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/nbcb.png");
-background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/nbcb.png");
-}
-.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-isos {
-background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/isos.png");
-background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/isos.png");
-}
-.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-connectivity2d {
-background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/connectivity2d.png");
-background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/connectivity2d.png");
-}
-.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-cov {
-background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/cov.png");
-background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/cov.png");
-}
-.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-eeglinesv {
-background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/eeglinesv.png");
-background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/eeglinesv.png");
-}
-.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-fourier {
-background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/fourie.png");
-background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/fourie.png");
-}
-.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-imcoherence {
-background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/imcoherence.png");
-background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/imcoherence.png");
-}
-.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-isostopo {
-background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/isostopo.png");
-background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/isostopo.png");
-}
-.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-ica {
-background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/ica.png");
-background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/ica.png");
-}
-.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-pca {
-background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/pca.png");
-background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/pca.png");
-}
-.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-stw {
-background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/stw.png");
-background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/stw.png");
-}
-.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-timeseries {
-background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/timeseries.png");
-background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/timeseries.png");
-}
-.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-wavelet {
-background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/wavelet.png");
-background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/wavelet.png");
-}
-.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-xcoher {
-background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/xcoher.png");
-background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/xcoher.png");
-}
-.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-xcorr {
-background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/xcorr.png");
-background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/xcorr.png");
-}
-.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-xpcc {
-background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/xpcc.png");
-background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/xpcc.png");
-}
-
-/* --- Portlet mode: Configuring a single portlet's parameters */
-/* This mode is triggered by .portlet-container.portlet-configure */
-/* not much to style yet: Just use a <h5> for the portlet's type and a standard <fieldset> list for its fields */
-
-/* --- Portlet mode: Running */
-.view-portlets .portlet-container.portlet-run .portlet h5 {
-padding-right: 100px;
-}
-
-.view-portlets .portlet-container.portlet-run .portlet .action-view {
-right: 45px;
-}
-
-.view-portlets .portlet-container.portlet-run .portlet .specialviewer {
-background: #ccc; /* THIS IS FOR DEMO PURPOSES ONLY !!!*/
-height: 100%; /* no idea why this doesn't work out yet */
-padding-top: 38px;
-width: 100%;
--webkit-box-sizing: border-box;
--moz-box-sizing: border-box;
-}
-
-
-/* !-------------------------------------------- */
 /* !COMPONENT: Parameter Space Exploration */
 /* !-------------------------------------------- */
 
@@ -618,25 +390,6 @@ iframe{
 .right-display {
 	float: right;
 	padding-right: 30px;
-}
-
-/* Portlets toolbar shows/hides buttons based on current state:*/
-ul#portlets-toolbar li a.hideable.action {
-	display: none;
-}
-
-#portlets-toolbar.select-portlets-toolbar a#save-configure-tabs-button,
-#portlets-toolbar.select-portlets-toolbar a#cancel-configure-tabs-button {
-	display: inline-block;
-}
-
-#portlets-toolbar.parameters-portlets-toolbar a#save-portlet-params-button,
-#portlets-toolbar.parameters-portlets-toolbar a#cancel-configure-portlet-params-button {
-	display: inline-block;
-}
-
-#portlets-toolbar.standard-portlets-toolbar a#configure-tabs-button {
-	display: inline-block;
 }
 
 /* PSE Message Incompatible */

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,6 +35,7 @@
 
 import json
 from tvb.basic.config.utils import EnhancedDictionary
+from tvb.basic.profile import TvbProfile
 
 
 class StructureNode:
@@ -165,12 +166,12 @@ class StructureNode:
         json_children = StructureNode.__convert2json(forest, project_id)
         if len(json_children) > 0:
             result = '{data: [{ data: {title: "' + project_name + '"'
-            result += ',icon: "/static/style/nodes/nodeRoot.png"},'
+            result += f',icon: "{TvbProfile.current.web.DEPLOY_CONTEXT}/static/style/nodes/nodeRoot.png"}},'
             result += 'state:"open", attr:{id:"' + StructureNode.PREFIX_ID_PROJECT
             result += '"}, children: [' + json_children + '] } ] }'
         else:
             result = '{data: [{ data: {title: "' + project_name + '"'
-            result += ',icon: "/static/style/nodes/nodeRoot.png"}'
+            result += f',icon: "{TvbProfile.current.web.DEPLOY_CONTEXT}/static/style/nodes/nodeRoot.png"}}'
             result += ',attr:{id:"' + StructureNode.PREFIX_ID_PROJECT + '"}}]}'
 
         return result
@@ -201,7 +202,7 @@ class StructureNode:
         place_comma = False
         for node in nodes_list:
             json_node = '{data: {title:"' + (node.name if len(node.name) < 100 else node.name[:95] + "...")
-            json_node += '",icon: "/static/style/nodes/node'
+            json_node += '",icon: "{}/static/style/nodes/node'.format(TvbProfile.current.web.DEPLOY_CONTEXT)
             if node.is_group:
                 json_node += 'Group.png"},'
             else:
@@ -236,46 +237,12 @@ class StructureNode:
         return result
 
 
-class GenericMetaData(EnhancedDictionary):
-    """
-    Wrap a dictionary of meta-data for generic entities 
-    - Operations, Project, or DataType.
-    """
-    KEY_GID = "Gid"
-    KEY_FILENAME = "file_name"
-
-    def __init__(self, data=None):
-        """
-        :param data: The actual dictionary to be wrapped by current entity.
-        """
-        super(GenericMetaData, self).__init__()
-        if data is not None:
-            self.update(data)
-
-    @property
-    def gid(self):
-        """
-        :returns: current Global Identifier or None.
-        """
-        if self.KEY_GID in list(self):
-            return self[self.KEY_GID]
-        return None
-
-    @property
-    def file_name(self):
-        """
-        :returns: name of the file where to store current data, or None.
-        """
-        if self.KEY_FILENAME in list(self):
-            return self[self.KEY_FILENAME]
-        return None
-
-
-class DataTypeMetaData(GenericMetaData):
+class DataTypeMetaData(dict):
     """
     This object will be populated from meta-data stored on a particular DataType/Operation.
     It should contain enough information, to restore a DataType entity, without DB previous data required.
     """
+    KEY_GID = "Gid"
     KEY_STATE = "Data_State"
     STATES = {'RAW_DATA': 'Raw Data',
               'INTERMEDIATE': 'Intermediate',
@@ -313,8 +280,19 @@ class DataTypeMetaData(GenericMetaData):
     KEY_FK_OPERATION_GROUP = 'fk_operation_group'
 
     def __init__(self, data=None, invalid=False):
-        GenericMetaData.__init__(self, data)
         self.invalid = invalid
+
+        if data is not None:
+            self.update(data)
+
+    @property
+    def gid(self):
+        """
+        :returns: current Global Identifier or None.
+        """
+        if self.KEY_GID in list(self):
+            return self[self.KEY_GID]
+        return None
 
     @property
     def subject(self):
@@ -344,7 +322,7 @@ class DataTypeMetaData(GenericMetaData):
         return None
 
     def mark_invalid(self):
-        """ 
+        """
         Mark current meta-data as invalid.
         e.g. Because of a missing associated file.
         """
@@ -365,8 +343,8 @@ class DataTypeMetaData(GenericMetaData):
     def get_filterable_meta(cls):
         """
         Contains all the attributes by which the user can structure the tree of DataTypes.
-    
-        All the returned attributes should exists into the 'data' field of its 
+
+        All the returned attributes should exists into the 'data' field of its
         corresponding DataTypeMetaData object.
         """
         return [

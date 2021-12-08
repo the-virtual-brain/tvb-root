@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -47,11 +47,11 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex, RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.adapters.simulator.coupling_forms import get_ui_name_to_coupling_dict
+from tvb.adapters.simulator.coupling_forms import CouplingFunctionsEnum
 from tvb.adapters.simulator.model_forms import get_model_to_form_dict
 from tvb.adapters.simulator.monitor_forms import get_monitor_to_form_dict
 from tvb.adapters.simulator.simulator_fragments import *
-from tvb.basic.neotraits.api import Attr
+from tvb.basic.neotraits.api import EnumAttr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException, InvalidParameterException
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
@@ -59,7 +59,6 @@ from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import FloatField, SelectField
-from tvb.simulator.coupling import Coupling
 from tvb.simulator.simulator import Simulator
 
 
@@ -67,14 +66,13 @@ class SimulatorAdapterForm(ABCAdapterForm):
 
     def __init__(self):
         super(SimulatorAdapterForm, self).__init__()
-        self.coupling_choices = get_ui_name_to_coupling_dict()
-        default_coupling = list(self.coupling_choices.values())[0]
+        default_coupling = CouplingFunctionsEnum.LINEAR
 
         self.connectivity = TraitDataTypeSelectField(SimulatorAdapterModel.connectivity, name=self.get_input_name(),
                                                      conditions=self.get_filters())
         self.coupling = SelectField(
-            Attr(Coupling, default=default_coupling, label="Coupling", doc=Simulator.coupling.doc), name='coupling',
-            choices=self.coupling_choices)
+            EnumAttr(default=default_coupling, label="Coupling", doc=Simulator.coupling.doc), name='coupling')
+
         self.conduction_speed = FloatField(Simulator.conduction_speed)
         self.ordered_fields = (self.connectivity, self.conduction_speed, self.coupling)
         self.range_params = [Simulator.connectivity, Simulator.conduction_speed]
@@ -90,8 +88,8 @@ class SimulatorAdapterForm(ABCAdapterForm):
         datatype.connectivity = self.connectivity.value
         datatype.conduction_speed = self.conduction_speed.value
         coupling = self.coupling.value
-        if type(datatype.coupling) != coupling:
-            datatype.coupling = coupling()
+        if type(datatype.coupling) != coupling.value:
+            datatype.coupling = coupling.instance
 
     @staticmethod
     def get_view_model():
@@ -121,10 +119,6 @@ class SimulatorAdapter(ABCAdapter):
 
     algorithm = None
     branch_simulation_state_gid = None
-
-    # This is a list with the monitors that actually return multi dimensions for the state variable dimension.
-    # We exclude from this for example EEG, MEG or Bold which return 
-    HAVE_STATE_VARIABLES = ["GlobalAverage", "SpatialAverage", "Raw", "SubSample", "TemporalAverage"]
 
     def __init__(self):
         super(SimulatorAdapter, self).__init__()
@@ -289,14 +283,14 @@ class SimulatorAdapter(ABCAdapter):
             ts_index.data_ndim = 4
             ts_index.state = 'INTERMEDIATE'
 
-            state_variable_dimension_name = ts.labels_ordering[1]
-            if m_name in self.HAVE_STATE_VARIABLES:
+            if monitor.voi is not None:
+                state_variable_dimension_name = ts.labels_ordering[1]
                 selected_vois = [self.algorithm.model.variables_of_interest[idx] for idx in monitor.voi]
                 ts.labels_dimensions[state_variable_dimension_name] = selected_vois
                 ts_index.labels_dimensions = json.dumps(ts.labels_dimensions)
 
             ts_h5_class = h5.REGISTRY.get_h5file_for_datatype(type(ts))
-            ts_h5_path = h5.path_for(self._get_output_path(), ts_h5_class, ts.gid)
+            ts_h5_path = h5.path_by_dir(self._get_output_path(), ts_h5_class, ts.gid)
             self.log.info("Generating Timeseries at: {}".format(ts_h5_path))
             ts_h5 = ts_h5_class(ts_h5_path)
             ts_h5.store(ts, scalars_only=True, store_references=False)
@@ -326,7 +320,8 @@ class SimulatorAdapter(ABCAdapter):
             simulation_history = SimulationHistory()
             simulation_history.populate_from(self.algorithm)
             self.generic_attributes.visible = False
-            history_index = h5.store_complete(simulation_history, self._get_output_path(), self.generic_attributes)
+            history_index = h5.store_complete_to_dir(simulation_history, self._get_output_path(),
+                                                     self.generic_attributes)
             self.generic_attributes.visible = True
             history_index.fixed_generic_attributes = True
             results.append(history_index)
@@ -340,3 +335,6 @@ class SimulatorAdapter(ABCAdapter):
         self.log.debug("%s: Adapter simulation finished!!" % str(self))
         results.extend(result_indexes.values())
         return results
+
+    def _get_output_path(self):
+        return self.get_storage_path()

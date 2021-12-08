@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -45,10 +45,12 @@ Usage::
 #TODO: In syntax it is corrected to match the neo-traits. It still requires to be checked
 
 import numpy
+
 import matplotlib.pyplot as pyplot
 from tvb.basic.neotraits.api import HasTraits, NArray, Int
 import tvb.simulator.models as models
 import tvb.simulator.integrators as integrators
+from tvb.simulator.models.models_enum import ModelsEnum
 
 # NOTE: png files are ~5-10 times smaller than svg, but lower quality on zoom.
 IMG_SUFFIX = ".svg"  # ".png"
@@ -232,7 +234,7 @@ def test_factory(model_class, **kwargs):
 if __name__ == '__main__':
     # Do some stuff that tests or makes use of this module... 
     print("Generating phase-plane images for tvb.simulator.models...")
-    AVAILABLE_MODELS = models.ModelsEnum.get_base_model_subclasses()
+    AVAILABLE_MODELS = ModelsEnum.get_base_model_subclasses()
 
     for model_class in AVAILABLE_MODELS:
         print("Generating phase-planes for %s" % model_class.__name__)

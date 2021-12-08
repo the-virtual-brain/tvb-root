@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -59,9 +59,9 @@ class SpatioTemporalController(BaseController):
         BaseController.__init__(self)
         self.operation_service = OperationService()
         self.logger = get_logger(__name__)
-        editable_entities = [dict(link='/spatial/stimulus/region/step_1_submit/1/1', title='Region Stimulus',
+        editable_entities = [dict(link=self.build_path('/spatial/stimulus/region/step_1_submit/1/1'), title='Region Stimulus',
                                   subsection='regionstim', description='Create a new Stimulus on Region level'),
-                             dict(link='/spatial/stimulus/surface/step_1_submit/1/1', title='Surface Stimulus',
+                             dict(link=self.build_path('/spatial/stimulus/surface/step_1_submit/1/1'), title='Surface Stimulus',
                                   subsection='surfacestim', description='Create a new Stimulus on Surface level')]
         self.submenu_list = editable_entities
 

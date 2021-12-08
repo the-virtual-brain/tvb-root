@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -39,12 +39,12 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField, SelectField, TraitDataTypeSelectField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
+from tvb.basic.neotraits.api import TVBEnum, EnumAttr
 
 
 class CSVConnectivityParser(object):
@@ -111,7 +111,12 @@ class CSVConnectivityParser(object):
             self.result_conn[self.permutation[row_idx]] = new_row
 
 
-DELIMITER_OPTIONS = {'comma': ',', 'semicolon': ';', 'tab': '\t', 'space': ' ', 'colon': ':'}
+class CSVDelimiterOptionsEnum(TVBEnum):
+    COMMA = ','
+    SEMICOLON = ';'
+    tab = '\t'
+    SPACE = ' '
+    COLON = ':'
 
 
 class CSVConnectivityImporterModel(UploaderViewModel):
@@ -119,9 +124,8 @@ class CSVConnectivityImporterModel(UploaderViewModel):
         label='Weights file (csv)'
     )
 
-    weights_delimiter = Str(
-        choices=tuple(DELIMITER_OPTIONS.values()),
-        default=tuple(DELIMITER_OPTIONS.values())[0],
+    weights_delimiter = EnumAttr(
+        default=CSVDelimiterOptionsEnum.COMMA,
         label='Field delimiter : '
     )
 
@@ -129,9 +133,8 @@ class CSVConnectivityImporterModel(UploaderViewModel):
         label='Tracts file (csv)'
     )
 
-    tracts_delimiter = Str(
-        choices=tuple(DELIMITER_OPTIONS.values()),
-        default=tuple(DELIMITER_OPTIONS.values())[0],
+    tracts_delimiter = EnumAttr(
+        default=CSVDelimiterOptionsEnum.COMMA,
         label='Field delimiter : '
     )
 
@@ -147,11 +150,9 @@ class CSVConnectivityImporterForm(ABCUploaderForm):
         super(CSVConnectivityImporterForm, self).__init__()
 
         self.weights = TraitUploadField(CSVConnectivityImporterModel.weights, '.csv', 'weights')
-        self.weights_delimiter = SelectField(CSVConnectivityImporterModel.weights_delimiter, name='weights_delimiter',
-                                             choices=DELIMITER_OPTIONS)
+        self.weights_delimiter = SelectField(CSVConnectivityImporterModel.weights_delimiter, name='weights_delimiter')
         self.tracts = TraitUploadField(CSVConnectivityImporterModel.tracts, ['.csv'], 'tracts')
-        self.tracts_delimiter = SelectField(CSVConnectivityImporterModel.tracts_delimiter, name='tracts_delimiter',
-                                            choices=DELIMITER_OPTIONS)
+        self.tracts_delimiter = SelectField(CSVConnectivityImporterModel.tracts_delimiter, name='tracts_delimiter')
         self.input_data = TraitDataTypeSelectField(CSVConnectivityImporterModel.input_data, 'input_data')
 
     @staticmethod
@@ -206,7 +207,7 @@ class CSVConnectivityImporter(ABCUploader):
         """
         weights_matrix = self._read_csv_file(view_model.weights, view_model.weights_delimiter)
         tract_matrix = self._read_csv_file(view_model.tracts, view_model.tracts_delimiter)
-        FilesHelper.remove_files([view_model.weights, view_model.tracts])
+        self.storage_interface.remove_files([view_model.weights, view_model.tracts])
         conn_index = self.load_entity_by_gid(view_model.input_data)
         if weights_matrix.shape[0] != conn_index.number_of_regions:
             raise LaunchException("The csv files define %s nodes but the connectivity you selected as reference "
@@ -225,4 +226,4 @@ class CSVConnectivityImporter(ABCUploader):
         result.hemispheres = input_connectivity.hemispheres
         result.configure()
 
-        return h5.store_complete(result, self.storage_path)
+        return self.store_complete(result)

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -37,14 +37,15 @@ Upgrade script from H5 version 3 to version 4 (for tvb release 1.4.1)
 
 import os
 import json
+
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.exceptions import IncompatibleFileManagerException
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.import_service import ImportService
-from tvb.datatypes.projections import ProjectionsType
+from tvb.datatypes.projections import ProjectionsTypeEnum
+from tvb.storage.h5.file.exceptions import IncompatibleFileManagerException
+from tvb.storage.storage_interface import StorageInterface
 
 LOGGER = get_logger(__name__)
 FIELD_PROJECTION_TYPE = "Projection_type"
@@ -62,7 +63,7 @@ def update(input_file, burst_match_dict=None):
                                                "valid file on the disk." % input_file)
 
     folder, file_name = os.path.split(input_file)
-    storage_manager = HDF5StorageManager(folder, file_name)
+    storage_manager = StorageInterface.get_storage_manager(input_file)
 
     root_metadata = storage_manager.get_metadata()
     if DataTypeMetaData.KEY_CLASS_NAME not in root_metadata:
@@ -74,11 +75,11 @@ def update(input_file, burst_match_dict=None):
     if "ProjectionSurface" in class_name and FIELD_PROJECTION_TYPE not in root_metadata:
         LOGGER.info("Updating ProjectionSurface %s from %s" % (file_name, folder))
 
-        projection_type = ProjectionsType.EEG.value
+        projection_type = ProjectionsTypeEnum.EEG.value
         if "SEEG" in class_name:
-            projection_type = ProjectionsType.SEEG.value
+            projection_type = ProjectionsTypeEnum.SEEG.value
         elif "MEG" in class_name:
-            projection_type = ProjectionsType.MEG.value
+            projection_type = ProjectionsTypeEnum.MEG.value
 
         root_metadata[FIELD_PROJECTION_TYPE] = json.dumps(projection_type)
         LOGGER.debug("Setting %s = %s" % (FIELD_PROJECTION_TYPE, projection_type))

@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,12 +35,14 @@ import collections.abc
 import numpy
 import types
 import typing
+from enum import Enum
+
 from ._declarative_base import _Attr, MetaType
 from .ex import TraitValueError, TraitTypeError, TraitAttributeError, TraitFinalAttributeError
 from tvb.basic.logger.builder import get_logger
 
 if typing.TYPE_CHECKING:
-    from ._core import HasTraits
+    from ._core import HasTraits, TupleEnum
 
 # a logger for the whole traits system
 log = get_logger('tvb.traits')
@@ -82,7 +84,6 @@ class Attr(_Attr):
         self.final = bool(final)
         self.choices = choices
 
-
     def __validate(self, value):
         """ check field_type and choices """
         if not isinstance(value, self.field_type):
@@ -121,7 +122,6 @@ class Attr(_Attr):
         # we do not check here if we have a value for a required field
         # it is too early for that, owner.__init__ has not run yet
 
-
     def _validate_set(self, instance, value):
         # type: ('HasTraits', typing.Any) -> typing.Any
         """
@@ -140,9 +140,7 @@ class Attr(_Attr):
         self.__validate(value)
         return value
 
-
     # descriptor protocol
-
     def __get__(self, instance, owner):
         # type: (typing.Optional['HasTraits'], 'MetaType') -> typing.Any
         self._assert_have_field_name()
@@ -170,7 +168,6 @@ class Attr(_Attr):
                                       'Use a default or assign a value before reading it', attr=self)
         return value
 
-
     def __set__(self, instance, value):
         # type: ('HasTraits', typing.Any) -> None
         self._assert_have_field_name()
@@ -189,7 +186,6 @@ class Attr(_Attr):
 
         instance.__dict__[self.field_name] = value
 
-
     def _defined_on_str_helper(self):
         if self.owner is not None:
             return '{}.{}.{} = {}'.format(
@@ -205,7 +201,6 @@ class Attr(_Attr):
         return '{}(field_type={}, default={!r}, required={})'.format(
             self._defined_on_str_helper(), self.field_type, self.default, self.required
         )
-
 
 
 class Final(Attr):
@@ -254,7 +249,6 @@ class List(Attr):
         self.element_type = of
         self.element_choices = choices
 
-
     def __validate_elements(self, value):
         """ check that all elements are of the declared type and one of the declared choices """
         for i, el in enumerate(value):
@@ -269,12 +263,10 @@ class List(Attr):
                         attr=self
                     )
 
-
     def _post_bind_validate(self):
         super(List, self)._post_bind_validate()
         # check that the default contains elements of the declared type
         self.__validate_elements(self.default)
-
 
     def _validate_set(self, instance, value):
         value = super(List, self)._validate_set(instance, value)
@@ -284,14 +276,11 @@ class List(Attr):
         self.__validate_elements(value)
         return value
 
-
     # __get__ __set__ here only for typing purposes, for better ide checking and autocomplete
-
 
     def __get__(self, instance, owner):
         # type: (typing.Optional[HasTraits], MetaType) -> typing.Sequence
         return super(List, self).__get__(instance, owner)
-
 
     def __set__(self, instance, value):
         # type: (HasTraits, typing.Sequence) -> None
@@ -322,7 +311,6 @@ class _Number(Attr):
         if self.default is not None:
             self.__validate(self.default)
 
-
     def _validate_set(self, instance, value):
         if value is None:
             if self.required:
@@ -332,7 +320,6 @@ class _Number(Attr):
 
         self.__validate(value)
         return self.field_type(value)
-
 
 
 class Int(_Number):
@@ -363,7 +350,6 @@ class Int(_Number):
             raise TraitTypeError(msg, attr=self)
         # super call after the field_type check above
         super(Int, self)._post_bind_validate()
-
 
 
 class Float(_Number):
@@ -400,7 +386,6 @@ class Float(_Number):
         super(Float, self)._post_bind_validate()
 
 
-
 class Dim(Final):
     """
     A symbol that defines a dimension in a numpy array shape.
@@ -412,7 +397,6 @@ class Dim(Final):
 
     def __init__(self, doc=''):
         super(Dim, self).__init__(field_type=int, doc=doc)
-
 
 
 class NArray(Attr):
@@ -482,7 +466,6 @@ class NArray(Attr):
         if not numpy.can_cast(value.dtype, self.dtype, 'safe'):
             raise TraitTypeError("can't be set to an array of dtype {}".format(value.dtype), attr=self)
 
-
     def _post_bind_validate(self):
         if self.default is None:
             return
@@ -505,7 +488,6 @@ class NArray(Attr):
 
                     break
 
-
     def _lookup_expected_shape(self, instance):
         """ look up expected shape on the instance """
         expected_shape = []
@@ -524,7 +506,6 @@ class NArray(Attr):
                     raise TraitAttributeError(msg.format(dim_attr.field_name), attr=self)
             expected_shape.append(expected_dim)
         return expected_shape
-
 
     def _validate_set(self, instance, value):
         value = super(NArray, self)._validate_set(instance, value)
@@ -550,7 +531,6 @@ class NArray(Attr):
 
         return value.astype(self.dtype)
 
-
     # here only for typing purposes, so ide's can get better suggestions
     def __get__(self, instance, owner):
         # type: (typing.Optional['HasTraits'], 'MetaType') -> typing.Union[numpy.ndarray, 'NArray']
@@ -570,6 +550,62 @@ class NArray(Attr):
             self.ndim,
             self.required,
         )
+
+
+class EnumAttr(Attr):
+    def __init__(self, field_type=None, default=None, doc='', label='', required=True):
+        """
+        :param default: The default enum value
+        """
+
+        if field_type is None and default is not None:
+            field_type = type(default)
+
+        if default is None and field_type is None:
+            raise ValueError('Either a default or a field_type is required')
+
+        super(EnumAttr, self).__init__(
+            field_type=field_type, default=default, doc=doc, label=label, required=required, choices=tuple(field_type)
+        )
+
+    def __validate(self, value):
+        """
+        value either has to be in the enum choices or its tpye has to be in the value list of enum choices
+        """
+        if value in self.choices:
+            return
+
+        if type(value) in [choice.value for choice in self.choices]:
+            return
+
+        raise TraitTypeError("Attribute can't be set to an instance of {}".format(type(value)), attr=self)
+
+    def _validate_set(self, instance, value):
+        # type: ('HasTraits', typing.Any) -> typing.Any
+        """
+        Same method as in Attr.
+        The reason we override it is to not call the __validate method from the superclass.
+        """
+        if value is None:
+            if self.required:
+                raise TraitValueError("Attribute is required. Can't set to None", attr=self)
+            else:
+                return value
+
+        self.__validate(value)
+        return value
+
+    def _post_bind_validate(self):
+        if self.default is not None:
+            self.__validate(self.default)
+
+    # def __get__(self, instance, owner):
+    #     # type: (typing.Optional['TupleEnum'], 'MetaType') -> typing.Union[Enum, 'Enum']
+    #     return super(EnumAttr).__get__(instance, owner)
+    #
+    # def __set__(self, instance, value):
+    #     # type: (TupleEnum, Enum) -> None
+    #     super(EnumAttr).__set__(instance, value)
 
 
 class Range(object):

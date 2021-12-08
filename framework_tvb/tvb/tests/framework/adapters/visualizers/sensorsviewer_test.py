@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -40,9 +40,8 @@ from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
 from tvb.adapters.visualizers.sensors import SensorsViewer
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.datatypes.sensors import SensorTypes
-from tvb.datatypes.surfaces import EEG_CAP
+from tvb.datatypes.sensors import SensorTypesEnum
+from tvb.datatypes.surfaces import SurfaceTypesEnum
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -71,12 +70,6 @@ class TestSensorViewers(TransactionalTestCase):
         self.test_user = TestFactory.create_user('Sensors_Viewer_User')
         self.test_project = TestFactory.create_project(self.test_user, 'Sensors_Viewer_Project')
 
-    def transactional_teardown_method(self):
-        """
-        Clean-up tests data
-        """
-        FilesHelper().remove_project_structure(self.test_project.name)
-
     def test_launch_eeg(self):
         """
         Check that all required keys are present in output from EegSensorViewer launch.
@@ -84,16 +77,16 @@ class TestSensorViewers(TransactionalTestCase):
         # Import Sensors
         zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'eeg_unitvector_62.txt.bz2')
         TestFactory.import_sensors(self.test_user, self.test_project, zip_path,
-                                   SensorsImporterModel.OPTIONS['EEG Sensors'])
+                                   SensorTypesEnum.TYPE_EEG)
         field = FilterChain.datatype + '.sensors_type'
-        filters = FilterChain('', [field], [SensorTypes.TYPE_EEG.value], ['=='])
+        filters = FilterChain('', [field], [SensorTypesEnum.TYPE_EEG.value], ['=='])
         sensors_index = TestFactory.get_entity(self.test_project, SensorsIndex, filters)
 
         # Import EEGCap
         cap_path = os.path.join(os.path.dirname(tvb_data.obj.__file__), 'eeg_cap.obj')
-        TestFactory.import_surface_obj(self.test_user, self.test_project, cap_path, EEG_CAP)
+        TestFactory.import_surface_obj(self.test_user, self.test_project, cap_path, SurfaceTypesEnum.EEG_CAP_SURFACE)
         field = FilterChain.datatype + '.surface_type'
-        filters = FilterChain('', [field], [EEG_CAP], ['=='])
+        filters = FilterChain('', [field], [SurfaceTypesEnum.EEG_CAP_SURFACE.value], ['=='])
         eeg_cap_surface_index = TestFactory.get_entity(self.test_project, SurfaceIndex, filters)
 
         viewer = SensorsViewer()
@@ -119,10 +112,10 @@ class TestSensorViewers(TransactionalTestCase):
 
         zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'meg_151.txt.bz2')
         TestFactory.import_sensors(self.test_user, self.test_project, zip_path,
-                                   SensorsImporterModel.OPTIONS['MEG Sensors'])
+                                   SensorTypesEnum.TYPE_MEG)
 
         field = FilterChain.datatype + '.sensors_type'
-        filters = FilterChain('', [field], [SensorTypes.TYPE_MEG.value], ['=='])
+        filters = FilterChain('', [field], [SensorTypesEnum.TYPE_MEG.value], ['=='])
         sensors_index = TestFactory.get_entity(self.test_project, SensorsIndex, filters)
 
         viewer = SensorsViewer()
@@ -139,7 +132,7 @@ class TestSensorViewers(TransactionalTestCase):
         """
         zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'seeg_39.txt.bz2')
         sensors_index = TestFactory.import_sensors(self.test_user, self.test_project, zip_path,
-                                                   SensorsImporterModel.OPTIONS['Internal Sensors'])
+                                                   SensorTypesEnum.TYPE_INTERNAL)
         viewer = SensorsViewer()
         viewer.current_project_id = self.test_project.id
         view_model = viewer.get_view_model_class()()

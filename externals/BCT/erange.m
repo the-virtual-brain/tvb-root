@@ -3,7 +3,7 @@ function  [Erange,eta,Eshort,fs] = erange(CIJ)
 %
 %   [Erange,eta,Eshort,fs] = erange(CIJ);
 %
-%   Shorcuts are central edges which significantly reduce the
+%   Shortcuts are central edges which significantly reduce the
 %   characteristic path length in the network.
 %
 %   Input:      CIJ,        binary directed connection matrix

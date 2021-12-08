@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,6 +34,8 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
+import numpy
+
 from tvb.adapters.datatypes.db.time_series import *
 from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5, TimeSeriesSurfaceH5
@@ -47,7 +49,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import DataTypeGidAttr, ViewModel
-from tvb.datatypes.surfaces import CORTICAL, EEG_CAP, Surface
+from tvb.datatypes.surfaces import Surface, SurfaceTypesEnum
 
 MAX_MEASURE_POINTS_LENGTH = 600
 
@@ -115,46 +117,6 @@ class BrainViewer(ABCSurfaceDisplayer):
         overall_shape = time_series.get_data_shape()
         used_shape = (overall_shape[0] / (self.PAGE_SIZE * 2.0), overall_shape[1], overall_shape[2], overall_shape[3])
         return numpy.prod(used_shape) * 8.0
-
-    def generate_preview(self, view_model, figure_size=None):
-        """
-        Generate the preview for the burst page
-        """
-        time_series_index = self.load_entity_by_gid(view_model.time_series)
-        self.populate_surface_fields(time_series_index)
-
-        url_vertices, url_normals, url_lines, url_triangles, url_region_map = \
-            SurfaceURLGenerator.get_urls_for_rendering(self.surface_h5, self.region_map_gid)
-
-        params = self.retrieve_measure_points_params(time_series_index)
-        base_adapter_url, time_urls = self._prepare_data_slices(time_series_index)
-
-        with h5.h5_file_for_index(time_series_index) as time_series_h5:
-            assert isinstance(time_series_h5, TimeSeriesH5)
-            min_val, max_val = time_series_h5.get_min_max_values()
-
-        if self.surface_gid and self.region_map_gid:
-            boundary_url = SurfaceURLGenerator.get_url_for_region_boundaries(self.surface_gid, self.region_map_gid,
-                                                                             self.stored_adapter.id)
-        else:
-            boundary_url = ''
-
-        params.update(urlVertices=json.dumps(url_vertices), urlTriangles=json.dumps(url_triangles),
-                      urlLines=json.dumps(url_lines), urlNormals=json.dumps(url_normals),
-                      urlRegionMap=json.dumps(url_region_map), urlRegionBoundaries=boundary_url,
-                      base_adapter_url=base_adapter_url, isOneToOneMapping=self.one_to_one_map,
-                      minActivity=min_val, maxActivity=max_val)
-
-        normalization_factor = figure_size[0] / 800
-        if figure_size[1] / 600 < normalization_factor:
-            normalization_factor = figure_size[1] / 600
-        params['width'] = figure_size[0] * normalization_factor
-        params['height'] = figure_size[1] * normalization_factor
-
-        if self.surface_h5:
-            self.surface_h5.close()
-
-        return self.build_display_result("brain/portlet_preview", params)
 
     def launch(self, view_model):
         # type: (BrainViewerModel) -> dict
@@ -445,7 +407,7 @@ class DualBrainViewer(BrainViewer):
         self.connectivity_index = None
 
         if self.surface_index is None:
-            eeg_cap = dao.get_generic_entity(SurfaceIndex, EEG_CAP, "surface_type")
+            eeg_cap = dao.get_generic_entity(SurfaceIndex, SurfaceTypesEnum.EEG_CAP_SURFACE.value, "surface_type")
             if len(eeg_cap) < 1:
                 raise Exception("No EEG Cap Surface found for display!")
             self.surface_index = eeg_cap[0]
@@ -485,11 +447,11 @@ class DualBrainViewer(BrainViewer):
             shell_surface_index = self.load_entity_by_gid(view_model.shell_surface)
 
         if isinstance(time_series_index, TimeSeriesSEEGIndex):
-            shell_surface_index = ensure_shell_surface(self.current_project_id, shell_surface_index, CORTICAL)
+            shell_surface_index = ensure_shell_surface(self.current_project_id, shell_surface_index,
+                                                       SurfaceTypesEnum.CORTICAL_SURFACE)
 
         params = BrainViewer.compute_parameters(self, time_series_index, shell_surface_index)
         eeg_monitor = EegMonitor()
-        eeg_monitor.storage_path = self.storage_path
         params.update(eeg_monitor.compute_parameters(time_series_index, is_extended_view=True))
 
         params['isOneToOneMapping'] = False

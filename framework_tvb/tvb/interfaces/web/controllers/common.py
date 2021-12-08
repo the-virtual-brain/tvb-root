@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -51,6 +51,7 @@ TYPE_IMPORTANT = "IMPORTANT"
 KEY_KEYCLOAK_WEB = "keycloakConfigWebFile"
 KEY_CURRENT_VERSION = "currentVersion"
 KEY_CURRENT_JS_VERSION = "currentVersionJS"
+KEY_DEPLOY_CONTEXT = "deploy_context"
 KEY_SESSION = "session"
 KEY_SESSION_TREE = "treeSessionKey"
 KEY_USER = "user"

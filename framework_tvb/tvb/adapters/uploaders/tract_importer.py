@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -39,10 +39,8 @@ from tvb.adapters.datatypes.db.tracts import TractsIndex
 from tvb.adapters.datatypes.h5.tracts_h5 import TractsH5
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.file.files_helper import TvbZip
 from tvb.core.entities.storage import transactional
 from tvb.core.neocom import h5
-from tvb.core.neocom.h5 import path_for
 from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
@@ -212,7 +210,7 @@ class TrackvizTractsImporter(_TrackImporterBase):
         tract_start_indices = [0]
         tract_region = []
 
-        with TractsH5(path_for(self.storage_path, TractsH5, datatype.gid)) as tracts_h5:
+        with TractsH5(self.path_for(TractsH5, datatype.gid)) as tracts_h5:
             # we process tracts in bigger chunks to optimize disk write costs
             for tract_bundle in chunk_iter(tract_gen, self.READ_CHUNK):
                 tract_bundle = [tr[0] for tr in tract_bundle]
@@ -253,24 +251,23 @@ class ZipTxtTractsImporter(_TrackImporterBase):
     def launch(self, view_model):
         # type: (TrackImporterModel) -> [TractsIndex]
         datatype = self._base_before_launch(view_model.data_file, view_model.region_volume)
-        tracts_h5 = TractsH5(path_for(self.storage_path, TractsH5, datatype.gid))
+        tracts_h5 = TractsH5(self.path_for(TractsH5, datatype.gid))
 
         tract_start_indices = [0]
         tract_region = []
 
-        with TvbZip(view_model.data_file) as zipf:
-            for tractf in sorted(zipf.namelist()):  # one track per file
-                if not tractf.endswith('.txt'):  # omit directories and other non track files
-                    continue
-                vertices_file = zipf.open(tractf)
-                datatype.tract_vertices = numpy.loadtxt(vertices_file, dtype=numpy.float32)
+        for tractf in sorted(self.storage_interface.get_filenames_in_zip(view_model.data_file)):  # one track per file
+            if not tractf.endswith('.txt'):  # omit directories and other non track files
+                continue
+            vertices_file = self.storage_interface.open_tvb_zip(view_model.data_file, tractf)
+            datatype.tract_vertices = numpy.loadtxt(vertices_file, dtype=numpy.float32)
 
-                tract_start_indices.append(tract_start_indices[-1] + len(datatype.tract_vertices))
-                tracts_h5.write_vertices_slice(datatype.tract_vertices)
+            tract_start_indices.append(tract_start_indices[-1] + len(datatype.tract_vertices))
+            tracts_h5.write_vertices_slice(datatype.tract_vertices)
 
-                if view_model.region_volume is not None:
-                    tract_region.append(self._get_tract_region(datatype.tract_vertices[0]))
-                vertices_file.close()
+            if view_model.region_volume is not None:
+                tract_region.append(self._get_tract_region(datatype.tract_vertices[0]))
+            vertices_file.close()
 
         tracts_h5.close()
         self.region_volume_h5.close()

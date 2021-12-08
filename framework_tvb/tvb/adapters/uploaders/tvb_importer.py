@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -33,21 +33,18 @@
 """
 
 import os
-import shutil
 import zipfile
 
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.model.model_operation import STATUS_ERROR
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str
-from tvb.core.services.exceptions import ImportException
+from tvb.core.services.exceptions import ImportException, DatatypeGroupImportException
 from tvb.core.services.import_service import ImportService
 
 
@@ -83,6 +80,7 @@ class TVBImporter(ABCUploader):
     _ui_name = "TVB HDF5 / ZIP"
     _ui_subsection = "tvb_datatype_importer"
     _ui_description = "Upload H5 file with TVB generic entity"
+    LINKS = "Links"
 
     def get_form_class(self):
         return TVBImporterForm
@@ -113,18 +111,17 @@ class TVBImporter(ABCUploader):
             current_op = dao.get_operation_by_id(self.operation_id)
             if zipfile.is_zipfile(view_model.data_file):
                 # Creates a new TMP folder where to extract data
-                tmp_folder = os.path.join(self.storage_path, "tmp_import")
-                FilesHelper().unpack_zip(view_model.data_file, tmp_folder)
+                tmp_folder = os.path.join(self.get_storage_path(), "tmp_import")
+                self.storage_interface.unpack_zip(view_model.data_file, tmp_folder)
                 is_group = False
                 current_op_id = current_op.id
-                for file in os.listdir(tmp_folder):
+                for _, dirs, _ in os.walk(tmp_folder):
                     # In case we import a DatatypeGroup, we want the default import flow
-                    if os.path.isdir(os.path.join(tmp_folder, file)):
-                        current_op_id = None
+                    if dirs:
                         is_group = True
-                        break
+                    break
                 try:
-                    operations, all_dts, stored_dts_count = service.import_project_operations(current_op.project,
+                    operations, all_dts, stored_dts_count = service.import_list_of_operations(current_op.project,
                                                                                               tmp_folder, is_group,
                                                                                               current_op_id)
                     self.nr_of_datatypes += stored_dts_count
@@ -134,21 +131,20 @@ class TVBImporter(ABCUploader):
                     elif stored_dts_count < all_dts:
                         current_op.additional_info = 'Part of the chosen datatypes already exist!'
                         dao.store_entity(current_op)
+                    self.storage_interface.remove_folder(tmp_folder)
+                except DatatypeGroupImportException as excep:
+                    raise LaunchException(str(excep))
                 except ImportException as excep:
                     self.log.exception(excep)
                     current_op.additional_info = excep.message
                     current_op.status = STATUS_ERROR
                     raise LaunchException("Invalid file received as input. " + str(excep))
-                finally:
-                    shutil.rmtree(tmp_folder)
             else:
                 # upgrade file if necessary
                 file_update_manager = FilesUpdateManager()
                 file_update_manager.upgrade_file(view_model.data_file)
 
-                folder, h5file = os.path.split(view_model.data_file)
-                manager = HDF5StorageManager(folder, h5file)
-                if manager.is_valid_hdf5_file():
+                if self.storage_interface.get_storage_manager(view_model.data_file).is_valid_tvb_file():
                     datatype = None
                     try:
                         datatype = service.load_datatype_from_file(view_model.data_file, self.operation_id)
@@ -162,8 +158,7 @@ class TVBImporter(ABCUploader):
                         self.log.exception(excep)
                         if datatype is not None:
                             target_path = h5.path_for_stored_index(datatype)
-                            if os.path.exists(target_path):
-                                os.remove(target_path)
+                            self.storage_interface.remove_files([target_path])
                         raise LaunchException("Invalid file received as input. " + str(excep))
                 else:
                     raise LaunchException("Uploaded file: %s is neither in ZIP or HDF5 format" % view_model.data_file)

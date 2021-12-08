@@ -1,5 +1,5 @@
 <div id="main" class="columnized colscheme-2-1st-narrow">
-    <script type="text/javascript" src="/static/js/projectTree.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/projectTree.js?{{ currentVersionJS }}"></script>
     {% import 'project/pagination.html' as pag %}
 
     {% macro displayOperationResults(operation_row) -%}
@@ -7,14 +7,21 @@
               - list of icons for results, or
               - expand button in case of a group.
         -->
-        {% if operation_row['datatype_group_gid'] is not none %}
+        {% if operation_row['datatype_group_gid'] is not none or operation_row['results'] | length > 10 %}
             <nav class="inline-menu">
                 <button class="action action-menu" type="button">Expand</button>
 
                 <div class="extension">
                     <div class="dropdown-pane" onkeypress="redirectToHrefChild(this)" tabindex="3">
                         <mark>{{ operation_row['count'] }} operations</mark>
-                        <p>Group {{ operation_row['group'] }}</p>
+
+                        {% if operation_row['datatype_group_gid'] is not none %}
+                            <p>Group {{ operation_row['group'] }}</p>
+                        {% else %}
+                            <p>There are too many datatypes to display them.
+                                To view them, please visit the Data Structure page!</p>
+                        {% endif %}
+
 
                         {% for view_algo in operation_row.view_groups %}
                             {% set launchParamName = view_algo.parameter_name %}
@@ -32,11 +39,11 @@
             </nav>
         {% endif %}
 
-        {% if operation_row['results'] is not none %}
+        {% if operation_row['results'] is not none and operation_row['results'] | length < 10 %}
             <div>
                 {% for 	result in operation_row['results'] %}
-                    {% if not result.invalid and not result.is_nan %}
-                        <img src="/static/style/nodes/node{{ result.display_type }}.png" class="result_icon"
+                    {% if not result.invalid and not result.is_nan and result.visible %}
+                        <img src="{{ deploy_context | safe }}/static/style/nodes/node{{ result.display_type }}.png" class="result_icon"
                              title="{{ result.display_name }} "
                              onclick="displayNodeDetails('{{ result.gid }}', '{{ result.type }}', 'operations');"/>
                     {% endif %}
@@ -44,7 +51,7 @@
 
                 {% for result in operation_row['results'] %}
                     {% if result.invalid or result.is_nan %}
-                        <img src="/static/style/nodes/nodeInvalid.png" class="result_icon"
+                        <img src="{{ deploy_context | safe }}/static/style/nodes/nodeInvalid.png" class="result_icon"
                              title="{{ result.display_name }}"/>
                     {% endif %}
                 {% endfor %}
@@ -53,7 +60,7 @@
 
     {%- endmacro %}
 
-    <form id="operationsForm" method="post" action="/project/viewoperations/{{ selectedProject.id }}">
+    <form id="operationsForm" method="post" action="{{ deploy_context | safe }}/project/viewoperations/{{ selectedProject.id }}">
         <!--! Column w/ filters for the operation list -->
         <section class="ops-filter view-column col-1">
             <h4>

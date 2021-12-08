@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -37,9 +37,8 @@ In this version the location where ResultFigures are stored has changed.
 
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
-
+from tvb.storage.storage_interface import StorageInterface
 
 PAGE_SIZE = 20
 
@@ -72,7 +71,7 @@ def update():
 
             dao.store_entities(figures)
 
-            project_path = FilesHelper().get_project_folder(project)
+            project_path = StorageInterface().get_project_folder(project.name)
             update_manager = ProjectUpdateManager(project_path)
             update_manager.run_all_updates()
 

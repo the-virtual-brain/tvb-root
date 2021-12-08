@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -48,7 +48,7 @@ class TestCategory(AlgorithmCategoryConfig):
     order_nr = 42
 
 
-ALL_TEST_ADAPTERS = ["testadapter1", "testadapter2", "testadapter3", "ndimensionarrayadapter", "testgroupadapter"]
+ALL_TEST_ADAPTERS = ["dummy_adapter1", "dummy_adapter2", "dummy_adapter3", "ndimensionarrayadapter", "testgroupadapter"]
 
 
 class TestIntrospector(BaseTestCase):
@@ -74,15 +74,15 @@ class TestIntrospector(BaseTestCase):
         nr_adapters_mod3 = 0
 
         for algorithm in adapters:
-            assert algorithm.module in ['tvb.tests.framework.adapters.testadapter1',
-                                        'tvb.tests.framework.adapters.testadapter2',
-                                        'tvb.tests.framework.adapters.testadapter3'
+            assert algorithm.module in ['tvb.tests.framework.adapters.dummy_adapter1',
+                                        'tvb.tests.framework.adapters.dummy_adapter2',
+                                        'tvb.tests.framework.adapters.dummy_adapter3'
                                         ], "Unknown Adapter Module:" + str(algorithm.module)
-            assert algorithm.classname in ["TestAdapter1",
-                                           "TestAdapter2", "TestAdapterHugeMemoryRequired",
-                                           "TestAdapter3", "TestAdapterHDDRequired"
+            assert algorithm.classname in ["DummyAdapter1",
+                                           "DummyAdapter2", "DummyAdapterHugeMemoryRequired",
+                                           "DummyAdapter3", "DummyAdapterHDDRequired"
                                            ], "Unknown Adapter Class:" + str(algorithm.classname)
-            if algorithm.module == 'tvb.tests.framework.adapters.testadapter3':
+            if algorithm.module == 'tvb.tests.framework.adapters.dummy_adapter3':
                 nr_adapters_mod3 += 1
 
         assert nr_adapters_mod3 == 3

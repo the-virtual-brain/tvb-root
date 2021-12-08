@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -28,10 +28,16 @@
 
 """
 Models based on Wong-Wang's work.
-This one is meant to be used by TVB, with an excitatory and an inhibitory population, mutually coupled.
-Following Deco et al 2014.
+
+First one follows [DPA_2014], with an excitatory and an inhibitory
+population, mutually coupled.
+
+Second adds regional heterogeneity (excitation-inhibition balance) as described in [Deco_2021].
+
 
 .. moduleauthor:: Dionysios Perdikis <dionperd@gmail.com>
+.. moduleauthor:: Ignacio Martín <natx.mc@gmail.com>
+.. moduleauthor:: Jan Fousek <jan.fousek@univ-amu.fr>
 """
 
 import numpy
@@ -195,7 +201,7 @@ class ReducedWongWangExcInh(ModelNumbaDfun):
         doc="""Global coupling scaling""")
 
     lamda = NArray(
-        label=":math:`\lambda`",
+        label=r":math:`\lambda`",
         default=numpy.array([0.0, ]),
         domain=Range(lo=0.0, hi=1.0, step=0.01),
         doc="""Inhibitory global coupling scaling""")
@@ -284,4 +290,112 @@ class ReducedWongWangExcInh(ModelNumbaDfun):
                             self.W_i, self.J_i,
                             self.G, self.lamda, self.I_o, self.I_ext)
         return deriv.T[..., numpy.newaxis]
+
+
+
+
+
+@guvectorize([(float64[:],)*23], '(n),(m)' + ',()'*20 + '->(n)', nopython=True)
+def _numba_dfun_bei(S, c, mi, ae, be, de, ge, te, wp, we, jn, ai, bi, di, gi, ti, wi, ji, g, l, io, ie, dx):
+    """Gufunc for transcriptional model presented in Deco et Al 2020, Dynamical consequences of regional heterogeneity in the
+    brain’s transcriptional landscape"""
+
+    cc = g[0]*jn[0]*c[0]
+
+    jnSe = jn[0]*S[0]
+
+    x = wp[0]*jnSe - ji[0]*S[1] + we[0]*io[0] + cc + ie[0]
+    x = (ae[0]*x - be[0]) * mi[0]
+    h = x / (1 - numpy.exp(-de[0]*x))
+    dx[0] = - (S[0] / te[0]) + (1.0 - S[0]) * h * ge[0]
+
+    x = jnSe - S[1] + wi[0]*io[0] + l[0]*cc
+    x = (ai[0]*x - bi[0]) * mi[0]
+    h = x / (1 - numpy.exp(-di[0]*x))
+    dx[1] = - (S[1] / ti[0]) + h * gi[0]
+
+class DecoBalancedExcInh(ReducedWongWangExcInh):
+    r"""
+    .. [Deco_2021] Deco, Gustavo, Morten L. Kringelbach, Aurina Arnatkeviciute,
+    Stuart Oldham, Kristina Sabaroedin, Nigel C. Rogasch, Kevin M. Aquino, and
+    Alex Fornito. "Dynamical consequences of regional heterogeneity in the
+    brain’s transcriptional landscape." Science Advances 7, no. 29 (2021):
+    eabf4752.
+
+    Equations extend the [DPA_2013] with effective gain parameter M_i to
+
+
+    .. math::
+                 x_{ek}       &=   w_p\,J_N \, S_{ek} - J_iS_{ik} + W_eI_o + GJ_N \mathbf\Gamma(S_{ek}, S_{ej}, u_{kj}) \\
+                 H(x_{ek})    &=  \dfrac{M_i(a_ex_{ek}- b_e)}{1 - \exp(-d_e M_i(a_ex_{ek} -b_e))} \\
+                 \dot{S}_{ek} &= -\dfrac{S_{ek}}{\tau_e} + (1 - S_{ek}) \, {\gamma}H(x_{ek}) \\
+
+                 x_{ik}       &=   J_N \, S_{ek} - S_{ik} + W_iI_o + {\lambda}GJ_N \mathbf\Gamma(S_{ik}, S_{ej}, u_{kj}) \\
+                 H(x_{ik})    &=  \dfrac{M_i(a_ix_{ik} - b_i)}{1 - \exp(-d_i M_i(a_ix_{ik} -b_i))} \\
+                 \dot{S}_{ik} &= -\dfrac{S_{ik}}{\tau_i} + \gamma_iH(x_{ik}) \
+    """
+
+    # Define traited attributes for this model, these represent possible kwargs.
+
+    M_i = NArray(
+        label=":math:`ratio`",
+        default=numpy.array([1.0, ]),
+        domain=Range(lo=1.0, hi=10., step=0.01),
+        doc="""Effective gain within a region.""")
+
+
+    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
+        r"""
+        Numpy dfun for transcriptional model presented in [Deco_2020],
+        Dynamical consequences of regional heterogeneity in the brain’s
+        transcriptional landscape
+        """
+
+        S = state_variables[:, :]
+
+        S_e = S[0, :]
+        S_i = S[1, :]
+
+        c_0 = coupling[0, :]
+
+        # if applicable
+        lc_0 = local_coupling * S_e
+
+        coupling = self.G * self.J_N * (c_0 + lc_0)
+
+        J_N_S_e = self.J_N * S_e
+
+        inh = self.J_i * S_i
+
+        I_e = self.W_e * self.I_o + self.w_p * J_N_S_e + coupling - inh + self.I_ext
+
+        x_e = (self.a_e * I_e - self.b_e) * self.M_i
+        H_e = x_e / (1 - numpy.exp(-self.d_e * x_e))
+
+        dS_e = - (S_e / self.tau_e) + (1.0 - S_e) * H_e * self.gamma_e
+
+        I_i = self.W_i * self.I_o + J_N_S_e - S_i + self.lamda * coupling
+
+        x_i = (self.a_i * I_i - self.b_i) * self.M_i
+        H_i = x_i / (1 - numpy.exp(-self.d_i * x_i))
+
+        dS_i = - (S_i / self.tau_i) + H_i * self.gamma_i
+
+        derivative = numpy.array([dS_e, dS_i])
+
+        return derivative
+
+    def dfun(self, x, c, local_coupling=0.0, **kwargs):
+        x_ = x.reshape(x.shape[:-1]).T
+        c_ = c.reshape(c.shape[:-1]).T + local_coupling * x[0]
+        deriv = _numba_dfun_bei(x_, c_,
+                            self.M_i,
+                            self.a_e, self.b_e, self.d_e, self.gamma_e, self.tau_e,
+                            self.w_p, self.W_e, self.J_N,
+                            self.a_i, self.b_i, self.d_i, self.gamma_i, self.tau_i,
+                            self.W_i, self.J_i,
+                            self.G, self.lamda, self.I_o, self.I_ext)
+        return deriv.T[..., numpy.newaxis]
+        # Numpy version, for debugging purposes
+        # return self._numpy_dfun(x, c, local_coupling)
 

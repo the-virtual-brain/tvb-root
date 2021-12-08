@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -58,8 +58,7 @@ class OperationApi(MainApi):
 
     @handle_response
     def launch_operation(self, project_gid, algorithm_class, view_model, temp_folder):
-        h5_file_path = h5.path_for(temp_folder, ViewModelH5, view_model.gid, type(view_model).__name__)
-        h5.store_view_model(view_model, temp_folder)
+        h5_file_path = h5.store_view_model(view_model, temp_folder)
 
         model_file_obj = open(h5_file_path, 'rb')
         files = {RequestFileKey.LAUNCH_ANALYZERS_MODEL_FILE.value: (os.path.basename(h5_file_path), model_file_obj)}

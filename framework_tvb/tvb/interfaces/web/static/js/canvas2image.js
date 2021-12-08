@@ -4,7 +4,7 @@
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
  *
- * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ * (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
  *
  * This program is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software Foundation,
@@ -92,7 +92,7 @@ function __storeSVG(svgElement, kwargs, save) {
 
     // get the styles for the svg
 
-    $.get( "/static/style/subsection_svg.css", function (stylesheet) {
+    $.get( deploy_context + "/static/style/subsection_svg.css", function (stylesheet) {
                                                                          // strip all
         var re = new RegExp("[\\s\\n^]*\\/\\*(.|[\\r\\n])*?\\*\\/" +     // block style comments
             "|([\\s\\n]*\\/\\/.*)" +                     // single line comments

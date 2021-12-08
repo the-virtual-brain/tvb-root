@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -56,6 +56,7 @@ Conversion of power of 2 sample-rates(Hz) to Monitor periods(ms)
 
 import abc
 import numpy
+
 from tvb.datatypes.time_series import (TimeSeries, TimeSeriesRegion, TimeSeriesEEG, TimeSeriesMEG, TimeSeriesSEEG,
                                        TimeSeriesSurface)
 from tvb.simulator import noise
@@ -65,8 +66,9 @@ from tvb.datatypes.region_mapping import RegionMapping
 import tvb.datatypes.equations as equations
 from tvb.simulator.common import numpy_add_at
 from tvb.simulator.backend.ref import ReferenceBackend
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Float, narray_describe
+from tvb.basic.neotraits.api import HasTraits, TVBEnum, Attr, NArray, Float, EnumAttr, narray_describe
 from .backend import ReferenceBackend
+
 
 class Monitor(HasTraits):
     """
@@ -74,7 +76,7 @@ class Monitor(HasTraits):
     """
 
     period = Float(
-        label="Sampling period (ms)",  # order = 10
+        label="Sampling period (ms)",
         default=0.9765625,  # ms. 0.9765625 => 1024Hz #ms, 0.5 => 2000Hz
         doc="""Sampling period in milliseconds, must be an integral multiple
         of integration-step size. As a guide: 2048 Hz => 0.48828125 ms ;
@@ -82,7 +84,7 @@ class Monitor(HasTraits):
 
     variables_of_interest = NArray(
         dtype=int,
-        label="Model variables to watch",  # order=11,
+        label="Model variables to watch",
         doc=("Indices of model's variables of interest (VOI) that this monitor should record. "
              "Note that the indices should start at zero, so that if a model offers VOIs V, W and "
              "V+W, and W is selected, and this monitor should record W, then the correct index is 0."),
@@ -169,16 +171,13 @@ class Raw(Monitor):
         - all the integration time steps
 
     """
-    _ui_name = "Raw recording"
 
     period = Float(default=0.0, label="Sampling period is ignored for Raw Monitor")
-    # order = -1
 
     variables_of_interest = NArray(
         dtype=int,
         label="Raw Monitor sees all!!! Resistance is futile...",
         required=False)
-    # order = -1
 
     def _config_vois(self, simulator):
         self.voi = numpy.arange(len(simulator.model.variables_of_interest))
@@ -206,8 +205,6 @@ class RawVoi(Raw):
 
         """
 
-    _ui_name = "Selected State Variables' Raw recording"
-
     def _config_vois(self, simulator):
         self.voi = self.variables_of_interest
         if self.voi is None or self.voi.size == 0:
@@ -222,12 +219,17 @@ class SubSample(Monitor):
     Sub-samples or decimates the solution in time.
 
     """
-    _ui_name = "Temporally sub-sample"
 
     def sample(self, step, state):
         if step % self.istep == 0:
             time = step * self.dt
             return [time, state[self.voi, :]]
+
+
+class DefaultMasks(TVBEnum):
+    CORTICAL = "cortical"
+    HEMISPHERES = "hemispheres"
+    REGION_MAPPING = "region_mapping"
 
 
 class SpatialAverage(Monitor):
@@ -245,12 +247,8 @@ class SpatialAverage(Monitor):
     integration steps.
 
     """
-    _ui_name = "Spatial average with temporal sub-sample"
-    CORTICAL = "cortical"
-    HEMISPHERES = "hemispheres"
-    REGION_MAPPING = "region mapping"
 
-    spatial_mask = NArray(  #TODO: Check it's a vector of length Nodes (like region mapping for surface)
+    spatial_mask = NArray(  # TODO: Check it's a vector of length Nodes (like region mapping for surface)
         dtype=int,
         label="Spatial Mask",
         required=False,
@@ -259,17 +257,12 @@ class SpatialAverage(Monitor):
             for mapping a surface based simulation back to the regions used in
             its `Long-range Connectivity.`""")
 
-    default_mask = Attr(
-        str,
-        choices=(CORTICAL, HEMISPHERES, REGION_MAPPING),
-        default=HEMISPHERES,
+    default_mask = EnumAttr(
+        default=DefaultMasks.CORTICAL,
         label="Default Mask",
         required=False,
         doc=("Fallback in case spatial mask is none and no surface provided"
              "to use either connectivity hemispheres or cortical attributes."))
-        # order = -1)
-
-    backend = ReferenceBackend()
 
     def _support_bool_mask(self, mask):
         """
@@ -294,12 +287,12 @@ class SpatialAverage(Monitor):
         if self.spatial_mask is None:
             self.is_default_special_mask = True
             if simulator.surface is not None:
-                self.spatial_mask, _, _ = self.backend.full_region_map(simulator.surface, simulator.connectivity)
+                self.spatial_mask = simulator.surface.region_mapping
             else:
                 conn = simulator.connectivity
-                if self.default_mask == self.CORTICAL:
+                if self.default_mask == DefaultMasks.CORTICAL:
                     self.spatial_mask = self._support_bool_mask(conn.cortical)
-                elif self.default_mask == self.HEMISPHERES:
+                elif self.default_mask == DefaultMasks.HEMISPHERES:
                     self.spatial_mask = self._support_bool_mask(conn.hemispheres)
                 else:
                     msg = "Must fill either the Spatial Mask parameter or choose a Default Mask for non-surface" \
@@ -315,7 +308,7 @@ class SpatialAverage(Monitor):
         number_of_areas = len(areas)
         if not numpy.all(areas == numpy.arange(number_of_areas)):
             msg = ("Areas in the spatial_mask must be specified as a "
-                    "contiguous set of indices starting from zero.")
+                   "contiguous set of indices starting from zero.")
             raise Exception(msg)
 
         self.log.debug("spatial_mask")
@@ -357,7 +350,6 @@ class GlobalAverage(Monitor):
     monitor for quickly checking the "global" state of a simulation.
 
     """
-    _ui_name = "Global average"
 
     def sample(self, step, state):
         """Records if integration step corresponds to sampling period."""
@@ -380,7 +372,6 @@ class TemporalAverage(Monitor):
     store is averaged and returned when time step is modulo ``istep``.
 
     """
-    _ui_name = "Temporal average"
 
     def _config_time(self, simulator):
         super(TemporalAverage, self)._config_time(simulator)
@@ -411,8 +402,6 @@ class AfferentCoupling(RawVoi):
 
     """
 
-    _ui_name = "Coupling recording"
-
     variables_of_interest = NArray(
         dtype=int,
         label="Indices of coupling variables to record",
@@ -435,7 +424,6 @@ class AfferentCouplingTemporalAverage(AfferentCoupling, TemporalAverage):
     store is averaged and returned when time step is modulo ``istep``.
 
     """
-    _ui_name = "Coupling Temporal average"
 
     def _config_vois(self, simulator):
         AfferentCoupling._config_vois(self, simulator)
@@ -451,7 +439,6 @@ class AfferentCouplingTemporalAverage(AfferentCoupling, TemporalAverage):
 
 class Projection(Monitor):
     "Base class monitor providing lead field suppport."
-    _ui_name = "Projection matrix"
 
     region_mapping = Attr(
         RegionMapping,
@@ -483,7 +470,7 @@ class Projection(Monitor):
 
     @classmethod
     def from_file(cls, sensors_fname, projection_fname, rm_f_name="regionMapping_16k_76.txt",
-                  period=1e3/1024.0, **kwds):
+                  period=1e3 / 1024.0, **kwds):
         """
         Build Projection-based monitor from sensors and projection files, and
         any extra keyword arguments are passed to the monitor class constructor.
@@ -503,9 +490,15 @@ class Projection(Monitor):
             "projection matrices. Please select an appropriate projection "
             "matrix."
         )
+    
+    _gain_configuration_done = False
 
     def config_for_sim(self, simulator):
         "Configure projection matrix monitor for given simulation."
+
+        # method body is not idempotent, so if we've been here before, don't redo
+        if self._gain_configuration_done:
+            return
 
         super(Projection, self).config_for_sim(simulator)
         self._sim = simulator
@@ -517,7 +510,7 @@ class Projection(Monitor):
         if self.obsnoise is not None:
             # configure the noise level
             if self.obsnoise.ntau > 0.0:
-                noiseshape = self.sensors.labels[:,numpy.newaxis].shape
+                noiseshape = self.sensors.labels[:, numpy.newaxis].shape
                 self.obsnoise.configure_coloured(dt=self.dt, shape=noiseshape)
             else:
                 self.obsnoise.configure_white(dt=self.dt)
@@ -528,13 +521,16 @@ class Projection(Monitor):
         conn = simulator.connectivity
         using_cortical_surface = surf is not None
         if using_cortical_surface:
-            non_cortical_indices, = numpy.where(numpy.bincount(surf.region_mapping) == 1)
+            cortical_mask = numpy.bincount(surf.region_mapping) == 1
+            non_cortical_indices, = numpy.where(cortical_mask)
+            cortical_indices, = numpy.where(~cortical_mask)
             self.rmap = surf.region_mapping
         else:
             # assume all cortical if no info
             if conn.cortical.size == 0:
                 conn.cortical = numpy.array([True] * conn.weights.shape[0])
             non_cortical_indices, = numpy.where(~conn.cortical)
+            cortical_indices, = numpy.where(conn.cortical)
             if self.region_mapping is None:
                 raise Exception("Please specify a region mapping on the EEG/MEG/iEEG monitor when "
                                 "performing a region simulation.")
@@ -545,7 +541,7 @@ class Projection(Monitor):
 
         have_subcortical = len(non_cortical_indices) > 0
 
-        # determine source space
+        # determine source space for cortical sources
         if using_cortical_surface:
             sources = {'loc': surf.vertices, 'ori': surf.vertex_normals}
         else:
@@ -553,13 +549,22 @@ class Projection(Monitor):
 
         # compute analytic if not provided
         if not hasattr(self, 'projection'):
-            self.log.debug('Precomputed projection not unavailable using analytic approximation.')
+            self.log.debug('Precomputed projection not unavailable, using analytic approximation.')
             self.gain = self.analytic(**sources)
 
         # reduce to region lead field if region sim
-        if not using_cortical_surface and self.gain.shape[1] == self.rmap.size:
+        # this fails when rmap doesn't have non_cortical, need to ensure "full" first
+        # OR fix non_cortical_rmap_idx to be empty in that case:
+        cortical_rmap = self.rmap.copy()
+        if (self.rmap.max()+1) == conn.cortical.sum():
+            # there are no non_cortical indices in rmap, so cortical_rmap is already fine
+            pass
+        else:
+            non_cortical_rmap_idx = numpy.hstack([numpy.argwhere(self.rmap==i)[:,0] for i in non_cortical_indices])
+            cortical_rmap = numpy.delete(cortical_rmap, non_cortical_rmap_idx)
+        if not using_cortical_surface and self.gain.shape[1] == cortical_rmap.size:
             gain = numpy.zeros((self.gain.shape[0], conn.number_of_regions))
-            numpy_add_at(gain.T, self.rmap, self.gain.T)
+            numpy_add_at(gain.T, cortical_rmap, self.gain.T)
             self.log.debug('Region mapping gain shape %s to %s', self.gain.shape, gain.shape)
             self.gain = gain
 
@@ -567,8 +572,15 @@ class Projection(Monitor):
         if have_subcortical:
             # need matrix of shape (proj.shape[0], len(sc_ind))
             src = conn.centres[non_cortical_indices], conn.orientations[non_cortical_indices]
-            self.gain = numpy.hstack((self.gain, self.analytic(*src)))
-            self.log.debug('Added subcortical analytic gain, for final shape %s', self.gain.shape)
+            sub_gain = self.analytic(*src)
+            if self.gain.shape[1] == (cortical_indices.size + non_cortical_indices.size):
+                self.gain[:, non_cortical_indices] = sub_gain
+            else:
+                full_gain = numpy.zeros((self.gain.shape[0], self.gain.shape[1] + sub_gain.shape[1]))
+                full_gain[:, self.rmap if using_cortical_surface else cortical_indices] = self.gain
+                full_gain[:, non_cortical_indices] = self.analytic(*src)
+                self.gain = full_gain
+                self.log.debug('Added subcortical analytic gain, for final shape %s', self.gain.shape)
 
         if self.sensors.usable is not None and not self.sensors.usable.all():
             mask_unusable = ~self.sensors.usable
@@ -576,13 +588,14 @@ class Projection(Monitor):
             self.log.debug('Zeroed gain coefficients for %d unusable sensors', mask_unusable.sum())
 
         # unconditionally zero NaN elements; framework not prepared for NaNs.
-        nan_mask = numpy.isfinite(self.gain).all(axis=1)
+        nan_mask = numpy.isfinite(self.gain)
         self.gain[~nan_mask] = 0.0
         self.log.debug('Zeroed %d NaN gain coefficients', nan_mask.sum())
 
         # attrs used for recording
         self._state = numpy.zeros((self.gain.shape[0], len(self.voi)))
         self._period_in_steps = int(self.period / self.dt)
+        self._gain_configuration_done = True
         self.log.debug('State shape %s, period in steps %s', self._state.shape, self._period_in_steps)
 
         self.log.info('Projection configured gain shape %s', self.gain.shape)
@@ -602,7 +615,7 @@ class Projection(Monitor):
                 sample += self.obsnoise.generate(shape=sample.shape)
 
             self._state[:] = 0.0
-            return time, sample.T[..., numpy.newaxis] # for compatibility
+            return time, sample.T[..., numpy.newaxis]  # for compatibility
 
     _gain = None
 
@@ -647,7 +660,6 @@ class EEG(Projection):
         Biology, 1987.
 
     """
-    _ui_name = "EEG"
 
     projection = Attr(
         projections_module.ProjectionSurfaceEEG,
@@ -672,12 +684,13 @@ class EEG(Projection):
             'sphere approximation of the head (Sarvas 1987).')
 
     @classmethod
-    def from_file(cls, sensors_fname='eeg_brainstorm_65.txt', projection_fname='projection_eeg_65_surface_16k.npy', **kwargs):
+    def from_file(cls, sensors_fname='eeg_brainstorm_65.txt', projection_fname='projection_eeg_65_surface_16k.npy',
+                  **kwargs):
         return Projection.from_file.__func__(cls, sensors_fname, projection_fname, **kwargs)
 
     def config_for_sim(self, simulator):
         super(EEG, self).config_for_sim(simulator)
-        self._ref_vec = numpy.zeros((self.sensors.number_of_sensors, ))
+        self._ref_vec = numpy.zeros((self.sensors.number_of_sensors,))
         if self.reference:
             if self.reference.lower() != 'average':
                 sensor_names = self.sensors.labels.tolist()
@@ -694,16 +707,16 @@ class EEG(Projection):
         # a => vector from sources_to_sensor
         # Q => source unit vectors
         r_0, Q = loc, ori
-        center = numpy.mean(r_0, axis=0)[numpy.newaxis, ]
-        radius = 1.05125 * max(numpy.sqrt(numpy.sum((r_0 - center)**2, axis=1)))
+        center = numpy.mean(r_0, axis=0)[numpy.newaxis,]
+        radius = 1.05125 * max(numpy.sqrt(numpy.sum((r_0 - center) ** 2, axis=1)))
         loc = self.sensors.locations.copy()
-        sen_dis = numpy.sqrt(numpy.sum((loc)**2, axis=1))
+        sen_dis = numpy.sqrt(numpy.sum((loc) ** 2, axis=1))
         loc = loc / sen_dis[:, numpy.newaxis] * radius + center
         V_r = numpy.zeros((loc.shape[0], r_0.shape[0]))
         for sensor_k in numpy.arange(loc.shape[0]):
             a = loc[sensor_k, :] - r_0
-            na = numpy.sqrt(numpy.sum(a**2, axis=1))[:, numpy.newaxis]
-            V_r[sensor_k, :] = numpy.sum(Q * (a / na**3), axis=1 ) / (4.0 * numpy.pi * self.sigma)
+            na = numpy.sqrt(numpy.sum(a ** 2, axis=1))[:, numpy.newaxis]
+            V_r[sensor_k, :] = numpy.sum(Q * (a / na ** 3), axis=1) / (4.0 * numpy.pi * self.sigma)
         return V_r
 
     def sample(self, step, state):
@@ -722,59 +735,57 @@ class EEG(Projection):
 
 class MEG(Projection):
     "Forward solution monitor for magnetoencephalography (MEG)."
-    _ui_name = "MEG"
 
     projection = Attr(
         projections_module.ProjectionSurfaceMEG,
-        default=None, label='Projection matrix', # order=2,
+        default=None, label='Projection matrix',
         doc='Projection matrix to apply to sources.')
 
     sensors = Attr(
         sensors_module.SensorsMEG,
-        label = "MEG Sensors",
-        default = None,
-        required = True,
+        label="MEG Sensors",
+        default=None,
+        required=True,
         doc="The set of MEG sensors for which the forward solution will be calculated.")
-
 
     @classmethod
     def from_file(cls, sensors_fname='meg_brainstorm_276.txt',
-                   projection_fname='projection_meg_276_surface_16k.npy', **kwargs):
+                  projection_fname='projection_meg_276_surface_16k.npy', **kwargs):
         return Projection.from_file.__func__(cls, sensors_fname, projection_fname, **kwargs)
 
     def analytic(self, loc, ori):
         """Compute single sphere analytic form of MEG lead field.
         Equation 25 of [Sarvas_1987]_."""
         # the magnetic constant = 1.25663706 × 10-6 m kg s-2 A-2  (H/m)
-        mu_0 = 1.25663706e-6 #mH/mm
+        mu_0 = 1.25663706e-6  # mH/mm
         # r => sensor positions
         # r_0 => source positions
         # a => vector from sources_to_sensor
         # Q => source unit vectors
         r_0, Q = loc, ori
         centre = numpy.mean(r_0, axis=0)[numpy.newaxis, :]
-        radius = 1.01 * max(numpy.sqrt(numpy.sum((r_0 - centre)**2, axis=1)))
+        radius = 1.01 * max(numpy.sqrt(numpy.sum((r_0 - centre) ** 2, axis=1)))
         sensor_locations = self.sensors.locations.copy()
-        sen_dis = numpy.sqrt(numpy.sum((sensor_locations)**2, axis=1))
+        sen_dis = numpy.sqrt(numpy.sum((sensor_locations) ** 2, axis=1))
         sensor_locations = sensor_locations / sen_dis[:, numpy.newaxis]
         sensor_locations = sensor_locations * radius
         sensor_locations = sensor_locations + centre
         B_r = numpy.zeros((sensor_locations.shape[0], r_0.shape[0], 3))
         for sensor_k in numpy.arange(sensor_locations.shape[0]):
-            a = sensor_locations[sensor_k,:] - r_0
-            na = numpy.sqrt(numpy.sum(a**2, axis=1))[:, numpy.newaxis]
-            rsk = sensor_locations[sensor_k,:][numpy.newaxis, :]
-            nr = numpy.sqrt(numpy.sum(rsk**2, axis=1))[:, numpy.newaxis]
+            a = sensor_locations[sensor_k, :] - r_0
+            na = numpy.sqrt(numpy.sum(a ** 2, axis=1))[:, numpy.newaxis]
+            rsk = sensor_locations[sensor_k, :][numpy.newaxis, :]
+            nr = numpy.sqrt(numpy.sum(rsk ** 2, axis=1))[:, numpy.newaxis]
 
-            F = a * (nr * a + nr**2 - numpy.sum(r_0 * rsk, axis=1)[:, numpy.newaxis])
+            F = a * (nr * a + nr ** 2 - numpy.sum(r_0 * rsk, axis=1)[:, numpy.newaxis])
             adotr = numpy.sum((a / na) * rsk, axis=1)[:, numpy.newaxis]
-            delF = ((na**2 / nr + adotr + 2.0 * na + 2.0 * nr) * rsk -
+            delF = ((na ** 2 / nr + adotr + 2.0 * na + 2.0 * nr) * rsk -
                     (a + 2.0 * nr + adotr * r_0))
 
-            B_r[sensor_k, :] = ((mu_0 / (4.0 * numpy.pi * F**2)) *
+            B_r[sensor_k, :] = ((mu_0 / (4.0 * numpy.pi * F ** 2)) *
                                 (numpy.cross(F * Q, r_0) - numpy.sum(numpy.cross(Q, r_0) *
                                                                      (rsk * delF), axis=1)[:, numpy.newaxis]))
-        return numpy.sqrt(numpy.sum(B_r**2, axis=2))
+        return numpy.sqrt(numpy.sum(B_r ** 2, axis=2))
 
     def create_time_series(self, connectivity=None, surface=None,
                            region_map=None, region_volume_map=None):
@@ -786,24 +797,21 @@ class MEG(Projection):
 class iEEG(Projection):
     "Forward solution for intracranial EEG (not ECoG!)."
 
-    _ui_name = "Intracerebral / Stereo EEG"
-
     projection = Attr(
         projections_module.ProjectionSurfaceSEEG,
         default=None, label='Projection matrix',
         doc='Projection matrix to apply to sources.')
 
-    sigma = Float(label="conductivity", default=1.0)  #, order=4)
+    sigma = Float(label="conductivity", default=1.0)
 
     sensors = Attr(
         sensors_module.SensorsInternal,
         label="Internal brain sensors", default=None, required=True,
         doc="The set of SEEG sensors for which the forward solution will be calculated.")
 
-
     @classmethod
     def from_file(cls, sensors_fname='seeg_588.txt',
-                   projection_fname='projection_seeg_588_surface_16k.npy', **kwargs):
+                  projection_fname='projection_seeg_588_surface_16k.npy', **kwargs):
         return Projection.from_file.__func__(cls, sensors_fname, projection_fname, **kwargs)
 
     def analytic(self, loc, ori):
@@ -867,7 +875,6 @@ class Bold(Monitor):
     .. note:: see Tutorial_Exploring_The_Bold_Monitor
 
     """
-    _ui_name = "BOLD"
 
     period = Float(
         label="Sampling period (ms)",
@@ -887,8 +894,7 @@ class Bold(Monitor):
     hrf_length = Float(
         label="Duration (ms)",
         default=20000.,
-        doc= """Duration of the hrf kernel""",)
-
+        doc="""Duration of the hrf kernel""", )
 
     _interim_period = None
     _interim_istep = None
@@ -903,25 +909,25 @@ class Bold(Monitor):
         Compute the hemodynamic response function.
 
         """
-        self._stock_sample_rate = 2.0**-2 #/ms    # NOTE: An integral multiple of dt
-        magic_number = self.hrf_length #* 0.8      # truncates G, volterra kernel, once ~zero
-        #Length of history needed for convolution in steps @ _stock_sample_rate
-        required_history_length = self._stock_sample_rate * magic_number # 3840 for tau_s=0.8
+        self._stock_sample_rate = 2.0 ** -2  # /ms    # NOTE: An integral multiple of dt
+        magic_number = self.hrf_length  # * 0.8      # truncates G, volterra kernel, once ~zero
+        # Length of history needed for convolution in steps @ _stock_sample_rate
+        required_history_length = self._stock_sample_rate * magic_number  # 3840 for tau_s=0.8
         self._stock_steps = numpy.ceil(required_history_length).astype(int)
-        stock_time_max    = magic_number/1000.0                                # [s]
-        stock_time_step   = stock_time_max / self._stock_steps                 # [s]
-        self._stock_time  = numpy.arange(0.0, stock_time_max, stock_time_step) # [s]
+        stock_time_max = magic_number / 1000.0  # [s]
+        stock_time_step = stock_time_max / self._stock_steps  # [s]
+        self._stock_time = numpy.arange(0.0, stock_time_max, stock_time_step)  # [s]
         self.log.debug("Bold requires %d steps for HRF kernel convolution", self._stock_steps)
-        #Compute the HRF kernel
+        # Compute the HRF kernel
         G = self.hrf_kernel.evaluate(self._stock_time)
-        #Reverse it, need it into the past for matrix-multiply of stock
+        # Reverse it, need it into the past for matrix-multiply of stock
         G = G[::-1]
         self.hemodynamic_response_function = G[numpy.newaxis, :]
-        #Interim stock configuration
-        self._interim_period = 1.0 / self._stock_sample_rate #period in ms
-        self._interim_istep = int(round(self._interim_period / self.dt)) # interim period in integration time steps
+        # Interim stock configuration
+        self._interim_period = 1.0 / self._stock_sample_rate  # period in ms
+        self._interim_istep = int(round(self._interim_period / self.dt))  # interim period in integration time steps
         self.log.debug('Bold HRF shape %s, interim period & istep %d & %d',
-                  self.hemodynamic_response_function.shape, self._interim_period, self._interim_istep)
+                       self.hemodynamic_response_function.shape, self._interim_period, self._interim_istep)
 
     def _config_time(self, simulator):
         super(Bold, self)._config_time(simulator)
@@ -943,13 +949,13 @@ class Bold(Monitor):
         # At stock's period update it with the temporal average of interim-stock
         if step % self._interim_istep == 0:
             avg_interim_stock = numpy.mean(self._interim_stock, axis=0)
-            self._stock[((step//self._interim_istep % self._stock_steps) - 1), :] = avg_interim_stock
+            self._stock[((step // self._interim_istep % self._stock_steps) - 1), :] = avg_interim_stock
         # At the monitor's period, apply the heamodynamic response function to
         # the stock and return the resulting BOLD signal.
         if step % self.istep == 0:
             time = step * self.dt
             hrf = numpy.roll(self.hemodynamic_response_function,
-                             ((step//self._interim_istep % self._stock_steps) - 1),
+                             ((step // self._interim_istep % self._stock_steps) - 1),
                              axis=1)
             if isinstance(self.hrf_kernel, equations.FirstOrderVolterra):
                 k1_V0 = self.hrf_kernel.parameters["k_1"] * self.hrf_kernel.parameters["V_0"]
@@ -971,25 +977,37 @@ class BoldRegionROI(Bold):
     simulation.
 
     """
-    _ui_name = "BOLD Region ROI (only with surface)"
 
     def config_for_sim(self, simulator):
         super(BoldRegionROI, self).config_for_sim(simulator)
         self.region_mapping = simulator.surface.region_mapping
+        self.no_regions = simulator.surface.region_mapping_data.connectivity.number_of_regions
 
-    def sample(self, step, state, array=numpy.array):
+    def sample(self, step, state):
         result = super(BoldRegionROI, self).sample(step, state)
         if result:
             t, data = result
             # TODO use reduceat
-            return [t, array([data.flat[self.region_mapping==i].mean()
-                              for i in range(self.region_mapping.max())])]
+            data = data[self.voi, :]
+            data = numpy.array([data[:, self.region_mapping == i, :].mean(axis=1)
+                                for i in range(self.no_regions)])
+            data = numpy.swapaxes(data, 0, 1)
+            return [t, data]
         else:
             return None
 
+    def create_time_series(self, connectivity=None, surface=None,
+                           region_map=None, region_volume_map=None):
+
+        return TimeSeriesRegion(connectivity=connectivity,
+                                region_mapping=region_map,
+                                region_mapping_volume=region_volume_map,
+                                sample_period=self.period,
+                                title='Regions ' + self.__class__.__name__)
+
 
 class ProgressLogger(Monitor):
-    "Logs progress of simulation; only for use in console scripts."
+    """Logs progress of simulation; only for use in console scripts."""
 
     def __init__(self, **kwargs):
         super(ProgressLogger, self).__init__(**kwargs)

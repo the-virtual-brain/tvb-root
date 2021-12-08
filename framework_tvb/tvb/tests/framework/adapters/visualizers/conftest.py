@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -30,6 +30,7 @@
 
 import pytest
 import numpy
+
 from tvb.adapters.datatypes.db import graph
 from tvb.adapters.datatypes.db.graph import CovarianceIndex
 from tvb.adapters.datatypes.db.mode_decompositions import IndependentComponentsIndex
@@ -132,7 +133,7 @@ def cross_correlation_factory(time_series_index_factory, operation_factory):
 def ica_factory(operation_factory, time_series_index_factory):
     def build():
         data = numpy.random.random((10, 10, 10, 10))
-        time_series_index = time_series_index_factory(data)
+        time_series_index = time_series_index_factory(data=data)
         time_series = h5.load_from_index(time_series_index)
         n_comp = 5
         ica = mode_decompositions.IndependentComponents(source=time_series,

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -27,9 +27,10 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-import numpy
 import json
-from tvb.core.neotraits.h5 import H5File, DataSet, Scalar, Reference
+
+import numpy
+from tvb.core.neotraits.h5 import H5File, DataSet, Scalar, Reference, Enum
 from tvb.datatypes.spectral import FourierSpectrum, WaveletCoefficients, CoherenceSpectrum, ComplexCoherenceSpectrum
 
 
@@ -50,12 +51,13 @@ class FourierSpectrumH5(DataTypeMatrixH5):
         self.array_data = DataSet(FourierSpectrum.array_data, self, expand_dimension=2)
         self.source = Reference(FourierSpectrum.source, self)
         self.segment_length = Scalar(FourierSpectrum.segment_length, self)
-        self.windowing_function = Scalar(FourierSpectrum.windowing_function, self)
+        self.windowing_function = Enum(FourierSpectrum.windowing_function, self)
         self.amplitude = DataSet(FourierSpectrum.amplitude, self, expand_dimension=2)
         self.phase = DataSet(FourierSpectrum.phase, self, expand_dimension=2)
         self.power = DataSet(FourierSpectrum.power, self, expand_dimension=2)
         self.average_power = DataSet(FourierSpectrum.average_power, self, expand_dimension=2)
-        self.normalised_average_power = DataSet(FourierSpectrum.normalised_average_power, self, expand_dimension=2)
+        self.normalised_average_power = DataSet(FourierSpectrum.normalised_average_power, self,
+                                                expand_dimension=2)
 
     def write_data_slice(self, partial_result):
         """
@@ -65,22 +67,22 @@ class FourierSpectrumH5(DataTypeMatrixH5):
 
         # mhtodo: these computations on the partial_result belong in the caller not here
 
-        self.array_data.append(partial_result.array_data)
+        self.array_data.append(partial_result.array_data, close_file=False)
 
         partial_result.compute_amplitude()
-        self.amplitude.append(partial_result.amplitude)
+        self.amplitude.append(partial_result.amplitude, close_file=False)
 
         partial_result.compute_phase()
-        self.phase.append(partial_result.phase)
+        self.phase.append(partial_result.phase, close_file=False)
 
         partial_result.compute_power()
-        self.power.append(partial_result.power)
+        self.power.append(partial_result.power, close_file=False)
 
         partial_result.compute_average_power()
-        self.average_power.append(partial_result.average_power)
+        self.average_power.append(partial_result.average_power, close_file=False)
 
         partial_result.compute_normalised_average_power()
-        self.normalised_average_power.append(partial_result.normalised_average_power)
+        self.normalised_average_power.append(partial_result.normalised_average_power, close_file=False)
 
     def get_fourier_data(self, selected_state, selected_mode, normalized):
         shape = self.array_data.shape
@@ -126,16 +128,16 @@ class WaveletCoefficientsH5(DataTypeMatrixH5):
         """
         # mhtodo: these computations on the partial_result belong in the caller not here
 
-        self.array_data.append(partial_result.array_data)
+        self.array_data.append(partial_result.array_data, close_file=False)
 
         partial_result.compute_amplitude()
-        self.amplitude.append(partial_result.amplitude)
+        self.amplitude.append(partial_result.amplitude, close_file=False)
 
         partial_result.compute_phase()
-        self.phase.append(partial_result.phase)
+        self.phase.append(partial_result.phase, close_file=False)
 
         partial_result.compute_power()
-        self.power.append(partial_result.power)
+        self.power.append(partial_result.power, close_file=False)
 
 
 class CoherenceSpectrumH5(DataTypeMatrixH5):
@@ -151,7 +153,7 @@ class CoherenceSpectrumH5(DataTypeMatrixH5):
         """
         Append chunk.
         """
-        self.array_data.append(partial_result.array_data)
+        self.array_data.append(partial_result.array_data, close_file=False)
 
 
 class ComplexCoherenceSpectrumH5(DataTypeMatrixH5):
@@ -170,9 +172,9 @@ class ComplexCoherenceSpectrumH5(DataTypeMatrixH5):
         """
         Append chunk.
         """
-        self.cross_spectrum.append(partial_result.cross_spectrum)
+        self.cross_spectrum.append(partial_result.cross_spectrum, close_file=False)
 
-        self.array_data.append(partial_result.array_data)
+        self.array_data.append(partial_result.array_data, close_file=False)
 
     def get_spectrum_data(self, selected_spectrum):
         shape = self.array_data.shape

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -29,8 +29,9 @@
 #
 
 import typing
+from enum import Enum
 
-from tvb.basic.neotraits.api import HasTraits
+from tvb.basic.neotraits.api import HasTraits, TVBEnum
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.neotraits.db import HasTraitsIndex
 from tvb.core.neotraits.h5 import H5File
@@ -70,7 +71,9 @@ class Registry(object):
         subtype = h5file.read_subtype_attr()
         if subtype:
             index = self.get_index_for_datatype(base_dt)
-            return type(self._index_to_subtype_factory[index](subtype))
+            function, enum_class = self._index_to_subtype_factory[index]
+            subtype_as_enum = TVBEnum.string_to_enum(list(enum_class), subtype)
+            return type(function(subtype_as_enum.value))
         return base_dt
 
     def get_index_for_datatype(self, datatype_class):
@@ -87,7 +90,9 @@ class Registry(object):
         # type: (HasTraitsIndex) -> typing.Type[HasTraits]
         subtype = index.get_subtype_attr()
         if subtype:
-            return type(self._index_to_subtype_factory[type(index)](subtype))
+            function, enum_class = self._index_to_subtype_factory[type(index)]
+            subtype_as_enum = TVBEnum.string_to_enum(list(enum_class), subtype)
+            return type(function(subtype_as_enum.value))
         return self._datatype_for_index[type(index)]
 
     def get_h5file_for_index(self, index_class):
@@ -98,12 +103,12 @@ class Registry(object):
         # type: (typing.Type[H5File]) -> typing.Type[DataType]
         return self._index_for_h5file[h5file_class]
 
-    def register_datatype(self, datatype_class, h5file_class, datatype_index, subtype_factory=None):
-        # type: (HasTraits, H5File, DataType, callable) -> None
+    def register_datatype(self, datatype_class, h5file_class, datatype_index, subtype_factory=None, subtype_enum=None):
+        # type: (HasTraits, H5File, DataType, callable, Enum) -> None
         self._h5file_for_datatype[datatype_class] = h5file_class
         self._h5file_for_index[datatype_index] = h5file_class
         self._index_for_datatype[datatype_class] = datatype_index
         self._datatype_for_h5file[h5file_class] = datatype_class
         self._datatype_for_index[datatype_index] = datatype_class
         self._index_for_h5file[h5file_class] = datatype_index
-        self._index_to_subtype_factory[datatype_index] = subtype_factory
+        self._index_to_subtype_factory[datatype_index] = (subtype_factory, subtype_enum)
