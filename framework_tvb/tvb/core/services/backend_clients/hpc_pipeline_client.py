@@ -281,8 +281,8 @@ class HPCPipelineClient(HPCClient):
         return encrypted_files
 
     @staticmethod
-    def stage_out_logs(working_dir, operation):
-        # type: (Storage, Operation) -> str
+    def stage_out_logs(working_dirs, operation):
+        # type: (list[Storage], Operation, str) -> str
         now = datetime.now()
         date_str = "%d-%d-%d_%d-%d-%d_%d" % (now.year, now.month, now.day, now.hour,
                                              now.minute, now.second, now.microsecond)
@@ -294,24 +294,26 @@ class HPCPipelineClient(HPCClient):
 
         stderr_f = 'stderr'
         stdout_f = 'stdout'
-        stderr = working_dir.stat(stderr_f)
-        stdout = working_dir.stat(stdout_f)
 
-        stderr.download(os.path.join(local_logs_dir, stderr_f))
-        stdout.download(os.path.join(local_logs_dir, stdout_f))
+        for index, working_dir in enumerate(working_dirs):
+            stderr = working_dir.stat(stderr_f)
+            stdout = working_dir.stat(stdout_f)
 
-        try:
-            output_list = HPCClient._listdir(working_dir, base='intermediary_logs')
+            stderr.download(os.path.join(local_logs_dir, str(index) + '_' + stderr_f))
+            stdout.download(os.path.join(local_logs_dir, str(index) + '_' + stdout_f))
 
-            for output_filename, output_filepath in output_list.items():
-                if type(output_filepath) is not unicore_client.PathFile:
-                    LOGGER.info("Object {} is not a file.")
-                    continue
-                filename = os.path.join(local_logs_dir, os.path.basename(output_filename))
-                output_filepath.download(filename)
+            try:
+                output_list = HPCClient._listdir(working_dir, base='intermediary_logs')
 
-        except OperationException as e:
-            LOGGER.warning("Exception when trying to download intermediary logs from HPC: {}".format(e.message))
+                for output_filename, output_filepath in output_list.items():
+                    if type(output_filepath) is not unicore_client.PathFile:
+                        LOGGER.info("Object {} is not a file.")
+                        continue
+                    filename = os.path.join(local_logs_dir, os.path.basename(output_filename))
+                    output_filepath.download(filename)
+
+            except OperationException as e:
+                LOGGER.warning("Exception when trying to download intermediary logs from HPC: {}".format(e.message))
 
         project = dao.get_project_by_id(operation.fk_launched_in)
         operation_dir = HPCClient.storage_interface.get_project_folder(project.name, str(operation.id))
