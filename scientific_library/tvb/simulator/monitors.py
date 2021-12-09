@@ -1029,7 +1029,7 @@ class ProgressLogger(Monitor):
 
 
 
-class Ca(Monitor):
+class CalciumSignal(Monitor):
     """
     Calcium signal monitor.
 
