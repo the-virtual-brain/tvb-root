@@ -225,6 +225,10 @@ class HPCOperationService(object):
             try:
                 op_identifiers = dao.get_operation_process_for_operation(operation.id, True)
                 if op_identifiers:
+                    if len(op_identifiers) < 2:
+                        HPCOperationService.LOGGER.info("For the moment {} jobs started for operation {}.".format(
+                            len(op_identifiers), operation.id))
+                        return
                     transport = Transport(auth_token)
                     job1 = Job(transport, op_identifiers[0].job_id)
                     job2 = Job(transport, op_identifiers[1].job_id)

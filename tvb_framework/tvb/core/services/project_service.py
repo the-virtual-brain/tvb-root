@@ -40,7 +40,7 @@ import os
 import uuid
 
 from tvb.basic.logger.builder import get_logger
-from tvb.config import DATATYPE_MEASURE_INDEX_MODULE, DATATYPE_MEASURE_INDEX_CLASS
+from tvb.config import DATATYPE_MEASURE_INDEX_MODULE, DATATYPE_MEASURE_INDEX_CLASS, IPPIPELINE_CREATOR_CLASS
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.inputs_processor import review_operation_inputs_from_adapter
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
@@ -434,7 +434,8 @@ class ProjectService:
         burst = dao.get_burst_for_operation_id(operation.id)
         datatypes_param, all_special_params = self._review_operation_inputs(operation.gid)
 
-        op_pid = dao.get_operation_process_for_operation(operation.id)
+        op_pid = dao.get_operation_process_for_operation(operation.id,
+                                                         allow_multiple_results=operation.algorithm.classname == IPPIPELINE_CREATOR_CLASS)
         op_details = OperationOverlayDetails(operation, user_display_name, len(datatypes_param),
                                              count_result, burst, no_of_op_in_group, op_pid)
 

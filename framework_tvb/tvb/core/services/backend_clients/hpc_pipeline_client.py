@@ -118,6 +118,7 @@ class HPCPipelineClient(HPCClient):
     @staticmethod
     def _launch_job_with_pyunicore(operation, authorization_token):
         # type: (Operation, str) -> list[Job]
+        op_id = operation.id
         site_client = HPCClient._build_unicore_client(authorization_token,
                                                       unicore_client._HBP_REGISTRY_URL,
                                                       TvbProfile.current.hpc.HPC_COMPUTE_SITE)
@@ -125,19 +126,21 @@ class HPCPipelineClient(HPCClient):
         # TODO: Should we run these steps or these will be run from sh script?
         try:
             user = site_client.access_info()['xlogin']['UID']
-            LOGGER.info("User {} was fetched for containerstore".format(user))
+            LOGGER.info("[Operation {}] User {} was fetched for containerstore".format(op_id, user))
         except KeyError:
-            LOGGER.info("User cannot be fetched")
-            raise TVBException("User cannot be fetched to compute containerstore")
+            LOGGER.info("[Operation {}] User cannot be fetched".format(op_id))
+            raise TVBException("[Operation {}] User cannot be fetched to compute containerstore".format(op_id))
         containers_store = '/scratch/snx3000/{}/containerstore'.format(user)
 
-        LOGGER.info("Prepare job configuration for operation: {}".format(operation.id))
+        LOGGER.info("[Operation {}] Prepare job configuration.".format(operation.id))
         job_config, job_script = HPCPipelineClient._configure_job(operation.id, 9, containers_store)
 
-        LOGGER.info("Prepare input files: pipeline input data zip file and pipeline arguments json file. ")
+        LOGGER.info(
+            "[Operation {}] Prepare input files: pipeline input data zip file and pipeline arguments json file.".format(
+                op_id))
         inputs = HPCPipelineClient._prepare_input(operation)
 
-        LOGGER.info("Prepare unicore job")
+        LOGGER.info("[Operation {}] Prepare first UNICORE job".format(op_id))
         job = HPCClient._prepare_pyunicore_job(operation=operation, job_inputs=inputs, job_script=job_script,
                                                job_config=job_config,
                                                auth_token=authorization_token, inputs_subfolder=None)
@@ -147,7 +150,7 @@ class HPCPipelineClient(HPCClient):
         unzip_path = os.path.join(mount_point, 'input-data')
         unzip_archive = site_client.execute('unzip {} -d {}'.format(zip_path, unzip_path))
         unzip_mount_point = unzip_archive.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]
-        LOGGER.info("Unzip mount point: {}".format(unzip_mount_point))
+        LOGGER.info("[Operation {}] Unzip mount point: {}".format(op_id, unzip_mount_point))
         HPCPipelineClient._poll_job(unzip_archive)
 
         script_path = os.path.join(mount_point, HPCSettings.HPC_PIPELINE_LAUNCHER_SH_SCRIPT)
@@ -155,37 +158,40 @@ class HPCPipelineClient(HPCClient):
         install_datalad = site_client.execute(
             'sh {} -m 0 -p {} -c {}'.format(script_path, os.path.normpath(mount_point), containers_store))
         install_datalad_mount_point = install_datalad.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]
-        LOGGER.info("Insall datalad mount point: {}".format(install_datalad_mount_point))
+        LOGGER.info("[Operation {}] Insall datalad mount point: {}".format(op_id, install_datalad_mount_point))
         HPCPipelineClient._poll_job(install_datalad)
         HPCPipelineClient._transfer_logs(site_client, install_datalad, job, 'install_datalad')
 
         pull_containers = site_client.execute(
             'sh {} -m 1 -p . -c {}'.format(script_path, containers_store))
         pull_containers_mount_point = pull_containers.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]
-        LOGGER.info("Pull containers mount point: {}".format(pull_containers_mount_point))
+        LOGGER.info("[Operation {}] Pull containers mount point: {}".format(op_id, pull_containers_mount_point))
         HPCPipelineClient._poll_job(pull_containers)
         HPCPipelineClient._transfer_logs(site_client, pull_containers, job, 'pull_containers')
 
         create_datasets = site_client.execute(
             'sh {} -m 11 -p {} -c {}'.format(script_path, os.path.normpath(mount_point), containers_store))
         create_datasets_mount_point = create_datasets.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]
-        LOGGER.info("Create datasets mount point: {}".format(create_datasets_mount_point))
+        LOGGER.info("[Operation {}] Create datasets mount point: {}".format(op_id, create_datasets_mount_point))
         HPCPipelineClient._poll_job(create_datasets)
         HPCPipelineClient._transfer_logs(site_client, create_datasets, job, 'create_datasets')
 
         try:
-            LOGGER.info("Start unicore job1")
+            LOGGER.info("[Operation {}] Start first UNICORE Job".format(op_id))
             job.start()
-            LOGGER.info("Job1 has started")
+            LOGGER.info("[Operation {}] Job1 has started".format(op_id))
             job_config2, _ = HPCPipelineClient._configure_job(operation.id, 10, containers_store,
                                                               working_dir=os.path.normpath(mount_point),
                                                               custom_exe_path=script_path)
+
+            LOGGER.info("[Operation {}] Prepare second UNICORE job".format(op_id))
             job2 = HPCClient._prepare_pyunicore_job(operation=operation, job_inputs=[], job_script=None,
-                                                   job_config=job_config2,
-                                                   auth_token=authorization_token, inputs_subfolder=None)
+                                                    job_config=job_config2,
+                                                    auth_token=authorization_token, inputs_subfolder=None)
+            LOGGER.info("[Operation {}] Job2 has started".format(op_id))
 
         except Exception as e:
-            LOGGER.error('Cannot start unicore job for operation {}'.format(operation.id), e)
+            LOGGER.error('[Operation {}] Cannot start unicore job.'.format(operation.id), e)
             raise TVBException(e)
         return [job, job2]
 
