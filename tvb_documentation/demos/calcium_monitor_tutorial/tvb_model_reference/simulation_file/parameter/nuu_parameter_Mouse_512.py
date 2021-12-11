@@ -110,11 +110,11 @@ class Parameter :
                 'variables_of_interest':[0],
                 'period':self.parameter_integrator['dt']*2000.0
             },
-            'Ca':False,
+            'Ca':True,
             'parameter_Ca':{
                 'variables_of_interest':[0,1,2],
-                'tau_rise':0.01,
-                'tau_decay':0.1
+                'tau_rise':10,
+                'tau_decay':100
             }
         }
 

@@ -87,6 +87,7 @@ def init(parameter_simulation,parameter_model,parameter_connection_between_regio
     model.state_variable_range['W_e'] = np.array(parameter_model['initial_condition']['W_e'])
     model.state_variable_range['W_i'] = np.array(parameter_model['initial_condition']['W_i'])
 
+    
     ## Connection
     if parameter_connection_between_region['default']:
         connection = lab.connectivity.Connectivity().from_file()
@@ -146,6 +147,8 @@ def init(parameter_simulation,parameter_model,parameter_connection_between_regio
         model.stvar = parameter_stimulation['variables']
     ## end add
 
+    
+    
     ## Coupling
     if parameter_coupling['type'] == 'Linear':
         coupling = lab.coupling.Linear(a=np.array(parameter_coupling['parameter']['a']),
