@@ -34,11 +34,14 @@ A collection of parameter related classes and functions.
 """
 
 from copy import deepcopy
-from typing import List, Any
+from typing import List, Any, Optional
 from dataclasses import dataclass, field
 import numpy as np
 from tvb.datatypes.connectivity import Connectivity
 from .simulator import Simulator
+
+class ParamGetter:
+    pass
 
 @dataclass
 class SimSeq:
@@ -46,19 +49,29 @@ class SimSeq:
     template: Simulator
     params: List[str]
     values: List[List[Any]]
+    getters: Optional[List[Optional[ParamGetter]]] = None # is the first Optional needed?
     # TODO consider transpose, so a param can have a remote data source
     # to load when constructing the sequence
 
     def __iter__(self):
         self.pos = 0
         return self
-    
+
+    def __post_init__(self):
+        self.template.configure() # deepcopy doesn't work on un-configured simulator o_O
+        if self.getters is None:
+            self.getters = [None]*len(self.params)
+        else:
+            assert len(self.getters) == len(self.params)
+
     def __next__(self):
         if self.pos >= len(self.values):
             raise StopIteration
-        obj = deepcopy(self.template)
-        updates = zip(self.params, self.values[self.pos])
-        for key, val in updates:
+        obj = deepcopy(self.template) 
+        updates = zip(self.params, self.getters, self.values[self.pos])
+        for key, getter, val in updates:
+            if getter is not None:
+                val = getter(val)
             exec(f'obj.{key} = val',
                  {'obj': obj, 'val': val})
         self.pos += 1
@@ -66,7 +79,7 @@ class SimSeq:
 
 class Metric:
     "A summary statistic for a simulation."
-    def __call__(self, t, y) -> np.ndarray:
+    def __call__(self, t, y) -> np.ndarray: # what about multi metric returning dict of statistics? Also, chaining?
         pass
 
 class NodeVariability(Metric):
