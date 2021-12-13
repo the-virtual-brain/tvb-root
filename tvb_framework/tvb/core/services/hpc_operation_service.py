@@ -122,7 +122,7 @@ class HPCOperationService(object):
 
         except OperationException as exception:
             HPCOperationService.LOGGER.error(exception)
-            HPCOperationService._operation_error(operation)
+            HPCOperationService._operation_error(operation, os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY])
 
         finally:
             if storage_interface.encryption_enabled():

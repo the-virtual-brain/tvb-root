@@ -183,11 +183,13 @@ class HPCPipelineClient(HPCClient):
             job_config2, _ = HPCPipelineClient._configure_job(operation.id, 10, containers_store,
                                                               working_dir=os.path.normpath(mount_point),
                                                               custom_exe_path=script_path)
+            job_config2['haveClientStageIn'] = True
 
             LOGGER.info("[Operation {}] Prepare second UNICORE job".format(op_id))
             job2 = HPCClient._prepare_pyunicore_job(operation=operation, job_inputs=[], job_script=None,
                                                     job_config=job_config2,
                                                     auth_token=authorization_token, inputs_subfolder=None)
+            job2.start()
             LOGGER.info("[Operation {}] Job2 has started".format(op_id))
 
         except Exception as e:
