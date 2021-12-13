@@ -29,7 +29,7 @@
 
 import numpy
 
-from tvb.adapters.simulator.equation_forms import BoldMonitorEquationsEnum
+from tvb.adapters.forms.equation_forms import BoldMonitorEquationsEnum
 from tvb.basic.neotraits.api import EnumAttr
 from tvb.core.entities.file.simulator.view_model import *
 from tvb.core.entities.filters.chain import FilterChain

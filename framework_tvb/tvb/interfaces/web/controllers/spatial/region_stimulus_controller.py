@@ -39,7 +39,8 @@ import numpy
 
 from tvb.adapters.creators.stimulus_creator import *
 from tvb.adapters.datatypes.h5.patterns_h5 import StimuliRegionH5
-from tvb.adapters.simulator.equation_forms import get_form_for_equation
+from tvb.adapters.forms.equation_forms import get_form_for_equation
+from tvb.adapters.forms.equation_plot_forms import EquationTemporalPlotForm
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.basic.neotraits.api import TVBEnum
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -53,29 +54,12 @@ from tvb.interfaces.web.controllers.common import MissingDataException
 from tvb.interfaces.web.controllers.decorators import handle_error, expose_page, expose_fragment, using_template, \
     check_user
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
-from tvb.interfaces.web.controllers.spatial.surface_model_parameters_controller import EquationPlotForm
+
 
 LOAD_EXISTING_URL = SpatioTemporalController.build_path('/spatial/stimulus/region/load_region_stimulus')
 RELOAD_DEFAULT_PAGE_URL = SpatioTemporalController.build_path('/spatial/stimulus/region/reset_region_stimulus')
 
 KEY_REGION_STIMULUS = "stim-region"
-
-
-class TemporalPlotForm(EquationPlotForm):
-    def __init__(self):
-        super(TemporalPlotForm, self).__init__()
-        self.min_x.label = 'Temporal Start Time(ms)'
-        self.min_x.doc = "The minimum value of the x-axis for temporal equation plot. " \
-                         "Not persisted, used only for visualization."
-        self.max_x.label = 'Temporal Start Time(ms)'
-        self.max_x.doc = "The maximum value of the x-axis for temporal equation plot. " \
-                         "Not persisted, used only for visualization."
-
-    def fill_from_post(self, form_data):
-        if self.min_x.name in form_data:
-            self.min_x.fill_from_post(form_data)
-        if self.max_x.name in form_data:
-            self.max_x.fill_from_post(form_data)
 
 
 @traced
@@ -292,7 +276,7 @@ class RegionStimulusController(SpatioTemporalController):
         Returns the html which contains the plot with the temporal equation.
         """
         try:
-            plot_form = TemporalPlotForm()
+            plot_form = EquationTemporalPlotForm()
             if form_data:
                 plot_form.fill_from_post(form_data)
 
@@ -359,7 +343,7 @@ class RegionStimulusController(SpatioTemporalController):
         The fields that have to be added to the existent
         adapter interface should be added in this method.
         """
-        temporal_plot_list_form = TemporalPlotForm()
+        temporal_plot_list_form = EquationTemporalPlotForm()
         input_list['temporalPlotInputList'] = self.render_adapter_form(temporal_plot_list_form)
         return input_list
 
