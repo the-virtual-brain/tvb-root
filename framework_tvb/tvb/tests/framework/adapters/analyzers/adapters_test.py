@@ -252,6 +252,8 @@ class TestAdapters(TransactionalTestCase):
 
         disk = fmri_balloon_adapter.get_required_disk_size(view_model)
         mem = fmri_balloon_adapter.get_required_memory_size(view_model)
+        assert disk > 0
+        assert mem > 0
 
         fmri_balloon_adapter.extract_operation_data(fmri_balloon_op)
         ts_index = fmri_balloon_adapter.launch(view_model)
