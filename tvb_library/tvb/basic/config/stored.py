@@ -86,7 +86,6 @@ KEY_PIPELINE_SCRIPT_URL = "PIPELINE_SCRIPT_URL"
 KEY_PIPELINE_JSON_PARSER_URL = "PIPELINE_JSON_PARSER_URL"
 
 
-
 class SettingsManager(object):
     def __init__(self, config_file_location):
         self.config_file_location = config_file_location
