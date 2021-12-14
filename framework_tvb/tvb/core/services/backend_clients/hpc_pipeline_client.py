@@ -91,10 +91,10 @@ class HPCPipelineClient(HPCClient):
         return [pipeline_data_zip, args_file, json_parser]
 
     @staticmethod
-    def _configure_job(operation_id, mode, container_store, working_dir="$PWD", custom_exe_path=None):
-        # type: (int, int, str, str, str) -> (dict, str)
-        bash_entrypoint = os.path.join(os.environ[HPCClient.TVB_BIN_ENV_KEY], HPCPipelineClient.SCRIPT_FOLDER_NAME,
-                                       HPCSettings.HPC_PIPELINE_LAUNCHER_SH_SCRIPT)
+    def _configure_job(operation_id, mode, container_store, working_dir="$PWD", stage_in_remote_files=True,
+                       custom_exe_path=None):
+        # type: (int, int, str, str, bool, str) -> (dict, str)
+        bash_entrypoint = HPCSettings.HPC_PIPELINE_LAUNCHER_SH_SCRIPT
         executable = os.path.basename(bash_entrypoint)
         if custom_exe_path is not None:
             bash_entrypoint = custom_exe_path
@@ -108,6 +108,23 @@ class HPCPipelineClient(HPCClient):
                   HPCSettings.UNICORE_ARGS_KEY: ['-m {}'.format(mode),
                                                  '-p {}'.format(working_dir),
                                                  '-c {}'.format(container_store)]}
+
+        if stage_in_remote_files:
+            pipeline_url = TvbProfile.current.hpc.PIPELINE_SCRIPT_URL
+            json_parser_url = TvbProfile.current.hpc.PIPELINE_JSON_PARSER_URL
+            if pipeline_url == '' or json_parser_url == '':
+                raise TVBException("Cannot submit HPC job because pipeline url or json parser url is not defined.")
+
+            pipeline_script = {
+                "From": pipeline_url,
+                "To": HPCSettings.HPC_PIPELINE_LAUNCHER_SH_SCRIPT
+            }
+            json_parser = {
+                "From": json_parser_url,
+                "To": HPCSettings.HPC_PIPELINE_JSON_PARSER
+            }
+
+            my_job[HPCSettings.UNICORE_IMPORTS_KEY] = [pipeline_script, json_parser]
 
         # TODO: Maybe take HPC Project also from GUI?
         if HPCClient.CSCS_PROJECT in os.environ:
@@ -133,7 +150,7 @@ class HPCPipelineClient(HPCClient):
         containers_store = '/scratch/snx3000/{}/containerstore'.format(user)
 
         LOGGER.info("[Operation {}] Prepare job configuration.".format(operation.id))
-        job_config, job_script = HPCPipelineClient._configure_job(operation.id, 9, containers_store)
+        job_config, _ = HPCPipelineClient._configure_job(operation.id, 9, containers_store)
 
         LOGGER.info(
             "[Operation {}] Prepare input files: pipeline input data zip file and pipeline arguments json file.".format(
@@ -141,7 +158,7 @@ class HPCPipelineClient(HPCClient):
         inputs = HPCPipelineClient._prepare_input(operation)
 
         LOGGER.info("[Operation {}] Prepare first UNICORE job".format(op_id))
-        job = HPCClient._prepare_pyunicore_job(operation=operation, job_inputs=inputs, job_script=job_script,
+        job = HPCClient._prepare_pyunicore_job(operation=operation, job_inputs=inputs, job_script=None,
                                                job_config=job_config,
                                                auth_token=authorization_token, inputs_subfolder=None)
         mount_point = job.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]
@@ -182,9 +199,9 @@ class HPCPipelineClient(HPCClient):
             LOGGER.info("[Operation {}] Job1 has started".format(op_id))
             job_config2, _ = HPCPipelineClient._configure_job(operation.id, 10, containers_store,
                                                               working_dir=os.path.normpath(mount_point),
-                                                              custom_exe_path=script_path)
+                                                              custom_exe_path=script_path,
+                                                              stage_in_remote_files=False)
             job_config2['haveClientStageIn'] = True
-
             LOGGER.info("[Operation {}] Prepare second UNICORE job".format(op_id))
             job2 = HPCClient._prepare_pyunicore_job(operation=operation, job_inputs=[], job_script=None,
                                                     job_config=job_config2,
@@ -251,7 +268,7 @@ class HPCPipelineClient(HPCClient):
 
     @staticmethod
     def execute(operation_id, user_name_label, adapter_instance, auth_token=""):
-        # type: (int, None, None) -> None
+        # type: (int, None, None, str) -> None
         """
         Submit an operation asynchronously on HPC
         """
@@ -290,7 +307,7 @@ class HPCPipelineClient(HPCClient):
 
     @staticmethod
     def stage_out_logs(working_dirs, operation):
-        # type: (list[Storage], Operation, str) -> str
+        # type: (list[Storage], Operation) -> str
         now = datetime.now()
         date_str = "%d-%d-%d_%d-%d-%d_%d" % (now.year, now.month, now.day, now.hour,
                                              now.minute, now.second, now.microsecond)
