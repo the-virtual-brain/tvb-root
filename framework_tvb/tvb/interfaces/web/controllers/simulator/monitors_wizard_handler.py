@@ -32,10 +32,10 @@
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
 
-from tvb.adapters.simulator.equation_forms import get_form_for_equation
-from tvb.adapters.simulator.monitor_forms import AdditiveNoiseViewModel, get_ui_name_to_monitor_dict, \
+from tvb.adapters.forms.equation_forms import get_form_for_equation
+from tvb.adapters.forms.monitor_forms import AdditiveNoiseViewModel, get_ui_name_to_monitor_dict, \
     get_form_for_monitor, BoldViewModel, get_monitor_to_ui_name_dict
-from tvb.adapters.simulator.simulator_fragments import SimulatorMonitorFragment, SimulatorFinalFragment
+from tvb.adapters.forms.simulator_fragments import SimulatorMonitorFragment, SimulatorFinalFragment
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.interfaces.web.controllers.simulator.simulator_wizzard_urls import SimulatorWizzardURLs
 

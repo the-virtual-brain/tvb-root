@@ -35,7 +35,7 @@
 import json
 import pytest
 
-from tvb.adapters.simulator.model_forms import ModelsEnum
+from tvb.adapters.forms.model_forms import ModelsEnum
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.core.entities.model.model_burst import Dynamic

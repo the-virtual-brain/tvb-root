@@ -33,10 +33,10 @@ import formencode
 from formencode import validators
 
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, SpatioTemporalPatternIndex
-from tvb.adapters.simulator.form_with_ranges import FormWithRanges
-from tvb.adapters.simulator.integrator_forms import get_form_for_integrator, get_integrator_name_list
-from tvb.adapters.simulator.model_forms import ModelsEnum
-from tvb.adapters.simulator.monitor_forms import get_ui_name_to_monitor_dict, get_monitor_to_ui_name_dict
+from tvb.adapters.forms.form_with_ranges import FormWithRanges
+from tvb.adapters.forms.integrator_forms import get_form_for_integrator, get_integrator_name_list
+from tvb.adapters.forms.model_forms import ModelsEnum
+from tvb.adapters.forms.monitor_forms import get_ui_name_to_monitor_dict, get_monitor_to_ui_name_dict
 from tvb.basic.profile import TvbProfile
 from tvb.basic.neotraits.api import Attr, EnumAttr, Range, List, Float, Int
 from tvb.core.adapters.abcadapter import ABCAdapterForm

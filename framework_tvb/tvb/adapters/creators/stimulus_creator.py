@@ -37,7 +37,7 @@ import uuid
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.adapters.simulator.equation_forms import get_form_for_equation, SpatialEquationsEnum, TemporalEquationsEnum
+from tvb.adapters.forms.equation_forms import get_form_for_equation, SpatialEquationsEnum, TemporalEquationsEnum
 from tvb.basic.neotraits.api import Attr, EnumAttr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, AdapterLaunchModeEnum, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain

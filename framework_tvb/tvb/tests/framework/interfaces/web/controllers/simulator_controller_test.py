@@ -44,16 +44,16 @@ from tvb.adapters.creators.stimulus_creator import RegionStimulusCreator
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.adapters.simulator.coupling_forms import get_form_for_coupling, LinearCouplingForm
-from tvb.adapters.simulator.equation_forms import TemporalEquationsEnum
-from tvb.adapters.simulator.model_forms import get_form_for_model, ModelsEnum, Generic2dOscillatorModelForm
+from tvb.adapters.forms.coupling_forms import get_form_for_coupling, LinearCouplingForm
+from tvb.adapters.forms.equation_forms import TemporalEquationsEnum
+from tvb.adapters.forms.model_forms import get_form_for_model, ModelsEnum, Generic2dOscillatorModelForm
 from tvb.core.entities.file.simulator.view_model import *
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.operation_service import OperationService
-from tvb.datatypes.equations import FirstOrderVolterra, GeneralizedSigmoid, Linear
+from tvb.datatypes.equations import FirstOrderVolterra, Linear
 from tvb.datatypes.sensors import SensorTypesEnum
 from tvb.datatypes.surfaces import SurfaceTypesEnum
 from tvb.interfaces.web.controllers.common import *

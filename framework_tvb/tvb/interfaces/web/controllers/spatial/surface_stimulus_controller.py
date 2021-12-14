@@ -40,7 +40,8 @@ import numpy
 
 from tvb.adapters.creators.stimulus_creator import *
 from tvb.adapters.datatypes.h5.patterns_h5 import StimuliSurfaceH5
-from tvb.adapters.simulator.equation_forms import get_form_for_equation
+from tvb.adapters.forms.equation_forms import get_form_for_equation
+from tvb.adapters.forms.equation_plot_forms import EquationTemporalPlotForm, EquationSpatialPlotForm
 from tvb.basic.neotraits.api import Float, TVBEnum
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
@@ -58,38 +59,6 @@ CHUNK_SIZE = 20
 
 KEY_SURFACE_STIMULI = "stim-surface"
 KEY_TMP_FORM = "temporal-form"
-
-
-class EquationTemporalPlotForm(Form):
-    def __init__(self):
-        super(EquationTemporalPlotForm, self).__init__()
-        self.min_tmp_x = FloatField(Float(label='Temporal Start Time(ms)', default=0, doc="The minimum value of the "
-                                                "x-axis for temporal equation plot. Not persisted, used only for "
-                                                "visualization."), name='min_tmp_x')
-        self.max_tmp_x = FloatField(Float(label='Temporal End Time(ms)', default=100, doc="The maximum value of the"
-                                                " x-axis for temporal equation plot. Not persisted, used only for"
-                                                " visualization."), name='max_tmp_x')
-
-    def fill_from_post(self, form_data):
-        if self.min_tmp_x.name in form_data:
-            self.min_tmp_x.fill_from_post(form_data)
-        if self.max_tmp_x.name in form_data:
-            self.max_tmp_x.fill_from_post(form_data)
-
-
-class EquationSpatialPlotForm(Form):
-    def __init__(self):
-        super(EquationSpatialPlotForm, self).__init__()
-        self.min_space_x = FloatField(Float(label='Spatial Start Distance(mm)', default=0, doc="The minimum value of"
-                                            " the x-axis for spatial equation plot."), name='min_space_x')
-        self.max_space_x = FloatField(Float(label='Spatial End Distance(mm)', default=100, doc="The maximum value of "
-                                            "the x-axis for spatial equation plot."), name='max_space_x')
-
-    def fill_from_post(self, form_data):
-        if self.min_space_x.name in form_data:
-            self.min_space_x.fill_from_post(form_data)
-        if self.max_space_x.name in form_data:
-            self.max_space_x.fill_from_post(form_data)
 
 
 @traced
