@@ -89,6 +89,19 @@ class BIDSImporter(ABCUploader):
     SPATIAL_TOKEN = "spatial"
     TS_TOKEN = "ts"
 
+    TSV_EXTENSION = ".tsv"
+    JSON_EXTENSION = ".json"
+
+    WEIGHTS_FILE = "weights" + TSV_EXTENSION
+    WEIGHTS_JSON_FILE = "weights" + JSON_EXTENSION
+    DISTANCES_FILE = "distances" + TSV_EXTENSION
+
+    VERTICES_FILE = "vertices" + TSV_EXTENSION
+    NORMALS_FILE = "normals" + TSV_EXTENSION
+    TRIANGLES_FILE = "faces" + TSV_EXTENSION
+
+    COORDS_ROWS_KEY = "CoordsRows"
+
     def get_form_class(self):
         return BIDSImporterForm
 
@@ -140,19 +153,19 @@ class BIDSImporter(ABCUploader):
         for net_file_name in os.listdir(net_folder):
             net_file_path = os.path.join(net_folder, net_file_name)
 
-            if net_file_name.endswith('weights.tsv'):
+            if net_file_name.endswith(self.WEIGHTS_FILE):
                 weights_matrix = self.read_list_data(net_file_path)
-            elif net_file_name.endswith('distances.tsv'):
+            elif net_file_name.endswith(self.DISTANCES_FILE):
                 tracts_matrix = self.read_list_data(net_file_path)
-            elif net_file_name.endswith('weights.json'):
+            elif net_file_name.endswith(self.WEIGHTS_JSON_FILE):
                 with open(net_file_path) as json_file:
                     json_dict = json.load(json_file)
-                    labels_path = json_dict['CoordsRows'][0]
-                    centres_path = json_dict['CoordsRows'][1]
+                    labels_path = json_dict[self.COORDS_ROWS_KEY][0]
+                    centres_path = json_dict[self.COORDS_ROWS_KEY][1]
 
                     dir_path = os.path.dirname(net_file_path)
-                    labels_path = os.path.join(dir_path, labels_path).replace('.json', '.tsv')
-                    centres_path = os.path.join(dir_path, centres_path).replace('.json', '.tsv')
+                    labels_path = os.path.join(dir_path, labels_path).replace(self.JSON_EXTENSION, self.TSV_EXTENSION)
+                    centres_path = os.path.join(dir_path, centres_path).replace(self.JSON_EXTENSION, self.TSV_EXTENSION)
 
                     centres = self.read_list_data(centres_path)
                     labels_vector = self.read_list_data(labels_path, dtype=numpy.str, usecols=[0])
@@ -180,11 +193,11 @@ class BIDSImporter(ABCUploader):
         for surface_file_name in os.listdir(surface_folder):
             surface_file_path = os.path.join(surface_folder, surface_file_name)
 
-            if surface_file_name.endswith('vertices.tsv'):
+            if surface_file_name.endswith(self.VERTICES_FILE):
                 vertices = self.read_list_data(surface_file_path)
-            elif surface_file_name.endswith('normals.tsv'):
+            elif surface_file_name.endswith(self.NORMALS_FILE):
                 normals = self.read_list_data(surface_file_path)
-            elif surface_file_name.endswith('faces.tsv'):
+            elif surface_file_name.endswith(self.TRIANGLES_FILE):
                 triangles = self.read_list_data(surface_file_path, dtype=numpy.int64)
 
         surface = CorticalSurface()
@@ -220,19 +233,19 @@ class BIDSImporter(ABCUploader):
         return surface
 
     def __build_time_series(self, ts_folder, connectivity):
-        tsv_ts_files = filter(lambda x: x.endswith('.tsv'), os.listdir(ts_folder))
+        tsv_ts_files = filter(lambda x: x.endswith(self.TSV_EXTENSION), os.listdir(ts_folder))
         ts = None
         for tsv_ts_file_name in tsv_ts_files:
             tsv_ts_file = os.path.join(ts_folder, tsv_ts_file_name)
             ts_array_data = self.read_list_data(tsv_ts_file)
             ts_array_data = ts_array_data.reshape((len(ts_array_data), 1, len(ts_array_data[0]), 1))
 
-            json_ts_file = tsv_ts_file.replace('.tsv', '.json')
+            json_ts_file = tsv_ts_file.replace(self.TSV_EXTENSION, self.JSON_EXTENSION)
             with open(json_ts_file) as json_ts:
-                ts_time_file = json.load(json_ts)['CoordsRows'][0]
+                ts_time_file = json.load(json_ts)[self.COORDS_ROWS_KEY][0]
 
             dir_path = os.path.dirname(json_ts_file)
-            ts_time_file = os.path.join(dir_path, ts_time_file).replace('.json', '.tsv')
+            ts_time_file = os.path.join(dir_path, ts_time_file).replace(self.JSON_EXTENSION, self.TSV_EXTENSION)
             ts_times_data = self.read_list_data(ts_time_file)
 
             ts = TimeSeriesRegion()
@@ -250,7 +263,7 @@ class BIDSImporter(ABCUploader):
         return ts
 
     def __build_functional_connectivity(self, spatial_folder, ts):
-        tsv_spatial_files = filter(lambda x: x.endswith('.tsv'), os.listdir(spatial_folder))
+        tsv_spatial_files = filter(lambda x: x.endswith(self.TSV_EXTENSION), os.listdir(spatial_folder))
 
         for tsv_spatial_file_name in tsv_spatial_files:
             tsv_spatial_file = os.path.join(spatial_folder, tsv_spatial_file_name)
