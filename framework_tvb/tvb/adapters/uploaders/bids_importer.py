@@ -125,7 +125,7 @@ class BIDSImporter(ABCUploader):
                 subject_folders.append(file_name)
 
         connectivity = None
-        ts = None
+        ts_dict = None
 
         for subject_folder in subject_folders:
             net_folder = os.path.join(subject_folder, self.NET_TOKEN)
@@ -138,11 +138,11 @@ class BIDSImporter(ABCUploader):
 
             ts_folder = os.path.join(subject_folder, self.TS_TOKEN)
             if os.path.exists(ts_folder):
-                ts = self.__build_time_series(ts_folder, connectivity)
+                ts_dict = self.__build_time_series(ts_folder, connectivity)
 
             spatial_folder = os.path.join(subject_folder, self.SPATIAL_TOKEN)
             if os.path.exists(spatial_folder):
-                self.__build_functional_connectivity(spatial_folder, ts)
+                self.__build_functional_connectivity(spatial_folder, ts_dict)
 
     def __build_connectivity(self, net_folder):
         weights_matrix = None
@@ -234,7 +234,7 @@ class BIDSImporter(ABCUploader):
 
     def __build_time_series(self, ts_folder, connectivity):
         tsv_ts_files = filter(lambda x: x.endswith(self.TSV_EXTENSION), os.listdir(ts_folder))
-        ts = None
+        ts_dict = {}
         for tsv_ts_file_name in tsv_ts_files:
             tsv_ts_file = os.path.join(ts_folder, tsv_ts_file_name)
             ts_array_data = self.read_list_data(tsv_ts_file)
@@ -259,10 +259,11 @@ class BIDSImporter(ABCUploader):
             ts_index.fixed_generic_attributes = True
             self._capture_operation_results([ts_index])
             dao.store_entity(ts_index)
+            ts_dict[os.path.basename(tsv_ts_file)] = ts
 
-        return ts
+        return ts_dict
 
-    def __build_functional_connectivity(self, spatial_folder, ts):
+    def __build_functional_connectivity(self, spatial_folder, ts_dict):
         tsv_spatial_files = filter(lambda x: x.endswith(self.TSV_EXTENSION), os.listdir(spatial_folder))
 
         for tsv_spatial_file_name in tsv_spatial_files:
@@ -272,7 +273,12 @@ class BIDSImporter(ABCUploader):
 
             pearson_correlation = CorrelationCoefficients()
             pearson_correlation.array_data = fc_data
-            pearson_correlation.source = ts
+
+            name_key = tsv_spatial_file_name.replace('sim_fc', '').replace('emp_fc', '').replace('.tsv', '')
+            for ts_file_name, ts in ts_dict.items():
+                if name_key in ts_file_name:
+                    pearson_correlation.source = ts
+                    break
 
             self.generic_attributes.user_tag_1 = tsv_spatial_file_name
             pearson_correlation.configure()
