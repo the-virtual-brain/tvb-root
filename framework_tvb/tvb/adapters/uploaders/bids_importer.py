@@ -48,6 +48,7 @@ from tvb.core.neotraits.view_model import Str
 from tvb.core.adapters.abcuploader import ABCUploaderForm, ABCUploader
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.graph import CorrelationCoefficients
+from tvb.datatypes.surfaces import CorticalSurface, center_vertices
 from tvb.datatypes.time_series import TimeSeriesRegion
 
 
@@ -84,6 +85,7 @@ class BIDSImporter(ABCUploader):
     SUBJECT_PREFIX = "sub"
 
     NET_TOKEN = "net"
+    COORDS_TOKEN = "coord"
     SPATIAL_TOKEN = "spatial"
     TS_TOKEN = "ts"
 
@@ -116,6 +118,10 @@ class BIDSImporter(ABCUploader):
             net_folder = os.path.join(subject_folder, self.NET_TOKEN)
             if os.path.exists(net_folder):
                 connectivity = self.__build_connectivity(net_folder)
+
+            coords_folder = os.path.join(subject_folder, self.COORDS_TOKEN)
+            if os.path.exists(coords_folder):
+                self.__build_surface(coords_folder)
 
             ts_folder = os.path.join(subject_folder, self.TS_TOKEN)
             if os.path.exists(ts_folder):
@@ -165,6 +171,53 @@ class BIDSImporter(ABCUploader):
         dao.store_entity(connectivity_index)
 
         return connectivity
+
+    def __build_surface(self, surface_folder):
+        vertices = None
+        normals = None
+        triangles = None
+
+        for surface_file_name in os.listdir(surface_folder):
+            surface_file_path = os.path.join(surface_folder, surface_file_name)
+
+            if surface_file_name.endswith('vertices.tsv'):
+                vertices = self.read_list_data(surface_file_path)
+            elif surface_file_name.endswith('normals.tsv'):
+                normals = self.read_list_data(surface_file_path)
+            elif surface_file_name.endswith('faces.tsv'):
+                triangles = self.read_list_data(surface_file_path, dtype=numpy.int64)
+
+        surface = CorticalSurface()
+
+        # The vertex values can be too small to be seen with the viewer, so we multiply them with orders of 10
+        vertices_mean = numpy.mean(vertices)
+        if vertices_mean < 0.1:
+            vertices = vertices * 1000
+        elif vertices_mean < 1:
+            vertices = vertices * 100
+        elif vertices_mean < 10:
+            vertices = vertices * 10
+
+        surface.vertices = vertices
+        surface.normals = normals
+        surface.zero_based_triangles = False
+        surface.triangles = triangles - 1
+        surface.hemisphere_mask = numpy.array([False] * len(vertices))
+        surface.compute_triangle_normals()
+        surface.valid_for_simulations = True
+
+        validation_result = surface.validate()
+        if validation_result.warnings:
+            self.add_operation_additional_info(validation_result.summary())
+
+        surface.configure()
+
+        surface_index = self.store_complete(surface)
+
+        self._capture_operation_results([surface_index])
+        dao.store_entity(surface_index)
+
+        return surface
 
     def __build_time_series(self, ts_folder, connectivity):
         tsv_ts_files = filter(lambda x: x.endswith('.tsv'), os.listdir(ts_folder))
