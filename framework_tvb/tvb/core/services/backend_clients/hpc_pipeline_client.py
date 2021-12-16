@@ -86,9 +86,7 @@ class HPCPipelineClient(HPCClient):
                 "Arguments file for the pipeline script was not found in the operation folder for operation {}".format(
                     operation.id))
 
-        json_parser = os.path.join(os.environ[HPCClient.TVB_BIN_ENV_KEY], HPCPipelineClient.SCRIPT_FOLDER_NAME,
-                                   HPCSettings.HPC_PIPELINE_JSON_PARSER)
-        return [pipeline_data_zip, args_file, json_parser]
+        return [pipeline_data_zip, args_file]
 
     @staticmethod
     def _configure_job(operation_id, mode, container_store, working_dir="$PWD", stage_in_remote_files=True,
