@@ -359,6 +359,10 @@ function configureNoiseParameters() {
     configureModel("/burst/noise/");
 }
 
+function applyTransferFunction(){
+    configureModel("/burst/tvb-o");
+}
+
 function toggleConfigSurfaceModelParamsButton() {
     var selectorSurfaceElem = $("select[name='surface']");
     selectorSurfaceElem.unbind('change.configureSurfaceModelParameters');
@@ -647,6 +651,7 @@ function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulat
     var next_button = previous_form.elements.namedItem('next');
     var previous_button = previous_form.elements.namedItem('previous');
     var config_region_param_button = previous_form.elements.namedItem('configRegionModelParam');
+    var apply_transfer_function_button = previous_form.elements.namedItem('configOntology');
     var config_surface_param_button = previous_form.elements.namedItem('configSurfaceModelParam');
     var config_noise_button = previous_form.elements.namedItem('configNoiseValues');
     var config_launch_button = previous_form.elements.namedItem('launch_simulation');
@@ -663,6 +668,9 @@ function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulat
     }
     if (config_region_param_button != null) {
         config_region_param_button.style.visibility = 'visible';
+    }
+    if(apply_transfer_function_button != null){
+        apply_transfer_function_button.style.visibility = 'visible';
     }
     if (config_surface_param_button != null) {
         config_surface_param_button.style.visibility = 'visible';
@@ -709,6 +717,7 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
     var next_button = currentForm.elements.namedItem('next');
     var previous_button = currentForm.elements.namedItem('previous');
     var config_region_param_button = currentForm.elements.namedItem('configRegionModelParam');
+    var apply_transfer_function_button = currentForm.elements.namedItem('configOntology');
     var config_surface_param_button = currentForm.elements.namedItem('configSurfaceModelParam');
     var config_noise_button = currentForm.elements.namedItem('configNoiseValues');
     var config_launch_button = currentForm.elements.namedItem('launch_simulation');
@@ -733,6 +742,9 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
                 }
                 if (config_region_param_button != null) {
                     config_region_param_button.style.visibility = 'hidden';
+                }
+                if(apply_transfer_function_button != null){
+                    apply_transfer_function_button.style.visibility = 'hidden';
                 }
                 if (config_surface_param_button != null) {
                     config_surface_param_button.style.visibility = 'hidden';

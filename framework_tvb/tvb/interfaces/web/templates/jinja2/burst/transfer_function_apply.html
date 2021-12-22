@@ -1,0 +1,68 @@
+<div id="main" class="columnized colscheme-2-even" style="overflow: hidden">
+    <link rel="stylesheet" type="text/css" href="{{ deploy_context | safe }}/static/style/section_stimulus.css?{{ currentVersionJS }}"/>
+
+    <section class="select-regions view-column col-1">
+
+        <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/spatial/base_spatial.js"></script>
+        <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/spatial/transfer_function_apply.js"></script>
+        {% include 'spatial/refreshBaseUrl_initializer.html' %}
+
+        <h4><mark>Apply</mark> Transfer Function</h4>
+
+        {{ applyTransferFunctionForm | safe }}
+
+        <button class="action" onclick="TF_applyTransferFunction()" style="float: right">Apply transfer function</button>
+        <button class="action" onclick="TF_clearHistogram()" style="float: right">Clear Histogram</button>
+
+        <fieldset>
+            <legend>Applied transfer functions:</legend>
+                {% if applied_transfer_functions %}
+                    {% for param in applied_transfer_functions %}
+                        <p>
+                            <b>Parameter {{ param }} :</b>
+                        </p>
+                    {% endfor %}
+                {% endif %}
+        </fieldset>
+
+        <p>&nbsp</p><p>&nbsp</p>
+
+        <fieldset>
+            <legend>Current equation plot:</legend>
+            <div id='transferFunctionDivId'></div>
+            {{ parametersTransferFunctionPlotForm | safe }}
+        </fieldset>
+
+        <script type="text/javascript">
+            $(document).ready(function () {
+                setEventsOnStaticFormFields({{ transferFunctionsPrefixes | safe }});
+                plotEquation();
+                redrawPlotOnMinMaxChanges();
+            });
+        </script>
+    </section>
+
+    {% include 'visualizers/histogram/view.html' %}
+
+    <form id="base_spatio_temporal_form" action="{{ submit_parameters_url }}" method="POST">
+        <aside class="header-component toolbar can-extend auto-extends">
+            <div class="extension">
+                <div class="dropdown-pane">
+                    <ul>
+                        <li>
+                            <button type="submit" class="action action-confirm" name="submit_action" values="submit_action"
+                                    id="base_spatio_temporal_submit">
+                                Apply TF On Nodes
+                            </button>
+                        </li>
+                        <li>
+                            <button type="submit" class="action action-cancel" name="submit_action" value="cancel_action">
+                                Cancel
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
+    </form>
+</div>

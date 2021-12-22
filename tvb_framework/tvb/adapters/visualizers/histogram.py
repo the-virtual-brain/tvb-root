@@ -105,6 +105,14 @@ class HistogramViewer(ABCDisplayer):
         input_data = self.load_entity_by_gid(view_model.input_data)
         return numpy.prod(input_data.shape) * 2
 
+    @staticmethod
+    def gather_params_dict(labels_list, values_list, title):
+        params = dict(title="Connectivity Measure - " + title, labels=json.dumps(labels_list),
+                      data=json.dumps(values_list), colors=json.dumps(values_list),
+                      xposition='center' if min(values_list) < 0 else 'bottom',
+                      minColor=min(values_list), maxColor=max(values_list))
+        return params
+
     def prepare_parameters(self, connectivity_measure_gid):
         """
         Prepare all required parameters for a launch.
@@ -114,10 +122,6 @@ class HistogramViewer(ABCDisplayer):
         labels_list = conn_measure.connectivity.region_labels.tolist()
         values_list = conn_measure.array_data.tolist()
         # A gradient of colors will be used for each node
-        colors_list = values_list
 
-        params = dict(title="Connectivity Measure - " + conn_measure.title, labels=json.dumps(labels_list),
-                      data=json.dumps(values_list), colors=json.dumps(colors_list),
-                      xposition='center' if min(values_list) < 0 else 'bottom',
-                      minColor=min(colors_list), maxColor=max(colors_list))
+        params = self.gather_params_dict(labels_list, values_list, conn_measure.title)
         return params

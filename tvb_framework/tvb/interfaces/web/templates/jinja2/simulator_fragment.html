@@ -46,6 +46,10 @@
         <button type="button" title="Set up model parameters for region-based simulations" class="btn btn-primary" tabindex="1"
            onclick="configureModelParamsOnRegions();" id="configRegionModelParam" name="configRegionModelParam"
            {% if renderer.load_readonly %} style="visibility: hidden" {% endif %}>Set up region Model</button>
+
+        <button type="button" title="Apply transfer function on a model parameter" class="btn btn-primary" tabindex="1"
+            onclick="wizzard_submit(this.parentElement, applyTransferFunction, 'div-simulator-parameters', true);" id="configOntology" name="configOntology"
+            {% if renderer.load_readonly %} style="visibility: hidden" {% endif %}>Apply Transfer Function</button>
     {% endif %}
     {% if renderer.include_setup_surface_model %}
             <button type="button" title="Set up model parameters for surface-based simulations" class="btn btn-primary" tabindex="1"

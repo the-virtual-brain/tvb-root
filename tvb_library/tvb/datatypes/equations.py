@@ -151,6 +151,15 @@ class DiscreteEquation(FiniteSupportEquation):
         doc="""The equation defines a function of :math:`x`""")
 
 
+class TransferFunction(Equation):
+    """
+    General class for transfer functions used by TVB-O.
+    Transfer functions should be implemented similar to the existing equations.
+    Until the transfer functions are implemented, we are going to use some existing
+    equations for demonstrative purposes
+    """
+
+
 class Linear(TemporalApplicableEquation):
     """
     A linear equation.
