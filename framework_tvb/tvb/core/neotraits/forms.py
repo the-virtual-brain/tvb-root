@@ -295,7 +295,7 @@ class SelectField(TraitField):
             self.template = 'form_fields/select_field.html'
 
     def __init__(self, trait_attribute, name=None, disabled=False, display_none_choice=True,
-                 subform=None, display_subform=True, ui_values=None):
+                 subform=None, display_subform=True, ui_values=None, session_key=None, form_key=None):
         super(SelectField, self).__init__(trait_attribute, name, disabled)
 
         self.choices = list(trait_attribute.choices)
@@ -308,6 +308,8 @@ class SelectField(TraitField):
             self.display_subform = display_subform
         self._prepare_template(self.choices)
         self.ui_values = ui_values
+        self.session_key = session_key
+        self.form_key = form_key
 
     @property
     def value(self):
@@ -502,7 +504,8 @@ class Form(object):
     def __init__(self):
         self.errors = []
 
-    def get_subform_key(self):
+    @staticmethod
+    def get_subform_key():
         """
         If the current form can be used as subform, this method should return the proper value.
         """

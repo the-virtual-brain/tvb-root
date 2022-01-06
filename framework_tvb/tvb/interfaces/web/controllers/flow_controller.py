@@ -41,7 +41,9 @@ import cherrypy
 import formencode
 import numpy
 import six
+from tvb.adapters.forms.equation_forms import get_form_for_equation
 
+from tvb.basic.neotraits.api import TVBEnum, SubformEnum
 from tvb.basic.neotraits.ex import TraitValueError
 from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -63,10 +65,12 @@ from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.common import InvalidFormValues
-from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json
+from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json, \
+    using_template
 from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
+from tvb.adapters.creators.local_connectivity_creator import LocalConnectivityCreatorModel, KEY_LCONN
 
 KEY_CONTENT = ABCDisplayer.KEY_CONTENT
 FILTER_FIELDS = "fields"
@@ -92,6 +96,7 @@ class FlowController(BaseController):
         self.context = SelectedAdapterContext()
         self.operation_services = OperationService()
         self.simulator_controller = SimulatorController()
+        self.enum_members = SubformEnum.get_enum_members()
 
         analyze_category, groups = self.algorithm_service.get_analyze_groups()
         adapters_list = []
@@ -141,6 +146,7 @@ class FlowController(BaseController):
         template_specification = dict(mainContent="header_menu", section_name='connectivity', controlPage=None,
                                       title="Select an algorithm", displayControl=False, subsection_name='step',
                                       submenu_list=self.connectivity_submenu)
+        common.add2session(KEY_LCONN, LocalConnectivityCreatorModel)
         return self.fill_default_attributes(template_specification)
 
     @staticmethod
@@ -669,3 +675,18 @@ class FlowController(BaseController):
                                                   **parameters)
 
         return [True, 'Stored the exploration material successfully']
+
+    @cherrypy.expose
+    @using_template('form_fields/form_field')
+    @handle_error(redirect=False)
+    @check_user
+    def refresh_subform(self, data_name, subform_label, spatial_model_key):
+        data_class = TVBEnum.string_to_enum(self.enum_members, data_name).value
+
+        spatial_model = common.get_from_session(spatial_model_key)
+        equation_info = spatial_model.get_equation_information()
+        setattr(spatial_model, equation_info[subform_label], data_class())
+
+        adapter_form = get_form_for_equation(data_class)()
+
+        return {'adapter_form': adapter_form}

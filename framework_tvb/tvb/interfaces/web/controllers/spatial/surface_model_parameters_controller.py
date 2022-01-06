@@ -36,83 +36,20 @@
 import json
 import cherrypy
 
-from tvb.adapters.simulator.equation_forms import get_form_for_equation
-from tvb.adapters.simulator.model_forms import get_model_to_form_dict
-from tvb.basic.neotraits.api import Attr, Float, EnumAttr, TupleEnum, TVBEnum
-from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.adapters.forms.equation_forms import get_form_for_equation
+from tvb.adapters.forms.equation_plot_forms import EquationPlotForm
+from tvb.adapters.forms.model_forms import get_model_to_form_dict
+from tvb.adapters.forms.surface_model_parameters_form import SurfaceModelParametersForm, KEY_CONTEXT_MPS
 from tvb.core.entities import load
-from tvb.core.neotraits.forms import Form, FormField, SelectField, FloatField, DynamicSelectField
-from tvb.core.neotraits.view_model import Str
 from tvb.core.services.burst_config_serialization import SerializationManager
-from tvb.datatypes.equations import Gaussian, Sigmoid
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
-from tvb.interfaces.web.controllers.decorators import expose_page, expose_fragment, handle_error, check_user, \
-    using_template
+from tvb.interfaces.web.controllers.decorators import expose_page, expose_fragment, handle_error, check_user
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorWizzardURLs
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
 from tvb.interfaces.web.entities.context_model_parameters import SurfaceContextModelParameters
 from tvb.interfaces.web.entities.context_simulator import SimulatorContext
-
-### SESSION KEY for ContextModelParameter entity.
-KEY_CONTEXT_MPS = "ContextForModelParametersOnSurface"
-
-
-class SurfaceModelEquationsEnum(TupleEnum):
-    GAUSSIAN = (Gaussian, "Gaussian")
-    SIGMOID = (Sigmoid, "Sigmoid")
-
-
-class SurfaceModelParametersForm(ABCAdapterForm):
-    NAME_EQATION_PARAMS_DIV = 'equation_params'
-    default_equation = SurfaceModelEquationsEnum.GAUSSIAN
-
-    def __init__(self, model_params):
-        super(SurfaceModelParametersForm, self).__init__()
-
-        model_labels = [param.name for param in model_params]
-        model_mathjax_representations = [param.label for param in model_params]
-        self.model_param = DynamicSelectField(Str(label='Model parameter'), choices=model_labels, name='model_param',
-                                              ui_values=model_mathjax_representations)
-        self.equation = SelectField(EnumAttr(label='Equation', default=self.default_equation),
-                                    name='equation',
-                                    subform=get_form_for_equation(self.default_equation.value))
-
-    @staticmethod
-    def get_required_datatype():
-        return None
-
-    @staticmethod
-    def get_input_name():
-        return None
-
-    @staticmethod
-    def get_filters():
-        return None
-
-    def fill_from_trait(self, trait):
-        self.equation.data = type(trait)
-        self.equation.subform_field = FormField(get_form_for_equation(type(trait)),
-                                                self.NAME_EQATION_PARAMS_DIV)
-        self.equation.subform_field.form.fill_from_trait(trait)
-
-
-class EquationPlotForm(Form):
-    def __init__(self):
-        super(EquationPlotForm, self).__init__()
-        self.min_x = FloatField(Float(label='Min distance(mm)', default=0,
-                                      doc="The minimum value of the x-axis for spatial equation plot."),
-                                name='min_x')
-        self.max_x = FloatField(Float(label='Max distance(mm)', default=100,
-                                      doc="The maximum value of the x-axis for spatial equation plot."),
-                                name='max_x')
-
-    def fill_from_post(self, form_data):
-        if self.min_x.name in form_data:
-            self.min_x.fill_from_post(form_data)
-        if self.max_x.name in form_data:
-            self.max_x.fill_from_post(form_data)
 
 
 @traced
@@ -229,18 +166,6 @@ class SurfaceModelParametersController(SpatioTemporalController):
 
         template_specification = self._prepare_reload(context)
         return self.fill_default_attributes(template_specification)
-
-    @cherrypy.expose
-    @using_template("form_fields/form_field")
-    @handle_error(redirect=False)
-    @check_user
-    def refresh_subform(self, equation):
-        eq_class = TVBEnum.string_to_enum(list(SurfaceModelEquationsEnum), equation).value
-        context = common.get_from_session(KEY_CONTEXT_MPS)
-        context.current_equation = eq_class()
-
-        eq_params_form = get_form_for_equation(eq_class)()
-        return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
 
     @cherrypy.expose
     def set_equation_param(self, **param):

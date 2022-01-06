@@ -27,9 +27,9 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.adapters.simulator.equation_forms import get_form_for_equation, TemporalEquationsEnum
-from tvb.adapters.simulator.form_with_ranges import FormWithRanges
-from tvb.basic.neotraits.api import Attr, EnumAttr, Range
+from tvb.adapters.forms.equation_forms import get_form_for_equation, TemporalEquationsEnum
+from tvb.adapters.forms.form_with_ranges import FormWithRanges
+from tvb.basic.neotraits.api import EnumAttr, Range
 from tvb.core.entities.file.simulator.view_model import NoiseViewModel, AdditiveNoiseViewModel, \
     MultiplicativeNoiseViewModel
 from tvb.core.entities.transient.range_parameter import RangeParameter
@@ -47,7 +47,8 @@ def get_form_for_noise(noise_class):
 
 class NoiseForm(FormWithRanges):
 
-    def get_subform_key(self):
+    @staticmethod
+    def get_subform_key():
         return 'NOISE'
 
     def __init__(self):

@@ -47,10 +47,10 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex, RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.adapters.simulator.coupling_forms import CouplingFunctionsEnum
-from tvb.adapters.simulator.model_forms import get_model_to_form_dict
-from tvb.adapters.simulator.monitor_forms import get_monitor_to_form_dict
-from tvb.adapters.simulator.simulator_fragments import *
+from tvb.adapters.forms.coupling_forms import CouplingFunctionsEnum
+from tvb.adapters.forms.model_forms import get_model_to_form_dict
+from tvb.adapters.forms.monitor_forms import get_monitor_to_form_dict
+from tvb.adapters.forms.simulator_fragments import *
 from tvb.basic.neotraits.api import EnumAttr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException, InvalidParameterException
