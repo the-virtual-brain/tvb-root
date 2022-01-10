@@ -33,8 +33,11 @@
 """
 
 from copy import deepcopy
+
+from tvb.adapters.forms.surface_model_parameters_form import SurfaceModelParametersForm
 from tvb.basic.logger.builder import get_logger
 from tvb.core.neocom import h5
+from tvb.core.neotraits.spatial_model import SpatialModel
 from tvb.datatypes.surfaces import CorticalSurface
 
 KEY_EQUATION = "equation"
@@ -42,7 +45,7 @@ KEY_FOCAL_POINTS = "focal_points"
 KEY_FOCAL_POINTS_TRIANGLES = "focal_points_triangles"
 
 
-class SurfaceContextModelParameters(object):
+class SurfaceContextModelParameters(SpatialModel):
     """
     This class contains methods which allows you to edit the model
     parameters for each vertex of the given surface.
@@ -186,3 +189,9 @@ class SurfaceContextModelParameters(object):
             result[param] = {'equation_name': equation.__class__.__name__,
                              'equation_params': base_equation, 'focal_points': focal_points}
         return result
+
+    @staticmethod
+    def get_equation_information():
+        return {
+            SurfaceModelParametersForm.equation_field_label: 'current_equation'
+        }

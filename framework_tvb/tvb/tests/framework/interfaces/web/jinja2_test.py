@@ -31,9 +31,9 @@
 import numpy
 from bs4 import BeautifulSoup
 
-from tvb.adapters.simulator.model_forms import ModelsEnum
+from tvb.adapters.forms.model_forms import ModelsEnum
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterForm
-from tvb.adapters.simulator.simulator_fragments import SimulatorModelFragment
+from tvb.adapters.forms.simulator_fragments import SimulatorModelFragment
 from tvb.basic.neotraits.api import HasTraits, NArray
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcadapter import ABCAdapter, ABCAdapterForm
