@@ -27,7 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.adapters.simulator.form_with_ranges import FormWithRanges
+from tvb.adapters.forms.form_with_ranges import FormWithRanges
 from tvb.basic.neotraits.api import NArray, Range
 from tvb.core.entities.transient.range_parameter import RangeParameter
 from tvb.datatypes.connectivity import Connectivity

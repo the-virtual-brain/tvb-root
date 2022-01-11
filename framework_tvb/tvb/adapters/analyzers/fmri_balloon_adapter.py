@@ -59,14 +59,6 @@ class BalloonModelAdapterModel(ViewModel):
         doc="""The timeseries that represents the input neural activity"""
     )
 
-    dt = Float(
-        label=":math:`dt`",
-        default=0.002,
-        required=True,
-        doc="""The integration time step size for the balloon model (s).
-            If none is provided, by default, the TimeSeries sample period is used."""
-    )
-
     tau_s = Float(
         label=r":math:`\tau_s`",
         default=1.54,
@@ -107,6 +99,14 @@ class BalloonModelAdapterModel(ViewModel):
             Coefficients  k1, k2 and k3 will be derived accordingly."""
     )
 
+    normalize_neural_input = Attr(
+        field_type=bool,
+        label="Normalize neural input",
+        default=False,
+        required=True,
+        doc="""Set if the mean should be subtracted from the neural input."""
+    )
+
 
 class BalloonModelAdapterForm(ABCAdapterForm):
 
@@ -114,12 +114,12 @@ class BalloonModelAdapterForm(ABCAdapterForm):
         super(BalloonModelAdapterForm, self).__init__()
         self.time_series = TraitDataTypeSelectField(BalloonModelAdapterModel.time_series, name=self.get_input_name(),
                                                     conditions=self.get_filters(), has_all_option=True)
-        self.dt = FloatField(BalloonModelAdapterModel.dt)
         self.tau_s = FloatField(BalloonModelAdapterModel.tau_s)
         self.tau_f = FloatField(BalloonModelAdapterModel.tau_f)
         self.neural_input_transformation = SelectField(BalloonModelAdapterModel.neural_input_transformation)
         self.bold_model = SelectField(BalloonModelAdapterModel.bold_model)
         self.RBM = BoolField(BalloonModelAdapterModel.RBM)
+        self.normalize_neural_input = BoolField(BalloonModelAdapterModel.normalize_neural_input)
 
     @staticmethod
     def get_view_model():
@@ -168,22 +168,16 @@ class BalloonModelAdapter(ABCAdapter):
         self.log.debug("time_series shape is %s" % str(self.input_shape))
         # -------------------- Fill Algorithm for Analysis -------------------##
         algorithm = BalloonModel()
-
-        if view_model.dt is not None:
-            algorithm.dt = view_model.dt
-        else:
-            algorithm.dt = self.input_time_series_index.sample_period / 1000.
-
         if view_model.tau_s is not None:
             algorithm.tau_s = view_model.tau_s
         if view_model.tau_f is not None:
             algorithm.tau_f = view_model.tau_f
         if view_model.bold_model is not None:
             algorithm.bold_model = view_model.bold_model
-        if view_model.RBM is not None:
-            algorithm.RBM = view_model.RBM
         if view_model.neural_input_transformation is not None:
             algorithm.neural_input_transformation = view_model.neural_input_transformation
+        algorithm.RBM = view_model.RBM
+        algorithm.normalize_neural_input = view_model.normalize_neural_input
 
         self.algorithm = algorithm
 

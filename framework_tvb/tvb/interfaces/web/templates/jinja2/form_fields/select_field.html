@@ -14,7 +14,8 @@
         <script type="text/javascript">
             $(document).ready(function () {
                 $('select[name^="{{ field.name }}"]').change(function () {
-                    refreshSubform(this, '{{ field.subform_field.form.get_subform_key() }}', '{{ field.subform_field.name }}')
+                    refreshSubform(this, '{{ field.subform_field.form.get_subform_key() }}',
+                        '{{ field.subform_field.name }}', '{{ field.session_key }}', '{{ field.label }}')
                 });
                 setEventsOnFormFields('{{ field.subform_field.form.get_subform_key() }}', '{{ field.subform_field.name }}');
             });

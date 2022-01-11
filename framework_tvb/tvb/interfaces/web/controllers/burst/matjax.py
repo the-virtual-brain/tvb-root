@@ -35,7 +35,8 @@ of the dynamic models in Simulator/Phase Plane.
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
-from tvb.adapters.simulator.model_forms import ModelsEnum
+
+from tvb.adapters.forms.model_forms import ModelsEnum
 
 
 def configure_matjax_doc():
