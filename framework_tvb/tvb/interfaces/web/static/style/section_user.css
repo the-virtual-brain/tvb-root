@@ -214,6 +214,11 @@ margin-left: 116px;
 width: 404px;
 }
 
+body#s-user.user-authorized div#main section.sites {
+margin-left: 116px;
+width: 604px;
+}
+
 body#s-user.user-authorized div#main section.updates {
 margin-left: 85px;
 }
@@ -254,6 +259,10 @@ text-transform: uppercase;
 width: 131px;
 }
 
+body#s-user.user-authorized div#main section.sites dt {
+    width: 151px;
+}
+
 body#s-user.user-authorized div#main dd {
 border-top: 1px solid #2272a3;
 color: #194343;
@@ -261,6 +270,11 @@ float: left;
 font-family: "Georgia", "Times", serif;
 padding: 10px 0 5px 0;
 width: 273px;
+}
+
+body#s-user.user-authorized div#main section.sites dd {
+width: 373px;
+padding-left: 10px;
 }
 
 body#s-user.user-authorized div#main dt:first-child, 
