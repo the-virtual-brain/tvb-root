@@ -35,42 +35,25 @@ Tests for the Numba batch-unrolling backend.
 
 from .backendtestbase import BaseTestSim
 from tvb.simulator.backend.nbbu import NbbuBackend
+from tvb.datatypes.connectivity import Connectivity
 
-
-# This does a benchmark, not a proper test yet.
-
-if __name__ == '__main__':
-    import numba, mako.template, time, tqdm, numpy as np
-    numba.config.threading_layer='tbb'
-    from tvb.datatypes.connectivity import Connectivity
+def _prep_one(nl, k):
     conn = Connectivity.from_file()
-    weights = conn.weights.astype('f')
-    dt = 0.1
-    idelays = (conn.tract_lengths / 10 / dt).astype('i')
-
     backend = NbbuBackend()
-    template = '<%include file="nbbu-poc.py.mako"/>'
+    kernel = backend.prep_poc_bench(conn, nl=nl, k=k)
+    return kernel
 
-    nt = 1000
-    for nl in [1,16,32]:#,64]: #[16,32]:
-        for k in [1,4,8]:#,64,96,128]:
-            ns = {'numba': numba}
-            delays = backend.build_py_func(
-                template, dict(nl=nl, nt=nt), name='delays')
-            g = np.linspace(0,1,k*nl).reshape((k,nl))
-            r, V = np.random.randn(*(2,k,76,2000, nl)).astype('f')/10.0
-            V -= 2.0
-            pars = 1.0,1.0,-5.0,15.0,0.0
-            print(f'compile {nl}, ', end='', flush=True)
-            delays(0.01, r, V, weights, idelays, g, *pars)
-            print(f'run {k}: ', end='', flush=True)
-            rep = 50
-            tic = time.time()
-            for i in range(rep):
-                delays(0.01, r, V, weights, idelays, g, *pars)
-                print('.',end='',flush=True)
-            # t = timeit.timeit('delays(out, rnl, weights, idelays, g)', number=rep, globals=globals())
-            t = time.time() - tic
-            us = (t / rep) * 1e6
-            it = nt * nl * k
-            print(f'\t{us/it:0.2f} us/it {it/us:0.2f} M it/s {(2*r.nbytes)>>20} MB')
+def test_nbbu_1_1(benchmark):
+    benchmark(_prep_one(1, 1))
+
+def test_nbbu_2_2(benchmark):
+    benchmark(_prep_one(2, 2))
+
+def test_nbbu_4_4(benchmark):
+    benchmark(_prep_one(4, 4))
+
+def test_nbbu_8_8(benchmark):
+    benchmark(_prep_one(8, 8))
+
+def test_nbbu_16_16(benchmark):
+    benchmark(_prep_one(16, 16))
