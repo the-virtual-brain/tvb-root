@@ -59,6 +59,6 @@ class NbbuBackend(NbBackend):
         delays = self.build_py_func(template, params, name='delays')
         # prep arrays for one chunk of sim
         g = np.linspace(0,1,k*nl).reshape((k,nl))
-        r, V = np.random.randn(2,k,nn,2000, nl).astype('f')/10.0
+        r, V = np.random.randn(2,k,nn,nh+nt+1, nl).astype('f')/10.0
         V -= 2.0
         return lambda : delays(0.01, r, V, weights, idelays, g, *pars)

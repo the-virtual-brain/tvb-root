@@ -33,27 +33,17 @@ Tests for the Numba batch-unrolling backend.
 
 """
 
+import numpy as np
+import pytest
 from .backendtestbase import BaseTestSim
 from tvb.simulator.backend.nbbu import NbbuBackend
 from tvb.datatypes.connectivity import Connectivity
 
-def _prep_one(nl, k):
+@pytest.mark.parametrize('cv', [3.0, np.inf])
+@pytest.mark.parametrize('k', [1, 8])
+@pytest.mark.parametrize('nl', [1, 8])
+def test_poc(benchmark, nl, k, cv):
     conn = Connectivity.from_file()
     backend = NbbuBackend()
-    kernel = backend.prep_poc_bench(conn, nl=nl, k=k)
-    return kernel
-
-def test_nbbu_1_1(benchmark):
-    benchmark(_prep_one(1, 1))
-
-def test_nbbu_2_2(benchmark):
-    benchmark(_prep_one(2, 2))
-
-def test_nbbu_4_4(benchmark):
-    benchmark(_prep_one(4, 4))
-
-def test_nbbu_8_8(benchmark):
-    benchmark(_prep_one(8, 8))
-
-def test_nbbu_16_16(benchmark):
-    benchmark(_prep_one(16, 16))
+    kernel = backend.prep_poc_bench(conn, nl=nl, k=k, cv=cv)
+    benchmark(kernel)
