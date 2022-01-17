@@ -18,7 +18,8 @@ RUN wget -q https://zenodo.org/record/4263723/files/tvb_data.zip?download=1 -O t
 RUN ln -s $(which python3) /usr/bin/python
 RUN apt-get install -y libpq-dev wget
 
-RUN apt-get install -y icu-devtools
+ENV DEBIAN_FRONTEND=noninteractive 
+RUN apt-get update && apt-get install -y icu-devtools
 
 WORKDIR /work
 ENV RUNNER_ALLOW_RUNASROOT=1
