@@ -41,12 +41,12 @@ from tvb.datatypes.connectivity import Connectivity
 from tvb.simulator.integrators import EulerStochastic
 from tvb.simulator.noise import Additive
 
+conn = Connectivity.from_file()
 
 @pytest.mark.parametrize('cv', [3.0, np.inf])
 @pytest.mark.parametrize('k', [1, 8])
 @pytest.mark.parametrize('nl', [1, 8])
 def test_bench_poc(benchmark, nl, k, cv):
-    conn = Connectivity.from_file()
     backend = NbbuBackend()
     g, r, V, kernel = backend.prep_poc_bench(conn, nl=nl, nt=100, k=k, cv=cv)
     benchmark(kernel)
@@ -54,29 +54,62 @@ def test_bench_poc(benchmark, nl, k, cv):
 
 class TestNbbuSim(BaseTestSim):
 
-    def test_poc(self):
-        dt = 0.01
+    def make_sim(self, dt, g_i): 
         integrator = EulerStochastic(dt=dt, noise=Additive(nsig=np.r_[dt]))
         integrator.noise.dt = integrator.dt
         sim = self._create_sim(
             integrator,
             inhom_mmpr=False,
             delays=True,
-            run_sim=False
+            run_sim=False,
+            conn=conn,
         )
-        sim.coupling.a = np.r_[0.0]
+        sim.simulation_length = 1.0
+        sim.coupling.a = np.r_[g_i]
+        sim.configure()
+        return sim
+    
+    def test_grid(self):
+        # setup template sim
+        dt = 0.01
+        sim = self.make_sim(dt, 0.05)
         conn = sim.connectivity
         nn = conn.weights.shape[0]
+        # backend & kernel
         backend = NbbuBackend()
-        nl, k, cv, nt = 4, 4, sim.conduction_speed, 10
-        g, r, V, kernel = backend.prep_poc_bench(conn, nl=nl, nt=10, k=k, cv=cv)
-        kernel()
+        nl, k, cv, nt = 4, 4, sim.conduction_speed, int(sim.simulation_length/dt)
+        np.random.seed(42)
+        g, r, V, kernel = backend.prep_poc_bench(conn, nl=nl, nt=nt, k=k, cv=cv, dt=dt)
+        g *= 0.05
+        # convert history
+        nh = 5117
+        assert nh == conn.idelays.max() + 1
+        for ii in range(16):
+            i, j = ii//4, ii%4
+            r[i, :, :nh-1, j] = sim.history.buffer[1:, 0, :, 0].T[:,::-1]
+            r[i, :, nh, j] = sim.history.buffer[0, 0, :, 0]
+            V[i, :, :nh-1, j] = sim.history.buffer[1:, 1, :, 0].T[:,::-1]
+            V[i, :, nh, j] = sim.history.buffer[0, 1, :, 0]
+        # run both 
+        kernel(r,V,g)
         np.random.seed(42)
         state = np.stack([r,V])  # (2, k, nnode, horizon + nstep + 1, nl)
-        nht = conn.idelays.max()+2+nt
+        nht = conn.idelays.max()+1+nt
         assert state.shape == (2, k, nn, nht, nl)
-        yh = np.transpose(state[:,0,:,conn.idelays.max()+2:,0], (2, 0, 1))
+        yh = np.transpose(state[:,3,:,conn.idelays.max()+1:,3], (2, 0, 1))
         (_, y), = sim.run()
         y = y[...,0]
         assert y.shape == yh.shape
-        np.testing.assert_allclose(yh, y)
+        # run tvb on all g values and check median error
+        for i, g_ in enumerate(g.flat[:]):
+            gsim = self.make_sim(dt, g_)
+            (_, y), = gsim.run()
+            y = y[...,0]
+            yh = np.transpose(state[:,i//4,:,conn.idelays.max()+1:,i%4], (2, 0, 1))
+            assert y.shape == yh.shape
+            #subplot(4,4,i+1)
+            #plot(yh[:,0,0])
+            #plot(y[:,0,0])
+            me = np.median(np.sum(y[:,0,:] - yh[:,0,:],axis=1)**2)
+            print(f'{g_:0.3f} {me:0.1f}')        
+            assert me < 2.0

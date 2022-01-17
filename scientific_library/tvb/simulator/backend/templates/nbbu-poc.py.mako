@@ -1,9 +1,11 @@
 import numpy as np
 import numba as nb
+from math import sqrt
 
 @nb.njit(fastmath=True, boundscheck=False, parallel=True)
 def delays(dt, r, V, weights,idelays,g,Delta,tau,eta,J,I):
     rtau = nb.float32(1 / tau)
+    nscl = sqrt(dt) * sqrt(2*dt)
     Delta_rpitau = nb.float32(Delta / (np.pi * tau))
     for k in nb.prange(r.shape[0]):
         for t in range(${nt}):
@@ -27,7 +29,8 @@ def delays(dt, r, V, weights,idelays,g,Delta,tau,eta,J,I):
                 V_noise${i} = V[k, i, ${nh} + t + 1, ${i}]
                 dr${i} = rtau * (Delta_rpitau + 2 * V${i} * r${i})
                 dV${i} = 1/tau * ( V${i}**2 - np.pi**2 * tau**2 * r${i}**2 + eta + J * tau * r${i} + I + r_c${i} ) 
-                r[k, i, ${nh} + t + 1, ${i}] = r${i} + dt*dr${i} + r_noise${i}
-                V[k, i, ${nh} + t + 1, ${i}] = V${i} + dt*dV${i} + V_noise${i}
+                nr${i} = r${i} + dt*dr${i} + nscl*r_noise${i}
+                r[k, i, ${nh} + t + 1, ${i}] = nr${i} * (nr${i} > 0.0)
+                V[k, i, ${nh} + t + 1, ${i}] = V${i} + dt*dV${i} + nscl*V_noise${i}
 % endfor
 

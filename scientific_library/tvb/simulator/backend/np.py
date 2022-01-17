@@ -74,7 +74,7 @@ class NpBackend(MakoUtilMix):
             exec(source, globals_)
         except Exception as exc:
             if not print_source:
-                print(self._insert_line_numbers(source))
+                print(self.insert_line_numbers(source))
             raise exc
         fns = [globals_[n] for n in name.split(',')]
         return fns[0] if len(fns)==1 else fns

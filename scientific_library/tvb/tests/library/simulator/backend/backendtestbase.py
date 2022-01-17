@@ -52,9 +52,9 @@ class BaseTestSim(unittest.TestCase):
 
 
     def _create_sim(self, integrator=None, inhom_mmpr=False, delays=False,
-            run_sim=True):
+            run_sim=True, conn=None):
         mpr = MontbrioPazoRoxin()
-        conn = Connectivity.from_file()
+        conn = conn or Connectivity.from_file()
         if inhom_mmpr:
             dispersion = 1 + np.random.randn(conn.weights.shape[0])*0.1
             mpr = MontbrioPazoRoxin(eta=mpr.eta*dispersion)
