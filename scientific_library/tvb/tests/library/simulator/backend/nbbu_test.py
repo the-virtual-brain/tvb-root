@@ -44,12 +44,13 @@ from tvb.simulator.noise import Additive
 conn = Connectivity.from_file()
 
 @pytest.mark.parametrize('cv', [3.0, np.inf])
-@pytest.mark.parametrize('k', [1, 8])
-@pytest.mark.parametrize('nl', [1, 8])
+@pytest.mark.parametrize('k', [1, 2])
+@pytest.mark.parametrize('nl', [1, 4])
 def test_bench_poc(benchmark, nl, k, cv):
     backend = NbbuBackend()
     g, r, V, kernel = backend.prep_poc_bench(conn, nl=nl, nt=100, k=k, cv=cv)
-    benchmark(kernel)
+    bkernel = lambda : kernel(r,V,g)
+    benchmark(bkernel)
 
 
 class TestNbbuSim(BaseTestSim):

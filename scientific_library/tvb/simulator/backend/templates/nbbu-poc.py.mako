@@ -8,7 +8,7 @@ def delays(dt, r, V, weights,idelays,g,Delta,tau,eta,J,I):
     nscl = sqrt(dt) * sqrt(2*dt)
     Delta_rpitau = nb.float32(Delta / (np.pi * tau))
     for k in nb.prange(r.shape[0]):
-        for t in range(${nt}):
+        for t in range(${nt}-1):
             for i in range(r.shape[1]):
 % for i in range(nl):
                 acc${i} = nb.float32(0.0)
