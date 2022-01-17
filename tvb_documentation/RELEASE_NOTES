@@ -4,10 +4,13 @@
  Release Date: x xxx xxx
  Description:
 ======================================================================================================================================
-    * Add GUI for preprocessing pipeline
+    * Add GUI prototype for preprocessing pipeline
     * Add support for a web context path (different than ROOT)
     * Review form code
     * Small review in CLI
+    * Allen Creator transpose resulting matrices (part of structural conn) at the end
+    * Bug fixes (e.g. Equation strings, Tutorials regarding default cortex)
+    * Add new checkboxes for NII importer to support non-zero-based arrays
 
 ======================================================================================================================================
  The Virtual Brain (TVB)

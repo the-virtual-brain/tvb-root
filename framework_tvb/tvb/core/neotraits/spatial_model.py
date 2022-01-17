@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
-# analysers necessary to run brain-simulations. You can use it stand alone or
-# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
+# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
 # (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
@@ -29,9 +29,16 @@
 #
 
 """
-The public api of the neotraits package.
+.. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
 """
 
-from ._core import HasTraits, TupleEnum, TVBEnum, TVBEnum, SubformEnum, trait_property, cached_trait_property
-from .info import narray_describe, narray_summary_info
-from ._attr import Attr, Int, Float, NArray, Final, List, EnumAttr, Range, LinspaceRange, Dim
+from abc import abstractmethod
+
+
+class SpatialModel:
+
+    @staticmethod
+    @abstractmethod
+    def get_equation_information():
+        pass

@@ -27,7 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.adapters.simulator.noise_forms import get_form_for_noise
+from tvb.adapters.forms.noise_forms import get_form_for_noise
 from tvb.basic.neotraits.api import TupleEnum, EnumAttr
 from tvb.core.entities.file.simulator.view_model import HeunDeterministicViewModel, HeunStochasticViewModel, \
     EulerDeterministicViewModel, EulerStochasticViewModel, RungeKutta4thOrderDeterministicViewModel, IdentityViewModel, \
@@ -73,8 +73,10 @@ class NoiseTypesEnum(TupleEnum):
 
 class IntegratorForm(Form):
 
-    def get_subform_key(self):
+    @staticmethod
+    def get_subform_key():
         return 'INTEGRATOR'
+
     def __init__(self, is_dt_disabled=False):
         super(IntegratorForm, self).__init__()
         self.is_dt_disabled = is_dt_disabled

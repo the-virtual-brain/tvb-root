@@ -1205,8 +1205,12 @@ function prepareUrlParam(paramName, paramValue) {
     return paramName + '=' + paramValue;
 }
 
-function refreshSubform(currentElem, elementType, subformDiv) {
-    let url = prepareRefreshSubformUrl(currentElem, subformDiv);
+function prepareRefreshSubformUrl(currentElem, subformDiv, sessionKey, formKey) {
+    return '/flow/refresh_subform/' + currentElem.value + "/" + formKey + "/" + sessionKey;
+}
+
+function refreshSubform(currentElem, elementType, subformDiv, sessionKey, formKey) {
+    let url = prepareRefreshSubformUrl(currentElem, subformDiv, sessionKey, formKey);
     if (url.startsWith('/')) {
         url = deploy_context + url
     }

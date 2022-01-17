@@ -35,12 +35,13 @@
 
 from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.adapters.simulator.equation_forms import GaussianEquationForm, get_form_for_equation, SpatialEquationsEnum
+from tvb.adapters.forms.equation_forms import GaussianEquationForm, get_form_for_equation, SpatialEquationsEnum
 from tvb.basic.neotraits.api import Attr, EnumAttr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import FormField, SelectField, TraitDataTypeSelectField, FloatField, StrField
+from tvb.core.neotraits.spatial_model import SpatialModel
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr, Str
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.surfaces import Surface, SurfaceTypesEnum
@@ -69,7 +70,7 @@ class LocalConnectivitySelectorForm(ABCAdapterForm):
         return {'adapter_form': self, 'legend': 'Selected entity'}
 
 
-class LocalConnectivityCreatorModel(ViewModel, LocalConnectivity):
+class LocalConnectivityCreatorModel(ViewModel, LocalConnectivity, SpatialModel):
     surface = DataTypeGidAttr(
         linked_datatype=Surface,
         label=LocalConnectivity.surface.label
@@ -79,6 +80,15 @@ class LocalConnectivityCreatorModel(ViewModel, LocalConnectivity):
         label='Display name',
         required=False
     )
+
+    @staticmethod
+    def get_equation_information():
+        return {
+            LocalConnectivityCreatorModel.equation.label.lower(): 'equation'
+        }
+
+
+KEY_LCONN = "local-conn"
 
 
 class LocalConnectivityCreatorForm(ABCAdapterForm):
@@ -90,7 +100,9 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
                                                 conditions=self.get_filters())
         self.spatial = SelectField(EnumAttr(field_type=SpatialEquationsEnum,
                                             default=SpatialEquationsEnum.GAUSSIAN.instance, required=True),
-                                   name='spatial', display_none_choice=False, subform=GaussianEquationForm)
+                                   name='spatial', display_none_choice=False, subform=GaussianEquationForm,
+                                   session_key=KEY_LCONN)
+
         self.cutoff = FloatField(LocalConnectivityCreatorModel.cutoff)
         self.display_name = StrField(LocalConnectivityCreatorModel.display_name, name='display_name')
 

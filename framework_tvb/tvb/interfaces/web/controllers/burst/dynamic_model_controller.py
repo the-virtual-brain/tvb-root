@@ -37,11 +37,11 @@ import cherrypy
 import numpy
 
 import tvb.core.entities.model.model_burst as model_burst
-from tvb.adapters.simulator.equation_forms import get_form_for_equation, TemporalEquationsEnum
-from tvb.adapters.simulator.integrator_forms import get_form_for_integrator, NoiseTypesEnum
-from tvb.adapters.simulator.model_forms import get_form_for_model, ModelsEnum
-from tvb.adapters.simulator.noise_forms import get_form_for_noise
-from tvb.adapters.simulator.simulator_fragments import SimulatorModelFragment, SimulatorIntegratorFragment
+from tvb.adapters.forms.equation_forms import get_form_for_equation, TemporalEquationsEnum
+from tvb.adapters.forms.integrator_forms import get_form_for_integrator, NoiseTypesEnum
+from tvb.adapters.forms.model_forms import get_form_for_model, ModelsEnum
+from tvb.adapters.forms.noise_forms import get_form_for_noise
+from tvb.adapters.forms.simulator_fragments import SimulatorModelFragment, SimulatorIntegratorFragment
 from tvb.adapters.visualizers.phase_plane_interactive import phase_space_d3
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import TVBEnum

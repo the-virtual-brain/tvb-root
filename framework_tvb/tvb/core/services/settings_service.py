@@ -252,7 +252,8 @@ class SettingsService(object):
             raise InvalidSettingsException('TVB Storage folder should have write access for tvb process')
 
         list_content = os.listdir(storage_path)
-        list_content.remove("TEMP")
+        if "TEMP" in list_content:
+            list_content.remove("TEMP")
         if len(list_content) > 0:
             raise InvalidSettingsException(
                 'TVB Storage should be empty, please set another folder than {}.'.format(storage_path))
