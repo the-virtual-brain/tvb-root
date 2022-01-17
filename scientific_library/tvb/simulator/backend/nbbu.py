@@ -47,7 +47,8 @@ import numba, mako.template, time, tqdm, numpy as np
 
 class NbbuBackend(NbBackend):
 
-    def prep_poc_bench(self, conn, dt=0.1, nt=1000, cv=10.0, nl=1, k=1, pars=(1.0,1.0,-5.0,15.0,0.0)):
+    def prep_poc_bench(self, conn, dt=0.01,
+            nt=1000, cv=10.0, nl=1, k=1, pars=(1.0,1.0,-5.0,15.0,0.0)):
         # prep connectome
         weights = conn.weights.astype('f')
         idelays = (conn.tract_lengths / cv / dt).astype('i')
@@ -61,4 +62,6 @@ class NbbuBackend(NbBackend):
         g = np.linspace(0,1,k*nl).reshape((k,nl))
         r, V = np.random.randn(2,k,nn,nh+nt+1, nl).astype('f')/10.0
         V -= 2.0
-        return lambda : delays(0.01, r, V, weights, idelays, g, *pars)
+        return g, r, V, lambda : delays(dt, r, V, weights, idelays, g, *pars)
+
+        
