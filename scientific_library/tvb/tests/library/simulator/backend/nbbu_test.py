@@ -108,9 +108,5 @@ class TestNbbuSim(BaseTestSim):
             y = y[...,0]
             yh = np.transpose(state[:,i//4,:,conn.idelays.max()+1:,i%4], (2, 0, 1))
             assert y.shape == yh.shape
-            #subplot(4,4,i+1)
-            #plot(yh[:,0,0])
-            #plot(y[:,0,0])
             me = np.median(np.sum(y[:,0,:] - yh[:,0,:],axis=1)**2)
-            print(f'{g_:0.3f} {me:0.1f}')        
             assert me < 2.0
