@@ -43,14 +43,33 @@ from tvb.simulator.noise import Additive
 
 conn = Connectivity.from_file()
 
-@pytest.mark.parametrize('cv', [3.0, np.inf])
-@pytest.mark.parametrize('k', [1, 2])
-@pytest.mark.parametrize('nl', [1, 4])
-def test_bench_poc(benchmark, nl, k, cv):
+def double_conn(c, n):
+    c2 = Connectivity(
+        weights=np.tile(c.weights, (n,n)),
+        tract_lengths=np.tile(c.tract_lengths, (n,n)),
+        )
+    return c2
+
+conn_m = double_conn(conn, 4) # 306
+conn_l = double_conn(conn, 8) # 607
+
+def _bench_poc(benchmark, nl, k, cv, conn):
     backend = NbbuBackend()
     g, r, V, kernel = backend.prep_poc_bench(conn, nl=nl, nt=100, k=k, cv=cv)
     bkernel = lambda : kernel(r,V,g)
     benchmark(bkernel)
+
+@pytest.mark.parametrize('cv', [1.0, np.inf])
+@pytest.mark.parametrize('k', [1, 8])
+@pytest.mark.parametrize('nl', [1, 8, 16])
+def test_poc_small(benchmark, nl, k, cv):
+    return _bench_poc(benchmark, nl, k, cv, conn)
+
+@pytest.mark.parametrize('cv', [1.0, np.inf])
+@pytest.mark.parametrize('k', [1, 8])
+@pytest.mark.parametrize('nl', [1, 8, 16])
+def test_poc_med(benchmark, nl, k, cv):
+    return _bench_poc(benchmark, nl, k, cv, conn_m)
 
 
 class TestNbbuSim(BaseTestSim):
@@ -114,4 +133,3 @@ class TestNbbuSim(BaseTestSim):
     def test_autotune(self):
         pass
 
-    # TODO backend 

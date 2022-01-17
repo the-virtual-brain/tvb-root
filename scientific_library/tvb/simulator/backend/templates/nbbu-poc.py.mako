@@ -44,12 +44,15 @@ def delays(dt, r, V, weights,idelays,g,Delta,tau,eta,J,I):
                 acc${i} = nb.float32(0.0)
 % endfor
                 for j in range(r.shape[1]):
+                    if weights[i,j] != nb.float32(0):
+                        continue
 % for i in range(nl):
   % if nh > 1:
-                    acc${i} += weights[i,j]*r[k, j, ${nh} + t - idelays[i, j], ${i}]
+                    rj${i} = r[k, j, ${nh} + t - idelays[i, j], ${i}]
   % else:
-                    acc${i} += weights[i,j]*r[k, j, ${nh} + t, ${i}]
+                    rj${i} = r[k, j, ${nh} + t, ${i}]
   % endif
+                    acc${i} += weights[i,j] * rj${i}
 % endfor
 % for i in range(nl):
                 r_c${i} = g[k,${i}] * acc${i}
