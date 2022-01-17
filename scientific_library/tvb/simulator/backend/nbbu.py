@@ -47,6 +47,48 @@ import numba, mako.template, time, tqdm, numpy as np
 
 class NbbuBackend(NbBackend):
 
+    def __init__(self, blocks=4, lanes=4, chunklen=1000, progress=False):
+        self.blocks = blocks
+        self.lanes = lanes
+        self.chunklen = chunklen
+        self.progress = progress
+
+    def run_sim(self, sim, **kwargs):
+        "Given a template simulator, run batches from parameters **kwargs."
+        nchunks = int(np.ceil(sim.simulation_length / sim.integrator.dt / self.chunklen))
+        chiter = (tqdm.trange if self.progress else range)(nchunks)
+        kernel, states, parameters, nh = self.prep_kernel(sim, nchunks)
+        outputs = []
+        for i in chiter:
+            kernel(states, parameters)
+            outputs.append(states[nh:])
+            self.shuffle_chunk(sim, states, nh)
+        return outputs
+
+    def prep_kernel(self, sim, nchunks):
+        "Prepare a kernel and associated arrays for use."
+        # TODO
+        kernel = lambda x, p: 0
+        states = np.array([]) # (k, ..., nl)
+        parameters = np.array([]) # (k, ..., nl)
+        nh = sim.connectivity.idelays.max() + 1
+        if isinstance(sim.integrator, IntegratorStochastic):
+            self.noise_chunk(sim, states[nh:])
+        return kernel, states, parameters, nh
+
+    def shuffle_chunk(self, sim, states, nh):
+        "Prepare the next chunk from the previous one."
+        chunk[:nh] = chunk[-nh:]  # maybe could use it's own kernel
+        if isinstance(sim.integrator, IntegratorStochastic):
+            self.noise_chunk(sim, chunk[nh:])
+
+    def noise_chunk(self, sim, states):
+        "Generate noise in chunk for integration."
+        # replace by bitgenerator
+        z = np.random.randn(*states.shape)
+        z = z * sim.integrator.noise.nsig
+        states[:] = z
+
     def prep_poc_bench(self, conn, dt=0.01,
             nt=1000, cv=10.0, nl=1, k=1, pars=(1.0,1.0,-5.0,15.0,0.0)):
         # prep connectome
@@ -63,4 +105,16 @@ class NbbuBackend(NbBackend):
         r, V = np.random.randn(2,k,nn,nh+nt, nl).astype('f')
         return g, r, V, lambda r, V, g: delays(dt, r, V, weights, idelays, g, *pars)
 
-        
+# TODO migrate test code into backend
+# TODO chunking for any sim length
+# TODO autotune k & nl to choose best Miter/s
+# TODO expand all paramers to (k,nl) matrices, check perf
+# TODO generalize dfun, gfun & cfun
+# TODO generalize integrator
+# TODO add bold & tavg
+# TODO add stim
+# TODO add driver code to handle arbitrary parameter spaces / sequences
+# TODO memmap sharded output files
+# TODO add cli
+
+# parameters may be constant, varying per thread, varying per node

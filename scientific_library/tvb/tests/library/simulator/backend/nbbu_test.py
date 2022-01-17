@@ -110,3 +110,8 @@ class TestNbbuSim(BaseTestSim):
             assert y.shape == yh.shape
             me = np.median(np.sum(y[:,0,:] - yh[:,0,:],axis=1)**2)
             assert me < 2.0
+
+    def test_autotune(self):
+        pass
+
+    # TODO backend 
