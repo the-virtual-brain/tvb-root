@@ -44,7 +44,7 @@ def delays(dt, r, V, weights,idelays,g,Delta,tau,eta,J,I):
                 acc${i} = nb.float32(0.0)
 % endfor
                 for j in range(r.shape[1]):
-                    if weights[i,j] != nb.float32(0):
+                    if weights[i,j] == nb.float32(0):
                         continue
 % for i in range(nl):
   % if nh > 1:
