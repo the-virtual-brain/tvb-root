@@ -68,6 +68,7 @@ class NbbuBackend(NbBackend):
     def prep_kernel(self, sim, nchunks):
         "Prepare a kernel and associated arrays for use."
         # TODO
+        template = '<%include file="nbbu-poc.py.mako"/>'
         kernel = lambda x, p: 0
         states = np.array([]) # (k, ..., nl)
         parameters = np.array([]) # (k, ..., nl)
@@ -84,7 +85,7 @@ class NbbuBackend(NbBackend):
 
     def noise_chunk(self, sim, states):
         "Generate noise in chunk for integration."
-        # replace by bitgenerator
+        # replace by bitgenerator.normal(0,nsig)
         z = np.random.randn(*states.shape)
         z = z * sim.integrator.noise.nsig
         states[:] = z
@@ -105,6 +106,8 @@ class NbbuBackend(NbBackend):
         r, V = np.random.randn(2,k,nn,nh+nt, nl).astype('f')
         return g, r, V, lambda r, V, g: delays(dt, r, V, weights, idelays, g, *pars)
 
+# TODO generate code for user
+# TODO sparse weights
 # TODO migrate test code into backend
 # TODO chunking for any sim length
 # TODO autotune k & nl to choose best Miter/s
