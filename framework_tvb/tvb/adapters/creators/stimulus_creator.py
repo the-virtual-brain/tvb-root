@@ -211,7 +211,7 @@ class StimulusRegionSelectorForm(ABCAdapterForm):
 
     def __init__(self):
         super(StimulusRegionSelectorForm, self).__init__()
-        traited_attr = Attr(StimuliRegionIndex, label='Load Region Stimulus', required=False)
+        traited_attr = Attr(StimuliRegionIndex, label='Load Region Stimulus', required=False, doc=""" """)
         self.region_stimulus = TraitDataTypeSelectField(traited_attr, name='existentEntitiesSelect')
         self.display_name = StrField(RegionStimulusCreatorModel.display_name, name='display_name')
 
@@ -221,17 +221,19 @@ class StimulusRegionSelectorForm(ABCAdapterForm):
 
 class RegionStimulusCreatorModel(ViewModel, StimuliRegion, SpatialModel):
     temporal = EnumAttr(field_type=TemporalEquationsEnum, label="Temporal Equation",
-                        default=TemporalEquationsEnum.PULSETRAIN.instance)
+                        default=TemporalEquationsEnum.PULSETRAIN.instance, doc=""" """)
 
     connectivity = DataTypeGidAttr(
         field_type=uuid.UUID,
         linked_datatype=Connectivity,
-        label="Connectivity"
+        label="Connectivity",
+        doc=""" """
     )
 
     display_name = Str(
         label='Display name',
-        required=False
+        required=False,
+        doc=""" """
     )
 
     @staticmethod
