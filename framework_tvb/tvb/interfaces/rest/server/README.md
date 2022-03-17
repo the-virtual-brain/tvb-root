@@ -1,6 +1,7 @@
 # TVB REST Server
+### Setup TVB REST server locally
 
-### TVB REST services which can be used to interact with TVB. 
+TVB REST services which can be used to interact with TVB. 
 
 To be able to run TVB REST server locally you need a keycloak server for obtaining authorization tokens. Follow the steps to get started with the local setup of TVB REST Server.
 
@@ -27,7 +28,7 @@ Before you start
 2. Let's create a new realm for the TVB REST server. Open your [Keycloak Admin Console](http://localhost:8081/admin) and login with the above created username and password. By doing this you'll log in your default master realm
 
     1. Click `Master` (dropdown) on top left and then click on `Add realm`
-    2. Click `Import` and select [myrealm-realm.json](./keycloak_configs/myrealm-realm.json) file and then click on `Create`. This will automatically create a new realm as _myrealm_ for you
+    2. Click `Import` and select [myrealm-realm.json](./dev_resources/myrealm-realm.json) file and then click on `Create`. This will automatically create a new realm as _myrealm_ for you
 
 ### Create client
 
@@ -35,7 +36,7 @@ Before you start
 
     1. Click `Clients` (left-hand menu)
     2. Click `Create` (top-right corner of table)
-    3. Click `Import` and select [tvb-rest.json](./keycloak_configs/tvb-rest.json) file and then click on `Save`
+    3. Click `Import` and select [tvb-rest.json](./dev_resources/tvb-rest.json) file and then click on `Save`
 
 ### Create User
 
@@ -53,16 +54,16 @@ Before you start
 5. Now we've to configure the TVB to run the REST server on app start. So for that start your main TVB app and navigate to [TVB Settings](http://localhost:8080/settings/settings/)
 
     1. To use TVB app using TVB user and rest server using keycloak user. Do following
-        1. Enter [keycloak_config.json](./keycloak_configs/keycloak_config.json) in the `Rest API Keycloak configuration file` field. And make sure [keycloak_config.json](./keycloak_configs/keycloak_config.json) is accessible to the TVB app
+        1. Enter [keycloak_config.json](./dev_resources/keycloak_config.json) in the `Rest API Keycloak configuration file` field. And make sure [keycloak_config.json](./dev_resources/keycloak_config.json) is accessible to the TVB app
         
-        ![This is an image](./keycloak_configs/keycloak_setting_rest_only.jpg)
+        ![This is an image](./dev_resources/keycloak_setting_rest_only.jpg)
 
     2. To use the same keycloak user in the TVB app and in the rest server
         1. Enable the keycloak login, click on checkbox
-        2. Enter the same [keycloak_config.json](./keycloak_configs/keycloak_config.json) file name in the `Web Keycloak configuration file` field
+        2. Enter the same [keycloak_config.json](./dev_resources/keycloak_config.json) file name in the `Web Keycloak configuration file` field
                 
 
-        ![This is an image](./keycloak_configs/keycloak_setting_rest_and_gui.jpg)
+        ![This is an image](./dev_resources/keycloak_setting_rest_and_gui.jpg)
 
     Click `Apply` to save changes and restart TVB.
 
@@ -71,13 +72,19 @@ If you've enabled keycloak login then after restart TVB will open the keycloak l
 
 If TVB rest server started successfully then you'll be able to see the rest server documentation at [http://localhost:9090/doc/](http://localhost:9090/doc)
 
+To use TVB REST server install [tvb-rest-client](https://pypi.org/project/tvb-rest-client/) API using
+
+```
+pip install tvb-rest-client
+```
+
 Test the rest server, by firing a simulation from command line:
 
 ```
 python -m tvb.interfaces.rest.client.examples.fire_simulation --rest-url=http://localhost:9090
 ```
  
-Or using [tvb-rest-client](https://pypi.org/project/tvb-rest-client/)
+Using [tvb-rest-client](https://pypi.org/project/tvb-rest-client/) API for retrieving user's projects
 
 ```
 from tvb.interfaces.rest.client.tvb_client import TVBClient
@@ -86,11 +93,5 @@ tvb_client.browser_login()
 print(tvb_client.get_project_list())
 ```
 
-
-
-
-
-
-
-
+Any operations launched using REST server are also visibile in the TVB GUI.
 
