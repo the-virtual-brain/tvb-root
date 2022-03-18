@@ -20,10 +20,10 @@ Before you start
 
 From the command line. Enter the following command
 
-    ```
     docker run -p 8081:8080 -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin quay.io/keycloak/keycloak:17.0.0 start-dev
-    ```
-    This will start your keycloak server at [localhost:8081](http://localhost:8081). It will also create an initial admin user with username `admin` and password `admin`
+
+    
+This will start your keycloak server at [localhost:8081](http://localhost:8081). It will also create an initial admin user with username `admin` and password `admin`
 
 ### 2. Create realm
 
