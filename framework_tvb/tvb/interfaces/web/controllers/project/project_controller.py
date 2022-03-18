@@ -40,13 +40,11 @@ import formencode
 from cherrypy.lib.static import serve_file
 from formencode import validators
 from simplejson import JSONEncoder
-
 import tvb.core.entities.model.model_operation as model
 from tvb.adapters.creators.tumor_dataset_creator import TumorDatasetCreator
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
-from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.storage import dao
@@ -62,6 +60,7 @@ from tvb.interfaces.web.controllers.decorators import settings, check_user, hand
 from tvb.interfaces.web.controllers.flow_controller import FlowController
 from tvb.interfaces.web.entities.context_overlay import OverlayTabDefinition
 from tvb.interfaces.web.entities.context_simulator import SimulatorContext
+from tvb.interfaces.web.structure import WebStructure
 from tvb.storage.h5.utils import string2bool
 from tvb.storage.storage_interface import StorageInterface
 
@@ -715,7 +714,7 @@ class ProjectController(BaseController):
         """
         Overwrite base controller to add required parameters for adapter templates.
         """
-        template_dictionary[common.KEY_SECTION] = 'project'
+        template_dictionary[common.KEY_SECTION] = WebStructure.SECTION_PROJECT
         template_dictionary[common.KEY_SUB_SECTION] = subsection
         template_dictionary[common.KEY_INCLUDE_RESOURCES] = 'project/included_resources'
         BaseController.fill_default_attributes(self, template_dictionary)
