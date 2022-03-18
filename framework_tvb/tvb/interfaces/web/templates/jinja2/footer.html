@@ -2,6 +2,9 @@
 <!--!    Main Navigation - Common footer for all pages           -->
 <!--! ========================================================== -->
 <footer>
+    {% if section_name is not defined %}
+        {% set section_name = 'user' %}
+    {% endif %}
     {% set currentTab='nav-' ~ section_name %}
     <nav>
         <ul>
