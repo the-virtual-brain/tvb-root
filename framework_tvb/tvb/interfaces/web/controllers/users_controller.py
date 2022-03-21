@@ -40,11 +40,10 @@ import json
 import os
 import ssl
 import time
-from urllib.request import urlopen
-
 import cherrypy
 import formencode
 import tvb.interfaces.web
+from urllib.request import urlopen
 from formencode import validators
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
@@ -59,6 +58,7 @@ from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.decorators import check_user, expose_json, check_admin
 from tvb.interfaces.web.controllers.decorators import handle_error, using_template, settings, jsonify
 from tvb.interfaces.web.entities.context_simulator import SimulatorContext
+from tvb.interfaces.web.structure import WebStructure
 from tvb.storage.storage_interface import StorageInterface
 
 KEY_SERVER_VERSION = "versionInfo"
@@ -430,6 +430,7 @@ class UserController(BaseController):
         template_dictionary[common.KEY_INCLUDE_TOOLTIP] = True
         template_dictionary[common.KEY_WRAP_CONTENT_IN_MAIN_DIV] = False
         template_dictionary[common.KEY_CURRENT_TAB] = 'nav-user'
+        template_dictionary[common.KEY_SECTION] = WebStructure.SECTION_USER
         template_dictionary[KEY_STORAGE_IN_UPDATE] = (TvbProfile.current.version.DATA_CHECKED_TO_VERSION <
                                                       TvbProfile.current.version.DATA_VERSION)
         return template_dictionary
