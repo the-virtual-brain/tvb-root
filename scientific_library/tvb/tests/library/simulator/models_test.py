@@ -41,7 +41,7 @@ from tvb.simulator.models.base import Model
 from tvb.tests.library.base_testcase import BaseTestCase
 
 
-class TestBoundsModel(Model):
+class ModelTestBounds(Model):
     # Used for phase-plane axis ranges and to bound random initial() conditions.
     state_variable_boundaries = Final(
         label="State Variable boundaries [lo, hi]",
@@ -77,7 +77,7 @@ class TestBoundsModel(Model):
         return 0.0 * state
 
 
-class TestUpdateVariablesModel(Model):
+class ModelTestUpdateVariables(Model):
     variables_of_interest = List(
         of=str,
         label="Variables watched by Monitors",
@@ -116,7 +116,7 @@ class TestUpdateVariablesModel(Model):
         return state
 
 
-class TestUpdateVariablesBoundsModel(TestUpdateVariablesModel, TestBoundsModel):
+class ModelTestUpdateVariablesBounds(ModelTestUpdateVariables, ModelTestBounds):
     pass
 
 
@@ -150,7 +150,7 @@ class TestModels(BaseTestCase):
         return state, obser
 
     def test_sv_boundaries_setup(self):
-        model = TestBoundsModel()
+        model = ModelTestBounds()
         model.configure()
         min_float = numpy.finfo("double").min
         max_float = numpy.finfo("double").max
@@ -164,11 +164,11 @@ class TestModels(BaseTestCase):
             assert numpy.allclose(sv_bounds, model.state_variable_boundaries[sv], min_positive)
 
     def test_stvar_init(self):
-        model = TestBoundsModel()
+        model = ModelTestBounds()
         model.configure()
         numpy.testing.assert_array_equal(model.stvar, model.cvar)
 
-        model = TestBoundsModel()
+        model = ModelTestBounds()
         model.stvar=numpy.r_[1,3]
         model.configure()
         numpy.testing.assert_array_equal(model.stvar, numpy.r_[1,3])

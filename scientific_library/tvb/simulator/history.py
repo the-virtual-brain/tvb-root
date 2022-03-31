@@ -214,7 +214,7 @@ class SparseHistory(DenseHistory):
     n_nnzw = Dim()
     n_nnzr = Dim()
     time_stride = Dim()
-    nnz_mask = NDArray(('n_node', 'n_node'), numpy.bool)
+    nnz_mask = NDArray(('n_node', 'n_node'), numpy.bool_)
     const_indices = NDArray(('n_cvar', n_nnzw, 'n_mode'), 'i')
     nnz_idelays = NDArray((n_nnzw,), 'i')
     nnz_row_el_idx = NDArray((n_nnzw, ), 'i')

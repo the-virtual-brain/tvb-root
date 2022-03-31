@@ -82,7 +82,7 @@ class Sensors(HasTraits):
         source_full_path = try_get_absolute_path("tvb_data.sensors", source_file)
         reader = FileReader(source_full_path)
 
-        result.labels = reader.read_array(dtype=numpy.str, use_cols=(0,))
+        result.labels = reader.read_array(dtype=numpy.str_, use_cols=(0,))
         result.locations = reader.read_array(use_cols=(1, 2, 3))
         return result
 
@@ -199,15 +199,15 @@ class SensorsEEG(Sensors):
 
 
 class SensorsMEG(Sensors):
-    """
+    r"""
     These are actually just SQUIDS. Axial or planar gradiometers are achieved
     by calculating lead fields for two sets of sensors and then subtracting...
     ::
 
                               position  orientation
                                  |           |
-                                / \         / \\
-                               /   \       /   \\
+                                / \         /  \
+                               /   \       /    \
         file columns: labels, x, y, z,   dx, dy, dz
 
     """
@@ -243,7 +243,7 @@ class SensorsInternal(Sensors):
     def _split_string_text_numbers(labels):
         items = []
         for i, s in enumerate(labels):
-            match = re.findall('(\d+|\D+)', s)
+            match = re.findall(r'(\d+|\D+)', s)
             if match:
                 items.append((match[0], i))
             else:

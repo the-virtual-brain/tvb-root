@@ -256,7 +256,7 @@ class TestAllAnalyticWithSubcortical(BaseTestCase):
         conn = connectivity.Connectivity()
         conn.generate_surrogate_connectivity(4)
         conn.centres /= 100.0
-        conn.cortical = numpy.array([1, 0, 1, 1], numpy.bool)
+        conn.cortical = numpy.array([1, 0, 1, 1], numpy.bool_)
         seeg_sensors = SensorsInternal(
             locations=conn.centres,
             labels=conn.region_labels)

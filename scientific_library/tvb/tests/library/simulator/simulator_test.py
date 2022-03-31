@@ -218,9 +218,9 @@ class TestSimulator(BaseTestCase):
         assert len(test_simulator.monitors) == len(result)
 
     def test_integrator_boundaries_config(self):
-        from .models_test import TestBoundsModel
+        from .models_test import ModelTestBounds
         test_simulator = simulator.Simulator()
-        test_simulator.model = TestBoundsModel()
+        test_simulator.model = ModelTestBounds()
         test_simulator.model.configure()
         test_simulator.integrator = HeunDeterministic()
         test_simulator.integrator.configure()
@@ -247,9 +247,9 @@ class TestSimulator(BaseTestCase):
             assert test_simulator.current_state[sv_ind, :, :].max() <= sv_boundaries[1]
 
     def test_history_bound_and_clamp_only_bound(self):
-        from .models_test import TestBoundsModel
+        from .models_test import ModelTestBounds
         test_simulator = simulator.Simulator()
-        test_simulator.model = TestBoundsModel()
+        test_simulator.model = ModelTestBounds()
         test_simulator.model.configure()
         test_simulator.integrator = HeunDeterministic()
         test_simulator.integrator.configure()
@@ -264,9 +264,9 @@ class TestSimulator(BaseTestCase):
         self._assert_history_inside_boundaries(test_simulator)
 
     def test_history_bound_and_clamp(self):
-        from .models_test import TestBoundsModel
+        from .models_test import ModelTestBounds
         test_simulator = simulator.Simulator()
-        test_simulator.model = TestBoundsModel()
+        test_simulator.model = ModelTestBounds()
         test_simulator.model.configure()
         self._config_connectivity(test_simulator)
 
@@ -281,9 +281,9 @@ class TestSimulator(BaseTestCase):
         assert numpy.array_equal(test_simulator.current_state[1:3, :, :], value_for_clamp)
 
     def test_integrator_update_variables_config(self):
-        from .models_test import TestUpdateVariablesModel
+        from .models_test import ModelTestUpdateVariables
         test_simulator = simulator.Simulator()
-        test_simulator.model = TestUpdateVariablesModel()
+        test_simulator.model = ModelTestUpdateVariables()
         test_simulator.model.configure()
         test_simulator.integrator.configure()
         test_simulator.configure_integration_for_model()
@@ -297,9 +297,9 @@ class TestSimulator(BaseTestCase):
                (test_simulator.model.nvar - numpy.sum(test_simulator.model.state_variable_mask)) == 2
 
     def test_integrator_update_variables_with_boundaries_and_clamp_config(self):
-        from .models_test import TestUpdateVariablesBoundsModel
+        from .models_test import ModelTestUpdateVariablesBounds
         test_simulator = simulator.Simulator()
-        test_simulator.model = TestUpdateVariablesBoundsModel()
+        test_simulator.model = ModelTestUpdateVariablesBounds()
         test_simulator.model.configure()
         test_simulator.integrator.clamped_state_variable_indices = numpy.array([0, 4])
         test_simulator.integrator.clamped_state_variable_values = numpy.array([0.0, 0.0])
