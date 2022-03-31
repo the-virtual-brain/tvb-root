@@ -4,9 +4,16 @@ from numpy.ctypeslib import ndpointer
 import ctypes as ct
 from dataclasses import dataclass
 from enum import Enum
-
+import argparse
+import logging
 from .templates import MakoUtilMix
+import numpy as np
+import subprocess
+import ctypes
+import time
+import tqdm
 
+logging.basicConfig(level=logging.DEBUG)
 
 class mathlib(Enum):
     default = 'default'
@@ -75,18 +82,16 @@ class ISPCBackend(MakoUtilMix):
                     logger.info('found ispc at %r', ispc)
                     return ispc
 
-    def compile(self, fname: src, options: Options):
+    def compile(self, fname: str, options: Options):
         "Compile a source file and return name of object file."
-
+        raise NotImplemented
     
 
 def _find_ispc():
-
-
-
+    return '/usr/local/bin/ispc'
 
 def create_ispc_object(fname=None):
-    cmd = f"{where_ispc()}
+    cmd = f"{_find_ispc()}"
     subprocess.check_call(cmd)
 
 
@@ -97,9 +102,9 @@ def make_kernel(): #{{{
     cxx = os.environ.get('CXX', 'g++')
     cxxflags = os.environ.get('CXXFLAGS', '')
     # cmd(cxx + ' -fPIC ' + cxxflags + ' -O3 -c network.ispc.cpp -o network.ispc.o')
-    cmd('ispc --pic network.ispc -o network.ispc.o')
-    cmd(cxx + ' -fPIC ' + cxxflags + ' -O3 -c tasksys.cpp -o tasksys.cpp.o')
-    cmd(cxx + ' -shared tasksys.cpp.o network.ispc.o -o network.so')
+    cmd('ispc --pic tvb/simulator/backend/templates/ispc-kura-sweep.ispc.mako --target ' + target.neon_i32x4.value + ' -o network.ispc.o')
+    cmd('arch -arm64 ' + cxx + ' -fPIC ' + cxxflags + ' -O3 -c tvb/simulator/backend/ispc_tasksys.cpp -o tasksys.cpp.o')
+    cmd('arch -arm64 ' + cxx + ' -shared tasksys.cpp.o network.ispc.o -o network.so')
 
     # need to break out the CMake build examples to figure out the right link
     # flags. Even without multicore, it looks a lot slower (8 it/s for 8 cores?)
@@ -162,6 +167,15 @@ def parse_args():#{{{
     parser.add_argument('--lineinfo', default=False, action='store_true')
     return parser.parse_args()#}}}
 
+def load_connectome():
+    from tvb.datatypes.connectivity import Connectivity
+    conn = Connectivity.from_file()
+    return conn.weights, conn.tract_lengths
+
+def setup_params(nc, ns):
+    import numpy as np
+    c, s = np.mgrid[0.1:0.2:1j*nc, 1.0:2.0:1j*ns]
+    return c.reshape((-1,)), s.reshape((-1,))
 
 if __name__ == '__main__':
 
@@ -169,6 +183,8 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
     logger = logging.getLogger('[parsweep_cuda]')
     logger.info('caching strategy %r', args.caching)
+    logger.setLevel(logging.INFO)
+
 
     # setup data#{{{
     weights, lengths = load_connectome()
@@ -177,19 +193,22 @@ if __name__ == '__main__':
     logger.info('single connectome, %d x %d parameter space', ns, nc)
     logger.info('%d total num threads', ns * nc)
     couplings, speeds = setup_params(nc=nc, ns=ns)
-    params_matrix = expand_params(couplings, speeds)#}}}
+    params_matrix = np.c_[couplings, speeds]# expand_params(couplings, speeds)#}}}
+    print(params_matrix.shape)
 
     # dimensions#{{{
-    dt, tavg_period = 1.0, 1000.0
+    dt, tavg_period = 1.0, 10.0
     # TODO buf_len per speed/block
     min_speed = speeds.min()
     n_work_items, n_params = params_matrix.shape
     n_nodes = weights.shape[0]
     buf_len_ = (lengths / min_speed / dt).astype('i').max() + 1
     buf_len = 2**np.argwhere(2**np.r_[:30] > buf_len_)[0][0]  # use next power of 2
+    print('buf_len is ', buf_len)
     assert buf_len == 256  # FIXME
     logger.info('real buf_len %d, using power of 2 %d', buf_len_, buf_len)
     n_inner_steps = int(tavg_period / dt)#}}}
+    print('inner', n_inner_steps)
 
     # setup data#{{{
     data = { 'weights': weights, 'lengths': lengths,

@@ -31,7 +31,7 @@ inline float next_theta(float theta, float dt, float omega, float c, float rec_n
 }/*}}}*/
 
 
-void integrate_couplings(
+task void integrate_couplings(
     uniform uint i_speed,
 
     uniform uint i_step,
@@ -104,9 +104,10 @@ export void integrate(
 {
     for (uniform uint i_speed = 0; i_speed < n_speed; ++i_speed)
     {
-        integrate_couplings(i_speed, i_step, n_node, n_step, n_coupling, n_speed,
+        launch integrate_couplings(i_speed, i_step, n_node, n_step, n_coupling, n_speed,
             dt, speeds, weights, lengths, couplings, state_pwi, tavg);
     }
+    sync;
 }
 
 
