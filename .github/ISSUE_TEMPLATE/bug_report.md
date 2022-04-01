@@ -40,4 +40,4 @@ description of the results.*
 
 
 #### Additional information
-*Replace this text with the output of `mne.sys_info()`.*
+*Replace this text with your TVB version, OS and other pertinent information.*
