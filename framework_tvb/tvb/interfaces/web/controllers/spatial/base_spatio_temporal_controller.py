@@ -34,7 +34,6 @@
 """
 
 import json
-
 from tvb.adapters.visualizers.surface_view import SurfaceURLGenerator
 from tvb.basic.logger.builder import get_logger
 from tvb.core.neocom import h5
@@ -44,6 +43,7 @@ from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.common import MissingDataException
 from tvb.interfaces.web.controllers.decorators import settings, expose_page, using_template
+from tvb.interfaces.web.structure import WebStructure
 
 PARAM_SURFACE = "surface"
 
@@ -121,7 +121,7 @@ class SpatioTemporalController(BaseController):
         """
         Overwrite base controller to add required parameters for adapter templates.
         """
-        template_dictionary[common.KEY_SECTION] = 'stimulus'
+        template_dictionary[common.KEY_SECTION] = WebStructure.SECTION_STIMULUS
         template_dictionary[common.KEY_SUB_SECTION] = subsection
         template_dictionary[common.KEY_SUBMENU_LIST] = self.submenu_list
         template_dictionary[common.KEY_INCLUDE_RESOURCES] = 'spatial/included_resources'

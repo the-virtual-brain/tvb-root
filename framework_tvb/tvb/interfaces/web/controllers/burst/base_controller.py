@@ -35,6 +35,7 @@
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
+from tvb.interfaces.web.structure import WebStructure
 
 
 @traced
@@ -43,7 +44,7 @@ class BurstBaseController(BaseController):
     def fill_default_attributes(self, template_dictionary, subsection='burst'):
 
         template_dictionary[common.KEY_PARAMETERS_CONFIG] = False
-        template_dictionary[common.KEY_SECTION] = 'burst'
+        template_dictionary[common.KEY_SECTION] = WebStructure.SECTION_BURST
         template_dictionary[common.KEY_SUBMENU_LIST] = self.burst_submenu
 
         if common.KEY_SUB_SECTION not in template_dictionary:
