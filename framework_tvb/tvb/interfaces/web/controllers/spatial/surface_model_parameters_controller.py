@@ -35,7 +35,6 @@
 
 import json
 import cherrypy
-
 from tvb.adapters.forms.equation_forms import get_form_for_equation
 from tvb.adapters.forms.equation_plot_forms import EquationPlotForm
 from tvb.adapters.forms.model_forms import get_model_to_form_dict
@@ -50,6 +49,7 @@ from tvb.interfaces.web.controllers.simulator.simulator_controller import Simula
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
 from tvb.interfaces.web.entities.context_model_parameters import SurfaceContextModelParameters
 from tvb.interfaces.web.entities.context_simulator import SimulatorContext
+from tvb.interfaces.web.structure import WebStructure
 
 
 @traced
@@ -253,7 +253,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         """
         Overwrite base controller to add required parameters for adapter templates.
         """
-        template_dictionary[common.KEY_SECTION] = 'burst'
+        template_dictionary[common.KEY_SECTION] = WebStructure.SECTION_BURST
         template_dictionary[common.KEY_SUB_SECTION] = 'surfacemodel'
         template_dictionary[common.KEY_INCLUDE_RESOURCES] = 'spatial/included_resources'
         BaseController.fill_default_attributes(self, template_dictionary)

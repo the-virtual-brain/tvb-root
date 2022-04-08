@@ -37,7 +37,6 @@
 import json
 import uuid
 import cherrypy
-
 from tvb.adapters.creators.local_connectivity_creator import *
 from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
 from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
@@ -52,6 +51,7 @@ from tvb.interfaces.web.controllers.common import MissingDataException
 from tvb.interfaces.web.controllers.decorators import check_user, handle_error
 from tvb.interfaces.web.controllers.decorators import expose_fragment, expose_page, expose_json
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
+from tvb.interfaces.web.structure import WebStructure
 
 NO_OF_CUTOFF_POINTS = 20
 
@@ -254,7 +254,7 @@ class LocalConnectivityController(SpatioTemporalController):
         """
         Overwrite base controller to add required parameters for adapter templates.
         """
-        template_dictionary[common.KEY_SECTION] = 'connectivity'
+        template_dictionary[common.KEY_SECTION] = WebStructure.SECTION_CONNECTIVITY
         template_dictionary[common.KEY_SUB_SECTION] = 'local'
         template_dictionary[common.KEY_SUBMENU_LIST] = self.connectivity_submenu
         template_dictionary[common.KEY_INCLUDE_RESOURCES] = 'spatial/included_resources'
