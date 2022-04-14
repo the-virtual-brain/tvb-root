@@ -39,6 +39,7 @@ The Sensors dataType.
 
 import re
 import numpy
+from io import StringIO
 
 from tvb.basic.readers import FileReader, try_get_absolute_path
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int, TVBEnum, Final
@@ -84,6 +85,17 @@ class Sensors(HasTraits):
 
         result.labels = reader.read_array(dtype=numpy.str_, use_cols=(0,))
         result.locations = reader.read_array(use_cols=(1, 2, 3))
+        return result
+
+    @classmethod
+    def from_bytes_stream(cls, bytes_stream):
+        """Construct Sensors from source_file."""
+        result = Sensors()
+        content_str = StringIO(bytes_stream.decode())
+        result.labels = numpy.loadtxt(content_str, dtype=numpy.str, skiprows=0, usecols=(0,))
+        content_str.seek(0)
+        result.locations = numpy.loadtxt(content_str, dtype=numpy.float64, skiprows=0, usecols=(1, 2, 3))
+
         return result
 
     def configure(self):
