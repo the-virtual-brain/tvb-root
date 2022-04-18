@@ -155,7 +155,7 @@ class Simulator(object):
             else:
                 default_cortex.local_connectivity = LocalConnectivity()
             default_cortex.local_connectivity.surface = default_cortex.region_mapping_data.surface
-            # TODO stimulus
+            # Surface simulations will run without stimulus - OK for now
         else:
             default_cortex = None
             if with_stimulus:
