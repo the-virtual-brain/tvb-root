@@ -60,7 +60,7 @@ and offering extra features:
  
 You can launch the web interface of TVB with the following command:
 
-    python -m tvb.interfaces.web.run WEB_PROFILE tvb.config
+    python -m tvb.interfaces.web.run WEB_PROFILE
     
 Your port **8080** should be free, as a CherryPy service will try to run there.
 Your default browser should automatically open <http://localhost:8080/> which is the way to
