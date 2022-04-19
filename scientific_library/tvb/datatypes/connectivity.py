@@ -376,7 +376,7 @@ class Connectivity(HasTraits):
                         hemispheres = None
                         break
             if hemispheres is not None:
-                self.hemispheres = numpy.array(hemispheres, dtype=numpy.bool)
+                self.hemispheres = numpy.array(hemispheres, dtype=numpy.bool_)
 
     def transform_remove_self_connections(self):
         """
@@ -724,13 +724,13 @@ class Connectivity(HasTraits):
             result.weights = reader.read_array_from_file("weights")
             if reader.has_file_like("centres"):
                 result.centres = reader.read_array_from_file("centres", use_cols=(1, 2, 3))
-                result.region_labels = reader.read_array_from_file("centres", dtype=numpy.str, use_cols=(0,))
+                result.region_labels = reader.read_array_from_file("centres", dtype=numpy.str_, use_cols=(0,))
             else:
                 result.centres = reader.read_array_from_file("centers", use_cols=(1, 2, 3))
                 result.region_labels = reader.read_array_from_file("centers", dtype=numpy.str, use_cols=(0,))
             result.orientations = reader.read_optional_array_from_file("average_orientations")
-            result.cortical = reader.read_optional_array_from_file("cortical", dtype=numpy.bool)
-            result.hemispheres = reader.read_optional_array_from_file("hemispheres", dtype=numpy.bool)
+            result.cortical = reader.read_optional_array_from_file("cortical", dtype=numpy.bool_)
+            result.hemispheres = reader.read_optional_array_from_file("hemispheres", dtype=numpy.bool_)
             result.areas = reader.read_optional_array_from_file("areas")
             result.tract_lengths = reader.read_array_from_file("tract_lengths")
 

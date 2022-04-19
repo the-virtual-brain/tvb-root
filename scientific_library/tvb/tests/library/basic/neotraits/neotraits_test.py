@@ -260,7 +260,7 @@ def test_mro_fail():
 
 def test_narr_simple():
     class Boo(HasTraits):
-        x = NArray(shape=(Dim.any, Dim.any), dtype=np.dtype(np.int))
+        x = NArray(shape=(Dim.any, Dim.any), dtype=np.dtype(np.int64))
 
     boo = Boo(x=np.array([[1, 4]]))
     boo.x = np.array([[1], [2]])
@@ -269,7 +269,7 @@ def test_narr_simple():
 def test_narr_enforcing():
     with pytest.raises(TypeError):
         class Boo(HasTraits):
-            x = NArray(dtype=np.dtype(np.int), default=np.eye(2))
+            x = NArray(dtype=np.dtype(np.int64), default=np.eye(2))
 
     with pytest.raises(ValueError):
         # bad ndim default
@@ -556,7 +556,7 @@ def test_int_attribute():
     ainst.b = int(42)
     # values are not only checked for compatibility but converted to the declared type
     assert type(ainst.b) == np.int8
-    ainst.b = np.int(4)
+    ainst.b = np.int64(4)
 
     with pytest.raises(TypeError):
         # out of bounds for a int8
