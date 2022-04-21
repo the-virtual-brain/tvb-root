@@ -186,8 +186,8 @@ class TestFlowController(BaseControllersTest):
 
     def test_launch_multiple_operations(self, simulation_launch):
         operations = []
-        for i in range(TvbProfile.current.MAX_THREADS_NUMBER + 1):
-            operations.append(simulation_launch(self.test_user, self.test_project, 2000))
+        for i in range(TvbProfile.current.MAX_THREADS_NUMBER + 2):
+            operations.append(simulation_launch(self.test_user, self.test_project, 500))
         preparing_operations = True
         while preparing_operations:
             op_ready = True
@@ -198,19 +198,20 @@ class TestFlowController(BaseControllersTest):
                     break
             if op_ready:
                 preparing_operations = False
-
+        # All started except for the last, as the queue is not enough to launch all
         for i, operation in enumerate(operations):
             op = dao.get_operation_by_id(operation.id)
-            if i == len(operations) - 1:
+            if i >= TvbProfile.current.MAX_THREADS_NUMBER:
                 assert op.status == STATUS_PENDING
             else:
                 assert op.status == STATUS_STARTED
+        # Queue still full
         while LOCKS_QUEUE.qsize() == 0:
             pass
 
         StandAloneClient.process_queued_operations()
 
-        op = operations[len(operations) -1]
+        op = operations[len(operations) - 1]
         while dao.get_operation_by_id(op.id).status == STATUS_PENDING:
             pass
         op = dao.get_operation_by_id(op.id)
