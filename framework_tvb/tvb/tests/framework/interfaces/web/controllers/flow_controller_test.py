@@ -187,7 +187,7 @@ class TestFlowController(BaseControllersTest):
     def test_launch_multiple_operations(self, simulation_launch):
         operations = []
         for i in range(TvbProfile.current.MAX_THREADS_NUMBER + 1):
-            operations.append(simulation_launch(self.test_user, self.test_project, 1000))
+            operations.append(simulation_launch(self.test_user, self.test_project, 2000))
         preparing_operations = True
         while preparing_operations:
             op_ready = True
