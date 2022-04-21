@@ -73,9 +73,6 @@ jobs:
       - name: run library tests
         run: cd scientific_library && python3 -m pytest -v  --cov --cov-report=xml --ignore=tvb/tests/library/simulator/rateml_test.py
 
-      - name: run rateml tests
-        run: cd scientific_library/tvb/tests/library/simulator/ && pytest rateml_test.py --cov --cov-report=xml
-
       - name: run framework tests
         run: cd framework_tvb && python3 -m pytest -v  --cov --cov-report=xml
 
