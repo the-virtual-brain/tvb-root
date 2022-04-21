@@ -104,6 +104,7 @@ class TimeSeries(HasTraits):
             "Dimensions": self.labels_ordering,
             "Time units": self.sample_period_unit,
             "Sample period": self.sample_period,
+            "Start time": self.start_time,
             "Length": self.sample_period * self.data.shape[0]
         }
         summary.update(narray_summary_info(self.data))
