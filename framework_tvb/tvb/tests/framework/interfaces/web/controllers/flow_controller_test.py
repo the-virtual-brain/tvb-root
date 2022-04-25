@@ -212,7 +212,6 @@ class TestFlowController(BaseControllersTest):
         # wait while queue is still full
         while LOCKS_QUEUE.qsize() == 0:
             sleep(0.3)
-            pass
         # Make sure the last operation is being launched ...
         op = operations[len(operations) - 1]
         while dao.get_operation_by_id(op.id).status == STATUS_PENDING:
