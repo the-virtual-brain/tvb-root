@@ -185,9 +185,12 @@ class TestFlowController(BaseControllersTest):
         assert operation is None
 
     def test_launch_multiple_operations(self, simulation_launch):
+        assert TvbProfile.current.MAX_THREADS_NUMBER == LOCKS_QUEUE.qsize(), "Queue wasn't correctly initialized"
+        # Launch more operations that can be executed in parallel
         operations = []
         for i in range(TvbProfile.current.MAX_THREADS_NUMBER + 2):
-            operations.append(simulation_launch(self.test_user, self.test_project, 500))
+            operations.append(simulation_launch(self.test_user, self.test_project, 300))
+        # Wait until queue is actually full of Started operations
         preparing_operations = True
         while preparing_operations:
             op_ready = True
@@ -195,6 +198,7 @@ class TestFlowController(BaseControllersTest):
                 op = dao.get_operation_by_id(operations[i].id)
                 if op.status == STATUS_PENDING:
                     op_ready = False
+                    sleep(0.3)
                     break
             if op_ready:
                 preparing_operations = False
@@ -205,15 +209,16 @@ class TestFlowController(BaseControllersTest):
                 assert op.status == STATUS_PENDING
             else:
                 assert op.status == STATUS_STARTED
-        # Queue still full
+        # wait while queue is still full
         while LOCKS_QUEUE.qsize() == 0:
+            sleep(0.3)
             pass
-
-        StandAloneClient.process_queued_operations()
-
+        # Make sure the last operation is being launched ...
         op = operations[len(operations) - 1]
         while dao.get_operation_by_id(op.id).status == STATUS_PENDING:
-            pass
+            # Simulate the background job launching next round of operations
+            StandAloneClient.process_queued_operations()
+            sleep(0.3)
         op = dao.get_operation_by_id(op.id)
         assert op.status == STATUS_STARTED
 
