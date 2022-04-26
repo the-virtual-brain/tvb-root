@@ -103,7 +103,8 @@ class TestSQLiteProfile(WebSettingsProfile):
         super(TestSQLiteProfile, self).__init__()
 
         self.web.RENDER_HTML = False
-        self.MAX_THREADS_NUMBER = self.manager.get_attribute(stored.KEY_MAX_THREAD_NR, 2, int)
+        # NOTE: overwriting MAX_THREADS_NUMBER won't work in a test profile, as it needs a restart
+        # self.MAX_THREADS_NUMBER = self.manager.get_attribute(stored.KEY_MAX_THREAD_NR, 2, int)
 
         self.TVB_STORAGE = self.manager.get_attribute(stored.KEY_STORAGE, self.DEFAULT_STORAGE, str)
         # For tests we will place logs in workspace (current folder), to have them visible from Hudson.
