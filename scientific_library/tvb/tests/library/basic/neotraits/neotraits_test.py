@@ -442,10 +442,10 @@ def test_str_ndarrays():
     assert 'Georgiana' != a.s[0]
     assert 'Georg' == a.s[0]
 
-    # dtype(str) is dtype('|S0') so it is the most restrictive thus useless
+    # dtype(str) used to be dtype('|S0'), not any more
     with pytest.raises(TypeError):
         class A(HasTraits):
-            s = NArray(dtype=str, default=np.array(['eli']))
+            s = NArray(dtype='|S0', default=np.array(['eli']))
         # fails because the declared type |S0 is different from |S3
         # it is not only different but not compatible
 
@@ -910,4 +910,3 @@ def test_function_attribute():
     with pytest.raises(TypeError):
         # out of bounds
         ainst.c = "Not a function"
-
