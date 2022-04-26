@@ -563,7 +563,7 @@ class Projection(Monitor):
             non_cortical_rmap_idx = numpy.hstack([numpy.argwhere(self.rmap==i)[:,0] for i in non_cortical_indices])
             cortical_rmap = numpy.delete(cortical_rmap, non_cortical_rmap_idx)
         if not using_cortical_surface and self.gain.shape[1] == cortical_rmap.size:
-            gain = numpy.zeros((self.gain.shape[0], conn.number_of_regions))
+            gain = numpy.zeros((self.gain.shape[0], conn.number_of_regions - len(numpy.where(~conn.cortical)[0])))
             numpy_add_at(gain.T, cortical_rmap, self.gain.T)
             self.log.debug('Region mapping gain shape %s to %s', self.gain.shape, gain.shape)
             self.gain = gain
