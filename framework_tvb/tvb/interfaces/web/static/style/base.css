@@ -2660,3 +2660,12 @@ position: absolute;
 -moz-box-shadow: 2px 2px 10px 0 rgba(0, 0, 0, 0.7);
 box-shadow: 2px 2px 10px 0 rgba(0, 0, 0, 0.7);
 }
+
+
+#bottom-nav li:hover{
+    background-color: rgb(1, 0, 44);
+}
+
+#bottom-nav li.active {
+    background-color: rgb(37, 37, 37);
+}

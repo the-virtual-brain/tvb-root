@@ -36,7 +36,7 @@
         <meta http-equiv="Cache-Control" content="no-cache" />
 
         <link rel="shortcut icon" href="{{ deploy_context | safe }}/static/style/img/favicon.ico" />
-        <link rel="stylesheet" type="text/css" href="{{ deploy_context | safe }}/static/style/base.css?{{ currentVersionJS }}" />
+        <link rel="stylesheet" type="text/css" href="{{ deploy_context | safe }}/static/style/base.css" />
         <link rel="stylesheet" type="text/css" href="{{ deploy_context | safe }}/static/style/overlay.css?{{ currentVersionJS }}"/>
         <link rel="stylesheet" type="text/css" href="{{ deploy_context | safe }}/static/jquery/jquery-ui.css?{{ currentVersionJS }}"/>
 
@@ -48,6 +48,8 @@
         <script type="text/javascript" src="{{ deploy_context | safe }}/static/jquery/jquery-ui.js?{{ currentVersionJS }}"></script> <!--JQuery custom imports for the Range, Slider controller -->
         <script type="text/javascript" src="{{ deploy_context | safe }}/static/jquery/jquery.json.js"></script>
         <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/genericTVB.js?{{ currentVersionJS }}"></script>
+
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" integrity="sha512-KfkfwYDsLkIlwQp6LFnl8zNdLGxu9YAA1QvwINks4PhcElQSvqcyVLLD9aMhXd13uQjoXtEKNosOWaZqXgel0g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
         <!--  include keycloak initialization      -->
         {% if keycloakConfigWebFile is defined%}
@@ -83,7 +85,7 @@
             {% endif %}
         {% endif %}
 
-        {% include 'footer.html' %}
+        {% include 'new_footer.html' %}
     </body>
 
 </html>
