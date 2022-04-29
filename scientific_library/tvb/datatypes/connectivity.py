@@ -37,6 +37,7 @@ The Connectivity datatype.
 """
 
 from copy import copy
+from io import BytesIO
 
 import numpy
 import scipy.stats
@@ -376,7 +377,7 @@ class Connectivity(HasTraits):
                         hemispheres = None
                         break
             if hemispheres is not None:
-                self.hemispheres = numpy.array(hemispheres, dtype=numpy.bool)
+                self.hemispheres = numpy.array(hemispheres, dtype=numpy.bool_)
 
     def transform_remove_self_connections(self):
         """
@@ -700,8 +701,25 @@ class Connectivity(HasTraits):
 
         return numpy.setdiff1d(numpy.r_[:self.number_of_regions], region_mapping)
 
-    @staticmethod
-    def from_file(source_file="connectivity_76.zip"):
+    @classmethod
+    def _read(cls, reader):
+        result = Connectivity()
+        result.weights = reader.read_array_from_file("weights")
+        if reader.has_file_like("centres"):
+            result.centres = reader.read_array_from_file("centres", use_cols=(1, 2, 3))
+            result.region_labels = reader.read_array_from_file("centres", dtype=numpy.str_, use_cols=(0,))
+        else:
+            result.centres = reader.read_array_from_file("centers", use_cols=(1, 2, 3))
+            result.region_labels = reader.read_array_from_file("centers", dtype=numpy.str_, use_cols=(0,))
+        result.orientations = reader.read_optional_array_from_file("average_orientations")
+        result.cortical = reader.read_optional_array_from_file("cortical", dtype=numpy.bool_)
+        result.hemispheres = reader.read_optional_array_from_file("hemispheres", dtype=numpy.bool_)
+        result.areas = reader.read_optional_array_from_file("areas")
+        result.tract_lengths = reader.read_array_from_file("tract_lengths")
+        return result
+
+    @classmethod
+    def from_file(cls, source_file="connectivity_76.zip"):
 
         result = Connectivity()
         source_full_path = try_get_absolute_path("tvb_data.connectivity", source_file)
@@ -720,21 +738,15 @@ class Connectivity(HasTraits):
 
         else:
             reader = ZipReader(source_full_path)
-
-            result.weights = reader.read_array_from_file("weights")
-            if reader.has_file_like("centres"):
-                result.centres = reader.read_array_from_file("centres", use_cols=(1, 2, 3))
-                result.region_labels = reader.read_array_from_file("centres", dtype=numpy.str, use_cols=(0,))
-            else:
-                result.centres = reader.read_array_from_file("centers", use_cols=(1, 2, 3))
-                result.region_labels = reader.read_array_from_file("centers", dtype=numpy.str, use_cols=(0,))
-            result.orientations = reader.read_optional_array_from_file("average_orientations")
-            result.cortical = reader.read_optional_array_from_file("cortical", dtype=numpy.bool)
-            result.hemispheres = reader.read_optional_array_from_file("hemispheres", dtype=numpy.bool)
-            result.areas = reader.read_optional_array_from_file("areas")
-            result.tract_lengths = reader.read_array_from_file("tract_lengths")
+            result = cls._read(reader)
 
         return result
+
+    @classmethod
+    def from_bytes_stream(cls, bytes_stream):
+        """Construct a Connectivity from a stream of bytes."""
+        reader = ZipReader(BytesIO(bytes_stream))
+        return cls._read(reader)
 
     @property
     def horizon(self):

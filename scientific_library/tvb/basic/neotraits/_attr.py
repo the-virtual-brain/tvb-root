@@ -402,7 +402,7 @@ class Dim(Final):
 class NArray(Attr):
     """
     Declares a numpy array.
-    dtype enforces the dtype. The default dtype is float32.
+    dtype enforces the dtype. The default dtype is float64.
     An optional symbolic shape can be given, as a tuple of Dim attributes from the owning class.
     The shape will be enforced, but no broadcasting will be done.
     domain declares what values are allowed in this array.
@@ -417,7 +417,7 @@ class NArray(Attr):
             required=True,
             doc='',
             label='',
-            dtype=numpy.float,
+            dtype=numpy.float64,
             shape=None,
             dim_names=(),
             domain=None,

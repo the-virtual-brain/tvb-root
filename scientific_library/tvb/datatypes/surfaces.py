@@ -39,6 +39,7 @@ Surface relates DataTypes.
 import warnings
 import numpy
 import scipy.sparse
+from io import BytesIO
 
 from tvb.basic import exceptions
 from tvb.basic.neotraits.api import TVBEnum
@@ -155,17 +156,27 @@ class Surface(HasTraits):
     valid_for_simulations = Attr(field_type=bool, default=True)
 
     @classmethod
-    def from_file(cls, source_file="cortex_16384.zip"):
-        """Construct a Surface from source_file."""
-
+    def _read(cls, reader):
         result = cls()
-        source_full_path = try_get_absolute_path("tvb_data.surfaceData", source_file)
-        reader = ZipReader(source_full_path)
-
         result.vertices = reader.read_array_from_file("vertices.txt")
         result.vertex_normals = reader.read_array_from_file("normals.txt")
         result.triangles = reader.read_array_from_file("triangles.txt", dtype=numpy.int32)
         return result
+
+    @classmethod
+    def from_file(cls, source_file="cortex_16384.zip"):
+        """Construct a Surface from source_file."""
+        source_full_path = try_get_absolute_path("tvb_data.surfaceData", source_file)
+        reader = ZipReader(source_full_path)
+
+        return cls._read(reader)
+
+    @classmethod
+    def from_bytes_stream(cls, bytes_stream):
+        """Construct a Surface from a stream of bytes."""
+
+        reader = ZipReader(BytesIO(bytes_stream))
+        return cls._read(reader)
 
     def configure(self):
         """Compute additional attributes on surface data required for full functionality."""
@@ -520,7 +531,6 @@ class Surface(HasTraits):
 
             self._edge_lengths = elem
         return self._edge_lengths
-
 
     @property
     def edge_triangles(self):

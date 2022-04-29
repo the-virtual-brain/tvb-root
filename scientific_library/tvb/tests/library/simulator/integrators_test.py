@@ -39,7 +39,7 @@ Test for tvb.simulator.coupling module
 import numpy
 import pytest
 from tvb.tests.library.base_testcase import BaseTestCase
-from tvb.tests.library.simulator.models_test import TestUpdateVariablesModel, TestUpdateVariablesBoundsModel
+from tvb.tests.library.simulator.models_test import ModelTestUpdateVariables, ModelTestUpdateVariablesBounds
 from tvb.simulator import integrators
 from tvb.simulator import noise
 
@@ -230,7 +230,7 @@ class TestIntegrators(BaseTestCase):
             assert numpy.all(x1 == x0)
 
     def test_update_variables(self):
-        self._test_update_variables(TestUpdateVariablesModel())
+        self._test_update_variables(ModelTestUpdateVariables())
 
     def test_update_variables_with_boundaries(self):
-        self._test_update_variables(TestUpdateVariablesBoundsModel())
+        self._test_update_variables(ModelTestUpdateVariablesBounds())

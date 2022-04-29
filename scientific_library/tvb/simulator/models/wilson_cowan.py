@@ -345,7 +345,7 @@ class WilsonCowan(ModelNumbaDfun):
         Constant intensity.Entry point for coupling.""")
 
     shift_sigmoid = NArray(
-        dtype= numpy.bool,
+        dtype= numpy.bool_,
         label=r":math:`shift sigmoid`",
         default=numpy.array([True]),
         doc="""In order to have resting state (E=0 and I=0) in absence of external input,
