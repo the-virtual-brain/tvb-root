@@ -124,6 +124,9 @@ ColSch.schemes = {
     cubehelix: new ColorScheme(ColSch.DarkTheme, 24),
     termal:    new ColorScheme(ColSch.DarkTheme, 25),
 
+    whiteJet:  new ColorScheme(ColSch.LightTheme, 1),
+    whiteTVB:  new ColorScheme(ColSch.LightTheme, 3),
+
     transparentJet:    new ColorScheme(ColSch.TransparentTheme, 1),
     transparentTVB:    new ColorScheme(ColSch.TransparentTheme, 3),
     transparentRdYlBu: new ColorScheme(ColSch.TransparentTheme, 13),
