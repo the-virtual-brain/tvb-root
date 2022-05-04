@@ -314,7 +314,7 @@ class PowerSpectraInteractive(HasTraits):
         Generate radio selector buttons to set the windowing function.
         """
         #TODO: add support for kaiser, requiers specification of beta.
-        wf_tup = ("None", "hamming", "bartlett", "blackman", "hanning") 
+        wf_tup = ("None", "hamming", "bartlett", "blackman", "hanning")
         self.window_function_selector = widgets.RadioButtons(options=wf_tup, value=wf_tup[0], layout=self.other_layout)
         self.window_function_selector.observe(self.update_window_function, 'value')
 
@@ -342,7 +342,7 @@ class PowerSpectraInteractive(HasTraits):
         #Segment time-series, overlapping if necessary
         nseg = int(numpy.ceil(self.time_series_length / self.window_length))
         if nseg != 1:
-            seg_tpts = self.window_length / self.period
+            seg_tpts = numpy.ceil(self.window_length / self.period) # use ceil to avoid dimensions mismatch
             overlap = ((seg_tpts * nseg) - self.tpts) / (nseg-1)
             starts = [max(seg*(seg_tpts - overlap), 0) for seg in range(nseg)]
             segments = [self.data[int(start):int(start+seg_tpts)] for start in starts]
@@ -358,13 +358,13 @@ class PowerSpectraInteractive(HasTraits):
         #Apply windowing function
         if self.window_function != "None":
             window_function = eval("".join(("numpy.", self.window_function)))
-            window_mask = numpy.reshape(window_function(seg_tpts), 
+            window_mask = numpy.reshape(window_function(seg_tpts),
                                         (int(seg_tpts), 1, 1, 1, 1))
             time_series = time_series * window_mask
 
         #Calculate the FFT
         result =  numpy.fft.fft(time_series, axis=0)
-        nfreq = len(result)/2
+        nfreq = numpy.ceil(len(result)/2) # use ceil to avoid dimensions mismatch
 
         self.frequency = numpy.arange(0, self.max_freq, self.freq_step)
         LOG.debug("frequency shape: %s" % str(self.frequency.shape))
@@ -445,8 +445,8 @@ class PowerSpectraInteractive(HasTraits):
 #        std = (self.spectra[:, self.variable, :, self.mode] +
 #               self.spectra_std[:, self.variable, :, self.mode])
 #        self.fft_ax.plot(self.frequency, std, "--")
-#    
-#    
+#
+#
 #    def plot_sem(self):
 #        """  """
 #        sem = (self.spectra[:, self.variable, :, self.mode] +
@@ -472,17 +472,17 @@ class PowerSpectraInteractive(HasTraits):
         #import pdb; pdb.set_trace()
         #Plot the power spectra
         if self.normalise_power == "yes":
-            self.fft_ax.plot(self.frequency, 
+            self.fft_ax.plot(self.frequency,
                              self.spectra_norm[:, self.variable, :, self.mode])
         else:
-            self.fft_ax.plot(self.frequency, 
+            self.fft_ax.plot(self.frequency,
                              self.spectra[:, self.variable, :, self.mode])
 
 #        #TODO: Need to ensure colour matching... and allow region selection.
 #        #If requested, add standard deviation
 #        if self.show_std:
 #            self.plot_std(self)
-#            
+#
 #        #If requested, add standard error in mean
 #        if self.show_sem:
 #            self.plot_sem(self)
