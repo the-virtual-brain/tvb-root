@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -38,26 +38,59 @@ for visualising the effect of noise on a trajectory.
 Demo::
 
     from tvb.simulator.plot.phase_plane_interactive import PhasePlaneInteractive
-    ppi = PhasePlaneInteractive()
-    ppi.show()
+    ppi_fig = PhasePlaneInteractive()
+    ppi_fig.show()
+
+
+Example specifying a Model and stochastic sample trajectories::
+
+    import tvb.simulator.models
+    from tvb.simulator.plot.phase_plane_interactive import PhasePlaneInteractive
+    MODEL = tvb.simulator.models.JansenRit()
+    import tvb.simulator.integrators
+    INTEGRATOR = tvb.simulator.integrators.HeunStochastic(dt=2**-5)
+    ppi_fig = PhasePlaneInteractive(model=MODEL, integrator=INTEGRATOR)
+    ppi_fig.show()
+
+
+.. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
+
 """
-import numpy as np
+# TODO: Add more LOG statements.
+# TODO: Add connectivity term to parameters...
+# TODO: Memory grows with usage, may be just a lazy garbage collector but, should
+#      check for leaks or look into "forcing" cleanup...
+
+import numpy
 import matplotlib.pyplot as plt
 import colorsys
+import matplotlib.widgets as widgets
 
-import ipywidgets as widgets
-from IPython.display import display
-
-from tvb.simulator.lab import integrators
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray
+from tvb.simulator.common import get_logger
 import tvb.simulator.models as models_module
 import tvb.simulator.integrators as integrators_module
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List
+
+LOG = get_logger(__name__)
+
+# Define a colour theme... see: matplotlib.colors.cnames.keys()
+BACKGROUNDCOLOUR = "lightgray"
+EDGECOLOUR = "darkslateblue"
+AXCOLOUR = "steelblue"
+BUTTONCOLOUR = "steelblue"
+HOVERCOLOUR = "darkred"
+
+# Set the resolution of the phase-plane and sample trajectories.
+NUMBEROFGRIDPOINTS = 42
+TRAJ_STEPS = 4096
+
 
 def get_color(num_colours):
     for hue in range(num_colours):
         hue = 1.0 * hue / num_colours
         col = [int(x) for x in colorsys.hsv_to_rgb(hue, 1.0, 230)]
         yield "#{0:02x}{1:02x}{2:02x}".format(*col)
+
 
 class PhasePlaneInteractive(HasTraits):
     """
@@ -67,19 +100,14 @@ class PhasePlaneInteractive(HasTraits):
         - A fixed value for the state-variables which aren't currently selected.
         - The noise strength, if a stocahstic integrator is specified.
 
-    and dropdown lists for selecting:
+    and radio buttons for selecting:
         - Which state-variables to show on each axis.
         - Which mode to show, if the Model has them.
 
-    Entering the coordinates in the X,Y Coordinate Boxes will generate a sample 
-    trajectory, originating from the coordinates entered.
+    Clicking on the phase-plane will generate a sample trajectory, originating
+    from where you clicked.
 
     """
-
-    # Set the resolution of the phase-plane and sample trajectories.
-    NUMBEROFGRIDPOINTS = 42
-    TRAJ_STEPS = 4096
-    exclude_sliders = None
 
     model = Attr(
         field_type=models_module.Model,
@@ -96,431 +124,84 @@ class PhasePlaneInteractive(HasTraits):
         trajectories on the phase-plane. NOTE: This is not used for generating
         the phase-plane itself, ie the vector field and nulclines.""")
 
+    exclude_sliders = List(
+        of=str)
+
     def __init__(self, **kwargs):
-        """ Initialise based on provided keywords or their traited defaults. """
-
+        """
+        Initialise based on provided keywords or their traited defaults. Also,
+        initialise the place-holder attributes that aren't filled until the
+        show() method is called.
+        """
         super(PhasePlaneInteractive, self).__init__(**kwargs)
+        LOG.debug(str(kwargs))
 
-        # Parameters to be passed to plotter
-        self.params = dict()
+        # figure
+        self.ipp_fig = None
 
-        # Setup the initial state
-        self.svx = self.model.state_variables[0] #x-axis: 1st state variable
-        self.svy = self.model.state_variables[1] #y-axis: 2nd state variable
-        self.mode = 0
+        # phase-plane
+        self.pp_ax = None
+        self.X = None
+        self.Y = None
+        self.U = None
+        self.V = None
+        self.UVmag = None
+        self.nullcline_x = None
+        self.nullcline_y = None
+        self.pp_quivers = None
 
-        # LAYOUTS
-        self.slider_layout = widgets.Layout(width='90%')
-        self.slider_style = {'description_width': 'initial'}
-        self.button_layout = widgets.Layout(width='90%')
-        self.other_layout = widgets.Layout(width='90%')
-        self.box_layout = widgets.Layout(border='solid 1px black',
-                                        margin='0px 5px 5px 0px',
-                                        padding='2px 2px 2px 2px')
-        
-        # Toggle variable for trajectory
-        self.traj_out = None
+        # Current state
+        self.svx = None
+        self.svy = None
+        self.default_sv = None
+        self.no_coupling = None
+        self.mode = None
+
+        # Selectors
+        self.state_variable_x = None
+        self.state_variable_y = None
+        self.mode_selector = None
+
+        # Sliders
+        self.param_sliders = None
+        self.axes_range_sliders = None
+        self.sv_sliders = None
+        self.noise_slider = None
+
+        # Reset buttons
+        self.reset_param_button = None
+        self.reset_sv_button = None
+        self.reset_axes_button = None
+        self.reset_noise_button = None
+        self.reset_seed_button = None
 
     def show(self):
-        """ Generate the Phase Plane Figure and Widgets. """
-        
-        # Make sure the model is configured.
+        """ Generate the interactive phase-plane figure. """
+        model_name = self.model.__class__.__name__
+        msg = "Generating an interactive phase-plane plot for %s"
+        LOG.info(msg % model_name)
+
+        # Make sure the model is fully configured...
         self.model.configure()
 
-        model = self.model
-        integrator = self.integrator
-        TRAJ_STEPS = self.TRAJ_STEPS
-        NUMBEROFGRIDPOINTS = self.NUMBEROFGRIDPOINTS
-        
-        # List for storing plotted trajectory coordinates.
-        traj_texts = []
-
-        def plotter(**plot_params):
-            """ Main plotter function. """
-
-            # Generating the Phase Plane Figure
-            model_name = model.__class__.__name__
-            integrator_name = integrator.__class__.__name__
-            figsize = 4, 5
-            try:
-                figure_window_title = "Interactive phase-plane: " + model_name
-                figure_window_title += "   --   %s" % integrator_name
-                ipp_fig = plt.figure(num = figure_window_title,
-                                            figsize = figsize)
-            except ValueError:
-                ipp_fig = plt.figure(num = 42, figsize = figsize)
-
-            pp_ax = ipp_fig.add_axes([0.15, 0.2, 0.8, 0.75])
-            pp_splt = ipp_fig.add_subplot(212)
-            ipp_fig.subplots_adjust(left=0.15, bottom=0.02, right=0.95,
-                                        top=0.3, wspace=0.1, hspace=1.0)
-            pp_splt.set_prop_cycle(color=get_color(model.nvar))
-            pp_splt.plot(np.arange(TRAJ_STEPS+1) * integrator.dt,
-                            np.zeros((TRAJ_STEPS+1, model.nvar)))
-            if hasattr(pp_splt, 'autoscale'):
-                pp_splt.autoscale(enable=True, axis='y', tight=True)
-            pp_splt.legend(model.state_variables)
-
-            # Fetching the parameter values from widgets.
-            svx = plot_params.pop('svx')
-            svy = plot_params.pop('svy')
-            
-            mode = plot_params.pop('mode')
-
-            # Fetching Trajectory Coordinates and storing in a list.
-            traj_x = plot_params.pop('traj_x')
-            traj_y = plot_params.pop('traj_y')
-            plot_traj = plot_params.pop('plot_traj')
-
-            if plot_traj and (traj_x, traj_y) not in traj_texts:
-                traj_texts.append((traj_x, traj_y))
-
-            # Clearing Plotted Trajectories.
-            clear_traj = plot_params.pop('clear_traj')
-            if clear_traj:
-                traj_texts.clear()
-
-            # Set Model Parameters
-            for k, v in plot_params.items():
-                setattr(model, k, np.r_[v])
-
-            # Set State Vector
-            sv_mean = np.array([plot_params[key] for key in model.state_variables])
-            sv_mean = sv_mean.reshape((model.nvar, 1, 1))
-            default_sv = sv_mean.repeat(model.number_of_modes, axis=2)
-            no_coupling = np.zeros((model.nvar, 1, model.number_of_modes))
-
-            # Set Mesh Grid
-            xlo = plot_params['sl_x_min']
-            xhi = plot_params['sl_x_max']
-            ylo = plot_params['sl_y_min']
-            yhi = plot_params['sl_y_max']
-
-            X = np.mgrid[xlo:xhi:(NUMBEROFGRIDPOINTS*1j)]
-            Y = np.mgrid[ylo:yhi:(NUMBEROFGRIDPOINTS*1j)]
-            
-            # Calculate Phase Plane
-            svx_ind = model.state_variables.index(svx)
-            svy_ind = model.state_variables.index(svy)
-
-            # Calculate the vector field discretely sampled at a grid of points
-            grid_point = default_sv.copy()
-            U = np.zeros((NUMBEROFGRIDPOINTS, NUMBEROFGRIDPOINTS,
-                                    model.number_of_modes))
-            V = np.zeros((NUMBEROFGRIDPOINTS, NUMBEROFGRIDPOINTS,
-                                    model.number_of_modes))
-            for ii in range(NUMBEROFGRIDPOINTS):
-                grid_point[svy_ind] = Y[ii]
-                for jj in range(NUMBEROFGRIDPOINTS):
-
-                    grid_point[svx_ind] = X[jj]
-
-                    d = model.dfun(grid_point, no_coupling)
-
-                    for kk in range(model.number_of_modes):
-                        U[ii, jj, kk] = d[svx_ind, 0, kk]
-                        V[ii, jj, kk] = d[svy_ind, 0, kk]
-            
-            model_name = model.__class__.__name__
-            pp_ax.set(title = model_name + " mode " + str(mode))
-            pp_ax.set(xlabel = "State Variable " + svx)
-            pp_ax.set(ylabel = "State Variable " + svy)
-
-            #Plot a discrete representation of the vector field
-            if np.all(U[:, :, mode] + V[:, :, mode]  == 0):
-                pp_ax.set(title = model_name + " mode " + str(mode) + ": NO MOTION IN THIS PLANE")
-                X, Y = np.meshgrid(X, Y)
-                pp_quivers = pp_ax.scatter(X, Y, s=8, marker=".", c="k")
-            else:
-                pp_quivers = pp_ax.quiver(X, Y,
-                                                    U[:, :, mode],
-                                                    V[:, :, mode],
-                                                    #UVmag[:, :, mode],
-                                                    width=0.001, headwidth=8)
-
-            #Plot the nullclines
-            nullcline_x = pp_ax.contour(X, Y,
-                                                U[:, :, mode],
-                                                [0], colors="r")
-            nullcline_y = pp_ax.contour(X, Y,
-                                                V[:, :, mode],
-                                                [0], colors="g")
-
-            # Plot Trajectory
-            if len(traj_texts):
-                for traj_text in traj_texts:
-
-                    x = float(traj_text[0])
-                    y = float(traj_text[1])
-                    svx_ind = model.state_variables.index(svx)
-                    svy_ind = model.state_variables.index(svy)
-
-                    # Calculate an example trajectory
-                    state = default_sv.copy()
-                    integrator.clamped_state_variable_indices = np.setdiff1d(
-                        np.r_[:len(model.state_variables)], np.r_[svx_ind, svy_ind])
-                    integrator.clamped_state_variable_values = default_sv[integrator.clamped_state_variable_indices]
-                    state[svx_ind] = x
-                    state[svy_ind] = y
-                    scheme = integrator.scheme
-                    traj = np.zeros((TRAJ_STEPS+1, model.nvar, 1,
-                                        model.number_of_modes))
-                    traj[0, :] = state
-                    for step in range(TRAJ_STEPS):
-                        state = scheme(state, model.dfun, no_coupling, 0.0, 0.0)
-                        traj[step+1, :] = state
-
-                    pp_ax.scatter(x, y, s=42, c='g', marker='o', edgecolor=None)
-                    pp_ax.plot(traj[:, svx_ind, 0, mode],
-                                    traj[:, svy_ind, 0, mode])
-
-                    # Plot the selected state variable trajectories as a function of time
-                    pp_splt.plot(np.arange(TRAJ_STEPS+1) * integrator.dt,
-                                    traj[:, :, 0, mode])
-
-        # Create UI with Widgets
-        ui = self.create_ui()
-        
-        # Generate Output
-        out = widgets.interactive_output(plotter, self.params)
-        
-        # Display Output
-        display(ui, out)
-    
-    ##------------------------------------------------------------------------##
-    ##----------------- Functions for building the figure --------------------##
-    ##------------------------------------------------------------------------##
-
-    def create_ui(self):
-        """ Create the widget UI. """
-
-        #Figure and main phase-plane axes
+        # Setup the inital(current) state
+        self.svx = self.model.state_variables[0]  # x-axis: 1st state variable
+        self.svy = self.model.state_variables[1]  # y-axis: 2nd state variable
+        self.mode = 0
         self.set_state_vector()
 
-        # Axes Sliders and Reset Button
-        self.add_axes_sliders()
-        self.add_reset_axes_button()
-        
-        # Param Sliders and Reset Button
-        self.add_param_sliders()
-        self.add_reset_param_button()
-        
-        # State Variable Sliders and Reset Button
-        self.add_sv_sliders()
-        self.add_reset_sv_button()
-        
-        # XY Axes State Variable Selector and Mode Selector
-        self.add_sv_selector()
+        # Make the figure:
+        self.create_figure()
+
+        # Selectors
+        self.add_state_variable_selector()
         self.add_mode_selector()
 
-        # Trajectory Plotting
-        self.add_traj_coords_text()
-        
-        # Widget Group 1
-        self.mode_selector_widget = widgets.VBox([widgets.Label('Mode Selector'), self.mode_selector])
-        self.svx_widget = widgets.VBox([widgets.Label('SVX Selector'), self.state_variable_x])
-        self.svy_widget = widgets.VBox([widgets.Label('SVY Selector'), self.state_variable_y])
-        self.ax_widgets_list = [self.reset_axes_button, 
-                                self.sl_x_min, self.sl_x_max, self.sl_y_min, self.sl_y_max, 
-                                self.mode_selector_widget, self.svx_widget, self.svy_widget]
-
-        self.add_integrator_widgets()
-
-        self.ax_widgets = widgets.VBox(self.ax_widgets_list, layout=self.box_layout)
-
-        # Widget Group 2
-        self.sv_widgets = widgets.VBox([self.reset_sv_button]+list(self.sv_sliders.values())+
-                                       [self.traj_label, self.traj_x_box, self.traj_y_box, 
-                                        self.plot_traj_button, self.traj_out, self.clear_traj_button], 
-                                       layout=self.box_layout)
-
-        # Widget Group 3
-        self.param_widgets = widgets.VBox([self.reset_param_button]+list(self.param_sliders.values()), layout=self.box_layout)
-
-        # Group all Widgets in a Widget GridBox
-        items = [self.param_widgets, self.sv_widgets, self.ax_widgets]
-        grid = widgets.GridBox(items, layout=widgets.Layout(grid_template_columns="326px 326px 326px"))
-        return grid
-    
-    def add_reset_axes_button(self):
-        """ Add a button to reset the axes of the Phase Plane to their default ranges. """
-        
-        def reset_ranges(val):
-            self.sl_x_min.value = self.sl_x_min_initval
-            self.sl_x_max.value = self.sl_x_max_initval
-            self.sl_y_min.value = self.sl_y_min_initval
-            self.sl_y_max.value = self.sl_y_max_initval
-    
-        self.reset_axes_button = widgets.Button(description='Reset axes',
-                                                disabled=False, 
-                                                layout=self.button_layout)
-        self.reset_axes_button.on_click(reset_ranges)
-
-    def add_reset_sv_button(self):
-        """ Add a button to reset the State Variables to their default values. """
-
-        self.reset_sv_button = widgets.Button(description='Reset state-variables',
-                                        disabled=False, 
-                                        layout=self.button_layout)
-            
-        def reset_state_variables(sad):
-            for sv in range(self.model.nvar):
-                sv_str = self.model.state_variables[sv]
-                self.sv_sliders[sv_str].value = self.sv_sliders_values[sv_str]
-
-        self.reset_sv_button.on_click(reset_state_variables)
-
-    def add_reset_param_button(self):
-        """ Add a button to reset the model parameters to their default values. """
-
-        self.reset_param_button = widgets.Button(description='Reset parameters',
-                                            disabled=False,
-                                            layout=self.button_layout)
-
-        def reset_parameters(sad):
-            for param_slider in self.param_sliders:
-                self.param_sliders[param_slider].value = self.param_sliders_values[param_slider]
-
-        self.reset_param_button.on_click(reset_parameters)
-    
-    def add_reset_noise_button(self):
-        """ Add a button to reset integrator noise. """
-
-        self.reset_noise_button = widgets.Button(description='Reset noise strength',
-                                                disabled=False, 
-                                                layout=self.button_layout)
-        def reset_noise(sad):
-            self.noise_slider.value = self.noise_slider_valinit
-
-        self.reset_noise_button.on_click(reset_noise)
-
-    def add_reset_random_stream_button(self):
-        """ Add a button to reset random stream of Integrator Noise. """
-
-        self.reset_seed_button = widgets.Button(description='Reset random stream',
-                                                disabled=False,
-                                                layout=self.button_layout)
-        def reset_seed(event):
-            self.integrator.noise.reset_random_stream()
-
-        self.reset_seed_button.on_click(reset_seed)
-
-    def add_axes_sliders(self):
-        """ Add sliders to set phase plane axes values. """
-
-        default_range_x = (self.model.state_variable_range[self.svx][1] -
-                            self.model.state_variable_range[self.svx][0])
-        default_range_y = (self.model.state_variable_range[self.svy][1] -
-                            self.model.state_variable_range[self.svy][0])
-        min_val_x = self.model.state_variable_range[self.svx][0] - 4.0 * default_range_x
-        max_val_x = self.model.state_variable_range[self.svx][1] + 4.0 * default_range_x
-        min_val_y = self.model.state_variable_range[self.svy][0] - 4.0 * default_range_y
-        max_val_y = self.model.state_variable_range[self.svy][1] + 4.0 * default_range_y
-        
-        self.sl_x_min_initval = self.model.state_variable_range[self.svx][0]
-        self.sl_x_max_initval = self.model.state_variable_range[self.svx][1]
-        self.sl_y_min_initval = self.model.state_variable_range[self.svy][0]
-        self.sl_y_max_initval = self.model.state_variable_range[self.svy][1]
-
-        self.sl_x_min = widgets.FloatSlider(description="xlo",
-                                    min=min_val_x,
-                                    max=max_val_x,
-                                    value= self.model.state_variable_range[self.svx][0],
-                                    layout=self.slider_layout,
-                                    style = self.slider_style,
-                                    continuous_update=False)
-        self.sl_x_min.observe(self.update_sl_x_range, 'value')
-
-        self.sl_x_max = widgets.FloatSlider(description="xhi",
-                                        min=min_val_x,
-                                        max=max_val_x,
-                                        value=self.model.state_variable_range[self.svx][1],
-                                        layout= self.slider_layout,
-                                        style = self.slider_style,
-                                        continuous_update=False)
-
-        self.sl_y_min = widgets.FloatSlider(description="ylo", 
-                                        min=min_val_y, 
-                                        max=max_val_y, 
-                                        value=self.model.state_variable_range[self.svy][0],
-                                        layout=self.slider_layout,
-                                        style = self.slider_style,
-                                        continuous_update=False)
-        self.sl_y_min.observe(self.update_sl_y_range, 'value')
-
-        self.sl_y_max = widgets.FloatSlider(description="yhi", 
-                                        min=min_val_y, 
-                                        max=max_val_y,
-                                        value=self.model.state_variable_range[self.svy][1],
-                                        layout=self.slider_layout,
-                                        style = self.slider_style,
-                                        continuous_update=False)
-
-        self.params['sl_x_min'] = self.sl_x_min
-        self.params['sl_x_max'] = self.sl_x_max
-        self.params['sl_y_min'] = self.sl_y_min
-        self.params['sl_y_max'] = self.sl_y_max
-
-    def add_sv_sliders(self):
-        """ Add sliders to set the Phase Plane State Variables values. """
-
-        msv_range = self.model.state_variable_range
-        self.sv_sliders = dict()
-        self.sv_sliders_values = dict()
-        for sv in range(self.model.nvar):
-            sv_str = self.model.state_variables[sv]
-            self.sv_sliders[sv_str] = widgets.FloatSlider(description=sv_str,
-                                                            min=msv_range[sv_str][0],
-                                                            max=msv_range[sv_str][1],
-                                                            value = self.default_sv[sv,0,0],
-                                                            layout=self.slider_layout,
-                                                            style = self.slider_style,
-                                                            continuous_update=False)
-            self.sv_sliders_values[sv_str] = self.default_sv[sv,0,0]
-            self.params[sv_str] = self.sv_sliders[sv_str]
-
-    def add_param_sliders(self):
-        """ Add sliders to select the model parameter values. """
-
-        self.param_sliders = dict()
-        self.param_sliders_values = dict()
-
-        for param_name in type(self.model).declarative_attrs:
-            if self.exclude_sliders is not None and param_name in self.exclude_sliders:
-                continue
-            param_def = getattr(type(self.model), param_name)
-            if not isinstance(param_def, NArray) or not param_def.dtype == np.float :
-                continue
-            param_range = param_def.domain
-            if param_range is None:
-                continue
-            param_value = getattr(self.model, param_name)[0]
-            self.param_sliders[param_name] = widgets.FloatSlider(description=param_name,
-                                                                min=param_range.lo,
-                                                                max=param_range.hi,
-                                                                value=param_value,
-                                                                layout=self.slider_layout,
-                                                                style = self.slider_style,
-                                                                continuous_update=False)
-            self.param_sliders_values[param_name] = param_value
-            self.params[param_name] = self.param_sliders[param_name]
-
-    def add_noise_slider(self):
-        """ Add a slider to set integrator noise. """
-
-        self.noise_slider_valinit = self.integrator.noise.nsig
-        self.noise_slider = widgets.FloatSlider(description="Log Noise", 
-                                                min=-9.0,
-                                                max=1.0,
-                                                value = self.integrator.noise.nsig,
-                                                layout=self.slider_layout,
-                                                style = self.slider_style)
-        self.noise_slider.observe(self.update_noise)
-    
-    def add_integrator_widgets(self):
-        """ Add a noise slider, reset noise button and reset random stream button for Stochastic Integrator. """
-
-        if isinstance(self.integrator, integrators.IntegratorStochastic):
+        # Sliders
+        self.add_axes_range_sliders()
+        self.add_state_variable_sliders()
+        self.add_param_sliders()
+        if isinstance(self.integrator, integrators_module.IntegratorStochastic):
             if self.integrator.noise.ntau > 0.0:
                 self.integrator.noise.configure_coloured(self.integrator.dt,
                                                          (1, self.model.nvar, 1,
@@ -529,139 +210,615 @@ class PhasePlaneInteractive(HasTraits):
                 self.integrator.noise.configure_white(self.integrator.dt,
                                                       (1, self.model.nvar, 1,
                                                        self.model.number_of_modes))
-            
-            # Add the widgets to the UI
-            self.add_reset_noise_button()
+
             self.add_noise_slider()
-            self.add_reset_random_stream_button()
-            self.ax_widgets_list.extend([self.reset_noise_button, self.noise_slider, self.reset_seed_button])
+            self.add_reset_noise_button()
+            self.add_reset_seed_button()
 
-    def add_mode_selector(self):
-        """ Add a Radio Button to select the mode of model to be displayed. """
-        
-        self.mode_tuple = tuple(range(self.model.number_of_modes))
-        self.mode_selector = widgets.Dropdown(options=self.mode_tuple, value=0, layout=self.other_layout)
-        self.params['mode'] = self.mode_selector
+        # Reset buttons
+        self.add_reset_param_button()
+        self.add_reset_sv_button()
+        self.add_reset_axes_button()
 
-    def add_sv_selector(self):
-        """ Add a Dropdown list to select the State Variable for Each Axis. """
-        
+        # Calculate the phase plane
+        self.set_mesh_grid()
+        self.calc_phase_plane()
+
+        # Plot phase plane
+        self.plot_phase_plane()
+
+        # add mouse handler for trajectory clicking
+        self.ipp_fig.canvas.mpl_connect('button_press_event',
+                                        self.click_trajectory)
+        # import pdb; pdb.set_trace()
+
+        plt.show()
+
+    ##------------------------------------------------------------------------##
+    ##----------------- Functions for building the figure --------------------##
+    ##------------------------------------------------------------------------##
+
+    def create_figure(self):
+        """ Create the figure and phase-plane axes. """
+        # Figure and main phase-plane axes
+        model_name = self.model.__class__.__name__
+        integrator_name = self.integrator.__class__.__name__
+        figsize = 10, 5
+        try:
+            figure_window_title = "Interactive phase-plane: " + model_name
+            figure_window_title += "   --   %s" % integrator_name
+            self.ipp_fig = plt.figure(num=figure_window_title,
+                                        figsize=figsize,
+                                        facecolor=BACKGROUNDCOLOUR,
+                                        edgecolor=EDGECOLOUR)
+        except ValueError:
+            LOG.info("My life would be easier if you'd update your PyLab...")
+            self.ipp_fig = plt.figure(num=42, figsize=figsize,
+                                        facecolor=BACKGROUNDCOLOUR,
+                                        edgecolor=EDGECOLOUR)
+
+        self.pp_ax = self.ipp_fig.add_axes([0.265, 0.2, 0.5, 0.75])
+
+        self.pp_splt = self.ipp_fig.add_subplot(212)
+        self.ipp_fig.subplots_adjust(left=0.265, bottom=0.02, right=0.765,
+                                     top=0.3, wspace=0.1, hspace=None)
+        self.pp_splt.set_prop_cycle(color=get_color(self.model.nvar))
+        self.pp_splt.plot(numpy.arange(TRAJ_STEPS + 1) * self.integrator.dt,
+                          numpy.zeros((TRAJ_STEPS + 1, self.model.nvar)))
+        if hasattr(self.pp_splt, 'autoscale'):
+            self.pp_splt.autoscale(enable=True, axis='y', tight=True)
+        self.pp_splt.legend(self.model.state_variables)
+
+    def add_state_variable_selector(self):
+        """
+        Generate radio selector buttons to set which state variable is displayed
+        on the x and y axis of the phase-plane plot.
+        """
+        svx_ind = self.model.state_variables.index(self.svx)
+        svy_ind = self.model.state_variables.index(self.svy)
+
         # State variable for the x axis
-        self.state_variable_x = widgets.Dropdown(options=list(self.model.state_variables), value=self.svx, layout=self.other_layout)
-        self.params['svx'] = self.state_variable_x
-        self.state_variable_x.observe(self.update_axis_sliders, 'value')
+        pos_shp = [0.07, 0.05, 0.065, 0.12 + 0.006 * self.model.nvar]
+        rax = self.ipp_fig.add_axes(pos_shp, facecolor=AXCOLOUR, title="x-axis")
+        self.state_variable_x = widgets.RadioButtons(rax,
+                                                     tuple(self.model.state_variables),
+                                                     active=svx_ind)
+        self.state_variable_x.on_clicked(self.update_svx)
 
         # State variable for the y axis
-        self.state_variable_y = widgets.Dropdown(options=list(self.model.state_variables), value=self.svy, layout=self.other_layout)
-        self.state_variable_y.observe(self.update_axis_sliders, 'value')
-        self.params['svy'] = self.state_variable_y
-    
-    def add_traj_coords_text(self):
-        """ 
-        Add a Textbox to enter coordinate values for plotting trajectories.
-        Add a button to clear trajectories.
+        pos_shp = [0.14, 0.05, 0.065, 0.12 + 0.006 * self.model.nvar]
+        rax = self.ipp_fig.add_axes(pos_shp, facecolor=AXCOLOUR, title="y-axis")
+        self.state_variable_y = widgets.RadioButtons(rax,
+                                                     tuple(self.model.state_variables),
+                                                     active=svy_ind)
+        self.state_variable_y.on_clicked(self.update_svy)
+
+    def add_mode_selector(self):
         """
-        
-        self.traj_label = widgets.Label('Trajectory Co-ordinates (Float)')
-        self.plot_traj = widgets.Valid(value=False, description="Hidden Field for Plotting Trajectory")
-        self.clear_traj = widgets.Valid(value=False, description="Hidden Field for Clearing Trajectory")
-        self.traj_out = widgets.Textarea(value='', placeholder='Trajectory Co-ordinates output will be shown here')
+        Add a radio button to the figure for selecting which mode of the model
+        should be displayed.
+        """
+        pos_shp = [0.02, 0.07, 0.04, 0.1 + 0.002 * self.model.number_of_modes]
+        rax = self.ipp_fig.add_axes(pos_shp, facecolor=AXCOLOUR, title="Mode")
+        mode_tuple = tuple(range(self.model.number_of_modes))
+        self.mode_selector = widgets.RadioButtons(rax, mode_tuple, active=0)
+        self.mode_selector.on_clicked(self.update_mode)
 
-        def update_traj_text(val):
-            self.traj_out.value = f'{self.traj_out.value}Trajectory plotted at ({self.traj_x.value},{self.traj_y.value}).\n'
-            self.plot_traj.value = True
-            self.clear_traj.value = False
-        
-        def disable_plot_traj(val):
-            self.plot_traj.value = False
+    def add_axes_range_sliders(self):
+        """
+        Add sliders to the figure to allow the phase-planes axes to be set.
+        """
+        self.axes_range_sliders = dict()
 
-        def clear_plotted_traj(val):
-            self.traj_out.value = ''
-            self.clear_traj.value = True
-            self.plot_traj.value = False
-        
-        self.traj_x_label = widgets.Label('X: ')
-        self.traj_x = widgets.FloatText(placeholder='X - Coordinate', continuous_update=False)
-        self.traj_x.observe(disable_plot_traj, 'value')
-        self.traj_x_box = widgets.HBox([self.traj_x_label, self.traj_x])
+        default_range_x = (self.model.state_variable_range[self.svx][1] -
+                           self.model.state_variable_range[self.svx][0])
+        default_range_y = (self.model.state_variable_range[self.svy][1] -
+                           self.model.state_variable_range[self.svy][0])
+        min_val_x = self.model.state_variable_range[self.svx][0] - 4.0 * default_range_x
+        max_val_x = self.model.state_variable_range[self.svx][1] + 4.0 * default_range_x
+        min_val_y = self.model.state_variable_range[self.svy][0] - 4.0 * default_range_y
+        max_val_y = self.model.state_variable_range[self.svy][1] + 4.0 * default_range_y
 
-        self.traj_y_label = widgets.Label('Y: ')
-        self.traj_y = widgets.FloatText(placeholder='Y - Coordinate', continuous_update=False)
-        self.traj_y.observe(disable_plot_traj, 'value')
-        self.traj_y_box = widgets.HBox([self.traj_y_label, self.traj_y])
+        sax = self.ipp_fig.add_axes([0.04, 0.835, 0.125, 0.025],
+                                    facecolor=AXCOLOUR)
+        sl_x_min = widgets.Slider(sax, "xlo", min_val_x, max_val_x,
+                                  valinit=self.model.state_variable_range[self.svx][0])
+        sl_x_min.on_changed(self.update_range)
 
-        self.plot_traj_button = widgets.Button(description='Plot Trajectory')
-        self.plot_traj_button.on_click(update_traj_text)
+        sax = self.ipp_fig.add_axes([0.04, 0.8, 0.125, 0.025], facecolor=AXCOLOUR)
+        sl_x_max = widgets.Slider(sax, "xhi", min_val_x, max_val_x,
+                                  valinit=self.model.state_variable_range[self.svx][1])
+        sl_x_max.on_changed(self.update_range)
 
-        self.clear_traj_button = widgets.Button(description='Clear Trajectory')
-        self.clear_traj_button.on_click(clear_plotted_traj)
-        
-        self.params['traj_x'] = self.traj_x
-        self.params['traj_y'] = self.traj_y
-        self.params['plot_traj'] = self.plot_traj
-        self.params['clear_traj'] = self.clear_traj
+        sax = self.ipp_fig.add_axes([0.04, 0.765, 0.125, 0.025],
+                                    facecolor=AXCOLOUR)
+        sl_y_min = widgets.Slider(sax, "ylo", min_val_y, max_val_y,
+                                  valinit=self.model.state_variable_range[self.svy][0])
+        sl_y_min.on_changed(self.update_range)
 
-    def set_state_vector(self):
-        """ Set up the default state-variable values. """
+        sax = self.ipp_fig.add_axes([0.04, 0.73, 0.125, 0.025], facecolor=AXCOLOUR)
+        sl_y_max = widgets.Slider(sax, "yhi", min_val_y, max_val_y,
+                                  valinit=self.model.state_variable_range[self.svy][1])
+        sl_y_max.on_changed(self.update_range)
 
-        self.sv_mean = np.array([self.model.state_variable_range[key].mean() for key in self.model.state_variables])
-        self.sv_mean = self.sv_mean.reshape((self.model.nvar, 1, 1))
-        self.default_sv = self.sv_mean.repeat(self.model.number_of_modes, axis=2)
-        self.no_coupling = np.zeros((self.model.nvar, 1, self.model.number_of_modes))
+        self.axes_range_sliders["sl_x_min"] = sl_x_min
+        self.axes_range_sliders["sl_x_max"] = sl_x_max
+        self.axes_range_sliders["sl_y_min"] = sl_y_min
+        self.axes_range_sliders["sl_y_max"] = sl_y_max
+
+    def add_state_variable_sliders(self):
+        """
+        Add sliders to the figure to allow default values for the models state
+        variable to be set.
+        """
+        msv_range = self.model.state_variable_range
+        offset = 0.0
+        self.sv_sliders = dict()
+        for sv in range(self.model.nvar):
+            offset += 0.035
+            pos_shp = [0.04, 0.6 - offset, 0.125, 0.025]
+            sax = self.ipp_fig.add_axes(pos_shp, facecolor=AXCOLOUR)
+            sv_str = self.model.state_variables[sv]
+            self.sv_sliders[sv_str] = widgets.Slider(sax, sv_str,
+                                                     msv_range[sv_str][0],
+                                                     msv_range[sv_str][1],
+                                                     valinit=self.default_sv[sv, 0, 0])
+            self.sv_sliders[sv_str].on_changed(self.update_state_variables)
+
+    # Traited paramaters as sliders
+    def add_param_sliders(self):
+        """
+        Add sliders to the figure to allow the models parameters to be set.
+        """
+        offset = 0.0
+        self.param_sliders = dict()
+        # import pdb; pdb.set_trace()
+        for param_name in type(self.model).declarative_attrs:
+            if self.exclude_sliders is not None and param_name in self.exclude_sliders:
+                continue
+            param_def = getattr(type(self.model), param_name)
+            if not isinstance(param_def, NArray) or not param_def.dtype == numpy.float:
+                continue
+            param_range = param_def.domain
+            if param_range is None:
+                continue
+            offset += 0.035
+            sax = self.ipp_fig.add_axes([0.825, 0.865 - offset, 0.125, 0.025],
+                                        facecolor=AXCOLOUR)
+            param_value = getattr(self.model, param_name)
+            param_value = param_value[0] if len(param_value) > 0 else 0
+            self.param_sliders[param_name] = widgets.Slider(sax, param_name,
+                                                            param_range.lo,
+                                                            param_range.hi,
+                                                            valinit=param_value)
+            self.param_sliders[param_name].on_changed(self.update_parameters)
+
+    def add_noise_slider(self):
+        """
+        Add a slider to the figure to allow the integrators noise strength to
+        be set.
+        """
+        pos_shp = [0.825, 0.1, 0.125, 0.025]
+        sax = self.ipp_fig.add_axes(pos_shp, facecolor=AXCOLOUR)
+
+        self.noise_slider = widgets.Slider(sax, "Log Noise", -9.0, 1.0,
+                                           valinit=self.integrator.noise.nsig)
+        self.noise_slider.on_changed(self.update_noise)
+
+    def add_reset_param_button(self):
+        """
+        Add a button to the figure for reseting the model parameter values to
+        their original values.
+        """
+        bax = self.ipp_fig.add_axes([0.825, 0.865, 0.125, 0.04])
+        self.reset_param_button = widgets.Button(bax, 'Reset parameters',
+                                                 color=BUTTONCOLOUR,
+                                                 hovercolor=HOVERCOLOUR)
+
+        def reset_parameters(event):
+            for param_slider in self.param_sliders:
+                self.param_sliders[param_slider].reset()
+
+        self.reset_param_button.on_clicked(reset_parameters)
+
+    def add_reset_sv_button(self):
+        """
+        Add a button to the figure for reseting the model state variables to
+        their default values.
+        """
+        bax = self.ipp_fig.add_axes([0.04, 0.60, 0.125, 0.04])
+        self.reset_sv_button = widgets.Button(bax, 'Reset state-variables',
+                                              color=BUTTONCOLOUR,
+                                              hovercolor=HOVERCOLOUR)
+
+        def reset_state_variables(event):
+            for svsl in self.sv_sliders.values():
+                svsl.reset()
+
+        self.reset_sv_button.on_clicked(reset_state_variables)
+
+    def add_reset_noise_button(self):
+        """
+        Add a button to the figure for reseting the noise to its default value.
+        """
+        bax = self.ipp_fig.add_axes([0.825, 0.135, 0.125, 0.04])
+        self.reset_noise_button = widgets.Button(bax, 'Reset noise strength',
+                                                 color=BUTTONCOLOUR,
+                                                 hovercolor=HOVERCOLOUR)
+
+        def reset_noise(event):
+            self.noise_slider.reset()
+
+        self.reset_noise_button.on_clicked(reset_noise)
+
+    def add_reset_seed_button(self):
+        """
+        Add a button to the figure for reseting the random number generator to
+        its intial state. For reproducible noise...
+        """
+        bax = self.ipp_fig.add_axes([0.825, 0.05, 0.125, 0.04])
+        self.reset_seed_button = widgets.Button(bax, 'Reset random stream',
+                                                color=BUTTONCOLOUR,
+                                                hovercolor=HOVERCOLOUR)
+
+        def reset_seed(event):
+            self.integrator.noise.trait["random_stream"].reset()
+
+        self.reset_seed_button.on_clicked(reset_seed)
+
+    def add_reset_axes_button(self):
+        """
+        Add a button to the figure for reseting the phase-plane axes to their
+        default ranges.
+        """
+        bax = self.ipp_fig.add_axes([0.04, 0.87, 0.125, 0.04])
+        self.reset_axes_button = widgets.Button(bax, 'Reset axes',
+                                                color=BUTTONCOLOUR,
+                                                hovercolor=HOVERCOLOUR)
+
+        def reset_ranges(event):
+            self.axes_range_sliders["sl_x_min"].reset()
+            self.axes_range_sliders["sl_x_max"].reset()
+            self.axes_range_sliders["sl_y_min"].reset()
+            self.axes_range_sliders["sl_y_max"].reset()
+
+        self.reset_axes_button.on_clicked(reset_ranges)
 
     ##------------------------------------------------------------------------##
     ##------------------- Functions for updating the figure ------------------##
     ##------------------------------------------------------------------------##
 
-    def update_sl_x_range(self, val):
-        """ Update the x_min slider's max value to be equal to the min value of x_max slider. """
+    # NOTE: All the ax.set_xlim, poly.xy, etc, garbage below is fragile. It works
+    #      at the moment, but there are currently bugs in Slider and the hackery
+    #      below takes these into account... If the bugs are fixed/changed then
+    #      this could break. As an example, the Slider doc says poly is a
+    #      Rectangle, but it's actually a Polygon. The Slider set_val method
+    #      assumes a Rectangle even though this is not the case, so the array
+    #      Slider.poly.xy is corrupted by that method. The corruption isn't
+    #      visible in the plot, which is probably why it hasn't been fixed...
 
-        self.sl_x_min.max = self.sl_x_max.value
-    
-    def update_sl_y_range(self, val):
-        """ Update the y_min slider's max value to be equal to the min value of y_max slider. """
+    def update_xrange_sliders(self):
+        """
+        A hacky update of the x-axis range sliders that is called when the
+        state-variable selected for the x-axis is changed.
+        """
+        default_range_x = (self.model.state_variable_range[self.svx][1] -
+                           self.model.state_variable_range[self.svx][0])
+        min_val_x = self.model.state_variable_range[self.svx][0] - 4.0 * default_range_x
+        max_val_x = self.model.state_variable_range[self.svx][1] + 4.0 * default_range_x
+        self.axes_range_sliders["sl_x_min"].valinit = self.model.state_variable_range[self.svx][0]
+        self.axes_range_sliders["sl_x_min"].valmin = min_val_x
+        self.axes_range_sliders["sl_x_min"].valmax = max_val_x
+        self.axes_range_sliders["sl_x_min"].ax.set_xlim(min_val_x, max_val_x)
+        self.axes_range_sliders["sl_x_min"].poly.axes.set_xlim(min_val_x, max_val_x)
+        self.axes_range_sliders["sl_x_min"].poly.xy[[0, 1], 0] = min_val_x
+        self.axes_range_sliders["sl_x_min"].vline.set_data(
+            ([self.axes_range_sliders["sl_x_min"].valinit, self.axes_range_sliders["sl_x_min"].valinit], [0, 1]))
+        self.axes_range_sliders["sl_x_max"].valinit = self.model.state_variable_range[self.svx][1]
+        self.axes_range_sliders["sl_x_max"].valmin = min_val_x
+        self.axes_range_sliders["sl_x_max"].valmax = max_val_x
+        self.axes_range_sliders["sl_x_max"].ax.set_xlim(min_val_x, max_val_x)
+        self.axes_range_sliders["sl_x_max"].poly.axes.set_xlim(min_val_x, max_val_x)
+        self.axes_range_sliders["sl_x_max"].poly.xy[[0, 1], 0] = min_val_x
+        self.axes_range_sliders["sl_x_max"].vline.set_data(
+            ([self.axes_range_sliders["sl_x_max"].valinit, self.axes_range_sliders["sl_x_max"].valinit], [0, 1]))
+        self.axes_range_sliders["sl_x_min"].reset()
+        self.axes_range_sliders["sl_x_max"].reset()
 
-        self.sl_y_min.max = self.sl_y_max.value
+    def update_yrange_sliders(self):
+        """
+        A hacky update of the y-axis range sliders that is called when the
+        state-variable selected for the y-axis is changed.
+        """
+        # svy_ind = self.model.state_variables.index(self.svy)
+        default_range_y = (self.model.state_variable_range[self.svy][1] -
+                           self.model.state_variable_range[self.svy][0])
+        min_val_y = self.model.state_variable_range[self.svy][0] - 4.0 * default_range_y
+        max_val_y = self.model.state_variable_range[self.svy][1] + 4.0 * default_range_y
+        self.axes_range_sliders["sl_y_min"].valinit = self.model.state_variable_range[self.svy][0]
+        self.axes_range_sliders["sl_y_min"].valmin = min_val_y
+        self.axes_range_sliders["sl_y_min"].valmax = max_val_y
+        self.axes_range_sliders["sl_y_min"].ax.set_xlim(min_val_y, max_val_y)
+        self.axes_range_sliders["sl_y_min"].poly.axes.set_xlim(min_val_y, max_val_y)
+        self.axes_range_sliders["sl_y_min"].poly.xy[[0, 1], 0] = min_val_y
+        self.axes_range_sliders["sl_y_min"].vline.set_data(
+            ([self.axes_range_sliders["sl_y_min"].valinit, self.axes_range_sliders["sl_y_min"].valinit], [0, 1]))
+        self.axes_range_sliders["sl_y_max"].valinit = self.model.state_variable_range[self.svy][1]
+        self.axes_range_sliders["sl_y_max"].valmin = min_val_y
+        self.axes_range_sliders["sl_y_max"].valmax = max_val_y
+        self.axes_range_sliders["sl_y_max"].ax.set_xlim(min_val_y, max_val_y)
+        self.axes_range_sliders["sl_y_max"].poly.axes.set_xlim(min_val_y, max_val_y)
+        self.axes_range_sliders["sl_y_max"].poly.xy[[0, 1], 0] = min_val_y
+        self.axes_range_sliders["sl_y_max"].vline.set_data(
+            ([self.axes_range_sliders["sl_y_max"].valinit, self.axes_range_sliders["sl_y_max"].valinit], [0, 1]))
+        self.axes_range_sliders["sl_y_min"].reset()
+        self.axes_range_sliders["sl_y_max"].reset()
 
-    def set_default_axes_sliders(self):
-        """ Calculate the default X Axis and Y Axis Sliders values. """
+    def update_svx(self, label):
+        """
+        Update state variable used for x-axis based on radio buttton selection.
+        """
+        self.svx = label
+        self.update_xrange_sliders()
+        self.set_mesh_grid()
+        self.calc_phase_plane()
+        self.update_phase_plane()
 
-        default_range_x = (self.model.state_variable_range[self.state_variable_x.value][1] -
-                            self.model.state_variable_range[self.state_variable_x.value][0])
-        default_range_y = (self.model.state_variable_range[self.state_variable_y.value][1] -
-                            self.model.state_variable_range[self.state_variable_y.value][0])
-        min_val_x = self.model.state_variable_range[self.state_variable_x.value][0] - 4.0 * default_range_x
-        max_val_x = self.model.state_variable_range[self.state_variable_x.value][1] + 4.0 * default_range_x
-        min_val_y = self.model.state_variable_range[self.state_variable_y.value][0] - 4.0 * default_range_y
-        max_val_y = self.model.state_variable_range[self.state_variable_y.value][1] + 4.0 * default_range_y
+    def update_svy(self, label):
+        """
+        Update state variable used for y-axis based on radio buttton selection.
+        """
+        self.svy = label
+        self.update_yrange_sliders()
+        self.set_mesh_grid()
+        self.calc_phase_plane()
+        self.update_phase_plane()
 
-        return min_val_x,max_val_x,min_val_y,max_val_y
+    def update_mode(self, label):
+        """ Update the visualised mode based on radio button selection. """
+        self.mode = label
+        self.update_phase_plane()
 
-    def update_axis_sliders(self, val):
-        """ Update the Axes Sliders to their default values when State Variable is changed. """
+    def update_parameters(self, val):
+        """
+        Update model parameters based on the current parameter slider values.
 
-        self.sl_x_min_initval = self.model.state_variable_range[self.state_variable_x.value][0]
-        self.sl_x_max_initval = self.model.state_variable_range[self.state_variable_x.value][1]
-        self.sl_y_min_initval = self.model.state_variable_range[self.state_variable_y.value][0]
-        self.sl_y_max_initval = self.model.state_variable_range[self.state_variable_y.value][1]
+        NOTE: Haven't figured out how to update independantly, so just update
+            everything.
+        """
+        # TODO: Grab caller and use val directly, ie independent parameter update.
+        # import pdb; pdb.set_trace()
+        for param in self.param_sliders:
+            setattr(self.model, param, numpy.array([self.param_sliders[param].val]))
 
-        min_val_x, max_val_x, min_val_y, max_val_y = self.set_default_axes_sliders()
-        
-        self.sl_x_min.min = min_val_x
-        self.sl_x_min.value = self.sl_x_min_initval
-        self.sl_x_min.max = max_val_x
-        self.sl_x_max.min = min_val_x
-        self.sl_x_max.value = self.sl_x_max_initval
-        self.sl_x_max.max = max_val_x
+        self.model.update_derived_parameters()
+        self.calc_phase_plane()
+        self.update_phase_plane()
 
-        self.sl_y_min.min = min_val_y
-        self.sl_y_min.value = self.sl_y_min_initval
-        self.sl_y_min.max = max_val_y
-        self.sl_y_max.min = min_val_y
-        self.sl_y_max.value = self.sl_y_max_initval
-        self.sl_y_max.max = max_val_y
-
-    def update_noise(self, val):
+    def update_noise(self, nsig):
         """ Update integrator noise based on the noise slider value. """
-        
-        self.integrator.noise.nsig = np.array([10 ** self.noise_slider.value, ])
+        self.integrator.noise.nsig = numpy.array([10 ** nsig, ])
+
+    def update_range(self, val):
+        """
+        Update the axes ranges based on the current axes slider values.
+
+        NOTE: Haven't figured out how to update independantly, so just update
+            everything.
+
+        """
+        # TODO: Grab caller and use val directly, ie independent range update.
+        self.axes_range_sliders["sl_x_min"].ax.set_facecolor(AXCOLOUR)
+        self.axes_range_sliders["sl_x_max"].ax.set_facecolor(AXCOLOUR)
+        self.axes_range_sliders["sl_y_min"].ax.set_facecolor(AXCOLOUR)
+        self.axes_range_sliders["sl_y_max"].ax.set_facecolor(AXCOLOUR)
+
+        if (self.axes_range_sliders["sl_x_min"].val >=
+                self.axes_range_sliders["sl_x_max"].val):
+            LOG.error("X-axis min must be less than max...")
+            self.axes_range_sliders["sl_x_min"].ax.set_facecolor("Red")
+            self.axes_range_sliders["sl_x_max"].ax.set_facecolor("Red")
+            return
+        if (self.axes_range_sliders["sl_y_min"].val >=
+                self.axes_range_sliders["sl_y_max"].val):
+            LOG.error("Y-axis min must be less than max...")
+            self.axes_range_sliders["sl_y_min"].ax.set_facecolor("Red")
+            self.axes_range_sliders["sl_y_max"].ax.set_facecolor("Red")
+            return
+
+        msv_range = self.model.state_variable_range
+        msv_range[self.svx][0] = self.axes_range_sliders["sl_x_min"].val
+        msv_range[self.svx][1] = self.axes_range_sliders["sl_x_max"].val
+        msv_range[self.svy][0] = self.axes_range_sliders["sl_y_min"].val
+        msv_range[self.svy][1] = self.axes_range_sliders["sl_y_max"].val
+        self.set_mesh_grid()
+        self.calc_phase_plane()
+        self.update_phase_plane()
+
+    def update_phase_plane(self):
+        """ Clear the axes and redraw the phase-plane. """
+        self.pp_ax.clear()
+        self.pp_splt.clear()
+        self.pp_splt.set_prop_cycle('color', get_color(self.model.nvar))
+        self.pp_splt.plot(numpy.arange(TRAJ_STEPS + 1) * self.integrator.dt,
+                          numpy.zeros((TRAJ_STEPS + 1, self.model.nvar)))
+        if hasattr(self.pp_splt, 'autoscale'):
+            self.pp_splt.autoscale(enable=True, axis='y', tight=True)
+        self.pp_splt.legend(self.model.state_variables)
+        self.plot_phase_plane()
+
+    def update_state_variables(self, val):
+        """
+        Update the default state-variable values, used for non-visualised state
+        variables, based of the current slider values.
+        """
+        for sv in self.sv_sliders:
+            k = self.model.state_variables.index(sv)
+            self.default_sv[k] = self.sv_sliders[sv].val
+
+        self.calc_phase_plane()
+        self.update_phase_plane()
+
+    def set_mesh_grid(self):
+        """
+        Generate the phase-plane gridding based on currently selected
+        state-variables and their range values.
+        """
+        xlo = self.model.state_variable_range[self.svx][0]
+        xhi = self.model.state_variable_range[self.svx][1]
+        ylo = self.model.state_variable_range[self.svy][0]
+        yhi = self.model.state_variable_range[self.svy][1]
+
+        self.X = numpy.mgrid[xlo:xhi:(NUMBEROFGRIDPOINTS * 1j)]
+        self.Y = numpy.mgrid[ylo:yhi:(NUMBEROFGRIDPOINTS * 1j)]
+
+    def set_state_vector(self):
+        """
+        Set up a vector containing the default state-variable values and create
+        a filler(all zeros) for the coupling arg of the Model's dfun method.
+        This method is called once at initialisation (show()).
+        """
+        # import pdb; pdb.set_trace()
+        sv_mean = numpy.array([self.model.state_variable_range[key].mean() for key in self.model.state_variables])
+        sv_mean = sv_mean.reshape((self.model.nvar, 1, 1))
+        self.default_sv = sv_mean.repeat(self.model.number_of_modes, axis=2)
+        self.no_coupling = numpy.zeros((self.model.nvar, 1,
+                                        self.model.number_of_modes))
+
+    def calc_phase_plane(self):
+        """ Calculate the vector field. """
+        svx_ind = self.model.state_variables.index(self.svx)
+        svy_ind = self.model.state_variables.index(self.svy)
+
+        # Calculate the vector field discretely sampled at a grid of points
+        grid_point = self.default_sv.copy()
+        self.U = numpy.zeros((NUMBEROFGRIDPOINTS, NUMBEROFGRIDPOINTS,
+                              self.model.number_of_modes))
+        self.V = numpy.zeros((NUMBEROFGRIDPOINTS, NUMBEROFGRIDPOINTS,
+                              self.model.number_of_modes))
+        for ii in range(NUMBEROFGRIDPOINTS):
+            grid_point[svy_ind] = self.Y[ii]
+            for jj in range(NUMBEROFGRIDPOINTS):
+                # import pdb; pdb.set_trace()
+                grid_point[svx_ind] = self.X[jj]
+
+                d = self.model.dfun(grid_point, self.no_coupling)
+
+                for kk in range(self.model.number_of_modes):
+                    self.U[ii, jj, kk] = d[svx_ind, 0, kk]
+                    self.V[ii, jj, kk] = d[svy_ind, 0, kk]
+
+        # Colours for the vector field quivers
+        # self.UVmag = numpy.sqrt(self.U**2 + self.V**2)
+
+        # import pdb; pdb.set_trace()
+        if numpy.isnan(self.U).any() or numpy.isnan(self.V).any():
+            LOG.error("NaN")
+
+    def plot_phase_plane(self):
+        """ Plot the vector field and its nullclines. """
+        # Set title and axis labels
+        model_name = self.model.__class__.__name__
+        self.pp_ax.set(title=model_name + " mode " + str(self.mode))
+        self.pp_ax.set(xlabel="State Variable " + self.svx)
+        self.pp_ax.set(ylabel="State Variable " + self.svy)
+
+        # import pdb; pdb.set_trace()
+        # Plot a discrete representation of the vector field
+        if numpy.all(self.U[:, :, self.mode] + self.V[:, :, self.mode] == 0):
+            self.pp_ax.set(title=model_name + " mode " + str(self.mode) + ": NO MOTION IN THIS PLANE")
+            X, Y = numpy.meshgrid(self.X, self.Y)
+            self.pp_quivers = self.pp_ax.scatter(X, Y, s=8, marker=".", c="k")
+        else:
+            self.pp_quivers = self.pp_ax.quiver(self.X, self.Y,
+                                                self.U[:, :, self.mode],
+                                                self.V[:, :, self.mode],
+                                                # self.UVmag[:, :, self.mode],
+                                                width=0.001, headwidth=8)
+
+        # Plot the nullclines
+        self.nullcline_x = self.pp_ax.contour(self.X, self.Y,
+                                              self.U[:, :, self.mode],
+                                              [0], colors="r")
+        self.nullcline_y = self.pp_ax.contour(self.X, self.Y,
+                                              self.V[:, :, self.mode],
+                                              [0], colors="g")
+        plt.draw()
+
+    def plot_trajectory(self, x, y):
+        """
+        Plot a sample trajectory, starting at the position x,y in the
+        phase-plane. This method is called as a result of a mouse click on the
+        phase-plane.
+        """
+        svx_ind = self.model.state_variables.index(self.svx)
+        svy_ind = self.model.state_variables.index(self.svy)
+
+        # Calculate an example trajectory
+        state = self.default_sv.copy()
+        self.integrator.clamped_state_variable_indices = numpy.setdiff1d(
+            numpy.r_[:len(self.model.state_variables)], numpy.r_[svx_ind, svy_ind])
+        self.integrator.clamped_state_variable_values = self.default_sv[self.integrator.clamped_state_variable_indices]
+        state[svx_ind] = x
+        state[svy_ind] = y
+        scheme = self.integrator.scheme
+        traj = numpy.zeros((TRAJ_STEPS + 1, self.model.nvar, 1,
+                            self.model.number_of_modes))
+        traj[0, :] = state
+        for step in range(TRAJ_STEPS):
+            # import pdb; pdb.set_trace()
+            state = scheme(state, self.model.dfun, self.no_coupling, 0.0, 0.0)
+            traj[step + 1, :] = state
+
+        self.pp_ax.scatter(x, y, s=42, c='g', marker='o', edgecolor=None)
+        self.pp_ax.plot(traj[:, svx_ind, 0, self.mode],
+                        traj[:, svy_ind, 0, self.mode])
+
+        # Plot the selected state variable trajectories as a function of time
+        self.pp_splt.plot(numpy.arange(TRAJ_STEPS + 1) * self.integrator.dt,
+                          traj[:, :, 0, self.mode])
+
+        plt.draw()
+
+    def click_trajectory(self, event):
+        """
+        This method captures mouse clicks on the phase-plane and then uses the
+        plot_trajectory() method to generate a sample trajectory.
+        """
+        if event.inaxes is self.pp_ax:
+            x, y = event.xdata, event.ydata
+            LOG.info('trajectory starting at (%f, %f)', x, y)
+            self.plot_trajectory(x, y)
+
+
+def _list_of_models():
+    base = models_module.Model
+    for key in dir(models_module):
+        attr = getattr(models_module, key)
+        if isinstance(attr, type) and issubclass(attr, base):
+            if attr is base:
+                continue
+            first_para = attr.__doc__.replace('\n', ' ').replace('\t', ' ')[:100] + ' ...'
+            yield attr.__name__, attr._ui_name
+
+
+if __name__ == "__main__":
+
+    import sys
+
+    try:
+        Model = getattr(models_module, sys.argv[1])
+    except Exception:
+        print("""
+usage: python -m tvb.simulator.plot.phase_plane_interactive name_of_model
+
+where name_of_model is one of
+
+%s
+        """ % (
+            '\n'.join(map('{0[0]:>25} - {0[1]}'.format, _list_of_models()))
+        ))
+        sys.exit(1)
+
+    ppi_fig = PhasePlaneInteractive(model=Model())
+    ppi_fig.show()
