@@ -86,7 +86,7 @@ class CompareIntegrators(HasTraits):
         label="Model",
         default=models.Generic2dOscillator(a=np.array([0.1])),
         doc=""" The model required to compare integrators. """)
-    
+
     coupling = Attr(
         field_type=coupling_module.Coupling,
         label="Coupling",
@@ -104,14 +104,14 @@ class CompareIntegrators(HasTraits):
         label="Integrators to compare",
         default=default_methods,
         doc=""" The desired integrators to compare. Pass it in a list. E.g. [(Integrator, default_dt), ]. """)
-    
+
     def __init__(self, **kwargs):
         """ Initialise based on provided keywords or their traited defaults. """
 
         super(CompareIntegrators, self).__init__(**kwargs)
-        
+
         self.plot_params = dict()
-    
+
     def create_ui(self, comparison):
         """ Create Interactive UI to compare integrators. """
 
@@ -123,12 +123,12 @@ class CompareIntegrators(HasTraits):
 
         output = widgets.VBox([controls])
         return output
-    
+
     def show(self, comparison='Default'):
         """ Generate interactive Compare Integrators Figure. """
 
         ui = self.create_ui(comparison)
-        
+
         def plotter(**plot_params):
             val = plot_params['comparison']
             if val == 'dt Growth':
@@ -137,7 +137,7 @@ class CompareIntegrators(HasTraits):
                 self.compare_pairwise()
             else:
                 self.compare()
-        
+
         out = widgets.interactive_output(plotter, self.plot_params)
         display(ui,out)
 
@@ -159,21 +159,21 @@ class CompareIntegrators(HasTraits):
                 simulation_length=sim_length,
             ).configure()
             (t, raw), = sim.run()
-            
+
             if i == 0:
                 euler_raw = raw
             else:
                 if raw.shape[0] != euler_raw.shape[0]:
                     continue
                 raw = abs(raw - euler_raw) / euler_raw.ptp() * 100.0
-            
+
             plt.subplot(3, 2, i + 1)
             plt.autoscale(True)
             plt.plot(t, raw[:, 0, :, 0], 'k', alpha=0.1)
             if i > 0:
                 plt.ylabel('% diff')
                 plt.plot(t, raw[:, 0, :, 0].mean(axis=1), 'k', linewidth=3)
-            plt.title(method._ui_name, wrap=True)
+            plt.title(method.__name__, wrap=True)
             plt.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0.4, hspace=0.4)
             plt.grid(True)
 
@@ -195,7 +195,7 @@ class CompareIntegrators(HasTraits):
             ).configure()
             (t, raw), = sim.run()
             raws.append(raw)
-            names.append(method._ui_name)
+            names.append(method.__name__)
 
         n_raw = len(raws)
         plt.figure(figsize=self.fig_size)
@@ -211,14 +211,14 @@ class CompareIntegrators(HasTraits):
                 else:
                     plt.semilogy(t, (abs(raw_i - raw_j) / raw_i.ptp())[:, 0, :, 0], 'k', alpha=0.1)
                     plt.ylim(np.exp(np.r_[-30, 0]))
-                
+
                 plt.grid(True)
                 if i==0:
                     plt.title(name_j, wrap = True)
                 if j==0:
                     plt.ylabel(name_i, wrap=True)
                 plt.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0.4, hspace=0.5)
-            
+
             if i == 0:
                 euler_raw = raw
             else:
@@ -246,10 +246,10 @@ class CompareIntegrators(HasTraits):
             t = t[:1000]
             raw = raw[:1000]
             raws.append(raw)
-        
+
         plt.figure(figsize=self.fig_size)
         plt.rcParams["font.size"] = "10"
-    
+
         for i, dt in enumerate(dts):
             plt.subplot(len(dts)//3, 3+1, i + 1)
             plt.autoscale(True)
