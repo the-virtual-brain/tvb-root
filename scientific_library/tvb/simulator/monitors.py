@@ -66,9 +66,9 @@ from tvb.datatypes.region_mapping import RegionMapping
 import tvb.datatypes.equations as equations
 from tvb.simulator.common import numpy_add_at
 from tvb.simulator.backend.ref import ReferenceBackend
-from tvb.basic.neotraits.api import HasTraits, TVBEnum, Attr, NArray, Float, EnumAttr, narray_describe
+from tvb.basic.neotraits.api import HasTraits, Range, TVBEnum, Attr, NArray, Float, EnumAttr, narray_describe
 from .backend import ReferenceBackend
-
+import tvb.simulator.integrators as integrators_module
 
 class Monitor(HasTraits):
     """
@@ -393,7 +393,6 @@ class TemporalAverage(Monitor):
             avg_stock = numpy.mean(self._stock, axis=0)
             time = (step - self.istep / 2.0) * self.dt
             return [time, avg_stock]
-
 
 class AfferentCoupling(RawVoi):
     """
@@ -1004,6 +1003,226 @@ class BoldRegionROI(Bold):
                                 region_mapping_volume=region_volume_map,
                                 sample_period=self.period,
                                 title='Regions ' + self.__class__.__name__)
+
+class BoldModels(TVBEnum):
+    LINEAR = "linear"
+    NONLINEAR = "nonlinear"
+
+class BoldBalloonWindkessel(Monitor):
+    """
+    Balloon-Windkessel model for hemodynamic response. 
+
+    The haemodynamic model parameters based on constants for a 1.5 T scanner.
+    """
+
+    bold_model = EnumAttr(
+        default=BoldModels.NONLINEAR,
+        label="Select BOLD model equations",
+        doc="""Select the set of equations for the BOLD model.""")
+
+    period = Float(
+        label="Sampling period (ms)",
+        default=1000.0,
+        doc="""Repetition time (TR).""")
+
+    integrator = Attr(
+        field_type=integrators_module.Integrator,
+        label="Integration scheme",
+        default=integrators_module.HeunDeterministic(dt=10.),
+        required=True,
+        doc=""" A tvb.simulator.Integrator object which is an integration
+        scheme with supporting attributes such as integration step size and
+        noise specification for stochastic methods. It is used to compute the
+        time courses of the balloon model state variables.""")
+
+    RBM = Attr(
+        field_type=bool,
+        label="Revised BOLD Model",
+        default=True,
+        required=True,
+        doc="""Select classical vs revised BOLD model (CBM or RBM).
+        Coefficients  k1, k2 and k3 will be derived accordingly.""")
+
+    include_svars = Attr(
+        field_type=bool,
+        label="Include physiological state variables.",
+        default=False,
+        required=True,
+        doc="""If true, the state variables of the hemodynamic model are
+        returned (s, f, v, q). Otherwise only the BOLD signal is returned. """)
+
+
+    tau_s = Float(
+        label=r":math:`\tau_s`",
+        default=1.54,
+        required=True,
+        doc="""Balloon model parameter. Time of signal decay (s)""")
+
+    tau_f = Float(
+        label=r":math:`\tau_f`",
+        default=1.44,
+        required=True,
+        doc=""" Balloon model parameter. Time of flow-dependent elimination or
+        feedback regulation (s). The average  time blood take to traverse the
+        venous compartment. It is the  ratio of resting blood volume (V0) to
+        resting blood flow (F0).""")
+
+    tau_o = Float(
+        label=r":math:`\tau_o`",
+        default=0.98,
+        required=True,
+        doc="""
+        Balloon model parameter. Haemodynamic transit time (s). The average
+        time blood take to traverse the venous compartment. It is the  ratio
+        of resting blood volume (V0) to resting blood flow (F0).""")
+
+    alpha = Float(
+        label=r":math:`\tau_f`",
+        default=0.32,
+        required=True,
+        doc="""Balloon model parameter. Stiffness parameter. Grubb's exponent.""")
+
+    TE = Float(
+        label=":math:`TE`",
+        default=0.04,
+        required=True,
+        doc="""BOLD parameter. Echo Time""")
+
+    V0 = Float(
+        label=":math:`V_0`",
+        default=4.0,
+        required=True,
+        doc="""BOLD parameter. Resting blood volume fraction.""")
+
+    E0 = Float(
+        label=":math:`E_0`",
+        default=0.4,
+        required=True,
+        doc="""BOLD parameter. Resting oxygen extraction fraction.""")
+
+    epsilon = NArray(
+        label=":math:`\epsilon`",
+        default=numpy.array([0.5]),
+        domain=Range(lo=0.5, hi=2.0, step=0.25),
+        required=True,
+        doc=""" BOLD parameter. Ratio of intra- and extravascular signals. In principle  this
+        parameter could be derived from empirical data and spatialized.""")
+
+    nu_0 = Float(
+        label=r":math:`\nu_0`",
+        default=40.3,
+        required=True,
+        doc="""BOLD parameter. Frequency offset at the outer surface of magnetized vessels (Hz).""")
+
+    r_0 = Float(
+        label=":math:`r_0`",
+        default=25.,
+        required=True,
+        doc=""" BOLD parameter. Slope r0 of intravascular relaxation rate (Hz). Only used for
+        ``revised`` coefficients. """)
+
+    def compute_derived_parameters(self):
+        """
+        Compute derived parameters :math:`k_1`, :math:`k_2` and :math:`k_3`.
+        """
+
+        if not self.RBM:
+            """
+            Classical BOLD Model Coefficients [Obata2004]_
+            Page 389 in [Stephan2007]_, Eq. (3)
+            """
+            k1 = 7. * self.E0
+            k2 = 2. * self.E0
+            k3 = 1. - self.epsilon
+        else:
+            """
+            Revised BOLD Model Coefficients.
+            Generalized BOLD signal model.
+            Page 400 in [Stephan2007]_, Eq. (12)
+            """
+            k1 = 4.3 * self.nu_0 * self.E0 * self.TE
+            k2 = self.epsilon * self.r_0 * self.E0 * self.TE
+            k3 = 1 - self.epsilon
+
+        return numpy.array([k1, k2, k3])
+
+    def balloon_dfun(self, state_variables, neural_input, local_coupling=0.0):
+        s, f, v, q = state_variables
+
+        x = neural_input[0, :]
+
+        ds = x - (1. / self.tau_s) * s - (1. / self.tau_f) * (f - 1.)
+        df = s
+        dv = (1. / self.tau_o) * (f - v ** (1. / self.alpha))
+        dq = (1. / self.tau_o) * ((f * (1. - (1. - self.E0) ** (1. / f)) / self.E0) -
+                                  (v ** (1. / self.alpha)) * (q / v))
+
+        return numpy.array([ds, df, dv, dq])
+
+
+
+    def _bold(self, state):
+        s, f, v, q = state
+
+        # BOLD models
+        if self.bold_model == "nonlinear":
+            """
+            Non-linear BOLD model equations.
+            Page 391. Eq. (13) top in [Stephan2007]_
+            """
+            y_bold = numpy.array(self.V0 * (self.k1 * (1. - q) + self.k2 * (1. - q / v) + self.k3 * (1. - v)))
+            y_b = y_bold[numpy.newaxis, :, :]
+            self.log.debug("Max value: %s" % str(y_b.max()))
+
+        else:
+            """
+            Linear BOLD model equations.
+            Page 391. Eq. (13) bottom in [Stephan2007]_ 
+            """
+            y_bold = numpy.array(self.V0 * ((self.k1 + self.k2) * (1. - q) + (self.k3 - self.k2) * (1. - v)))
+            y_b = y_bold[numpy.newaxis, :, :]
+        return y_b
+
+        
+    def _config_time(self,simulator):
+        super()._config_time(simulator)
+        self.k1, self.k2, self.k3 = self.compute_derived_parameters()
+
+        self._state = numpy.ones( (4, simulator.number_of_nodes, simulator.model.number_of_modes) )
+        self._state[0,:] = 0.
+
+        # or allow providing bold dt as multiple of model dts...
+        assert self.integrator.dt >= simulator.integrator.dt
+        self._dt_istep = ReferenceBackend.iround(self.integrator.dt/simulator.integrator.dt)
+        self.integrator.dt = self._dt_istep * simulator.integrator.dt / 1000.
+        self.integrator.configure()
+
+        # _tavg_stock covers the time between the bold timesteps
+        self._tavg_stock = numpy.zeros( ( self._dt_istep, self.voi.shape[0],
+                                     simulator.number_of_nodes, 
+                                     simulator.model.number_of_modes))
+
+    def sample(self, step, state):
+        # push to timeaverage
+        self._tavg_stock[((step % self._dt_istep) - 1), :] = state[self.voi]
+        # if time steps over bold dt 
+        if step % self._dt_istep == 0:
+            neural_activity = numpy.mean(self._tavg_stock, axis=0)
+            self._state = self.integrator.scheme(
+                    self._state, 
+                    self.balloon_dfun,
+                    neural_activity, 
+                    local_coupling=0.0, stimulus=0.0)
+        #   if bold period, yeet current state
+        if step % self.istep == 0:
+            time = step * self.dt
+            bold = self._bold(self._state)
+            if self.include_svars:
+                return [time, numpy.concatenate([bold, self._state])]
+            else:
+                return [time, bold]
+
+
 
 
 class ProgressLogger(Monitor):
