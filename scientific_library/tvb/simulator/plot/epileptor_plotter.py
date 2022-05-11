@@ -136,17 +136,12 @@ class EpileptorModelPlot(HasTraits):
         self.control_box = widgets.HBox([self.burster_param_box, self.sim_param_box ,self.model_param_box], layout=self.box_layout)
         
         # Output Widget
-        op = widgets.Output()
-        with op:
-            self.fig = plt.figure(figsize=(9,5))
-            self.fig1 = self.fig.add_subplot(121)
-            self.fig2 = self.fig.add_subplot(122, projection='3d')
-        
-        self.output_box = op
-        self.output_box.layout = self.box_layout
+        self.fig = None
+        self.op = widgets.Output()
+        self.op.layout = self.box_layout
 
         # Widget and Output Grid 
-        grid = widgets.GridBox([self.control_box, self.output_box], layout={'grid_template_rows':'225px 625px'})
+        grid = widgets.GridBox([self.control_box, self.op], layout={'grid_template_rows':'225px 625px'})
         return grid
 
     def set_default_burster_parameters(self):
@@ -310,24 +305,28 @@ class EpileptorModelPlot(HasTraits):
 
     def plot_model(self):
         """ Plot Normal Model Simulation Output. """
+        self.op.clear_output(wait=True)
+        with plt.ioff():
+            if not self.fig:
+                self.fig = plt.figure(figsize=(9,5))
+            self.fig.clear()
+            self.fig1 = self.fig.add_subplot(121)
+            self.fig2 = self.fig.add_subplot(122, projection='3d')
 
-        self.fig.clear()
-        self.fig1 = self.fig.add_subplot(121)
-        self.fig2 = self.fig.add_subplot(122, projection='3d')
+            self.fig1.plot(self.tavg_time, self.tavg_data[:, 0, 0, 0], label='x')
+            self.fig1.plot(self.tavg_time, self.tavg_data[:, 2, 0, 0], label='z')
+            self.fig1.legend()
+            self.fig1.grid(True)
+            self.fig1.set_xlabel('Time (ms)')
+            self.fig1.set_ylabel("Temporal average")
 
-        self.fig1.plot(self.tavg_time, self.tavg_data[:, 0, 0, 0], label='x')
-        self.fig1.plot(self.tavg_time, self.tavg_data[:, 2, 0, 0], label='z')
-        
-        self.fig1.legend()
-        self.fig1.grid(True)
-        self.fig1.set_xlabel('Time (ms)')
-        self.fig1.set_ylabel("Temporal average")
+            self.fig2.plot(self.tavg_data[:, 0, 0, 0], self.tavg_data[:, 1, 0, 0], self.tavg_data[:, 2, 0, 0])
 
-        self.fig2.plot(self.tavg_data[:, 0, 0, 0], self.tavg_data[:, 1, 0, 0], self.tavg_data[:, 2, 0, 0])
-        
-        plt.grid(True)
-        plt.xlabel('x')
-        plt.ylabel('y')
+            plt.grid(True)
+            plt.xlabel('x')
+            plt.ylabel('y')
+            with self.op:
+                display(self.fig.canvas)
 
     def plot_slow_model(self):
         """ Plot Slow Model Simulation Output. """
