@@ -29,6 +29,7 @@
 #
 
 """
+.. moduleauthor:: David Bacter <david.bacter@codemart.ro>
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
 
@@ -78,7 +79,7 @@ class BIDSImporterForm(ABCUploaderForm):
 
 class BIDSImporter(ABCUploader):
 
-    _ui_name = "BIDS Importer"
+    _ui_name = "BIDS Derivative Importer"
     _ui_subsection = "bids_importer"
     _ui_description = "Import a dataset in BIDS format"
 
@@ -201,17 +202,7 @@ class BIDSImporter(ABCUploader):
                 triangles = self.read_list_data(surface_file_path, dtype=numpy.int64)
 
         surface = CorticalSurface()
-
-        # The vertex values can be too small to be seen with the viewer, so we multiply them with orders of 10
-        vertices_mean = numpy.mean(vertices)
-        if vertices_mean < 0.1:
-            vertices = vertices * 1000
-        elif vertices_mean < 1:
-            vertices = vertices * 100
-        elif vertices_mean < 10:
-            vertices = vertices * 10
-
-        surface.vertices = vertices
+        surface.set_scaled_vertices(vertices)
         surface.normals = normals
         surface.zero_based_triangles = False
         surface.triangles = triangles - 1

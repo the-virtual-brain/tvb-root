@@ -178,6 +178,17 @@ class Surface(HasTraits):
         reader = ZipReader(BytesIO(bytes_stream))
         return cls._read(reader)
 
+    def set_scaled_vertices(self, new_vertices):
+        # The vertex values can be too small to be seen with the viewers or widgets, thus we scale them a bit
+        vertices_mean = numpy.mean(new_vertices)
+        if vertices_mean < 0.1:
+            new_vertices = new_vertices * 1000
+        elif vertices_mean < 1:
+            new_vertices = new_vertices * 100
+        elif vertices_mean < 10:
+            new_vertices = new_vertices * 10
+        self.vertices = new_vertices
+
     def configure(self):
         """Compute additional attributes on surface data required for full functionality."""
 
