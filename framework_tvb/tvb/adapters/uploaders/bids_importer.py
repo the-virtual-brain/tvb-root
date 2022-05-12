@@ -49,13 +49,13 @@ from tvb.core.neotraits.view_model import Str
 from tvb.core.adapters.abcuploader import ABCUploaderForm, ABCUploader
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.graph import CorrelationCoefficients
-from tvb.datatypes.surfaces import CorticalSurface, center_vertices
+from tvb.datatypes.surfaces import CorticalSurface
 from tvb.datatypes.time_series import TimeSeriesRegion
 
 
 class BIDSImporterModel(UploaderViewModel):
     uploaded = Str(
-        label='BIDS dataset (zip)'
+        label='BIDS derivatives dataset (zip)'
     )
 
 
@@ -79,7 +79,7 @@ class BIDSImporterForm(ABCUploaderForm):
 
 class BIDSImporter(ABCUploader):
 
-    _ui_name = "BIDS Derivative Importer"
+    _ui_name = "BIDS Derivatives Importer"
     _ui_subsection = "bids_importer"
     _ui_description = "Import a dataset in BIDS format"
 
