@@ -224,36 +224,13 @@ class PowerSpectraInteractive(HasTraits):
         self.lc_box.layout = self.box_layout
 
         # item 2
+        self.fig = None
         self.op = widgets.Output()
-        with self.op:
-            time_series_type = self.time_series.__class__.__name__
-            try:
-                figure_window_title = "Interactive power spectra: " + time_series_type
-                plt.close(figure_window_title)
-                self.ifft_fig = plt.figure(num = figure_window_title,
-                                            figsize = (9, 4),
-                                            facecolor = BACKGROUNDCOLOUR,
-                                            edgecolor = EDGECOLOUR)
-            except ValueError:
-                LOG.info("My life would be easier if you'd update your Pyplot...")
-                figure_number = 42
-                plt.close(figure_number)
-                self.ifft_fig = plt.figure(num = figure_number,
-                                            figsize = (9, 4),
-                                            facecolor = BACKGROUNDCOLOUR,
-                                            edgecolor = EDGECOLOUR)
+        self.op.layout = self.box_layout
 
-            self.fft_ax = self.ifft_fig.add_axes([0.15, 0.15, 0.75, 0.75])
-
-        self.ifft_fig_box = self.op
-        self.ifft_fig_box.layout = self.box_layout
-
-        items = [self.ifft_fig_box, self.lc_box]
+        items = [self.op, self.lc_box]
         grid = widgets.GridBox(items, layout=widgets.Layout(grid_template_rows="450px 250px"))
-
         return grid
-
-
 
     def add_xscale_selector(self):
         """
@@ -455,28 +432,49 @@ class PowerSpectraInteractive(HasTraits):
 
     def plot_spectra(self):
         """ Plot the power spectra. """
-        self.fft_ax.clear()
-        # Set title and axis labels
-        time_series_type = self.time_series.__class__.__name__
-        self.fft_ax.set(title = time_series_type)
-        self.fft_ax.set(xlabel = "Frequency (%s)" % self.units)
-        self.fft_ax.set(ylabel = "Power")
+        self.op.clear_output(wait=True)
+        with plt.ioff():
+            if not self.ifft_fig:
+                time_series_type = self.time_series.__class__.__name__
+                try:
+                    figure_window_title = "Interactive power spectra: " + time_series_type
+                    plt.close(figure_window_title)
+                    self.ifft_fig = plt.figure(num=figure_window_title,
+                                               figsize=(9, 4),
+                                               facecolor=BACKGROUNDCOLOUR,
+                                               edgecolor=EDGECOLOUR)
+                except ValueError:
+                    LOG.info("My life would be easier if you'd update your Pyplot...")
+                    figure_number = 42
+                    plt.close(figure_number)
+                    self.ifft_fig = plt.figure(num=figure_number,
+                                               figsize=(9, 4),
+                                               facecolor=BACKGROUNDCOLOUR,
+                                               edgecolor=EDGECOLOUR)
 
-        # Set x and y scale based on curent radio button selection.
-        self.fft_ax.set_xscale(self.xscale)
-        self.fft_ax.set_yscale(self.yscale)
+                self.fft_ax = self.ifft_fig.add_axes([0.15, 0.15, 0.75, 0.75])
+            self.fft_ax.clear()
+            # Set title and axis labels
+            time_series_type = self.time_series.__class__.__name__
+            self.fft_ax.set(title = time_series_type)
+            self.fft_ax.set(xlabel = "Frequency (%s)" % self.units)
+            self.fft_ax.set(ylabel = "Power")
 
-        if hasattr(self.fft_ax, 'autoscale'):
-            self.fft_ax.autoscale(enable=True, axis='both', tight=True)
+            # Set x and y scale based on curent radio button selection.
+            self.fft_ax.set_xscale(self.xscale)
+            self.fft_ax.set_yscale(self.yscale)
 
-        #import pdb; pdb.set_trace()
-        #Plot the power spectra
-        if self.normalise_power == "yes":
-            self.fft_ax.plot(self.frequency,
-                             self.spectra_norm[:, self.variable, :, self.mode])
-        else:
-            self.fft_ax.plot(self.frequency,
-                             self.spectra[:, self.variable, :, self.mode])
+            if hasattr(self.fft_ax, 'autoscale'):
+                self.fft_ax.autoscale(enable=True, axis='both', tight=True)
+
+            #import pdb; pdb.set_trace()
+            #Plot the power spectra
+            if self.normalise_power == "yes":
+                self.fft_ax.plot(self.frequency,
+                                 self.spectra_norm[:, self.variable, :, self.mode])
+            else:
+                self.fft_ax.plot(self.frequency,
+                                 self.spectra[:, self.variable, :, self.mode])
 
 #        #TODO: Need to ensure colour matching... and allow region selection.
 #        #If requested, add standard deviation
@@ -487,7 +485,8 @@ class PowerSpectraInteractive(HasTraits):
 #        if self.show_sem:
 #            self.plot_sem(self)
 
-        plt.draw()
+        with self.op:
+            display(self.ifft_fig.canvas)
 
 
 if __name__ == "__main__":
