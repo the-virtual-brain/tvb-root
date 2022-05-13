@@ -73,7 +73,7 @@ class HeadPlotter3D:
             conn = connectivity.Connectivity.from_file()
         if surface is None:
             surface = surfaces.SkinAir.from_file()
-        
+
         # Configure Surface
         surface.configure()
 
@@ -120,8 +120,6 @@ class HeadPlotter3D:
                 # MEG sensors as red +'s
                 x, y, z = meg_sensors.locations.T
                 ax.plot(x, y, z, 'r+')
-        #plt.figure()
-        fig.show()
 
         out = widgets.interactive_output(plot, params)
         display(control_box,out)
