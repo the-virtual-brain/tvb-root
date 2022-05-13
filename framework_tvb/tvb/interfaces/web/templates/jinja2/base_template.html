@@ -49,8 +49,6 @@
         <script type="text/javascript" src="{{ deploy_context | safe }}/static/jquery/jquery.json.js"></script>
         <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/genericTVB.js?{{ currentVersionJS }}"></script>
 
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" integrity="sha512-KfkfwYDsLkIlwQp6LFnl8zNdLGxu9YAA1QvwINks4PhcElQSvqcyVLLD9aMhXd13uQjoXtEKNosOWaZqXgel0g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-
         <!--  include keycloak initialization      -->
         {% if keycloakConfigWebFile is defined%}
             {% include 'user/keycloak_config.html' %}
