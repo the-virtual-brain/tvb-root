@@ -47,15 +47,15 @@ class regularRun:
 	def simulate_python(self, modelExec):
 		# Initialize Model
 		model = self.tvb_python_model(modelExec)
+		# zerlaut setup
+		noises = noise.Additive(nsig=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]), ntau=0.0)
+		integrator = integrators.HeunStochastic(dt=.1, noise=noises)
 		# Initialize integrator
-		# integrator = integrators.EulerDeterministic(dt=self.dt)
-		# integrator = integrators.EulerStochastic(dt=1, noise=noise.Additive(nsig=np.array([1e-5])))
-		integrator = integrators.EulerDeterministic(dt=self.dt)#, noise=noise.Additive(nsig=np.array([1e-5])))
 		# Initialize Monitors
 		monitorsen = (monitors.TemporalAverage(period=self.period))
 		# Initialize Simulator
 		sim = simulator.Simulator(model=model, connectivity=self.connectivity,
-								  coupling=self.coupling,
+								  coupling=coupling.Linear(a=np.array(0.4), b=np.array(0.0)),
 								  integrator=integrator,
 								  monitors=[monitorsen])
 		sim.configure()
