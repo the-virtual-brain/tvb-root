@@ -151,7 +151,7 @@ Datatype:
    tables in a relational database (sqlite or postgresql).
 
    Example: Surface, Connectivity
-   Code: scientific_library/tvb/datatypes/
+   Code: tvb_library/tvb/datatypes/
 
 Adapter:
 
@@ -164,7 +164,7 @@ Adapter:
    These plugins are discovered at TVB startup and recorded in the database table ALGORITHMS.
 
    Example:  SimulatorAdapter
-   code: framework_tvb/tvb/adapters
+   code: tvb_framework/tvb/adapters
 
 Operation:
 

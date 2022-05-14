@@ -26,4 +26,4 @@ RUN pip install --no-build-isolation tvb-gdist
 
 # docker run --rm -it -v $PWD:/tvb -w /tvb tvb/lib 
 # add --gpus all for testing CUDA
-CMD ["/bin/bash", "-c", "cd tvb_bin; python3 setup.py develop --no-deps; cd ../scientific_library; python3 setup.py develop --no-deps; python3 -m pytest -n12"]
+CMD ["/bin/bash", "-c", "cd tvb_bin; python3 setup.py develop --no-deps; cd ../tvb_library; python3 setup.py develop --no-deps; python3 -m pytest -n12"]

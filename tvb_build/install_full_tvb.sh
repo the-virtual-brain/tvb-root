@@ -5,11 +5,11 @@
 # set up external dependencies that we maintain as distutils packages in externals/
 cd ..
 
-cd framework_tvb
+cd tvb_framework
 python setup.py develop --no-deps --user
 cd ..
 
-cd scientific_library
+cd tvb_library
 python setup.py develop --user
 cd ..
 

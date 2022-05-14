@@ -33,11 +33,11 @@ pipeline {
                         conda activate mac-distribution
 
                         echo "Install TVB framework"
-                        cd framework_tvb
+                        cd tvb_framework
                         python setup.py install
 
                         echo "Install TVB library"
-                        cd ../scientific_library
+                        cd ../tvb_library
                         python setup.py install
 
                         echo "Install TVB library contrib"
