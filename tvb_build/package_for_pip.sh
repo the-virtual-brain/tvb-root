@@ -30,7 +30,7 @@ done
 echo "============================="
 echo " Packing: tvb-rest-client"
 echo "============================="
-cd framework_tvb
+cd tvb_framework
 mv setup.py setup_bck.py
 mv setup_rest_client.py setup.py
 python setup.py sdist

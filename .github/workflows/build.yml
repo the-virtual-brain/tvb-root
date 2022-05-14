@@ -71,10 +71,10 @@ jobs:
           python3 setup.py develop
 
       - name: run library tests
-        run: cd scientific_library && python3 -m pytest -v  --cov --cov-report=xml --ignore=tvb/tests/library/simulator/rateml_test.py
+        run: cd tvb_library && python3 -m pytest -v  --cov --cov-report=xml --ignore=tvb/tests/library/simulator/rateml_test.py
 
       - name: run framework tests
-        run: cd framework_tvb && python3 -m pytest -v  --cov --cov-report=xml
+        run: cd tvb_framework && python3 -m pytest -v  --cov --cov-report=xml
 
       - name: run storage tests
         run: cd tvb_storage && python3 -m pytest -v  --cov --cov-report=xml

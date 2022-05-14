@@ -53,9 +53,9 @@ USER root
 ARG LAST_SHA=LATEST
 RUN cd tvb-root; \
     git pull; \
-    cd framework_tvb; \
+    cd tvb_framework; \
     /opt/conda/envs/tvb-run/bin/python setup.py develop --no-deps; \
-    cd ../scientific_library; \
+    cd ../tvb_library; \
     /opt/conda/envs/tvb-run/bin/python setup.py develop; \
     cd ../tvb_contrib; \
     /opt/conda/envs/tvb-run/bin/python setup.py develop --no-deps; \

@@ -35,7 +35,7 @@ def setup_test_console_env():
     # Remove anything pointing to the framework, to make sure that only one direct dependency exists
     # TVB-Framework --> TVB Scientific Library
     # We should have nothing inverse.
-    sys.path = [path for path in sys.path if not path.endswith('framework_tvb')]
+    sys.path = [path for path in sys.path if not path.endswith('tvb_framework')]
 
     from tvb.basic.profile import TvbProfile
     TvbProfile.set_profile(TvbProfile.TEST_LIBRARY_PROFILE)
