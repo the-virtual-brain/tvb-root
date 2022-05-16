@@ -55,13 +55,13 @@ class regularRun:
 		monitorsen = (monitors.TemporalAverage(period=self.period))
 		# Initialize Simulator
 		sim = simulator.Simulator(model=model, connectivity=self.connectivity,
-								  coupling=coupling.Linear(a=np.array(0.4), b=np.array(0.0)),
+								  coupling=coupling.Linear(a=np.array(self.g), b=np.array(0.0)),
 								  integrator=integrator,
 								  monitors=[monitorsen])
 		sim.configure()
-		sim.history.buffer[:] = 0.0
-		sim.current_state[:] = 0.0
-		print('shb', sim.history.buffer.shape)  # ('n_time', 'n_cvar', 'n_node', 'n_mode')
+		# sim.history.buffer[:] = 0.0
+		# sim.current_state[:] = 0.0
+		# print('shb', sim.history.buffer.shape)  # ('n_time', 'n_cvar', 'n_node', 'n_mode')
 
 		(time, data) = sim.run(simulation_length=self.sim_length)[0]
 
