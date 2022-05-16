@@ -9,7 +9,7 @@ from tvb.rateML.XML2model import RateML
 
 class regularRun:
 
-	def __init__(self, sim_length, g, s, dt, period, omega = 60, filename='connectivity_68.zip'):
+	def __init__(self, sim_length, g, s, dt, period, omega = 60, filename='connectivity_zerlaut_68.zip'):
 	# def __init__(self, sim_length, g, s, dt, period, omega = 60, filename='paupau.zip'):
 		self.sim_length = sim_length
 		self.g = np.array([g])
@@ -67,8 +67,8 @@ class regularRun:
 
 		# pad some zeros to make it equivalent to GPU for comparison
 		# CPU is now +1 timestep longer
-		data = np.insert(data, 0, 0, axis=0)
-		data = data[:-1]
+		# data = np.insert(data, 0, 0, axis=0)
+		# data = data[:-1]
 
 		# print('ds',data.shape)
 		plt.plot((data[:, 0, :, 0]), 'k', alpha=.2)
@@ -83,14 +83,13 @@ if __name__ == '__main__':
 	#
 	# RateML(model_filename, language)
 
-	simtime = 20
-	g = 1
+	simtime = 2000
+	g = .4
 	# g = 0.0042
-	s = 1.0
+	s = 4.0
 	dt = .1
-	period = 1
+	period = 10
 
-	model = 'OscillatorT'
-	# model = 'MontbrioPazoRoxin'
-	# model='Generic2dOscillator'
+	model = 'Zerlaut_adaptation_second_order'
+
 	(time, data) = regularRun(simtime, g, s, dt, period).simulate_python(model)
