@@ -53,7 +53,7 @@ setuptools.setup(name='tvb-storage',
                  include_package_data=True,
                  install_requires=STORAGE_REQUIRED_PACKAGES,
                  extras_require={
-                     'test': ["pytest"],
+                     'test': ["pytest", "decorator"],
                      'encrypt': ["syncrypto"]},
                  description='A package which handles the storage of TVB data',
                  long_description="",
