@@ -172,15 +172,13 @@ class RateML:
         return template
 
     def XSD_validate_XML(self):
-
-        ''' Use own validation instead of LEMS because of slight difference in definition file'''
+        """Use own validation instead of LEMS because of slight difference in definition file"""
 
         from lxml import etree
         from urllib.request import urlopen
 
         # Global XSD file location
-        schema_file = urlopen(
-            "https://raw.githubusercontent.com/the-virtual-brain/tvb-root/master/tvb_library/tvb/rateML/rML_v0.xsd")
+        schema_file = urlopen("https://www.thevirtualbrain.org/tvb/bin/rml.xsd")
         xmlschema = etree.XMLSchema(etree.parse(schema_file))
         xmlschema.assertValid(etree.parse(self.xml_location))
         logger.info("True validation of {0} against {1}".format(self.xml_location, schema_file.geturl()))
