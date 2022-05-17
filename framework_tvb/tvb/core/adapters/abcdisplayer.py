@@ -33,11 +33,10 @@
 import importlib
 import json
 import os
+import numpy
 from abc import ABCMeta
 from threading import Lock
 from uuid import UUID
-import numpy
-
 from six import add_metaclass
 from tvb.core.adapters.abcadapter import AdapterLaunchModeEnum, ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException
@@ -208,8 +207,8 @@ class ABCDisplayer(ABCAdapter, metaclass=ABCMeta):
         """
         if shell_surface:
             shell_h5 = h5.h5_file_for_index(shell_surface)
-            shell_vertices, shell_normals, _, shell_triangles, _ = surface_url_generator.get_urls_for_rendering(shell_h5)
-            shellObject = json.dumps([shell_vertices, shell_normals, shell_triangles])
+            vertices, normals, lines, triangles, _ = surface_url_generator.get_urls_for_rendering(shell_h5)
+            shell_object = json.dumps([vertices, normals, triangles, lines])
             shell_h5.close()
-            return shellObject
+            return shell_object
         return None

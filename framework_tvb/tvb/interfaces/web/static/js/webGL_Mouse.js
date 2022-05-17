@@ -47,6 +47,8 @@ var GL_lastMouseY = null;
 var GL_mouseXRelToCanvas = null;
 var GL_mouseYRelToCanvas = null;
 
+var ROTATION_EVENT_ID = null;
+
 function GL_handleMouseDown(event, canvas) {
     GL_mouseDown = event.which;
     GL_lastMouseX = event.clientX;
@@ -85,26 +87,26 @@ function GL_handleMouseMove(event) {
     GL_lastMouseX = newX;
     GL_lastMouseY = newY;
     // event.buttons not event.button. Latter is 0 in mouse moves in the w3c and mozilla
-    var shouldZoomCamera  = GL_mouseDown === 2;  // middle click
+    var shouldZoomCamera = GL_mouseDown === 2;  // middle click
     var movement;
 
-    if(shouldZoomCamera) { //camera input
+    if (shouldZoomCamera) { //camera input
         movement = Matrix.Translation($V([0, 0, -deltaY / TRANSLATION_SENSITIVITY]));
         GL_cameraMatrix = movement.x(GL_cameraMatrix);
-    }else{ // trackball input
+    } else { // trackball input
         var shouldTranslateXY = GL_mouseDown === 3 || event.shiftKey; // right click or shift
         var inModelSpace = event.ctrlKey;
 
         if (shouldTranslateXY) {
             movement = Matrix.Translation($V([deltaX / TRANSLATION_SENSITIVITY, -deltaY / TRANSLATION_SENSITIVITY, 0]));
-        }else{ // rotate
+        } else { // rotate
             movement = createRotationMatrix(deltaX / ROTATION_SENSITIVITY, [0, 1, 0]);
             movement = movement.x(createRotationMatrix(deltaY / ROTATION_SENSITIVITY, [1, 0, 0]));
-}
+        }
 
-        if (!inModelSpace){ // Normal mode. In camera space
+        if (!inModelSpace) { // Normal mode. In camera space
             GL_trackBallMatrix = movement.x(GL_trackBallMatrix);
-        }else{ // model space
+        } else { // model space
             GL_trackBallMatrix = GL_trackBallMatrix.x(movement);
         }
     }
@@ -118,40 +120,60 @@ function GL_handleMouseMove(event) {
 
 function GL_handleKeyDown(event) {
     var processed = true;
-    if (String.fromCharCode(event.keyCode) == " ") {
+    if (String.fromCharCode(event.keyCode) === " ") {
         GL_trackBallMatrix = Matrix.I(4);
-    }else if (event.keyCode === 37) {
+    } else if (event.keyCode === 37) {
         //Left cursor key
         GL_trackBallMatrix = createRotationMatrix(270, [1, 0, 0]).x(createRotationMatrix(270, [0, 0, 1]));
-    }else if (event.keyCode === 39) {
+    } else if (event.keyCode === 39) {
         //Right cursor key
         GL_trackBallMatrix = createRotationMatrix(270, [1, 0, 0]).x(createRotationMatrix(90, [0, 0, 1]));
-    }else if (event.keyCode === 38) {
+    } else if (event.keyCode === 38) {
         // Up cursor key
         GL_trackBallMatrix = createRotationMatrix(270, [1, 0, 0]);
-    }else if (event.keyCode === 40) {
+    } else if (event.keyCode === 40) {
+        // Down cursor key
         GL_trackBallMatrix = createRotationMatrix(270, [1, 0, 0]).x(createRotationMatrix(180, [0, 0, 1]));
-    }else{
+    } else if (event.keyCode === 49) {
+        // Key for number 1
+        // TVB-2498 Save here the tilted head position
+        GL_trackBallMatrix = createRotationMatrix(270, [1, 0, 0]).x(createRotationMatrix(180, [0, 0, 1])
+        ).x(createRotationMatrix(30, [0, 1, 0])).x(createRotationMatrix(-45, [0, 0, 1])
+        ).x(createRotationMatrix(-15, [0, 1, 0])).x(createRotationMatrix(-10, [0, 0, 1])
+        ).x(createRotationMatrix(20, [1, 0, 0])).x(createRotationMatrix(-80, [0, 0, 1])
+        ).x(createRotationMatrix(10, [1, 0, 0]));
+    } else if (event.keyCode === 80) {
+        // P (from play rotation movie)
+        ROTATION_EVENT_ID = setInterval(tickRotation, TICK_STEP * 10);
+    } else if (event.keyCode === 83) {
+        // S (from stop rotation movie)
+        clearInterval(ROTATION_EVENT_ID);
+    } else {
         processed = false;
     }
 
-    if(processed){
+    if (processed) {
         GL_cameraMatrix = Matrix.Translation($V([0, 0, -200]));
         GL_mvMatrix = GL_cameraMatrix.x(GL_trackBallMatrix);
-
-    event.preventDefault();
-	return false;
+        event.preventDefault();
+        return false;
+    }
 }
+
+function tickRotation() {
+    GL_mvMatrix = GL_mvMatrix.x(createRotationMatrix(3, [0, 0, 1]));
+    drawScene();
 }
 
 function GL_handleKeyUp(event) {
 }
 
 function GL_handleMouseWeel(delta) {
-    var movement = Matrix.Translation($V([0, 0, delta/WHEEL_SENSITIVITY]));
+    var movement = Matrix.Translation($V([0, 0, delta / WHEEL_SENSITIVITY]));
     GL_cameraMatrix = movement.x(GL_cameraMatrix);
     GL_mvMatrix = GL_cameraMatrix.x(GL_trackBallMatrix);
 }
+
 // ------ KEY FUNCTIONS END -----------------------------------------------------
 
 // ------ RESHAPE FUNCTIONS START -----------------------------------------------
@@ -174,5 +196,6 @@ function updateGLCanvasSize(canvasId) {
     canvas.attr("width", width);
     canvas.attr("height", height);
 }
+
 // ------ RESHAPE FUNCTIONS END -------------------------------------------------
 
