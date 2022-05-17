@@ -12,12 +12,12 @@ RUN setx /M PATH "%PATH%;C:\miniconda\Scripts"
 RUN conda init powershell
 
 # Prepare tvb-run env
-RUN activate && conda create -y --name tvb-run python=3.7 numba scipy numpy networkx scikit-learn cython pip numexpr psutil
+RUN activate && conda create -y --name tvb-run python=3.10 numba scipy numpy networkx scikit-learn cython pip numexpr psutil
 RUN activate && conda install -y --name tvb-run pytest pytest-cov pytest-benchmark pytest-mock pytest-xdist matplotlib-base
 RUN activate && conda install -y --name tvb-run psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils werkzeug
 RUN activate tvb-run && pip install --upgrade pip
 RUN activate tvb-run && pip install certifi
-RUN activate tvb-run && pip install h5py==2.10 formencode cfflib flask==1.1.4 jinja2==2.11.3 nibabel sqlalchemy alembic allensdk
+RUN activate tvb-run && pip install h5py formencode cfflib flask==1.1.4 jinja2==2.11.3 nibabel sqlalchemy alembic allensdk
 RUN activate && conda install -y --name tvb-run -c conda-forge jupyterlab gevent
 RUN activate tvb-run && pip install tvb-gdist BeautifulSoup4 subprocess32 flask-restx python-keycloak mako pyAesCrypt pyunicore==0.6.0
 RUN activate tvb-run && pip install lockfile syncrypto

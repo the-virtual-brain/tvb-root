@@ -23,22 +23,22 @@ RUN service postgresql start && createdb -O postgres tvb-test && psql --command 
 USER root
 RUN conda update -n base -c defaults conda
 
-RUN conda create -y --name tvb-docs python=3.7 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil
+RUN conda create -y --name tvb-docs python=3.10 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil
 RUN conda install -y --name tvb-docs pytest pytest-mock matplotlib-base
 RUN conda install -y --name tvb-docs psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy werkzeug
 RUN conda install -y --name tvb-docs -c conda-forge jupyterlab gevent
 RUN /opt/conda/envs/tvb-docs/bin/pip install --upgrade pip
-RUN /opt/conda/envs/tvb-docs/bin/pip install h5py==2.10 formencode cfflib flask==1.1.4 jinja2==2.11.3 nibabel sqlalchemy alembic allensdk # h5py and jinja2 versions are constarined by allensdk
+RUN /opt/conda/envs/tvb-docs/bin/pip install h5py formencode cfflib flask==1.1.4 jinja2==2.11.3 nibabel sqlalchemy alembic allensdk # h5py and jinja2 versions are constarined by allensdk
 RUN /opt/conda/envs/tvb-docs/bin/pip install --no-build-isolation tvb-gdist
 RUN /opt/conda/envs/tvb-docs/bin/pip install BeautifulSoup4 subprocess32 flask-restx python-keycloak mako pyAesCrypt pyunicore==0.6.0
 RUN /opt/conda/envs/tvb-docs/bin/pip install sphinx==1.2.3 docutils==0.12
 
 RUN conda update -n base -c defaults conda
-RUN conda create -y --name tvb-run python=3 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil
+RUN conda create -y --name tvb-run python=3.10 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil
 RUN conda install -y --name tvb-run pytest pytest-cov pytest-benchmark pytest-mock pytest-xdist matplotlib-base
 RUN conda install -y --name tvb-run psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy werkzeug docutils
 RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
-RUN /opt/conda/envs/tvb-run/bin/pip install h5py>=2.10 formencode cfflib flask==1.1.4 jinja2==2.11.3 nibabel sqlalchemy alembic allensdk # h5py and jinja2 versions are constrained by allensdk
+RUN /opt/conda/envs/tvb-run/bin/pip install h5py formencode cfflib flask==1.1.4 jinja2==2.11.3 nibabel sqlalchemy alembic allensdk # h5py and jinja2 versions are constrained by allensdk
 RUN conda install -y --name tvb-run -c conda-forge jupyterlab gevent
 RUN /opt/conda/envs/tvb-run/bin/pip install --no-build-isolation tvb-gdist
 RUN /opt/conda/envs/tvb-run/bin/pip install BeautifulSoup4 subprocess32 flask-restx python-keycloak mako pyAesCrypt pyunicore==0.6.0
