@@ -245,7 +245,7 @@ class TestNbSim(BaseTestSim):
         r_tvb, V_tvb = raw_d[0,:,:,0]
 
         np.testing.assert_allclose(r_tvb, r_pdq, rtol=1e-4)
-        np.testing.assert_allclose(V_tvb, V_pdq, rtol=1e-4)
+        np.testing.assert_allclose(V_tvb, V_pdq, rtol=1e-4, atol=1e-3)
 
     def test_tavg_chunking(self):
         dt = 0.01
