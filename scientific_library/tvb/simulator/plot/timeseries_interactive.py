@@ -219,17 +219,14 @@ class TimeSeriesInteractive(HasTraits):
     # ------------------------------------------------------------------------##
     # ------------------ Functions for building the figure -------------------##
     # ------------------------------------------------------------------------##
-    def create_figure(self):
-        """ Create the figure and time-series axes. """
-
+    def _create_inner_figure(self):
+        """ Create the figure - common part with subclass"""
         self.outer_box_layout = widgets.Layout(border='solid 1px white',
                                                margin=MARGIN_3PX,
                                                padding=MARGIN_2PX)
-
         self.box_layout = widgets.Layout(border=BORDER_BLACK,
                                          margin=MARGIN_3PX,
                                          padding=MARGIN_2PX)
-
         self.button_layout = widgets.Layout(width='auto')
 
         self.its_fig = None
@@ -256,10 +253,13 @@ class TimeSeriesInteractive(HasTraits):
 
         self.add_scaling_slider()
 
+    def create_figure(self):
+        """ Create the figure and time-series axes. """
+        self._create_inner_figure()
+
         self.control_box = widgets.GridBox(self.control_widgets,
                                            layout=widgets.Layout(grid_template_columns="290px 350px 290px",
                                                                  border=BORDER_BLACK))
-
         self.region_select_buttons = []
         self.add_region_selectall_button()
         self.add_region_unselectall_button()
@@ -502,15 +502,15 @@ class TimeSeriesInteractive(HasTraits):
         self.ts_ax.clear()
         self.plot_time_series()
 
-    def plot_time_series(self, **kwargs):
-        """ Plot a view on the timeseries. """
+    def _plot_inner_ts(self, fig_size=(9, 5), ts_axes=[0.1, 0.05, 0.85, 0.90]):
+        """ Plot a view on the timeseries - common part with subclass. """
         self.out.clear_output(wait=True)
         with plt.ioff():
             if not self.its_fig:
                 try:
                     figure_window_title = "Interactive time series"
                     self.its_fig = plt.figure(num=figure_window_title,
-                                              figsize=(9, 5),
+                                              figsize=fig_size,
                                               facecolor=BACKGROUNDCOLOUR,
                                               edgecolor=EDGECOLOUR)
                 except ValueError:
@@ -518,11 +518,11 @@ class TimeSeriesInteractive(HasTraits):
                     figure_number = 42
                     plt.close(figure_number)
                     self.its_fig = plt.figure(num=figure_number,
-                                              figsize=(9, 5),
+                                              figsize=fig_size,
                                               facecolor=BACKGROUNDCOLOUR,
                                               edgecolor=EDGECOLOUR)
 
-                self.ts_ax = self.its_fig.add_axes([0.1, 0.05, 0.85, 0.90])
+                self.ts_ax = self.its_fig.add_axes(ts_axes)
 
                 self.whereami_ax = self.its_fig.add_axes([0.1, 0.95, 0.85, 0.025],
                                                          facecolor=BACKGROUNDCOLOUR)
@@ -535,6 +535,10 @@ class TimeSeriesInteractive(HasTraits):
                 self.hereiam = self.whereami_ax.plot(self.time_view,
                                                      numpy.zeros((len(self.time_view),)),
                                                      'b-', linewidth=4)
+
+    def plot_time_series(self, **kwargs):
+        """ Plot a view on the timeseries. """
+        self._plot_inner_ts()
 
         # This assumes shape => (time, space)
         step = self.scaling * self.peak_to_peak
@@ -603,38 +607,7 @@ class TimeSeriesInteractivePlotter(TimeSeriesInteractive):
     def create_figure(self, **kwargs):
         """ Create the figure and time-series axes. """
 
-        self.outer_box_layout = widgets.Layout(border='solid 1px white',
-                                               margin=MARGIN_3PX,
-                                               padding=MARGIN_2PX)
-        self.box_layout = widgets.Layout(border=BORDER_BLACK,
-                                         margin=MARGIN_3PX,
-                                         padding=MARGIN_2PX)
-        self.button_layout = widgets.Layout(width='auto')
-
-        # Plot
-        self.its_fig = None
-        self.out = widgets.Output()
-        self.out.layout = self.box_layout
-
-        # WIDGETS
-        self.control_widgets = []
-        self.time_control_buttons = []
-
-        # Sliders
-        self.add_window_length_slider()
-
-        # time-view buttons
-        self.add_start_button()
-        self.add_big_step_back_button()
-        self.add_step_back_button()
-        self.add_step_forward_button()
-        self.add_big_step_forward_button()
-        self.add_end_button()
-
-        self.tc_box = widgets.HBox(self.time_control_buttons, layout=self.outer_box_layout)
-        self.control_widgets.append(self.tc_box)
-
-        self.add_scaling_slider()
+        self._create_inner_figure()
 
         self.control_box = widgets.GridBox(self.control_widgets,
                                            layout=widgets.Layout(grid_template_columns="300px 350px 300px",
@@ -647,37 +620,7 @@ class TimeSeriesInteractivePlotter(TimeSeriesInteractive):
 
     def plot_time_series(self, **kwargs):
         """ Plot a view on the timeseries. """
-        self.out.clear_output(wait=True)
-        with plt.ioff():
-            if not self.its_fig:
-                try:
-                    figure_window_title = "Interactive time series"
-                    self.its_fig = plt.figure(num=figure_window_title,
-                                              figsize=(9, 7),
-                                              facecolor=BACKGROUNDCOLOUR,
-                                              edgecolor=EDGECOLOUR)
-                except ValueError:
-                    LOG.info("My life would be easier if you'd update your Pyplot...")
-                    figure_number = 42
-                    plt.close(figure_number)
-                    self.its_fig = plt.figure(num=figure_number,
-                                              figsize=(9, 5),
-                                              facecolor=BACKGROUNDCOLOUR,
-                                              edgecolor=EDGECOLOUR)
-
-                self.ts_ax = self.its_fig.add_axes([0.1, 0.1, 0.85, 0.85])
-
-                self.whereami_ax = self.its_fig.add_axes([0.1, 0.95, 0.85, 0.025],
-                                                         facecolor=BACKGROUNDCOLOUR)
-                self.whereami_ax.set_axis_off()
-                if hasattr(self.whereami_ax, 'autoscale'):
-                    self.whereami_ax.autoscale(enable=True, axis='both', tight=True)
-                self.whereami_ax.plot(self.time_view,
-                                      numpy.zeros((len(self.time_view),)),
-                                      color="0.3", linestyle="--")
-                self.hereiam = self.whereami_ax.plot(self.time_view,
-                                                     numpy.zeros((len(self.time_view),)),
-                                                     'b-', linewidth=4)
+        self._plot_inner_ts(fig_size=(9, 7), ts_axes=[0.1, 0.1, 0.85, 0.85])
 
         # This assumes shape => (time, space)
         step = self.scaling * self.peak_to_peak
