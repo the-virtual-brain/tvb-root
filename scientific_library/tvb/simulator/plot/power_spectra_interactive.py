@@ -58,10 +58,9 @@ Usage
 """
 
 import numpy
-import pylab
-import os
-import matplotlib.widgets as widgets
-
+import matplotlib.pyplot as plt
+import ipywidgets as widgets
+from IPython.core.display import display
 from tvb.simulator.common import get_logger
 import tvb.datatypes.time_series as time_series_datatypes
 from tvb.basic.neotraits.api import HasTraits, Attr, Int
@@ -70,7 +69,7 @@ from tvb.simulator.plot.utils import generate_region_demo_data
 LOG = get_logger(__name__)
 
 # Define a colour theme... see: matplotlib.colors.cnames.keys()
-BACKGROUNDCOLOUR = "slategrey"
+BACKGROUNDCOLOUR = "white"
 EDGECOLOUR = "darkslateblue"
 AXCOLOUR = "steelblue"
 BUTTONCOLOUR = "steelblue"
@@ -114,6 +113,8 @@ class PowerSpectraInteractive(HasTraits):
         show() method is called.
 
         """
+        super(PowerSpectraInteractive, self).__init__(**kwargs)
+        LOG.debug(str(kwargs))
         #figure
         self.ifft_fig = None
 
@@ -159,7 +160,7 @@ class PowerSpectraInteractive(HasTraits):
         LOG.debug("time_series shape: %s" % str(self.time_series.data.shape))
         #TODO: if isinstance(self.time_series, TimeSeriesSurface) and self.first_n == -1: #LOG.error, return.
         self.data = self.time_series.data[:, :, :self.first_n, :]
-        self.period = 1 / self.time_series.sample_rate  
+        self.period = 1 / self.time_series.sample_rate
         self.period_unit = "s"
         self.max_freq = 0.5 / self.period
         self.units = "Hz"
@@ -175,143 +176,142 @@ class PowerSpectraInteractive(HasTraits):
         self.configure()
 
         #Make the figure:
-        self.create_figure()
+        fig = self.create_figure()
 
-        #Selectors
-        self.add_xscale_selector()
-        self.add_yscale_selector()
-        self.add_mode_selector()
-        self.add_variable_selector()
-        self.add_normalise_power_selector()
-        self.add_window_length_selector()
-        self.add_window_function_selector()
-
-        #Sliders
-        #self.add_window_length_slider() #Want discrete values
-        #self.add_scaling_slider()
-
-        #...
         self.calc_fft()
-
-        #Plot timeseries
         self.plot_spectra()
 
-        pylab.show()
+        display(fig)
 
     ##------------------------------------------------------------------------##
     ##------------------ Functions for building the figure -------------------##
     ##------------------------------------------------------------------------##
     def create_figure(self):
         """ Create the figure and time-series axes. """
-        time_series_type = self.time_series.__class__.__name__
-        try:
-            figure_window_title = "Interactive power spectra: " + time_series_type
-            pylab.close(figure_window_title)
-            self.ifft_fig = pylab.figure(num = figure_window_title,
-                                        figsize = (16, 8),
-                                        facecolor = BACKGROUNDCOLOUR, 
-                                        edgecolor = EDGECOLOUR)
-        except ValueError:
-            LOG.info("My life would be easier if you'd update your PyLab...")
-            figure_number = 42
-            pylab.close(figure_number)
-            self.ifft_fig = pylab.figure(num = figure_number, 
-                                         figsize = (16, 8), 
-                                         facecolor = BACKGROUNDCOLOUR, 
-                                         edgecolor = EDGECOLOUR)
 
-        self.fft_ax = self.ifft_fig.add_axes([0.15, 0.2, 0.7, 0.75])
+        self.outer_box_layout = widgets.Layout(border='solid 1px white',
+                                    margin='3px 3px 3px 3px',
+                                    padding='2px 2px 2px 2px')
+
+        self.box_layout = widgets.Layout(border='solid 1px black',
+                                    margin='3px 3px 3px 3px',
+                                    padding='2px 2px 2px 2px')
+
+        self.other_layout = widgets.Layout(width='90%')
+
+        self.lc_items = []
+
+        self.add_mode_selector()
+        self.add_normalise_power_selector()
+
+        self.add_xscale_selector()
+        self.add_yscale_selector()
+
+        self.add_variable_selector()
+
+        self.add_window_function_selector()
+        self.add_window_length_selector()
+
+        self.mode_sv_box = widgets.VBox([self.ms_box, self.vs_box], layout=self.outer_box_layout)
+        self.xs_ys_box = widgets.VBox([self.xss_box,self.yss_box], layout=self.outer_box_layout)
+        self.np_box = widgets.VBox([self.nps_box], layout=self.outer_box_layout)
+        self.wf_box = widgets.VBox([self.wfs_box], layout=self.outer_box_layout)
+        self.wl_box = widgets.VBox([self.wls_box], layout=self.outer_box_layout)
+
+        self.lc_items.extend([self.mode_sv_box, self.xs_ys_box, self.np_box, self.wf_box, self.wl_box])
+
+        self.lc_box = widgets.HBox(self.lc_items)
+        self.lc_box.layout = self.box_layout
+
+        # item 2
+        self.fig = None
+        self.op = widgets.Output()
+        self.op.layout = self.box_layout
+
+        items = [self.op, self.lc_box]
+        grid = widgets.GridBox(items, layout=widgets.Layout(grid_template_rows="450px 250px"))
+        return grid
 
     def add_xscale_selector(self):
         """
         Add a radio button to the figure for selecting which scaling the x-axes
         should use.
         """
-        pos_shp = [0.45, 0.02, 0.05, 0.104]
-        rax = self.ifft_fig.add_axes(pos_shp, facecolor=AXCOLOUR, title="xscale")
         xscale_tuple = ("log", "linear")
-        self.xscale_selector = widgets.RadioButtons(rax, xscale_tuple, active=1)
-        self.xscale_selector.on_clicked(self.update_xscale)
+        self.xscale_selector = widgets.RadioButtons(options=xscale_tuple, value=xscale_tuple[1], layout=self.other_layout)
+        self.xscale_selector.observe(self.update_xscale, 'value')
+
+        self.xss_box = widgets.VBox([widgets.Label('X Axis Scale'), self.xscale_selector], layout=self.box_layout)
 
     def add_yscale_selector(self):
         """
         Add a radio button to the figure for selecting which scaling the y-axes
         should use.
         """
-        pos_shp = [0.02, 0.5, 0.05, 0.104]
-        rax = self.ifft_fig.add_axes(pos_shp, facecolor=AXCOLOUR, title="yscale")
         yscale_tuple = ("log", "linear")
-        self.yscale_selector = widgets.RadioButtons(rax, yscale_tuple, active=0)
-        self.yscale_selector.on_clicked(self.update_yscale)
+        self.yscale_selector = widgets.RadioButtons(options=yscale_tuple, value=yscale_tuple[0], layout=self.other_layout)
+        self.yscale_selector.observe(self.update_yscale, 'value')
+
+        self.yss_box = widgets.VBox([widgets.Label('Y Axis Scale'), self.yscale_selector], layout=self.box_layout)
 
     def add_mode_selector(self):
         """
         Add a radio button to the figure for selecting which mode of the model
         should be displayed.
         """
-        pos_shp = [0.02, 0.07, 0.05, 0.1+0.002*self.data.shape[3]]
-        rax = self.ifft_fig.add_axes(pos_shp, facecolor=AXCOLOUR, title="Mode")
         mode_tuple = tuple(range(self.data.shape[3]))
-        self.mode_selector = widgets.RadioButtons(rax, mode_tuple, active=0)
-        self.mode_selector.on_clicked(self.update_mode)
+        self.mode_selector = widgets.RadioButtons(options=mode_tuple, value=mode_tuple[0], layout=self.other_layout)
+        self.mode_selector.observe(self.update_mode, 'value')
+
+        self.ms_box = widgets.VBox([widgets.Label('Mode'), self.mode_selector], layout=self.box_layout)
 
     def add_variable_selector(self):
         """
         Generate radio selector buttons to set which state variable is 
         displayed.
         """
-        noc = self.data.shape[1] # number of choices
-        #State variable for the x axis
-        pos_shp = [0.02, 0.22, 0.05, 0.12+0.008*noc]
-        rax = self.ifft_fig.add_axes(pos_shp, facecolor=AXCOLOUR, 
-                                     title="state variable")
-        self.variable_selector = widgets.RadioButtons(rax, tuple(range(noc)), 
-                                                    active=0)
-        self.variable_selector.on_clicked(self.update_variable)
+        noc = self.data.shape[1]
+        self.variable_selector = widgets.RadioButtons(options=tuple(range(noc)), value=0, layout=self.other_layout)
+        self.variable_selector.observe(self.update_variable, 'value')
+
+        self.vs_box = widgets.VBox([widgets.Label('State Variable'), self.variable_selector], layout=self.box_layout)
 
     def add_window_length_selector(self):
         """
         Generate radio selector buttons to set the window length is seconds.
         """
-        noc = self.possible_window_lengths.shape[0] # number of choices
-        #State variable for the x axis
-        pos_shp = [0.88, 0.07, 0.1, 0.12+0.02*noc]
-        rax = self.ifft_fig.add_axes(pos_shp, facecolor=AXCOLOUR, 
-                                     title="Segment length")
         wl_tup = tuple(self.possible_window_lengths)
-        self.window_length_selector = widgets.RadioButtons(rax, wl_tup, active=4)
-        self.window_length_selector.on_clicked(self.update_window_length)
+        self.window_length_selector = widgets.RadioButtons(options=wl_tup, value=wl_tup[4], layout=self.other_layout)
+        self.window_length_selector.observe(self.update_window_length, 'value')
+
+        self.wls_box = widgets.VBox([widgets.Label('Segment Length'), self.window_length_selector], layout=self.box_layout)
 
     def add_window_function_selector(self):
         """
         Generate radio selector buttons to set the windowing function.
         """
         #TODO: add support for kaiser, requiers specification of beta.
-        wf_tup = ("None", "hamming", "bartlett", "blackman", "hanning") 
-        noc = len(wf_tup) # number of choices
-        #State variable for the x axis
-        pos_shp = [0.88, 0.77, 0.085, 0.12+0.01*noc]
-        rax = self.ifft_fig.add_axes(pos_shp, facecolor=AXCOLOUR, 
-                                    title="Windowing function")
-        self.window_function_selector = widgets.RadioButtons(rax, wf_tup, active=0)
-        self.window_function_selector.on_clicked(self.update_window_function)
+        wf_tup = ("None", "hamming", "bartlett", "blackman", "hanning")
+        self.window_function_selector = widgets.RadioButtons(options=wf_tup, value=wf_tup[0], layout=self.other_layout)
+        self.window_function_selector.observe(self.update_window_function, 'value')
+
+        self.wfs_box = widgets.VBox([widgets.Label('Windowing Function'), self.window_function_selector], layout=self.box_layout)
 
     def add_normalise_power_selector(self):
         """
         Add a radio button to chose whether or not the power of all spectra 
         shouold be normalised to 1.
         """
-        pos_shp = [0.02, 0.8, 0.05, 0.104]
-        rax = self.ifft_fig.add_axes(pos_shp, facecolor=AXCOLOUR, title="normalise")
         np_tuple = ("yes", "no")
-        self.normalise_power_selector = widgets.RadioButtons(rax, np_tuple, active=1)
-        self.normalise_power_selector.on_clicked(self.update_normalise_power)
+        self.normalise_power_selector = widgets.RadioButtons(options=np_tuple, value=np_tuple[1], layout=self.other_layout)
+        self.normalise_power_selector.observe(self.update_normalise_power, 'value')
+
+        self.nps_box = widgets.VBox([widgets.Label('Normalise'), self.normalise_power_selector], layout=self.box_layout)
 
 
     ##------------------------------------------------------------------------##
     ##------------------ Functions for updating the state --------------------##
     ##------------------------------------------------------------------------##
-
     def calc_fft(self):
         """
         Calculate FFT using current state of the window_length, window_function,
@@ -319,10 +319,10 @@ class PowerSpectraInteractive(HasTraits):
         #Segment time-series, overlapping if necessary
         nseg = int(numpy.ceil(self.time_series_length / self.window_length))
         if nseg != 1:
-            seg_tpts = self.window_length / self.period
+            seg_tpts = numpy.ceil(self.window_length / self.period) # use ceil to avoid dimensions mismatch
             overlap = ((seg_tpts * nseg) - self.tpts) / (nseg-1)
             starts = [max(seg*(seg_tpts - overlap), 0) for seg in range(nseg)]
-            segments = [self.data[int(start):int(start+seg_tpts)] for start in starts] 
+            segments = [self.data[int(start):int(start+seg_tpts)] for start in starts]
             segments = [segment[:, :, :, numpy.newaxis] for segment in segments]
             time_series = numpy.concatenate(segments, axis=4)
         else:
@@ -335,18 +335,18 @@ class PowerSpectraInteractive(HasTraits):
         #Apply windowing function
         if self.window_function != "None":
             window_function = eval("".join(("numpy.", self.window_function)))
-            window_mask = numpy.reshape(window_function(seg_tpts), 
-                                        (seg_tpts, 1, 1, 1, 1))
+            window_mask = numpy.reshape(window_function(seg_tpts),
+                                        (int(seg_tpts), 1, 1, 1, 1))
             time_series = time_series * window_mask
 
         #Calculate the FFT
         result =  numpy.fft.fft(time_series, axis=0)
-        nfreq = len(result)/2
+        nfreq = numpy.ceil(len(result)/2) # use ceil to avoid dimensions mismatch
 
         self.frequency = numpy.arange(0, self.max_freq, self.freq_step)
         LOG.debug("frequency shape: %s" % str(self.frequency.shape))
 
-        self.spectra = numpy.mean(numpy.abs(result[1:int(nfreq)+1])**2, axis=-1) 
+        self.spectra = numpy.mean(numpy.abs(result[1:int(nfreq)+1])**2, axis=-1)
         LOG.debug("spectra shape: %s" % str(self.spectra.shape))
 
         self.spectra_norm = (self.spectra / numpy.sum(self.spectra, axis=0))
@@ -359,56 +359,56 @@ class PowerSpectraInteractive(HasTraits):
     ##------------------------------------------------------------------------##
     ##------------------ Functions for updating the figure -------------------##
     ##------------------------------------------------------------------------##
-    def update_xscale(self, xscale):
+    def update_xscale(self, value):
         """ 
         Update the FFT axes' xscale to either log or linear based on radio
         button selection.
         """
-        self.xscale = xscale
+        self.xscale = value['new']
         self.fft_ax.set_xscale(self.xscale)
-        pylab.draw()
+        plt.draw()
 
-    def update_yscale(self, yscale):
+    def update_yscale(self, value):
         """ 
         Update the FFT axes' yscale to either log or linear based on radio
         button selection.
         """
-        self.yscale = yscale
+        self.yscale = value['new']
         self.fft_ax.set_yscale(self.yscale)
-        pylab.draw()
+        plt.draw()
 
-    def update_mode(self, mode):
+    def update_mode(self, value):
         """ Update the visualised mode based on radio button selection. """
-        self.mode = mode
+        self.mode = value['new']
         self.plot_spectra()
 
-    def update_variable(self, variable):
+    def update_variable(self,value):
         """ 
         Update state variable being plotted based on radio buttton selection.
         """
-        self.variable = variable
+        self.variable = value['new']
         self.plot_spectra()
 
-    def update_normalise_power(self, normalise_power):
+    def update_normalise_power(self, value):
         """ Update whether to normalise based on radio button selection. """
-        self.normalise_power = normalise_power
+        self.normalise_power = value['new']
         self.plot_spectra()
 
-    def update_window_length(self, length):
+    def update_window_length(self, value):
         """
         Update timeseries window length based on the selected value.
         """
         #TODO: need this casting but not sure why, don't need int() with mode...
-        self.window_length = numpy.float64(length) 
+        self.window_length = numpy.float64(value['new'])
         #import pdb; pdb.set_trace()
         self.freq_step = 1.0 / self.window_length
         self.update_spectra()
 
-    def update_window_function(self, window_function):
+    def update_window_function(self, value):
         """
         Update windowing function based on the radio button selection.
         """
-        self.window_function = window_function
+        self.window_function = value['new']
         self.update_spectra()
 
     def update_spectra(self):
@@ -422,8 +422,8 @@ class PowerSpectraInteractive(HasTraits):
 #        std = (self.spectra[:, self.variable, :, self.mode] +
 #               self.spectra_std[:, self.variable, :, self.mode])
 #        self.fft_ax.plot(self.frequency, std, "--")
-#    
-#    
+#
+#
 #    def plot_sem(self):
 #        """  """
 #        sem = (self.spectra[:, self.variable, :, self.mode] +
@@ -432,39 +432,61 @@ class PowerSpectraInteractive(HasTraits):
 
     def plot_spectra(self):
         """ Plot the power spectra. """
-        self.fft_ax.clear()
-        # Set title and axis labels
-        time_series_type = self.time_series.__class__.__name__
-        self.fft_ax.set(title = time_series_type)
-        self.fft_ax.set(xlabel = "Frequency (%s)" % self.units)
-        self.fft_ax.set(ylabel = "Power")
+        self.op.clear_output(wait=True)
+        with plt.ioff():
+            if not self.ifft_fig:
+                time_series_type = self.time_series.__class__.__name__
+                try:
+                    figure_window_title = "Interactive power spectra: " + time_series_type
+                    plt.close(figure_window_title)
+                    self.ifft_fig = plt.figure(num=figure_window_title,
+                                               figsize=(9, 4),
+                                               facecolor=BACKGROUNDCOLOUR,
+                                               edgecolor=EDGECOLOUR)
+                except ValueError:
+                    LOG.info("My life would be easier if you'd update your Pyplot...")
+                    figure_number = 42
+                    plt.close(figure_number)
+                    self.ifft_fig = plt.figure(num=figure_number,
+                                               figsize=(9, 4),
+                                               facecolor=BACKGROUNDCOLOUR,
+                                               edgecolor=EDGECOLOUR)
 
-        # Set x and y scale based on curent radio button selection.
-        self.fft_ax.set_xscale(self.xscale)
-        self.fft_ax.set_yscale(self.yscale)
+                self.fft_ax = self.ifft_fig.add_axes([0.15, 0.15, 0.75, 0.75])
+            self.fft_ax.clear()
+            # Set title and axis labels
+            time_series_type = self.time_series.__class__.__name__
+            self.fft_ax.set(title = time_series_type)
+            self.fft_ax.set(xlabel = "Frequency (%s)" % self.units)
+            self.fft_ax.set(ylabel = "Power")
 
-        if hasattr(self.fft_ax, 'autoscale'):
-            self.fft_ax.autoscale(enable=True, axis='both', tight=True)
+            # Set x and y scale based on curent radio button selection.
+            self.fft_ax.set_xscale(self.xscale)
+            self.fft_ax.set_yscale(self.yscale)
 
-        #import pdb; pdb.set_trace()
-        #Plot the power spectra
-        if self.normalise_power == "yes":
-            self.fft_ax.plot(self.frequency, 
-                             self.spectra_norm[:, self.variable, :, self.mode])
-        else:
-            self.fft_ax.plot(self.frequency, 
-                             self.spectra[:, self.variable, :, self.mode])
+            if hasattr(self.fft_ax, 'autoscale'):
+                self.fft_ax.autoscale(enable=True, axis='both', tight=True)
+
+            #import pdb; pdb.set_trace()
+            #Plot the power spectra
+            if self.normalise_power == "yes":
+                self.fft_ax.plot(self.frequency,
+                                 self.spectra_norm[:, self.variable, :, self.mode])
+            else:
+                self.fft_ax.plot(self.frequency,
+                                 self.spectra[:, self.variable, :, self.mode])
 
 #        #TODO: Need to ensure colour matching... and allow region selection.
 #        #If requested, add standard deviation
 #        if self.show_std:
 #            self.plot_std(self)
-#            
+#
 #        #If requested, add standard error in mean
 #        if self.show_sem:
 #            self.plot_sem(self)
 
-        pylab.draw()
+        with self.op:
+            display(self.ifft_fig.canvas)
 
 
 if __name__ == "__main__":
