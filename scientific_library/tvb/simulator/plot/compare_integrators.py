@@ -72,7 +72,7 @@ class CompareIntegrators(HasTraits):
     """
     The graphical interface for comparing different integrators 
     provide controls for setting:
-        
+
         - how to compare integrators
         - which integrators to compare
 
@@ -118,7 +118,7 @@ class CompareIntegrators(HasTraits):
     def create_ui(self, comparison):
         """ Create Interactive UI to compare integrators. """
 
-        self.fig_size = (9, 9)
+        self.fig_size = (13, 13)
         self.select_comparison_label = widgets.Label('Compare: ')
         self.select_comparison = widgets.Dropdown(options=['Default', 'Pairwise', 'dt Growth'], value=comparison)
         controls = widgets.HBox([self.select_comparison_label, self.select_comparison])
@@ -183,48 +183,31 @@ class CompareIntegrators(HasTraits):
         """ Compare Integrators Simulation Pairwise. """
 
         clear_output()
-        raws = []
-        names = []
-        for i, (method, dt) in enumerate(self.methods):
-            np.random.seed(42)
-            sim = simulator.Simulator(
-                connectivity=self.conn,
-                model=self.model,
-                coupling=self.coupling,
-                integrator=method(dt=dt),
-                monitors=self.monitors,
-                simulation_length=sim_length,
-            ).configure()
-            (t, raw), = sim.run()
-            raws.append(raw)
-            names.append(method.__name__)
-
+        raws, names, t = self.get_simulation_data_for_integrators(sim_length)
         n_raw = len(raws)
+
         plt.figure(figsize=self.fig_size)
         plt.rcParams[FONT_SIZE] = "6"
+        plt.autoscale(True)
+
         for i, (raw_i, name_i) in enumerate(zip(raws, names)):
             for j, (raw_j, name_j) in enumerate(zip(raws, names)):
                 plt.subplot(n_raw, n_raw, i * n_raw + j + 1)
-                plt.autoscale(True)
+                plt.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0.4, hspace=0.5)
                 if raw_i.shape[0] != t.shape[0] or raw_i.shape[0] != raw_j.shape[0]:
                     continue
+
+                # execute these steps only if there is something to plot
+                plt.title(None if i else name_j, wrap=True)
+                plt.ylabel(None if j else name_i, wrap=True)
+                plt.grid(True)
+
                 if i == j:
                     plt.plot(t, raw_i[:, 0, :, 0], 'k', alpha=0.1)
                 else:
                     plt.semilogy(t, (abs(raw_i - raw_j) / raw_i.ptp())[:, 0, :, 0], 'k', alpha=0.1)
                     plt.ylim(np.exp(np.r_[-30, 0]))
 
-                plt.grid(True)
-                if i == 0:
-                    plt.title(name_j, wrap=True)
-                if j == 0:
-                    plt.ylabel(name_i, wrap=True)
-                plt.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0.4, hspace=0.5)
-
-            if i == 0:
-                euler_raw = raw
-            else:
-                raw = abs(raw - euler_raw) / euler_raw.ptp() * 100.0
         plt.tight_layout()
 
     def grow_dt(self, sim_length=1200.0):
@@ -260,3 +243,21 @@ class CompareIntegrators(HasTraits):
             else:
                 dat = np.log10((abs(raws[i] - raws[0]) / raws[0].ptp()))
             plt.plot(t, dat[:, 0, :, 0], 'k', alpha=0.1)
+
+    def get_simulation_data_for_integrators(self, sim_length):
+        raws, names = [], []
+        for i, (method, dt) in enumerate(self.methods):
+            np.random.seed(42)
+            sim = simulator.Simulator(
+                connectivity=self.conn,
+                model=self.model,
+                coupling=self.coupling,
+                integrator=method(dt=dt),
+                monitors=self.monitors,
+                simulation_length=sim_length,
+            ).configure()
+            (t, raw), = sim.run()
+            raws.append(raw)
+            names.append(method.__name__)
+
+        return raws, names, t
