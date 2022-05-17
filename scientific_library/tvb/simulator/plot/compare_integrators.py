@@ -40,7 +40,7 @@ Usage
     ci.show()
 
 """
-
+import itertools
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -190,23 +190,24 @@ class CompareIntegrators(HasTraits):
         plt.rcParams[FONT_SIZE] = "6"
         plt.autoscale(True)
 
-        for i, (raw_i, name_i) in enumerate(zip(raws, names)):
-            for j, (raw_j, name_j) in enumerate(zip(raws, names)):
-                plt.subplot(n_raw, n_raw, i * n_raw + j + 1)
-                plt.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0.4, hspace=0.5)
-                if raw_i.shape[0] != t.shape[0] or raw_i.shape[0] != raw_j.shape[0]:
-                    continue
+        for values in itertools.product(enumerate(zip(raws, names)), repeat=2):
+            i, (raw_i, name_i) = values[0]
+            j, (raw_j, name_j) = values[1]
+            plt.subplot(n_raw, n_raw, i * n_raw + j + 1)
+            plt.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0.4, hspace=0.5)
+            if raw_i.shape[0] != t.shape[0] or raw_i.shape[0] != raw_j.shape[0]:
+                continue
 
-                # execute these steps only if there is something to plot
-                plt.title(None if i else name_j, wrap=True)
-                plt.ylabel(None if j else name_i, wrap=True)
-                plt.grid(True)
+            # execute these steps only if there is something to plot
+            plt.title(None if i else name_j, wrap=True)
+            plt.ylabel(None if j else name_i, wrap=True)
+            plt.grid(True)
 
-                if i == j:
-                    plt.plot(t, raw_i[:, 0, :, 0], 'k', alpha=0.1)
-                else:
-                    plt.semilogy(t, (abs(raw_i - raw_j) / raw_i.ptp())[:, 0, :, 0], 'k', alpha=0.1)
-                    plt.ylim(np.exp(np.r_[-30, 0]))
+            if i == j:
+                plt.plot(t, raw_i[:, 0, :, 0], 'k', alpha=0.1)
+            else:
+                plt.semilogy(t, (abs(raw_i - raw_j) / raw_i.ptp())[:, 0, :, 0], 'k', alpha=0.1)
+                plt.ylim(np.exp(np.r_[-30, 0]))
 
         plt.tight_layout()
 
