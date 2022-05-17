@@ -53,17 +53,20 @@ import ipywidgets as widgets
 from IPython.display import display
 from IPython.core.display import clear_output
 
+FONT_SIZE = "font.size"
+
 default_base_dt = 0.1
 default_var_order_dt = 5.0
 
 default_methods = [
     (integrators.EulerDeterministic, default_base_dt),
-    (integrators.HeunDeterministic, 2*default_base_dt),
+    (integrators.HeunDeterministic, 2 * default_base_dt),
     (integrators.Dop853, default_var_order_dt),
     (integrators.Dopri5, default_var_order_dt),
-    (integrators.RungeKutta4thOrderDeterministic, 4*default_base_dt),
+    (integrators.RungeKutta4thOrderDeterministic, 4 * default_base_dt),
     (integrators.VODE, default_var_order_dt),
 ]
+
 
 class CompareIntegrators(HasTraits):
     """
@@ -115,9 +118,9 @@ class CompareIntegrators(HasTraits):
     def create_ui(self, comparison):
         """ Create Interactive UI to compare integrators. """
 
-        self.fig_size = (9,9)
+        self.fig_size = (9, 9)
         self.select_comparison_label = widgets.Label('Compare: ')
-        self.select_comparison = widgets.Dropdown(options = ['Default', 'Pairwise', 'dt Growth'], value=comparison)
+        self.select_comparison = widgets.Dropdown(options=['Default', 'Pairwise', 'dt Growth'], value=comparison)
         controls = widgets.HBox([self.select_comparison_label, self.select_comparison])
         self.plot_params['comparison'] = self.select_comparison
 
@@ -139,15 +142,14 @@ class CompareIntegrators(HasTraits):
                 self.compare()
 
         out = widgets.interactive_output(plotter, self.plot_params)
-        display(ui,out)
-
+        display(ui, out)
 
     def compare(self, sim_length=1000.0):
         """ Compare Integrators Simulation. """
 
         clear_output()
         plt.figure(figsize=self.fig_size)
-        plt.rcParams["font.size"] = "10"
+        plt.rcParams[FONT_SIZE] = "10"
         for i, (method, dt) in enumerate(self.methods):
             np.random.seed(42)
             sim = simulator.Simulator(
@@ -199,10 +201,10 @@ class CompareIntegrators(HasTraits):
 
         n_raw = len(raws)
         plt.figure(figsize=self.fig_size)
-        plt.rcParams["font.size"] = "6"
+        plt.rcParams[FONT_SIZE] = "6"
         for i, (raw_i, name_i) in enumerate(zip(raws, names)):
             for j, (raw_j, name_j) in enumerate(zip(raws, names)):
-                plt.subplot(n_raw, n_raw, i*n_raw + j + 1)
+                plt.subplot(n_raw, n_raw, i * n_raw + j + 1)
                 plt.autoscale(True)
                 if raw_i.shape[0] != t.shape[0] or raw_i.shape[0] != raw_j.shape[0]:
                     continue
@@ -213,9 +215,9 @@ class CompareIntegrators(HasTraits):
                     plt.ylim(np.exp(np.r_[-30, 0]))
 
                 plt.grid(True)
-                if i==0:
-                    plt.title(name_j, wrap = True)
-                if j==0:
+                if i == 0:
+                    plt.title(name_j, wrap=True)
+                if j == 0:
                     plt.ylabel(name_i, wrap=True)
                 plt.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0.4, hspace=0.5)
 
@@ -229,7 +231,7 @@ class CompareIntegrators(HasTraits):
         """ Compare single Integrator with Dt Growth. """
 
         clear_output()
-        dts = [float(10**e) for e in np.r_[-2:0:10j]]
+        dts = [float(10 ** e) for e in np.r_[-2:0:10j]]
 
         raws = []
         for i, dt in enumerate(dts):
@@ -248,10 +250,10 @@ class CompareIntegrators(HasTraits):
             raws.append(raw)
 
         plt.figure(figsize=self.fig_size)
-        plt.rcParams["font.size"] = "10"
+        plt.rcParams[FONT_SIZE] = "10"
 
         for i, dt in enumerate(dts):
-            plt.subplot(len(dts)//3, 3+1, i + 1)
+            plt.subplot(len(dts) // 3, 3 + 1, i + 1)
             plt.autoscale(True)
             if i == 0:
                 dat = raws[i]

@@ -58,13 +58,11 @@ Usage
 
 """
 
-# TODO: Add state-variable and mode selection RadioButtons
-
-import ipywidgets as widgets
-from IPython.display import display
 import numpy
+import ipywidgets as widgets
 import matplotlib.pyplot as plt
 import tvb.datatypes.time_series as time_series_datatypes
+from IPython.display import display
 from matplotlib import rcParams
 from tvb.basic.neotraits.api import HasTraits, Attr, Int
 from tvb.simulator.common import get_logger
@@ -77,11 +75,11 @@ EDGECOLOUR = "darkslateblue"
 AXCOLOUR = "steelblue"
 BUTTONCOLOUR = "steelblue"
 HOVERCOLOUR = "blue"
-
+MARGIN_2PX = '2px 2px 2px 2px'
+MARGIN_3PX = '3px 3px 3px 3px'
+BORDER_BLACK = 'solid 1px black'
 TIME_RESOLUTION = 1024  # 512 is too coarse; 2048 is a bit slow... ?Make it a traited attribute??
 
-
-# TODO: check for fence-posts, I did this tired...
 
 class TimeSeriesInteractive(HasTraits):
     """
@@ -92,8 +90,6 @@ class TimeSeriesInteractive(HasTraits):
         - Window length
         - Amplitude scaling
         - Stepping forward/backward through time.
-
-
     """
 
     time_series = Attr(
@@ -151,11 +147,9 @@ class TimeSeriesInteractive(HasTraits):
         self.region_cb_stack = list()
 
     def configure(self):
-        #print('Configure')
-        """ Seperate configure cause ttraits be busted... """
-        # TODO: if isinstance(self.time_series, TimeSeriesSurface) and self.first_n == -1: #LOG.error, return.
+        """ Prepare for usage """
         self.data = (self.time_series.data[:, :, :, :] -
-                     self.time_series.data[:, :, :, :].mean(axis=0)[numpy.newaxis, :])#self.first_n
+                     self.time_series.data[:, :, :, :].mean(axis=0)[numpy.newaxis, :])
         self.period = self.time_series.sample_period
         self.tpts = self.data.shape[0]
         self.nsrs = self.data.shape[2]
@@ -168,7 +162,7 @@ class TimeSeriesInteractive(HasTraits):
         # Use actual labels if they exist.
         if (isinstance(self.time_series, time_series_datatypes.TimeSeriesRegion) and
                 (not self.time_series.connectivity is None)):
-            self.labels = self.time_series.connectivity.region_labels#[1:]
+            self.labels = self.time_series.connectivity.region_labels
         elif (isinstance(self.time_series, (time_series_datatypes.TimeSeriesEEG,
                                             time_series_datatypes.TimeSeriesMEG)) and (
                       not self.time_series.sensors is None)):
@@ -229,12 +223,12 @@ class TimeSeriesInteractive(HasTraits):
         """ Create the figure and time-series axes. """
 
         self.outer_box_layout = widgets.Layout(border='solid 1px white',
-                            margin='3px 3px 3px 3px',
-                            padding='2px 2px 2px 2px')
-        
-        self.box_layout = widgets.Layout(border='solid 1px black',
-                                    margin='3px 3px 3px 3px',
-                                    padding='2px 2px 2px 2px')
+                                               margin=MARGIN_3PX,
+                                               padding=MARGIN_2PX)
+
+        self.box_layout = widgets.Layout(border=BORDER_BLACK,
+                                         margin=MARGIN_3PX,
+                                         padding=MARGIN_2PX)
 
         self.button_layout = widgets.Layout(width='auto')
 
@@ -248,7 +242,7 @@ class TimeSeriesInteractive(HasTraits):
 
         # Sliders
         self.add_window_length_slider()
-        
+
         # time-view buttons
         self.add_start_button()
         self.add_big_step_back_button()
@@ -257,13 +251,14 @@ class TimeSeriesInteractive(HasTraits):
         self.add_big_step_forward_button()
         self.add_end_button()
 
-        self.tc_box = widgets.HBox(self.time_control_buttons, layout = self.outer_box_layout)
+        self.tc_box = widgets.HBox(self.time_control_buttons, layout=self.outer_box_layout)
         self.control_widgets.append(self.tc_box)
 
         self.add_scaling_slider()
 
         self.control_box = widgets.GridBox(self.control_widgets,
-                                        layout=widgets.Layout(grid_template_columns="290px 350px 290px", border='solid 1px black'))
+                                           layout=widgets.Layout(grid_template_columns="290px 350px 290px",
+                                                                 border=BORDER_BLACK))
 
         self.region_select_buttons = []
         self.add_region_selectall_button()
@@ -271,10 +266,8 @@ class TimeSeriesInteractive(HasTraits):
         self.add_region_checkboxes()
 
         self.space_label = widgets.Label('Space labels selection')
-
-        self.label_buttons_box = widgets.HBox([self.space_label]+self.region_select_buttons)#, layout=self.outer_box_layout)
-
-        self.region_box = widgets.HBox(self.region_cb_box_list)#, layout=self.outer_box_layout)
+        self.label_buttons_box = widgets.HBox([self.space_label] + self.region_select_buttons)
+        self.region_box = widgets.HBox(self.region_cb_box_list)
         self.space_labels_box = widgets.VBox([self.label_buttons_box, self.region_box], layout=self.box_layout)
 
         items = [self.out, self.control_box, self.space_labels_box]
@@ -309,16 +302,16 @@ class TimeSeriesInteractive(HasTraits):
 
         self.region_checkboxes = dict()
         self.region_cb_box_list = []
-        cb_mw = 950//(len(self.labels)//10 + 1)
-        for i,label in enumerate(self.labels):
+        cb_mw = 950 // (len(self.labels) // 10 + 1)
+        for i, label in enumerate(self.labels):
             self.region_checkboxes[label] = widgets.Checkbox(value=True,
-                                                            description=label,
-                                                            disabled=False,
-                                                            indent=False,
-                                                            layout = {'max_width':f'{cb_mw}px'})
+                                                             description=label,
+                                                             disabled=False,
+                                                             indent=False,
+                                                             layout={'max_width': f'{cb_mw}px'})
             self.region_checkboxes[label].observe(self.update_region_plots, names=['value'])
 
-            if i and i%10 == 0:
+            if i and i % 10 == 0:
                 self.region_cb_box_list.append(widgets.VBox(self.region_cb_stack))
                 self.region_cb_stack = []
             self.region_cb_stack.append(self.region_checkboxes[label])
@@ -330,7 +323,7 @@ class TimeSeriesInteractive(HasTraits):
             for checkbox in self.region_checkboxes:
                 self.region_checkboxes[checkbox].value = True
 
-        self.region_checkbox_select_button = widgets.Button(description='Select All', layout = {'description':'initial'})
+        self.region_checkbox_select_button = widgets.Button(description='Select All', layout={'description': 'initial'})
         self.region_checkbox_select_button.on_click(update_select_region_selectors)
         self.region_select_buttons.append(self.region_checkbox_select_button)
 
@@ -339,7 +332,8 @@ class TimeSeriesInteractive(HasTraits):
             for checkbox in self.region_checkboxes:
                 self.region_checkboxes[checkbox].value = False
 
-        self.region_checkbox_unselect_button = widgets.Button(description='Unselect All', layout = {'description':'initial'})
+        self.region_checkbox_unselect_button = widgets.Button(description='Unselect All',
+                                                              layout={'description': 'initial'})
         self.region_checkbox_unselect_button.on_click(update_unselect_region_selectors)
         self.region_select_buttons.append(self.region_checkbox_unselect_button)
 
@@ -348,10 +342,10 @@ class TimeSeriesInteractive(HasTraits):
         Add a slider to allow the time-series window length to be adjusted.
         """
         self.window_length_slider = widgets.IntSlider(min=TIME_RESOLUTION * self.period,
-                                                   max=self.time_series_length,
-                                                   value=self.window_length,
-                                                   layout = widgets.Layout(width="90%"),
-                                                   continuous_update = False)
+                                                      max=self.time_series_length,
+                                                      value=self.window_length,
+                                                      layout=widgets.Layout(width="90%"),
+                                                      continuous_update=False)
         self.window_length_slider.observe(self.update_window_length, names=['value'])
         self.wls_label = widgets.Label("Window Length")
         self.wls_box = widgets.VBox([self.wls_label, self.window_length_slider], layout=self.outer_box_layout)
@@ -361,11 +355,11 @@ class TimeSeriesInteractive(HasTraits):
     # TODO: Add a conversion so this is an amplitude scaling, say 1.0-20.0
     def add_scaling_slider(self):
         """ Add a slider to allow scaling of the offset of time-series. """
-        self.scaling_slider = widgets.FloatSlider(min = 0.0,
-                                                   max = 1.25,
-                                                   value=self.scaling,
-                                                   layout = widgets.Layout(width="90%"),
-                                                   continuous_update = False)
+        self.scaling_slider = widgets.FloatSlider(min=0.0,
+                                                  max=1.25,
+                                                  value=self.scaling,
+                                                  layout=widgets.Layout(width="90%"),
+                                                  continuous_update=False)
         self.scaling_slider.observe(self.update_scaling, names=['value'])
         self.ss_label = widgets.Label("Spacing")
         self.ss_box = widgets.VBox([self.ss_label, self.scaling_slider], layout=self.outer_box_layout)
@@ -555,7 +549,7 @@ class TimeSeriesInteractive(HasTraits):
 
             # Light gray guidelines
             self.ts_ax.plot([num_labels * [self.time[self.time_view[0]]],
-                            num_labels * [self.time[self.time_view[-1]]]],
+                             num_labels * [self.time[self.time_view[-1]]]],
                             numpy.vstack(2 * (offset,)), "0.85")
 
             # Determine colors and linestyles for each variable of the Timeseries
@@ -587,18 +581,18 @@ class TimeSeriesInteractive(HasTraits):
                     for sample_value in range(self.data.shape[3]):
                         self.ts_view.append(self.ts_ax.plot(self.time[self.time_view],
                                                             offset + self.data[self.time_view, variable_value, :,
-                                                                    sample_value],
+                                                                     sample_value],
                                                             alpha=alpha, color=colors[variable_value],
                                                             linestyle=linestyle[variable_value],
                                                             **kwargs))
             else:
                 self.ts_view = self.ts_ax.plot(self.time[self.time_view],
-                                            offset + self.data[self.time_view, 0, :num_labels, 0])
+                                               offset + self.data[self.time_view, 0, :num_labels, 0])
 
             self.hereiam[0].remove()
             self.hereiam = self.whereami_ax.plot(self.time_view,
-                                                numpy.zeros((len(self.time_view),)),
-                                                'b-', linewidth=4)
+                                                 numpy.zeros((len(self.time_view),)),
+                                                 'b-', linewidth=4)
 
             with self.out:
                 display(self.its_fig.canvas)
@@ -610,13 +604,11 @@ class TimeSeriesInteractivePlotter(TimeSeriesInteractive):
         """ Create the figure and time-series axes. """
 
         self.outer_box_layout = widgets.Layout(border='solid 1px white',
-                            margin='3px 3px 3px 3px',
-                            padding='2px 2px 2px 2px')
-
-        self.box_layout = widgets.Layout(border='solid 1px black',
-                                    margin='3px 3px 3px 3px',
-                                    padding='2px 2px 2px 2px')
-
+                                               margin=MARGIN_3PX,
+                                               padding=MARGIN_2PX)
+        self.box_layout = widgets.Layout(border=BORDER_BLACK,
+                                         margin=MARGIN_3PX,
+                                         padding=MARGIN_2PX)
         self.button_layout = widgets.Layout(width='auto')
 
         # Plot
@@ -639,12 +631,14 @@ class TimeSeriesInteractivePlotter(TimeSeriesInteractive):
         self.add_big_step_forward_button()
         self.add_end_button()
 
-        self.tc_box = widgets.HBox(self.time_control_buttons, layout = self.outer_box_layout)
+        self.tc_box = widgets.HBox(self.time_control_buttons, layout=self.outer_box_layout)
         self.control_widgets.append(self.tc_box)
 
         self.add_scaling_slider()
 
-        self.control_box = widgets.GridBox(self.control_widgets,  layout=widgets.Layout(grid_template_columns="300px 350px 300px", border='solid 1px black'))
+        self.control_box = widgets.GridBox(self.control_widgets,
+                                           layout=widgets.Layout(grid_template_columns="300px 350px 300px",
+                                                                 border=BORDER_BLACK))
 
         items = [self.out, self.control_box]
         grid = widgets.GridBox(items, layout=widgets.Layout(grid_template_rows="800px 100px"))
@@ -658,7 +652,6 @@ class TimeSeriesInteractivePlotter(TimeSeriesInteractive):
             if not self.its_fig:
                 try:
                     figure_window_title = "Interactive time series"
-                    #            plt.close(figure_window_title)
                     self.its_fig = plt.figure(num=figure_window_title,
                                               figsize=(9, 7),
                                               facecolor=BACKGROUNDCOLOUR,
@@ -697,7 +690,6 @@ class TimeSeriesInteractivePlotter(TimeSeriesInteractive):
 
         self.ts_ax.set_yticks(offset)
         self.ts_ax.set_yticklabels(self.labels, fontsize=10)
-        # import pdb; pdb.set_trace()
 
         # Light gray guidelines
         self.ts_ax.plot([self.nsrs * [self.time[self.time_view[0]]],
