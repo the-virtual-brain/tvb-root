@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -62,7 +62,7 @@ Example specifying a Model and stochastic sample trajectories::
 #      check for leaks or look into "forcing" cleanup...
 
 import numpy
-import pylab
+import matplotlib.pyplot as plt
 import colorsys
 import matplotlib.widgets as widgets
 
@@ -139,7 +139,7 @@ class PhasePlaneInteractive(HasTraits):
         # figure
         self.ipp_fig = None
 
-        # p hase-plane
+        # phase-plane
         self.pp_ax = None
         self.X = None
         self.Y = None
@@ -232,7 +232,7 @@ class PhasePlaneInteractive(HasTraits):
                                         self.click_trajectory)
         # import pdb; pdb.set_trace()
 
-        pylab.show()
+        plt.show()
 
     ##------------------------------------------------------------------------##
     ##----------------- Functions for building the figure --------------------##
@@ -247,13 +247,13 @@ class PhasePlaneInteractive(HasTraits):
         try:
             figure_window_title = "Interactive phase-plane: " + model_name
             figure_window_title += "   --   %s" % integrator_name
-            self.ipp_fig = pylab.figure(num=figure_window_title,
+            self.ipp_fig = plt.figure(num=figure_window_title,
                                         figsize=figsize,
                                         facecolor=BACKGROUNDCOLOUR,
                                         edgecolor=EDGECOLOUR)
         except ValueError:
             LOG.info("My life would be easier if you'd update your PyLab...")
-            self.ipp_fig = pylab.figure(num=42, figsize=figsize,
+            self.ipp_fig = plt.figure(num=42, figsize=figsize,
                                         facecolor=BACKGROUNDCOLOUR,
                                         edgecolor=EDGECOLOUR)
 
@@ -492,9 +492,9 @@ class PhasePlaneInteractive(HasTraits):
     #      at the moment, but there are currently bugs in Slider and the hackery
     #      below takes these into account... If the bugs are fixed/changed then
     #      this could break. As an example, the Slider doc says poly is a
-    #      Rectangle, but it's actually a Polygon. The Slider set_val method 
-    #      assumes a Rectangle even though this is not the case, so the array 
-    #      Slider.poly.xy is corrupted by that method. The corruption isn't 
+    #      Rectangle, but it's actually a Polygon. The Slider set_val method
+    #      assumes a Rectangle even though this is not the case, so the array
+    #      Slider.poly.xy is corrupted by that method. The corruption isn't
     #      visible in the plot, which is probably why it hasn't been fixed...
 
     def update_xrange_sliders(self):
@@ -555,7 +555,7 @@ class PhasePlaneInteractive(HasTraits):
         self.axes_range_sliders["sl_y_max"].reset()
 
     def update_svx(self, label):
-        """ 
+        """
         Update state variable used for x-axis based on radio buttton selection.
         """
         self.svx = label
@@ -565,7 +565,7 @@ class PhasePlaneInteractive(HasTraits):
         self.update_phase_plane()
 
     def update_svy(self, label):
-        """ 
+        """
         Update state variable used for y-axis based on radio buttton selection.
         """
         self.svy = label
@@ -649,7 +649,7 @@ class PhasePlaneInteractive(HasTraits):
 
     def update_state_variables(self, val):
         """
-        Update the default state-variable values, used for non-visualised state 
+        Update the default state-variable values, used for non-visualised state
         variables, based of the current slider values.
         """
         for sv in self.sv_sliders:
@@ -661,7 +661,7 @@ class PhasePlaneInteractive(HasTraits):
 
     def set_mesh_grid(self):
         """
-        Generate the phase-plane gridding based on currently selected 
+        Generate the phase-plane gridding based on currently selected
         state-variables and their range values.
         """
         xlo = self.model.state_variable_range[self.svx][0]
@@ -743,12 +743,12 @@ class PhasePlaneInteractive(HasTraits):
         self.nullcline_y = self.pp_ax.contour(self.X, self.Y,
                                               self.V[:, :, self.mode],
                                               [0], colors="g")
-        pylab.draw()
+        plt.draw()
 
     def plot_trajectory(self, x, y):
         """
         Plot a sample trajectory, starting at the position x,y in the
-        phase-plane. This method is called as a result of a mouse click on the 
+        phase-plane. This method is called as a result of a mouse click on the
         phase-plane.
         """
         svx_ind = self.model.state_variables.index(self.svx)
@@ -778,11 +778,11 @@ class PhasePlaneInteractive(HasTraits):
         self.pp_splt.plot(numpy.arange(TRAJ_STEPS + 1) * self.integrator.dt,
                           traj[:, :, 0, self.mode])
 
-        pylab.draw()
+        plt.draw()
 
     def click_trajectory(self, event):
         """
-        This method captures mouse clicks on the phase-plane and then uses the 
+        This method captures mouse clicks on the phase-plane and then uses the
         plot_trajectory() method to generate a sample trajectory.
         """
         if event.inaxes is self.pp_ax:
