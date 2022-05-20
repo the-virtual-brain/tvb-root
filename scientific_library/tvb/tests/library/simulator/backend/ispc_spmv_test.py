@@ -71,12 +71,15 @@ def run():
 
 import subprocess, cpuinfo, sys, tempfile, os, ctypes as ct, numpy as np
 
+here = os.path.abspath(os.path.dirname(__file__))
+
 def _build_spmv_lib(fname):
+    cxx = 'g++'
     info = cpuinfo.get_cpu_info()
     arch_prefix = ''
     if sys.platform == 'darwin' and info['arch'] == 'ARM_8':
         target = 'neon-i32x4'
-        arch_prefix = 'arch -arm64'
+        arch_prefix = 'arch -arm64 '
     else: # intel
         if 'avx512f' in info['flags']:
             target = 'avx512skx-i32x16'
@@ -95,8 +98,8 @@ def _build_spmv_lib(fname):
         tasksyso = f'{dir}/tasksys.o'
         so = f'{dir}/{os.path.basename(fname)}.so'
         run(f'ispc {fname} --target {target} -o {fnameo}')
-        run(f'{arch_prefix} c++ -std=c++11 -O3 -c {tasksys_fname} -o {tasksyso}')
-        run(f'{arch_prefix} c++ -shared {tasksyso} {fnameo} -o {so}')
+        run(f'{arch_prefix}{cxx} -std=c++11 -O3 -c {tasksys_fname} -o {tasksyso}')
+        run(f'{arch_prefix}{cxx} -shared {tasksyso} {fnameo} -o {so}')
         lib = ct.CDLL(so)
         lib.spmv3.restype = None
         fvec = np.ctypeslib.ndpointer(dtype=np.float32)
