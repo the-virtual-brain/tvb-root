@@ -280,3 +280,32 @@ class TestAllAnalyticWithSubcortical(BaseTestCase):
         row, col = numpy.where(zero_mask)
         assert (row == col).all()
 
+
+class TestSVEEG(BaseTestCase):
+    "Test use of multiple state variables in monitors."
+
+    def _build_test_sim_eeg(self):
+        import numpy as np
+
+        conn = connectivity.Connectivity.from_file()
+        conn.speed = np.r_[70.0]
+        cfun = coupling.Linear(a=np.r_[0.2], b = np.r_[0.0])
+
+        eeg = monitors.EEG.from_file()
+        eeg.period = 1.0
+        eeg.variables_of_interest = np.r_[0]
+        sim = simulator.Simulator(
+            model=models.ReducedSetHindmarshRose(),
+            integrator=integrators.HeunDeterministic(dt=0.0122),
+            connectivity=conn,
+            coupling=cfun,
+            monitors=(eeg,),
+            simulation_length=10.0
+        )
+        return sim
+
+    def test_config_run(self):
+        sim = self._build_test_sim_eeg()
+        sim.configure()
+        (_, d),  = sim.run()
+        assert d.shape[2] == 65
