@@ -308,3 +308,4 @@ class TestSVEEG(BaseTestCase):
         sim = self._build_test_sim_eeg()
         sim.configure()
         (_, d),  = sim.run()
+        assert d.shape[2] == 65
