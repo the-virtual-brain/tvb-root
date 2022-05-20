@@ -724,7 +724,7 @@ class EEG(Projection):
         if maybe_sample is not None:
             time, sample = maybe_sample
             sample -= self._ref_vec.dot(sample[:, self._ref_vec_mask])[:, numpy.newaxis]
-            return time, sample.reshape((state.shape[0], -1, 1))
+            return time, sample.reshape((self.voi.size, -1, 1))
 
     def create_time_series(self, connectivity=None, surface=None,
                            region_map=None, region_volume_map=None):
