@@ -55,7 +55,8 @@ from tvb.datatypes.time_series import TimeSeriesRegion
 
 class BIDSImporterModel(UploaderViewModel):
     uploaded = Str(
-        label='BIDS derivatives dataset (zip)'
+        label='BIDS derivatives dataset (zip)',
+        doc="data compatible with BIDS Extension Proposal 032 (BEP032): BIDS Computational Model Specification"
     )
 
 
@@ -78,7 +79,6 @@ class BIDSImporterForm(ABCUploaderForm):
 
 
 class BIDSImporter(ABCUploader):
-
     _ui_name = "BIDS Derivatives Importer"
     _ui_subsection = "bids_importer"
     _ui_description = "Import a dataset in BIDS format"
