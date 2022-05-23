@@ -29,7 +29,7 @@
 #
 
 import os
-import tvb_data.bids
+import pytest
 from tvb.adapters.uploaders.bids_importer import BIDSImporterModel, BIDSImporter
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
@@ -39,7 +39,15 @@ from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
+try:
+    import tvb_data.bids
 
+    BIDS_DATA_FOUND = True
+except ImportError:
+    BIDS_DATA_FOUND = False
+
+
+@pytest.mark.skipif(not BIDS_DATA_FOUND, reason="Older or incomplete tvb_data")
 class TestBIDSImporter(BaseTestCase):
     """
     Unit-tests for BIDS importer.
