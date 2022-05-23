@@ -30,17 +30,12 @@
 
 import os
 import tvb_data.bids
-
 from tvb.adapters.uploaders.bids_importer import BIDSImporterModel, BIDSImporter
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.db.graph import CorrelationCoefficientsIndex
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.datatypes.surfaces import SurfaceTypesEnum
-from tvb.basic.profile import TvbProfile
-from tvb.core.entities.load import get_filtered_datatypes, load_entity_by_gid
-from tvb.core.services.exceptions import OperationException
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -56,7 +51,7 @@ class TestBIDSImporter(BaseTestCase):
         """
         self.test_user = TestFactory.create_user('Zip_BIDS_User')
         self.test_project = TestFactory.create_project(self.test_user, 'Zip_BIDS_Project')
-        self.zip_file_path = os.path.join(os.path.dirname(tvb_data.bids.__file__), 'BIDS_DEMO_DATA_SET.zip')
+        self.zip_file_path = os.path.join(os.path.dirname(tvb_data.bids.__file__), 'bids_derivatives_dataset.zip')
 
     def teardown_method(self):
         """
