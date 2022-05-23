@@ -97,7 +97,7 @@ The command for running our tests has two forms:
             pip install -U tvb-library
             python -m pytest --pyargs tvb.tests.library
     
-- For all the tests to run correctly, the dependencies specified as LIBRARY_REQUIRED_EXTRA in [setup.py](https://github.com/the-virtual-brain/tvb-root/blob/master/scientific_library/setup.py) should be installed
+- For all the tests to run correctly, the dependencies specified as LIBRARY_REQUIRED_EXTRA in [setup.py](https://github.com/the-virtual-brain/tvb-root/blob/master/tvb_library/setup.py) should be installed
 - Make sure that tvb-data package is installed from [Zenodo](https://zenodo.org/record/4263723)
 
 ### Coverage

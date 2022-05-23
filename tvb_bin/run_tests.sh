@@ -21,7 +21,7 @@ if [[ "$1" ]]; then
 	
 	echo 'Starting TVB tests on PostgreSQL DB ...'
 	mkdir TEST_OUTPUT
-	pytest ../framework_tvb/tvb/tests/framework --profile=TEST_POSTGRES_PROFILE --junitxml=TEST_OUTPUT/results_frw.xml > TEST_OUTPUT/frw.out 2>&1
+	pytest ../tvb_framework/tvb/tests/framework --profile=TEST_POSTGRES_PROFILE --junitxml=TEST_OUTPUT/results_frw.xml > TEST_OUTPUT/frw.out 2>&1
 	
 else
     # Make sure TVB application is not running....

@@ -56,7 +56,7 @@ DIST_FOLDER = os.path.join(TVB_ROOT, "dist")
 DIST_FOLDER_FINAL = "TVB_Distribution"
 STEP1_RESULT = os.path.join(TVB_ROOT, "tvb_build", "build", "TVB_build_step1.zip")
 APP = APP_NAME + u'.app'
-FW_FOLDER = os.path.join(TVB_ROOT, "framework_tvb")
+FW_FOLDER = os.path.join(TVB_ROOT, "tvb_framework")
 VERSION = TvbProfile.current.version.BASE_VERSION
 
 FOLDERS_TO_DELETE = ['.svn', '.project', '.settings']
