@@ -4,11 +4,11 @@ rem Use this script to install TVB from the main code sources repo, to the curre
 rem set up external dependencies that we maintain as distutils packages in externals/
 cd ..
 
-cd framework_tvb
+cd tvb_framework
 python setup.py develop --no-deps
 cd ..
 
-cd scientific_library
+cd tvb_library
 python setup.py develop
 cd ..
 

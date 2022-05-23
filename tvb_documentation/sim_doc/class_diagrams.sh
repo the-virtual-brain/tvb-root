@@ -5,7 +5,7 @@ set -o verbose
 # Reverse engineer the classes of tvb.simulator, show only public attributes #
 ##############################################################################
 
-SIM_ROOT=../../scientific_library/tvb/simulator
+SIM_ROOT=../../tvb_library/tvb/simulator
 
 ## Simulator ##
 pyreverse --project=simulator $SIM_ROOT/simulator.py

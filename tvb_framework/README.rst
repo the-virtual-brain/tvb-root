@@ -20,7 +20,7 @@ Python installation, you may want to read this:
 
 If you don't require the framework features listed above, the simulator
 and associated scientific modules can be used independently; please see
-the `tvb-library <https://github.com/the-virtual-brain/tvb-root/tree/master/scientific_library>`__
+the `tvb-library <https://github.com/the-virtual-brain/tvb-root/tree/master/tvb_library>`__
 folder.
 
 Framework structure
@@ -51,7 +51,7 @@ Framework structure
 Usage
 -----
 
-To use TVB code, clone from GitHub (https://github.com/the-virtual-brain/tvb-framework), or get from Pypi::
+To use TVB code, clone from GitHub (https://github.com/the-virtual-brain/tvb-root), or get from Pypi::
 
     pip install tvb-framework
     python -m tvb.interfaces.web.run WEB_PROFILE tvb.config

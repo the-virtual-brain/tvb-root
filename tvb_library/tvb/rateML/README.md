@@ -13,7 +13,7 @@ python XML2model.py -m 'model_filename' -l 'python' | 'cuda'
 ```
 
 The XML file location and model output location are optional, if the default XML and generated model folders 
-(~/rateML) are used. The relative paths mentioned in this readme all start from /tvb-root/scientific_library/tvb/.
+(~/rateML) are used. The relative paths mentioned in this readme all start from /tvb-root/tvb_library/tvb/.
 \
 The model filename is the name of XML file which will also be the name of the model class for Python models and 
 the kernel name for CUDA models. The language (python | cuda) determines if either a python or cuda model 

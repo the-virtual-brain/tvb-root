@@ -172,18 +172,13 @@ class RateML:
         return template
 
     def XSD_validate_XML(self):
-
-        ''' Use own validation instead of LEMS because of slight difference in definition file'''
-
+        """Use own validation instead of LEMS because of slight difference in definition file"""
         from lxml import etree
-        from urllib.request import urlopen
 
-        # Global XSD file location
-        schema_file = urlopen(
-            "https://raw.githubusercontent.com/the-virtual-brain/tvb-root/master/scientific_library/tvb/rateML/rML_v0.xsd")
-        xmlschema = etree.XMLSchema(etree.parse(schema_file))
+        xsd_fname = os.path.join(os.path.abspath(os.path.dirname(__file__)), "rML_v0.xsd")
+        xmlschema = etree.XMLSchema(etree.parse(xsd_fname))
         xmlschema.assertValid(etree.parse(self.xml_location))
-        logger.info("True validation of {0} against {1}".format(self.xml_location, schema_file.geturl()))
+        logger.info("True validation of {0} against {1}".format(self.xml_location, xsd_fname))
 
     def pp_bound(self, model):
 
@@ -259,7 +254,7 @@ class RateML:
             model.component_types['derivatives'].dynamics.state_variables[sv.name].dimension = sv_rnd
 
     def load_model(self):
-        "Load model from filename"
+        """Load model from filename"""
 
         # instantiate LEMS lib
         model = Model()
@@ -278,10 +273,10 @@ class RateML:
         return model, svboundaries, couplinglist, noisepresent, nsigpresent
 
     def render(self):
-        '''
+        """
         render_model start the mako templating.
         this function is similar for all languages. its .render arguments are overloaded.
-        '''
+        """
 
         model, svboundaries, couplinglist, noisepresent, nsigpresent = self.load_model()
 
