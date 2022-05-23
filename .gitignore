@@ -22,7 +22,7 @@ TEST_OUTPUT/
 
 # other tools
 .mypy_cache/
-/framework_tvb/tvb/interfaces/web/static/help/
+/tvb_framework/tvb/interfaces/web/static/help/
 /tvb_build/docker/step1/
 
 /tvb_build/docker/keycloak_rest.json

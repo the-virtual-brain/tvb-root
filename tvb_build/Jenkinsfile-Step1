@@ -40,7 +40,7 @@ pipeline {
                 '''
                 withCredentials([usernamePassword(credentialsId: 'tvb-revision', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
                         sh '''#!/bin/bash
-                            git commit scientific_library/tvb/basic/config/tvb.version -m "Update GIT revision number automatically from Jenkins" && git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/the-virtual-brain/tvb-root.git HEAD:${GIT_BRANCH//origin\\/} || true
+                            git commit tvb_library/tvb/basic/config/tvb.version -m "Update GIT revision number automatically from Jenkins" && git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/the-virtual-brain/tvb-root.git HEAD:${GIT_BRANCH//origin\\/} || true
                         '''
                  }
                 archiveArtifacts artifacts: 'tvb_build/build/*.zip'
@@ -74,7 +74,7 @@ pipeline {
                     source activate tvb-run
                     rm -rf TEST_OUTPUT
                     mkdir TEST_OUTPUT
-                    cd framework_tvb
+                    cd tvb_framework
                     python setup_rest_client.py develop --no-deps
                     cd ..
                     pytest --pyargs tvb.interfaces.rest.client.tests.rest_tests  --junitxml=TEST_OUTPUT/results_REST-client.xml > TEST_OUTPUT/results_REST-client.out 2>&1
@@ -96,9 +96,9 @@ pipeline {
                     mkdir TEST_OUTPUT
                     cd tvb_build
                     bash install_full_tvb.sh
-                    cd ../scientific_library
+                    cd ../tvb_library
                     py.test --cov-config .coveragerc --cov=tvb tvb/tests --cov-branch --cov-report xml:../TEST_OUTPUT/coverage_lib.xml --junitxml=../TEST_OUTPUT/results_lib.xml
-                    cd ../framework_tvb
+                    cd ../tvb_framework
                     py.test --cov-config .coveragerc --cov=tvb tvb/tests --cov-branch --cov-report xml:../TEST_OUTPUT/coverage_frw.xml --junitxml=../TEST_OUTPUT/results_frw.xml
                     exit 0
                 '''

@@ -82,7 +82,7 @@ class DocGenerator:
     DOCS = "docs"
     API = "api"
     DIST_FOLDER = "dist"
-    FW_FOLDER = "framework_tvb"
+    FW_FOLDER = "tvb_framework"
     MANUALS = "manuals"
     ONLINE_HELP = "_help"
 

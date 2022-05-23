@@ -3,18 +3,18 @@ TVB RELEASE PROCEDURE
 
 When creating a new TVB set of release packages you should:
 
-	- update version number in: framework_tvb/tvb/config/settings.py BASE_VERSION
+	- update version number in: tvb_framework/tvb/config/settings.py BASE_VERSION
     - in case DB changes happened:
-        * increment in scientific_library/tvb/basic/config/settings.py DB_CURRENT_VERSION
-        * create a new DB update script in: framework_tvb/tvb/core/entities/model/db_update_scripts/
+        * increment in tvb_library/tvb/basic/config/settings.py DB_CURRENT_VERSION
+        * create a new DB update script in: tvb_framework/tvb/core/entities/model/db_update_scripts/
     - in case File Storage changes drastically:
-        * increment in scientific_library/tvb/basic/config/settings.py DATA_VERSION
-        * create the next update script in: framework_tvb/tvb/core/entities/file/file_update_scripts/
+        * increment in tvb_library/tvb/basic/config/settings.py DATA_VERSION
+        * create the next update script in: tvb_framework/tvb/core/entities/file/file_update_scripts/
     - in case something changed in the code, which requires an update script:
-        * create a new update script, with svn revision number in: framework_tvb/tvb/core/code_versions/code_update_scripts/
+        * create a new update script, with svn revision number in: tvb_framework/tvb/core/code_versions/code_update_scripts/
     - in case a Project structure changes :
-        * increment in scientific_library/tvb/basic/config/settings.py PROJECT_VERSION
-        * create a new project update script, with the new project version-number in: framework_tvb/tvb/core/project_versions/project_update_scripts/
+        * increment in tvb_library/tvb/basic/config/settings.py PROJECT_VERSION
+        * create a new project update script, with the new project version-number in: tvb_framework/tvb/core/project_versions/project_update_scripts/
             
     - refresh class diagrams:
     	* go in tvb_documentation/sim_doc and execute sh class_diagrams.sh

@@ -59,8 +59,8 @@ class Config:
 
         # TVB sources and specify where to copy them in distribution
         self.tvb_sources = {
-            join("..", "framework_tvb", "tvb"): join(self.target_site_packages, "tvb"),
-            join("..", "scientific_library", "tvb"): join(self.target_site_packages, "tvb"),
+            join("..", "tvb_framework", "tvb"): join(self.target_site_packages, "tvb"),
+            join("..", "tvb_library", "tvb"): join(self.target_site_packages, "tvb"),
             join("..", "tvb_storage", "tvb"): join(self.target_site_packages, "tvb"),
             join("..", "tvb_bin", "tvb_bin"): join(self.target_site_packages, "tvb_bin"),
             join("..", "externals", "BCT"): join(self.target_site_packages, "externals", "BCT"),
@@ -211,7 +211,7 @@ def _modify_pth(pth_name):
     """
     Replace tvb links with paths
     """
-    tvb_markers = ["tvb_root", "tvb-root", "framework_tvb", "scientific_library", "third_party_licenses", "tvb_data",
+    tvb_markers = ["tvb_root", "tvb-root", "tvb_framework", "tvb_library", "third_party_licenses", "tvb_data",
                    "Hudson", "hudson"]
     tvb_replacement = "./tvb\n./tvb_bin\n./tvb_data\n"
     new_content = ""
