@@ -36,11 +36,11 @@ The Connectivity datatype.
 
 """
 
-from copy import copy
-from io import BytesIO
-
 import numpy
 import scipy.stats
+from copy import copy
+from io import BytesIO
+from tvb.basic.exceptions import ValidationException
 from tvb.basic.neotraits.api import Attr, NArray, List, HasTraits, Int, narray_summary_info
 from tvb.basic.readers import ZipReader, H5Reader, try_get_absolute_path
 
@@ -269,9 +269,9 @@ class Connectivity(HasTraits):
         #      simulator non-functional. Inn the longer run it'll probably be
         #      necessary for delays to never be stored but always calculated
         #      from tract-lengths and speed...
-        if self.speed is None:  # TODO: this is a hack fix...
+        if self.speed is None:
             self.log.warning("Connectivity.speed attribute not initialized properly, setting it to 3.0...")
-            self.speed = numpy.array([3.0])  # F£$%^&*!!!#self.trait["speed"].value
+            self.speed = numpy.array([3.0])
 
         # NOTE: Because of the conduction_speed hack for UI this must be evaluated here, even if delays
         # already has a value, otherwise setting speed in the UI has no effect...
@@ -336,7 +336,7 @@ class Connectivity(HasTraits):
         """
         nor = self.number_of_regions
         tract_lengths = numpy.zeros((nor, nor))
-        # TODO: redundant by half, do half triangle then flip...
+        # Suggestion for optimization: redundant by half, do half triangle then flip...
         for region in range(nor):
             temp = self.centres - self.centres[region, :][numpy.newaxis, :]
             tract_lengths[region, :] = numpy.sqrt(numpy.sum(temp ** 2, axis=1))
@@ -431,7 +431,7 @@ class Connectivity(HasTraits):
         else:
             self.log.error("Bad weights normalisation mode, must be one of:")
             self.log.error("('tract', 'edge', 'region', 'node', 'none')")
-            raise Exception("Bad weights normalisation mode")
+            raise ValidationException("Bad weights normalisation mode")
 
         self.log.debug("Normalization factor is: %s" % str(normalisation_factor))
         mask = self.weights != 0.0
@@ -667,7 +667,7 @@ class Connectivity(HasTraits):
         if these_centres in ("spherical", "annular", "toroidal", "cubic"):
             eval("self.centres_" + these_centres + "(number_of_regions=number_of_regions)")
         else:
-            raise Exception("Bad centres geometry")
+            raise ValidationException("Bad centres geometry")
 
     def create_region_labels(self, mode="numeric"):
 
@@ -690,7 +690,7 @@ class Connectivity(HasTraits):
         else:
             self.log.error("Bad region labels mode, must be one of:")
             self.log.error("('numeric', 'num', 'alphabetic', 'alpha')")
-            raise Exception("Bad region labels mode")
+            raise ValidationException("Bad region labels mode")
 
     def unmapped_indices(self, region_mapping):
         """
@@ -750,5 +750,65 @@ class Connectivity(HasTraits):
 
     @property
     def horizon(self):
-        "The horizon is the maximum number of steps required in memory for simulation."
+        """The horizon is the maximum number of steps required in memory for simulation."""
         return self._horizon
+
+    def set_centres(self, centres, expected_number_of_nodes):
+        """Fill positions"""
+        if centres is None:
+            raise ValidationException("Region centres are required for Connectivity Regions! "
+                                      "We expect a file that contains *centres* inside the uploaded ZIP.")
+        if expected_number_of_nodes < 2:
+            raise ValidationException("A connectivity with at least 2 nodes is expected")
+
+        self.centres = centres
+
+    def set_region_labels(self, region_labels):
+        if region_labels is not None:
+            self.region_labels = region_labels
+
+    def set_weights(self, weights, expected_number_of_nodes):
+        if weights is not None:
+            if weights.shape != (expected_number_of_nodes, expected_number_of_nodes):
+                raise ValidationException("Unexpected shape for weights matrix!  Should be %d x %d " % (
+                    expected_number_of_nodes, expected_number_of_nodes))
+            self.weights = weights
+
+    def set_tract_lengths(self, tract_lengths, expected_number_of_nodes):
+        """Fill and check tracts. Allow empty files for tracts, they will be computed by tvb-library."""
+        if tract_lengths is not None and tract_lengths.size != 0:
+            if numpy.any([x < 0 for x in tract_lengths.flatten()]):
+                raise ValidationException("Negative values are not accepted in tracts matrix! "
+                                          "Please check your file, and use values >= 0")
+            if tract_lengths.shape != (expected_number_of_nodes, expected_number_of_nodes):
+                raise ValidationException("Unexpected shape for tracts matrix!  Should be %d x %d " % (
+                    expected_number_of_nodes, expected_number_of_nodes))
+        self.tract_lengths = tract_lengths
+
+    def set_orientations(self, orientations, expected_number_of_nodes):
+        if orientations is not None:
+            if len(orientations) != expected_number_of_nodes:
+                raise ValidationException("Invalid size for vector orientation. "
+                                          "Expected the same as region-centers number %d" % expected_number_of_nodes)
+            self.orientations = orientations
+
+    def set_areas(self, areas, expected_number_of_nodes):
+        if areas is not None:
+            if len(areas) != expected_number_of_nodes:
+                raise ValidationException("Invalid size for vector areas. "
+                                          "Expected the same as region-centers number %d" % expected_number_of_nodes)
+            self.areas = areas
+
+    def set_cortical(self, cortical, expected_number_of_nodes):
+        if cortical is not None:
+            if len(cortical) != expected_number_of_nodes:
+                raise ValidationException("Invalid size for vector cortical. "
+                                          "Expected the same as region-centers number %d" % expected_number_of_nodes)
+            self.cortical = cortical
+
+    def set_hemispheres(self, hemispheres, expected_number_of_nodes):
+        if hemispheres is not None:
+            if len(hemispheres) != expected_number_of_nodes:
+                raise ValidationException("Invalid size for vector hemispheres. "
+                                          "Expected the same as region-centers number %d" % expected_number_of_nodes)
+            self.hemispheres = hemispheres

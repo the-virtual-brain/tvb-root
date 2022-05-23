@@ -147,60 +147,18 @@ class ZIPConnectivityImporter(ABCUploader):
 
         result = Connectivity()
 
-        # Fill positions
-        if centres is None:
-            raise Exception("Region centres are required for Connectivity Regions! "
-                            "We expect a file that contains *centres* inside the uploaded ZIP.")
+        # Set attributes
         expected_number_of_nodes = len(centres)
-        if expected_number_of_nodes < 2:
-            raise Exception("A connectivity with at least 2 nodes is expected")
-        result.centres = centres
-        if labels_vector is not None:
-            result.region_labels = labels_vector
-
-        # Fill and check weights
-        if weights_matrix is not None:
-            if weights_matrix.shape != (expected_number_of_nodes, expected_number_of_nodes):
-                raise Exception("Unexpected shape for weights matrix! "
-                                "Should be %d x %d " % (expected_number_of_nodes, expected_number_of_nodes))
-            result.weights = weights_matrix
-            if view_model.normalization:
-                result.weights = result.scaled_weights(view_model.normalization)
-
-        # Fill and check tracts. Allow empty files for tracts, they will be computed by tvb-library.
-        if tract_matrix is not None:
-            if tract_matrix.size != 0:
-                if numpy.any([x < 0 for x in tract_matrix.flatten()]):
-                    raise Exception("Negative values are not accepted in tracts matrix! "
-                                    "Please check your file, and use values >= 0")
-                if tract_matrix.shape != (expected_number_of_nodes, expected_number_of_nodes):
-                    raise Exception("Unexpected shape for tracts matrix! "
-                                    "Should be %d x %d " % (expected_number_of_nodes, expected_number_of_nodes))
-            result.tract_lengths = tract_matrix
-
-        if orientation is not None:
-            if len(orientation) != expected_number_of_nodes:
-                raise Exception("Invalid size for vector orientation. "
-                                "Expected the same as region-centers number %d" % expected_number_of_nodes)
-            result.orientations = orientation
-
-        if areas is not None:
-            if len(areas) != expected_number_of_nodes:
-                raise Exception("Invalid size for vector areas. "
-                                "Expected the same as region-centers number %d" % expected_number_of_nodes)
-            result.areas = areas
-
-        if cortical_vector is not None:
-            if len(cortical_vector) != expected_number_of_nodes:
-                raise Exception("Invalid size for vector cortical. "
-                                "Expected the same as region-centers number %d" % expected_number_of_nodes)
-            result.cortical = cortical_vector
-
-        if hemisphere_vector is not None:
-            if len(hemisphere_vector) != expected_number_of_nodes:
-                raise Exception("Invalid size for vector hemispheres. "
-                                "Expected the same as region-centers number %d" % expected_number_of_nodes)
-            result.hemispheres = hemisphere_vector
+        result.set_centres(centres, expected_number_of_nodes)
+        result.set_region_labels(labels_vector)
+        result.set_weights(weights_matrix, expected_number_of_nodes)
+        if view_model.normalization:
+            result.weights = result.scaled_weights(view_model.normalization)
+        result.set_tract_lengths(tract_matrix, expected_number_of_nodes)
+        result.set_orientations(orientation, expected_number_of_nodes)
+        result.set_areas(areas, expected_number_of_nodes)
+        result.set_cortical(cortical_vector, expected_number_of_nodes)
+        result.set_hemispheres(hemisphere_vector, expected_number_of_nodes)
 
         result.configure()
         return self.store_complete(result)

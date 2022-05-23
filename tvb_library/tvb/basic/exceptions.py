@@ -47,6 +47,6 @@ class TVBException(Exception):
 
 class ValidationException(TVBException):
     """
-    Exception class for problems that occurs during MappedType 
-    validation before storing it into DB.
+    Exception class for problems that occurs during HasTraits
+    validations on fields.
     """
