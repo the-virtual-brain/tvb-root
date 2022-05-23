@@ -1,6 +1,0 @@
-allensdk==2.13.4
-flask==1.1.4
-h5py==3.6
-Jinja2==2.11.3
-pandas==3.5.1
-tables==3.6.1
