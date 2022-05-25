@@ -139,6 +139,7 @@ examples.
 .. _Using Your Own Connectivity: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/using_your_own_connectivity.ipynb
 .. _Interacting with TVBClient API by launching simulation and analyzer methods: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/interacting_with_rest_api_fire_simulation.ipynb
 .. _Interacting with TVBClient API importers: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/interacting_with_rest_api_launch_operations.ipynb
+.. _Launch BIDS derivatives importer: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/launching_bids_adapter.ipynb
 
 
 .. figure:: figures/analyze_region_corrcoef.png
@@ -342,6 +343,14 @@ Interact with TVB Framework
       :target: `Encrypt Files before upload in TVB Web GUI`_
 
       `Encrypt Files before upload in TVB Web GUI`_
+
+
+.. figure:: figures/interacting_with_the_framework.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Launch BIDS derivatives importer`_
+
+      `Launch BIDS derivatives importer`_
 
 Interact with TVB REST Client API
 ---------------------------------
