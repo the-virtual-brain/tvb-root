@@ -116,7 +116,7 @@ examples.
 .. _Display Source Sensor Geometry: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/display_source_sensor_geometry.ipynb
 .. _Display Surface Local Connectivity: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/display_surface_local_connectivity.ipynb
 .. _Encrypt Files before upload in TVB Web GUI: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/encrypt_data.ipynb
-.. _Exploring Epileptor 2D: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/exploring_epileptor2D.ipynb
+.. _Exploring Epileptor 2D: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/exploring_epileptor_2d.ipynb
 .. _Exploring Longer Time Series: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/exploring_longer_time_series.ipynb
 .. _Exploring Resting State in Epilepsy: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/exploring_resting_state_in_epilepsy.ipynb
 .. _Exploring The Bold Monitor: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/exploring_the_bold_monitor.ipynb
