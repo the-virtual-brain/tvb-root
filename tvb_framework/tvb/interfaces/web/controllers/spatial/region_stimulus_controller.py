@@ -34,11 +34,13 @@
 """
 
 import json
+import uuid
 import cherrypy
 import numpy
-
-from tvb.adapters.creators.stimulus_creator import *
+from tvb.adapters.creators.stimulus_creator import KEY_REGION_STIMULUS, RegionStimulusCreatorForm, RegionStimulusCreator
+from tvb.adapters.creators.stimulus_creator import StimulusRegionSelectorForm, RegionStimulusCreatorModel
 from tvb.adapters.datatypes.h5.patterns_h5 import StimuliRegionH5
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.forms.equation_forms import get_form_for_equation
 from tvb.adapters.forms.equation_plot_forms import EquationTemporalPlotForm
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
@@ -52,7 +54,6 @@ from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.common import MissingDataException
 from tvb.interfaces.web.controllers.decorators import handle_error, expose_page, expose_fragment
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
-
 
 LOAD_EXISTING_URL = SpatioTemporalController.build_path('/spatial/stimulus/region/load_region_stimulus')
 RELOAD_DEFAULT_PAGE_URL = SpatioTemporalController.build_path('/spatial/stimulus/region/reset_region_stimulus')
@@ -263,7 +264,7 @@ class RegionStimulusController(SpatioTemporalController):
             if form_data:
                 plot_form.fill_from_post(form_data)
 
-            min_x, max_x, ui_message = self.get_x_axis_range(plot_form.min_x.value, plot_form.max_x.value)
+            min_x, max_x, ui_message = self.get_x_axis_range(plot_form.min_tmp_x.value, plot_form.max_tmp_x.value)
             current_stimuli_region = common.get_from_session(KEY_REGION_STIMULUS)
             series_data, display_ui_message = current_stimuli_region.temporal.get_series_data(min_range=min_x,
                                                                                               max_range=max_x)

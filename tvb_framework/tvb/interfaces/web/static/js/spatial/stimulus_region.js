@@ -37,10 +37,10 @@ function setStimulusParamAndRedrawChart(methodToCall, fieldName, fieldValue) {
 }
 
 function redrawPlotOnMinMaxChanges() {
-    $('#min_x').change(function () {
+    $('#min_tmp_x').change(function () {
         plotEquation();
     });
-    $('#max_x').change(function () {
+    $('#max_tmp_x').change(function () {
         plotEquation();
     });
 }
@@ -64,10 +64,10 @@ function setEventsOnFormFields(fieldsWithEvents, div_id = 'temporal_params') {
 }
 
 function prepareUrlParams() {
-    min_field = $('#min_x')[0];
+    min_field = $('#min_tmp_x')[0];
     min_params = prepareUrlParam(min_field.name, min_field.value);
 
-    max_field = $('#max_x')[0];
+    max_field = $('#max_tmp_x')[0];
     max_params = prepareUrlParam(max_field.name, max_field.value);
 
     params = min_params + '&' + max_params;
