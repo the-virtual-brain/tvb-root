@@ -183,10 +183,14 @@ class TVBJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if hasattr(obj, "to_json"):
             return obj.to_json()
-        # TODO: Review this quick fix.
-        # TVB-2565 numpy int serialization
-        if numpy.issubdtype(obj, numpy.integer):
-            return int(obj)
+        if isinstance(obj, bytes):
+            return obj.decode('utf-8')
+        try:
+            # TVB-2565 numpy int serialization
+            if numpy.issubdtype(obj, numpy.integer):
+                return int(obj)
+        except TypeError:
+            pass
         return json.JSONEncoder.default(self, obj)
 
 
