@@ -49,21 +49,25 @@ class EquationPlotForm(Form):
             self.max_x.fill_from_post(form_data)
 
 
-class EquationSpatialPlotForm(EquationPlotForm):
+class EquationSpatialPlotForm(Form):
     def __init__(self):
         super(EquationSpatialPlotForm, self).__init__()
-        self.min_x.label = 'Spatial Start Distance(mm)'
-        self.min_x.doc = "The minimum value of the x-axis for spatial equation plot."
-        self.max_x.label = 'Spatial End Distance(mm)'
-        self.max_x.doc = "The maximum value of the x-axis for spatial equation plot."
+        self.min_space_x = FloatField(Float(label='Spatial Start Distance(mm)', default=0,
+                                            doc="The minimum value of the x-axis for spatial equation plot."),
+                                      name='min_space_x')
+        self.max_space_x = FloatField(Float(label='Spatial End Distance(mm)', default=100,
+                                            doc="The maximum value of the x-axis for spatial equation plot."),
+                                      name='max_space_x')
 
 
-class EquationTemporalPlotForm(EquationPlotForm):
+class EquationTemporalPlotForm(Form):
     def __init__(self):
         super(EquationTemporalPlotForm, self).__init__()
-        self.min_x.label = 'Temporal Start Time(ms)'
-        self.min_x.doc = "The minimum value of the x-axis for temporal equation plot. " \
-                         "Not persisted, used only for visualization."
-        self.max_x.label = 'Temporal Start Time(ms)'
-        self.max_x.doc = "The maximum value of the x-axis for temporal equation plot. " \
-                         "Not persisted, used only for visualization."
+        self.min_tmp_x = FloatField(Float(label='Temporal Start Time(ms)', default=0,
+                                          doc="The minimum value of the x-axis for temporal equation plot. " \
+                                              "Not persisted, used only for visualization."),
+                                    name='min_tmp_x')
+        self.max_tmp_x = FloatField(Float(label='Temporal End Time(ms)', default=100,
+                                          doc="The maximum value of the x-axis for temporal equation plot. " \
+                                              "Not persisted, used only for visualization."),
+                                    name='max_tmp_x')
