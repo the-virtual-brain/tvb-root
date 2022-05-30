@@ -1,0 +1,85 @@
+name: Test all
+on: [push]
+
+jobs:
+  build:
+    name: Test and Inspect
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ "3.7", "3.8" ]
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: upgrade pip
+        run: python3 -m pip install --upgrade pip
+
+      - name: put ~/.local/bin on $PATH
+        run: echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
+
+      - name: create a requirements file
+        run: echo "numba numpy scipy networkx scikit-learn scikit-image==0.14.2 cython numexpr psutil pytest pytest-cov pytest-xdist pytest-benchmark pytest-mock matplotlib h5py>=2.10 typing BeautifulSoup4 subprocess32 flask-restx python-keycloak mako pyAesCrypt pyunicore formencode flask==1.1.4 jinja2==2.11.3 nibabel sqlalchemy alembic allensdk werkzeug gevent cherrypy MarkupSafe==2.0.1 decorator" | tr ' ' \\n > requirements.txt
+
+      - name: cache ~/.local for pip deps
+        id: cache-local
+        uses: actions/cache@v3
+        with:
+          path: ~/.local
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+
+      - name: pip install dependencies (from Dockerfile-build)
+        if: steps.cache-local.outputs.cache-hit != 'true'
+        run: |
+          pip3 install --user -r requirements.txt
+          pip3 install --user --no-build-isolation tvb-gdist
+
+      - name: setup tvb
+        run: cd tvb_build && bash install_full_tvb.sh
+
+      - name: cache data
+        id: cache-data
+        uses: actions/cache@v3
+        with:
+          path: tvb_data
+          key: tvb-data
+
+      - name: download data
+        if: steps.cache-data.outputs.cache-hit != 'true'
+        run: |
+          wget -q https://zenodo.org/record/4263723/files/tvb_data.zip?download=1 -O tvb_data.zip
+          mkdir tvb_data
+          unzip tvb_data.zip -d tvb_data
+          rm tvb_data.zip
+
+      - name: setup data
+        run: |
+          cd tvb_data
+          python3 setup.py develop
+
+      - name: run library tests
+        run: cd tvb_library && python3 -m pytest -v  --cov --cov-report=xml --ignore=tvb/tests/library/simulator/rateml_test.py
+
+      - name: run framework tests
+        run: cd tvb_framework && python3 -m pytest -v  --cov --cov-report=xml
+
+      - name: run storage tests
+        run: cd tvb_storage && python3 -m pytest -v  --cov --cov-report=xml
+
+      - name: Prepare PATH for Sonar
+        run: |
+          echo "PATH=$PATH:/opt/sonar-scanner/bin:/opt/nodejs/bin" >> $GITHUB_ENV
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

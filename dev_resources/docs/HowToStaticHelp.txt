@@ -1,0 +1,7 @@
+To add Static Help to be able to see it in the TVB Gui User page:
+	- go to https://jenkins.codemart.ro/view/TVB/job/TVB%20-%20Step1/ and dowload the zip file "TVB_build_step1.zip"
+	- unzip it
+	- find the "_help" folder and rename it "help" (if necessary)
+	- copy the "help" folder under [tvb-root]/framework_tvb/tvb/interfaces/web/static/
+	
+In the end, the path should look like: [tvb-root]/framework_tvb/tvb/interfaces/web/static/help/_images/...

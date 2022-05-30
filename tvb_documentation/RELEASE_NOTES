@@ -1,8 +1,8 @@
 ======================================================================================================================================
  The Virtual Brain (TVB)
- Version: 2.5 - build xxxx
- Release Date: x xxx xxx
- Description:
+ Version: 2.5 - build 17095
+ Release Date: 15 May 2022
+ Description: release on Pypi
 ======================================================================================================================================
     * Add GUI prototype for preprocessing pipeline
     * Add support for a web context path (different than ROOT)
@@ -11,6 +11,7 @@
     * Allen Creator transpose resulting matrices (part of structural conn) at the end
     * Bug fixes (e.g. Equation strings, Tutorials regarding default cortex)
     * Add new checkboxes for NII importer to support non-zero-based arrays
+    * Few new methods added on HasTraits subclasses (conn, surface, etc)
 
 ======================================================================================================================================
  The Virtual Brain (TVB)

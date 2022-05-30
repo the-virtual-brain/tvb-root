@@ -53,9 +53,9 @@ USER root
 ARG LAST_SHA=LATEST
 RUN cd tvb-root; \
     git pull; \
-    cd framework_tvb; \
+    cd tvb_framework; \
     /opt/conda/envs/tvb-run/bin/python setup.py develop --no-deps; \
-    cd ../scientific_library; \
+    cd ../tvb_library; \
     /opt/conda/envs/tvb-run/bin/python setup.py develop; \
     cd ../tvb_contrib; \
     /opt/conda/envs/tvb-run/bin/python setup.py develop --no-deps; \
@@ -67,7 +67,7 @@ RUN cd tvb-root; \
     /opt/conda/envs/tvb-run/bin/python setup.py develop --no-deps
 
 COPY --chown=$TVB_USER:$TVB_USER .tvb.configuration $USER_HOME/.tvb.configuration
-COPY --chown=$TVB_USER:$TVB_USER step1/_help $USER_HOME/tvb-root/framework_tvb/tvb/interfaces/web/static/help
+COPY --chown=$TVB_USER:$TVB_USER step1/_help $USER_HOME/tvb-root/tvb_framework/tvb/interfaces/web/static/help
 RUN chown $TVB_USER:$TVB_USER $USER_HOME
 
 USER $TVB_USER

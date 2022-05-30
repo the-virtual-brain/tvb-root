@@ -1,0 +1,73 @@
+<link rel="stylesheet" type="text/css" href="{{ deploy_context | safe }}/static/style/color_scheme.css"/>
+
+<dt>
+    <label for="setColorSchemeSelId">Color Scheme</label>
+</dt>
+<dd>
+    <select id="setColorSchemeSelId" onchange="ColSch_setColorScheme(this.options[this.selectedIndex].value, true);" tabindex="1">
+        <option disabled="disabled">--- TVB ---</option>
+        <option value="linear" selected="selected">White-Red</option>
+        <option value="rainbow">Jet</option>
+        <option value="TVB">TVB</option>
+        <option value="sparse">Sparse</option>
+
+        <option disabled="disabled">--- ColorBrewer ---</option>
+        <option value="RdYlBu">RdYlBu</option>
+        <option value="Spectral">Spectral</option>
+        <option value="YlGnBu">YlGnBu</option>
+        <option value="RdPu">RdPu</option>
+        <option value="Grays">Grays</option>
+
+        <option disabled="disabled">--- Perceptual ---</option>
+        <option value="matteo">Matteo</option>
+        <option value="termal">Termal</option>
+        <option value="cubehelix">CubeHelix</option>
+
+        <option disabled="disabled">--- White background ---</option>
+        <option value="whiteJet">Jet</option>
+        <option value="whiteTVB">TVB</option>
+
+        <option disabled="disabled">--- Transparent background ---</option>
+        <option value="transparentJet">Jet</option>
+        <option value="transparentTVB">TVB</option>
+        <option value="transparentTermal">Termal</option>
+
+        <option disabled="disabled">--- Transparent Bck and Pink Extremes ---</option>
+        <option value="transparentSparse">Sparse</option>
+        <option value="transparentMatteo">Matteo</option>
+    </select>
+    <fieldset>
+        <dl>
+            <dt>
+                <label>Color range</label>
+            </dt>
+            <dd>
+                <div class="sliderStepDiv">
+                    <div id="rangerForLinearColSch" title="Set the active color range "></div>
+                </div>
+                [ <label id="sliderMinValue"></label> , <label id="sliderMaxValue"></label> ]
+            </dd>
+        </dl>
+        <dl>
+            <dt>
+                <label>Trim middle</label>
+            </dt>
+            <dd>
+                <div class="sliderStepDiv">
+                    <div id="rangerForMiddleHoleDiameter" title="Set the diameter of the near mean trimming "></div>
+                </div>
+            </dd>
+        </dl>
+        <dl>
+            <dt>
+                <span class="slider-value" id="ColSch_colorNo"></span>
+                <span class="slider-value"> colors</span>
+            </dt>
+            <dd>
+                <div class="sliderStepDiv">
+                    <div id="sliderForSparseColSch" title="Set the number of color bins"></div>
+                </div>
+            </dd>
+        </dl>
+    </fieldset>
+</dd>

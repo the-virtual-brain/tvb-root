@@ -5,7 +5,7 @@ cd ..
 rm -Rf dist
 mkdir dist
 
-declare -a folders2pack=("framework_tvb" "scientific_library" "tvb_contrib" "tvb_storage")
+declare -a folders2pack=("tvb_framework" "tvb_library" "tvb_contrib" "tvb_storage")
 if [[ "$1" != "" ]]; then
     echo "Received param: " "$1"
     folders2pack=("$1")
@@ -30,7 +30,7 @@ done
 echo "============================="
 echo " Packing: tvb-rest-client"
 echo "============================="
-cd framework_tvb
+cd tvb_framework
 mv setup.py setup_bck.py
 mv setup_rest_client.py setup.py
 python setup.py sdist

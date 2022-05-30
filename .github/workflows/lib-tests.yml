@@ -61,10 +61,10 @@ jobs:
           python3 setup.py develop
 
       - name: run library tests
-        run: cd scientific_library && python3 -m pytest -n12 --ignore=tvb/tests/library/simulator/rateml_test.py
+        run: cd tvb_library && python3 -m pytest -n12 --ignore=tvb/tests/library/simulator/rateml_test.py
 
       - name: run library benchmarks
-        run: cd scientific_library && python3 -m pytest --benchmark-only --ignore=tvb/tests/library/simulator/rateml_test.py
+        run: cd tvb_library && python3 -m pytest --benchmark-only --ignore=tvb/tests/library/simulator/rateml_test.py
       
       - name: run rateml tests
-        run: cd scientific_library/tvb/tests/library/simulator/ && pytest rateml_test.py
+        run: cd tvb_library/tvb/tests/library/simulator/ && pytest rateml_test.py

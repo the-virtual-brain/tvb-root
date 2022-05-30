@@ -1,0 +1,24 @@
+<p class="field-data field-series">
+    <select name="{{ field.name }}" id="{{ field.name }}" tabindex="1" {{ 'disabled' if field.disabled }} class="form-control">
+        {% for option in field.options() %}
+            <option value="{{ option.value }}" {{ 'selected' if option.checked }}
+                    class="form-control">{{ option.label }}</option>
+        {% endfor %}
+    </select>
+    {% if field.subform_field and field.display_subform %}
+        <div id="{{ field.subform_field.name }}">
+            {% with adapter_form=field.subform_field.form %}
+                {% include 'form_fields/form_field.html' %}
+            {% endwith %}
+        </div>
+        <script type="text/javascript">
+            $(document).ready(function () {
+                $('select[name^="{{ field.name }}"]').change(function () {
+                    refreshSubform(this, '{{ field.subform_field.form.get_subform_key() }}',
+                        '{{ field.subform_field.name }}', '{{ field.session_key }}', '{{ field.label }}')
+                });
+                setEventsOnFormFields('{{ field.subform_field.form.get_subform_key() }}', '{{ field.subform_field.name }}');
+            });
+        </script>
+    {% endif %}
+</p>

@@ -49,7 +49,7 @@ Using a virtual environment inside Anaconda is a good idea.
    $ envname="tvb-run"
    $ conda create -y --name $envname python=3 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils werkzeug matplotlib-base
    $ source activate $envname
-   $ consta install -c conda-forge jupyterlab flask gevent
+   $ conda install -c conda-forge jupyterlab flask gevent
    $ pip install h5py==2.10 formencode cfflib jinja2 nibabel sqlalchemy sqlalchemy-migrate allensdk tvb-gdist BeautifulSoup4 subprocess32 flask-restx python-keycloak mako
    $ cd [tvb-root]/tvb_build/
    $ sh install_full_tvb.sh
@@ -151,7 +151,7 @@ Datatype:
    tables in a relational database (sqlite or postgresql).
 
    Example: Surface, Connectivity
-   Code: scientific_library/tvb/datatypes/
+   Code: tvb_library/tvb/datatypes/
 
 Adapter:
 
@@ -164,7 +164,7 @@ Adapter:
    These plugins are discovered at TVB startup and recorded in the database table ALGORITHMS.
 
    Example:  SimulatorAdapter
-   code: framework_tvb/tvb/adapters
+   code: tvb_framework/tvb/adapters
 
 Operation:
 

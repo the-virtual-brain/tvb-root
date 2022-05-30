@@ -1,0 +1,8 @@
+{
+  "realm": "myrealm",
+  "auth-server-url": "http://localhost:8081/",
+  "ssl-required": "external",
+  "resource": "tvb-rest",
+  "public-client": true,
+  "confidential-port": 0
+}

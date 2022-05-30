@@ -5,7 +5,7 @@
 Nice to have
 ******************************************
 
-Tools/Libraries that might be useful for addressing current issues & desired functionality of TVB's scientific_library.
+Tools/Libraries that might be useful for addressing current issues & desired functionality of TVB's tvb_library.
 Blaze: http://blaze.pydata.org
 
 Blaze is an expressive, compact set of foundational abstractions for composing computations over large amounts of semi-structured data, of arbitrary formats and distributed across arbitrary networks.
