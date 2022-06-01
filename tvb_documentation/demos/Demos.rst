@@ -116,7 +116,7 @@ examples.
 .. _Display Source Sensor Geometry: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/display_source_sensor_geometry.ipynb
 .. _Display Surface Local Connectivity: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/display_surface_local_connectivity.ipynb
 .. _Encrypt Files before upload in TVB Web GUI: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/encrypt_data.ipynb
-.. _Exploring Epileptor 2D: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/exploring_epileptor2D.ipynb
+.. _Exploring Epileptor 2D: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/exploring_epileptor_2d.ipynb
 .. _Exploring Longer Time Series: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/exploring_longer_time_series.ipynb
 .. _Exploring Resting State in Epilepsy: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/exploring_resting_state_in_epilepsy.ipynb
 .. _Exploring The Bold Monitor: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/exploring_the_bold_monitor.ipynb
@@ -139,6 +139,7 @@ examples.
 .. _Using Your Own Connectivity: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/using_your_own_connectivity.ipynb
 .. _Interacting with TVBClient API by launching simulation and analyzer methods: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/interacting_with_rest_api_fire_simulation.ipynb
 .. _Interacting with TVBClient API importers: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/interacting_with_rest_api_launch_operations.ipynb
+.. _Launch BIDS derivatives importer: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/launching_bids_adapter.ipynb
 
 
 .. figure:: figures/analyze_region_corrcoef.png
@@ -342,6 +343,14 @@ Interact with TVB Framework
       :target: `Encrypt Files before upload in TVB Web GUI`_
 
       `Encrypt Files before upload in TVB Web GUI`_
+
+
+.. figure:: figures/interacting_with_the_framework.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Launch BIDS derivatives importer`_
+
+      `Launch BIDS derivatives importer`_
 
 Interact with TVB REST Client API
 ---------------------------------
