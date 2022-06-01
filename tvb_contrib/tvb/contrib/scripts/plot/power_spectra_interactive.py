@@ -82,7 +82,7 @@ class PowerSpectraInteractive(HasTraits):
 
         - which state-variable and mode to display [sets]
         - log or linear scaling for the power or frequency axis [binary]
-        - sementation lenth [set]
+        - segmentation length [set]
         - windowing function [set]
         - power normalisation [binary] (emphasise relative frequency contribution)
         - show std or sem [binary]
@@ -127,8 +127,13 @@ class PowerSpectraInteractive(HasTraits):
         self.show_sem = False
         self.show_std = False
         self.normalise_power = "no"
-        self.window_length = 0.25
+        self.window_length = 1.0
+        self.window_length_ms = 1000 * self.window_length
         self.window_function = "None"
+        self.freq_step = 1.0 / self.window_length
+        self.units = "Hz"
+        self.period = 1.0 # ms
+        self.max_freq = 0.5 / (self.period / 1000)
 
         # Selectors
         self.xscale_selector = None
@@ -145,7 +150,6 @@ class PowerSpectraInteractive(HasTraits):
         possible_freq_steps = [2 ** x for x in range(-2, 7)]  # Hz
         # possible_freq_steps.append(1.0 / self.time_series_length) #Hz
         self.possible_window_lengths = 1.0 / numpy.array(possible_freq_steps)  # s
-        self.freq_step = 1.0 / self.window_length
         self.frequency = None
         self.spectra = None
         self.spectra_norm = None
@@ -153,14 +157,39 @@ class PowerSpectraInteractive(HasTraits):
         # Sliders
         # self.window_length_slider = None
 
+    def _assert_window_length(self):
+        self.window_length = numpy.minimum(self.window_length, self.window_length_max)
+        print("window_length = %g sec" % self.window_length)
+        self.window_length_ms = 1000 * self.window_length
+        self.freq_step = 1.0 / self.window_length
+        print("freq_step = %g %s" % (self.freq_step, self.units))
+
+    def _configure_timefreq_from_time_series(self):
+        if self.time_series is not None:
+            self.period = self.time_series.sample_period
+            print("period = %g ms" % self.period)
+            self.max_freq = 0.5 / (self.period / 1000)
+            print("max_freq = %g %s" % (self.max_freq, self.units))
+            self.tpts = self.time_series.data.shape[0]
+            if isinstance(self.time_series.time, numpy.ndarray) and \
+                len(self.time_series.time) == self.tpts:
+                self.time = self.time_series.time.copy()
+            else:
+                self.time = self.period * numpy.arange(0, self.tpts, 1)
+        self.time_series_length = self.tpts * self.period
+        print("time_series_length = %g ms" % self.time_series_length)
+        self.window_length_max = self.time_series_length / 1000.0
+        self._assert_window_length()
+
     def configure(self):
-        """ Seperate configure cause ttraits be busted... """
+        """ Separate configure cause traits be busted... """
         LOG.debug("time_series shape: %s" % str(self.time_series.data.shape))
         # TODO: if isinstance(self.time_series, TimeSeriesSurface) and self.first_n == -1: #LOG.error, return.
         if self.first_n == 0:
             first_n = None
         else:
             first_n = self.first_n
+        self._configure_timefreq_from_time_series()
         self.data = self.time_series.data[:, :, :first_n, :]
         print('data.shape = %s' % str(self.data.shape))
         self.regions = numpy.arange(self.data.shape[2]).astype('i')
@@ -175,20 +204,8 @@ class PowerSpectraInteractive(HasTraits):
         self.data_xy = numpy.array(self.data_xy).transpose(1, 2, 0, 3)
         self.reg_inds_sel = slice(0, self.regions.shape[0])
         self.reg_xy_inds_sel = numpy.arange(self.data_xy.shape[2]).astype('i')
-        self.period = self.time_series.sample_period
-        print("period = %g" % self.period)
-        print("window_length = %g" % self.window_length)
-        self.max_freq = 0.5 / (self.period / 1000)
-        print("max_freq = %g" % self.max_freq)
-        self.freq_step = 1.0 / (self.window_length / 1000)
-        print("freq_step = %g" % self.freq_step)
-        self.units = "Hz"
-        self.tpts = self.data.shape[0]
         self.nsrs = self.data.shape[2]
         self.nsrs_xy = self.nsrs * (self.nsrs - 1) / 2
-        self.time_series_length = self.tpts * self.period
-        print("time_series_length = %g" % self.time_series_length)
-        self.time = numpy.arange(self.tpts) * self.period
         self.labels = ["channel_%0.3d" % k for k in range(self.nsrs)]
 
     def show(self):
@@ -310,13 +327,19 @@ class PowerSpectraInteractive(HasTraits):
         """
         Generate radio selector buttons to set the window length is seconds.
         """
+        self._assert_window_length()
+        self.possible_window_lengths = numpy.unique(numpy.concatenate((self.possible_window_lengths,
+                                                                       numpy.array([self.window_length]))))
+        self.possible_window_lengths = \
+            self.possible_window_lengths[self.possible_window_lengths < self.window_length_max]
+        active = numpy.argmin(numpy.abs(self.possible_window_lengths - self.window_length))
         noc = self.possible_window_lengths.shape[0]  # number of choices
         # State variable for the x axis
         pos_shp = [0.88, 0.07, 0.1, 0.12 + 0.02 * noc]
         rax = self.fig.add_axes(pos_shp, facecolor=AXCOLOUR,
                                 title="Segment length")
         wl_tup = tuple(self.possible_window_lengths)
-        self.window_length_selector = widgets.RadioButtons(rax, wl_tup, active=4)
+        self.window_length_selector = widgets.RadioButtons(rax, wl_tup, active=active)
         self.window_length_selector.on_clicked(self.update_window_length)
 
     def add_window_function_selector(self):
@@ -352,10 +375,10 @@ class PowerSpectraInteractive(HasTraits):
         Calculate FFT using current state of the window_length, window_function,
         """
         # Segment time-series, overlapping if necessary
-        nseg = int(numpy.ceil(self.time_series_length / self.window_length))
+        nseg = int(numpy.ceil(self.time_series_length / self.window_length_ms))
         print("nseg = \n%s" % str(nseg))
         if nseg != 1:
-            seg_tpts = int(numpy.round(self.window_length / self.period))
+            seg_tpts = int(numpy.round(self.window_length_ms / self.period))
             print("seg_tpts = \n%s" % str(seg_tpts))
             overlap = int(numpy.round(((seg_tpts * nseg) - self.tpts) / (nseg - 1)))
             print("overlap = \n%s" % str(overlap))
@@ -528,8 +551,8 @@ class PowerSpectraInteractive(HasTraits):
         """
         # TODO: need this casting but not sure why, don't need int() with mode...
         self.window_length = numpy.float64(length)
+        self._assert_window_length()
         # import pdb; pdb.set_trace()
-        self.freq_step = 1.0 / self.window_length
         self.plot_spectra()
 
     def update_window_function(self, window_function):
