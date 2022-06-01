@@ -371,6 +371,7 @@ class TimeSeriesPlotter(BasePlotter):
                 self.HighlightingDataCursor(line, formatter='{label}'.format, bbox=dict(fc='white'),
                                             arrowprops=dict(arrowstyle='simple', fc='white', alpha=0.5))
 
+        pyplot.gcf().tight_layout()
         self._save_figure(pyplot.gcf(), figure_name)
         self._check_show()
         return pyplot.gcf(), axes, lines
