@@ -604,7 +604,7 @@ function initShaders() {
     if (isOneToOneMapping) {
         SHADING_Context.one_to_one_program_init(GL_shaderProgram);
     } else {
-        SHADING_Context.region_progam_init(GL_shaderProgram, NO_OF_MEASURE_POINTS, legendGranularity);
+        SHADING_Context.region_program_init(GL_shaderProgram, NO_OF_MEASURE_POINTS, legendGranularity);
     }
 }
 
