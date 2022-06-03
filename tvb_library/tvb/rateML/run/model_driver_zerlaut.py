@@ -1,3 +1,21 @@
+"""
+
+This is the partly rateML generated and partly manual implementation of the Zerlaut [1] HPC GPU model driver for
+exploration of the paramters : global_coupling, b_e, E_L_e, E_L_i and T as in [2]. A Jyputer notebook can be found here:
+https://lab.ch.ebrains.eu/hub/user-redirect/lab/tree/shared/Public_3Species_TVBAdEx_EITN_FallSchool/Human/Different_brain_states_simulated_in_the_human_brain.ipynb
+
+[1] Zerlaut, Yann, Sandrine Chemla, Frederic Chavane, and Alain Destexhe. “Modeling Mesoscopic Cortical Dynamics Using
+a Mean-Field Model of Conductance-Based Networks of Adaptive Exponential Integrate-and-Fire Neurons.”
+Journal of Computational Neuroscience 44, no. 1 (February 1, 2018): 45–61. https://doi.org/10.1007/s10827-017-0668-2.
+
+[2]  A comprehensive neural simulation of slow-wave sleep and highly responsive wakefulness dynamics
+Jennifer S. Goldman, Lionel Kusch, Bahar Hazal Yalçinkaya, Damien Depannemaecker, Trang-Anh E. Nghiem, Viktor Jirsa, Alain Destexhe
+bioRxiv 2021.08.31.458365; doi: https://doi.org/10.1101/2021.08.31.458365
+
+.. moduleauthor:: Michiel. A. van der Vlag <m.van.der.vlag@fz-juelich.de>
+
+"""
+
 from __future__ import print_function
 
 import logging
@@ -39,7 +57,8 @@ class Driver_Setup:
 
 		self.dt = self.args.delta_time
 		self.connectivity = self.tvb_connectivity(self.args.n_regions)
-		self.weights = self.connectivity.weights
+		# normalize connection weights as is done in original
+		self.weights = self.connectivity.weights / (np.sum(self.connectivity.weights, axis=0) + 1e-12)
 		self.lengths = self.connectivity.tract_lengths
 		self.tavg_period = 10.0
 		self.n_inner_steps = int(self.tavg_period / self.dt)

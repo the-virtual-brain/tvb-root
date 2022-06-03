@@ -1,32 +1,20 @@
-// -*- coding: utf-8 -*-
-//
-//
-// TheVirtualBrain-Scientific Package. This package holds all simulators, and
-// analysers necessary to run brain-simulations. You can use it stand alone or
-// in conjunction with TheVirtualBrain-Framework Package. See content of the
-// documentation-folder for more details. See also http://www.thevirtualbrain.org
-//
-// (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
-//
-// This program is free software: you can redistribute it and/or modify it under the
-// terms of the GNU General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
-// This program is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-// PARTICULAR PURPOSE.  See the GNU General Public License for more details.
-// You should have received a copy of the GNU General Public License along with this
-// program.  If not, see <http://www.gnu.org/licenses/>.
-//
-//
-//   CITATION:
-// When using The Virtual Brain for scientific publications, please cite it as follows:
-//
-//  Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-//  Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-//      The Virtual Brain: a simulator of primate brain network dynamics.
-//   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
-//
-//
+/*
+
+This is the partly rateML generated and partly manual implementation of the Zerlaut [1] HPC GPU  model for parameters
+exploration of: global_coupling, b_e, E_L_e, E_L_i and T as in [2]. A Jyputer notebook can be found here:
+https://lab.ch.ebrains.eu/hub/user-redirect/lab/tree/shared/Public_3Species_TVBAdEx_EITN_FallSchool/Human/Different_brain_states_simulated_in_the_human_brain.ipynb
+
+[1] Zerlaut, Yann, Sandrine Chemla, Frederic Chavane, and Alain Destexhe. “Modeling Mesoscopic Cortical Dynamics Using
+a Mean-Field Model of Conductance-Based Networks of Adaptive Exponential Integrate-and-Fire Neurons.”
+Journal of Computational Neuroscience 44, no. 1 (February 1, 2018): 45–61. https://doi.org/10.1007/s10827-017-0668-2.
+
+[2]  A comprehensive neural simulation of slow-wave sleep and highly responsive wakefulness dynamics
+Jennifer S. Goldman, Lionel Kusch, Bahar Hazal Yalçinkaya, Damien Depannemaecker, Trang-Anh E. Nghiem, Viktor Jirsa, Alain Destexhe
+bioRxiv 2021.08.31.458365; doi: https://doi.org/10.1101/2021.08.31.458365
+
+.. moduleauthor:: Michiel. A. van der Vlag <m.van.der.vlag@fz-juelich.de>
+
+*/
 
 #include <stdio.h> // for printf
 #define PI_2 (2 * M_PI_F)
