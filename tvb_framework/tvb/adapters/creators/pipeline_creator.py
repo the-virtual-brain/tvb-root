@@ -36,7 +36,7 @@ from tvb.adapters.forms.pipeline_forms import IPPipelineAnalysisLevelsEnum, get_
 from tvb.basic.neotraits.api import List, Int, EnumAttr, TVBEnum, Attr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.neotraits.forms import TraitUploadField, SimpleLabelField, SelectField, StrField, BoolField, FormField, \
-    IntField, Form
+    IntField, Form, ValidatedTraitUploadField
 from tvb.core.neotraits.view_model import ViewModel, Str
 from tvb.core.pipeline.analysis_levels import PipelineAnalysisLevel, PreprocAnalysisLevel, ParticipantAnalysisLevel, \
     GroupAnalysisLevel
@@ -277,7 +277,8 @@ class IPPipelineCreatorForm(ABCAdapterForm):
         super(IPPipelineCreatorForm, self).__init__()
 
         self.pipeline_job = SimpleLabelField("Pipeline Job1")
-        self.mri_data = TraitUploadField(IPPipelineCreatorModel.mri_data, '.zip', 'mri_data')
+        self.mri_data = ValidatedTraitUploadField(IPPipelineCreatorModel.mri_data, '.zip', 'mri_data',
+                                                  js_validator_func='validateBidsZip')
         self.participant_label = StrField(IPPipelineCreatorModel.participant_label)
         self.session_label = StrField(IPPipelineCreatorModel.session_label)
         self.task_label = StrField(IPPipelineCreatorModel.task_label)

@@ -1,0 +1,25 @@
+{
+  "name": "framework_tvb",
+  "version": "1.0.0",
+  "description": "TVB FRAMEWORK\r =============",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "CODEMART",
+  "license": "ISC",
+  "dependencies": {
+    "adm-zip": "^0.5.9",
+    "assert": "^2.0.0",
+    "bids-validator": "^1.9.3",
+    "browserify-zlib": "^0.2.0",
+    "buffer": "^6.0.3",
+    "crypto-browserify": "^3.12.0",
+    "stream-browserify": "^3.0.0"
+  },
+  "devDependencies": {
+    "fs": "^0.0.1-security",
+    "webpack": "^5.73.0",
+    "webpack-cli": "^4.9.2"
+  }
+}
