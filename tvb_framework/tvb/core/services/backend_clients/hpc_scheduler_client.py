@@ -46,7 +46,7 @@ from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasure
 from tvb.core.entities.model.model_operation import Operation, STATUS_CANCELED, STATUS_ERROR
 from tvb.core.entities.storage import dao, OperationDAO
 from tvb.core.neocom import h5
-from tvb.core.services.backend_clients.hpc_client import HPCClient, get_op_thread, HPCOperationThread
+from tvb.core.services.backend_clients.hpc_client_base import HPCClientBase, get_op_thread, HPCOperationThread
 from tvb.core.services.burst_service import BurstService
 from tvb.storage.storage_interface import StorageInterface
 
@@ -61,7 +61,7 @@ LOGGER = get_logger(__name__)
 HPC_THREADS = []
 
 
-class HPCSchedulerClient(HPCClient):
+class HPCSchedulerClient(HPCClientBase):
     """
     Simple class, to mimic the same behavior we are expecting from StandAloneClient, but firing the operation on
     an HPC node. Define TVB_BIN_ENV_KEY and CSCS_LOGIN_TOKEN_ENV_KEY as environment variables before running on HPC.
@@ -147,7 +147,7 @@ class HPCSchedulerClient(HPCClient):
         LOGGER.info("Encrypt job inputs for operation: {}".format(operation.id))
         job_encrypted_inputs = encryption_handler.encrypt_inputs(job_plain_inputs)
 
-        job = HPCClient._prepare_pyunicore_job(operation=operation, job_inputs=job_encrypted_inputs,
+        job = HPCClientBase._prepare_pyunicore_job(operation=operation, job_inputs=job_encrypted_inputs,
                                                job_script=job_script, job_config=job_config, auth_token=auth_token)
         job.start()
         return job
@@ -155,17 +155,17 @@ class HPCSchedulerClient(HPCClient):
     @staticmethod
     def _stage_out_results(working_dir, simulator_gid):
         # type: (Storage, typing.Union[uuid.UUID, str]) -> list
-        output_subfolder = HPCClient.CSCS_DATA_FOLDER + '/' + HPCClient.OUTPUT_FOLDER
-        output_list = HPCClient._listdir(working_dir, output_subfolder)
+        output_subfolder = HPCClientBase.CSCS_DATA_FOLDER + '/' + HPCClientBase.OUTPUT_FOLDER
+        output_list = HPCClientBase._listdir(working_dir, output_subfolder)
         LOGGER.info("Output list {}".format(output_list))
         storage_interface = StorageInterface()
         encrypted_dir = os.path.join(storage_interface.get_encryption_handler(simulator_gid).get_encrypted_dir(),
-                                     HPCClient.OUTPUT_FOLDER)
-        encrypted_files = HPCClient._stage_out_outputs(encrypted_dir, output_list)
+                                     HPCClientBase.OUTPUT_FOLDER)
+        encrypted_files = HPCClientBase._stage_out_outputs(encrypted_dir, output_list)
 
         # Clean data uploaded on CSCS
         LOGGER.info("Clean uploaded files and results")
-        working_dir.rmdir(HPCClient.CSCS_DATA_FOLDER)
+        working_dir.rmdir(HPCClientBase.CSCS_DATA_FOLDER)
 
         LOGGER.info(encrypted_files)
         return encrypted_files

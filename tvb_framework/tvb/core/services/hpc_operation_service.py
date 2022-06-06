@@ -43,7 +43,7 @@ from tvb.core.entities.load import get_class_by_name
 from tvb.core.entities.model.model_operation import STATUS_ERROR, STATUS_CANCELED, STATUS_FINISHED
 from tvb.core.entities.model.model_operation import STATUS_STARTED, STATUS_PENDING
 from tvb.core.entities.storage import dao
-from tvb.core.services.backend_clients.hpc_client import HPCJobStatus
+from tvb.core.services.backend_clients.hpc_client_base import HPCJobStatus
 from tvb.core.services.backend_clients.hpc_pipeline_client import HPCPipelineClient
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
 from tvb.core.services.exceptions import OperationException

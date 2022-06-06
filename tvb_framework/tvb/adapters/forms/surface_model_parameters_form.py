@@ -32,8 +32,7 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 """
-from tvb.adapters.simulator.equation_forms import get_form_for_equation, SurfaceModelEquationsEnum
-from tvb.adapters.simulator.form_methods import SURFACE_EQ_KEY
+from tvb.adapters.forms.equation_forms import get_form_for_equation, SurfaceModelEquationsEnum
 from tvb.basic.neotraits.api import Attr, Float, EnumAttr, TupleEnum, TVBEnum
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.neotraits.forms import Form, FormField, SelectField, FloatField, DynamicSelectField
@@ -57,7 +56,7 @@ class SurfaceModelParametersForm(ABCAdapterForm):
         self.equation = SelectField(EnumAttr(label='Equation', default=self.default_equation),
                                     name='equation',
                                     subform=get_form_for_equation(self.default_equation.value),
-                                    session_key=KEY_CONTEXT_MPS, form_key=SURFACE_EQ_KEY)
+                                    session_key=KEY_CONTEXT_MPS)
 
     @staticmethod
     def get_required_datatype():

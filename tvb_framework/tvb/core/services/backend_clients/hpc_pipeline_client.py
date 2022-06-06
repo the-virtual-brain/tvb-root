@@ -42,7 +42,7 @@ from tvb.core.entities.model.model_datatype import ZipDatatype
 from tvb.core.entities.model.model_operation import STATUS_ERROR
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
-from tvb.core.services.backend_clients.hpc_client import HPCClient, HPCOperationThread
+from tvb.core.services.backend_clients.hpc_client_base import HPCClientBase, HPCOperationThread
 from tvb.core.services.exceptions import OperationException
 from tvb.storage.storage_interface import StorageInterface
 
@@ -57,7 +57,7 @@ LOGGER = get_logger(__name__)
 HPC_THREADS = []
 
 
-class HPCPipelineClient(HPCClient):
+class HPCPipelineClient(HPCClientBase):
     """
     HPC backend client to run the image processing pipeline.
     """
@@ -125,8 +125,8 @@ class HPCPipelineClient(HPCClient):
             my_job[HPCSettings.UNICORE_IMPORTS_KEY] = [pipeline_script, json_parser]
 
         # TODO: Maybe take HPC Project also from GUI?
-        if HPCClient.CSCS_PROJECT in os.environ:
-            my_job[HPCSettings.UNICORE_PROJECT_KEY] = os.environ[HPCClient.CSCS_PROJECT]
+        if HPCClientBase.CSCS_PROJECT in os.environ:
+            my_job[HPCSettings.UNICORE_PROJECT_KEY] = os.environ[HPCClientBase.CSCS_PROJECT]
 
         return my_job, bash_entrypoint
 
@@ -134,7 +134,7 @@ class HPCPipelineClient(HPCClient):
     def _launch_job_with_pyunicore(operation, authorization_token):
         # type: (Operation, str) -> list[Job]
         op_id = operation.id
-        site_client = HPCClient._build_unicore_client(authorization_token,
+        site_client = HPCClientBase._build_unicore_client(authorization_token,
                                                       unicore_client._HBP_REGISTRY_URL,
                                                       TvbProfile.current.hpc.HPC_COMPUTE_SITE)
 
@@ -156,7 +156,7 @@ class HPCPipelineClient(HPCClient):
         inputs = HPCPipelineClient._prepare_input(operation)
 
         LOGGER.info("[Operation {}] Prepare first UNICORE job".format(op_id))
-        job = HPCClient._prepare_pyunicore_job(operation=operation, job_inputs=inputs, job_script=None,
+        job = HPCClientBase._prepare_pyunicore_job(operation=operation, job_inputs=inputs, job_script=None,
                                                job_config=job_config,
                                                auth_token=authorization_token, inputs_subfolder=None)
         mount_point = job.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]
@@ -201,7 +201,7 @@ class HPCPipelineClient(HPCClient):
                                                               stage_in_remote_files=False)
             job_config2['haveClientStageIn'] = True
             LOGGER.info("[Operation {}] Prepare second UNICORE job".format(op_id))
-            job2 = HPCClient._prepare_pyunicore_job(operation=operation, job_inputs=[], job_script=None,
+            job2 = HPCClientBase._prepare_pyunicore_job(operation=operation, job_inputs=[], job_script=None,
                                                     job_config=job_config2,
                                                     auth_token=authorization_token, inputs_subfolder=None)
             job2.start()
@@ -238,7 +238,7 @@ class HPCPipelineClient(HPCClient):
 
     @staticmethod
     def _generate_public_private_keys_hpc(mount_point):
-        site_client = HPCClient._build_unicore_client(os.environ[HPCClient.CSCS_LOGIN_TOKEN_ENV_KEY],
+        site_client = HPCClientBase._build_unicore_client(os.environ[HPCClientBase.CSCS_LOGIN_TOKEN_ENV_KEY],
                                                       unicore_client._HBP_REGISTRY_URL,
                                                       TvbProfile.current.hpc.HPC_COMPUTE_SITE)
         script_path = os.path.join(mount_point, HPCSettings.HPC_PIPELINE_LAUNCHER_SH_SCRIPT)
@@ -251,7 +251,7 @@ class HPCPipelineClient(HPCClient):
     def _run_hpc_job(operation_identifier, authorization_token):
         # type: (int, str) -> None
         operation = dao.get_operation_by_id(operation_identifier)
-        project_folder = HPCClient.storage_interface.get_project_folder(operation.project.name)
+        project_folder = HPCClientBase.storage_interface.get_project_folder(operation.project.name)
         storage_interface = StorageInterface()
         storage_interface.inc_running_op_count(project_folder)
 
@@ -285,7 +285,7 @@ class HPCPipelineClient(HPCClient):
     @staticmethod
     def _stage_out_results(working_dir):
         # type: (Storage) -> list
-        output_list = HPCClient._listdir(working_dir)
+        output_list = HPCClientBase._listdir(working_dir)
         LOGGER.info("Output list {}".format(output_list))
         storage_interface = StorageInterface()
         # TODO: Choose a local folder to copy back the encrypted results
@@ -294,11 +294,11 @@ class HPCPipelineClient(HPCClient):
                                              now.minute, now.second, now.microsecond)
         uq_name = "PipelineResults-%s" % date_str
         unique_Path = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, uq_name)
-        encrypted_files = HPCClient._stage_out_outputs(unique_Path, output_list)
+        encrypted_files = HPCClientBase._stage_out_outputs(unique_Path, output_list)
 
         # Clean data uploaded on CSCS
         LOGGER.info("Clean uploaded files and results")
-        # working_dir.rmdir(HPCClient.CSCS_DATA_FOLDER)
+        # working_dir.rmdir(HPCClientBase.CSCS_DATA_FOLDER)
 
         LOGGER.info(encrypted_files)
         return encrypted_files
@@ -326,7 +326,7 @@ class HPCPipelineClient(HPCClient):
             stdout.download(os.path.join(local_logs_dir, str(index) + '_' + stdout_f))
 
             try:
-                output_list = HPCClient._listdir(working_dir, base='intermediary_logs')
+                output_list = HPCClientBase._listdir(working_dir, base='intermediary_logs')
 
                 for output_filename, output_filepath in output_list.items():
                     if type(output_filepath) is not unicore_client.PathFile:
@@ -339,7 +339,7 @@ class HPCPipelineClient(HPCClient):
                 LOGGER.warning("Exception when trying to download intermediary logs from HPC: {}".format(e.message))
 
         project = dao.get_project_by_id(operation.fk_launched_in)
-        operation_dir = HPCClient.storage_interface.get_project_folder(project.name, str(operation.id))
+        operation_dir = HPCClientBase.storage_interface.get_project_folder(project.name, str(operation.id))
         results_zip = os.path.join(operation_dir, 'pipeline_results.zip')
         StorageInterface().write_zip_folder(results_zip, local_logs_dir)
         # StorageInterface.remove_folder(local_logs_dir)
@@ -352,7 +352,7 @@ class HPCPipelineClient(HPCClient):
         encrypted_files = HPCPipelineClient._stage_out_results(working_dir)
 
         project = dao.get_project_by_id(operation.fk_launched_in)
-        operation_dir = HPCClient.storage_interface.get_project_folder(project.name, str(operation.id))
+        operation_dir = HPCClientBase.storage_interface.get_project_folder(project.name, str(operation.id))
 
         # TODO: decrypt pipeline results under the operation dir?
         assert len(encrypted_files) > 0
@@ -367,7 +367,7 @@ class HPCPipelineClient(HPCClient):
     def update_db_with_results(operation, results_zip):
         # type: (Operation, str) -> (str, int)
         project = dao.get_project_by_id(operation.fk_launched_in)
-        op_dir = HPCClient.storage_interface.get_project_folder(project.name, str(operation.id))
+        op_dir = HPCClientBase.storage_interface.get_project_folder(project.name, str(operation.id))
         view_model = h5.load_view_model(operation.view_model_gid, op_dir)
 
         ga = GenericAttributes()

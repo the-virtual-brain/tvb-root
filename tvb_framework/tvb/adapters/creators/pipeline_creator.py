@@ -30,7 +30,6 @@
 import json
 import os
 
-from tvb.adapters.forms.form_methods import PIPELINE_KEY
 from tvb.adapters.forms.pipeline_forms import IPPipelineAnalysisLevelsEnum, get_form_for_analysis_level, \
     PreprocPipelineForm
 from tvb.basic.neotraits.api import List, Int, EnumAttr, TVBEnum, Attr
@@ -248,7 +247,7 @@ class PipelineStep1Form(Form):
                                                    default=IPPipelineAnalysisLevelsEnum.PREPROC_LEVEL.instance,
                                                    doc="""Select the analysis level that the pipeline will be launched
                                                     on."""), name='analysis_level', subform=PreprocPipelineForm,
-                                          session_key=KEY_PIPELINE, form_key=PIPELINE_KEY)
+                                          session_key=KEY_PIPELINE)
 
 
 class PipelineStep2Form(Form):

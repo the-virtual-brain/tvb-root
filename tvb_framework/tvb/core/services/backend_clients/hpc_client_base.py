@@ -89,7 +89,7 @@ class HPCOperationThread(Thread):
         return self._stop_event.is_set()
 
 
-class HPCClient(BackendClient):
+class HPCClientBase(BackendClient):
     """
     Base class for HPC clients: HPCPipelineClient and HPCSchedulerClient (simulation).
     """
@@ -117,14 +117,14 @@ class HPCClient(BackendClient):
                                inputs_subfolder=''):
         # use "DAINT-CSCS" -- change if another supercomputer is prepared for usage
         LOGGER.info("Prepare unicore client for operation: {}".format(operation.id))
-        site_client = HPCClient._build_unicore_client(auth_token,
-                                                      unicore_client._HBP_REGISTRY_URL,
-                                                      TvbProfile.current.hpc.HPC_COMPUTE_SITE)
+        site_client = HPCClientBase._build_unicore_client(auth_token,
+                                                          unicore_client._HBP_REGISTRY_URL,
+                                                          TvbProfile.current.hpc.HPC_COMPUTE_SITE)
 
         LOGGER.info("Submit job for operation: {}".format(operation.id))
-        job = HPCClient._create_job_with_pyunicore(pyunicore_client=site_client, job_description=job_config,
-                                                   job_script=job_script, inputs=job_inputs,
-                                                   inputs_subfolder=inputs_subfolder)
+        job = HPCClientBase._create_job_with_pyunicore(pyunicore_client=site_client, job_description=job_config,
+                                                       job_script=job_script, inputs=job_inputs,
+                                                       inputs_subfolder=inputs_subfolder)
         LOGGER.info("Job url {} for operation: {}".format(job.resource_url, operation.id))
         op_identifier = OperationProcessIdentifier(operation_id=operation.id, job_id=job.resource_url)
         dao.store_entity(op_identifier)
@@ -166,9 +166,9 @@ class HPCClient(BackendClient):
 
         working_dir = job.working_dir
         if job_script is not None:
-            HPCClient._upload_file_with_pyunicore(working_dir, job_script, None)
+            HPCClientBase._upload_file_with_pyunicore(working_dir, job_script, None)
         for input_file in inputs:
-            HPCClient._upload_file_with_pyunicore(working_dir, input_file, inputs_subfolder)
+            HPCClientBase._upload_file_with_pyunicore(working_dir, input_file, inputs_subfolder)
         return job
 
     @staticmethod
@@ -182,7 +182,7 @@ class HPCClient(BackendClient):
         if destination is None:
             destination = os.path.basename(input_name)
         if subfolder == '':
-            subfolder = HPCClient.CSCS_DATA_FOLDER
+            subfolder = HPCClientBase.CSCS_DATA_FOLDER
 
         if subfolder:
             url = "{}/{}/{}/{}".format(working_dir.resource_url, "files", subfolder, destination)

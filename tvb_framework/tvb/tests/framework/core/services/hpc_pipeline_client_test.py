@@ -3,7 +3,7 @@ import os
 
 from tvb.adapters.creators.pipeline_creator import IPPipelineCreatorModel
 from tvb.basic.profile import TvbProfile
-from tvb.core.services.backend_clients.hpc_client import HPCClient
+from tvb.core.services.backend_clients.hpc_client_base import HPCClientBase
 from tvb.core.services.backend_clients.hpc_pipeline_client import HPCPipelineClient
 from tvb.interfaces.rest.commons.files_helper import create_temp_folder
 from tvb.storage.storage_interface import StorageInterface
@@ -60,12 +60,12 @@ def test_hpc_pipeline(operation_factory):
             , outfile)
 
     # Add correct path to tvb_bin folder and a valid ebrains auth token
-    os.environ[HPCClient.TVB_BIN_ENV_KEY] = "/Users/bvalean/WORK/tvb-root/tvb_bin"
-    os.environ[HPCClient.CSCS_PROJECT] = "ich012"
-    os.environ.setdefault(HPCClient.CSCS_LOGIN_TOKEN_ENV_KEY,
+    os.environ[HPCClientBase.TVB_BIN_ENV_KEY] = "/Users/bvalean/WORK/tvb-root/tvb_bin"
+    os.environ[HPCClientBase.CSCS_PROJECT] = "ich012"
+    os.environ.setdefault(HPCClientBase.CSCS_LOGIN_TOKEN_ENV_KEY,
                           '')
     TvbProfile.current.hpc.HPC_COMPUTE_SITE = 'DAINT-CSCS'
 
     hpc_pipeline_client = HPCPipelineClient()
-    jobs_list = hpc_pipeline_client._launch_job_with_pyunicore(op, os.environ[HPCClient.CSCS_LOGIN_TOKEN_ENV_KEY])
+    jobs_list = hpc_pipeline_client._launch_job_with_pyunicore(op, os.environ[HPCClientBase.CSCS_LOGIN_TOKEN_ENV_KEY])
     assert len(jobs_list) == 2
