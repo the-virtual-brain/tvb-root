@@ -1,5 +1,15 @@
 ======================================================================================================================================
  The Virtual Brain (TVB)
+ Version: 2.6 - build 17216
+ Release Date: 8 June 2022
+ Description: release on Pypi
+======================================================================================================================================
+    * Bug fixes
+    * simulator.plots updated
+    * rename scientific_library into tvb_library and framework_tvb into tvb_framework
+
+======================================================================================================================================
+ The Virtual Brain (TVB)
  Version: 2.5 - build 17095
  Release Date: 15 May 2022
  Description: release on Pypi
