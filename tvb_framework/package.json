@@ -9,10 +9,8 @@
   "author": "CODEMART",
   "license": "ISC",
   "dependencies": {
-    "adm-zip": "^0.5.9",
     "assert": "^2.0.0",
-    "bids-validator": "^1.9.3",
-    "browserify-zlib": "^0.2.0",
+    "bids-validator": "^1.9.4",
     "buffer": "^6.0.3",
     "crypto-browserify": "^3.12.0",
     "stream-browserify": "^3.0.0"

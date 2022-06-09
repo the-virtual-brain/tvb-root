@@ -20,7 +20,7 @@ function buildParagraphs( messages, target, type ) {
  * @param result - result object
  * @param target - target html element
  */
-function buildResult( result, target ) {
+function buildResultSummary( result, target ) {
     if (result.errors.length > 0) {
         const description = '<p style="color: red;">Errors:</p>';
         target.innerHTML = description;
@@ -62,7 +62,6 @@ function validateBidsDir( selectedFiles ) {
                     summary,
                     status: 'validated',
                 };
-                console.log('result: ', result);
             } else {
                 result = {
                     errors: issues.errors ? issues.errors : [],
@@ -70,15 +69,15 @@ function validateBidsDir( selectedFiles ) {
                     summary,
                     status: 'validated',
                 };
-                console.log('result: ', result);
             }
-            buildResult(result, resultTarget);
+            console.log('result: ', result);
+            buildResultSummary(result, resultTarget);
             return result;
         },
     );
 }
 
-// add the event to directory typ input to validate the BIDS directory
+// add the event to directory input to validate the BIDS directory
 const upload = document.getElementById('mri_data');
 if (upload) {
     upload.addEventListener("change", (e) => {

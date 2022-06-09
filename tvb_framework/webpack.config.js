@@ -14,8 +14,6 @@ module.exports = {
             assert: "assert",
             stream: "stream-browserify",
             buffer: "buffer",
-            zlib: "browserify-zlib",
-            crypto: "crypto-browserify",
             fs: false
         }
     },
