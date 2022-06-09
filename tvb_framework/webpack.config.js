@@ -2,6 +2,7 @@ const path = require('path');
 const webpack = require('webpack');
 
 module.exports = {
+    mode: 'production',
     entry: './src/validators.js',
     output: {
         libraryTarget: 'umd',
@@ -27,7 +28,7 @@ module.exports = {
         }),
     ],
     optimization: {
-        minimize: false,
+        minimize: true,
         chunkIds: 'named',
     },
 };

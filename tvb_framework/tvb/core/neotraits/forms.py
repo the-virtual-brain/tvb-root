@@ -124,10 +124,9 @@ TEMPORARY_PREFIX = ".tmp"
 class ValidatedTraitUploadField(TraitField):
     template = 'form_fields/validated_upload_field.html'
 
-    def __init__(self, traited_attribute, required_type, name, disabled=False, js_validator_func=None):
+    def __init__(self, traited_attribute, required_type, name, disabled=False):
         super(ValidatedTraitUploadField, self).__init__(traited_attribute, name, disabled)
         self.required_type = required_type
-        self.validator = js_validator_func
 
 
 class TraitUploadField(TraitField):
