@@ -58,10 +58,10 @@ class AnnotationTerm(object):
         self.parent_left = parent_left
         self.parent_right = parent_right
         self.relation = relation
-        self.label = label
-        self.definition = definition
-        self.synonym = synonym
-        self.uri = uri
+        self.label = label.decode('UTF-8') if isinstance(label, bytes) else str(label)
+        self.definition = definition.decode('UTF-8') if isinstance(definition, bytes) else str(definition)
+        self.synonym = synonym.decode('UTF-8') if isinstance(synonym, bytes) else str(synonym)
+        self.uri = uri.decode('UTF-8') if isinstance(uri, bytes) else str(uri)
         self.synonym_tvb_left = tvb_left or -1
         self.synonym_tvb_right = tvb_right or -1
         self.children = []

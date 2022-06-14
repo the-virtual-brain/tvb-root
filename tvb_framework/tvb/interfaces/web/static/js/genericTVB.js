@@ -999,7 +999,7 @@ function HLPR_readJSONfromFile(fileName, staticFiles) {
     doAjaxCall({
         async: false,
         url: fileName,
-        methos: "GET",
+        method: "GET",
         mimeType: "text/plain",
         success: function (r) {
             fileData = r;
