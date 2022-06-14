@@ -127,7 +127,7 @@ SHADING_Context.one_to_one_program_init = function(shader){
 };
 
 /** Init the program that uses per region activity and a color scheme */
-SHADING_Context.region_progam_init = function(shader, measure_point_nr, legendGranularity){
+SHADING_Context.region_program_init = function(shader, measure_point_nr, legendGranularity){
     SHADING_Context._brain_common(shader);
     shader.vertexRegionAttribute = gl.getAttribLocation(shader, "aVertexRegion");
     gl.enableVertexAttribArray(shader.vertexRegionAttribute);

@@ -251,7 +251,7 @@ class ABCSurfaceDisplayer(ABCSpaceDisplayer):
                 boundary_vertices.append(processed_vertices)
                 boundary_lines.append(processed_triangles)
                 boundary_normals.append(processed_normals)
-            return numpy.array([boundary_vertices, boundary_lines, boundary_normals]).tolist()
+            return [boundary_vertices, boundary_lines, boundary_normals]
 
     @staticmethod
     def _process_triangle(triangle, reg_idx1, reg_idx2, dangling_idx, indices_offset,
