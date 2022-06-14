@@ -16,7 +16,7 @@ User's Guide
 ============
 
 This document provides the most basic tutorial to get the new user started
-working with |TVB|, version 1.0. As |TVB| will be updated regularly, please
+working with |TVB|. As |TVB| is updated from time to time, please
 check for updates on our web site: http://www.thevirtualbrain.org.
 
 .. toctree::
