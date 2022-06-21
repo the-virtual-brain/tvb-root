@@ -33,6 +33,8 @@ Models based on Wong-Wang's work.
 
 """
 
+import numpy as np
+
 from numba import guvectorize, float64
 from tvb.simulator.models.wong_wang_exc_inh import ReducedWongWangExcInh as TVBReducedWongWangExcInh
 from tvb.simulator.models.base import numpy, ModelNumbaDfun
@@ -254,7 +256,7 @@ def _numba_update_non_state_variables_before_integration_fic(S, c,
 
     jnSe = jn[0] * S[0]
 
-    I_e = wp[0] * jnSe - S[2] * S[1] + we[0] * io[0] + cc + ie[0]  # I_e
+    I_e = wp[0] * jnSe -S[2] * S[1] + we[0] * io[0] + cc + ie[0]  # I_e
     x = ae[0]*I_e - be[0]
     h = x / (1 - numpy.exp(-de[0]*x))
     newS[3] = h  # R_e
@@ -266,11 +268,43 @@ def _numba_update_non_state_variables_before_integration_fic(S, c,
 
 
 @guvectorize([(float64[:],)*9], '(n),(m)' + ',()'*6 + '->(n)', nopython=True)
-def _numba_dfun_fic(X, R, ge, te, gi, ti, eta, r_e_0, dx):
+def _numba_dfun_fic_JS(X, R, ge, te, gi, ti, eta, r_e_0, dx):
     "Gufunc for reduced Wong-Wang model equations."
     dx[0] = - (X[0] / te[0]) + (1.0 - X[0]) * R[0] * ge[0]
     dx[1] = - (X[1] / ti[0]) + R[1] * gi[0]
-    dx[2] = eta[0] * X[2] * X[1] * (R[0] - r_e_0[0])  # X[2] * X[1] *  or R[1]
+    dx[2] = eta[0] * X[2] * X[1] * (R[0] - r_e_0[0])
+
+
+@guvectorize([(float64[:],)*9], '(n),(m)' + ',()'*6 + '->(n)', nopython=True)
+def _numba_dfun_fic_S(X, R, ge, te, gi, ti, eta, r_e_0, dx):
+    "Gufunc for reduced Wong-Wang model equations."
+    dx[0] = - (X[0] / te[0]) + (1.0 - X[0]) * R[0] * ge[0]
+    dx[1] = - (X[1] / ti[0]) + R[1] * gi[0]
+    dx[2] = eta[0] * X[1] * (R[0] - r_e_0[0])
+
+
+@guvectorize([(float64[:],)*9], '(n),(m)' + ',()'*6 + '->(n)', nopython=True)
+def _numba_dfun_fic_R(X, R, ge, te, gi, ti, eta, r_e_0, dx):
+    "Gufunc for reduced Wong-Wang model equations."
+    dx[0] = - (X[0] / te[0]) + (1.0 - X[0]) * R[0] * ge[0]
+    dx[1] = - (X[1] / ti[0]) + R[1] * gi[0]
+    dx[2] = eta[0] * R[1] * (R[0] - r_e_0[0])
+
+
+@guvectorize([(float64[:],)*9], '(n),(m)' + ',()'*6 + '->(n)', nopython=True)
+def _numba_dfun_fic_1(X, R, ge, te, gi, ti, eta, r_e_0, dx):
+    "Gufunc for reduced Wong-Wang model equations."
+    dx[0] = - (X[0] / te[0]) + (1.0 - X[0]) * R[0] * ge[0]
+    dx[1] = - (X[1] / ti[0]) + R[1] * gi[0]
+    dx[2] = eta[0] * (R[0] - r_e_0[0])
+
+
+@guvectorize([(float64[:],)*9], '(n),(m)' + ',()'*6 + '->(n)', nopython=True)
+def _numba_dfun_fic_no(X, R, ge, te, gi, ti, eta, r_e_0, dx):
+    "Gufunc for reduced Wong-Wang model equations."
+    dx[0] = - (X[0] / te[0]) + (1.0 - X[0]) * R[0] * ge[0]
+    dx[1] = - (X[1] / ti[0]) + R[1] * gi[0]
+    dx[2] = 0.0*R[0]
 
 
 class ReducedWongWangExcIOInhIFIC(ReducedWongWangExcIOInhI):
@@ -321,9 +355,74 @@ class ReducedWongWangExcIOInhIFIC(ReducedWongWangExcIOInhI):
     _nvar = 5
     cvar = numpy.array([0], dtype=numpy.int32)
 
+    FIC = "R"
+
+    _fic_fun = None
+    _Ji_fun = None
+    _numba_dfun = None
+
+    def _fic_fun_JS(self, J_i, S, R):
+        return self.eta * J_i * S * (R[0] - self.R_e_0)
+
+    def _fic_fun_S(self, J_i, S, R):
+        return self.eta * S * (R[0] - self.R_e_0)
+
+    def _fic_fun_R(self, J_i, S, R):
+        return self.eta * R[1] * (R[0] - self.R_e_0)
+
+    def _fic_fun_1(self, J_i, S, R):
+        return self.eta * (R[0] - self.R_e_0)
+
+    def _fic_fun_0(self, J_i, S, R):
+        return 0.0*S
+
+    def _Ji_fun_FIC(self, J_i):
+        return J_i
+
+    def _Ji_fun_noFIC(self, J_i):
+        return self.J_i[:, np.newaxis]
+
+    def update_derived_parameters(self):
+        """
+        When needed, this should be a method for calculating parameters that are
+        calculated based on paramaters directly set by the caller. For example,
+        see, ReducedSetFitzHughNagumo. When not needed, this pass simplifies
+        code that updates an arbitrary models parameters -- ie, this can be
+        safely called on any model, whether it's used or not.
+        """
+        super(ReducedWongWangExcIOInhIFIC, self).update_derived_parameters()
+        if self.FIC:
+            self._Ji_fun = self._Ji_fun_FIC
+            if self.FIC == 1:
+                self._fic_fun = self._fic_fun_1
+                self._numba_dfun_fic = _numba_dfun_fic_1
+            else:
+                try:
+                    self.FIC = self.FIC.upper()
+                except:
+                    raise ValueError("The FIC mode parameters has to be one of '0, 1, 'JS', 'S', 'R''!"
+                                     "\nInstead %s was given!" % str(self.FIC))
+                if self.FIC == "JS":
+                    self._fic_fun = self._fic_fun_JS
+                    self._numba_dfun_fic = _numba_dfun_fic_JS
+                elif self.FIC == "S":
+                    self._fic_fun = self._fic_fun_S
+                    self._numba_dfun_fic = _numba_dfun_fic_S
+                elif self.FIC == "R":
+                    self._fic_fun = self._fic_fun_R
+                    self._numba_dfun_fic = _numba_dfun_fic_R
+                else:
+                    raise ValueError("The FIC mode parameters has to be one of '0, 1, 'JS', 'S', 'R''!"
+                                     "\nInstead %s was given!" % str(self.FIC))
+        else:
+            self._Ji_fun = self._Ji_fun_noFIC
+            self._fic_fun = self._fic_fun_0
+            self._numba_dfun_fic = _numba_dfun_fic_no
+
     def update_state_variables_before_integration(self, state_variables, coupling, local_coupling=0.0, stimulus=0.0):
         self._stimulus = stimulus
         if self.use_numba:
+            state_variables[2] = self._Ji_fun(state_variables[2])
             state_variables = \
                 _numba_update_non_state_variables_before_integration_fic(
                     state_variables.reshape(state_variables.shape[:-1]).T,
@@ -341,8 +440,8 @@ class ReducedWongWangExcIOInhIFIC(ReducedWongWangExcIOInhI):
         # and we consider them constant for any subsequent possible call to this function,
         # by any integration scheme
 
-        S = state_variables[:2, :]  # synaptic gating dynamics
-        J_i = state_variables[2, :]  # FIC dynamics
+        S = state_variables[:2, :]              # synaptic gating dynamics
+        J_i = self._Ji_fun(state_variables[2])  # FIC dynamics
 
         c_0 = coupling[0, :]
 
@@ -381,15 +480,15 @@ class ReducedWongWangExcIOInhIFIC(ReducedWongWangExcIOInhI):
                  \dot{S}_{ik} &= -\dfrac{S_{ik}}{\tau_i} + \gamma_iH(x_{ik}) \,
 
         """
-        S = integration_variables[:2, :]     # Synaptic gating dynamics
-        J_i = integration_variables[2, :]  # FIC dynamics
+        S = integration_variables[:2, :]        # Synaptic gating dynamics
+        J_i = self._Ji_fun(integration_variables[2])  # FIC dynamics
 
         # Synaptic gating dynamics
         dS_e = - (S[0] / self.tau_e) + (1 - S[0]) * R[0] * self.gamma_e
         dS_i = - (S[1] / self.tau_i) + R[1] * self.gamma_i
 
         # FIC dynamics
-        dJ_i = self.eta * J_i * S[1] * (R[0] - self.R_e_0)  # or R[1] instead of J_i * S[1] *
+        dJ_i = self._fic_fun(J_i, S[1], R)
 
         return numpy.array([dS_e, dS_i, dJ_i])
 
@@ -402,9 +501,9 @@ class ReducedWongWangExcIOInhIFIC(ReducedWongWangExcIOInhI):
         else:
             R = self._R
         if self.use_numba:
-            deriv = _numba_dfun_fic(x.reshape(x.shape[:-1]).T, R.reshape(R.shape[:-1]).T,
-                                    self.gamma_e, self.tau_e, self.gamma_i, self.tau_i,
-                                    self.eta, self.R_e_0).T[..., numpy.newaxis]
+            deriv = self._numba_dfun_fic(x.reshape(x.shape[:-1]).T, R.reshape(R.shape[:-1]).T,
+                                         self.gamma_e, self.tau_e, self.gamma_i, self.tau_i,
+                                         self.eta, self.R_e_0).T[..., numpy.newaxis]
         else:
             deriv = self._numpy_dfun(x, R)
         #  Set them to None so that they are recomputed on subsequent steps
