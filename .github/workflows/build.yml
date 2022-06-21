@@ -28,7 +28,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.local
-          key: ${{ runner.os }}-pip-${{ hashFiles('req_done_${{ matrix.python-version }}.out') }}
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('tvb_framework/requirements.txt') }}
 
       - name: install tools and dependencies
         if: steps.cache-local.outputs.cache-hit != 'true'
@@ -39,7 +39,6 @@ jobs:
           python3 -m pip install scikit-build
           pip3 install --user -r tvb_framework/requirements.txt
           pip3 install --user --no-build-isolation tvb-gdist
-          echo "DONE PIP" > req_done_${{ matrix.python-version }}.out
 
       - name: setup tvb
         run: cd tvb_build && bash install_full_tvb.sh

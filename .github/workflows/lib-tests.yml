@@ -25,7 +25,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.local
-          key: ${{ runner.os }}-pip-${{ hashFiles('req_done.out') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('tvb_library/requirements.txt') }}
 
       - name: pip install dependencies
         if: steps.cache-local.outputs.cache-hit != 'true'
@@ -33,7 +33,6 @@ jobs:
           python3 -m pip install --upgrade pip
           pip3 install --user -r tvb_library/requirements.txt
           pip3 install --user --no-build-isolation tvb-gdist
-          echo "DONE PIP" > req_done.out
 
       - name: setup tvb
         run: cd tvb_library && python3 setup.py develop --user --no-deps
