@@ -30,7 +30,7 @@ jobs:
         run: echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
 
       - name: create a requirements file
-        run: echo "numba numpy scipy networkx scikit-build scikit-learn scikit-image cython numexpr psutil pytest pytest-cov pytest-xdist pytest-benchmark pytest-mock matplotlib h5py>=2.10 typing BeautifulSoup4 subprocess32 flask-restx python-keycloak mako pyAesCrypt pyunicore formencode flask jinja2 nibabel sqlalchemy alembic allensdk werkzeug gevent cherrypy MarkupSafe decorator tables==3.6.1" | tr ' ' \\n > requirements.txt
+        run: echo "numba numpy scipy networkx scikit-build scikit-learn scikit-image cython numexpr psutil pytest pytest-cov pytest-xdist pytest-benchmark pytest-mock matplotlib h5py>=2.10 typing BeautifulSoup4 subprocess32 flask-restx python-keycloak mako pyAesCrypt pyunicore formencode flask jinja2 nibabel sqlalchemy alembic allensdk werkzeug gevent cherrypy MarkupSafe decorator tables==3.7.0" | tr ' ' \\n > requirements.txt
 
       - name: cache ~/.local for pip deps
         id: cache-local
