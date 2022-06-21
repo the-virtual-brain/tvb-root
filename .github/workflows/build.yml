@@ -8,17 +8,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pythonversion: [ "3.8", "3.9", "3.10" ]
+        python-version: [ "3.8", "3.9", "3.10" ]
 
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
-      - name: set up Python ${{ matrix.pythonversion }}
+      - name: set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v3
         with:
-          python-version: ${{ matrix.pythonversion }}
+          python-version: ${{ matrix.python-version }}
 
       - name: put ~/.local/bin on $PATH
         run: echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
@@ -28,7 +28,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.local
-          key: ${{ runner.os }}-pip-${{ hashFiles('req_done_'+matrix.pythonversion+'.out') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('req_done_${{ matrix.python-version }}.out') }}
 
       - name: install tools and dependencies
         if: steps.cache-local.outputs.cache-hit != 'true'
@@ -39,7 +39,7 @@ jobs:
           python3 -m pip install scikit-build
           pip3 install --user -r tvb_framework/requirements.txt
           pip3 install --user --no-build-isolation tvb-gdist
-          echo "DONE PIP" > req_done_${{ matrix.pythonversion }}.out
+          echo "DONE PIP" > req_done_${{ matrix.python-version }}.out
 
       - name: setup tvb
         run: cd tvb_build && bash install_full_tvb.sh
