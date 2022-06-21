@@ -31,7 +31,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.local
-          key: ${{ runner.os }}-pypi-${{ hashFiles('requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
 
       - name: pip install dependencies
         if: steps.cache-local.outputs.cache-hit != 'true'
