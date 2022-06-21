@@ -62,7 +62,7 @@ class NIFTIParser(object):
             msg = "File: %s does not have a valid NIFTI-1 format." % data_file
             raise ParseException(msg)
 
-        nifti_image_hdr = self.nifti_image.get_header()
+        nifti_image_hdr = self.nifti_image.header
 
         # Check if there is a time dimensions (4th dimension).
         nifti_data_shape = nifti_image_hdr.get_data_shape()
