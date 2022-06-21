@@ -27,7 +27,7 @@ jobs:
         run: echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
 
       - name: create a requirements file
-        run: echo "numba numpy scipy networkx scikit-learn scikit-image cython numexpr psutil pytest pytest-cov pytest-xdist pytest-benchmark pytest-mock matplotlib h5py>=2.10 typing BeautifulSoup4 subprocess32 flask-restx python-keycloak mako pyAesCrypt pyunicore formencode flask jinja2 nibabel sqlalchemy alembic allensdk werkzeug gevent cherrypy MarkupSafe decorator" | tr ' ' \\n > requirements.txt
+        run: echo "numba numpy scipy networkx scikit-learn scikit-image cython numexpr psutil pytest pytest-cov pytest-xdist pytest-benchmark pytest-mock matplotlib h5py>=2.10 typing BeautifulSoup4 subprocess32 flask-restx python-keycloak mako pyAesCrypt pyunicore formencode flask jinja2 nibabel sqlalchemy alembic allensdk werkzeug gevent cherrypy MarkupSafe decorator tables==3.6.1" | tr ' ' \\n > requirements.txt
 
       - name: cache ~/.local for pip deps
         id: cache-local
@@ -36,10 +36,10 @@ jobs:
           path: ~/.local
           key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
 
-      - name: pip install dependencies (from Dockerfile-build)
+      - name: pip install dependencies
         if: steps.cache-local.outputs.cache-hit != 'true'
         run: |
-          pip3 install --user -U numpy h5py
+          pip3 install --user -U numpy
           pip3 install --user -r requirements.txt
           pip3 install --user --no-build-isolation tvb-gdist
 

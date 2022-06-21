@@ -28,7 +28,7 @@ jobs:
 
       - name: cache ~/.local for pip deps
         id: cache-local
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.local
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
@@ -44,7 +44,7 @@ jobs:
 
       - name: cache data
         id: cache-data
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: tvb_data
           key: tvb-data
