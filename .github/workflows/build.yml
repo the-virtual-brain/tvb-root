@@ -17,10 +17,11 @@ jobs:
 
       - name: set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v3
-        env:
-          AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Install APT packages
+        run:  sudo apt install libbz2-dev libhdf5-serial-dev liblzo2-dev
 
       - name: upgrade pip
         run: python3 -m pip install --upgrade pip
@@ -41,6 +42,7 @@ jobs:
       - name: pip install dependencies
         if: steps.cache-local.outputs.cache-hit != 'true'
         run: |
+          python3 -m pip install --upgrade setuptools pip wheel
           pip3 install --user -U numpy
           pip3 install --user -r requirements.txt
           pip3 install --user --no-build-isolation tvb-gdist
