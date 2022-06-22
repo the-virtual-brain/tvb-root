@@ -13,8 +13,10 @@ jobs:
       - name: pycuda test
         run: python3 -c "import pycuda.autoinit; print('yes')"
       
-      - uses: actions/checkout@v1
-      
+      - uses: actions/checkout@v3
+        with:
+            fetch-depth: 0
+
       - name: upgrade pip
         run: python3 -m pip install --upgrade pip
 
@@ -22,7 +24,7 @@ jobs:
         run: echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
 
       - name: create a requirements file
-        run: echo "numba scipy numpy networkx scikit-learn cython numexpr psutil pytest pytest-cov pytest-xdist pytest-benchmark pytest-mock matplotlib psycopg2 h5py>=2.10 typing BeautifulSoup4 subprocess32 flask-restx python-keycloak mako pyAesCrypt pyunicore formencode cfflib jinja2 nibabel sqlalchemy alembic allensdk sphinx==1.2.3 docutils==0.12 werkzeug flask gevent jupyter cherrypy autopep8" | tr ' ' \\n > requirements.txt
+        run: echo "numba scipy numpy networkx cython numexpr psutil pytest pytest-cov pytest-xdist pytest-benchmark pytest-mock matplotlib h5py BeautifulSoup4 subprocess32 mako pylems formencode werkzeug gevent ipywidgets autopep8" | tr ' ' \\n > requirements.txt
 
       - name: cache ~/.local for pip deps
         id: cache-local
@@ -31,14 +33,14 @@ jobs:
           path: ~/.local
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
 
-      - name: pip install dependencies (from Dockerfile-build)
+      - name: pip install dependencies
         if: steps.cache-local.outputs.cache-hit != 'true'
         run: |
           pip3 install --user -r requirements.txt
           pip3 install --user --no-build-isolation tvb-gdist
 
       - name: setup tvb
-        run: cd tvb_build && bash install_full_tvb.sh
+        run: cd tvb_library && python3 setup.py develop --user --no-deps
 
       - name: cache data
         id: cache-data
