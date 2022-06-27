@@ -242,7 +242,13 @@ class ZerlautAdaptationFirstOrder(Model):
         domain=Range(lo=1000, hi=50000, step=1000),
         doc="""cell number""")
 
-    p_connect = NArray(
+    p_connect_e = NArray(
+        label=r":math:`\epsilon`",
+        default=numpy.array([0.05]),
+        domain=Range(lo=0.001, hi=0.2, step=0.001),  # valid only for relatively sparse connectivities
+        doc="""connectivity probability""")
+
+    p_connect_i = NArray(
         label=r":math:`\epsilon`",
         default=numpy.array([0.05]),
         domain=Range(lo=0.001, hi=0.2, step=0.001),  # valid only for relatively sparse connectivities
@@ -395,8 +401,8 @@ class ZerlautAdaptationFirstOrder(Model):
                   Fi_ext + self.external_input_ex_in,
             W_e, self.Q_e, self.tau_e, self.E_e,
             self.Q_i, self.tau_i, self.E_i,
-            self.g_L, self.C_m, self.E_L_e, self.N_tot,
-            self.p_connect, self.g, self.K_ext_e, self.K_ext_i)
+            self.g_L, self.C_m, self.E_L_e, self.N_tot,self.p_connect_e,
+            self.p_connect_i, self.g, self.K_ext_e, self.K_ext_i)
         derivative[2] = -W_e / self.tau_w_e + self.b_e * E + self.a_e * (mu_V - self.E_L_e) / self.tau_w_e
         # Adaptation inhibitory
         mu_V, sigma_V, T_V = self.get_fluct_regime_vars(
@@ -404,8 +410,8 @@ class ZerlautAdaptationFirstOrder(Model):
                   Fi_ext + self.external_input_in_in,
             W_i, self.Q_e, self.tau_e, self.E_e,
             self.Q_i, self.tau_i, self.E_i,
-            self.g_L, self.C_m, self.E_L_i, self.N_tot,
-            self.p_connect, self.g, self.K_ext_e, self.K_ext_i)
+            self.g_L, self.C_m, self.E_L_i, self.N_tot,self.p_connect_e,
+            self.p_connect_i, self.g, self.K_ext_e, self.K_ext_i)
         derivative[3] = -W_i / self.tau_w_i + self.b_i * I + self.a_i * (mu_V - self.E_L_i) / self.tau_w_i
 
         return derivative
@@ -451,7 +457,7 @@ class ZerlautAdaptationFirstOrder(Model):
         mu_V, sigma_V, T_V = self.get_fluct_regime_vars(fe, fi, fe_ext, fi_ext, W, self.Q_e, self.tau_e, self.E_e,
                                                         self.Q_i, self.tau_i, self.E_i,
                                                         self.g_L, self.C_m, E_L, self.N_tot,
-                                                        self.p_connect, self.g, self.K_ext_e, self.K_ext_i)
+                                                        self.p_connect_e, self.p_connect_i, self.g, self.K_ext_e, self.K_ext_i)
         V_thre = self.threshold_func(mu_V, sigma_V, T_V * self.g_L / self.C_m,
                                      P[0], P[1], P[2], P[3], P[4], P[5], P[6], P[7], P[8], P[9])
         V_thre *= 1e3  # the threshold need to be in mv and not in Volt
@@ -461,7 +467,7 @@ class ZerlautAdaptationFirstOrder(Model):
     @staticmethod
     @jit(nopython=True, cache=True)
     def get_fluct_regime_vars(Fe, Fi, Fe_ext, Fi_ext, W, Q_e, tau_e, E_e, Q_i, tau_i, E_i, g_L, C_m, E_L, N_tot,
-                              p_connect, g, K_ext_e, K_ext_i):
+                              p_connect_e, p_connect_i, g, K_ext_e, K_ext_i):
         """
         Compute the mean characteristic of neurons.
         Inspired from the next repository :
@@ -482,14 +488,15 @@ class ZerlautAdaptationFirstOrder(Model):
         :param C_m: membrane capacitance
         :param E_L: leak reversal potential
         :param N_tot: cell number
-        :param p_connect: connectivity probability
+        :param p_connect_e: connectivity probability of excitatory neurons
+        :param p_connect_i: connectivity probability of inhibitory neurons
         :param g: fraction of inhibitory cells
         :return: mean and variance of membrane voltage of neurons and autocorrelation time constant
         """
         # firing rate
         # 1e-6 represent spontaneous release of synaptic neurotransmitter or some intrinsic currents of neurons
-        fe = (Fe + 1.0e-6) * (1. - g) * p_connect * N_tot + Fe_ext * K_ext_e
-        fi = (Fi + 1.0e-6) * g * p_connect * N_tot + Fi_ext * K_ext_i
+        fe = (Fe + 1.0e-6) * (1. - g) * p_connect_e * N_tot + Fe_ext * K_ext_e
+        fi = (Fi + 1.0e-6) * g * p_connect_i * N_tot + Fi_ext * K_ext_i
 
         # conductance fluctuation and effective membrane time constant
         mu_Ge, mu_Gi = Q_e * tau_e * fe, Q_i * tau_i * fi  # Eqns 5 from [MV_2018]
