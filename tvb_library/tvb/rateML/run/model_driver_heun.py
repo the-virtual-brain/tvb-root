@@ -8,7 +8,7 @@ import pickle
 from tvb.simulator.lab import *
 from tvb.basic.logger.builder import get_logger
 
-from tvb.rateML.run.regular_run import regularRun
+# from tvb.rateML.run.regular_run import regularRun
 
 import os.path
 import numpy as np
@@ -470,40 +470,40 @@ if __name__ == '__main__':
 	driver_setup = Driver_Setup()
 	tavgGPU = Driver_Execute(driver_setup).run_all()
 
-	simtime = driver_setup.args.n_time
-	# simtime = 10
-	regions = driver_setup.args.n_regions
-	g = 1.0
-	# g = 0.0042
-	s = 1.0
-	dt = driver_setup.dt
-	period = 1
-
-	# generic model definition
-	model = driver_setup.args.model.capitalize()+'T'
-
-	# non generic model names
-	# model = 'MontbrioT'
-	# model = 'RwongwangT'
-	# model = 'OscillatorT'
-	# model = 'DumontGutkin'
-	# model = 'MontbrioPazoRoxin'
-	# model='Generic2dOscillator'
-	(time, tavgCPU) = regularRun(simtime, g, s, dt, period).simulate_python(model)
-
-	print('CPUshape', tavgCPU.shape)
-	print('GPUshape', tavgGPU.shape)
-
-	# check for deviation tolerance between GPU and CPU
-	# for basic coupling and period = 1
-	# using euler deterministic solver
-	max_err = []
-	x = 0
-	for t in range(0, simtime):
-		# print(t, 'tol:', np.max(np.abs(actual[t] - expected[t, :, :, 0])))
-		# print(t, 'tol:', np.max(np.abs(tavgCPU[t,:,:,0], tavgGPU[t,:,:,0])))
-		print(t)
-		# print('C', tavgCPU[t,:,:,0])
-		# print('G', tavgGPU[t,:,:,0])
-		# print(t, 'tol:', np.max(np.abs(tavgCPU[t,:,:,0] - tavgGPU[t,:,:,0])))
-		np.testing.assert_allclose(tavgCPU[t, :, :, 0], tavgGPU[t, :, :, 0], 2e-5 * t * 2, 1e-5 * t * 2)
+	# simtime = driver_setup.args.n_time
+	# # simtime = 10
+	# regions = driver_setup.args.n_regions
+	# g = 1.0
+	# # g = 0.0042
+	# s = 1.0
+	# dt = driver_setup.dt
+	# period = 1
+	#
+	# # generic model definition
+	# model = driver_setup.args.model.capitalize()+'T'
+	#
+	# # non generic model names
+	# # model = 'MontbrioT'
+	# # model = 'RwongwangT'
+	# # model = 'OscillatorT'
+	# # model = 'DumontGutkin'
+	# # model = 'MontbrioPazoRoxin'
+	# # model='Generic2dOscillator'
+	# (time, tavgCPU) = regularRun(simtime, g, s, dt, period).simulate_python(model)
+	#
+	# print('CPUshape', tavgCPU.shape)
+	# print('GPUshape', tavgGPU.shape)
+	#
+	# # check for deviation tolerance between GPU and CPU
+	# # for basic coupling and period = 1
+	# # using euler deterministic solver
+	# max_err = []
+	# x = 0
+	# for t in range(0, simtime):
+	# 	# print(t, 'tol:', np.max(np.abs(actual[t] - expected[t, :, :, 0])))
+	# 	# print(t, 'tol:', np.max(np.abs(tavgCPU[t,:,:,0], tavgGPU[t,:,:,0])))
+	# 	print(t)
+	# 	# print('C', tavgCPU[t,:,:,0])
+	# 	# print('G', tavgGPU[t,:,:,0])
+	# 	# print(t, 'tol:', np.max(np.abs(tavgCPU[t,:,:,0] - tavgGPU[t,:,:,0])))
+	# 	np.testing.assert_allclose(tavgCPU[t, :, :, 0], tavgGPU[t, :, :, 0], 2e-5 * t * 2, 1e-5 * t * 2)
