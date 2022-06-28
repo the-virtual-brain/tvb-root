@@ -445,7 +445,7 @@ class Driver_Execute(Driver_Setup):
 		plt.show()
 
 	def write_output(self, tavg):
-		tavg_file = open(here + 'tavg_data', 'wb')
+		tavg_file = open(here + '/tavg_data', 'wb')
 		pickle.dump(tavg, tavg_file)
 		tavg_file.close()
 
