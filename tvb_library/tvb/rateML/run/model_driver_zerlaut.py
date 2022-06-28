@@ -168,11 +168,17 @@ class Driver_Setup:
 		'''
 		This code generates the parameters ranges that need to be set
 		'''
-		sweeparam0 = np.linspace(0, 0.5, n0)
-		sweeparam1 = np.linspace(0, 120, n1)
-		sweeparam2 = np.linspace(-80, -60, n2)
-		sweeparam3 = np.linspace(-80, -60, n3)
-		sweeparam4 = np.linspace(5, 40, n4)
+		sweeparam0 = np.linspace(0.2, 0.7, n0)
+		sweeparam1 = np.linspace(60, 60, n1)
+		sweeparam2 = np.linspace(-63, -63, n2)
+		sweeparam3 = np.linspace(-65, -65, n3)
+		sweeparam4 = np.linspace(40, 40, n4)
+                
+		#sweeparam0 = np.linspace(0, 0.5, n0)
+		#sweeparam1 = np.linspace(0, 120, n1)
+		#sweeparam2 = np.linspace(-80, -60, n2)
+		#sweeparam3 = np.linspace(-80, -60, n3)
+		#sweeparam4 = np.linspace(5, 40, n4)
 		params = itertools.product(
 		sweeparam0,
 		sweeparam1,
@@ -474,7 +480,7 @@ class Driver_Execute(Driver_Setup):
 		plt.show()
 
 	def write_output(self, tavg):
-		tavg_file = open('tavg_data', 'wb')
+		tavg_file = open(here + '/tavg_data', 'wb')
 		pickle.dump(tavg, tavg_file)
 		tavg_file.close()
 

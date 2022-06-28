@@ -87,10 +87,10 @@ const float external_input_ex_ex = 0.315*1e-3;
 const float external_input_ex_in = 0.000;
 const float external_input_in_ex = 0.315*1e-3;
 const float external_input_in_in = 0.000;
-// adjusted to 1.25 to scale the noise to tvb
-const float tau_OU = 1.25;
+
+const float tau_OU = 5.0;
 const float weight_noise = 1e-4;
-//const float weight_noise = 10.5;
+
 const float K_ext_e = 400;
 const float K_ext_i = 0;
 
@@ -208,11 +208,11 @@ __global__ void zerlaut(
             if (t == (i_step)){
                 tavg(i_node + 0 * n_node) = 0;
                 tavg(i_node + 1 * n_node) = 0;
-//                tavg(i_node + 2 * n_node) = 0;
-//                tavg(i_node + 3 * n_node) = 0;
-//                tavg(i_node + 4 * n_node) = 0;
-//                tavg(i_node + 5 * n_node) = 0;
-//                tavg(i_node + 6 * n_node) = 0;
+                tavg(i_node + 2 * n_node) = 0;
+                tavg(i_node + 3 * n_node) = 0;
+                tavg(i_node + 4 * n_node) = 0;
+                tavg(i_node + 5 * n_node) = 0;
+                tavg(i_node + 6 * n_node) = 0;
             }
 
             E = state((t) % nh, i_node + 0 * n_node);
@@ -387,12 +387,12 @@ __global__ void zerlaut(
 
             // Update the observable
             tavg(i_node + 0 * n_node) += E/n_step;
-//            tavg(i_node + 1 * n_node) += I/n_step;
-//            tavg(i_node + 2 * n_node) += C_ee/n_step;
-//            tavg(i_node + 3 * n_node) += C_ei/n_step;
-//            tavg(i_node + 4 * n_node) += C_ii/n_step;
-//            tavg(i_node + 5 * n_node) += W_e/n_step;
-//            tavg(i_node + 6 * n_node) += W_i/n_step;
+            tavg(i_node + 1 * n_node) += I/n_step;
+            tavg(i_node + 2 * n_node) += C_ee/n_step;
+            tavg(i_node + 3 * n_node) += C_ei/n_step;
+            tavg(i_node + 4 * n_node) += C_ii/n_step;
+            tavg(i_node + 5 * n_node) += W_e/n_step;
+            tavg(i_node + 6 * n_node) += W_i/n_step;
 
             // sync across warps executing nodes for single sim, before going on to next time step
             __syncthreads();
