@@ -19,6 +19,7 @@ TEST_OUTPUT/
 # coverage
 .coverage
 .htmlcov
+coverage.xml
 
 # other tools
 .mypy_cache/
