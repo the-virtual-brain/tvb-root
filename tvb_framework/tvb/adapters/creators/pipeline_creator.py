@@ -29,18 +29,34 @@
 #
 import json
 import os
+import shutil
+import tempfile
+import pathlib
 
+import cherrypy._cpreqbody
 from tvb.adapters.forms.pipeline_forms import IPPipelineAnalysisLevelsEnum, get_form_for_analysis_level, \
     PreprocPipelineForm
 from tvb.basic.neotraits.api import List, Int, EnumAttr, TVBEnum, Attr
+from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
-from tvb.core.neotraits.forms import TraitUploadField, SimpleLabelField, SelectField, StrField, BoolField, FormField, \
+from tvb.core.neotraits.forms import SimpleLabelField, SelectField, StrField, BoolField, FormField, \
     IntField, Form, ValidatedTraitUploadField
 from tvb.core.neotraits.view_model import ViewModel, Str
 from tvb.core.pipeline.analysis_levels import PipelineAnalysisLevel, PreprocAnalysisLevel, ParticipantAnalysisLevel, \
     GroupAnalysisLevel
+from typing import List
+
 from tvb.storage.storage_interface import StorageInterface
 from tvb.core.neocom import h5
+
+from tvb.basic.logger.builder import get_logger
+
+
+_logger = get_logger(__name__)
+
+
+MRI_DATA_FIELD_NAME = 'mri_data'
+IGNORED_FILES = '.DS_Store'
 
 
 class OutputVerbosityLevelsEnum(str, TVBEnum):
@@ -71,7 +87,8 @@ class IPPipelineCreatorModel(ViewModel):
     PIPELINE_DATASET_FILE = "pipeline_dataset.zip"
 
     mri_data = Str(
-        label='Select MRI data for upload'
+        label='Select MRI data for upload',
+        default='enter path here'
     )
 
     participant_label = Str(
@@ -269,7 +286,51 @@ class PipelineStep3Form(Form):
         self.wall_time_step3 = IntField(IPPipelineCreatorModel.wall_time_step3, name='wall_time_step3')
 
 
-KEY_PIPELINE = "ip-pipeline"
+def zip_files(uploaded_files: List[cherrypy._cpreqbody.Part]) -> str:
+    """
+    Create a zip archive from a list of cherrypy Part objects
+    zip the uploaded directory ( a list of Part objects ) by creating a temporary directory
+    in which the directory tree is created then zip the created tree and return the path
+    to the zip file created
+    """
+    zip_destination = TvbProfile.current.TVB_TEMP_FOLDER
+    # create a temporary directory to write directory tree from which to create the archive
+    temp_root_dir = tempfile.mkdtemp()
+    # set the root which will be archived
+    root_dir_name = uploaded_files[0].filename.split('/')[0]
+    uploaded_root_dir = os.path.join(temp_root_dir, root_dir_name)
+    pathlib.Path(uploaded_root_dir).mkdir(parents=True, exist_ok=True)
+
+    # write the received files in the temporary dir
+    for file in uploaded_files:
+        # ignore macOS generated files
+        if file.filename.endswith(IGNORED_FILES):
+            continue
+
+        path = os.path.join(temp_root_dir, os.path.normpath(file.filename))
+        # create directory structure if it doesn't exist
+        path_to_dir = os.path.dirname(path)
+        pathlib.Path(path_to_dir).mkdir(parents=True, exist_ok=True)
+        # write files
+        with open(path, 'wb') as f:
+            while True:
+                data = file.file.read(8192)
+                if not data:
+                    break
+                f.write(data)
+    extension = 'zip'
+    dir_zipped = shutil.make_archive(root_dir_name,
+                                     extension,
+                                     temp_root_dir)  # saves the archive on disk
+    # move zip to TEMP dir and replace if a zip exists with that name
+    zip_path = os.path.join(zip_destination, f'{root_dir_name}.{extension}')
+    if os.path.exists(zip_path):
+        os.remove(zip_path)
+    shutil.move(dir_zipped, zip_destination)
+
+    # remove the temporary files as they are no longer needed
+    shutil.rmtree(temp_root_dir)
+    return zip_path
 
 
 class IPPipelineCreatorForm(ABCAdapterForm):
@@ -278,8 +339,7 @@ class IPPipelineCreatorForm(ABCAdapterForm):
         super(IPPipelineCreatorForm, self).__init__()
 
         self.pipeline_job = SimpleLabelField("Pipeline Job1")
-        self.mri_data = ValidatedTraitUploadField(IPPipelineCreatorModel.mri_data, '.zip', 'mri_data',
-                                                  js_validator_func='validateBidsZip')
+        self.mri_data = ValidatedTraitUploadField(IPPipelineCreatorModel.mri_data, '.zip', MRI_DATA_FIELD_NAME)
         self.participant_label = StrField(IPPipelineCreatorModel.participant_label)
         self.session_label = StrField(IPPipelineCreatorModel.session_label)
         self.task_label = StrField(IPPipelineCreatorModel.task_label)
@@ -340,6 +400,9 @@ class IPPipelineCreatorForm(ABCAdapterForm):
         self.step1_subform.form.analysis_level.subform_field.form.fill_trait(datatype.analysis_level)
 
     def fill_from_post(self, form_data):
+        # compress uploaded directory to zip
+        form_data.update({MRI_DATA_FIELD_NAME: zip_files(form_data[MRI_DATA_FIELD_NAME])})
+
         super(IPPipelineCreatorForm, self).fill_from_post(form_data)
         self.step1_subform.form.analysis_level.subform_field.form = get_form_for_analysis_level(
             self.step1_subform.form.analysis_level.data.value)()
