@@ -14,36 +14,25 @@ RUN apt-get -y update && apt-get -y install build-essential gcc
 RUN apt-get -y update && apt-get -y install texlive-base texlive-formats-extra
 RUN apt-get -y update && apt-get -y install octave postgresql
 
-# Used by syncrypto
-RUN apt-get -y update && apt-get -y install libssl-dev libffi-dev python-dev
-
 USER postgres
 RUN service postgresql start && createdb -O postgres tvb-test && psql --command "ALTER USER postgres WITH PASSWORD 'postgres';"
 
 USER root
 RUN conda update -n base -c defaults conda
-
-RUN conda create -y --name tvb-docs python=3.10 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil
-RUN conda install -y --name tvb-docs pytest pytest-mock matplotlib-base
-RUN conda install -y --name tvb-docs psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy werkzeug
-RUN conda install -y --name tvb-docs -c conda-forge jupyterlab gevent
-RUN /opt/conda/envs/tvb-docs/bin/pip install --upgrade pip
-RUN /opt/conda/envs/tvb-docs/bin/pip install h5py formencode cfflib flask==1.1.4 jinja2==2.11.3 nibabel sqlalchemy alembic allensdk # h5py and jinja2 versions are constarined by allensdk
-RUN /opt/conda/envs/tvb-docs/bin/pip install --no-build-isolation tvb-gdist
-RUN /opt/conda/envs/tvb-docs/bin/pip install BeautifulSoup4 subprocess32 flask-restx python-keycloak mako pyAesCrypt pyunicore==0.6.0
-RUN /opt/conda/envs/tvb-docs/bin/pip install sphinx==1.2.3 docutils==0.12
-
-RUN conda update -n base -c defaults conda
-RUN conda create -y --name tvb-run python=3.10 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil
-RUN conda install -y --name tvb-run pytest pytest-cov pytest-benchmark pytest-mock pytest-xdist matplotlib-base
-RUN conda install -y --name tvb-run psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy werkzeug docutils
+RUN conda create -y --name tvb-run python=3.10 nomkl numba scipy numpy cython psycopg2
+RUN conda install -y --name tvb-run -c conda-forge jupyterlab
 RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
-RUN /opt/conda/envs/tvb-run/bin/pip install h5py formencode cfflib flask==1.1.4 jinja2==2.11.3 nibabel sqlalchemy alembic allensdk # h5py and jinja2 versions are constrained by allensdk
-RUN conda install -y --name tvb-run -c conda-forge jupyterlab gevent
 RUN /opt/conda/envs/tvb-run/bin/pip install --no-build-isolation tvb-gdist
-RUN /opt/conda/envs/tvb-run/bin/pip install BeautifulSoup4 subprocess32 flask-restx python-keycloak mako pyAesCrypt pyunicore==0.6.0
-RUN /opt/conda/envs/tvb-run/bin/pip install lockfile pylems
-RUN /opt/conda/envs/tvb-run/bin/pip install syncrypto autopep8
+RUN /opt/conda/envs/tvb-run/bin/pip install lockfile scikit-build
+RUN /opt/conda/envs/tvb-run/bin/pip install syncrypto
+
+RUN conda create -y --name tvb-docs python=3.10 nomkl numba scipy numpy cython psycopg2
+RUN conda install -y --name tvb-docs -c conda-forge jupyterlab
+RUN /opt/conda/envs/tvb-docs/bin/pip install --upgrade pip
+RUN /opt/conda/envs/tvb-docs/bin/pip install --no-build-isolation tvb-gdist
+RUN /opt/conda/envs/tvb-docs/bin/pip install lockfile scikit-build
+RUN /opt/conda/envs/tvb-docs/bin/pip install syncrypto
+RUN /opt/conda/envs/tvb-docs/bin/pip install sphinx==1.2.3 docutils==0.12
 
 # Jupyther notebook configurations: set password
 # tvb42
@@ -61,6 +50,9 @@ RUN wget https://zenodo.org/record/4263723/files/tvb_data.zip?download=1 -O tvb_
 # make sure a copy of tvb-root exists inside, for users without Github clone
 USER $TVB_USER
 RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git
+RUN cd tvb-root/tvb_build; \
+    opt/conda/envs/tvb-run/bin/pip install -r docker/requirements_group; \
+    opt/conda/envs/tvb-docs/bin/pip install -r docker/requirements_group
 
 USER root
 ARG LAST_SHA=LATEST

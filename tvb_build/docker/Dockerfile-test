@@ -14,25 +14,17 @@ RUN apt-get -y update && apt-get -y install build-essential gcc
 RUN apt-get -y update && apt-get -y install texlive-base texlive-formats-extra
 RUN apt-get -y update && apt-get -y install octave postgresql
 
-# Used by syncrypto
-RUN apt-get -y update && apt-get -y install libssl-dev libffi-dev python-dev
-
 USER postgres
 RUN service postgresql start && createdb -O postgres tvb-test && psql --command "ALTER USER postgres WITH PASSWORD 'postgres';"
 
 USER root
 RUN conda update -n base -c defaults conda
-RUN conda create -y --name tvb-run python=3.10 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil
-RUN conda install -y --name tvb-run pytest pytest-cov pytest-benchmark pytest-mock pytest-xdist matplotlib-base
-RUN conda install -y --name tvb-run psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils werkzeug
+RUN conda create -y --name tvb-run python=3.10 nomkl numba scipy numpy cython psycopg2
+RUN conda install -y --name tvb-run -c conda-forge jupyterlab
 RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
-RUN /opt/conda/envs/tvb-run/bin/pip install h5py formencode cfflib flask==1.1.4 jinja2==2.11.3 nibabel sqlalchemy alembic allensdk # h5py and jinja2 versions are constrained by allensdk
-RUN conda install -y --name tvb-run -c conda-forge jupyterlab gevent
 RUN /opt/conda/envs/tvb-run/bin/pip install --no-build-isolation tvb-gdist
-RUN /opt/conda/envs/tvb-run/bin/pip install BeautifulSoup4 subprocess32 flask-restx python-keycloak mako pyAesCrypt pyunicore==0.6.0
-RUN /opt/conda/envs/tvb-run/bin/pip install lockfile
+RUN /opt/conda/envs/tvb-run/bin/pip install lockfile scikit-build
 RUN /opt/conda/envs/tvb-run/bin/pip install syncrypto
-RUN /opt/conda/envs/tvb-run/bin/pip install autopep8
 
 # Jupyther notebook configurations: set password
 # tvb42
@@ -46,19 +38,21 @@ RUN wget https://zenodo.org/record/4263723/files/tvb_data.zip?download=1 -O tvb_
     cd tvb_data; \
     /opt/conda/envs/tvb-run/bin/python setup.py develop
 
-COPY --chown=$TVB_USER:$TVB_USER .tvb.configuration $USER_HOME/.tvb.configuration
 RUN chown $TVB_USER:$TVB_USER $USER_HOME
-
+WORKDIR $USER_HOME
 USER $TVB_USER
+COPY requirements_group requirements.txt
+RUN /opt/conda/envs/tvb-run/bin/pip install -r requirements.txt
 
-RUN mkdir $USER_HOME/.tvb-temp; mkdir $USER_HOME/.tvb-temp/logs; mkdir -m777 $TVB_STORAGE $NUMBA_CACHE $KEYCLOAK_CONFIG
+COPY .tvb.configuration $USER_HOME/.tvb.configuration
+RUN mkdir $USER_HOME/.tvb-temp; mkdir $USER_HOME/.tvb-temp/logs; mkdir -m777 $TVB_STORAGE $NUMBA_CACHE $KEYCLOAK_CONFIG; mkdir $USER_HOME/tvb-root
 
 ENV TVB_USER_HOME $USER_HOME
 ENV NUMBA_CACHE_DIR $NUMBA_CACHE
-
 WORKDIR $USER_HOME/tvb-root
-# MOUNT -v [local- tvb-root - clone]:$USER_HOME/tvb-root
 
-# For running all unit-tests
-# inspect output in local tvb-root/tvb_bin/TEST_OUTPUT folder
+# MOUNT -v [local- tvb-root - clone]:$USER_HOME/tvb-root
+# For running all unit-tests inspect output in local tvb-root/tvb_bin/TEST_OUTPUT folder
 #CMD ["bash","-c","source activate tvb-run && cd tvb_build && bash install_full_tvb.sh && cd ../tvb_bin && service postgresql start && bash run_tests.sh postgres"]
+#CMD ["bash","-c","source activate tvb-run && cd tvb_build && bash install_full_tvb.sh && cd ../tvb_bin && bash run_tests.sh"]
+CMD ["bash","-c","source activate tvb-run && /bin/bash"]
