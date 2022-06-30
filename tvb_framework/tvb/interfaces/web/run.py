@@ -77,7 +77,10 @@ from tvb.interfaces.web.request_handler import RequestHandler
 from tvb.storage.storage_interface import StorageInterface
 
 if __name__ == '__main__':
-    TvbProfile.set_profile(sys.argv[1])
+    if len(sys.argv) < 2:
+        TvbProfile.set_profile(TvbProfile.WEB_PROFILE)
+    else:
+        TvbProfile.set_profile(sys.argv[1])
 
 LOGGER = get_logger('tvb.interfaces.web.run')
 CONFIG_EXISTS = not TvbProfile.is_first_run()

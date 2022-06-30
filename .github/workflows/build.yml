@@ -8,7 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ "3.7", "3.8" ]
+        python-version: [ "3.8", "3.9", "3.10" ]
 
     steps:
       - uses: actions/checkout@v3
@@ -20,26 +20,24 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: upgrade pip
-        run: python3 -m pip install --upgrade pip
-
       - name: put ~/.local/bin on $PATH
         run: echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
-
-      - name: create a requirements file
-        run: echo "numba numpy scipy networkx scikit-learn scikit-image==0.14.2 cython numexpr psutil pytest pytest-cov pytest-xdist pytest-benchmark pytest-mock matplotlib h5py>=2.10 typing BeautifulSoup4 subprocess32 flask-restx python-keycloak mako pyAesCrypt pyunicore formencode flask==1.1.4 jinja2==2.11.3 nibabel sqlalchemy alembic allensdk werkzeug gevent cherrypy MarkupSafe==2.0.1 decorator" | tr ' ' \\n > requirements.txt
 
       - name: cache ~/.local for pip deps
         id: cache-local
         uses: actions/cache@v3
         with:
           path: ~/.local
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('tvb_framework/requirements.txt') }}
 
-      - name: pip install dependencies (from Dockerfile-build)
+      - name: install tools and dependencies
         if: steps.cache-local.outputs.cache-hit != 'true'
         run: |
-          pip3 install --user -r requirements.txt
+          sudo apt install libbz2-dev libhdf5-serial-dev liblzo2-dev
+          python3 -m pip install --upgrade setuptools pip wheel
+          pip3 install --user --upgrade numpy
+          python3 -m pip install scikit-build
+          pip3 install --user -r tvb_framework/requirements.txt
           pip3 install --user --no-build-isolation tvb-gdist
 
       - name: setup tvb
