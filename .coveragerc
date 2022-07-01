@@ -4,11 +4,14 @@ omit =
     */_numba/*
     */_opencl/*
     */plot/*
+    */web/static/*
+    */web/templates/*
+    *.tvb-temp*
     */tvb_bin/*
     */tvb_data/*
-    */tvb_framework/*
+    **/__init__.py
 
 # Regex expressions for lines excluded from report
 exclude_lines =
     pragma: no cover
-    if __name__ == .__main__.:
+    if __name__ == .__main__.:y

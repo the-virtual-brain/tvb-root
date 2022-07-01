@@ -1,14 +1,12 @@
 [report]
 omit =
     */tests/*
-    */_numba/*
-    */_opencl/*
-    */plot/*
     */tvb_bin/*
     */tvb_data/*
+    */tvb_library/*
     */tvb_framework/*
 
 # Regex expressions for lines excluded from report
 exclude_lines =
     pragma: no cover
-    if __name__ == .__main__.:
+    if __name__ == .__main__.:y
