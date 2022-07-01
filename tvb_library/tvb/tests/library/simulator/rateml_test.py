@@ -93,7 +93,7 @@ def setup_namespace(model='kuramoto'):
 #This line avoid passing script name as a parameters
 check_input_params()
 class TestRateML():
-	models=["epileptor", "kuramoto", "montbrio", "oscillator", "rwongwang"]
+	models=["epileptor", "kuramoto", "montbrio", "oscillator", "rwongwang", "zerlaut"]
 	python_mods = ["python"]*len(models)
 	languages = ["python", "cuda"]
 
