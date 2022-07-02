@@ -2,7 +2,6 @@
 omit =
     */tests/*
     */_numba/*
-    */_opencl/*
     */plot/*
     */tvb_bin/*
     */tvb_data/*

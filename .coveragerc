@@ -2,14 +2,15 @@
 omit =
     */tests/*
     */_numba/*
-    */_opencl/*
     */plot/*
+    */*update_scripts/*
     */web/static/*
     */web/templates/*
     *.tvb-temp*
     */tvb_bin/*
     */tvb_data/*
     **/__init__.py
+    **/setup.py
 
 # Regex expressions for lines excluded from report
 exclude_lines =
