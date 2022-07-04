@@ -42,7 +42,7 @@ WORKDIR $USER_HOME
 COPY requirements_group requirements.txt
 RUN  /home/tvb_user/.conda/envs/tvb-run/bin/pip install -r requirements.txt
 
-COPY .tvb.configuration $USER_HOME/.tvb.configuration
+COPY --chown=$TVB_USER:$TVB_USER .tvb.configuration $USER_HOME/.tvb.configuration
 RUN mkdir $USER_HOME/.tvb-temp; mkdir $USER_HOME/.tvb-temp/logs; mkdir -m777 $TVB_STORAGE $KEYCLOAK_CONFIG; mkdir $USER_HOME/tvb-root
 
 ENV TVB_USER_HOME $USER_HOME
