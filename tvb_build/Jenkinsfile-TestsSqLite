@@ -17,11 +17,11 @@ pipeline {
             agent {
                 docker {
                     image '${FULL_DOCKER_IMAGE_NAME}'
-                    args '-u tvb_user'
                 }
             }
             steps {
                 sh '''#!/bin/bash
+                    su tvb_user
                     source activate tvb-run
                     cd tvb_build
                     bash install_full_tvb.sh
