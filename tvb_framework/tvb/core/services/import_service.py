@@ -34,6 +34,7 @@
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+
 import json
 import os
 import shutil
@@ -43,7 +44,6 @@ from datetime import datetime
 from cherrypy._cpreqbody import Part
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.attributes import manager_of_class
-
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.ex import TraitTypeError, TraitAttributeError
 from tvb.basic.profile import TvbProfile
@@ -250,7 +250,7 @@ class ImportService(object):
                     'Imported file depends on datatypes that do not exist. Please upload '
                     'those first!')
 
-    def _store_or_link_burst_config(self, burst_config, bc_path, project_id):
+    def _store_or_link_burst_config(self, burst_config, bc_path):
         bc_already_in_tvb = dao.get_generic_entity(BurstConfiguration, burst_config.gid, 'gid')
         if len(bc_already_in_tvb) == 0:
             self.store_datatype(burst_config, bc_path)
@@ -300,7 +300,7 @@ class ImportService(object):
                 adapter = ABCAdapter.build_adapter(algo)
                 view_model_class = adapter.get_view_model_class()
                 view_model2adapter[view_model_class] = algo
-            except IntrospectionException as e:
+            except IntrospectionException:
                 self.logger.exception("Could not load %s" % algo)
 
         return view_model2adapter
@@ -471,7 +471,7 @@ class ImportService(object):
                     if isinstance(dt, BurstConfiguration):
                         if op_group:
                             dt.fk_operation_group = op_group.id
-                        all_stored_dts_count += self._store_or_link_burst_config(dt, dt_path, project.id)
+                        all_stored_dts_count += self._store_or_link_burst_config(dt, dt_path)
                     else:
                         dts[dt_path] = dt
                         if op_group:
