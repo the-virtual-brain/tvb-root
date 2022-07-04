@@ -7,7 +7,7 @@ module.exports = {
     output: {
         libraryTarget: 'umd',
         filename: 'bundle.js',
-        path: path.resolve(__dirname, 'tvb/interfaces/web/static/js'),
+        path: path.resolve(__dirname, '../tvb_framework/tvb/interfaces/web/static/js'),
     },
     resolve: {
         alias: {
