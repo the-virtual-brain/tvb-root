@@ -17,6 +17,7 @@ pipeline {
             agent {
                 docker {
                     image '${FULL_DOCKER_IMAGE_NAME}'
+                    args '-u tvb_user'
                 }
             }
             steps {
