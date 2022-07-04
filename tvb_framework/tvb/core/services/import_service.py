@@ -50,6 +50,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.config import VIEW_MODEL2ADAPTER, TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
 from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig, DEFAULTDATASTATE_INTERMEDIATE
 from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.adapters.exceptions import IntrospectionException
 from tvb.core.entities import load
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
@@ -289,16 +290,19 @@ class ImportService(object):
                 if self.storage_interface.ends_with_tvb_file_extension(metadata_file):
                     self._import_image(root, metadata_file, project.id, target_images_path)
 
-    @staticmethod
-    def _populate_view_model2adapter():
+    def _populate_view_model2adapter(self):
         if len(VIEW_MODEL2ADAPTER) > 0:
             return VIEW_MODEL2ADAPTER
         view_model2adapter = {}
         algos = dao.get_all_algorithms()
         for algo in algos:
-            adapter = ABCAdapter.build_adapter(algo)
-            view_model_class = adapter.get_view_model_class()
-            view_model2adapter[view_model_class] = algo
+            try:
+                adapter = ABCAdapter.build_adapter(algo)
+                view_model_class = adapter.get_view_model_class()
+                view_model2adapter[view_model_class] = algo
+            except IntrospectionException as e:
+                self.logger.exception("Could not load %s" % algo)
+
         return view_model2adapter
 
     def _retrieve_operations_in_order(self, project, import_path, importer_operation_id=None):
