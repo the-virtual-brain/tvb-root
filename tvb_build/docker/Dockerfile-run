@@ -39,6 +39,9 @@ RUN wget https://zenodo.org/record/4263723/files/tvb_data.zip?download=1 -O tvb_
      /home/tvb_user/.conda/envs/tvb-run/bin/python setup.py develop
 
 WORKDIR $USER_HOME
+COPY requirements_group requirements.txt
+RUN  /home/tvb_user/.conda/envs/tvb-run/bin/pip install -r requirements.txt
+
 # make sure a copy of tvb-root exists inside, for users without Github clone
 RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git
 ARG LAST_SHA=LATEST
@@ -68,4 +71,4 @@ WORKDIR $USER_HOME/tvb-root
 # For running TVB Web GUI
 # bind port 8080
 # MOUNT -v [local- ~/TVB ]:$TVB_STORAGE
-CMD ["bash","-c","source activate tvb-run && cd tvb_bin && /home/tvb_user/.conda/envs/tvb-run/bin/python -m tvb.interfaces.web.run WEB_PROFILE"]
+CMD ["bash","-c","source activate tvb-run && cd tvb_bin && python -m tvb.interfaces.web.run WEB_PROFILE"]
