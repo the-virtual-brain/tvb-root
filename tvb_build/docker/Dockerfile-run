@@ -32,6 +32,8 @@ RUN /opt/conda/envs/tvb-run/bin/pip install --no-build-isolation tvb-gdist
 RUN /opt/conda/envs/tvb-run/bin/pip install BeautifulSoup4 subprocess32 flask-restx python-keycloak mako pyAesCrypt pyunicore==0.6.0
 RUN /opt/conda/envs/tvb-run/bin/pip install lockfile
 RUN /opt/conda/envs/tvb-run/bin/pip install syncrypto
+#Dirty quick fix for TVB single landing page to work
+RUN /opt/conda/envs/tvb-run/bin/pip install markupsafe==2.0.1
 
 # Jupyther notebook configurations: set password
 # tvb42
@@ -67,6 +69,7 @@ RUN cd tvb-root; \
     /opt/conda/envs/tvb-run/bin/python setup.py develop --no-deps
 
 COPY --chown=$TVB_USER:$TVB_USER .tvb.configuration $USER_HOME/.tvb.configuration
+#COPY --chown=$TVB_USER:$TVB_USER .tvb.landing.page.configuration $USER_HOME/.tvb.landing.page.configuration
 COPY --chown=$TVB_USER:$TVB_USER step1/_help $USER_HOME/tvb-root/tvb_framework/tvb/interfaces/web/static/help
 RUN chown $TVB_USER:$TVB_USER $USER_HOME
 
@@ -92,4 +95,5 @@ WORKDIR $USER_HOME/tvb-root
 # bind port 8080
 # MOUNT -v [local- ~/TVB ]:$TVB_STORAGE
 
+CMD ["bash","-c","source activate tvb-run && python -m tvb.interfaces.web.run_landing_page"]
 CMD ["bash","-c","source activate tvb-run && cd tvb_bin && python -m tvb.interfaces.web.run WEB_PROFILE"]
