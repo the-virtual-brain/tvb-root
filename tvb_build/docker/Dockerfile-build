@@ -18,60 +18,57 @@ RUN service postgresql start && createdb -O postgres tvb-test && psql --command 
 
 USER root
 RUN conda update -n base -c defaults conda; conda init bash
-
-USER $TVB_USER
 RUN conda create -y --name tvb-run python=3.10 nomkl numba scipy numpy cython psycopg2
 RUN conda install -y --name tvb-run -c conda-forge jupyterlab tvb-gdist
-RUN /home/tvb_user/.conda/envs/tvb-run/bin/pip install --upgrade pip
-RUN /home/tvb_user/.conda/envs/tvb-run/bin/pip install lockfile scikit-build
-RUN /home/tvb_user/.conda/envs/tvb-run/bin/pip install syncrypto
+RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
+RUN /opt/conda/envs/tvb-run/bin/pip install lockfile scikit-build
+RUN /opt/conda/envs/tvb-run/bin/pip install syncrypto
 
 RUN conda create -y --name tvb-docs python=3.10 nomkl numba scipy numpy cython psycopg2
 RUN conda install -y --name tvb-docs -c conda-forge jupyterlab tvb-gdist
-RUN /home/tvb_user/.conda/envs/tvb-docs/bin/pip install --upgrade pip
-RUN /home/tvb_user/.conda/envs/tvb-docs/bin/pip install lockfile scikit-build
-RUN /home/tvb_user/.conda/envs/tvb-docs/bin/pip install syncrypto
-RUN /home/tvb_user/.conda/envs/tvb-docs/bin/pip install sphinx==1.2.3 docutils==0.12
+RUN /opt/conda/envs/tvb-docs/bin/pip install --upgrade pip
+RUN /opt/conda/envs/tvb-docs/bin/pip install lockfile scikit-build
+RUN /opt/conda/envs/tvb-docs/bin/pip install syncrypto
+RUN /opt/conda/envs/tvb-docs/bin/pip install sphinx docutils
 
 # Jupyther notebook configurations: set password
 # tvb42
 RUN mkdir $JUPYTER_CONFIG
 RUN /bin/bash -c "source activate tvb-run"; \
-    /home/tvb_user/.conda/envs/tvb-run/bin/jupyter notebook --generate-config; \
+    /opt/conda/envs/tvb-run/bin/jupyter notebook --generate-config; \
     echo "c.NotebookApp.password='sha1:12bff019c253:9daecd92c2e9bdb10b3b8a06767a74a0fe078d7c'">>$JUPYTER_CONFIG/jupyter_notebook_config.py
 
 RUN wget https://zenodo.org/record/4263723/files/tvb_data.zip?download=1 -O tvb_data.zip; \
     mkdir tvb_data; unzip tvb_data.zip -d tvb_data; rm tvb_data.zip; \
     cd tvb_data; \
-     /home/tvb_user/.conda/envs/tvb-run/bin/python setup.py develop;\
-     /home/tvb_user/.conda/envs/tvb-docs/bin/python setup.py develop
+     /opt/conda/envs/tvb-run/bin/python setup.py develop;\
+     /opt/conda/envs/tvb-docs/bin/python setup.py develop
 
 WORKDIR $USER_HOME
 COPY requirements_group requirements.txt
-RUN  /home/tvb_user/.conda/envs/tvb-run/bin/pip install -r requirements.txt
-RUN  /home/tvb_user/.conda/envs/tvb-docs/bin/pip install -r requirements.txt
+RUN  /opt/conda/envs/tvb-run/bin/pip install -r requirements.txt
+RUN  /opt/conda/envs/tvb-docs/bin/pip install -r requirements.txt
+RUN chown $TVB_USER:$TVB_USER $USER_HOME
 
+USER $TVB_USER
 # make sure a copy of tvb-root exists inside, for users without Github clone
 RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git
 ARG LAST_SHA=LATEST
 RUN cd tvb-root; \
     git pull; \
     cd tvb_build; \
-    /home/tvb_user/.conda/envs/tvb-run/bin/pip install -r docker/requirements_group;\
-    /home/tvb_user/.conda/envs/tvb-docs/bin/pip install -r docker/requirements_group;\
+    /opt/conda/envs/tvb-run/bin/pip install -r docker/requirements_group;\
+    /opt/conda/envs/tvb-docs/bin/pip install -r docker/requirements_group;\
     /bin/bash -c "source activate tvb-run && /bin/bash install_full_tvb.sh";\
     /bin/bash -c "source activate tvb-docs && /bin/bash install_full_tvb.sh"
 
 COPY --chown=$TVB_USER:$TVB_USER .tvb.configuration $USER_HOME/.tvb.configuration
 RUN mkdir $USER_HOME/.tvb-temp; mkdir $USER_HOME/.tvb-temp/logs; mkdir -m777 $TVB_STORAGE $KEYCLOAK_CONFIG
-
-RUN /home/tvb_user/.conda/envs/tvb-docs/bin/pip install -U sphinx docutils
-
 ENV TVB_USER_HOME $USER_HOME
 WORKDIR $USER_HOME/tvb-root
 
-#RUN rm /home/tvb_user/.conda/envs/tvb-run/share/jupyter/kernels/python3/kernel.json
-#RUN echo '{"argv": ["python", "-m", "ipykernel_launcher", "-f", "{connection_file}"], "display_name": "Python 3", "language": "python"}' >> /home/tvb_user/.conda/envs/tvb-run/share/jupyter/kernels/python3/kernel.json
+#RUN rm /opt/conda/envs/tvb-run/share/jupyter/kernels/python3/kernel.json
+#RUN echo '{"argv": ["python", "-m", "ipykernel_launcher", "-f", "{connection_file}"], "display_name": "Python 3", "language": "python"}' >> /opt/conda/envs/tvb-run/share/jupyter/kernels/python3/kernel.json
 
 # MOUNT -v [local- tvb-root - clone]:$USER_HOME/tvb-root
 
