@@ -35,6 +35,7 @@ from tvb.adapters.forms.equation_forms import TemporalEquationsEnum, get_form_fo
 from tvb.basic.neotraits._attr import EnumAttr
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.neotraits.forms import DynamicSelectField, TraitDataTypeSelectField, SelectField
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.graph import ConnectivityMeasure
 
@@ -58,7 +59,9 @@ class TVBOntologyForm(ABCAdapterForm):
             label='Connectivity measure',
             doc='A connectivity measure'
         )
-        self.connectivity_measure = TraitDataTypeSelectField(cm_attribute, name='connectivity_measure')
+        cm_filter = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=['=='], values=['1'])
+        self.connectivity_measure = TraitDataTypeSelectField(cm_attribute, name='connectivity_measure',
+                                                             conditions=cm_filter)
 
         transfer_function_attribute = EnumAttr(
             field_type=TemporalEquationsEnum,

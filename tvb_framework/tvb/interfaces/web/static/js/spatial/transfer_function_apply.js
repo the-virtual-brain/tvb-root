@@ -57,10 +57,23 @@ function setTransferFunctionAndRedrawChart(methodToCall, fieldName, fieldValue) 
 
 function plotEquation(subformDiv = null) {
     let url = refreshBaseUrl + '/get_equation_chart';
+
+    let min_x = 0;
+    let max_x = 100;
+    const min_x_input = document.getElementById('min_x');
+    const max_x_input = document.getElementById('max_x');
+
+    if (min_x_input) {
+        min_x = min_x_input.value;
+    }
+    if (max_x_input) {
+        max_x = max_x_input.value
+    }
     doAjaxCall({
         async: false,
-        type: 'GET',
+        type: 'POST',
         url: url,
+        data: {'min_x' : min_x, 'max_x': max_x },
         success: function (data) {
             $("#" + 'transferFunctionDivId').empty().append(data);
         }
