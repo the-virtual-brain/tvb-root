@@ -47,3 +47,4 @@ psycopg2
 syncrypto
 lxml
 pylems
+docutils

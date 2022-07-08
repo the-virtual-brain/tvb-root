@@ -111,7 +111,7 @@ pipeline {
             sh 'docker rm -f ${REST_CONTAINER} || true'
         }
         changed {
-            mail to: 'lia.domide@codemart.ro bogdan.valean@codemart.ro',
+            mail to: 'lia.domide@codemart.ro',
             subject: "Jenkins Pipeline ${currentBuild.fullDisplayName} changed status",
             body: """
                 Result: ${currentBuild.result}
