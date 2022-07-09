@@ -71,11 +71,11 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                     source activate tvb-run
+                    cd tvb_build
+                    bash install_full_tvb.sh
+                    cd ../tvb_bin
                     rm -rf TEST_OUTPUT
                     mkdir TEST_OUTPUT
-                    cd tvb_framework
-                    python setup_rest_client.py develop --no-deps
-                    cd ..
                     pytest --pyargs tvb.interfaces.rest.client.tests.rest_tests  --junitxml=TEST_OUTPUT/results_REST-client.xml > TEST_OUTPUT/results_REST-client.out 2>&1
                     exit 0
                 '''
