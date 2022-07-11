@@ -38,7 +38,6 @@ import json
 import os
 from pathlib import Path
 from time import sleep
-
 import cherrypy
 import pytest
 from tvb.basic.config import stored
@@ -186,8 +185,7 @@ class TestSettingsController(BaseTransactionalControllerTest):
         self.was_reset = should_reset
         TvbProfile._build_profile_class(TvbProfile.CURRENT_PROFILE_NAME)
 
-    @pytest.mark.skipif(TvbProfile.current.db.SELECTED_DB != 'postgres', reason="PostgreSQL connection not active!")
-    def test_pg_active(self):
+    def test_pg_profile_against_env_variables(self):
         # Since we can not easily check the current selected DB in GitHub actions,
         # we put this unit-test to be visible as skipped/not.
         pg_host = os.environ.get("POSTGRES_HOST", None)

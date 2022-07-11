@@ -90,6 +90,12 @@ def pytest_addoption(parser):
 def profile(request):
     profile = request.config.getoption("--profile")
     TvbProfile.set_profile(profile)
+    if profile == TvbProfile.TEST_POSTGRES_PROFILE:
+        pg_host = os.environ.get("POSTGRES_HOST", "127.0.0.1")
+        pg_port = os.environ.get("POSTGRES_PORT", "5432")
+        conn_string = TvbProfile.current.db.DB_URL
+        conn_string.replace("127.0.0.1:5432", pg_host + ":" + pg_port)
+        TvbProfile.current.db.DB_URL = conn_string
     return profile
 
 
@@ -111,10 +117,7 @@ def db_engine(tmpdir_factory, profile):
         path = os.path.join(str(tmpdir), 'tmp.sqlite')
         conn_string = r'sqlite:///' + path
     elif profile == TvbProfile.TEST_POSTGRES_PROFILE:
-        pg_host = os.environ.get("POSTGRES_HOST", "127.0.0.1")
-        pg_port = os.environ.get("POSTGRES_PORT", "5432")
         conn_string = TvbProfile.current.db.DB_URL
-        conn_string.replace("127.0.0.1:5432", pg_host + ":" + pg_port)
     else:
         raise ValueError('bad test profile {}'.format(profile))
 
