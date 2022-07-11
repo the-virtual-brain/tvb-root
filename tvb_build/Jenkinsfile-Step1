@@ -76,7 +76,7 @@ pipeline {
                     cd ../tvb_bin
                     rm -rf TEST_OUTPUT
                     mkdir TEST_OUTPUT
-                    pytest --pyargs tvb.interfaces.rest.client.tests.rest_tests  --junitxml=TEST_OUTPUT/results_REST-client.xml > TEST_OUTPUT/results_REST-client.out 2>&1
+                    pytest --pyargs tvb.interfaces.rest.client.tests  --junitxml=TEST_OUTPUT/results_REST-client.xml > TEST_OUTPUT/results_REST-client.out 2>&1
                     exit 0
                 '''
                  junit 'tvb_bin/TEST_OUTPUT/results_*.xml'
