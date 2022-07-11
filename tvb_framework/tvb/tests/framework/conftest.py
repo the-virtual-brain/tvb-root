@@ -111,7 +111,10 @@ def db_engine(tmpdir_factory, profile):
         path = os.path.join(str(tmpdir), 'tmp.sqlite')
         conn_string = r'sqlite:///' + path
     elif profile == TvbProfile.TEST_POSTGRES_PROFILE:
+        pg_host = os.environ.get("POSTGRES_HOST", "127.0.0.1")
+        pg_port = os.environ.get("POSTGRES_PORT", "5432")
         conn_string = TvbProfile.current.db.DB_URL
+        conn_string.replace("127.0.0.1:5432", pg_host + ":" + pg_port)
     else:
         raise ValueError('bad test profile {}'.format(profile))
 
@@ -588,7 +591,8 @@ def datatype_group_factory(connectivity_factory, time_series_index_factory, time
 
             operation3 = operation_factory(test_project=project)
             region_mapping = region_mapping_factory(surface=surface, connectivity=connectivity)
-            region_mapping_index_factory(op=operation3, conn_gid=connectivity.gid.hex, surface_gid=surface.gid.hex, region_mapping=region_mapping)
+            region_mapping_index_factory(op=operation3, conn_gid=connectivity.gid.hex, surface_gid=surface.gid.hex,
+                                         region_mapping=region_mapping)
 
         algorithm = dao.get_algorithm_by_module(SIMULATOR_MODULE, SIMULATOR_CLASS)
         adapter = ABCAdapter.build_adapter(algorithm)

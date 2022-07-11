@@ -20,6 +20,7 @@ if [[ "$1" ]]; then
 	python tvb_bin/app.py clean TEST_POSTGRES_PROFILE
 	
 	echo 'Starting TVB tests on PostgreSQL DB ...'
+	echo 'env variables POSTGRES_HOST and POSTGRES_PORT are considered, if you need to adjust'
 	mkdir TEST_OUTPUT
 	pytest ../tvb_framework/tvb/tests/framework --profile=TEST_POSTGRES_PROFILE --junitxml=TEST_OUTPUT/results_frw.xml > TEST_OUTPUT/frw.out 2>&1
 	
