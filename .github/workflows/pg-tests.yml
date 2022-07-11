@@ -35,10 +35,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.local
-          key: ${{ runner.os }}-pip--${{ hashFiles('tvb_framework/requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('tvb_framework/requirements.txt') }}
 
       - name: install tools and dependencies
-        if: steps.cache-local.outputs.cache-hit != 'true'
         run: |
           sudo apt install libbz2-dev libhdf5-serial-dev liblzo2-dev octave
           python3 -m pip install --upgrade setuptools pip wheel
@@ -46,6 +45,11 @@ jobs:
           python3 -m pip install scikit-build
           pip3 install --user -r tvb_framework/requirements.txt
           pip3 install --user --no-build-isolation tvb-gdist
+          which octave
+          ls -all /usr/bin/octave*
+          ls -all /etc/bin/octave*
+          ls -all /usr/local/octave
+          echo $PATH
 
       - name: setup tvb
         run: cd tvb_build && bash install_full_tvb.sh
@@ -71,7 +75,7 @@ jobs:
       - name: run framework tests
         env:
           POSTGRES_HOST: postgres
-        run: cd tvb_framework && pytest tvb/tests/framework --profile=TEST_SQLITE_PROFILE
+        run: cd tvb_framework && pytest tvb/tests/framework --profile=TEST_POSTGRES_PROFILE
 
 
 
