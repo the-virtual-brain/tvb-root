@@ -3,7 +3,7 @@ on: [push]
 
 jobs:
   build:
-    name: Test Python 3.10 - PostgreSQL
+    name: Frw-Tests (3.10 PG-SQL)
     runs-on: ubuntu-latest
 
     services:
@@ -35,12 +35,12 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.local
-          key: ${{ runner.os }}-pip-${{ hashFiles('tvb_framework/requirements.txt') }}
+          key: ${{ runner.os }}-pip--${{ hashFiles('tvb_framework/requirements.txt') }}
 
       - name: install tools and dependencies
         if: steps.cache-local.outputs.cache-hit != 'true'
         run: |
-          sudo apt install libbz2-dev libhdf5-serial-dev liblzo2-dev
+          sudo apt install libbz2-dev libhdf5-serial-dev liblzo2-dev octave
           python3 -m pip install --upgrade setuptools pip wheel
           pip3 install --user --upgrade numpy psycopg2
           python3 -m pip install scikit-build
@@ -66,13 +66,12 @@ jobs:
           rm tvb_data.zip
 
       - name: setup data
-        run: |
-          cd tvb_data
-          python3 setup.py develop
+        run: cd tvb_data && python3 setup.py develop
 
       - name: run framework tests
         env:
           POSTGRES_HOST: postgres
-        run: cd tvb_bin && bash run_tests.sh postgres
+        run: cd tvb_framework && pytest tvb/tests/framework --profile=TEST_SQLITE_PROFILE
+
 
 
