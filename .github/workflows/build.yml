@@ -41,7 +41,11 @@ jobs:
           pip3 install --user --no-build-isolation tvb-gdist
 
       - name: setup tvb
-        run: cd tvb_build && bash install_full_tvb.sh
+        run: |
+          cd tvb_build
+          bash install_full_tvb.sh
+          # dirty fix for including bct tests in the run
+          echo "MATLAB_EXECUTABLE=/usr/bin/octave" > ~/.tvb.configuration
 
       - name: cache data
         id: cache-data
