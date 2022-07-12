@@ -28,7 +28,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.local
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('tvb_framework/requirements.txt') }}
+          key: pip-${{ matrix.python-version }}-${{ hashFiles('tvb_framework/requirements.txt') }}
 
       - name: install tools and dependencies
         if: steps.cache-local.outputs.cache-hit != 'true'

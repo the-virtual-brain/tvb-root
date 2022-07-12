@@ -185,15 +185,6 @@ class TestSettingsController(BaseTransactionalControllerTest):
         self.was_reset = should_reset
         TvbProfile._build_profile_class(TvbProfile.CURRENT_PROFILE_NAME)
 
-    def test_pg_profile_against_env_variables(self):
-        # Since we can not easily check the current selected DB in GitHub actions,
-        # we put this unit-test to be visible as skipped/not.
-        pg_host = os.environ.get("POSTGRES_HOST", None)
-        pg_port = os.environ.get("POSTGRES_PORT", None)
-        conn_string = TvbProfile.current.db.DB_URL
-        assert pg_host is None or pg_host in conn_string
-        assert pg_port is None or pg_port in conn_string
-
     def test_check_db_url(self):
         """
         Test that for a various DB URLs, the correct check response is returned.
