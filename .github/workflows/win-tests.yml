@@ -1,0 +1,73 @@
+name: Test on Windows
+on: [push]
+
+jobs:
+  build:
+    name: Frw-Tests (3.10 Windows)
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+
+      - name: put ~/.local/bin on $PATH
+        run: echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
+
+      - name: cache ~/.local for pip deps
+        id: cache-local
+        uses: actions/cache@v3
+        with:
+          path: ~/.local
+          key: pip-${{ hashFiles('tvb_framework/requirements.txt') }}
+
+      - name: install tools and dependencies
+        if: steps.cache-local.outputs.cache-hit != 'true'
+        run: |
+          python3 -m pip install --upgrade setuptools pip wheel
+          pip3 install --user --upgrade numpy
+          pip3 install --user -r tvb_framework/requirements.txt
+          pip3 install --user --no-build-isolation tvb-gdist
+
+      - name: setup tvb
+        shell: pwsh
+        run: |
+          cd tvb_build
+          install_full_tvb.bat
+
+      - name: cache data
+        id: cache-data
+        uses: actions/cache@v3
+        with:
+          path: tvb_data
+          key: tvb-data
+
+      - name: download data
+        if: steps.cache-data.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -OutFile tvb_data.zip -Uri "https://zenodo.org/record/4263723/files/tvb_data.zip?download=1"
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          function Unzip
+          {
+              param([string]$zipfile, [string]$outpath)
+              [System.IO.Compression.ZipFile]::ExtractToDirectory($zipfile, $outpath)
+          }
+
+          Unzip "tvb_data.zip" "tvb_data"
+          rm tvb_data.zip
+          cd tvb_data
+          python3 setup.py develop
+
+      - name: run framework tests
+        run:
+          cd tvb_framework
+          pytest tvb/tests/framework
+
+
+
