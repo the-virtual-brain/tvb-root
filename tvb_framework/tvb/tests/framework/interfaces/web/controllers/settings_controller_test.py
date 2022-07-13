@@ -38,7 +38,6 @@ import json
 import os
 from pathlib import Path
 from time import sleep
-
 import cherrypy
 import pytest
 from tvb.basic.config import stored
