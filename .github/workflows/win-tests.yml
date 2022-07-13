@@ -29,27 +29,27 @@ jobs:
       - name: install tools and dependencies
         if: steps.cache-local.outputs.cache-hit != 'true'
         run: |
-          python3 -m pip install --upgrade setuptools pip wheel
-          pip3 install --user --upgrade numpy
-          pip3 install --user -r tvb_framework/requirements.txt
-          pip3 install --user --no-build-isolation tvb-gdist
+          python -m pip install --upgrade setuptools pip wheel
+          pip install --user --upgrade numpy cython
+          pip install --user -r tvb_framework/requirements.txt
+          pip install --user --no-build-isolation tvb-gdist
 
       - name: cache data
-        id: cache-tvb-data
+        id: cache-data
         uses: actions/cache@v3
         with:
           path: tvb_data
-          key: tvb-data
+          key: tvbdata
 
       - name: download data
-        if: steps.cache-tvb-data.outputs.cache-hit != 'true'
+        if: steps.cache-data.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
-          Invoke-WebRequest -OutFile tvb_data.zip -Uri "https://zenodo.org/record/4263723/files/tvb_data.zip?download=1"
-          Expand-Archive 'tvb_data.zip' tvb_data
-          rm tvb_data.zip
-          cd tvb_data
-          python3 setup.py develop
+          Invoke-WebRequest -OutFile C:\\TEMP\\tvb_data.zip -Uri "https://zenodo.org/record/4263723/files/tvb_data.zip?download=1"
+          Expand-Archive 'C:\\TEMP\\tvb_data.zip' C:\\tvb_data
+          del C:\\TEMP\\tvb_data.zip
+          cd C:\\tvb_data
+          python setup.py develop
 
       - name: run framework tests
         shell: pwsh
