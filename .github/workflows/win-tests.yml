@@ -31,6 +31,7 @@ jobs:
         run: |
           python -m pip install --upgrade setuptools pip wheel
           pip install --user --upgrade numpy cython
+          python -m pip install scikit-build
           pip install --user -r tvb_framework/requirements.txt
           pip install --user --no-build-isolation tvb-gdist
 
