@@ -27,14 +27,14 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-import os
-import cherrypy
-import numpy
-from jinja2 import PackageLoader, Environment
 
+import os
+import numpy
+import cherrypy
 import tvb.interfaces
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int, Dim, List
 import tvb.core.neotraits.forms
+from jinja2 import PackageLoader, Environment
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int, Dim, List
 from tvb.core.neotraits.forms import StrField, IntField, BoolField, Form, FormField, ArrayField
 
 # inject jinja config

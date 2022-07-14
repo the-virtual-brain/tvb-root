@@ -588,7 +588,8 @@ def datatype_group_factory(connectivity_factory, time_series_index_factory, time
 
             operation3 = operation_factory(test_project=project)
             region_mapping = region_mapping_factory(surface=surface, connectivity=connectivity)
-            region_mapping_index_factory(op=operation3, conn_gid=connectivity.gid.hex, surface_gid=surface.gid.hex, region_mapping=region_mapping)
+            region_mapping_index_factory(op=operation3, conn_gid=connectivity.gid.hex, surface_gid=surface.gid.hex,
+                                         region_mapping=region_mapping)
 
         algorithm = dao.get_algorithm_by_module(SIMULATOR_MODULE, SIMULATOR_CLASS)
         adapter = ABCAdapter.build_adapter(algorithm)

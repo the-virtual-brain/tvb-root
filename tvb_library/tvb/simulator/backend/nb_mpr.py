@@ -148,18 +148,23 @@ class NbMPRBackend(MakoUtilMix):
             sim.stimulus.configure_time(np.arange(nstep)*sim.integrator.dt)
             stimulus = sim.stimulus()
 
-        svar_bufs = integrate(
+        svar_bufs = self._run_integrate( integrate, sim, N, nstep, svar_bufs, stimulus)
+
+        return [svar_buf[:,horizon:] for svar_buf in svar_bufs]
+
+
+    def _run_integrate(self, integrate, sim, N, nstep, svar_bufs, stimulus):
+        return integrate(
             N = N,
             dt = sim.integrator.dt,
             nstep = nstep,
-            i0 = horizon,
+            i0 = sim.connectivity.horizon,
             **dict(zip(sim.model.state_variables,svar_bufs)),
             weights = sim.connectivity.weights, 
             idelays = sim.connectivity.idelays,
             parmat = sim.model.spatial_parameter_matrix.T,
             stimulus = stimulus
         )
-        return [svar_buf[:,horizon:] for svar_buf in svar_bufs]
 
     def _time_average(self, ts, istep):
         N, T = ts.shape
@@ -197,17 +202,7 @@ class NbMPRBackend(MakoUtilMix):
                         np.arange(chunk*chunksize, (chunk+1)*chunksize)*sim.integrator.dt
                 )
                 stimulus = sim.stimulus()
-            svar_bufs = integrate(
-                N = N,
-                dt = sim.integrator.dt,
-                nstep = chunksize,
-                i0 = horizon,
-                **dict(zip(sim.model.state_variables,svar_bufs)),
-                weights = sim.connectivity.weights, 
-                idelays = sim.connectivity.idelays,
-                parmat = sim.model.spatial_parameter_matrix,
-                stimulus = stimulus
-            )
+            svar_bufs = self._run_integrate( integrate, sim, N, chunksize, svar_bufs, stimulus)
 
             tavg_chunk = chunk * tavg_chunksize
             svar_chunks = [self._time_average(svar[:, horizon:], tavg_steps) for svar in svar_bufs]
