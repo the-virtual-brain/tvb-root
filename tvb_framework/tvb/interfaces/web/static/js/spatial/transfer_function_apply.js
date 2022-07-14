@@ -40,11 +40,14 @@ function TF_clearHistogram(){
 }
 
 function setTransferFunctionAndRedrawChart(methodToCall, fieldName, fieldValue) {
-    let currentParam = fieldName + '=' + fieldValue;
-    let url = refreshBaseUrl + '/' + methodToCall + '?' + currentParam;
+    const postData = {};
+    postData[fieldName] = fieldValue;
+    let url = refreshBaseUrl + '/' + methodToCall;
+
     $.ajax({
         url: url,
         type: 'POST',
+        data: postData,
         success: function (data) {
             if (fieldName === 'connectivity_measure') {
                 $("#" + 'histogramCanvasId').empty().append(data);

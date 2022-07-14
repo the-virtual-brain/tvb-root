@@ -124,7 +124,7 @@ class TVBOntologyController(SpatioTemporalController):
         self.model_params_list = self._prepare_model_params_list(self.simulator_context.simulator.model)
 
         ontology_context = TVBOntologyContext(TVBOntologyForm.default_transfer_function, self.model_params_list[0].name,
-                                              uuid.UUID(connectivity_measures[0].gid))
+                                              uuid.UUID(connectivity_measures[-1].gid))
         common.add2session(KEY_ONTOLOGY, ontology_context)
         params = self._prepare_reload(ontology_context)
 
