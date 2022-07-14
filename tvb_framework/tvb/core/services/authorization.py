@@ -28,7 +28,8 @@
 #
 #
 
-from keycloak import KeycloakOpenID, json
+import json
+from keycloak import KeycloakOpenID
 
 
 class AuthorizationManagerMeta(type):

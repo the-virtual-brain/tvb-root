@@ -308,9 +308,9 @@ Head model
   should include the following:
 
     * Mesh surface for the cortex (regularised, continuous and complete per
-    hemisphere, that is, there should be no holes in the surface and it should be
-    possible to unambiguously define an inside and an outside, in other words,
-    each hemisphere should be topologically spherical):
+      hemisphere, that is, there should be no holes in the surface and it should be
+      possible to unambiguously define an inside and an outside, in other words,
+      each hemisphere should be topologically spherical):
 
         + vertices (Cartesian (x,y,z))
         + triangles (triplets of indices into the vertices array, TRIANGLES, but not

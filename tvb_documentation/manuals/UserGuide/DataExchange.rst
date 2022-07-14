@@ -163,8 +163,9 @@ type or a group of data types. Each of such structures can be exported as follow
    - each operation folder containing a list of HDF5 files, one for each data type
      included in the exported group. Each file has structure/details as described above in the case of
      simple data type export. *This format applies to any |TVB| data type.*
+
 #. if a simple data type is exported with links, the result is a ZIP file containing a HDF5 file for
-the exported datatype and a HDF5 file for each linked datatype.
+   the exported datatype and a HDF5 file for each linked datatype.
 
 
 
