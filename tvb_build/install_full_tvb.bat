@@ -5,24 +5,24 @@ rem set up external dependencies that we maintain as distutils packages in exter
 cd ..
 
 cd tvb_framework
-python setup.py develop --no-deps
+pip install -e . --no-deps
 cd ..
 
 cd tvb_library
-python setup.py develop
+pip install -e .
 cd ..
 
 cd tvb_storage
-python setup.py develop
+pip install -e .
 cd ..
 
 cd tvb_contrib
-python setup.py develop --no-deps
+pip install -e . --no-deps
 cd ..
 
 cd tvb_bin
-python setup.py develop
+pip install -e .
 cd ..
 
 cd tvb_build
-python setup.py develop --no-deps
+pip install -e . --no-deps
