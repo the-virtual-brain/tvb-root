@@ -367,6 +367,6 @@ class DBSettings(object):
         # Overwrite number of connections to the DB.
         # Otherwise might reach PostgreSQL limit when launching multiple concurrent operations.
         # MAX_CONNECTION default value will be used for WEB
-        # When launched on cluster, the MAX_ASYNC_CONNECTIONS overwrites MAX_ONNECTIONS value
+        # When launched on cluster, the MAX_ASYNC_CONNECTIONS overwrites MAX_CONNECTIONS value
         self.MAX_CONNECTIONS = manager.get_attribute(stored.KEY_MAX_CONNECTIONS, 20, int)
         self.MAX_ASYNC_CONNECTIONS = manager.get_attribute(stored.KEY_MAX_ASYNC_CONNECTIONS, 2, int)

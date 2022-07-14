@@ -542,6 +542,7 @@ class ConnectivityMeasureOnSurfaceViewer(SurfaceViewer):
             if region_maps:
                 region_map_index = region_maps[0]
 
+        assert region_map_index is not None
         surface_gid = region_map_index.fk_surface_gid
         surface_viewer_model = SurfaceViewerModel(surface=surface_gid,
                                                   region_map=region_map_index.gid,

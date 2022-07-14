@@ -31,10 +31,9 @@
 """
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-from abc import ABCMeta
-
 import numpy
-from nibabel import trackvis
+from abc import ABCMeta
+from nibabel import streamlines
 from tvb.adapters.datatypes.db.tracts import TractsIndex
 from tvb.adapters.datatypes.h5.tracts_h5 import TractsH5
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
@@ -79,7 +78,7 @@ class TrackImporterForm(ABCUploaderForm):
     def __init__(self):
         super(TrackImporterForm, self).__init__()
 
-        self.data_file = TraitUploadField(TrackImporterModel.data_file, '.trk', 'data_file')
+        self.data_file = TraitUploadField(TrackImporterModel.data_file, ('.trk', '.tck'), 'data_file')
         self.region_volume = TraitDataTypeSelectField(TrackImporterModel.region_volume, name='region_volume')
 
     @staticmethod
@@ -89,7 +88,7 @@ class TrackImporterForm(ABCUploaderForm):
     @staticmethod
     def get_upload_information():
         return {
-            'data_file': '.trk'
+            'data_file': ('.trk', '.tck')
         }
 
 
@@ -102,7 +101,7 @@ class TrackZipImporterForm(TrackImporterForm):
 
 
 class _TrackImporterBase(ABCUploader, metaclass=ABCMeta):
-    _ui_name = "Tracts TRK"
+    _ui_name = "Tracts TRK or TCK"
     _ui_subsection = "tracts_importer"
     _ui_description = "Import tracts"
 
@@ -123,6 +122,8 @@ class _TrackImporterBase(ABCUploader, metaclass=ABCMeta):
         if not (0 <= x_plane < self.region_volume_shape[0] and
                 0 <= y_plane < self.region_volume_shape[1] and
                 0 <= z_plane < self.region_volume_shape[2]):
+            # import random
+            # return random.randint(0, 75)
             raise IndexError('There are vertices outside the region volume map cube!')
 
         # in memory data set
@@ -175,8 +176,10 @@ class _SpaceTransform(object):
     def __init__(self, hdr):
         # this is an affine transform mapping the voxel space in which the tracts live to the surface space
         # see http://www.grahamwideman.com/gw/brain/fs/coords/fscoords.htm
-        self.vox_to_ras = hdr['vox_to_ras']
-
+        if 'vox_to_ras' in hdr:
+            self.vox_to_ras = hdr['vox_to_ras']
+        if 'voxel_to_rasmm' in hdr:
+            self.vox_to_ras = hdr['voxel_to_rasmm']
         if self.vox_to_ras[3][3] == 0:
             # according to http://www.trackvis.org/docs/?subsect=fileformat this means that the matrix cannot be trusted
             self.vox_to_ras = numpy.eye(4)
@@ -204,24 +207,19 @@ class TrackvizTractsImporter(_TrackImporterBase):
         datatype = self._base_before_launch(view_model.data_file, view_model.region_volume)
 
         # note the streaming parsing, we do not load the dataset in memory at once
-        tract_gen, hdr = trackvis.read(view_model.data_file, as_generator=True)
-
-        vox2ras = _SpaceTransform(hdr)
+        tract_obj = streamlines.load(view_model.data_file, lazy_load=True)
+        vox2ras = _SpaceTransform(tract_obj.header)
         tract_start_indices = [0]
         tract_region = []
 
         with TractsH5(self.path_for(TractsH5, datatype.gid)) as tracts_h5:
             # we process tracts in bigger chunks to optimize disk write costs
-            for tract_bundle in chunk_iter(tract_gen, self.READ_CHUNK):
-                tract_bundle = [tr[0] for tr in tract_bundle]
+            for tr in tract_obj.streamlines:
+                tract_start_indices.append(tract_start_indices[-1] + len(tr))
+                if view_model.region_volume is not None:
+                    tract_region.append(self._get_tract_region(tr[0]))
 
-                for tr in tract_bundle:
-                    tract_start_indices.append(tract_start_indices[-1] + len(tr))
-                    if view_model.region_volume is not None:
-                        tract_region.append(self._get_tract_region(tr[0]))
-
-                vertices = numpy.concatenate(tract_bundle)  # in voxel space
-                datatype.vertices = vox2ras.transform(vertices)
+                datatype.vertices = vox2ras.transform(tr)
                 tracts_h5.write_vertices_slice(datatype.vertices)
 
             datatype.tract_start_idx = numpy.array(tract_start_indices)

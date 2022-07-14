@@ -33,7 +33,6 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                     source activate tvb-docs
-                    pip install docutils==0.12
                     cd tvb_build
                     bash install_full_tvb.sh
                     python build_step1.py $GIT_BRANCH
@@ -72,15 +71,15 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                     source activate tvb-run
+                    cd tvb_build
+                    bash install_full_tvb.sh
+                    cd ../tvb_bin
                     rm -rf TEST_OUTPUT
                     mkdir TEST_OUTPUT
-                    cd tvb_framework
-                    python setup_rest_client.py develop --no-deps
-                    cd ..
-                    pytest --pyargs tvb.interfaces.rest.client.tests.rest_tests  --junitxml=TEST_OUTPUT/results_REST-client.xml > TEST_OUTPUT/results_REST-client.out 2>&1
+                    pytest --pyargs tvb.interfaces.rest.client.tests  --junitxml=TEST_OUTPUT/results_REST-client.xml > TEST_OUTPUT/results_REST-client.out 2>&1
                     exit 0
                 '''
-                 junit 'TEST_OUTPUT/results_*.xml'
+                 junit 'tvb_bin/TEST_OUTPUT/results_*.xml'
             }
         }
         stage ('Compute coverage') {
@@ -112,7 +111,7 @@ pipeline {
             sh 'docker rm -f ${REST_CONTAINER} || true'
         }
         changed {
-            mail to: 'lia.domide@codemart.ro bogdan.valean@codemart.ro',
+            mail to: 'lia.domide@codemart.ro',
             subject: "Jenkins Pipeline ${currentBuild.fullDisplayName} changed status",
             body: """
                 Result: ${currentBuild.result}
