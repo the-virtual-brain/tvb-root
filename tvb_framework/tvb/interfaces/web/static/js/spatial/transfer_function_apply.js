@@ -35,6 +35,11 @@ function TF_submitAndRedraw(methodToCall, fieldName, fieldValue) {
                 const values = $.parseJSON(result['data']);
                 const labels = $.parseJSON(result['labels']);
                 const colors = $.parseJSON(result['colors']);
+                // TODO
+                // I removed the class "view-column" from .histogramParentDiv, in visualizers/histogram/view.html but that is not ok for the stand alone viewer (missing border there)
+                // Color scheme not updated on changed values -- possibly we ned to call something else, not redrawHistogram bellow, or adjust this function
+                // submit of Eq class selection into the session ??
+                // Application on multiple model params is possible now, but not obvious to the end user unless final step (after submit)
                 redrawHistogram(sect.width(), sect.height(), values, labels, colors, result['xposition']);
             } else {
                 plotEquation();
