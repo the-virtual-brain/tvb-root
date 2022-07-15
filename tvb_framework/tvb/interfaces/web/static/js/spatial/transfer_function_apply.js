@@ -17,31 +17,11 @@
  *
  **/
 
-function TF_applyTransferFunction(){
-    doAjaxCall({
-        async: false,
-        type: 'POST',
-        url: '/burst/tvb-o/apply_transfer_function',
-        success: function (data){
-            $("#" + 'histogramCanvasId').empty().append(data);
-        }
-    });
-}
-
-function TF_clearHistogram(){
-    doAjaxCall({
-        async: false,
-        type: 'POST',
-        url: '/burst/tvb-o/clear_histogram',
-        success: function (data){
-            $("#" + 'histogramCanvasId').empty().append(data);
-        }
-    });
-}
-
-function setTransferFunctionAndRedrawChart(methodToCall, fieldName, fieldValue) {
+function TF_submitAndRedraw(methodToCall, fieldName, fieldValue) {
     const postData = {};
-    postData[fieldName] = fieldValue;
+    if (fieldName !== '') {
+        postData[fieldName] = fieldValue;
+    }
     let url = refreshBaseUrl + '/' + methodToCall;
 
     $.ajax({
@@ -49,8 +29,13 @@ function setTransferFunctionAndRedrawChart(methodToCall, fieldName, fieldValue) 
         type: 'POST',
         data: postData,
         success: function (data) {
-            if (fieldName === 'connectivity_measure') {
-                $("#" + 'histogramCanvasId').empty().append(data);
+            if (['set_connectivity_measure', "apply_transfer_function", "clear_histogram"].includes(methodToCall)) {
+                const result = $.parseJSON(data);
+                const sect = $('section.col-2');
+                const values = $.parseJSON(result['data']);
+                const labels = $.parseJSON(result['labels']);
+                const colors = $.parseJSON(result['colors']);
+                redrawHistogram(sect.width(), sect.height(), values, labels, colors, result['xposition']);
             } else {
                 plotEquation();
             }
@@ -76,7 +61,7 @@ function plotEquation(subformDiv = null) {
         async: false,
         type: 'POST',
         url: url,
-        data: {'min_x' : min_x, 'max_x': max_x },
+        data: {'min_x': min_x, 'max_x': max_x},
         success: function (data) {
             $("#" + 'transferFunctionDivId').empty().append(data);
         }
@@ -92,21 +77,21 @@ function redrawPlotOnMinMaxChanges() {
     });
 }
 
-function setEventsOnStaticFormFields(fieldsWithEvents){
+function setEventsOnStaticFormFields(fieldsWithEvents) {
     let CONNECTIVITY_MEASURE_FIELD = 'set_connectivity_measure';
     let MODEL_PARAM_FIELD = 'set_model_parameter';
 
-    $('select[name^="' + fieldsWithEvents[CONNECTIVITY_MEASURE_FIELD] + '"]').change(function (){
-        setTransferFunctionAndRedrawChart(CONNECTIVITY_MEASURE_FIELD, this.name, this.value)
+    $('select[name^="' + fieldsWithEvents[CONNECTIVITY_MEASURE_FIELD] + '"]').change(function () {
+        TF_submitAndRedraw(CONNECTIVITY_MEASURE_FIELD, this.name, this.value)
     });
 
-    $('select[name^="' + fieldsWithEvents[MODEL_PARAM_FIELD] + '"]').change(function (){
-        setTransferFunctionAndRedrawChart(MODEL_PARAM_FIELD, this.name, this.value)
+    $('select[name^="' + fieldsWithEvents[MODEL_PARAM_FIELD] + '"]').change(function () {
+        TF_submitAndRedraw(MODEL_PARAM_FIELD, this.name, this.value)
     });
 }
 
-function setEventsOnFormFields(elementType, div_id){
+function setEventsOnFormFields(elementType, div_id) {
     $('#' + div_id + ' input').change(function () {
-        setTransferFunctionAndRedrawChart('set_transfer_function_param', this.name, this.value)
+        TF_submitAndRedraw('set_transfer_function_param', this.name, this.value)
     });
 }

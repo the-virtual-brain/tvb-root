@@ -1,4 +1,4 @@
-<div>
+<div class="mainDiv">
     <script type="text/javascript" src="{{ deploy_context | safe }}/static/flot/jquery.flot.js"></script>
     <script type="text/javascript" src="{{ deploy_context | safe }}/static/flot/jquery.flot.stack.js"></script>
     <script type="text/javascript" src="{{ deploy_context | safe }}/static_view/histogram/histogram.js?{{ currentVersionJS }}" ></script>
@@ -7,18 +7,18 @@
     <link type="text/css" rel="stylesheet" href="{{ deploy_context | safe }}/static/style/section_visualisers.css?{{ currentVersionJS }}"/>
 
     <script type="text/javascript">
-        $(document).ready(function() {
+        $(document).ready(function () {
             startHistogramView({{ minColor }}, {{ maxColor }}, {{ data }}, {{ labels | safe }}, {{ colors }});
         });
 
-        function launchViewer(width, height) {
+        function redrawHistogram(width, height, data, labels, colors, xposition) {
         	document.getElementById('histogramCanvasId').style.width = (width * 0.9) + 'px';
         	document.getElementById('histogramCanvasId').style.height = (height * 0.7) + 'px';
-        	drawHistogram('histogramCanvasId', {{ data }}, {{ labels | safe }}, {{ colors }}, '{{ xposition }}');
+        	drawHistogram('histogramCanvasId', data, labels, colors, xposition);
         }
     </script>
 
-    <div class="histogramParentDiv view-column">
+    <div class="histogramParentDiv">
         <div id="histogramCanvasId"></div>
         <div id="histogramLegend">
             <canvas id="histogramLegendCanvas" width="20px"></canvas>

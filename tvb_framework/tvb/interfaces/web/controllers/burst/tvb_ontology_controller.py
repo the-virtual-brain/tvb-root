@@ -45,7 +45,7 @@ from tvb.core.neocom import h5
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.decorators import expose_page, handle_error, check_user, \
-    expose_fragment
+    expose_fragment, jsonify
 from tvb.interfaces.web.controllers.simulator.simulator_wizzard_urls import SimulatorWizzardURLs
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
 from tvb.interfaces.web.entities.context_ontology import TVBOntologyContext, KEY_RESULT
@@ -175,50 +175,52 @@ class TVBOntologyController(SpatioTemporalController):
             self.logger.exception(ex)
             return {'allSeries': None, 'errorMsg': ex}
 
-    @expose_fragment('burst/transfer_function_apply')
+    @cherrypy.expose
+    @handle_error(redirect=False)
     def set_model_parameter(self, model_param):
         ontology_context = common.get_from_session(KEY_ONTOLOGY)
         ontology_context.current_model_param = model_param
 
-        template_specification = self._prepare_reload(ontology_context)
-        return self.fill_default_attributes(template_specification)
-
-    @expose_fragment('burst/transfer_function_apply')
+    @cherrypy.expose
+    @handle_error(redirect=False)
+    @jsonify
     def set_connectivity_measure(self, connectivity_measure):
         ontology_context = common.get_from_session(KEY_ONTOLOGY)
         ontology_context.current_connectivity_measure = uuid.UUID(connectivity_measure)
 
-        template_specification = self._prepare_reload(ontology_context)
-        return self.fill_default_attributes(template_specification)
+        result_dict = HistogramViewer().prepare_parameters(ontology_context.current_connectivity_measure)
+        return result_dict
 
     @cherrypy.expose
+    @handle_error(redirect=False)
     def set_transfer_function_param(self, **param):
         ontology_context = common.get_from_session(KEY_ONTOLOGY)
-        eq_params_form_class = get_form_for_equation(type(ontology_context.transfer_function))
+        eq_params_form_class = get_form_for_equation(type(ontology_context.current_transfer_function))
         eq_params_form = eq_params_form_class()
-        eq_params_form.fill_from_trait(ontology_context.transfer_function)
+        eq_params_form.fill_from_trait(ontology_context.current_transfer_function)
         eq_params_form.fill_from_post(param)
-        eq_params_form.fill_trait(ontology_context.transfer_function)
+        eq_params_form.fill_trait(ontology_context.current_transfer_function)
 
-    @expose_fragment('burst/transfer_function_apply')
+    @cherrypy.expose
+    @handle_error(redirect=False)
+    @jsonify
     def apply_transfer_function(self):
         ontology_context = common.get_from_session(KEY_ONTOLOGY)
         simulator = self.simulator_context.simulator
         result = ontology_context.apply_transfer_function()
 
-        template_specification = self._prepare_reload(ontology_context)
         connectivity = h5.load_from_gid(simulator.connectivity)
-        new_cm_params = HistogramViewer().gather_params_dict(connectivity.region_labels.tolist(), result.tolist(), '')
+        result_dict = HistogramViewer().gather_params_dict(connectivity.region_labels.tolist(),
+                                                           result.tolist(), self.title)
+        return result_dict
 
-        template_specification.update(new_cm_params)
-        template_specification['title'] = self.title
-        return self.fill_default_attributes(template_specification)
-
-    @expose_fragment('burst/transfer_function_apply')
+    @cherrypy.expose
+    @handle_error(redirect=False)
+    @jsonify
     def clear_histogram(self):
         ontology_context = common.get_from_session(KEY_ONTOLOGY)
-        template_specification = self._prepare_reload(ontology_context)
-        return self.fill_default_attributes(template_specification)
+        result_dict = HistogramViewer().prepare_parameters(ontology_context.current_connectivity_measure)
+        return result_dict
 
     @cherrypy.expose
     @handle_error(redirect=True)

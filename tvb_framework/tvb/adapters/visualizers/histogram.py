@@ -107,7 +107,7 @@ class HistogramViewer(ABCDisplayer):
 
     @staticmethod
     def gather_params_dict(labels_list, values_list, title):
-        params = dict(title="Connectivity Measure - " + title, labels=json.dumps(labels_list),
+        params = dict(title=title, labels=json.dumps(labels_list),
                       data=json.dumps(values_list), colors=json.dumps(values_list),
                       xposition='center' if min(values_list) < 0 else 'bottom',
                       minColor=min(values_list), maxColor=max(values_list))
@@ -123,5 +123,5 @@ class HistogramViewer(ABCDisplayer):
         values_list = conn_measure.array_data.tolist()
         # A gradient of colors will be used for each node
 
-        params = self.gather_params_dict(labels_list, values_list, conn_measure.title)
+        params = self.gather_params_dict(labels_list, values_list, "Connectivity Measure - " + conn_measure.title)
         return params
