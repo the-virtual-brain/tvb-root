@@ -32,7 +32,7 @@
 This module implements neotraits.
 It is private only to shield public usage of the imports and logger.
 """
-
+import copy
 import uuid
 from enum import Enum
 import numpy
@@ -304,3 +304,19 @@ class HasTraits(object):
             except TraitError:
                 ret[aname] = 'unavailable'
         return ret
+
+    def __deepcopy__(self, memodict={}):
+        """
+        Method for deep copying a HasTraits object correctly, event when its attributes are of type HasTraits as well.
+        """
+        cls = type(self)
+        copied = cls()
+        for k in cls.declarative_attrs:
+            attr = getattr(self, k)
+            if isinstance(attr, HasTraits):
+                attr = copy.deepcopy(attr)
+            try:
+                setattr(copied, k, attr)
+            except:
+                pass
+        return copied

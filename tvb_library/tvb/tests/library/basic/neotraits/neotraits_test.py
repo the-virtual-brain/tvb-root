@@ -29,11 +29,14 @@
 #
 
 import abc
+import copy
 import types
 import uuid
 import numpy
 import numpy as np
 import pytest
+from tvb.datatypes import connectivity
+from tvb.simulator import (simulator, models, coupling, integrators, monitors, noise)
 from tvb.basic.neotraits._core import TraitProperty
 from tvb.basic.neotraits.api import (
     HasTraits, Attr, NArray, Final, List, trait_property,
@@ -910,3 +913,46 @@ def test_function_attribute():
     with pytest.raises(TypeError):
         # out of bounds
         ainst.c = "Not a function"
+
+
+def test_deepcopy():
+    con = connectivity.Connectivity.from_file("connectivity_192.zip")
+    sim = simulator.Simulator(
+        connectivity=con,
+        coupling=coupling.Linear(a=numpy.array([2e-4])),
+        integrator=integrators.EulerStochastic(dt=10.0),
+        model=models.Linear(gamma=numpy.array([-1e-2])),
+        monitors=(monitors.Raw(),),
+        simulation_length=60e3
+    )
+    clone = copy.deepcopy(sim)
+
+    # check that attr are not the same
+    assert sim.integrator.noise != clone.integrator.noise
+    assert sim.model != clone.model
+    assert sim.coupling != clone.coupling
+    assert sim.connectivity != clone.connectivity
+
+    # but values of attr are the same
+    assert sim.integrator.noise.ntau == clone.integrator.noise.ntau == 0
+    assert sim.integrator.noise.dt is clone.integrator.noise.dt is None
+    assert sim.model.gamma[0] == clone.model.gamma[0]
+    assert sim.coupling.a[0] == clone.coupling.a[0]
+    assert sim.connectivity.number_of_regions == clone.connectivity.number_of_regions == 0
+
+    # configure simulation and modify original
+    sim.model.gamma[0] = 0.5
+    sim.integrator.noise.ntau = 2.0
+    sim.configure()
+
+    # check that values of attr are now different and values from clone are did not change
+    assert sim.integrator.noise.ntau != clone.integrator.noise.ntau
+    assert clone.integrator.noise.ntau == 0
+
+    assert sim.integrator.noise.dt != clone.integrator.noise.dt
+    assert clone.integrator.noise.dt is None
+
+    assert sim.model.gamma[0] != clone.model.gamma[0]
+
+    assert sim.connectivity.number_of_regions != clone.connectivity.number_of_regions
+    assert clone.connectivity.number_of_regions == 0
