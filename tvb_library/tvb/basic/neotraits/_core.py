@@ -42,7 +42,7 @@ from six import add_metaclass
 from ._attr import Attr
 from ._declarative_base import _Property, MetaType
 from .info import trait_object_str, trait_object_repr_html, narray_summary_info
-from .ex import TraitAttributeError, TraitTypeError, TraitError
+from .ex import TraitAttributeError, TraitTypeError, TraitError, TraitFinalAttributeError
 from tvb.basic.logger.builder import get_logger
 
 
@@ -317,6 +317,6 @@ class HasTraits(object):
                 attr = copy.deepcopy(attr)
             try:
                 setattr(copied, k, attr)
-            except:
+            except TraitFinalAttributeError:
                 pass
         return copied
