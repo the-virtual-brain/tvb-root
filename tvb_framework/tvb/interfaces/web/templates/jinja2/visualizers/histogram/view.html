@@ -11,10 +11,13 @@
             startHistogramView({{ minColor }}, {{ maxColor }}, {{ data }}, {{ labels | safe }}, {{ colors }});
         });
 
-        function redrawHistogram(width, height, data, labels, colors, xposition) {
-        	document.getElementById('histogramCanvasId').style.width = (width * 0.9) + 'px';
-        	document.getElementById('histogramCanvasId').style.height = (height * 0.7) + 'px';
+        function redrawHistogram(minColor, maxColor, data, labels, colorsStr, xposition) {
+            $('#colorMinId').val(minColor);
+            $('#colorMaxId').val(maxColor);
+            $('#originalColors').val(colorsStr);
+            const colors = $.parseJSON(colorsStr);
         	drawHistogram('histogramCanvasId', data, labels, colors, xposition);
+            changeColors();
         }
     </script>
 
