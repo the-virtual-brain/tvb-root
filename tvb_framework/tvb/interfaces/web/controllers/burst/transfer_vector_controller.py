@@ -58,19 +58,12 @@ class TransferVectorController(SpatioTemporalController):
     and producing a Spatial Vector distribution on Model parameters
     """
 
-    MODEL_PARAM_FIELD = 'set_model_parameter'
-    CONNECTIVITY_MEASURE_FIELD = 'set_connectivity_measure'
-    EQUATION_FIELD = 'set_transfer_function'
-    EQUATION_PARAMS_FIELD = 'set_transfer_function_param'
-
     base_url = '/burst/transfer/'
     title = 'Apply Spatial Vector on Model Parameter(s)'
 
     def __init__(self):
         super(TransferVectorController, self).__init__()
         self.simulator_context = SimulatorContext()
-        self.model_params_list = None
-        self.plotted_tf_prefixes = None
 
     def no_connectivity_measure_page(self):
         params = ({
@@ -78,38 +71,6 @@ class TransferVectorController(SpatioTemporalController):
             'mainContent': 'burst/transfer_function_apply_empty',
         })
         return self.fill_default_attributes(params)
-
-    @staticmethod
-    def _fill_form_from_context(config_form, context):
-        if context.current_model_param in context.applied_transfer_functions:
-            current_transfer_function = context.get_transfer_function_for_parameter(context.current_model_param)
-            context.current_transfer_function = current_transfer_function
-            config_form.transfer_function.data = type(current_transfer_function)
-            config_form.transfer_function.subform_field.form = get_form_for_equation(type(current_transfer_function))()
-            config_form.transfer_function.subform_field.form.fill_from_trait(current_transfer_function)
-        else:
-            context.current_transfer_function = TransferVectorForm.default_transfer_function.instance
-            config_form.transfer_function.data = type(context.current_transfer_function)
-            config_form.transfer_function.subform_field.form.fill_from_trait(context.current_transfer_function)
-
-    def _prepare_reload(self, ontology_context):
-        template_specification = HistogramViewer().prepare_parameters(ontology_context.current_connectivity_measure)
-        template_specification['baseUrl'] = self.base_url
-        template_specification['transferFunctionsPrefixes'] = self.plotted_tf_prefixes
-        template_specification['applied_transfer_functions'] = ontology_context.get_configure_info()
-
-        ontology_form = TransferVectorForm(self.model_params_list)
-        ontology_form.model_param.data = ontology_context.current_model_param
-        ontology_form.connectivity_measure.data = ontology_context.current_connectivity_measure
-        self._fill_form_from_context(ontology_form, ontology_context)
-        ontology_form = self.algorithm_service.prepare_adapter_form(form_instance=ontology_form)
-        template_specification['applyTransferFunctionForm'] = self.render_adapter_form(ontology_form)
-
-        transfer_function_plot_form = EquationPlotForm()
-        template_specification['parametersTransferFunctionPlotForm'] = self.render_adapter_form(
-            transfer_function_plot_form)
-
-        return template_specification
 
     @expose_page
     def index(self):
@@ -120,26 +81,30 @@ class TransferVectorController(SpatioTemporalController):
         if not connectivity_measures:
             return self.no_connectivity_measure_page()
 
-        self.model_params_list = self._prepare_model_params_list(self.simulator_context.simulator.model)
+        model_params_list = self._prepare_model_params_list(self.simulator_context.simulator.model)
 
-        ontology_context = TransferVectorContext(TransferVectorForm.default_transfer_function, self.model_params_list[0].name,
-                                                 uuid.UUID(connectivity_measures[-1].gid))
-        common.add2session(KEY_TRANSFER, ontology_context)
-        params = self._prepare_reload(ontology_context)
+        context = TransferVectorContext(TransferVectorForm.default_transfer_function.instance,
+                                        model_params_list[0].name,
+                                        uuid.UUID(connectivity_measures[-1].gid))
+        common.add2session(KEY_TRANSFER, context)
 
-        tvb_ontology_form = TransferVectorForm(self.model_params_list)
-        self.plotted_tf_prefixes = {
-            self.MODEL_PARAM_FIELD: tvb_ontology_form.model_param.name,
-            self.CONNECTIVITY_MEASURE_FIELD: tvb_ontology_form.connectivity_measure.name,
-            self.EQUATION_FIELD: tvb_ontology_form.transfer_function.name,
-            self.EQUATION_PARAMS_FIELD: tvb_ontology_form.transfer_function.subform_field.name
-        }
+        params = HistogramViewer().prepare_parameters(context.current_connectivity_measure)
 
+        config_form = TransferVectorForm(model_params_list)
+        config_form.model_param.data = context.current_model_param
+        config_form.connectivity_measure.data = context.current_connectivity_measure
+        config_form.transfer_function.data = type(context.current_transfer_function)
+        config_form.transfer_function.subform_field.form.fill_from_trait(context.current_transfer_function)
+        config_form = self.algorithm_service.prepare_adapter_form(form_instance=config_form)
+
+        eq_plot_form = EquationPlotForm()
         params.update({'mainContent': 'burst/transfer_function_apply',
                        'submit_parameters_url': self.build_path('/burst/transfer/submit_model_parameter'),
+                       'applyTransferFunctionForm': self.render_adapter_form(config_form),
+                       'parametersTransferFunctionPlotForm': self.render_adapter_form(eq_plot_form),
                        'isSingleMode': True,
                        'title': self.title,
-                       'transferFunctionsPrefixes': self.plotted_tf_prefixes})
+                       'baseUrl': self.base_url})
 
         return self.fill_default_attributes(params)
 
@@ -204,13 +169,14 @@ class TransferVectorController(SpatioTemporalController):
     @handle_error(redirect=False)
     @jsonify
     def apply_transfer_function(self):
-        ontology_context = common.get_from_session(KEY_TRANSFER)
+        context = common.get_from_session(KEY_TRANSFER)
         simulator = self.simulator_context.simulator
-        result = ontology_context.apply_transfer_function()
+        result = context.apply_transfer_function()
 
         connectivity = h5.load_from_gid(simulator.connectivity)
         result_dict = HistogramViewer().gather_params_dict(connectivity.region_labels.tolist(),
                                                            result.tolist(), self.title)
+        result_dict['applied_transfer_functions'] = context.get_applied_transfer_functions()
         return result_dict
 
     @cherrypy.expose

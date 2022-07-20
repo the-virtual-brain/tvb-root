@@ -34,6 +34,14 @@ function TF_submitAndRedraw(methodToCall, fieldName, fieldValue) {
                 const values = $.parseJSON(result['data']);
                 const labels = $.parseJSON(result['labels']);
                 redrawHistogram(result['minColor'], result['maxColor'], values, labels, result['colors'], result['xposition']);
+                if ("apply_transfer_function" == methodToCall) {
+                    const divApplied = $("#appliedVectorsDivId");
+                    divApplied.empty();
+                    const applied = result['applied_transfer_functions'];
+                    for (let it in applied) {
+                        divApplied.append("<p><b> Parameter " + it + " : </b> " + applied[it] + "</p>");
+                    }
+                }
             } else {
                 plotEquation();
             }
@@ -61,7 +69,7 @@ function plotEquation(subformDiv = null) {
         url: url,
         data: {'min_x': min_x, 'max_x': max_x},
         success: function (data) {
-            $("#" + 'transferFunctionDivId').empty().append(data);
+            $("#transferFunctionDivId").empty().append(data);
         }
     });
 }
@@ -75,16 +83,14 @@ function redrawPlotOnMinMaxChanges() {
     });
 }
 
-function setEventsOnStaticFormFields(fieldsWithEvents) {
-    let CONNECTIVITY_MEASURE_FIELD = 'set_connectivity_measure';
-    let MODEL_PARAM_FIELD = 'set_model_parameter';
+function setEventsOnStaticFormFields() {
 
-    $('select[name^="' + fieldsWithEvents[CONNECTIVITY_MEASURE_FIELD] + '"]').change(function () {
-        TF_submitAndRedraw(CONNECTIVITY_MEASURE_FIELD, this.name, this.value)
+    $('select[name^="connectivity_measure"]').change(function () {
+        TF_submitAndRedraw('set_connectivity_measure', this.name, this.value)
     });
 
-    $('select[name^="' + fieldsWithEvents[MODEL_PARAM_FIELD] + '"]').change(function () {
-        TF_submitAndRedraw(MODEL_PARAM_FIELD, this.name, this.value)
+    $('select[name^="model_param"]').change(function () {
+        TF_submitAndRedraw('set_model_parameter', this.name, this.value)
     });
 }
 

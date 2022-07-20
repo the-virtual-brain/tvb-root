@@ -37,7 +37,6 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.spatial_model import SpatialModel
 from tvb.interfaces.web.controllers.burst.transfer_vector_controller import TransferVectorForm
 
-
 KEY_EQUATION = "equation"
 KEY_RESULT = "result"
 
@@ -65,29 +64,13 @@ class TransferVectorContext(SpatialModel):
         cm = h5.load_from_gid(self.current_connectivity_measure)
         result = self.current_transfer_function.evaluate(cm.array_data)
 
-        if self.current_model_param in self.applied_transfer_functions:
-            param_data = self.applied_transfer_functions[self.current_model_param]
-            param_data[KEY_EQUATION] = self.current_transfer_function
-            param_data[KEY_RESULT] = result
-        else:
-            self.applied_transfer_functions[self.current_model_param] = {
-                KEY_EQUATION: self.current_transfer_function,
-                KEY_RESULT: result
-            }
-
+        self.applied_transfer_functions[self.current_model_param] = {
+            KEY_EQUATION: self.current_transfer_function,
+            KEY_RESULT: result
+        }
         return result
 
-    def get_transfer_function_for_parameter(self, parameter_name):
-        """
-        :returns: the applied transfer function for the given model param OR None if there is no
-        transfer function applied to this param.
-        """
-        try:
-            return self.applied_transfer_functions[parameter_name][KEY_EQUATION]
-        except KeyError:
-            return None
-
-    def get_configure_info(self):
+    def get_applied_transfer_functions(self):
         """
         :returns: a dictionary which contains information about the applied transfer functions on the model parameters.
         """
