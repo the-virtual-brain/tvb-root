@@ -313,10 +313,8 @@ class HasTraits(object):
         copied = cls()
         for k in cls.declarative_attrs:
             attr = getattr(self, k)
-            if isinstance(attr, HasTraits):
-                attr = copy.deepcopy(attr)
             try:
-                setattr(copied, k, attr)
+                setattr(copied, k, copy.deepcopy(attr))
             except TraitFinalAttributeError:
                 pass
         return copied
