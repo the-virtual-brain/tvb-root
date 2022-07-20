@@ -151,15 +151,6 @@ class DiscreteEquation(FiniteSupportEquation):
         doc="""The equation defines a function of :math:`x`""")
 
 
-class TransferFunction(Equation):
-    """
-    General class for transfer functions used by TVB-O.
-    Transfer functions should be implemented similar to the existing equations.
-    Until the transfer functions are implemented, we are going to use some existing
-    equations for demonstrative purposes
-    """
-
-
 class Linear(TemporalApplicableEquation):
     """
     A linear equation.
@@ -175,6 +166,31 @@ class Linear(TemporalApplicableEquation):
         field_type=dict,
         label="Linear Parameters",
         default=lambda: {"a": 1.0, "b": 0.0})
+
+
+class RescaleInterval(Equation):
+    """
+    Direct rescaling of an interval from [oldMin..oldMax] into [newMin..newMax]
+    """
+    equation = Final(
+        label="Rescale Equation",
+        default="(newMax - newMin) / (oldMax - oldMin) * var  + newMin",
+        doc=""":math:`result = (newMax - newMin) / (oldMax - oldMin) * x  + newMin`""")
+
+    parameters = Attr(
+        field_type=dict,
+        label="Rescale Interval Parameters",
+        default=lambda: {"newMin": 0.0, "newMax": 1.0, "oldMin": 0.0, "oldMax": 1.0})
+
+
+class Absolute(Equation):
+    """
+    Absolute value
+    """
+    equation = Final(
+        label="Absolute Equation",
+        default="abs(var)",
+        doc=""":math:`result = abs(x)`""")
 
 
 class Gaussian(SpatialApplicableEquation, FiniteSupportEquation):
