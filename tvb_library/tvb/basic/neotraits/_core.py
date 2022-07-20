@@ -38,6 +38,8 @@ from enum import Enum
 import numpy
 import typing
 from six import add_metaclass
+from numpy.random import RandomState
+from scipy.sparse import csc_matrix, spmatrix
 
 from ._attr import Attr
 from ._declarative_base import _Property, MetaType
@@ -195,6 +197,8 @@ class HasTraits(object):
 
     gid = Attr(field_type=uuid.UUID)
 
+    TYPES_TO_DEEPCOPY = (RandomState, csc_matrix, spmatrix)
+
     def __init__(self, **kwargs):
         """
         The default init accepts kwargs for all declarative attrs
@@ -313,10 +317,15 @@ class HasTraits(object):
         copied = cls()
         for k in cls.declarative_attrs:
             attr = getattr(self, k)
-            if isinstance(attr, HasTraits) or isinstance(attr, numpy.random.RandomState):
+            if isinstance(attr, (HasTraits, self.TYPES_TO_DEEPCOPY)):
                 attr = copy.deepcopy(attr)
             try:
                 setattr(copied, k, attr)
             except TraitFinalAttributeError:
                 pass
         return copied
+
+    def duplicate(self):
+        duplicate = copy.deepcopy(self)
+        duplicate.gid = uuid.uuid4()
+        return duplicate

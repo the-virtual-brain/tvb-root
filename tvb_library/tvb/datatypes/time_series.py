@@ -110,10 +110,8 @@ class TimeSeries(HasTraits):
         summary.update(narray_summary_info(self.data))
         return summary
 
-    def duplicate(self, **kwargs):
-        duplicate = deepcopy(self)
-        for attr, value in kwargs.items():
-            setattr(duplicate, attr, value)
+    def duplicate(self):
+        duplicate = super(TimeSeries, self).duplicate()
         duplicate.configure()
         return duplicate
 
