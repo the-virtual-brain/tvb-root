@@ -43,7 +43,7 @@ KEY_TRANSFER = "transferVector"
 
 
 class TransferVectorForm(ABCAdapterForm):
-    default_transfer_function = TransferVectorEquationsEnum.LINEAR_INTERVAL
+    default_transfer_function = TransferVectorEquationsEnum.IDENTITY
     transfer_function_label = 'Transfer Function'
 
     def __init__(self, model_params):

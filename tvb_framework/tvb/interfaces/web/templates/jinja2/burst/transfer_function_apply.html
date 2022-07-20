@@ -2,9 +2,8 @@
     <link rel="stylesheet" type="text/css" href="{{ deploy_context | safe }}/static/style/section_stimulus.css?{{ currentVersionJS }}"/>
 
     <section class="view-column col-1">
-
-        <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/spatial/base_spatial.js"></script>
-        <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/spatial/transfer_function_apply.js"></script>
+        <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/spatial/base_spatial.js?{{ currentVersionJS }}"></script>
+        <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/spatial/transfer_function_apply.js?{{ currentVersionJS }}"></script>
         {% include 'spatial/refreshBaseUrl_initializer.html' %}
 
         <h4><mark>Apply</mark> Transfer Function</h4>

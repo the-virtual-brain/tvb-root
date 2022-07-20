@@ -158,12 +158,12 @@ class TransferVectorController(SpatioTemporalController):
 
             transfer_function = ontology_context.current_transfer_function
             series_data, display_ui_message = transfer_function.get_series_data(min_range=min_x, max_range=max_x)
-            all_series = self.get_series_json(series_data, "Temporal")
+            all_series = self.get_series_json(series_data, "vector")
 
             ui_message = ''
             if display_ui_message:
-                ui_message = self.get_ui_message(["temporal"])
-            return {'allSeries': all_series, 'prefix': 'temporal', 'message': ui_message}
+                ui_message = self.get_ui_message(["vector"])
+            return {'allSeries': all_series, 'prefix': 'vector', 'message': ui_message}
         except NameError as ex:
             self.logger.exception(ex)
             return {'allSeries': None, 'errorMsg': "Incorrect parameters for equation passed."}
