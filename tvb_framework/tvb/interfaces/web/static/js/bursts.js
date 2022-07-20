@@ -360,7 +360,7 @@ function configureNoiseParameters() {
 }
 
 function applyTransferFunction(){
-    configureModel("/burst/tvb-o");
+    configureModel("/burst/transfer");
 }
 
 function toggleConfigSurfaceModelParamsButton() {

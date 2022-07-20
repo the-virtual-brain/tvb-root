@@ -31,7 +31,7 @@
 """
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
-from tvb.adapters.forms.equation_forms import TemporalEquationsEnum, get_form_for_equation
+from tvb.adapters.forms.equation_forms import TransferVectorEquationsEnum, get_form_for_equation
 from tvb.basic.neotraits._attr import EnumAttr
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.neotraits.forms import DynamicSelectField, TraitDataTypeSelectField, SelectField
@@ -39,15 +39,15 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.graph import ConnectivityMeasure
 
-KEY_ONTOLOGY = "tvb-o"
+KEY_TRANSFER = "transferVector"
 
 
-class TVBOntologyForm(ABCAdapterForm):
-    default_transfer_function = TemporalEquationsEnum.PULSETRAIN
+class TransferVectorForm(ABCAdapterForm):
+    default_transfer_function = TransferVectorEquationsEnum.LINEAR_INTERVAL
     transfer_function_label = 'Transfer Function'
 
     def __init__(self, model_params):
-        super(TVBOntologyForm, self).__init__()
+        super(TransferVectorForm, self).__init__()
 
         model_labels = [param.name for param in model_params]
         model_mathjax_representations = [param.label for param in model_params]
@@ -56,18 +56,18 @@ class TVBOntologyForm(ABCAdapterForm):
 
         cm_attribute = DataTypeGidAttr(
             linked_datatype=ConnectivityMeasure,
-            label='Connectivity measure',
-            doc='A connectivity measure'
+            label='Original Spatial Vector',
+            doc='A previously stored compatible Spatial Vector'
         )
         cm_filter = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=['=='], values=['1'])
         self.connectivity_measure = TraitDataTypeSelectField(cm_attribute, name='connectivity_measure',
                                                              conditions=cm_filter)
 
         transfer_function_attribute = EnumAttr(
-            field_type=TemporalEquationsEnum,
+            field_type=TransferVectorEquationsEnum,
             label=self.transfer_function_label,
             default=self.default_transfer_function
         )
         self.transfer_function = SelectField(transfer_function_attribute, name='transfer_function',
                                              subform=get_form_for_equation(self.default_transfer_function.value),
-                                             session_key=KEY_ONTOLOGY)
+                                             session_key=KEY_TRANSFER)

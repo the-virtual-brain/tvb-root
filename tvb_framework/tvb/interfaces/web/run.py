@@ -73,7 +73,7 @@ from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import
 from tvb.interfaces.web.controllers.spatial.region_stimulus_controller import RegionStimulusController
 from tvb.interfaces.web.controllers.spatial.surface_model_parameters_controller import SurfaceModelParametersController
 from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import SurfaceStimulusController
-from tvb.interfaces.web.controllers.burst.tvb_ontology_controller import TVBOntologyController
+from tvb.interfaces.web.controllers.burst.transfer_vector_controller import TransferVectorController
 from tvb.interfaces.web.controllers.users_controller import UserController
 from tvb.interfaces.web.request_handler import RequestHandler
 from tvb.storage.storage_interface import StorageInterface
@@ -164,7 +164,7 @@ def init_cherrypy(arguments=None):
     cherrypy.tree.mount(LocalConnectivityController(), BaseController.build_path("/spatial/localconnectivity/"),
                         config=CONFIGUER)
     cherrypy.tree.mount(NoiseConfigurationController(), BaseController.build_path("/burst/noise/"), config=CONFIGUER)
-    cherrypy.tree.mount(TVBOntologyController(), TVBOntologyController.build_path("/burst/tvb-o/"), config=CONFIGUER)
+    cherrypy.tree.mount(TransferVectorController(), TransferVectorController.build_path("/burst/transfer/"), config=CONFIGUER)
     cherrypy.tree.mount(HPCController(), BaseController.build_path("/hpc/"), config=CONFIGUER)
     cherrypy.tree.mount(KubeController(), BaseController.build_path("/kube/"), config=CONFIGUER)
 

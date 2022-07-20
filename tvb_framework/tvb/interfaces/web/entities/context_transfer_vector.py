@@ -35,14 +35,14 @@
 from tvb.basic.logger.builder import get_logger
 from tvb.core.neocom import h5
 from tvb.core.neotraits.spatial_model import SpatialModel
-from tvb.interfaces.web.controllers.burst.tvb_ontology_controller import TVBOntologyForm
+from tvb.interfaces.web.controllers.burst.transfer_vector_controller import TransferVectorForm
 
 
 KEY_EQUATION = "equation"
 KEY_RESULT = "result"
 
 
-class TVBOntologyContext(SpatialModel):
+class TransferVectorContext(SpatialModel):
     def __init__(self, current_transfer_function, current_model_param, current_connectivity_measure):
         self.logger = get_logger(self.__class__.__module__)
 
@@ -54,7 +54,7 @@ class TVBOntologyContext(SpatialModel):
     @staticmethod
     def get_equation_information():
         return {
-            TVBOntologyForm.transfer_function_label: 'current_transfer_function'
+            TransferVectorForm.transfer_function_label: 'current_transfer_function'
         }
 
     def apply_transfer_function(self):

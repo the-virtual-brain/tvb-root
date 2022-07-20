@@ -34,29 +34,28 @@
 
 import uuid
 import cherrypy
-
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.forms.equation_forms import get_form_for_equation
 from tvb.adapters.forms.equation_plot_forms import EquationPlotForm
-from tvb.adapters.forms.ontology_form import KEY_ONTOLOGY, TVBOntologyForm
+from tvb.adapters.forms.transfer_vector_form import KEY_TRANSFER, TransferVectorForm
 from tvb.adapters.visualizers.histogram import HistogramViewer
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
-from tvb.interfaces.web.controllers.decorators import expose_page, handle_error, check_user, \
-    expose_fragment, jsonify
+from tvb.interfaces.web.controllers.decorators import expose_page, handle_error, check_user, expose_fragment, jsonify
 from tvb.interfaces.web.controllers.simulator.simulator_wizzard_urls import SimulatorWizzardURLs
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
-from tvb.interfaces.web.entities.context_ontology import TVBOntologyContext, KEY_RESULT
+from tvb.interfaces.web.entities.context_transfer_vector import TransferVectorContext, KEY_RESULT
 from tvb.interfaces.web.entities.context_simulator import SimulatorContext
 from tvb.interfaces.web.controllers import common
 
 
 @traced
-class TVBOntologyController(SpatioTemporalController):
+class TransferVectorController(SpatioTemporalController):
     """
-    Controller class for TVB-O integration
+    Controller class for Applying a transfer function plus a ConnectivityMeasure DT
+    and producing a Spatial Vector distribution on Model parameters
     """
 
     MODEL_PARAM_FIELD = 'set_model_parameter'
@@ -64,11 +63,11 @@ class TVBOntologyController(SpatioTemporalController):
     EQUATION_FIELD = 'set_transfer_function'
     EQUATION_PARAMS_FIELD = 'set_transfer_function_param'
 
-    base_url = '/burst/tvb-o/'
-    title = 'TVB Ontology: Apply Transfer Function on Model Parameter'
+    base_url = '/burst/transfer/'
+    title = 'Apply Spatial Vector on Model Parameter(s)'
 
     def __init__(self):
-        super(TVBOntologyController, self).__init__()
+        super(TransferVectorController, self).__init__()
         self.simulator_context = SimulatorContext()
         self.model_params_list = None
         self.plotted_tf_prefixes = None
@@ -89,7 +88,7 @@ class TVBOntologyController(SpatioTemporalController):
             config_form.transfer_function.subform_field.form = get_form_for_equation(type(current_transfer_function))()
             config_form.transfer_function.subform_field.form.fill_from_trait(current_transfer_function)
         else:
-            context.current_transfer_function = TVBOntologyForm.default_transfer_function.instance
+            context.current_transfer_function = TransferVectorForm.default_transfer_function.instance
             config_form.transfer_function.data = type(context.current_transfer_function)
             config_form.transfer_function.subform_field.form.fill_from_trait(context.current_transfer_function)
 
@@ -99,7 +98,7 @@ class TVBOntologyController(SpatioTemporalController):
         template_specification['transferFunctionsPrefixes'] = self.plotted_tf_prefixes
         template_specification['applied_transfer_functions'] = ontology_context.get_configure_info()
 
-        ontology_form = TVBOntologyForm(self.model_params_list)
+        ontology_form = TransferVectorForm(self.model_params_list)
         ontology_form.model_param.data = ontology_context.current_model_param
         ontology_form.connectivity_measure.data = ontology_context.current_connectivity_measure
         self._fill_form_from_context(ontology_form, ontology_context)
@@ -123,12 +122,12 @@ class TVBOntologyController(SpatioTemporalController):
 
         self.model_params_list = self._prepare_model_params_list(self.simulator_context.simulator.model)
 
-        ontology_context = TVBOntologyContext(TVBOntologyForm.default_transfer_function, self.model_params_list[0].name,
-                                              uuid.UUID(connectivity_measures[-1].gid))
-        common.add2session(KEY_ONTOLOGY, ontology_context)
+        ontology_context = TransferVectorContext(TransferVectorForm.default_transfer_function, self.model_params_list[0].name,
+                                                 uuid.UUID(connectivity_measures[-1].gid))
+        common.add2session(KEY_TRANSFER, ontology_context)
         params = self._prepare_reload(ontology_context)
 
-        tvb_ontology_form = TVBOntologyForm(self.model_params_list)
+        tvb_ontology_form = TransferVectorForm(self.model_params_list)
         self.plotted_tf_prefixes = {
             self.MODEL_PARAM_FIELD: tvb_ontology_form.model_param.name,
             self.CONNECTIVITY_MEASURE_FIELD: tvb_ontology_form.connectivity_measure.name,
@@ -137,7 +136,7 @@ class TVBOntologyController(SpatioTemporalController):
         }
 
         params.update({'mainContent': 'burst/transfer_function_apply',
-                       'submit_parameters_url': self.build_path('/burst/tvb-o/submit_model_parameter'),
+                       'submit_parameters_url': self.build_path('/burst/transfer/submit_model_parameter'),
                        'isSingleMode': True,
                        'title': self.title,
                        'transferFunctionsPrefixes': self.plotted_tf_prefixes})
@@ -155,7 +154,7 @@ class TVBOntologyController(SpatioTemporalController):
                 plot_form.fill_from_post(form_data)
 
             min_x, max_x, ui_message = self.get_x_axis_range(plot_form.min_x.value, plot_form.max_x.value)
-            ontology_context = common.get_from_session(KEY_ONTOLOGY)
+            ontology_context = common.get_from_session(KEY_TRANSFER)
 
             transfer_function = ontology_context.current_transfer_function
             series_data, display_ui_message = transfer_function.get_series_data(min_range=min_x, max_range=max_x)
@@ -178,14 +177,14 @@ class TVBOntologyController(SpatioTemporalController):
     @cherrypy.expose
     @handle_error(redirect=False)
     def set_model_parameter(self, model_param):
-        ontology_context = common.get_from_session(KEY_ONTOLOGY)
+        ontology_context = common.get_from_session(KEY_TRANSFER)
         ontology_context.current_model_param = model_param
 
     @cherrypy.expose
     @handle_error(redirect=False)
     @jsonify
     def set_connectivity_measure(self, connectivity_measure):
-        ontology_context = common.get_from_session(KEY_ONTOLOGY)
+        ontology_context = common.get_from_session(KEY_TRANSFER)
         ontology_context.current_connectivity_measure = uuid.UUID(connectivity_measure)
 
         result_dict = HistogramViewer().prepare_parameters(ontology_context.current_connectivity_measure)
@@ -194,7 +193,7 @@ class TVBOntologyController(SpatioTemporalController):
     @cherrypy.expose
     @handle_error(redirect=False)
     def set_transfer_function_param(self, **param):
-        ontology_context = common.get_from_session(KEY_ONTOLOGY)
+        ontology_context = common.get_from_session(KEY_TRANSFER)
         eq_params_form_class = get_form_for_equation(type(ontology_context.current_transfer_function))
         eq_params_form = eq_params_form_class()
         eq_params_form.fill_from_trait(ontology_context.current_transfer_function)
@@ -205,7 +204,7 @@ class TVBOntologyController(SpatioTemporalController):
     @handle_error(redirect=False)
     @jsonify
     def apply_transfer_function(self):
-        ontology_context = common.get_from_session(KEY_ONTOLOGY)
+        ontology_context = common.get_from_session(KEY_TRANSFER)
         simulator = self.simulator_context.simulator
         result = ontology_context.apply_transfer_function()
 
@@ -218,7 +217,7 @@ class TVBOntologyController(SpatioTemporalController):
     @handle_error(redirect=False)
     @jsonify
     def clear_histogram(self):
-        ontology_context = common.get_from_session(KEY_ONTOLOGY)
+        ontology_context = common.get_from_session(KEY_TRANSFER)
         result_dict = HistogramViewer().prepare_parameters(ontology_context.current_connectivity_measure)
         return result_dict
 
@@ -227,16 +226,16 @@ class TVBOntologyController(SpatioTemporalController):
     @check_user
     def submit_model_parameter(self, submit_action='cancel_action'):
         if submit_action != "cancel_action":
-            ontology_model = common.get_from_session(KEY_ONTOLOGY)
+            ontology_model = common.get_from_session(KEY_TRANSFER)
             for model_param, applied_tf in ontology_model.applied_transfer_functions.items():
                 setattr(self.simulator_context.simulator.model, model_param, applied_tf[KEY_RESULT])
 
             self.simulator_context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_INTEGRATOR_URL)
 
-        common.remove_from_session(KEY_ONTOLOGY)
+        common.remove_from_session(KEY_TRANSFER)
         self.redirect("/burst/")
 
-    def fill_default_attributes(self, template_dictionary, subsection='tvb-o'):
+    def fill_default_attributes(self, template_dictionary, subsection='transfer'):
         """
         Overwrite base controller to add required parameters for adapter templates.
         """
