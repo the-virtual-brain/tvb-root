@@ -174,8 +174,8 @@ class RescaleInterval(Equation):
     """
     equation = Final(
         label="Rescale Equation",
-        default="(newMax - newMin) / (oldMax - oldMin) * var  + newMin",
-        doc=""":math:`result = (newMax - newMin) / (oldMax - oldMin) * x  + newMin`""")
+        default="(var - oldMin) * (newMax - newMin) / (oldMax - oldMin)  + newMin",
+        doc=""":math:`result = (x - oldMin) * (newMax - newMin) / (oldMax - oldMin)  + newMin`""")
 
     parameters = Attr(
         field_type=dict,
@@ -191,6 +191,26 @@ class Absolute(Equation):
         label="Absolute Equation",
         default="abs(var)",
         doc=""":math:`result = abs(x)`""")
+
+
+class Identity(Equation):
+    """
+    Identity value
+    """
+    equation = Final(
+        label="Identity Equation",
+        default="var",
+        doc=""":math:`result = x`""")
+
+
+class Logarithm(Equation):
+    """
+    Logarithm Equation
+    """
+    equation = Final(
+        label="Logarithm Equation",
+        default="log(var)",
+        doc=""":math:`result = log(x)`""")
 
 
 class Gaussian(SpatialApplicableEquation, FiniteSupportEquation):

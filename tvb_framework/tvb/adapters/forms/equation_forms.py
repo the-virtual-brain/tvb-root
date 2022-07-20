@@ -65,9 +65,11 @@ class BoldMonitorEquationsEnum(EquationsEnum):
 
 
 class TransferVectorEquationsEnum(EquationsEnum):
+    IDENTITY = (Identity, "Identity")
     LINEAR = (Linear, "Linear")
     LINEAR_INTERVAL = (RescaleInterval, "Rescale to Interval")
     ABSOLUTE = (Absolute, "Absolute")
+    LOGARITHM = (Logarithm, "Logarithm")
 
 
 def get_ui_name_to_monitor_equation_dict():
@@ -85,6 +87,8 @@ def get_equation_to_form_dict():
         Linear: LinearEquationForm,
         RescaleInterval: RescaleIntervalEquationForm,
         Absolute: AbsoluteEquationForm,
+        Identity: IdentityEquationForm,
+        Logarithm: LogarithmEquationForm,
         Gaussian: GaussianEquationForm,
         DoubleGaussian: DoubleGaussianEquationForm,
         Sigmoid: SigmoidEquationForm,
@@ -159,6 +163,18 @@ class AbsoluteEquationForm(EquationForm):
 
     def get_traited_equation(self):
         return Absolute
+
+
+class IdentityEquationForm(EquationForm):
+
+    def get_traited_equation(self):
+        return Identity
+
+
+class LogarithmEquationForm(EquationForm):
+
+    def get_traited_equation(self):
+        return Logarithm
 
 
 class GaussianEquationForm(EquationForm):
