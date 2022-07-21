@@ -38,7 +38,7 @@ from tvb.tests.framework.interfaces.web.controllers.base_controller_test import 
 from tvb.core.entities.storage import dao
 
 
-class TestRegionsTransferVectorController(BaseTransactionalControllerTest):
+class TestTransferVectorController(BaseTransactionalControllerTest):
     """ Unit tests for TransferVectorController """
 
     def transactional_setup_method(self):
@@ -87,3 +87,13 @@ class TestRegionsTransferVectorController(BaseTransactionalControllerTest):
         assert all(x in result_dict for x in expected_keys)
         assert result_dict['baseUrl'] == '/burst/transfer/'
         assert result_dict['mainContent'] == 'burst/transfer_function_apply'
+
+    def test_graph(self, operation_factory, connectivity_index_factory, connectivity_measure_index_factory):
+        op = operation_factory(test_project=self.test_project)
+        conn = connectivity_index_factory(op=op)
+        self.simulator.connectivity = conn.gid
+        connectivity_measure_index_factory(conn, op, self.test_project)
+        self.controller.index()
+
+        result_dict = self.controller.get_equation_chart()
+        assert isinstance(result_dict['allSeries'], str)
