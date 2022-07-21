@@ -654,9 +654,9 @@ def datatype_group_factory(connectivity_factory, time_series_index_factory, time
                     op_path = StorageInterface().get_project_folder(project.name, str(op.id))
                     h5.store_view_model(view_model, op_path)
 
-                    view_model_ms = copy.deepcopy(view_model_ms)
                     view_model_ms.gid = view_model_ms_gid
                     view_model_ms.time_series = ts_index.gid
+                    view_model_ms = copy.deepcopy(view_model_ms)    # deepcopy only after a TS is set
                     op_ms_path = StorageInterface().get_project_folder(project.name, str(op_ms.id))
                     h5.store_view_model(view_model_ms, op_ms_path)
 

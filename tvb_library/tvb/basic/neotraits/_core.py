@@ -217,7 +217,7 @@ class HasTraits(object):
         provides a unique id for example for a model configuration
         """  # these strings are interpreted as docstrings by many tools, not by python though
 
-        self.title = '{} gid: {}'.format(self.__class__.__name__, self.gid)
+        self.set_title()
         """ a generic name that the user can set to easily recognize the instance """
 
         for k, v in kwargs.items():
@@ -243,6 +243,9 @@ class HasTraits(object):
 
     def _repr_html_(self):
         return trait_object_repr_html(self)
+
+    def set_title(self):
+        self.title = '{} gid: {}'.format(self.__class__.__name__, self.gid)
 
     def tag(self, tag_name, tag_value=None):
         # type: (str, str) -> None
@@ -323,9 +326,14 @@ class HasTraits(object):
                 setattr(copied, k, attr)
             except TraitFinalAttributeError:
                 pass
+        # set title on copy with same gid as the original after deepcopy finishes
+        # (because when 'copied' is created it has a random gid and the title is set with that random gid)
+        copied.set_title()
         return copied
 
     def duplicate(self):
         duplicate = copy.deepcopy(self)
         duplicate.gid = uuid.uuid4()
+        # set new title after changing gid
+        duplicate.set_title()
         return duplicate
