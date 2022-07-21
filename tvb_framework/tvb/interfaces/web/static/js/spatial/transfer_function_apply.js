@@ -49,7 +49,7 @@ function TF_submitAndRedraw(methodToCall, fieldName, fieldValue) {
     });
 }
 
-function plotEquation(subformDiv = null) {
+function plotEquation() {
     let url = refreshBaseUrl + '/get_equation_chart';
 
     let min_x = 0;
@@ -94,7 +94,7 @@ function setEventsOnStaticFormFields() {
     });
 }
 
-function setEventsOnFormFields(elementType, div_id) {
+function setEventsOnFormFields(_elementType, div_id) {
     $('#' + div_id + ' input').change(function () {
         TF_submitAndRedraw('set_transfer_function_param', this.name, this.value)
     });

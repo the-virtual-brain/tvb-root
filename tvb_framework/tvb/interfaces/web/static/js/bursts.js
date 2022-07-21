@@ -647,18 +647,18 @@ function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulat
     const simulator_params = document.getElementById(div_id);
     simulator_params.removeChild(currentForm);
 
-    var previous_form = document.getElementById(previous_action);
-    var next_button = previous_form.elements.namedItem('next');
-    var previous_button = previous_form.elements.namedItem('previous');
-    var config_region_param_button = previous_form.elements.namedItem('configRegionModelParam');
-    var apply_transfer_function_button = previous_form.elements.namedItem('configOntology');
-    var config_surface_param_button = previous_form.elements.namedItem('configSurfaceModelParam');
-    var config_noise_button = previous_form.elements.namedItem('configNoiseValues');
-    var config_launch_button = previous_form.elements.namedItem('launch_simulation');
-    var config_pse_button = previous_form.elements.namedItem('setup_pse');
-    var config_launch_pse_button = previous_form.elements.namedItem('launch_pse');
-    var config_branch_button = previous_form.elements.namedItem('branch_simulation');
-    var fieldset = previous_form.elements[0];
+    const previous_form = document.getElementById(previous_action);
+    const next_button = previous_form.elements.namedItem('next');
+    const previous_button = previous_form.elements.namedItem('previous');
+    const config_region_param_button = previous_form.elements.namedItem('configRegionModelParam');
+    const apply_transfer_function_button = previous_form.elements.namedItem('configSpatialVector');
+    const config_surface_param_button = previous_form.elements.namedItem('configSurfaceModelParam');
+    const config_noise_button = previous_form.elements.namedItem('configNoiseValues');
+    const config_launch_button = previous_form.elements.namedItem('launch_simulation');
+    const config_pse_button = previous_form.elements.namedItem('setup_pse');
+    const config_launch_pse_button = previous_form.elements.namedItem('launch_pse');
+    const config_branch_button = previous_form.elements.namedItem('branch_simulation');
+    const fieldset = previous_form.elements[0];
 
     if (next_button != null) {
         next_button.style.visibility = 'visible';
@@ -714,16 +714,16 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
     if (disabledFieldset){
         $(fieldset).attr('disabled', 'disabled')
     }
-    var next_button = currentForm.elements.namedItem('next');
-    var previous_button = currentForm.elements.namedItem('previous');
-    var config_region_param_button = currentForm.elements.namedItem('configRegionModelParam');
-    var apply_transfer_function_button = currentForm.elements.namedItem('configOntology');
-    var config_surface_param_button = currentForm.elements.namedItem('configSurfaceModelParam');
-    var config_noise_button = currentForm.elements.namedItem('configNoiseValues');
-    var config_launch_button = currentForm.elements.namedItem('launch_simulation');
-    var config_pse_button = currentForm.elements.namedItem('setup_pse');
-    var config_launch_pse_button = currentForm.elements.namedItem('launch_pse');
-    var config_branch_button = currentForm.elements.namedItem('branch_simulation');
+    const next_button = currentForm.elements.namedItem('next');
+    const previous_button = currentForm.elements.namedItem('previous');
+    const config_region_param_button = currentForm.elements.namedItem('configRegionModelParam');
+    const apply_transfer_function_button = currentForm.elements.namedItem('configSpatialVector');
+    const config_surface_param_button = currentForm.elements.namedItem('configSurfaceModelParam');
+    const config_noise_button = currentForm.elements.namedItem('configNoiseValues');
+    const config_launch_button = currentForm.elements.namedItem('launch_simulation');
+    const config_pse_button = currentForm.elements.namedItem('setup_pse');
+    const config_launch_pse_button = currentForm.elements.namedItem('launch_pse');
+    const config_branch_button = currentForm.elements.namedItem('branch_simulation');
     var fieldset = currentForm.elements[0];
 
     $.ajax({
@@ -765,7 +765,7 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
                     config_branch_button.style.visibility = 'hidden';
                 }
                 fieldset.disabled = true;
-                var t = document.createRange().createContextualFragment(response);
+                const t = document.createRange().createContextualFragment(response);
                 const simulator_params = document.getElementById(div_id);
                 renderWithMathjax(simulator_params, t);
                 setInitialFocusOnButton(simulator_params);
