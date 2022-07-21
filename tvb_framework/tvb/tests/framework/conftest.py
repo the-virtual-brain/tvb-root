@@ -67,6 +67,7 @@ from tvb.core.neocom import h5
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
 from tvb.datatypes.connectivity import Connectivity
+from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.sensors import Sensors, SensorsEEG
@@ -350,6 +351,20 @@ def region_mapping_index_factory(region_mapping_factory, operation_factory):
         rm_db = h5.store_complete(region_mapping, op.id, op.project.name)
         rm_db.fk_from_operation = op.id
         return dao.store_entity(rm_db)
+
+    return build
+
+
+@pytest.fixture()
+def connectivity_measure_index_factory():
+    def build(conn, op, project):
+        conn_measure = ConnectivityMeasure()
+        conn_measure.connectivity = h5.load_from_index(conn)
+        conn_measure.array_data = numpy.ones(conn.number_of_regions)
+
+        conn_measure_db = h5.store_complete(conn_measure, op.id, project.name)
+        conn_measure_db.fk_from_operation = op.id
+        return dao.store_entity(conn_measure_db)
 
     return build
 

@@ -287,15 +287,9 @@ class TestProjectStructure(TransactionalTestCase):
         self._check_datatype_group_removed(group.id, datatype_groups[0].fk_operation_group)
 
     @pytest.fixture()
-    def array_factory(self, operation_factory, connectivity_index_factory):
+    def array_factory(self, operation_factory, connectivity_index_factory, connectivity_measure_index_factory):
         def _create_measure(conn, op, project):
-            conn_measure = ConnectivityMeasure()
-            conn_measure.connectivity = h5.load_from_index(conn)
-            conn_measure.array_data = numpy.array(conn.number_of_regions)
-
-            conn_measure_db = h5.store_complete(conn_measure, op.id, project.name)
-            conn_measure_db.fk_from_operation = op.id
-            dao.store_entity(conn_measure_db)
+            connectivity_measure_index_factory(conn, op, project)
 
             count = dao.count_datatypes(project.id, DataTypeMatrix)
             return count
