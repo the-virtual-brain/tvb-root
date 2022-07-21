@@ -920,7 +920,7 @@ def test_deepcopy():
     original = simulator.Simulator(
             connectivity=con,
             coupling=coupling.Linear(a=numpy.array([2e-4])),
-            integrator=integrators.EulerStochastic(dt=10.0, noise=noise.Additive()),
+            integrator=integrators.EulerStochastic(dt=10.0),
             model=models.Linear(gamma=numpy.array([-1e-2])),
             monitors=(monitors.Raw(),),
             simulation_length=60e3
@@ -933,6 +933,7 @@ def test_deepcopy():
 
     # check that attr are not the same
     assert original.integrator.noise != clone.integrator.noise
+    assert original.integrator.noise != integrators.IntegratorStochastic.noise.default
     assert original.model != clone.model
     assert original.coupling != clone.coupling
     assert original.connectivity != clone.connectivity
