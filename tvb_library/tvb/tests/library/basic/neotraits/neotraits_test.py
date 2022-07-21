@@ -920,12 +920,12 @@ def test_deepcopy():
     original = simulator.Simulator(
             connectivity=con,
             coupling=coupling.Linear(a=numpy.array([2e-4])),
-            integrator=integrators.EulerStochastic(dt=10.0),
+            integrator=integrators.EulerStochastic(dt=10.0, noise=noise.Additive()),
             model=models.Linear(gamma=numpy.array([-1e-2])),
             monitors=(monitors.Raw(),),
             simulation_length=60e3
     )
-    clone = copy.deepcopy(original)
+    clone = original.duplicate()    # deepcopy() called inside duplicate()
 
     # random attrs
     o_random_stream = original.integrator.noise.random_stream
