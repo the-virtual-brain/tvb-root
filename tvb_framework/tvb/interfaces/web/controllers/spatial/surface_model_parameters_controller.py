@@ -37,7 +37,6 @@ import json
 import cherrypy
 from tvb.adapters.forms.equation_forms import get_form_for_equation
 from tvb.adapters.forms.equation_plot_forms import EquationPlotForm
-from tvb.adapters.forms.model_forms import get_model_to_form_dict
 from tvb.adapters.forms.surface_model_parameters_form import SurfaceModelParametersForm, KEY_CONTEXT_MPS
 from tvb.core.entities import load
 from tvb.core.services.burst_config_serialization import SerializationManager
@@ -90,15 +89,8 @@ class SurfaceModelParametersController(SpatioTemporalController):
         cortex = des.conf.surface
         return model, cortex
 
-    def _prepare_model_params_list(self, model):
-        model_form = get_model_to_form_dict().get(type(model))
-        model_params = model_form().get_params_configurable_in_phase_plane()
-        if len(model_params) == 0:
-            self.logger.warning("The list with configurable parameters for the current model is empty!")
-
-        return model_params
-
-    def _fill_form_from_context(self, config_form, context):
+    @staticmethod
+    def _fill_form_from_context(config_form, context):
         if context.current_model_param in context.applied_equations:
             current_equation = context.get_equation_for_parameter(context.current_model_param)
             context.current_equation = current_equation

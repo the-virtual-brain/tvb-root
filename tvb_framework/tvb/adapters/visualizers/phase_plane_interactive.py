@@ -63,7 +63,7 @@ except ImportError:
     def nullcline(x, y, z):
         c = _contour.QuadContourGenerator(x, y, z, None, True, 0)
         segments = c.create_contour(0.0)
-        return segments
+        return segments[0]
 
 # how much courser is the grid used to show the vectors
 GRID_SUBSAMPLE = 2
