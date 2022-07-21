@@ -214,7 +214,6 @@ class Additive(Noise):
     """
 
     nsig = NArray(
-        #  configurable_noise=True,  # TODO: deal with configurable_noise
         label=":math:`D`",
         required=True,
         default=numpy.array([1.0]),
@@ -254,7 +253,6 @@ class Multiplicative(Noise):
     """
 
     nsig = NArray(
-        # configurable_noise=True,
         label=":math:`D`",
         required=True,
         default=numpy.array([1.0, ]),
