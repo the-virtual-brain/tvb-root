@@ -6,23 +6,26 @@
         {% include 'spatial/refreshBaseUrl_initializer.html' %}
 
         <h4><mark>Apply</mark> Transfer Function</h4>
+        <fieldset>
+            <legend>Choose how to configure a vector of values for Model Param(s), from a Datatype and a Transfer Function:</legend>
+        </fieldset>
         {{ applyTransferFunctionForm | safe }}
 
         <fieldset>
+            <legend>Click "Apply to parameter" bellow, once you are satisfied with the vector, to link values with a
+                model parameter configuration: </legend>
             <button class="action" onclick="TF_submitAndRedraw('apply_transfer_function', '', '')" style="float: right">
-                Apply to parameter
-            </button>
+                Apply to parameter </button>
             <button class="action" onclick="TF_submitAndRedraw('clear_histogram', '', '')" style="float: right">
-                Clear Histogram
-            </button>
+                Clear Histogram </button>
         </fieldset>
         <fieldset>
-            <legend>Applied transfer functions:</legend>
-            <div id='appliedVectorsDivId'></div>
+            <legend>Applied to model parameters:</legend>
+            <div id='appliedVectorsDivId'> -- None --</div>
         </fieldset>
 
         <fieldset>
-            <legend>Current equation plot:</legend>
+            <legend>Current transfer function plotted:</legend>
             <div id='transferFunctionDivId'></div>
             {{ parametersTransferFunctionPlotForm | safe }}
         </fieldset>
@@ -49,7 +52,8 @@
                         <li>
                             <button type="submit" class="action action-confirm" name="submit_action"
                                     value="submit_action" id="base_spatio_temporal_submit"
-                                    title="Confirm configured vectors on model params, submit and return to the Simulator page"> Apply Vector(s)
+                                    title="Confirm configured vectors on model params, submit and return to the Simulator page">
+                                Submit Vector(s)
                             </button>
                         </li>
                         <li>

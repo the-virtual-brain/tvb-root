@@ -107,7 +107,7 @@ class HistogramViewer(ABCDisplayer):
 
     @staticmethod
     def gather_params_dict(labels_list, values_list, title):
-        params = dict(title=title, labels=json.dumps(labels_list),
+        params = dict(title=title, labels=json.dumps(labels_list), isSingleMode=True,
                       data=json.dumps(values_list), colors=json.dumps(values_list),
                       xposition='center' if min(values_list) < 0 else 'bottom',
                       minColor=min(values_list), maxColor=max(values_list))

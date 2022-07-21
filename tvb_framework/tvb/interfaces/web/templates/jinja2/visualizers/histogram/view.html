@@ -21,7 +21,7 @@
         }
     </script>
 
-    <div class="histogramParentDiv">
+    <div class="histogramParentDiv {{ 'view-column' if isSingleMode else ''| safe }}">
         <div id="histogramCanvasId"></div>
         <div id="histogramLegend">
             <canvas id="histogramLegendCanvas" width="20px"></canvas>

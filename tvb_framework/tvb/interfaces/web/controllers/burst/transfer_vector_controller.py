@@ -102,7 +102,7 @@ class TransferVectorController(SpatioTemporalController):
                        'submit_parameters_url': self.build_path('/burst/transfer/submit_model_parameter'),
                        'applyTransferFunctionForm': self.render_adapter_form(config_form),
                        'parametersTransferFunctionPlotForm': self.render_adapter_form(eq_plot_form),
-                       'isSingleMode': True,
+                       'isSingleMode': False,
                        'title': self.title,
                        'baseUrl': self.base_url})
 
