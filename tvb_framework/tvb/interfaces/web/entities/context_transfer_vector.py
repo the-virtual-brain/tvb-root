@@ -80,6 +80,7 @@ class TransferVectorContext(SpatialModel):
             keys = sorted(list(transfer_function.parameters), key=lambda x: len(x))
             keys.reverse()
             base_tf = transfer_function.equation
+            base_tf = base_tf.replace('var', 'x')
             for tf_param in keys:
                 while True:
                     stripped_tf = "".join(base_tf.split())
