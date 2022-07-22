@@ -25,7 +25,5 @@ RUN activate tvb-run && pip install -r requirements.txt
 
 RUN mkdir %userprofile%\\TVB_TEST
 RUN mkdir %userprofile%\\.tvb-temp
-RUN CACLS %userprofile%\\TVB_TEST /e /p %username%:f
-RUN CACLS %userprofile%\\.tvb-temp /e /p %username%:f
 
 CMD ["cmd", "activate tvb-run"]
