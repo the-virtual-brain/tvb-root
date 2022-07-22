@@ -10,6 +10,8 @@ RUN activate && conda install -y --name tvb-run -c conda-forge jupyterlab tvb-gd
 RUN activate tvb-run && pip install --upgrade pip
 RUN activate tvb-run && pip install lockfile scikit-build
 RUN activate tvb-run && pip install syncrypto
+RUN activate tvb-run && pip install -U numpy
+
 
 # Download and install tvb data
 RUN mkdir %userprofile%\\TVB_CODE
