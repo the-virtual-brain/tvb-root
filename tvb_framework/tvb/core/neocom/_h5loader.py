@@ -183,6 +183,12 @@ class DirLoader(object):
 
 
 class TVBLoader(object):
+    """
+    A loader for HasTraits objects.
+    Works with the TVB database and the TVB storage folder structure to identify and load datatypes starting from their
+    corresponding HasTraitsIndex or a file path.
+    Intended for usage in tvb-framework.
+    """
 
     def __init__(self, registry):
         self.storage_interface = StorageInterface()
@@ -267,6 +273,13 @@ class TVBLoader(object):
 
 
 class ViewModelLoader(DirLoader):
+    """
+    A recursive loader for ViewModel objects.
+    Stores all files in one directory specified at initialization time.
+    Does not access the TVB database. Does not take into consideration the TVB storage folder structure.
+    Stores every linked HasTraits in a file, but not datatypes that are already stored in TVB storage.
+    Intended for usage within tvb-framework to store view models in H5 files.
+    """
 
     def __init__(self, base_dir, registry=None):
         super().__init__(base_dir, registry)
@@ -367,6 +380,14 @@ class ViewModelLoader(DirLoader):
 
 
 class DtLoader(ViewModelLoader):
+    """
+    A recursive loader for datatypes (HasTraits).
+    Stores all files in one directory specified at initialization time.
+    Does not access the TVB database. Does not take into consideration the TVB storage folder structure.
+    Stores every linked HasTraits object in a file (even datatypes which might already exist in the TVB storage).
+    Intended for storing tvb-library results in H5 files.
+    """
+
     def __init__(self, base_dir, registry):
         super().__init__(base_dir, registry)
 
