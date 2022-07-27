@@ -1,7 +1,10 @@
-FROM continuumio/miniconda3:master-nanoserver
+FROM python:3.10.5-windowsservercore-1809
 
-# Set our shell to became cmd
-SHELL ["cmd", "/S", "/C"]
+WORKDIR /tmp
+RUN powershell (New-Object System.Net.WebClient).DownloadFile('https://repo.continuum.io/miniconda/Miniconda3-latest-Windows-x86_64.exe', 'Miniconda3.exe')
+RUN powershell Unblock-File Miniconda3.exe
+RUN Miniconda3.exe /InstallationType=JustMe /RegisterPython=1 /S /D=C:\Miniconda3
+RUN setx /M PATH "%PATH%;C:\Miniconda3;C:\Miniconda3\Scripts;C:\Miniconda3\Library\bin"
 
 # Prepare tvb-run env
 RUN activate && conda update -n base -c defaults conda
