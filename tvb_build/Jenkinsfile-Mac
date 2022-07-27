@@ -21,7 +21,17 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                     cd tvb_build
-                    bash mac_conda_env.sh
+                    conda update -n base -c defaults conda
+                    conda env remove --name mac-distribution
+                    conda create -y --name mac-distribution python=3.10 nomkl numba scipy numpy cython psycopg2
+                    conda install -y --name mac-distribution -c conda-forge jupyterlab tvb-gdist
+
+                    /WORK/anaconda3/anaconda3/envs/mac-distribution/bin/pip install --upgrade pip
+                    /WORK/anaconda3/anaconda3/envs/mac-distribution/bin/pip install lockfile scikit-build
+                    /WORK/anaconda3/anaconda3/envs/mac-distribution/bin/pip install syncrypto
+                    /WORK/anaconda3/anaconda3/envs/mac-distribution/bin/pip install pyobjc
+
+                    /WORK/anaconda3/anaconda3/envs/mac-distribution/bin/pip install -r docker/requirements_group
                 '''
             }
         }
@@ -31,30 +41,8 @@ pipeline {
                     sh '''#!/bin/bash
                         source /WORK/anaconda3/anaconda3/etc/profile.d/conda.sh
                         conda activate mac-distribution
-
-                        echo "Install TVB framework"
-                        cd tvb_framework
-                        python setup.py install
-
-                        echo "Install TVB library"
-                        cd ../tvb_library
-                        python setup.py install
-
-                        echo "Install TVB library contrib"
-                        cd ../tvb_contrib
-                        python setup.py install
-
-                        echo "Install TVB-STORAGE"
-                        cd ../tvb_storage
-                        python setup.py install
-
-                        echo "Install TVB library bin"
-                        cd ../tvb_bin
-                        python setup.py install
-
-                        echo "Install TVB build"
-                        cd ../tvb_build
-                        python setup.py install
+                        cd tvb_build
+                        /bin/bash install_full_tvb.sh
                     '''
                 }
             }
