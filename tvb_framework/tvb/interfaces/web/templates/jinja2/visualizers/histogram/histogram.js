@@ -80,7 +80,6 @@ function drawHistogram(canvasDivId, data, labels, colorsPy) {
         },
         grid: {
             hoverable: true,
-            clickable: true,
         },
         xaxis: {
             ticks: histogramLabels,
@@ -94,53 +93,53 @@ function drawHistogram(canvasDivId, data, labels, colorsPy) {
     manageLabelsOnHover(canvasDiv);
 
     // Prepare functions for Export Canvas as Image
-    var canvas = $("#histogramCanvasId").find("canvas.flot-base")[0];
+    const canvas = $("#histogramCanvasId").find("canvas.flot-base")[0];
     canvas.drawForImageExport = function () {
-                /* this canvas is drawn by FLOT library so resizing it directly has no influence;
-                 * therefore, its parent needs resizing before redrawing;
-                 * canvas.afterImageExport() is used to bring is back to original size */
-                 var oldHeight = canvasDiv.height();
-                 canvas.scale = C2I_EXPORT_HEIGHT / oldHeight;
-                 canvasDiv.width(canvasDiv.width() * canvas.scale);
-                 canvasDiv.height(oldHeight * canvas.scale);
+        /* this canvas is drawn by FLOT library so resizing it directly has no influence;
+         * therefore, its parent needs resizing before redrawing;
+         * canvas.afterImageExport() is used to bring it back to original size */
+        const oldHeight = canvasDiv.height();
+        canvas.scale = C2I_EXPORT_HEIGHT / oldHeight;
+        canvasDiv.width(canvasDiv.width() * canvas.scale);
+        canvasDiv.height(oldHeight * canvas.scale);
 
-                 plot = $.plot(canvasDiv, plot.getData(), options);
+        plot = $.plot(canvasDiv, plot.getData(), options);
     };
     canvas.afterImageExport = function() {
-                // bring it back to original size and redraw
-                canvasDiv.width(canvasDiv.width() / canvas.scale).width("95%");         // set it back to percentage so
-                canvasDiv.height(canvasDiv.height() / canvas.scale).height("90%");      // it updates on window resize
+        // bring it back to original size and redraw
+        canvasDiv.width(canvasDiv.width() / canvas.scale).width("95%");         // set it back to percentage so
+        canvasDiv.height(canvasDiv.height() / canvas.scale).height("90%");      // it updates on window resize
 
-                plot = $.plot(canvasDiv, plot.getData(), options);
+        plot = $.plot(canvasDiv, plot.getData(), options);
     };
 }
 
 function _drawHistogramLegend() {
-    var legendDiv = $("#histogramLegend");
+    const legendDiv = $("#histogramLegend");
     ColSch_updateLegendColors(legendDiv[0], legendDiv.height() - 20);                    // -20 because of style
 
     // draw the labels
-    var minValue = parseFloat($('#colorMinId').val()), maxValue = parseFloat($('#colorMaxId').val());
+    const minValue = parseFloat($('#colorMinId').val()), maxValue = parseFloat($('#colorMaxId').val());
     ColSch_updateLegendLabels($(legendDiv), minValue, maxValue, legendDiv.height() - 20)
 }
 
 function computeColors(colorsArray) {
     // Compute actual colors from input array of numbers.
-    var minColor = parseFloat($('#colorMinId').val());
-    var maxColor = parseFloat($('#colorMaxId').val());
-    var result = [];
-    for (var i = 0; i < colorsArray.length; i++) {
-        var color = ColSch_getGradientColorString(colorsArray[i], minColor, maxColor);
+    const minColor = parseFloat($('#colorMinId').val());
+    const maxColor = parseFloat($('#colorMaxId').val());
+    const result = [];
+    for (const colorValue of colorsArray) {
+        const color = ColSch_getGradientColorString(colorValue, minColor, maxColor);
         result.push(color);
     }
     return result;
 }
 
 function changeColors() {
-    var originalColors = $('#originalColors').val().replace('[','').replace(']','').split(',');
-    var newColors = computeColors(originalColors);
-    var data = plot.getData();
-    for (var i = 0; i < data.length; i++) {
+    const originalColors = $('#originalColors').val().replace('[', '').replace(']', '').split(',');
+    const newColors = computeColors(originalColors);
+    const data = plot.getData();
+    for (let i = 0; i < data.length; i++) {
         data[i].color = newColors[i];
     }
     plot.draw();
@@ -149,7 +148,7 @@ function changeColors() {
 
 function startHistogramView(minColor, maxColor, data, labels, colors){
     function _draw(){
-        drawHistogram('histogramCanvasId', data, labels, colors, '${xposition}');
+        drawHistogram('histogramCanvasId', data, labels, colors);
         _drawHistogramLegend();
     }
 
