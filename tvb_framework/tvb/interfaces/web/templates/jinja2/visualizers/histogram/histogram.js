@@ -19,28 +19,79 @@
 
 // todo: do not use dom (hidden inputs) for data storage
 
-var plot = null;
+// add tooltip div to html - it will be managed when hovering over plot bars
+$("<div id='tooltip'></div>").css({
+			position: "absolute",
+			display: "none",
+			border: "1px solid #fdd",
+			padding: "2px",
+			"background-color": "#fee",
+			opacity: 0.80
+		}).appendTo("body");
+
+let plot = null;
+
+function manageLabelsOnHover(canvasDiv) {
+    // manage label tooltip on hover
+    $(canvasDiv).bind("plothover", function (_event, pos, item) {
+        if (!pos.x || !pos.y) {
+            // makes sure tooltip is hidden after cursor leaves plot
+            $("#tooltip").hide();
+            return;
+        }
+
+        if (item) {
+            $("#tooltip").html(item.series.hoverLabel + `: ${item.datapoint[1]}`)
+                .css({top: item.pageY + 5, left: item.pageX + 5})
+                .fadeIn(200);
+        } else {
+            $("#tooltip").hide();
+        }
+    });
+}
 
 function drawHistogram(canvasDivId, data, labels, colorsPy) {
-    var colors = computeColors(colorsPy);
-    var histogramLabels = [];
-    var histogramData = [];
-    for (var i = 0; i < data.length; i++) {
-        histogramData.push({data: [[i, parseFloat(data[i])]], color: colors[i]});
+    let colors = computeColors(colorsPy);
+    const histogramLabels = [];
+    const histogramData = [];
+    for (let i = 0; i < data.length; i++) {
+        histogramData.push({
+            data: [[i, parseFloat(data[i])]],
+            color: colors[i],
+            hoverLabel: labels[i],
+        });
         histogramLabels.push([i, labels[i]]);
     }
 
-    var options = {
-        series: {stack: 0,
-                 lines: {show: false, steps: false },
-                 bars: {show: true, barWidth: 0.9, align: 'center', fill:0.8, lineWidth:0}},
-        xaxis: {ticks: histogramLabels,
-                labelWidth: 100}
+    const options = {
+        series: {
+            stack: 0,
+            lines: {
+                show: false,
+                steps: false
+            },
+            bars: {
+                show: true,
+                barWidth: 0.9,
+                align: 'center',
+                fill:0.8,
+                lineWidth:0,
+            },
+        },
+        grid: {
+            hoverable: true,
+            clickable: true,
+        },
+        xaxis: {
+            ticks: histogramLabels,
+            labelWidth: 100,
+        },
     };
 
-    var canvasDiv = $("#" + canvasDivId);
+    const canvasDiv = $("#" + canvasDivId);
     plot = $.plot(canvasDiv, histogramData, options);
 
+    manageLabelsOnHover(canvasDiv);
 
     // Prepare functions for Export Canvas as Image
     var canvas = $("#histogramCanvasId").find("canvas.flot-base")[0];
