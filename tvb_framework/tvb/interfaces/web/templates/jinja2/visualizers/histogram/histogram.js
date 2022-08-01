@@ -20,14 +20,7 @@
 // todo: do not use dom (hidden inputs) for data storage
 
 // add tooltip div to html - it will be managed when hovering over plot bars
-$("<div id='tooltip'></div>").css({
-			position: "absolute",
-			display: "none",
-			border: "1px solid #fdd",
-			padding: "2px",
-			"background-color": "#fee",
-			opacity: 0.80
-		}).appendTo("body");
+$("<div id='tooltip' class='histogramToolTip'></div>").appendTo("body");
 
 let plot = null;
 
