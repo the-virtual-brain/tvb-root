@@ -168,6 +168,51 @@ class Linear(TemporalApplicableEquation):
         default=lambda: {"a": 1.0, "b": 0.0})
 
 
+class RescaleInterval(Equation):
+    """
+    Direct rescaling of an interval from [oldMin..oldMax] into [newMin..newMax]
+    """
+    equation = Final(
+        label="Rescale Equation",
+        default="(var - oldMin) * (newMax - newMin) / (oldMax - oldMin)  + newMin",
+        doc=""":math:`result = (x - oldMin) * (newMax - newMin) / (oldMax - oldMin)  + newMin`""")
+
+    parameters = Attr(
+        field_type=dict,
+        label="Rescale Interval Parameters",
+        default=lambda: {"newMin": 0.0, "newMax": 1.0, "oldMin": 0.0, "oldMax": 1.0})
+
+
+class Absolute(Equation):
+    """
+    Absolute value
+    """
+    equation = Final(
+        label="Absolute Equation",
+        default="abs(var)",
+        doc=""":math:`result = abs(x)`""")
+
+
+class Identity(Equation):
+    """
+    Identity value
+    """
+    equation = Final(
+        label="Identity Equation",
+        default="var",
+        doc=""":math:`result = x`""")
+
+
+class Logarithm(Equation):
+    """
+    Logarithm Equation
+    """
+    equation = Final(
+        label="Logarithm Equation",
+        default="log(var)",
+        doc=""":math:`result = log(x)`""")
+
+
 class Gaussian(SpatialApplicableEquation, FiniteSupportEquation):
     """
     A Gaussian equation.

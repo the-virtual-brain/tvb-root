@@ -32,17 +32,19 @@
 This module implements neotraits.
 It is private only to shield public usage of the imports and logger.
 """
-
+import copy
 import uuid
 from enum import Enum
 import numpy
 import typing
 from six import add_metaclass
+from numpy.random import RandomState
+from scipy.sparse import csc_matrix, spmatrix
 
 from ._attr import Attr
 from ._declarative_base import _Property, MetaType
 from .info import trait_object_str, trait_object_repr_html, narray_summary_info
-from .ex import TraitAttributeError, TraitTypeError, TraitError
+from .ex import TraitAttributeError, TraitTypeError, TraitError, TraitFinalAttributeError
 from tvb.basic.logger.builder import get_logger
 
 
@@ -195,6 +197,8 @@ class HasTraits(object):
 
     gid = Attr(field_type=uuid.UUID)
 
+    TYPES_TO_DEEPCOPY = (RandomState, csc_matrix, spmatrix)
+
     def __init__(self, **kwargs):
         """
         The default init accepts kwargs for all declarative attrs
@@ -213,7 +217,7 @@ class HasTraits(object):
         provides a unique id for example for a model configuration
         """  # these strings are interpreted as docstrings by many tools, not by python though
 
-        self.title = '{} gid: {}'.format(self.__class__.__name__, self.gid)
+        self.set_title()
         """ a generic name that the user can set to easily recognize the instance """
 
         for k, v in kwargs.items():
@@ -239,6 +243,9 @@ class HasTraits(object):
 
     def _repr_html_(self):
         return trait_object_repr_html(self)
+
+    def set_title(self):
+        self.title = '{} gid: {}'.format(self.__class__.__name__, self.gid)
 
     def tag(self, tag_name, tag_value=None):
         # type: (str, str) -> None
@@ -304,3 +311,29 @@ class HasTraits(object):
             except TraitError:
                 ret[aname] = 'unavailable'
         return ret
+
+    def __deepcopy__(self, memodict={}):
+        """
+        Method for deep copying a HasTraits object correctly, event when its attributes are of type HasTraits as well.
+        """
+        cls = type(self)
+        copied = cls()
+        for k in cls.declarative_attrs:
+            attr = getattr(self, k)
+            if isinstance(attr, (HasTraits, self.TYPES_TO_DEEPCOPY)):
+                attr = copy.deepcopy(attr)
+            try:
+                setattr(copied, k, attr)
+            except TraitFinalAttributeError:
+                pass
+        # set title on copy with same gid as the original after deepcopy finishes
+        # (because when 'copied' is created it has a random gid and the title is set with that random gid)
+        copied.set_title()
+        return copied
+
+    def duplicate(self):
+        duplicate = copy.deepcopy(self)
+        duplicate.gid = uuid.uuid4()
+        # set new title after changing gid
+        duplicate.set_title()
+        return duplicate

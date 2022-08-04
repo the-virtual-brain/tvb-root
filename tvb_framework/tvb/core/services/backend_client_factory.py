@@ -67,13 +67,12 @@ class BackendClientFactory(object):
 
     @staticmethod
     def execute(operation_id, user_name_label, adapter_instance):
-        backend_client = BackendClientFactory._get_backend_client(adapter_instance)
+        backend_client = BackendClientFactory._get_backend_client(adapter_instance.stored_adapter)
         backend_client.execute(operation_id, user_name_label, adapter_instance)
 
     @staticmethod
     def stop_operation(operation_id):
         operation = dao.get_operation_by_id(operation_id)
         algorithm = operation.algorithm
-        adapter_instance = ABCAdapter.build_adapter(algorithm)
-        backend_client = BackendClientFactory._get_backend_client(adapter_instance)
+        backend_client = BackendClientFactory._get_backend_client(algorithm)
         return backend_client.stop_operation(operation_id)

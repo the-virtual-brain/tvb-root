@@ -32,17 +32,16 @@
 This private module implements concrete declarative attributes
 """
 import collections.abc
+import inspect
 import numpy
 import types
 import typing
-from enum import Enum
-
 from ._declarative_base import _Attr, MetaType
 from .ex import TraitValueError, TraitTypeError, TraitAttributeError, TraitFinalAttributeError
 from tvb.basic.logger.builder import get_logger
 
 if typing.TYPE_CHECKING:
-    from ._core import HasTraits, TupleEnum
+    from ._core import HasTraits
 
 # a logger for the whole traits system
 log = get_logger('tvb.traits')
@@ -86,7 +85,8 @@ class Attr(_Attr):
 
     def __validate(self, value):
         """ check field_type and choices """
-        if not isinstance(value, self.field_type):
+        if not isinstance(value, self.field_type) and not (
+                inspect.isclass(self.default) and issubclass(value, self.field_type)):
             raise TraitTypeError("Attribute can't be set to an instance of {}".format(type(value)), attr=self)
         if self.choices is not None:
             if value not in self.choices and not (value is None and not self.required):
@@ -152,7 +152,8 @@ class Attr(_Attr):
         # (this attr instance is a class field, so the default is for the class)
         # This is consistent with how class fields work before they are assigned and become instance bound
         if self.field_name not in instance.__dict__:
-            if self.field_type != types.FunctionType and isinstance(self.default, types.FunctionType):
+            if (self.field_type != types.FunctionType and isinstance(self.default, types.FunctionType)
+                    or inspect.isclass( self.default) and issubclass(self.default, self.field_type)):
                 default = self.default()
             else:
                 default = self.default

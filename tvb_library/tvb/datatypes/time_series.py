@@ -111,7 +111,7 @@ class TimeSeries(HasTraits):
         return summary
 
     def duplicate(self, **kwargs):
-        duplicate = deepcopy(self)
+        duplicate = super(TimeSeries, self).duplicate()
         for attr, value in kwargs.items():
             setattr(duplicate, attr, value)
         duplicate.configure()
