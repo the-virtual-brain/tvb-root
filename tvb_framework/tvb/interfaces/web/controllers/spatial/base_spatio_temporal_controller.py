@@ -34,6 +34,7 @@
 """
 
 import json
+from tvb.adapters.forms.model_forms import get_model_to_form_dict
 from tvb.adapters.visualizers.surface_view import SurfaceURLGenerator
 from tvb.basic.logger.builder import get_logger
 from tvb.core.neocom import h5
@@ -154,3 +155,11 @@ class SpatioTemporalController(BaseController):
         rendering_dict.update({'showOnlineHelp': show_online_help})
         rendering_dict.update({'isCallout': False})
         return rendering_dict
+
+    def _prepare_model_params_list(self, model):
+        model_form = get_model_to_form_dict().get(type(model))
+        model_params = model_form().get_params_configurable_in_phase_plane()
+        if len(model_params) == 0:
+            self.logger.warning("The list with configurable parameters for the current model is empty!")
+
+        return model_params

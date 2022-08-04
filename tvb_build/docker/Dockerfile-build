@@ -41,13 +41,13 @@ RUN /bin/bash -c "source activate tvb-run"; \
 RUN wget https://zenodo.org/record/4263723/files/tvb_data.zip?download=1 -O tvb_data.zip; \
     mkdir tvb_data; unzip tvb_data.zip -d tvb_data; rm tvb_data.zip; \
     cd tvb_data; \
-     /opt/conda/envs/tvb-run/bin/python setup.py develop;\
-     /opt/conda/envs/tvb-docs/bin/python setup.py develop
+    /opt/conda/envs/tvb-run/bin/python setup.py develop;\
+    /opt/conda/envs/tvb-docs/bin/python setup.py develop
 
 WORKDIR $USER_HOME
 COPY requirements_group requirements.txt
-RUN  /opt/conda/envs/tvb-run/bin/pip install -r requirements.txt
-RUN  /opt/conda/envs/tvb-docs/bin/pip install -r requirements.txt
+RUN /opt/conda/envs/tvb-run/bin/pip install -r requirements.txt
+RUN /opt/conda/envs/tvb-docs/bin/pip install -r requirements.txt
 RUN chown $TVB_USER:$TVB_USER $USER_HOME
 
 USER $TVB_USER
@@ -67,10 +67,8 @@ RUN mkdir $USER_HOME/.tvb-temp; mkdir $USER_HOME/.tvb-temp/logs; mkdir -m777 $TV
 ENV TVB_USER_HOME $USER_HOME
 WORKDIR $USER_HOME/tvb-root
 
-#RUN rm /opt/conda/envs/tvb-run/share/jupyter/kernels/python3/kernel.json
-#RUN echo '{"argv": ["python", "-m", "ipykernel_launcher", "-f", "{connection_file}"], "display_name": "Python 3", "language": "python"}' >> /opt/conda/envs/tvb-run/share/jupyter/kernels/python3/kernel.json
-
 # MOUNT -v [local- tvb-root - clone]:$USER_HOME/tvb-root
+# MOUNT -v [local- ~/TVB ]:$TVB_STORAGE
 
 # For building static help for web
 CMD ["bash","-c","source activate tvb-docs && cd tvb_build && python build_step1.py"]
@@ -85,9 +83,5 @@ CMD ["bash","-c","source activate tvb-docs && cd tvb_build && python build_step1
 # For running Jupyter notebooks
 # bind port 8888:8888
 #CMD ["bash","-c","source activate tvb-run && cd tvb_documentation && jupyter notebook --ip 0.0.0.0 --no-browser --allow-root"]
-
-# For running TVB Web GUI
-# bind port 8080
-# MOUNT -v [local- ~/TVB ]:$TVB_STORAGE
 
 #CMD ["bash","-c","source activate tvb-run && /bin/bash"]

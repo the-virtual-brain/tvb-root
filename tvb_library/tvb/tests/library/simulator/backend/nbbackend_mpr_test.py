@@ -213,8 +213,8 @@ class TestNbSim(BaseTestSim):
             (raw_t, raw_d), = sim.run(simulation_length=1)
             r_tvb, V_tvb = raw_d[0, :, :, 0]
 
-        np.testing.assert_allclose(r_tvb, r_pdq, rtol=1e-4)
-        np.testing.assert_allclose(V_tvb, V_pdq, rtol=1e-4)
+        np.testing.assert_allclose(r_tvb, r_pdq, rtol=1e-4, atol=1e-3)
+        np.testing.assert_allclose(V_tvb, V_pdq, rtol=1e-4, atol=1e-3)
         
     def test_network_deterministic_delay(self):
         dt = 0.01
@@ -283,13 +283,13 @@ class TestNbSim(BaseTestSim):
         np.testing.assert_allclose(pdq_t,raw_t)
         np.testing.assert_allclose(pdq_chu_t,raw_t)
 
-        np.testing.assert_allclose(r_pdq, r_tvb, atol=1e-4, rtol=0.)
-        np.testing.assert_allclose(V_pdq, V_tvb, atol=1e-4, rtol=0.)
+        np.testing.assert_allclose(r_pdq, r_tvb, atol=1e-4, rtol=1e-3)
+        np.testing.assert_allclose(V_pdq, V_tvb, atol=1e-4, rtol=1e-3)
         # think a bit about the tolerances...  TVB stores in floats, so that 
         # can accumulate. Might be a good idea to test agains history with 
         # double typed buffer.
-        np.testing.assert_allclose(r_pdq_chu, r_tvb, atol=1e-4, rtol=0.)
-        np.testing.assert_allclose(V_pdq_chu, V_tvb, atol=1e-4, rtol=0.)
+        np.testing.assert_allclose(r_pdq_chu, r_tvb, atol=1e-4, rtol=1e-3)
+        np.testing.assert_allclose(V_pdq_chu, V_tvb, atol=1e-4, rtol=1e-3)
 
     def test_stim(self):
 

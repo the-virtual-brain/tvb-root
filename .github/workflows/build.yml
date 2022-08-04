@@ -1,4 +1,4 @@
-name: Test all
+name: Test Py
 on: [push]
 
 jobs:

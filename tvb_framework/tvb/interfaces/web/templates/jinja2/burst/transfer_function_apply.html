@@ -1,0 +1,69 @@
+<div id="main" class="columnized colscheme-2-even" style="overflow: hidden">
+    <link rel="stylesheet" type="text/css" href="{{ deploy_context | safe }}/static/style/section_stimulus.css?{{ currentVersionJS }}"/>
+    <section class="view-column col-1">
+        <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/spatial/base_spatial.js?{{ currentVersionJS }}"></script>
+        <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/spatial/transfer_function_apply.js?{{ currentVersionJS }}"></script>
+        {% include 'spatial/refreshBaseUrl_initializer.html' %}
+
+        <h4><mark>Apply</mark> Transfer Function</h4>
+        <fieldset>
+            <legend>Choose how to configure a vector of values for model param(s), from a stored spatial vector and a transfer function:</legend>
+        </fieldset>
+        {{ applyTransferFunctionForm | safe }}
+
+        <fieldset>
+            <legend>Click "Apply to parameter" bellow, once you are satisfied with the vector, to link values with a
+                model parameter configuration: </legend>
+            <button class="action" onclick="TF_submitAndRedraw('apply_transfer_function', '', '')" style="float: right">
+                Apply to parameter </button>
+            <button class="action" onclick="TF_submitAndRedraw('clear_histogram', '', '')" style="float: right">
+                Clear Histogram </button>
+        </fieldset>
+        <fieldset>
+            <legend>Applied to model parameters:</legend>
+            <div id='appliedVectorsDivId'> -- None --</div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Current transfer function plotted:</legend>
+            <div id='transferFunctionDivId'></div>
+            {{ parametersTransferFunctionPlotForm | safe }}
+        </fieldset>
+
+        <script type="text/javascript">
+            $(document).ready(function () {
+                setEventsOnStaticFormFields();
+                plotEquation();
+                redrawPlotOnMinMaxChanges();
+            });
+        </script>
+    </section>
+
+    <section class="view-column col-2">
+        <h4><mark>Inspect</mark> Vector of Values</h4>
+        {% include 'visualizers/histogram/view.html' %}
+    </section>
+
+    <form id="base_spatio_temporal_form" action="{{ submit_parameters_url }}" method="POST">
+        <aside class="header-component toolbar can-extend auto-extends">
+            <div class="extension">
+                <div class="dropdown-pane">
+                    <ul>
+                        <li>
+                            <button type="submit" class="action action-confirm" name="submit_action"
+                                    value="submit_action" id="base_spatio_temporal_submit"
+                                    title="Confirm configured vectors on model params, submit and return to the Simulator page">
+                                Submit Vector(s)
+                            </button>
+                        </li>
+                        <li>
+                            <button type="submit" class="action action-cancel" name="submit_action"
+                                    value="cancel_action" title="Drop changes and return to the simulator"> Cancel
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
+    </form>
+</div>

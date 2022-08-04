@@ -1,4 +1,4 @@
-name: lib-tests
+name: Test lib
 on: [push]
 jobs:
   lib-tests:
