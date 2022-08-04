@@ -6,7 +6,7 @@ TVB DSL Usage
 
 
 ﻿TVB_DSL XML (LEMS) code generation
-----------------------------------
+----------------------------------------
 This documentation describes the usage of the code generation for models defined in LEMS based XML to TVB Python format.
 The LEMS format has been adopted, modified and extended to match TVB nomenclature and consider the functionality required
 by these models. 
@@ -189,6 +189,6 @@ Running
 3. The resulting model will be automatically placed in model directory and recognized by TVB.
 
 Future extensions
-----
+-----------------
 Automatic numba, numbaCUDA and CUDA kernel generation will be directly supported by the DSL. 
 For more information on the current developments please refer to: https://github.com/the-virtual-brain/tvb-hpc

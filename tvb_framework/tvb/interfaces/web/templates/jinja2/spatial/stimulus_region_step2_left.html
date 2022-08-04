@@ -1,0 +1,33 @@
+<section  class="select-regions view-column col-1">
+
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/spatial/stimulus_region.js"></script>
+    {% include 'spatial/refreshBaseUrl_initializer.html' %}
+
+	<h4><mark>Select</mark> Regions</h4>
+
+    {{ regionStimSelectorForm | safe }}
+
+	{% include 'visualizers/connectivity/left_template_connectivity_view.html' %}
+
+	<script type="text/javascript" src="{{ deploy_context | safe }}/static/js/region_associator.js?{{ currentVersionJS }}"></script>
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+        	$("select[name='existentEntitiesSelect']").change(function () {
+                BS_loadEntity();
+            });
+			main({{ node_weights }}, "{{ measurePointsSelectionGID }}");
+			setEventsOnStaticFormFields({{ fieldsWithEvents | safe }});
+        });
+    </script>
+    
+    <form id="load-existing-entity" action="{{ loadExistentEntityUrl }}" method="POST">
+    	<input type="hidden" id="entity-gid" name="region_stimulus_gid" value="none"/>
+    	<input type="hidden" name="from_step" value="2"/>
+    </form>
+
+    <form id="reset-to-default" action="{{ resetToDefaultUrl }}" method="POST">
+    	<input type="hidden" name="from_step" value="2"/>
+    </form>
+
+</section>

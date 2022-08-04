@@ -1,7 +1,0 @@
-FROM thevirtualbrain/tvb-run
-
-ARG TVB_USER=tvb_user
-RUN wget https://zenodo.org/record/4544862/files/tvb-migrate.zip?download=1 -O tvb-migrate.zip; \
-unzip tvb-migrate.zip -d /home/tvb_user/TVB_STORAGE; rm tvb-migrate.zip;
-RUN cd /home/tvb_user/TVB_STORAGE/tvb-migrate; cp -R PROJECTS ..; cp -R tvb-database.db ..; cd .. && rm -R tvb-migrate;
-RUN sed -i "s|LAST_CHECKED_FILE_VERSION=5|LAST_CHECKED_FILE_VERSION=4 |g" /home/tvb_user/.tvb.configuration;

@@ -1,0 +1,64 @@
+<!--! Used by the brain viewer and the surface viewer to draw toggle checkboxes -->
+{% if biHemispheric %}
+    <dt> View hemispheres </dt>
+
+    <dd>
+        <input id="hemisphereRadio_1" type="radio" autocomplete="off" name="hemisphereRadio"
+               onchange="VS_SetHemisphere(null);" checked="checked" />
+        <label for="hemisphereRadio_1">both</label>
+        <br/>
+        <input id="hemisphereRadio_2" type="radio" autocomplete="off" name="hemisphereRadio"
+               onchange="VS_SetHemisphere('l');" />
+        <label for="hemisphereRadio_2">left</label>
+        <br/>
+        <input id="hemisphereRadio_3" type="radio" autocomplete="off" name="hemisphereRadio"
+               onchange="VS_SetHemisphere('r');" />
+            <label for="hemisphereRadio_3">right</label>
+    </dd>
+{% endif %}
+
+<dt>Lighting</dt>
+<dd>
+    <input id="showSpeculars" type="checkbox" onchange="setSpecularHighLights(this.checked);" autocomplete="off"/>
+        <label for="showSpeculars">shiny surface</label>
+</dd>
+
+<dt>Show</dt>
+<dd>
+    <input id="displayFaceChkId" type="checkbox" onchange="switchFaceObject();" autocomplete="off" tabindex="1"
+                title="Face approximative will move along with brain navigator."/>
+    <label for="displayFaceChkId" >face</label>
+</dd>
+
+<dt></dt>
+<dd>
+    <input id="showNavigator" type="checkbox" onchange="setNavigatorVisibility(this.checked);" autocomplete="off"/>
+        <label for="showNavigator">navigator</label>
+</dd>
+
+{% if hasRegionMap %}
+    <dt></dt>
+    <dd><input id="showMeasurePoints" type="checkbox" onchange="toggleMeasureNodes();" autocomplete="off" tabindex="1"/>
+        <label for="showMeasurePoints">measure points</label>
+    </dd>
+{% endif %}
+
+{% if urlRegionBoundaries %}
+    <dt></dt>
+    <dd>
+        <input id="showBrainBoundaries" type="checkbox" onchange="toggleDrawBoundaries();" autocomplete="off" tabindex="1"/>
+        <label for="showBrainBoundaries">region boundaries</label>
+    </dd>
+{% endif %}
+
+<dt>Toggle</dt>
+<dd>
+    <input id="ctrl-action-points" type="checkbox" onchange="wireFrame();" tabindex="1" autocomplete="off" title="Display only a cloud of points, without triangles"/>
+    <label for="ctrl-action-points">points display</label>
+</dd>
+
+<dt></dt>
+<dd>
+    <input id="showBrainLines" type="checkbox" onchange="toggleDrawTriangleLines();" autocomplete="off" tabindex="1"/>
+    <label for="showBrainLines">surface triangles</label>
+</dd>

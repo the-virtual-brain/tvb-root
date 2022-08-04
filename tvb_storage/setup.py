@@ -38,7 +38,7 @@ import os
 import shutil
 import setuptools
 
-STORAGE_VERSION = "2.5"
+STORAGE_VERSION = "2.6.1"
 
 STORAGE_TEAM = "Lia Domide, Paula Prodan, Bogdan Valean, Robert Vincze"
 
@@ -53,7 +53,7 @@ setuptools.setup(name='tvb-storage',
                  include_package_data=True,
                  install_requires=STORAGE_REQUIRED_PACKAGES,
                  extras_require={
-                     'test': ["pytest"],
+                     'test': ["pytest", "decorator"],
                      'encrypt': ["syncrypto"]},
                  description='A package which handles the storage of TVB data',
                  long_description="",

@@ -1,0 +1,39 @@
+<div>
+    <h4>
+        <mark>Surface</mark>
+        Model Configuration
+    </h4>
+    {{ adapter_form | safe }}
+
+    <button class="action" onclick="MP_applyEquationForParameter()" style="float: right">Apply equation</button>
+
+    <fieldset>
+        <legend>Applied equations:</legend>
+        {% if applied_equations %}
+            {% for param in applied_equations %}
+                <p>
+                    <b>Parameter {{ param }} :</b> {{ applied_equations[param]['equation_params'] }}
+                </p>
+            {% endfor %}
+        {% endif %}
+    </fieldset>
+
+    <br> <br> <br> <br> <br>
+    <br> <br> <br> <br> <br>
+
+    <fieldset>
+        <legend>Current equation plot:</legend>
+        <div id='equationDivId'></div>
+        {{ parametersEquationPlotForm | safe }}
+    </fieldset>
+
+
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            setEventsOnStaticFormFields({{ equationsPrefixes | safe }});
+            plotEquation();
+            redrawPlotOnMinMaxChanges();
+        });
+    </script>
+</div>

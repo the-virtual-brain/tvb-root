@@ -1,0 +1,214 @@
+<!--! Visualizer Large Scale Connectivity Matrix -->
+
+<div>
+	<script type="text/javascript" src="{{ deploy_context | safe }}/static/jquery/jquery.mousewheel.js"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/jquery/jquery.contextmenu.js" ></script>
+	<script type="text/javascript" src="{{ deploy_context | safe }}/static/js/sylvester.js"></script>
+	<script type="text/javascript" src="{{ deploy_context | safe }}/static/js/glUtils.js"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/zoom.js" ></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/jit-tvb.js?{{ currentVersionJS }}" ></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/projectTree.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/coloring/colorSchemeComponent.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static_view/commons/shading/shading.js"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/webGL_ShaderAndMatrixes.js?{{ currentVersionJS }}" ></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/webGL_Mouse.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/webGL_Pick.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/webGL_Connectivity.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static_view/connectivity/scripts/matrixScript.js?{{ currentVersionJS }}" ></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static_view/connectivity/scripts/connectivityScript.js?{{ currentVersionJS }}" ></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static_view/connectivity/scripts/connectivity2DScript.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static_view/connectivity/scripts/connectivityStepPlot.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static_view/connectivity/scripts/connectivityGlobals.js?{{ currentVersionJS }}" ></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static_view/connectivity/scripts/selectionControlScript.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static_view/commons/scripts/regionSelector.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/coloring/colorpicker.js?{{ currentVersionJS }}"></script>
+    <link rel="stylesheet" type="text/css" href="{{ deploy_context | safe }}/static/coloring/colorpicker.css?{{ currentVersionJS }}"/>
+	<link rel="stylesheet" type="text/css" href="{{ deploy_context | safe }}/static/style/section_connectivity.css?{{ currentVersionJS }}"/>
+
+	{% macro drawMatrixLegendArea(canvasContainerID) -%}
+		<div class="matrix-legend" id="{{ canvasContainerID }}"></div>
+		<div class="matrix-legend"> 
+			<table id="table-{{ canvasContainerID }}" class="table-legend-labels">
+				{% for label in range(7) %}
+		   			{% if label != 0 %}
+			    		<tr height="{{ ((100/8) | string) + '%' }}" style='vertical-align: bottom;'> <td>{{ label }}</td> </tr>
+		    		{% else %}
+			    		<tr height="20px"> <td>{{ label }}</td> </tr>
+		    		{% endif %}
+		    	{% endfor %}
+		    </table>
+		</div>
+	{%- endmacro %}
+	
+	<!--! Connectivity viewer -->
+	<section class="view-column connectivity-viewer col-1">
+	<h4><mark>View</mark> Large Scale Connectivity</h4>
+		<a id="showConnectivityDetailsBtn" href="#" onclick='displayNodeDetails("{{ originalConnectivity }}", "datatype", null, "Visualizers");'
+       	class="column-control action action-big-analyze" title="Overlay info for current connectivity entity.">Open Overlay</a>
+	
+		<div class="monitor" id="monitorDiv">
+		
+			<ul class="view-switcher tabswitcher">
+				<li class="active"><a id="leftSideDefaultSelectedTabId" href="#" onclick="hideLeftSideTabs(this); startConnectivity();">3D Edges</a></li>
+				<li><a href="#" onclick="hideLeftSideTabs(this); start2DConnectivity(0);">Hemisphere 1</a></li>
+				<li><a href="#" onclick="hideLeftSideTabs(this); start2DConnectivity(1);">Transverse</a></li>
+				<li><a href="#" onclick="hideLeftSideTabs(this); start2DConnectivity(2);">Hemisphere 2</a></li>
+				<li><a href="#" onclick="hideLeftSideTabs(this); startSpaceTimeConnectivity()">Space Time</a></li>
+			</ul>
+
+			{% include 'visualizers/connectivity/connectivity_view.html' %}
+			{% import 'visualizers/connectivity/connectivity_view.html' as cv with context %}
+			{{ cv.drawConnectivityViewer(true) }}
+
+			{% include 'visualizers/connectivity/connectivity_2D_view.html' %}
+
+			{% include 'visualizers/connectivity/connectivity_plot_view.html' %}
+			{% import 'visualizers/connectivity/connectivity_plot_view.html' as cpv  %}
+			{{ cpv.drawConnectivityPlotViewer() }}
+		</div>
+	</section>
+		
+	<!--! Matrix viewer and controls -->
+
+	{% with %}
+		{% set nodeCount = pointsLabels | length %}
+
+		<section id="scrollable-matrix-section" class="view-column matrix-controller col-2">
+
+			<hgroup>
+				<h4><mark>Control</mark> Large Scale Matrices</h4>
+				<input type="text" id="newConnectivityNameTag" value="" title="User name for the new Connectivity to be generated"/>
+				<label id="currentlySelectedNodesLabelId">All nodes selected</label>
+			</hgroup>
+
+			<a href="#" tabindex='-1' onclick='saveSubConnectivity("{{ submitURL }}", "{{ originalConnectivity }}", false);'
+			   class="action action-big-new action-new-connectivity column-control"
+			   title="Create a new connectivity from the selected nodes. Check the '* Select *' buttons bellow to see what it is included">Create new
+			</a>
+
+			<a href="#" tabindex='-1' onclick='saveSubConnectivity("{{ submitURL }}", "{{ originalConnectivity }}", true);'
+			   class="action action-big-branch action-branch-connectivity column-control"
+			   title="Clone the connectivity cutting the unselected edges. Check the '* Select *' buttons bellow to see what it is included">Branch
+			</a>
+
+			<div id="chkList" class="matrix">
+
+				<ul class="matrix-switcher tabswitcher">
+					<li class="active"><a href="#" id="rightSideDefaultSelectedTabId" onclick="hideRightSideTabs(this); showWeightsTable();">Weights Matrix</a></li>
+					<li><a href="#" onclick="hideRightSideTabs(this); showTractsTable();">Tracts Matrix</a></li>
+				</ul>
+
+				<!--! Toolbar -->
+				<ul class="toolbar-inline matrix-control">
+
+					<li>Selection</li>
+    		
+					<!--! Node/Edge operations -->
+					<li class="selection-ops">
+						<nav class="inline-menu">
+							<button class="action action-menu">Edge Operations</button>
+
+							<div class="extension">
+								<div class="dropdown-pane">
+									<ul>
+
+										<li class="selectors">
+											<label for="con-op-operation"><mark>Operation</mark></label>
+											<select id='con-op-operation'></select>
+										</li>
+		    					
+										<li class="selectors">
+											<label for="con-op-edges-type"><mark>Edges type</mark></label>
+											<select id='con-op-edges-type'></select>
+										</li>
+		    					
+										<li class="operators">
+											<label for="con-op-arguments"><mark>Weight change</mark></label>
+											<input id='con-op-arguments' type='text' value='' placeholder="numeric value"/>
+										</li>
+		    					
+										<li class="actors">
+											<button class="action action-analyze" onclick='doGroupOperation()' value='Apply weight change to selected nodes'>Apply weight change</button>
+										</li>
+
+									</ul>
+								</div>
+							</div>
+
+						</nav>
+					</li>
+
+                    <li class="selector-storage">
+						{% import 'visualizers/commons/channel_selector_button.html' as csb %}
+						{{ csb.drawRegionSelectorButton(connectivity_entity.title, groupedLabels, initialSelection, buttonTitle="Select Nodes") }}
+					</li>
+
+					<li class="selector-storage">
+						{% import 'visualizers/commons/channel_selector_quick.html' as csq %}
+						{{ csq.drawQuickSelector() }}
+					</li>
+				</ul>
+
+				{% import 'visualizers/connectivity/matrix_with_quadrants.html' as mwq %}
+				<!--! Matrices: Weights -->
+				<div id="div-matrix-weights" class="matrix-viewer">
+
+					<div class="matrix-table">
+						{{ mwq.draw2DConnectivityMatrix('leftHemisphere', 0, pointsLabels, 0, leftHemisphereCount, 0, leftHemisphereCount, 'w') }}
+						{{ mwq.draw2DConnectivityMatrix('leftRightQuarter', 2, pointsLabels, 0, leftHemisphereCount, leftHemisphereCount, nodeCount, 'w') }}
+						{{ mwq.draw2DConnectivityMatrix('rightLeftQuarter', 1, pointsLabels, leftHemisphereCount, nodeCount, 0, leftHemisphereCount, 'w') }}
+						{{ mwq.draw2DConnectivityMatrix('rightHemisphere', 3, pointsLabels, leftHemisphereCount, nodeCount, leftHemisphereCount, nodeCount, 'w') }}
+					</div>
+
+					{{ drawMatrixLegendArea('weights-legend') }}
+
+				</div>
+
+				<!--! Matrices: Tracts -->
+				<div id="div-matrix-tracts" class="matrix-viewer">
+					<div class="matrix-table">
+						{{ mwq.draw2DConnectivityMatrix('leftHemisphereTracts', 0, pointsLabels, 0, leftHemisphereCount, 0, leftHemisphereCount, 't') }}
+						{{ mwq.draw2DConnectivityMatrix('leftRightQuarterTracts', 2, pointsLabels, 0, leftHemisphereCount, leftHemisphereCount, nodeCount, 't') }}
+						{{ mwq.draw2DConnectivityMatrix('rightLeftQuarterTracts', 1, pointsLabels, leftHemisphereCount, nodeCount, 0, leftHemisphereCount, 't') }}
+						{{ mwq.draw2DConnectivityMatrix('rightHemisphereTracts', 3, pointsLabels, leftHemisphereCount, nodeCount, leftHemisphereCount, nodeCount, 't') }}
+					</div>
+
+					{{ drawMatrixLegendArea('tracts-legend') }}
+
+				</div>
+
+			</div>
+
+			{% with %}
+				{% set start_points_x = ([0, leftHemisphereCount, 0, leftHemisphereCount] | string) %}
+				{% set end_points_x = ([leftHemisphereCount, nodeCount, leftHemisphereCount, nodeCount] | string) %}
+				{% set start_points_y = ([0, leftHemisphereCount, leftHemisphereCount, 0] | string) %}
+				{% set end_points_y = ([leftHemisphereCount, nodeCount, nodeCount, leftHemisphereCount] | string) %}
+
+				<script type="text/javascript">
+					$(document).ready(function() {
+						// todo: warning the jsons below are huge, practically the whole connectivity in json
+						prepareConnectivity2D({{ leftHemisphereJson | safe }}, {{ bothHemisphereJson | safe }}, {{ rightHemisphereJson | safe}});
+						//Do all the required initializations and draw the right table view of the connectivity matrix
+						GFUNC_storeMinMax('{{ weightsMin }}', '{{ weightsNonZeroMin }}', '{{ weightsMax }}', '{{ tractsMin }}', '{{ tractsNonZeroMin }}', '{{ tractsMax }}');
+						TBL_storeHemisphereDetails({{ start_points_x }}, {{ end_points_x }}, {{ start_points_y }}, {{ end_points_y }});
+						prepareConnectivity('{{ urlWeights }}', '{{ urlTracts }}', '{{ urlPositions | safe }}', '{{ urlVertices | safe }}', '{{ urlTriangles | safe }}',
+						'{{ urlNormals | safe }}', '{{ urlLabels | safe }}', false, '{{ conductionSpeed }}', '{{ raysArray }}', '{{ colorsArray }}');
+						GVAR_baseSelection = '{{ base_selection }}';
+						GFUN_initSelectionComponent("{{ measurePointsSelectionGID }}", "{{ hemisphereOrderUrl }}");
+						GFUN_initializeConnectivityFull();
+					});
+				</script>
+
+			{% endwith %}
+
+			<input type="hidden" id="currentlyEditedNode"/>
+
+			{% include 'visualizers/connectivity/context_menu_table.html' %}
+
+		</section>
+
+	{% endwith %}
+
+</div>
+

@@ -1,0 +1,28 @@
+<!--! This component is used to generate a text based channel selector. The jinja2 function expects as inputs:
+    @param title: the title of the selection box
+    @param divId: the id of the top level div
+-->
+{% macro drawQuickSelector() -%}
+    <nav class="inline-menu">
+        <button class="action action-menu" title="Change the current selection quickly by editing this text representation.">Quick-select</button>
+        <div class="extension">
+            <div class="dropdown-pane">
+                <ul class="quickSelector">
+
+                    <li class="operators">
+                        <label for="selection-text-area">
+                            <mark>Change the current selection quickly by editing this text representation</mark>
+                        </label>
+                        <textarea id="selection-text-area" cols='40' rows='15' spellcheck="false">[]</textarea>
+                     </li>
+
+                     <li class="actors">
+                        <button id="loadSelectionFromTextBtn" class="action action-analyze" value="Parse" title="Parse text representation">Apply changes to list</button>
+                     </li>
+
+                 </ul>
+            </div>
+        </div>
+    </nav>
+{%- endmacro %}
+

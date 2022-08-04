@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en" id="s-user">
+<head>
+    <link rel="shortcut icon" href="/static/style/img/favicon.ico"/>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="/static/style/base.css"/>
+    <link rel="stylesheet" type="text/css" href="/static/style/section_user.css"/>
+    <title>The Virtual Brain</title>
+</head>
+<body id="s-user" class="user-authorized style-default v-odinson">
+<div id="main">
+    <section class="sites">
+        <h2>
+            <mark>TVB - EBRAINS</mark> Deployment Sites
+        </h2>
+        {% for app in apps %}
+            <dl>
+                <dt><input type="button" value="{{ app.label }}"
+                           onclick="go_to_selected_site('{{ app.url }}')"
+                           title="{{ app.description }}"/></dt>
+                <dd>{{ app.description|safe }}</dd>
+            </dl>
+        {% endfor %}
+    </section>
+    <script type="text/javascript">
+        function go_to_selected_site(site_url) {
+            window.location.href = site_url
+        }
+    </script>
+</div>
+<!--! === Box: Sponsor logos & links -->
+<aside class="credits">
+    <hgroup>
+        <h3 class="boxtitle">Lead<br/> Institutions </h3>
+    </hgroup>
+    <a href="https://www.univ-amu.fr/en" title="Visit the Aix Marseille Université..." target="_new" class="unimed"
+       tabindex="-1">Aix Marseille Université</a>
+    <a href="https://www.baycrest.org" title="Visit the Baycrest Foundation..." target="_new" class="baycrest"
+       tabindex="-1">Baycrest Foundation</a>
+    <a href="https://www.charite.de/en/" title="Charité University Medicine..." target="_new" class="charite"
+       tabindex="-1">Charité University Medicine</a>
+</aside>
+</body>
+</html>

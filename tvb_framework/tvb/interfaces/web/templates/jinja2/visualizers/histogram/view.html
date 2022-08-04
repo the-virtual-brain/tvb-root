@@ -1,0 +1,35 @@
+<div class="mainDiv">
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/flot/jquery.flot.js"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static_view/histogram/histogram.js?{{ currentVersionJS }}" ></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/coloring/colorSchemeComponent.js?{{ currentVersionJS }}"></script>
+
+    <link type="text/css" rel="stylesheet" href="{{ deploy_context | safe }}/static/style/section_visualisers.css?{{ currentVersionJS }}"/>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            startHistogramView({{ minColor }}, {{ maxColor }}, {{ data }}, {{ labels | safe }}, {{ colors }});
+        });
+
+        function redrawHistogram(minColor, maxColor, data, labels, colorsStr, xposition) {
+            $('#colorMinId').val(minColor);
+            $('#colorMaxId').val(maxColor);
+            $('#originalColors').val(colorsStr);
+            const colors = $.parseJSON(colorsStr);
+        	drawHistogram('histogramCanvasId', data, labels, colors, xposition);
+            changeColors();
+        }
+    </script>
+
+    <div class="histogramParentDiv {{ 'view-column' if isSingleMode else ''| safe }}">
+        <div id="histogramCanvasId"></div>
+        <div id="histogramLegend">
+            <canvas id="histogramLegendCanvas" width="20px"></canvas>
+            <table id="histogramLegendLabels" ></table>
+        </div>
+    </div>
+
+    <input type="hidden" id="colorMinId" value="{{ minColor }}"/>
+    <input type="hidden" id="colorMaxId" value="{{ maxColor }}"/>
+    <input type="hidden" id="originalColors" value="{{ colors }}"/>
+
+</div>

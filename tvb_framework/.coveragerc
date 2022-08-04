@@ -1,0 +1,15 @@
+[report]
+omit =
+    */tests/*
+    */web/static/*
+    */web/templates/*
+    *.tvb-temp*
+    */tvb_bin/*
+    */tvb_data/*
+    */tvb_library/*
+    */tvb_storage/*
+
+# Regex expressions for lines excluded from report
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.:

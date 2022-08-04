@@ -1,0 +1,23 @@
+<section  class="manage-regions view-column col-2">
+	<h4><mark>Manage</mark> Regions</h4>
+
+	{% import 'visualizers/commons/channel_selector.html' as cs %}
+	{% import 'visualizers/commons/channel_selector_quick.html' as csq %}
+
+	<ul class="toolbar-inline">
+		<li>
+			<label for="current_weight">New scaling</label>
+			<input type="text" name="current_weight" id="current_weight"/>
+			<button id="put-model" class="action action-store" title="Scaling can change the intensity of the defined stimulus for individual nodes.">Set scaling</button>
+		</li>
+		<li>
+			<button onclick="STIM_resetRegionStimulusWeights();" class="action action-reset" title="Reset all scalings defined in this session.">Reset scaling</button>
+		</li>
+        <!-- Quick-Select -->
+        <li class="selector-storage">
+            {{ csq.drawQuickSelector() }}
+        </li>
+	</ul>
+
+    {{ cs.drawRegionSelector(connectivity_entity.title, "channelSelector", groupedLabels, initialSelection) }}
+</section>

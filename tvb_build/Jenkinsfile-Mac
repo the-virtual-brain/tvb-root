@@ -33,11 +33,11 @@ pipeline {
                         conda activate mac-distribution
 
                         echo "Install TVB framework"
-                        cd framework_tvb
+                        cd tvb_framework
                         python setup.py install
 
                         echo "Install TVB library"
-                        cd ../scientific_library
+                        cd ../tvb_library
                         python setup.py install
 
                         echo "Install TVB library contrib"
@@ -72,7 +72,7 @@ pipeline {
     }
     post {
         changed {
-            mail to: 'lia.domide@codemart.ro paula.popa@codemart.ro bogdan.valean@codemart.ro',
+            mail to: 'lia.domide@codemart.ro paula.popa@codemart.ro',
             subject: "Jenkins Pipeline ${currentBuild.fullDisplayName} changed status",
             body: """
                 Result: ${currentBuild.result}

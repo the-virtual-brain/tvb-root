@@ -53,7 +53,7 @@ from subprocess import Popen, PIPE
 # source paths
 BIN_FOLDER = os.path.dirname(tvb_bin.__file__)
 TVB_ROOT = os.path.dirname(os.path.dirname(BIN_FOLDER))
-FW_FOLDER = os.path.join(TVB_ROOT, 'framework_tvb')
+FW_FOLDER = os.path.join(TVB_ROOT, 'tvb_framework')
 LICENSE_PATH = os.path.join(FW_FOLDER, 'LICENSE')
 RELEASE_NOTES_PATH = os.path.join(TVB_ROOT, 'tvb_documentation', 'RELEASE_NOTES')
 DATA_SRC_FOLDER = os.path.dirname(tvb_data.__file__)
@@ -188,7 +188,7 @@ def ensure_tvb_current_revision(branch=None):
         print("We will not change file tvb.version")
         return
 
-    tvb_version_path = "../scientific_library/tvb/basic/config/tvb.version"
+    tvb_version_path = "../tvb_library/tvb/basic/config/tvb.version"
     print("Tvb version file path: {}".format(tvb_version_path))
     paths = [tvb_version_path, os.path.join(config_folder, 'tvb.version')]
     for path in paths:

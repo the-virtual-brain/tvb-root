@@ -1,0 +1,91 @@
+{% import 'form_fields/generate_help_tooltip.html' as ght with context %}
+
+<form method="post" action="{{ renderer.form_action_url }}" id="{{ renderer.form_action_url }}" enctype="multipart/form-data">
+    <fieldset {% if renderer.is_branch %} class="enable_branch" {% endif %} {% if renderer.disable_fields %} disabled {% endif %}>
+        <dl>
+            {% if renderer.monitor_name %}
+            <legend>{{ renderer.monitor_name }}</legend>
+            {% endif %}
+            {% if renderer.form.ordered_fields %}
+                {% set form_fields = renderer.form.ordered_fields %}
+            {% else %}
+                {% set form_fields = renderer.form.fields %}
+            {% endif %}
+            {% for field in form_fields %}
+                <dt {% if field.label_classes %} class="{{ field.label_classes|join(' ') }}" {% endif %}>
+                    <label for="{{ field.name }}">{{ field.label }}</label>
+                    {{ ght.generate_help_tooltip(field.label, field.doc) }}
+                </dt>
+                <dd>
+                    {{ field | safe }}
+                    <p class="errorMessage">
+                        {% for error in field.errors %}
+                            <span> {{ error }} </span>
+                        {% endfor %}
+                    </p>
+                </dd>
+            {% endfor %}
+        </dl>
+    </fieldset>
+
+    {% if renderer.include_previous_button %}
+        <button name="previous" type="button" class="btn btn-primary" tabindex="1"
+                onclick="previousWizzardStep(this.parentElement, '{{ renderer.previous_form_action_url }}')"
+                {% if renderer.hide_previous_button %} style="visibility: hidden" {% endif %}>Previous
+        </button>
+    {% endif %}
+
+    {% if renderer.include_next_button %}
+        <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1"
+                onclick="wizzard_submit(this.parentElement)"
+                {% if renderer.load_readonly %} style="visibility: hidden" {% endif %}>Next
+        </button>
+    {% endif %}
+
+    {% if renderer.include_setup_region_model %}
+        <button type="button" title="Set up model parameters for region-based simulations" class="btn btn-primary" tabindex="1"
+           onclick="configureModelParamsOnRegions();" id="configRegionModelParam" name="configRegionModelParam"
+           {% if renderer.load_readonly %} style="visibility: hidden" {% endif %}>Set up region Model</button>
+
+        <button type="button" title="Apply transfer function on a model parameter" class="btn btn-primary" tabindex="1"
+            onclick="wizzard_submit(this.parentElement, applyTransferFunction, 'div-simulator-parameters', true);" id="configSpatialVector" name="configSpatialVector"
+            {% if renderer.load_readonly %} style="visibility: hidden" {% endif %}>Configure Spatial Vector</button>
+    {% endif %}
+    {% if renderer.include_setup_surface_model %}
+            <button type="button" title="Set up model parameters for surface-based simulations" class="btn btn-primary" tabindex="1"
+               onclick="wizzard_submit(this.parentElement, configureModelParamsOnSurface, 'div-simulator-parameters', true);" id="configSurfaceModelParam" name="configSurfaceModelParam"
+               {% if renderer.load_readonly %} style="visibility: hidden" {% endif %}>Set up surface model</button>
+    {% endif %}
+    {% if renderer.include_setup_noise %}
+            <button type="button" title="Configure noise for region-based simulations" class="btn btn-primary" tabindex="1"
+               onclick="configureNoiseParameters();" id="configNoiseValues" name="configNoiseValues"
+               {% if renderer.load_readonly %} style="visibility: hidden" {% endif %}>Configure noise</button>
+    {% endif %}
+
+    {% if renderer.include_branch_button %}
+        <button id="branch_simulation" name="branch_simulation" type="button" class="btn btn-primary" tabindex="1"
+                onclick="launchNewBurst(this.parentElement, 'branch')"
+                {% if renderer.load_readonly %} style="visibility: hidden" {% endif %}>Launch Branch
+        </button>
+    {% else %}
+
+        {% if renderer.include_launch_button %}
+            <button id="launch_simulation" name="launch_simulation" type="button" class="btn btn-primary" tabindex="1"
+                    onclick="launchNewBurst(this.parentElement, 'new')"
+                    {% if renderer.hide_launch_and_setup_pse_button %} style="visibility: hidden" {% endif %}>Launch
+            </button>
+        {% endif %}
+
+        {% if renderer.include_setup_pse %}
+            <button id="setup_pse" name="setup_pse" type="button" class="btn btn-primary" tabindex="1"
+                    onclick="wizzard_submit(this.parentElement)"
+                    {% if renderer.hide_launch_and_setup_pse_button %} style="visibility: hidden" {% endif %}>Setup PSE
+            </button>
+        {% endif %}
+
+        {% if renderer.include_launch_pse_button %}
+            <button id="launch_pse" name="launch_pse" type="button" class="btn btn-primary" tabindex="1"
+                    onclick="launchNewPSEBurst(this.parentElement)">Launch PSE</button>
+        {% endif %}
+    {% endif %}
+</form>
