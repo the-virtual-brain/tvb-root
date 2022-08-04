@@ -1,24 +1,25 @@
 FROM python:3.10.5-windowsservercore-1809
 
 WORKDIR /tmp
-RUN powershell (New-Object System.Net.WebClient).DownloadFile('https://repo.continuum.io/miniconda/Miniconda3-latest-Windows-x86_64.exe', 'Miniconda3.exe')
-RUN powershell Unblock-File Miniconda3.exe
-RUN Miniconda3.exe /InstallationType=JustMe /RegisterPython=1 /S /D=C:\Miniconda3
-RUN setx /M PATH "%PATH%;C:\Miniconda3;C:\Miniconda3\Scripts;C:\Miniconda3\Library\bin"
+# Download and install miniconda
+ADD https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe C:\\TEMP\\miniconda.exe
+SHELL ["cmd", "/S", "/C"]
+RUN start /wait "" C:\\TEMP\\miniconda.exe /InstallationType=AllUsers /RegisterPython=1 /S /D=C:\miniconda
+RUN setx /M PATH "%PATH%;C:\miniconda\Scripts"
+RUN conda init powershell
 
 # Prepare tvb-run env
 RUN activate && conda update -n base -c defaults conda
 RUN activate && conda create -y --name tvb-run python=3.10 numba scipy numpy cython psycopg2
 RUN activate && conda install -y --name tvb-run -c conda-forge jupyterlab tvb-gdist
-RUN activate tvb-run && pip install --upgrade pip
+RUN activate tvb-run && python -m pip install --upgrade pip
 RUN activate tvb-run && pip install lockfile scikit-build
 RUN activate tvb-run && pip install syncrypto
-RUN activate tvb-run && pip install -U numpy
 
 
 # Download and install tvb data
-RUN mkdir %userprofile%\\TVB_CODE
-WORKDIR %userprofile%/TVB_CODE
+RUN mkdir C:\\TVB_CODE
+WORKDIR /TVB_CODE
 ADD https://zenodo.org/record/4263723/files/tvb_data.zip?download=1 tvb_data.zip
 RUN tar -xf tvb_data.zip && dir && del tvb_data.zip
 RUN activate tvb-run && python setup.py develop
@@ -26,7 +27,7 @@ RUN activate tvb-run && python setup.py develop
 COPY requirements_group requirements.txt
 RUN activate tvb-run && pip install -r requirements.txt
 
-RUN mkdir %userprofile%\\TVB_TEST
-RUN mkdir %userprofile%\\.tvb-temp
+RUN mkdir C:\\Users\\containeradministrator\\TVB_TEST
+RUN mkdir C:\\Users\\containeradministrator\\.tvb-temp
 
 CMD ["cmd", "activate tvb-run"]
