@@ -73,8 +73,7 @@ class Integrator(HasTraits):
 
     dt = Float(
         label="Integration-step size (ms)",
-        default=0.01220703125, #0.015625,
-        #range = basic.Range(lo= 0.0048828125, hi=0.244140625, step= 0.1, base=2.)  mh: was commented
+        default=0.01220703125,
         required=True,
         doc="""The step size used by the integration routine in ms. This
         should be chosen to be small enough for the integration to be
@@ -272,11 +271,11 @@ class IntegratorStochastic(Integrator):
 
     noise = Attr(
         field_type=noise.Noise,
-        label = "Integration Noise",
-        default=noise.Additive(),
-        required = True,
-        doc = """The stochastic integrator's noise source. It incorporates its
-        own instance of Numpy's RandomState.""")  # type: noise.Noise
+        label="Integration Noise",
+        default=noise.Additive,
+        required=True,
+        doc="""The stochastic integrator's noise source. It incorporates its
+        own instance of Numpy's RandomState.""")
 
     def set_random_state(self, random_state):
         if random_state is not None:
