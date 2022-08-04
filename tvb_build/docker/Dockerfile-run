@@ -36,11 +36,11 @@ RUN /bin/bash -c "source activate tvb-run"; \
 RUN wget https://zenodo.org/record/4263723/files/tvb_data.zip?download=1 -O tvb_data.zip; \
     mkdir tvb_data; unzip tvb_data.zip -d tvb_data; rm tvb_data.zip; \
     cd tvb_data; \
-     /home/tvb_user/.conda/envs/tvb-run/bin/python setup.py develop
+    /home/tvb_user/.conda/envs/tvb-run/bin/python setup.py develop
 
 WORKDIR $USER_HOME
 COPY requirements_group requirements.txt
-RUN  /home/tvb_user/.conda/envs/tvb-run/bin/pip install -r requirements.txt
+RUN /home/tvb_user/.conda/envs/tvb-run/bin/pip install -r requirements.txt
 
 # make sure a copy of tvb-root exists inside, for users without Github clone
 RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git

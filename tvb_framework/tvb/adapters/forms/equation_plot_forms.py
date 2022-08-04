@@ -35,11 +35,11 @@ from tvb.basic.neotraits.api import Float
 class EquationPlotForm(Form):
     def __init__(self):
         super(EquationPlotForm, self).__init__()
-        self.min_x = FloatField(Float(label='Min distance(mm)', default=0,
-                                      doc="The minimum value of the x-axis for spatial equation plot."),
+        self.min_x = FloatField(Float(label='Min 0x value', default=0,
+                                      doc="The minimum value of the x-axis for the equation plot."),
                                 name='min_x')
-        self.max_x = FloatField(Float(label='Max distance(mm)', default=100,
-                                      doc="The maximum value of the x-axis for spatial equation plot."),
+        self.max_x = FloatField(Float(label='Max 0x value', default=100,
+                                      doc="The maximum value of the x-axis for the equation plot."),
                                 name='max_x')
 
     def fill_from_post(self, form_data):
