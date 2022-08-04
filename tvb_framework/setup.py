@@ -47,7 +47,7 @@ TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Prodan,
 TVB_INSTALL_REQUIREMENTS = ["alembic", "allensdk", "cherrypy", "flask", "flask-restx",
                             "formencode", "gevent", "h5py", "Jinja2", "nibabel", "numpy", "pandas",
                             "Pillow", "psutil", "python-keycloak", "requests", "scikit-learn",
-                            "scipy", "simplejson", "six", "sqlalchemy", "tvb-data", "tvb-gdist",
+                            "scipy", "siibra", "simplejson", "six", "sqlalchemy", "tvb-data", "tvb-gdist",
                             "tvb-library", "tvb-storage", "werkzeug"]
 
 # Packaging tvb-framework with REST server inside
