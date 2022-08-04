@@ -39,3 +39,4 @@ pandas
 requests
 simplejson
 six
+siibra
