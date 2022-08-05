@@ -28,13 +28,15 @@
 #
 #
 
-""" Utility functions for using siibra to extract Structural and Functional connectivities  """
+"""
+Utility functions for using siibra to extract Structural and Functional connectivities
+
+.. moduleauthor:: Romina Baila <romina.baila@codemart.ro>
+"""
 import numpy as np
 import siibra
 from tvb.basic.logger.builder import get_logger
-
 from tvb.datatypes import connectivity
-
 from tvb.datatypes.graph import ConnectivityMeasure
 
 LOGGER = get_logger(__name__)
@@ -134,9 +136,8 @@ def init_siibra_params(atlas_name, parcellation_name, subject_ids):
 
     return atlas, parcellation, subject_ids
 
+
 # ######################################## COMMON CONNECTIVITY METHODS #################################################
-
-
 def get_connectivity_component(parcellation, component):
     """ Return a list of all available connectivity components (weights/tract lengths) """
     modality = None
@@ -300,7 +301,8 @@ def create_tvb_connectivity_measure(siibra_fc, structural_connectivity):
     """
     fc_matrix = siibra_fc.matrix.to_numpy()
     conn_measure = ConnectivityMeasure(array_data=fc_matrix, connectivity=structural_connectivity)
-    title = get_fc_name_from_file_path(siibra_fc.filename)
+    fc_name = get_fc_name_from_file_path(siibra_fc.filename)
+    title = conn_measure.__class__.__name__ + '_' + fc_name
     conn_measure.title = title
 
     return conn_measure
