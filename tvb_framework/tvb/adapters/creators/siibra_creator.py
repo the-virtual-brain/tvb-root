@@ -169,11 +169,13 @@ class SiibraCreator(ABCAdapter):
             generic_attrs.subject = subject_id
 
             conn_index = self.store_complete(conn, generic_attrs)
+            conn_index.fixed_generic_attributes = True
             conn_indices.append(conn_index)
             if compute_fc:
                 conn_measures = conn_measures_dict[subject_id]
                 for conn_measure in conn_measures:
                     conn_measure_index = self.store_complete(conn_measure, generic_attrs)
+                    conn_measure_index.fixed_generic_attributes = True
                     conn_measures_indices.append(conn_measure_index)
         results.extend(conn_indices)
         if conn_measures_indices:
