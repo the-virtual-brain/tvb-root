@@ -28,6 +28,13 @@
 #
 #
 
+"""
+The adapter in this module creates new Structural and Functional Connectivities by extracting data from
+the EBRAINS Knowledge Graph using siibra
+
+.. moduleauthor:: Romina Baila <romina.baila@codemart.ro>
+"""
+
 import siibra
 from tvb.adapters.creators import siibra_base
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
