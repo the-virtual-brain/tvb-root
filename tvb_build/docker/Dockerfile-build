@@ -29,9 +29,8 @@ ARG JUPYTER_CONFIG=$USER_HOME/.jupyter
 RUN useradd -ms /bin/bash $TVB_USER
 WORKDIR $USER_HOME
 # copy the cloned repo from node image with the JS generated
-COPY --from=node_base --chown=$TVB_USER:$TVB_USER $USER_HOME/tvb-root .
-RUN ls -all .
-RUN chown -R $TVB_USER:$TVB_USER tvb-root
+RUN mkdir tvb-root
+COPY --from=node_base --chown=$TVB_USER:$TVB_USER $USER_HOME/tvb-root tvb-root
 
 RUN apt-get -y update && apt-get -y install build-essential gcc
 RUN apt-get -y update && apt-get -y install texlive-base texlive-formats-extra
