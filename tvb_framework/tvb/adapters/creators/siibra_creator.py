@@ -35,7 +35,6 @@ the EBRAINS Knowledge Graph using siibra
 .. moduleauthor:: Romina Baila <romina.baila@codemart.ro>
 """
 
-import os
 import siibra
 from tvb.adapters.creators import siibra_base
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
@@ -71,23 +70,15 @@ def init_siibra_options():
     return atlas_options, parcellation_options
 
 
-if os.environ.get('HBP_AUTH_TOKEN'):
-    DEFAULT_ATLAS = siibra_base.DEFAULT_ATLAS
-    DEFAULT_PARCELLATION = siibra_base.DEFAULT_PARCELLATION
-    if 'SIIBRA_INIT_DONE' not in globals():
-        ATLAS_OPTS, PARCELLATION_OPTS = init_siibra_options()
-        SIIBRA_INIT_DONE = True
-else:
-    DEFAULT_ATLAS = 'None'
-    DEFAULT_PARCELLATION = 'None'
-    ATLAS_OPTS = TVBEnum('AtlasOptions', {DEFAULT_ATLAS: DEFAULT_ATLAS})
-    PARCELLATION_OPTS = TVBEnum('ParcellationOptions', {DEFAULT_PARCELLATION: DEFAULT_PARCELLATION})
+if 'SIIBRA_INIT_DONE' not in globals():
+    ATLAS_OPTS, PARCELLATION_OPTS = init_siibra_options()
+    SIIBRA_INIT_DONE = True
 
 
 class SiibraModel(ViewModel):
     atlas = EnumAttr(
         field_type=ATLAS_OPTS,
-        default=ATLAS_OPTS[DEFAULT_ATLAS],
+        default=ATLAS_OPTS[siibra_base.DEFAULT_ATLAS],
         label='Atlas',
         required=True,
         doc='Atlas to be used'
@@ -95,7 +86,7 @@ class SiibraModel(ViewModel):
 
     parcellation = EnumAttr(
         field_type=PARCELLATION_OPTS,
-        default=PARCELLATION_OPTS[DEFAULT_PARCELLATION],
+        default=PARCELLATION_OPTS[siibra_base.DEFAULT_PARCELLATION],
         label='Parcellation',
         required=True,
         doc='Parcellation to be used'
