@@ -1,3 +1,23 @@
+# use node image
+FROM node:16 AS node_base
+
+ARG TVB_USER=tvb_user
+ARG USER_HOME=/home/$TVB_USER
+
+RUN useradd -ms /bin/bash $TVB_USER
+WORKDIR $USER_HOME
+USER $TVB_USER
+
+RUN echo "NODE Version:" && node --version
+RUN echo "NPM Version:" && npm --version
+# clone repo from branch HBP-176
+RUN git clone --branch HBP-176 --depth 1 https://github.com/the-virtual-brain/tvb-root.git
+
+# install node dependencies and build JS bundle
+RUN cd tvb-root/tvb_bids; \
+    yarn install; \
+    yarn webpack --config webpack.config.js
+
 FROM continuumio/miniconda3
 
 ARG TVB_USER=tvb_user
@@ -8,6 +28,8 @@ ARG JUPYTER_CONFIG=$USER_HOME/.jupyter
 
 RUN useradd -ms /bin/bash $TVB_USER
 WORKDIR $USER_HOME
+# copy the cloned repo from node image with the JS generated
+COPY --from=node_base $USER_HOME/tvb-root .
 
 RUN apt-get -y update && apt-get -y install build-essential gcc
 RUN apt-get -y update && apt-get -y install texlive-base texlive-formats-extra
@@ -52,7 +74,7 @@ RUN chown $TVB_USER:$TVB_USER $USER_HOME
 
 USER $TVB_USER
 # make sure a copy of tvb-root exists inside, for users without Github clone
-RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git
+#RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git
 ARG LAST_SHA=LATEST
 RUN cd tvb-root; \
     git pull; \
