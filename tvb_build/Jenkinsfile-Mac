@@ -26,12 +26,12 @@ pipeline {
                     conda create -y --name mac-distribution python=3.10 nomkl numba scipy numpy cython psycopg2
                     conda install -y --name mac-distribution -c conda-forge jupyterlab tvb-gdist
 
-                    /WORK/anaconda3/anaconda3/envs/mac-distribution/bin/pip install --upgrade pip
-                    /WORK/anaconda3/anaconda3/envs/mac-distribution/bin/pip install lockfile scikit-build
-                    /WORK/anaconda3/anaconda3/envs/mac-distribution/bin/pip install syncrypto
-                    /WORK/anaconda3/anaconda3/envs/mac-distribution/bin/pip install pyobjc
+                    /Applications/anaconda3/envs/mac-distribution/bin/pip install --upgrade pip
+                    /Applications/anaconda3/envs/mac-distribution/bin/pip install lockfile scikit-build
+                    /Applications/anaconda3/envs/mac-distribution/bin/pip install syncrypto
+                    /Applications/anaconda3/envs/mac-distribution/bin/pip install pyobjc biplist python-magic-bin six dmgbuild
 
-                    /WORK/anaconda3/anaconda3/envs/mac-distribution/bin/pip install -r docker/requirements_group
+                    /Applications/anaconda3/envs/mac-distribution/bin/pip install -r docker/requirements_group
                 '''
             }
         }
@@ -39,7 +39,7 @@ pipeline {
                 steps {
                     unstash 'step1'
                     sh '''#!/bin/bash
-                        source /WORK/anaconda3/anaconda3/etc/profile.d/conda.sh
+                        source /Applications/anaconda3/etc/profile.d/conda.sh
                         conda activate mac-distribution
                         cd tvb_build
                         /bin/bash install_full_tvb.sh
@@ -49,7 +49,7 @@ pipeline {
         stage ('Build TVB Distribution') {
                 steps {
                     sh '''#!/bin/bash
-                        source /WORK/anaconda3/anaconda3/etc/profile.d/conda.sh
+                        source /Applications/anaconda3/etc/profile.d/conda.sh
                         conda activate mac-distribution
                         echo "Start setup_mac"
                         python tvb_build/setup_mac.py
