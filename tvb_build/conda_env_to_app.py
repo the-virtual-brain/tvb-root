@@ -68,7 +68,7 @@ AUTHOR = "TVB Team"
 # Full path to the anaconda environment folder to package
 # Make sure it is the full path (and not a relative one, also to the homedir with ~) so this can be
 # correctly replaced later. Conda usßes hardcoded paths, which we convert to `/Applications/<APP_NAME>`
-CONDA_ENV_PATH = "/WORK/anaconda3/anaconda3/envs/mac-distribution"
+CONDA_ENV_PATH = "/Applications/anaconda3/envs/mac-distribution"
 # Folders to include from Anaconda environment, if ommitted everything will be copied
 # CONDA_FOLDERS = ["lib", "bin", "share", "qsci", "ssl", "translations"]
 # Paths of files and folders to remove from the copied anaconda environment,
