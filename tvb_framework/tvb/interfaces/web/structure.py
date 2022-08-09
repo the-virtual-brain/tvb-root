@@ -184,7 +184,7 @@ class WebStructure(object):
         SUB_SECTION_CONNECTIVITY: "Large Scale",
         SUB_SECTION_LOCAL_CONNECTIVITY: "Local",
         SUB_SECTION_ALLEN: "Mouse",
-        SUB_SECTION_SIIBRA: "Siibra",
+        # SUB_SECTION_SIIBRA: "Siibra",
 
         SUB_SECTION_VIEW_0: "Connectivity Visualizer",
         SUB_SECTION_VIEW_1: "Connectivity Edge Visualizer",
