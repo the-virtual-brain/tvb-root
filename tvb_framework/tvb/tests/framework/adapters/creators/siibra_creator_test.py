@@ -29,53 +29,53 @@
 #
 
 import pytest
-from tvb.adapters.creators.siibra_creator import SiibraCreator, SiibraModel
-from tvb.tests.framework.adapters.creators import siibra_base_test
+# from tvb.adapters.creators.siibra_creator import SiibraCreator, SiibraModel
+# from tvb.tests.framework.adapters.creators import siibra_base_test
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
 
-@pytest.mark.skipif(siibra_base_test.no_ebrains_auth_token(), reason="No EBRAINS AUTH token for accesing the KG was provided!")
-class TestSiibraCreator(TransactionalTestCase):
-    """ Test Siibra Creator functionalities """
-
-    def transactional_setup_method(self):
-        self.siibra_creator = SiibraCreator()
-        self.test_user = TestFactory.create_user('Siibra_Creator_Tests_User1')
-        self.test_project = TestFactory.create_project(self.test_user, 'Siibra_Creator_Tests_Project1')
-
-    def test_happy_flow_launch(self, operation_factory):
-        view_model = SiibraModel()
-        view_model.subject_ids = '000-001'
-
-        operation = operation_factory(test_user=self.test_user, test_project=self.test_project)
-        self.siibra_creator.extract_operation_data(operation)
-        results = self.siibra_creator.launch(view_model)
-
-        conn_indices = results[:2]
-        conn_measure_indices = results[2:]
-
-        assert len(conn_indices) == 2
-        assert len(conn_measure_indices) == 10  # 5 for each connectivity
-
-        # connectivitues
-        for conn in conn_indices:
-            assert conn.has_hemispheres_mask
-            assert conn.number_of_regions == 294
-        assert conn_indices[0].subject == '000'
-        assert conn_indices[1].subject == '001'
-
-        # connectivity measures
-        for conn_measure in conn_measure_indices:
-            assert conn_measure.parsed_shape == (294, 294)
-
-        # for first connectivity
-        for conn_measure in conn_measure_indices[:5]:
-            assert conn_measure.subject == '000'
-            assert conn_measure.fk_connectivity_gid == conn_indices[0].gid
-
-        # for second connectivity
-        for conn_measure in conn_measure_indices[5:]:
-            assert conn_measure.subject == '001'
-            assert conn_measure.fk_connectivity_gid == conn_indices[1].gid
+# @pytest.mark.skipif(siibra_base_test.no_ebrains_auth_token(), reason="No EBRAINS AUTH token for accesing the KG was provided!")
+# class TestSiibraCreator(TransactionalTestCase):
+#     """ Test Siibra Creator functionalities """
+#
+#     def transactional_setup_method(self):
+#         self.siibra_creator = SiibraCreator()
+#         self.test_user = TestFactory.create_user('Siibra_Creator_Tests_User1')
+#         self.test_project = TestFactory.create_project(self.test_user, 'Siibra_Creator_Tests_Project1')
+#
+#     def test_happy_flow_launch(self, operation_factory):
+#         view_model = SiibraModel()
+#         view_model.subject_ids = '000-001'
+#
+#         operation = operation_factory(test_user=self.test_user, test_project=self.test_project)
+#         self.siibra_creator.extract_operation_data(operation)
+#         results = self.siibra_creator.launch(view_model)
+#
+#         conn_indices = results[:2]
+#         conn_measure_indices = results[2:]
+#
+#         assert len(conn_indices) == 2
+#         assert len(conn_measure_indices) == 10  # 5 for each connectivity
+#
+#         # connectivitues
+#         for conn in conn_indices:
+#             assert conn.has_hemispheres_mask
+#             assert conn.number_of_regions == 294
+#         assert conn_indices[0].subject == '000'
+#         assert conn_indices[1].subject == '001'
+#
+#         # connectivity measures
+#         for conn_measure in conn_measure_indices:
+#             assert conn_measure.parsed_shape == (294, 294)
+#
+#         # for first connectivity
+#         for conn_measure in conn_measure_indices[:5]:
+#             assert conn_measure.subject == '000'
+#             assert conn_measure.fk_connectivity_gid == conn_indices[0].gid
+#
+#         # for second connectivity
+#         for conn_measure in conn_measure_indices[5:]:
+#             assert conn_measure.subject == '001'
+#             assert conn_measure.fk_connectivity_gid == conn_indices[1].gid
 
