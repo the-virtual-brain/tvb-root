@@ -29,7 +29,7 @@ pipeline {
                     /Applications/anaconda3/envs/mac-distribution/bin/pip install --upgrade pip
                     /Applications/anaconda3/envs/mac-distribution/bin/pip install lockfile scikit-build
                     /Applications/anaconda3/envs/mac-distribution/bin/pip install syncrypto
-                    /Applications/anaconda3/envs/mac-distribution/bin/pip install pyobjc biplist python-magic-bin six dmgbuild
+                    /Applications/anaconda3/envs/mac-distribution/bin/pip install pyobjc python-magic-bin six dmgbuild
 
                     /Applications/anaconda3/envs/mac-distribution/bin/pip install -r docker/requirements_group
                 '''
