@@ -93,7 +93,7 @@ class WebStructure(object):
     SUB_SECTION_CONNECTIVITY = "connectivity"
     SUB_SECTION_LOCAL_CONNECTIVITY = "local"
     SUB_SECTION_ALLEN = "allen"
-    SUB_SECTION_SIIBRA = 'siibra'
+    # SUB_SECTION_SIIBRA = 'siibra'
 
     ### Subsections used under BURST and PROJECT sections.
     ### These subsections can extend, and depend on existing visualizers in the system.

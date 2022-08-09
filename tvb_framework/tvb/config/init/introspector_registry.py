@@ -46,7 +46,7 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter
 from tvb.adapters.creators.allen_creator import AllenConnectomeBuilder
-from tvb.adapters.creators.siibra_creator import SiibraCreator
+# from tvb.adapters.creators.siibra_creator import SiibraCreator
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.adapters.visualizers.pse_discrete import DiscretePSEAdapter
@@ -131,9 +131,9 @@ class IntrospectionRegistry(object):
 
     ALLEN_CREATOR_MODULE = AllenConnectomeBuilder.__module__
     ALLEN_CREATOR_CLASS = AllenConnectomeBuilder.__name__
-
-    SIIBRA_CREATOR_MODULE = SiibraCreator.__module__
-    SIIBRA_CREATOR_CLASS = SiibraCreator.__name__
+    #
+    # SIIBRA_CREATOR_MODULE = SiibraCreator.__module__
+    # SIIBRA_CREATOR_CLASS = SiibraCreator.__name__
 
     MEASURE_METRICS_MODULE = TimeseriesMetricsAdapter.__module__
     MEASURE_METRICS_CLASS = TimeseriesMetricsAdapter.__name__
