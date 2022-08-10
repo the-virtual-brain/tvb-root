@@ -34,7 +34,7 @@ Utility functions for using siibra to extract Structural and Functional connecti
 .. moduleauthor:: Romina Baila <romina.baila@codemart.ro>
 """
 import numpy as np
-import siibra
+# import siibra
 from tvb.basic.logger.builder import get_logger
 from tvb.datatypes import connectivity
 from tvb.datatypes.graph import ConnectivityMeasure

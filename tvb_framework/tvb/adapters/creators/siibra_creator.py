@@ -35,8 +35,8 @@ the EBRAINS Knowledge Graph using siibra
 .. moduleauthor:: Romina Baila <romina.baila@codemart.ro>
 """
 
-import siibra
-from tvb.adapters.creators import siibra_base
+# import siibra
+# from tvb.adapters.creators import siibra_base
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.basic.neotraits._attr import Attr, List, EnumAttr
