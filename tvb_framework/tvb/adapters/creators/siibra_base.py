@@ -46,7 +46,8 @@ DEFAULT_PARCELLATION = 'Julich-Brain Cytoarchitectonic Maps 2.9'
 
 # ######################################## SIIBRA PARAMETERS CONFIGURATION #############################################
 class SiibraBase:
-    import siibra   # importing siibra at the top of the module seems to block a framework test
+    # importing siibra at the top of the module seems to block a framework test
+    from siibra import atlases, parcellations, modalities, get_features, spaces
     def check_atlas_parcellation_compatible(self, atlas, parcellation):
         """ Given an atlas and a parcellation, verify that the atlas contains the parcellation, i.e. they are compatible """
         return parcellation in list(atlas.parcellations)
@@ -82,8 +83,8 @@ class SiibraBase:
         return parsed_ids_strings
 
     def init_siibra_params(self, atlas_name, parcellation_name, subject_ids):
-        atlas = self.siibra.atlases[atlas_name] if atlas_name else None
-        parcellation = self.siibra.parcellations[parcellation_name] if parcellation_name else None
+        atlas = self.atlases[atlas_name] if atlas_name else None
+        parcellation = self.parcellations[parcellation_name] if parcellation_name else None
 
         if atlas and parcellation:
             compatible = self.check_atlas_parcellation_compatible(atlas, parcellation)
@@ -119,8 +120,8 @@ class SiibraBase:
 
         if not atlas and not parcellation:
             LOGGER.warning(f'No atlas and no parcellation were provided, so default ones will be selected.')
-            atlas = self.siibra.atlases[DEFAULT_ATLAS]
-            parcellation = self.siibra.parcellations[DEFAULT_PARCELLATION]
+            atlas = self.atlases[DEFAULT_ATLAS]
+            parcellation = self.parcellations[DEFAULT_PARCELLATION]
 
         LOGGER.info(f'Using atlas {atlas.name} and parcellation {parcellation.name}')
 
@@ -138,13 +139,13 @@ class SiibraBase:
         """ Return a list of all available connectivity components (weights/tract lengths) """
         modality = None
         if component == 'weights':
-            modality = self.siibra.modalities.StreamlineCounts
+            modality = self.modalities.StreamlineCounts
         if component == 'tracts':
-            modality = self.siibra.modalities.StreamlineLengths
+            modality = self.modalities.StreamlineLengths
         if component == 'fc':
-            modality = self.siibra.modalities.FunctionalConnectivity
+            modality = self.modalities.FunctionalConnectivity
 
-        all_conns = self.siibra.get_features(parcellation, modality)
+        all_conns = self.get_features(parcellation, modality)
 
         if len(all_conns) == 0:
             LOGGER.error(f'No connectivity {component} were found in parcellation {parcellation}!')
@@ -171,7 +172,7 @@ class SiibraBase:
         positions = []
 
         # get the parcellation of these regions to retrieve a compatible space
-        space = self.siibra.spaces.MNI152_2009C_NONL_ASYM  # commonly used space in other examples
+        space = self.spaces.MNI152_2009C_NONL_ASYM  # commonly used space in other examples
 
         for r in regions:
             # get centroids list

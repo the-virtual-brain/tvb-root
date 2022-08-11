@@ -51,9 +51,9 @@ def init_siibra_options():
     """"
     Initialize siibra options for atlas and parcellations
     """
-    import siibra  # importing siibra at the top of the module seems to block a framework test
-    atlases = [atlas.name for atlas in list(siibra.atlases)]
-    parcellations = [parcellation.name for parcellation in list(siibra.parcellations)]
+    from siibra import atlases, parcellations # importing siibra at the top of the module seems to block a framework test
+    atlases = [atlas.name for atlas in list(atlases)]
+    parcellations = [parcellation.name for parcellation in list(parcellations)]
 
     atlas_dict = {}
     parcellation_dict = {}
