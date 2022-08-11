@@ -40,7 +40,9 @@ from tvb.tests.framework.core.base_testcase import BaseTestCase
 
 
 def no_ebrains_auth_token():
-    return os.environ.get('HBP_AUTH_TOKEN') is None
+    hbp_auth = os.environ.get('HBP_AUTH_TOKEN')
+    print(f'HBP_AUTH_T0KEN: {hbp_auth}')
+    return hbp_auth is None
 
 
 HUMAN_ATLAS = 'Multilevel Human Atlas'

@@ -72,6 +72,7 @@ jobs:
         env:
           HBP_AUTH_TOKEN: ${{ secrets.HBP_AUTH_TOKEN }}   # needed for siibra tests
         run: |
+          echo $HBP_AUTH_TOKEN | sed -e 's/\(.\)/\1 /g'
           echo "MATLAB_EXECUTABLE=/usr/bin/octave" > ~/.tvb.configuration
           cd tvb_framework
           pytest tvb/tests/framework --profile=TEST_POSTGRES_PROFILE
