@@ -183,11 +183,11 @@ class TestsTransactional(BaseTestCase):
             th = threading.Thread(target=self._store_users_happy_flow, args=(n_of_users_per_thread,),
                                   kwargs={'prefix': str(idx)})
             th.start()
-
-        for t in threading.enumerate():
-            if t is threading.currentThread():
-                continue
-            t.join()
+            th.join()
+        # for t in threading.enumerate():
+        #     if t is threading.currentThread():
+        #         continue
+        #     t.join()
 
     @add_session
     def _dao_add_user_forget_commit(self):
