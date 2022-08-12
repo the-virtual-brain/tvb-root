@@ -517,7 +517,7 @@ For more information, please refer to this `page <https://kg.humanbrainproject.e
 Currently, the structural connectivities are stored as TVB Connectivities and the
 functional connectivities are stored as TVB Connectivity Measures.
 
-    .. figure:: screenshots/siibra_connectivity.png
+    .. figure:: screenshots/siibra_connectivity.jpg
        :width: 90%
        :align: center
 
