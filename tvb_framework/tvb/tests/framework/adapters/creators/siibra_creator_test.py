@@ -58,7 +58,7 @@ class TestSiibraCreator(TransactionalTestCase):
         assert len(conn_indices) == 2
         assert len(conn_measure_indices) == 10  # 5 for each connectivity
 
-        # connectivitues
+        # connectivities
         for conn in conn_indices:
             assert conn.has_hemispheres_mask
             assert conn.number_of_regions == 294

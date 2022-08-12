@@ -33,7 +33,6 @@ import numpy as np
 import pandas as pd
 import pytest
 import siibra
-from tvb.adapters.creators.siibra_base import *
 from tvb.adapters.creators import siibra_base as sb
 from tvb.datatypes import connectivity, graph
 from tvb.tests.framework.core.base_testcase import BaseTestCase
@@ -41,8 +40,7 @@ from tvb.tests.framework.core.base_testcase import BaseTestCase
 
 def no_ebrains_auth_token():
     hbp_auth = os.environ.get('HBP_AUTH_TOKEN')
-    print(f'HBP_AUTH_T0KEN: {hbp_auth}')
-    return hbp_auth == 'this_is_a.test_token78'
+    return hbp_auth is None
 
 
 HUMAN_ATLAS = 'Multilevel Human Atlas'

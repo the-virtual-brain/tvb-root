@@ -104,7 +104,7 @@ def init_siibra_params(atlas_name, parcellation_name, subject_ids):
             return
         if no_parcellations > 1:
             LOGGER.info(
-                f'Multiple parcellaation were founded for atlas {atlas.name}. An arbitrary one will be selected.')
+                f'Multiple parcellations were found for atlas {atlas.name}. An arbitrary one will be selected.')
         parcellation = parcellations[0]
 
     if not atlas and parcellation:
@@ -117,7 +117,7 @@ def init_siibra_params(atlas_name, parcellation_name, subject_ids):
         if no_atlases > 1:
             LOGGER.info(
                 f'Multiple atlases containing parcellation {parcellation_name} were found. '
-                f'An aribitrary one will be selected')
+                f'An arbitrary one will be selected')
         atlas = atlases[0]
 
     if not atlas and not parcellation:
