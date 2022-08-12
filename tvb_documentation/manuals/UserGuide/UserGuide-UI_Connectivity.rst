@@ -6,7 +6,8 @@ In this area you can edit two types of TVB connectivity objects:
     - long-range connectivity and,
     - local connectivity.
 
-You can also download connectomes from the **Allen Mouse Brain Connectivity Atlas**.
+You can also download connectomes from the **Allen Mouse Brain Connectivity Atlas** or create structural and
+functional connectivities with data from the **EBRAINS Knowledge Graph** using the **siibra** library.
 
 |
 
@@ -501,4 +502,54 @@ It will produce a Structural Connectivity in TVB format and a compatible brain V
 
 Check the Project --> Operations page to see when the import from Allen is done.
 You can also find your resulted Connectivity in Project --> Data Structure area.
+
+
+Siibra Connectivity Creator
+...........................
+In this page you can use the `siibra library <https://github.com/FZJ-INM1-BDA/siibra-python>`_
+to create structural and functional connectivities using data from
+to the `EBRAINS Knowledge Graph <https://kg.ebrains.eu/>`_. This knowledge graph
+brings together information from different data sources regarding
+brain atlases, parcellations and their associated features for multiple species. To be able to access
+this information, you will need a special token provided by the EBRAINS team.
+For more information, please refer to this `page <https://kg.humanbrainproject.eu/develop.html>`_.
+
+Currently, the structural connectivities are stored as TVB Connectivities and the
+functional connectivities are stored as TVB Connectivity Measures.
+
+    .. figure:: screenshots/siibra_connectivity.png
+       :width: 90%
+       :align: center
+
+       Siibra Connectivity page
+
+
+In order to use the functionalities provided in this page, an internet connection is
+required. Four parameters need to be configured in order to obtain structural and
+functional connectivities, all of which come with default values for first time users.
+
+For the **atlas** and **parcellation** parameters, you can see all the available options
+through siibra. Selecting an atlas and a parcellation which are incompatible with
+each other will result in an error after launching the operation.
+
+The **subjects** field lets you specify the ids of the subjects for which you wish
+to create the connectivities. The ids can be specified in 3 ways:
+
+    - Individual ids, separated by ';'. For example: "000;001" will create
+      connectivities for subjects 000 and 001.
+    - Range of ids, using '-'. For example: "000-002" will create
+      connectivities for subjects 000, 001 and 002.
+    - Combination of the 2 aforementioned methods. For example: "000-002;100"
+      will create connectivities for subjects 000, 001, 002 and 100.
+
+The last parameter, **Compute Functional Connectivities**, which comes in form
+of a checkbox, lets you decide whether or not you wish to also extract the
+functional connectivities from the Knowledge Graph. In case the box is checked,
+5 functional connectivities will be created for each selected subject.
+
+After pressing the `Launch` button, check the Project --> Operations page to see the
+status of this operation. If it finished without an error, you will see there
+the results: Connectivities and, optionally, Connectivity Measures. You can also
+access the results from the Project --> Data Structure area.
+
 
