@@ -176,8 +176,6 @@ def get_regions_positions(regions):
     LOGGER.info(f'Computing positions for regions')
     positions = []
 
-    # get the parcellation of these regions to retrieve a compatible space
-    parcellation = regions[0].parcellation
     space = siibra.spaces.MNI152_2009C_NONL_ASYM  # commonly used space in other examples
 
     for r in regions:
@@ -302,8 +300,7 @@ def create_tvb_connectivity_measure(siibra_fc, structural_connectivity):
     fc_matrix = siibra_fc.matrix.to_numpy()
     conn_measure = ConnectivityMeasure(array_data=fc_matrix, connectivity=structural_connectivity)
     fc_name = get_fc_name_from_file_path(siibra_fc.filename)
-    title = conn_measure.__class__.__name__ + '_' + fc_name
-    conn_measure.title = title
+    conn_measure.title = fc_name
 
     return conn_measure
 
