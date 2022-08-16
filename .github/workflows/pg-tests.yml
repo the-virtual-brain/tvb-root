@@ -75,6 +75,7 @@ jobs:
           echo $HBP_AUTH_TOKEN | sed -e 's/\(.\)/\1 /g'
           echo "MATLAB_EXECUTABLE=/usr/bin/octave" > ~/.tvb.configuration
           cd tvb_framework
+          curl -H "Authorization: Bearer $HBP_AUTH_TOKEN" 'https://core.kg.ebrains.eu/v3-beta/queries//bebbe365-a0d6-41ea-9ff8-2554c15f70b7/instances?stage=RELEASED&dataset_id=0f1ccc4a-9a11-4697-b43f-9c9c8ac543e6' | jq 'keys'
           pytest tvb/tests/framework --profile=TEST_POSTGRES_PROFILE
 
 
