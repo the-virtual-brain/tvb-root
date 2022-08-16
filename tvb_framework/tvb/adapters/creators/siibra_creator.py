@@ -167,7 +167,7 @@ class SiibraCreator(ABCAdapter):
         conn_measures_indices = []
 
         for subject_id, conn in conn_dict.items():
-            generic_attrs = GenericAttributes()
+            generic_attrs = view_model.generic_attributes
             generic_attrs.subject = subject_id
 
             conn_index = self.store_complete(conn, generic_attrs)
