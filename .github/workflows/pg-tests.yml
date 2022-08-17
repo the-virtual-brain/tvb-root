@@ -69,8 +69,6 @@ jobs:
         run: cd tvb_data && python3 setup.py develop
 
       - name: run framework tests
-        env:
-          HBP_AUTH_TOKEN: ${{ secrets.HBP_AUTH_TOKEN }}   # needed for siibra tests
         run: |
           echo "MATLAB_EXECUTABLE=/usr/bin/octave" > ~/.tvb.configuration
           cd tvb_framework
