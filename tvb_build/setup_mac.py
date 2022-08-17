@@ -29,7 +29,7 @@
 #
 
 """
-Create TVB distribution package for Mac OS.
+Create TVB distribution package for Mac-OS.
 
 Execute in root:
 
@@ -44,8 +44,7 @@ import importlib
 import tvb_bin
 from glob import glob
 from zipfile import ZipFile, ZIP_DEFLATED
-
-from conda_env_to_app import create_app, create_dmg, APP_NAME, APP_FILE
+from conda_env_to_app import create_app, create_dmg, APP_NAME
 from tvb.basic.profile import TvbProfile
 from tvb.basic.config.environment import Environment
 from tvb_build.third_party_licenses.build_licenses import generate_artefact
@@ -284,7 +283,6 @@ def prepare_mac_dist():
     jupyter_command = '/Applications/{}/Contents/Resources/bin/jupyter notebook '.format(APP)
     _create_command_file(os.path.join(DIST_FOLDER, "bin", 'jupyter_notebook'),
                          jupyter_command + '../demo_scripts', 'Launching IPython Notebook from TVB Distribution')
-
 
     destination_sources = os.path.join(APP, "Contents", "Resources", "lib", Environment.PYTHON_FOLDER)
     _generate_distribution("TVB_MacOS", destination_sources, VERSION)
