@@ -46,36 +46,25 @@ class TestSiibraCreator(TransactionalTestCase):
 
     def test_happy_flow_launch(self, operation_factory):
         view_model = SiibraModel()
-        view_model.subject_ids = '000-001'
+        view_model.subject_ids = '010'
 
         operation = operation_factory(test_user=self.test_user, test_project=self.test_project)
         self.siibra_creator.extract_operation_data(operation)
         results = self.siibra_creator.launch(view_model)
 
-        conn_indices = results[:2]
-        conn_measure_indices = results[2:]
+        conn_index = results[0]
+        conn_measure_indices = results[1:]
 
-        assert len(conn_indices) == 2
-        assert len(conn_measure_indices) == 10  # 5 for each connectivity
+        assert len(conn_measure_indices) == 5  # 5 for each connectivity
 
         # connectivities
-        for conn in conn_indices:
-            assert conn.has_hemispheres_mask
-            assert conn.number_of_regions == 294
-        assert conn_indices[0].subject == '000'
-        assert conn_indices[1].subject == '001'
+        assert conn_index.has_hemispheres_mask
+        assert conn_index.number_of_regions == 294
+        assert conn_index.subject == '010'
 
         # connectivity measures
         for conn_measure in conn_measure_indices:
             assert conn_measure.parsed_shape == (294, 294)
-
-        # for first connectivity
-        for conn_measure in conn_measure_indices[:5]:
-            assert conn_measure.subject == '000'
-            assert conn_measure.fk_connectivity_gid == conn_indices[0].gid
-
-        # for second connectivity
-        for conn_measure in conn_measure_indices[5:]:
-            assert conn_measure.subject == '001'
-            assert conn_measure.fk_connectivity_gid == conn_indices[1].gid
+            assert conn_measure.subject == '010'
+            assert conn_measure.fk_connectivity_gid == conn_index.gid
 

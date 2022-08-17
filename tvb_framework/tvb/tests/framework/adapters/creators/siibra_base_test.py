@@ -211,11 +211,10 @@ class TestSiibraBase(BaseTestCase):
         assert (tvb_conn.hemispheres == hemi).all()
 
     def test_get_tvb_connectivities_from_kg(self, create_test_atlases_and_parcellations):
-        tvb_conns = sb.get_tvb_connectivities_from_kg(self.human_atlas, self.julich_parcellation, '000-001')
+        tvb_conns = sb.get_tvb_connectivities_from_kg(self.human_atlas, self.julich_parcellation, '001')
 
-        assert len(tvb_conns) == 2
-        assert (list(tvb_conns.keys()) == ['000', '001'])
-        assert type(tvb_conns['000']) == connectivity.Connectivity
+        assert len(tvb_conns) == 1
+        assert (list(tvb_conns.keys()) == ['001'])
         assert type(tvb_conns['001']) == connectivity.Connectivity
 
     def test_get_fc_name_from_file_path(self):
@@ -232,55 +231,46 @@ class TestSiibraBase(BaseTestCase):
         tvb_conn_measure = sb.create_tvb_connectivity_measure(fc, conn)
         assert (tvb_conn_measure.array_data == fc.matrix.to_numpy()).all()
         assert tvb_conn_measure.connectivity is conn
-        assert tvb_conn_measure.title == 'ConnectivityMeasure_EmpCorrFC_concatenated'
+        assert tvb_conn_measure.title == 'EmpCorrFC_concatenated'
 
     def test_get_connectivity_measures_from_kg(self, create_test_atlases_and_parcellations):
-        sc1 = connectivity.Connectivity.from_file("connectivity_192.zip")
-        sc2 = connectivity.Connectivity.from_file("connectivity_76.zip")
-        scs = {'000': sc1, '001': sc2}
+        sc1 = connectivity.Connectivity.from_file("connectivity_76.zip")
+        scs = {'001': sc1}
 
-        tvb_conn_measures = sb.get_connectivity_measures_from_kg(self.human_atlas, self.julich_parcellation, '000-001',
-                                                                 scs)
+        tvb_conn_measures = sb.get_connectivity_measures_from_kg(self.human_atlas, self.julich_parcellation, '001', scs)
 
-        assert len(tvb_conn_measures) == 2
-        assert len(tvb_conn_measures['000']) == 5
+        assert len(tvb_conn_measures) == 1
         assert len(tvb_conn_measures['001']) == 5
-        assert (list(tvb_conn_measures.keys()) == ['000', '001'])
-        assert type(tvb_conn_measures['000'][0]) == graph.ConnectivityMeasure
+        assert (list(tvb_conn_measures.keys()) == ['001'])
         assert type(tvb_conn_measures['001'][0]) == graph.ConnectivityMeasure
 
-        assert tvb_conn_measures['000'][0].connectivity is sc1
-        assert tvb_conn_measures['001'][0].connectivity is sc2
+        assert tvb_conn_measures['001'][0].connectivity is sc1
 
     def test_get_connectivities_from_kg_no_fc(self, create_test_atlases_and_parcellations):
         """
         Test retrieval of just structural connectivities
         """
-        scs, fcs = sb.get_connectivities_from_kg(self.human_atlas, self.julich_parcellation, '000-001')
+        scs, fcs = sb.get_connectivities_from_kg(self.human_atlas, self.julich_parcellation, '001')
 
-        assert len(scs) == 2
+        assert len(scs) == 1
         assert not fcs
 
-        assert (list(scs.keys()) == ['000', '001'])
-        assert type(scs['000']) == connectivity.Connectivity
+        assert (list(scs.keys()) == ['001'])
         assert type(scs['001']) == connectivity.Connectivity
 
     def test_get_connectivities_from_kg_with_fc(self, create_test_atlases_and_parcellations):
         """
         Test retrieval of both structural and functional connectivities
         """
-        scs, fcs = sb.get_connectivities_from_kg(self.human_atlas, self.julich_parcellation, '000-001', True)
+        scs, fcs = sb.get_connectivities_from_kg(self.human_atlas, self.julich_parcellation, '001', True)
 
-        assert len(scs) == 2
-        assert len(fcs) == 2
-        assert len(fcs['000']) == 5
+        assert len(scs) == 1
+        assert len(fcs) == 1
         assert len(fcs['001']) == 5
 
-        assert (list(scs.keys()) == ['000', '001'])
-        assert type(scs['000']) == connectivity.Connectivity
+        assert (list(scs.keys()) == ['001'])
         assert type(scs['001']) == connectivity.Connectivity
 
-        assert (list(fcs.keys()) == ['000', '001'])
-        assert type(fcs['000'][0]) == graph.ConnectivityMeasure
+        assert (list(fcs.keys()) == ['001'])
         assert type(fcs['001'][4]) == graph.ConnectivityMeasure
 
