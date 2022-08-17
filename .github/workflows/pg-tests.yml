@@ -35,7 +35,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.local
-          key: pip-${{ hashFiles('tvb_framework/requirements.txt') }}
+          key: pip42-${{ hashFiles('tvb_framework/requirements.txt') }}
 
       - name: install tools and dependencies
         if: steps.cache-local.outputs.cache-hit != 'true'
