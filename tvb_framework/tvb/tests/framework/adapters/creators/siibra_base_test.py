@@ -210,6 +210,7 @@ class TestSiibraBase(BaseTestCase):
         assert (tvb_conn.centres == positions).all()
         assert (tvb_conn.hemispheres == hemi).all()
 
+    @pytest.mark.skip(reason="Out of memory when running this test in Github Actions")
     def test_get_tvb_connectivities_from_kg(self, create_test_atlases_and_parcellations):
         tvb_conns = sb.get_tvb_connectivities_from_kg(self.human_atlas, self.julich_parcellation, '001')
 
