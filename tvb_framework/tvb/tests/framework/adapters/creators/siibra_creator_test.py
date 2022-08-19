@@ -44,7 +44,6 @@ class TestSiibraCreator(TransactionalTestCase):
         self.test_user = TestFactory.create_user('Siibra_Creator_Tests_User1')
         self.test_project = TestFactory.create_project(self.test_user, 'Siibra_Creator_Tests_Project1')
 
-    @pytest.mark.skip(reason="Out of memory when running this test in Github Actions")
     def test_happy_flow_launch(self, operation_factory):
         view_model = SiibraModel()
         view_model.subject_ids = '010'

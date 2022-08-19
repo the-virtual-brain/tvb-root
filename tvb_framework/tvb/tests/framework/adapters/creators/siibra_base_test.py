@@ -211,7 +211,6 @@ class TestSiibraBase(BaseTestCase):
         assert (tvb_conn.centres == positions).all()
         assert (tvb_conn.hemispheres == hemi).all()
 
-    @pytest.mark.skip(reason="Out of memory when running this test in Github Actions")
     def test_get_tvb_connectivities_from_kg(self, create_test_atlases_and_parcellations):
         tvb_conns = sb.get_tvb_connectivities_from_kg(self.human_atlas, self.julich_parcellation, '001')
 
@@ -248,7 +247,6 @@ class TestSiibraBase(BaseTestCase):
 
         assert tvb_conn_measures['001'][0].connectivity is sc1
 
-    @pytest.mark.skip(reason="Out of memory when running this test in Github Actions")
     def test_get_connectivities_from_kg_no_fc(self, create_test_atlases_and_parcellations):
         """
         Test retrieval of just structural connectivities
@@ -261,7 +259,6 @@ class TestSiibraBase(BaseTestCase):
         assert (list(scs.keys()) == ['001'])
         assert type(scs['001']) == connectivity.Connectivity
 
-    @pytest.mark.skip(reason="Out of memory when running this test in Github Actions")
     def test_get_connectivities_from_kg_with_fc(self, create_test_atlases_and_parcellations):
         """
         Test retrieval of both structural and functional connectivities

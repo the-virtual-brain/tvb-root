@@ -36,6 +36,7 @@ Utility functions for using siibra to extract Structural and Functional connecti
 import numpy as np
 import siibra
 from enum import Enum
+from nibabel import Nifti1Image
 from tvb.basic.logger.builder import get_logger
 from tvb.datatypes import connectivity
 from tvb.datatypes.graph import ConnectivityMeasure
@@ -144,6 +145,115 @@ def init_siibra_params(atlas_name, parcellation_name, subject_ids):
     return atlas, parcellation, subject_ids
 
 
+# ################################################# SIIBRA METHODS #####################################################
+def compute_centroids(region, space):
+    """
+    Compute the centroids of a region in a specified space.
+    It is the uncached and slightly modified version of siibra.core.region.spatial_props.
+    """
+    from skimage import measure
+
+    if not region.mapped_in_space(space):
+        raise RuntimeError(
+            f"Spatial properties of {region.name} cannot be computed in {space.name}. "
+            "This region is only mapped in these spaces: "
+            ", ".join(s.name for s in region.supported_spaces)
+        )
+
+    # build binary mask of the image
+    pimg = build_mask_for_centroids(region=region, space=space)
+
+    # compute properties of labelled volume
+    A = np.asarray(pimg.get_fdata(), dtype=np.int32).squeeze()
+    C = measure.label(A)
+
+    # compute centroids of each connected component
+    centroids = []
+    for label in range(1, C.max() + 1):
+        nonzero = np.c_[np.nonzero(C == label)]
+        centroid = siibra.Point(np.dot(pimg.affine, np.r_[nonzero.mean(0), 1])[:3], space=space)
+        centroids.append(centroid)
+
+    return centroids
+
+
+def build_mask_for_centroids(region, space, resolution_mm=None, maptype: siibra.MapType = siibra.MapType.LABELLED,
+                             threshold_continuous=None, consider_other_types=True):
+    """
+    Returns a mask for the specified region in the specified space.
+    It is the uncached version of siibra.core.region.build_mask
+    """
+    spaceobj = siibra.core.Space.REGISTRY[space]
+    if spaceobj.is_surface:
+        raise NotImplementedError(
+            "Region masks for surface spaces are not yet supported."
+        )
+
+    mask = None
+    if isinstance(maptype, str):
+        maptype = siibra.MapType[maptype.upper()]
+
+    if region.has_regional_map(spaceobj, maptype):
+        # the region has itself a map of that type linked
+        mask = region.get_regional_map(space, maptype).fetch(
+            resolution_mm=resolution_mm
+        )
+    else:
+        # retrieve  map of that type from the region's corresponding parcellation map
+        parcmap = region.parcellation.get_map(spaceobj, maptype)
+        mask = parcmap.fetch_regionmap(region, resolution_mm=resolution_mm)
+
+    if mask is None:
+        # Attempt to produce a map from the child regions.
+        # We only accept this if all child regions produce valid masks.
+        # NOTE We ignore extension regions here, since this is a complex case currently (e.g. iam regions in BigBrain)
+        LOGGER.debug(f"Merging child regions to build mask for their parent {region.name}:")
+        maskdata = None
+        affine = None
+        for c in region.children:
+            if c.extended_from is not None:
+                continue
+            childmask = build_mask_for_centroids(c, space, resolution_mm, maptype, threshold_continuous)
+            if childmask is None:
+                LOGGER.warning(f"No success getting mask for child {c.name}")
+                break
+            if maskdata is None:
+                affine = childmask.affine
+                maskdata = np.asanyarray(childmask.dataobj)
+            else:
+                assert (childmask.affine == affine).all()
+                maskdata = np.maximum(maskdata, np.asanyarray(childmask.dataobj))
+        else:
+            # we get here only if the for loop was not interrupted by 'break'
+            if maskdata is not None:
+                return Nifti1Image(maskdata, affine)
+
+    if mask is None:
+        # No map of the requested type found for the region.
+        LOGGER.warn(
+            f"Could not compute {maptype.name.lower()} mask for {region.name} in {spaceobj.name}."
+        )
+        if consider_other_types:
+            for other_maptype in (set(siibra.MapType) - {maptype}):
+                mask = region.build_mask(
+                    space, resolution_mm, other_maptype, threshold_continuous, consider_other_types=False
+                )
+                if mask is not None:
+                    LOGGER.info(
+                        f"A mask was generated from map type {other_maptype.name.lower()} instead."
+                    )
+                    return mask
+        return None
+
+    if (threshold_continuous is not None) and (maptype == siibra.MapType.CONTINUOUS):
+        data = np.asanyarray(mask.dataobj) > threshold_continuous
+        LOGGER.info(f"Mask built using a continuous map thresholded at {threshold_continuous}.")
+        assert np.any(data > 0)
+        mask = Nifti1Image(data.astype("uint8").squeeze(), mask.affine)
+
+    return mask
+
+
 # ######################################## COMMON CONNECTIVITY METHODS #################################################
 def get_connectivity_component(parcellation, component):
     # type: (str, Component2Modality) -> []
@@ -182,7 +292,7 @@ def get_regions_positions(regions):
 
     for r in regions:
         # get centroids list
-        centroids = r.centroids(space)
+        centroids = compute_centroids(r, space)
         # get siibra.Point object from centroid list; some regions have multiple centroids, but only the first one is
         # selected
         centroids = centroids[0]
