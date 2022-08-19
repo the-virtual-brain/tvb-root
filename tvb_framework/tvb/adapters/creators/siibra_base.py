@@ -35,6 +35,7 @@ Utility functions for using siibra to extract Structural and Functional connecti
 """
 import numpy as np
 import siibra
+from enum import Enum
 from tvb.basic.logger.builder import get_logger
 from tvb.datatypes import connectivity
 from tvb.datatypes.graph import ConnectivityMeasure
@@ -43,6 +44,12 @@ LOGGER = get_logger(__name__)
 
 DEFAULT_ATLAS = 'Multilevel Human Atlas'
 DEFAULT_PARCELLATION = 'Julich-Brain Cytoarchitectonic Maps 2.9'
+
+
+class Component2Modality(Enum):
+    WEIGHTS = siibra.modalities.StreamlineCounts
+    TRACTS = siibra.modalities.StreamlineLengths
+    FC = siibra.modalities.FunctionalConnectivity
 
 
 # ######################################## SIIBRA PARAMETERS CONFIGURATION #############################################
@@ -139,21 +146,16 @@ def init_siibra_params(atlas_name, parcellation_name, subject_ids):
 
 # ######################################## COMMON CONNECTIVITY METHODS #################################################
 def get_connectivity_component(parcellation, component):
-    """ Return a list of all available connectivity components (weights/tract lengths) """
-    modality = None
-    if component == 'weights':
-        modality = siibra.modalities.StreamlineCounts
-    if component == 'tracts':
-        modality = siibra.modalities.StreamlineLengths
-    if component == 'fc':
-        modality = siibra.modalities.FunctionalConnectivity
-
+    # type: (str, Component2Modality) -> []
+    """
+        :return: a list of all available connectivity components (weights/tract lengths)
+    """
+    modality = component.value
     all_conns = siibra.get_features(parcellation, modality)
 
     if len(all_conns) == 0:
         LOGGER.error(f'No connectivity {component} were found in parcellation {parcellation}!')
         return None
-
     return all_conns
 
 
@@ -232,8 +234,8 @@ def get_tvb_connectivities_from_kg(atlas=None, parcellation=None, subject_ids=No
     """
     atlas, parcellation, subject_ids = init_siibra_params(atlas, parcellation, subject_ids)
     connectivities = {}
-    weights = get_connectivity_component(parcellation, 'weights')
-    tracts = get_connectivity_component(parcellation, 'tracts')
+    weights = get_connectivity_component(parcellation, Component2Modality.WEIGHTS)
+    tracts = get_connectivity_component(parcellation, Component2Modality.TRACTS)
 
     if not weights or not tracts:
         LOGGER.error(
@@ -309,7 +311,7 @@ def get_connectivity_measures_from_kg(atlas=None, parcellation=None, subject_ids
     atlas, parcellation, subject_ids = init_siibra_params(atlas, parcellation, subject_ids)
     conn_measures = {}
 
-    fcs = get_connectivity_component(parcellation, 'fc')
+    fcs = get_connectivity_component(parcellation, Component2Modality.FC)
 
     if not fcs:
         LOGGER.error(

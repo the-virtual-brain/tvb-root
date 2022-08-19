@@ -34,12 +34,13 @@ import pandas as pd
 import pytest
 import siibra
 from tvb.adapters.creators import siibra_base as sb
+from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.datatypes import connectivity, graph
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 
 
 def no_ebrains_auth_token():
-    hbp_auth = os.environ.get('HBP_AUTH_TOKEN')
+    hbp_auth = os.environ.get(IntrospectionRegistry.CLB_AUTH_TOKEN_KEY)
     return hbp_auth is None
 
 
@@ -151,15 +152,15 @@ class TestSiibraBase(BaseTestCase):
         """
         Test the retrieval of structural connectivities (weights and tracts) and functional connectivities
         """
-        weights = sb.get_connectivity_component(self.julich_parcellation, 'weights')
+        weights = sb.get_connectivity_component(self.julich_parcellation, sb.Component2Modality.WEIGHTS)
         assert len(weights) > 0
         assert type(weights[0]) == siibra.features.connectivity.StreamlineCounts
 
-        tracts = sb.get_connectivity_component(self.julich_parcellation, 'tracts')
+        tracts = sb.get_connectivity_component(self.julich_parcellation, sb.Component2Modality.TRACTS)
         assert len(tracts) > 0
         assert type(tracts[0]) == siibra.features.connectivity.StreamlineLengths
 
-        fcs = sb.get_connectivity_component(self.julich_parcellation, 'fc')
+        fcs = sb.get_connectivity_component(self.julich_parcellation, sb.Component2Modality.FC)
         assert len(fcs) > 0
         assert type(fcs[0]) == siibra.features.connectivity.FunctionalConnectivity
 
