@@ -174,7 +174,12 @@ def compute_centroids(region, space):
         centroid = siibra.Point(np.dot(pimg.affine, np.r_[nonzero.mean(0), 1])[:3], space=space)
         centroids.append(centroid)
 
-    return centroids
+    # currently return only the first centroid
+    centroid = centroids[0]
+    # tuple() gives the coordinate of the centroid
+    centroid_coord = tuple(centroid)
+
+    return centroid_coord
 
 
 def build_mask_for_centroids(region, space, resolution_mm=None, maptype: siibra.MapType = siibra.MapType.LABELLED,
@@ -287,24 +292,16 @@ def get_regions_positions(regions):
     """ Given a list of regions, compute the positions of their centroids """
     LOGGER.info(f'Computing positions for regions')
     positions = []
-
     space = siibra.spaces.MNI152_2009C_NONL_ASYM  # commonly used space in other examples
 
     for r in regions:
-        # get centroids list
-        centroids = compute_centroids(r, space)
-        # get siibra.Point object from centroid list; some regions have multiple centroids, but only the first one is
-        # selected
-        centroids = centroids[0]
-        # tuple() gives the coordinates of a centroid
-        positions.append(tuple(centroids))
+        centroid = compute_centroids(r, space)
+        positions.append(centroid)
 
     return positions
 
 
 # ###################################### STRUCTURAL CONNECTIVITY METHODS ###############################################
-
-
 def filter_structural_connectivity_by_id(weights, tracts, subj_ids):
     """
     Given two lists of connectivity weights and tract lengths and a list of subject ids, keep only the weights and
