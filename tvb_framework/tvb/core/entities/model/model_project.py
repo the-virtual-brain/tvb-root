@@ -135,6 +135,15 @@ class User(Base):
             self.preferences[k] = "%s,%s" % (DataTypeMetaData.KEY_STATE, DataTypeMetaData.KEY_SUBJECT)
         return self.preferences[k].split(',')
 
+    def set_ebrains_token(self, token):
+        self.preferences[UserPreferences.EBRAINS_TOKEN] = token
+
+    def get_ebrains_token(self):
+        if UserPreferences.EBRAINS_TOKEN not in self.preferences:
+            self.preferences[UserPreferences.EBRAINS_TOKEN] = ''
+
+        return self.preferences[UserPreferences.EBRAINS_TOKEN]
+
 
 class UserPreferences(Base):
     """
@@ -145,6 +154,7 @@ class UserPreferences(Base):
     ONLINE_HELP_ACTIVE = "online_help_active"
     VIEWERS_COLOR_SCHEME = "viewers_color_scheme"
     PROJECT_STRUCTURE_GROUPING = "project_structure_grouping"
+    EBRAINS_TOKEN = "ebrains_token"
     fk_user = Column(Integer, ForeignKey('USERS.id'), primary_key=True)
     key = Column(String, primary_key=True)
     value = Column(String)

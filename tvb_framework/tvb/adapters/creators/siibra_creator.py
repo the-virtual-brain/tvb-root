@@ -35,16 +35,18 @@ the EBRAINS Knowledge Graph using siibra
 .. moduleauthor:: Romina Baila <romina.baila@codemart.ro>
 """
 
+import os
 import siibra
 from tvb.adapters.creators import siibra_base
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
-from tvb.basic.neotraits._attr import Attr, List, EnumAttr
+from tvb.basic.neotraits._attr import Attr, EnumAttr
 from tvb.basic.neotraits._core import TVBEnum
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
-from tvb.core.entities.generic_attributes import GenericAttributes
+from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import StrField, SelectField, BoolField, MultiSelectField
 from tvb.core.neotraits.view_model import ViewModel, Str
+from tvb.core.services.user_service import UserService
 
 
 # Following code is executed only once, when the application starts running
@@ -76,6 +78,13 @@ if 'SIIBRA_INIT_DONE' not in globals():
 
 
 class SiibraModel(ViewModel):
+    ebrains_token = Str(
+        label='EBRAINS token',
+        required=True,
+        default='',
+        doc='Token provided by EBRAINS for accessing the Knowledge Graph'
+    )
+
     atlas = EnumAttr(
         field_type=ATLAS_OPTS,
         default=ATLAS_OPTS[siibra_base.DEFAULT_ATLAS],
@@ -116,6 +125,7 @@ class SiibraModel(ViewModel):
 class SiibraCreatorForm(ABCAdapterForm):
     def __init__(self):
         super(SiibraCreatorForm, self).__init__()
+        self.ebrains_token = StrField(SiibraModel.ebrains_token, name='ebrains_token')
         self.atlas = SelectField(SiibraModel.atlas, name='atlas')
         self.parcellation = SelectField(SiibraModel.parcellation, name='parcellation')
         self.subject_ids = StrField(SiibraModel.subject_ids, name='subject_ids')
@@ -143,6 +153,7 @@ class SiibraCreator(ABCAdapter):
 
     _ui_name = "Siibra Connectivity Creator"
     _ui_description = "Create Structural and Functional Connectivities from the EBRAINS KG using siibra"
+    _user_service = UserService()
 
     def get_form_class(self):
         return SiibraCreatorForm
@@ -151,10 +162,18 @@ class SiibraCreator(ABCAdapter):
         return [ConnectivityIndex, ConnectivityMeasureIndex]
 
     def launch(self, view_model):
+        ebrains_token = view_model.ebrains_token
         atlas = view_model.atlas.value
         parcellation = view_model.parcellation.value
         subject_ids = view_model.subject_ids
         compute_fc = view_model.fc
+
+        # save token as user preference
+        user = dao.get_user_by_id(self.user_id)
+        user.set_ebrains_token(ebrains_token)
+        self._user_service.edit_user(user)
+        # TODO: create a constant, but not in IntrospectionRegistry, as it cannot be imported at startup
+        os.environ['HBP_AUTH_TOKEN'] = ebrains_token
 
         # list of all resulting indices for connectivities and possibly connectivity measures
         results = []
