@@ -76,6 +76,8 @@ if 'SIIBRA_INIT_DONE' not in globals():
     ATLAS_OPTS, PARCELLATION_OPTS = init_siibra_options()
     SIIBRA_INIT_DONE = True
 
+EBRAINS_TOKEN = 'HBP_AUTH_TOKEN'
+
 
 class SiibraModel(ViewModel):
     ebrains_token = Str(
@@ -172,8 +174,9 @@ class SiibraCreator(ABCAdapter):
         user = dao.get_user_by_id(self.user_id)
         user.set_ebrains_token(ebrains_token)
         self._user_service.edit_user(user)
-        # TODO: create a constant, but not in IntrospectionRegistry, as it cannot be imported at startup
-        os.environ['HBP_AUTH_TOKEN'] = ebrains_token
+        # TODO: move the constant somewhere else, but not in IntrospectionRegistry, as it cannot be imported at startup
+        if EBRAINS_TOKEN not in os.environ:
+            os.environ[EBRAINS_TOKEN] = ebrains_token
 
         # list of all resulting indices for connectivities and possibly connectivity measures
         results = []
