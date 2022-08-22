@@ -44,7 +44,7 @@ from tvb.basic.neotraits._attr import Attr, EnumAttr
 from tvb.basic.neotraits._core import TVBEnum
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.storage import dao
-from tvb.core.neotraits.forms import StrField, SelectField, BoolField, MultiSelectField
+from tvb.core.neotraits.forms import StrField, SelectField, BoolField, EnvStrField
 from tvb.core.neotraits.view_model import ViewModel, Str
 from tvb.core.services.user_service import UserService
 
@@ -83,7 +83,6 @@ class SiibraModel(ViewModel):
     ebrains_token = Str(
         label='EBRAINS token',
         required=True,
-        default='',
         doc='Token provided by EBRAINS for accessing the Knowledge Graph'
     )
 
@@ -127,7 +126,7 @@ class SiibraModel(ViewModel):
 class SiibraCreatorForm(ABCAdapterForm):
     def __init__(self):
         super(SiibraCreatorForm, self).__init__()
-        self.ebrains_token = StrField(SiibraModel.ebrains_token, name='ebrains_token')
+        self.ebrains_token = EnvStrField(SiibraModel.ebrains_token, name='ebrains_token')
         self.atlas = SelectField(SiibraModel.atlas, name='atlas')
         self.parcellation = SelectField(SiibraModel.parcellation, name='parcellation')
         self.subject_ids = StrField(SiibraModel.subject_ids, name='subject_ids')

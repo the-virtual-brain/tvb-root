@@ -46,9 +46,10 @@ from tvb.core.entities.filters.chain import FilterChain, InvalidFilterChainInput
 from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 from tvb.core.entities.storage import dao
-from tvb.core.neotraits.forms import TraitDataTypeSelectField, TraitUploadField, TEMPORARY_PREFIX
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, TraitUploadField, TEMPORARY_PREFIX, EnvStrField
 from tvb.core.services.exceptions import OperationException
 from tvb.core.utils import date2string
+from tvb.interfaces.web.controllers import common
 from tvb.storage.storage_interface import StorageInterface
 
 
@@ -123,10 +124,21 @@ class AlgorithmService(object):
             datatype_options.append((datatype, display_name))
         field.datatype_options = datatype_options
 
+    def fill_from_user_preferences(self, field):
+        """
+        Method to set the value of input field at startup with a User Preference;
+        Currently supports only the EBRAINS token preference
+        """
+        user = common.get_logged_user()
+        pref = user.get_ebrains_token()
+        field.unvalidated_data = pref
+
     def _fill_form_with_datatypes(self, form, project_id, extra_conditions=None):
         for form_field in form.trait_fields:
             if isinstance(form_field, TraitDataTypeSelectField):
                 self.fill_selectfield_with_datatypes(form_field, project_id, extra_conditions)
+            elif isinstance(form_field, EnvStrField):
+                self.fill_from_user_preferences(form_field)
         return form
 
     def prepare_adapter_form(self, adapter_instance=None, form_instance=None, project_id=None, extra_conditions=None):

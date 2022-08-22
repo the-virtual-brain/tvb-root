@@ -46,6 +46,7 @@ class TestSiibraCreator(TransactionalTestCase):
 
     def test_happy_flow_launch(self, operation_factory):
         view_model = SiibraModel()
+        view_model.ebrains_token = ''
         view_model.subject_ids = '010'
 
         operation = operation_factory(test_user=self.test_user, test_project=self.test_project)
