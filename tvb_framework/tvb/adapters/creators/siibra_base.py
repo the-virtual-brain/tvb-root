@@ -167,15 +167,9 @@ def compute_centroids(region, space):
     A = np.asarray(pimg.get_fdata(), dtype=np.int32).squeeze()
     C = measure.label(A)
 
-    # compute centroids of each connected component
-    centroids = []
-    for label in range(1, C.max() + 1):
-        nonzero = np.c_[np.nonzero(C == label)]
-        centroid = siibra.Point(np.dot(pimg.affine, np.r_[nonzero.mean(0), 1])[:3], space=space)
-        centroids.append(centroid)
-
-    # currently return only the first centroid
-    centroid = centroids[0]
+    # compute centroid only for the first connected component of the region
+    nonzero = np.c_[np.nonzero(C == 1)]
+    centroid = siibra.Point(np.dot(pimg.affine, np.r_[nonzero.mean(0), 1])[:3], space=space)
     # tuple() gives the coordinate of the centroid
     centroid_coord = tuple(centroid)
 
