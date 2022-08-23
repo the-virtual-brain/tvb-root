@@ -287,9 +287,9 @@ class FlowController(BaseController):
         """ Execute HTTP POST on a generic step."""
         errors = None
         adapter_instance = ABCAdapter.build_adapter(algorithm)
-
+        user = common.get_logged_user()
         try:
-            form = self.algorithm_service.fill_adapter_form(adapter_instance, data, project_id)
+            form = self.algorithm_service.fill_adapter_form(adapter_instance, data, project_id, user)
             if form.validate():
                 try:
                     view_model = form.get_view_model()()
@@ -307,7 +307,7 @@ class FlowController(BaseController):
 
             if issubclass(type(adapter_instance), ABCDisplayer):
                 adapter_instance.current_project_id = project_id
-                adapter_instance.user_id = common.get_logged_user().id
+                adapter_instance.user_id = user.id
                 result = adapter_instance.launch(view_model)
                 if isinstance(result, dict):
                     return result
@@ -315,8 +315,7 @@ class FlowController(BaseController):
                     common.set_error_message("Invalid result returned from Displayer! Dictionary is expected!")
                 return {}
 
-            self.operation_services.fire_operation(adapter_instance, common.get_logged_user(), project_id,
-                                                   view_model=view_model)
+            self.operation_services.fire_operation(adapter_instance, user, project_id, view_model=view_model)
             common.set_important_message("Launched an operation.")
 
         except formencode.Invalid as excep:

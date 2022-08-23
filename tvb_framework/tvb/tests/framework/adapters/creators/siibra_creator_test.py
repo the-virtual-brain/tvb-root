@@ -27,9 +27,9 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
+import os
 import pytest
-from tvb.adapters.creators.siibra_creator import SiibraCreator, SiibraModel
+from tvb.adapters.creators.siibra_creator import SiibraCreator, SiibraModel, CLB_AUTH_TOKEN_KEY
 from tvb.tests.framework.adapters.creators import siibra_base_test
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
@@ -46,7 +46,7 @@ class TestSiibraCreator(TransactionalTestCase):
 
     def test_happy_flow_launch(self, operation_factory):
         view_model = SiibraModel()
-        view_model.ebrains_token = ''
+        view_model.ebrains_token = os.environ[CLB_AUTH_TOKEN_KEY]
         view_model.subject_ids = '010'
 
         operation = operation_factory(test_user=self.test_user, test_project=self.test_project)

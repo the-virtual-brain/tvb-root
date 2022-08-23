@@ -170,9 +170,9 @@ class AlgorithmService(object):
                         raise excep
                 post_data[form_field.name] = file_name
 
-    def fill_adapter_form(self, adapter_instance, post_data, project_id):
+    def fill_adapter_form(self, adapter_instance, post_data, project_id, user):
         # type: (ABCAdapter, dict, int) -> ABCAdapterForm
-        form = self.prepare_adapter_form(adapter_instance=adapter_instance, project_id=project_id)
+        form = self.prepare_adapter_form(adapter_instance=adapter_instance, project_id=project_id, user=user)
         if isinstance(form, ABCUploaderForm):
             self._prepare_upload_post_data(form, post_data, project_id)
 
