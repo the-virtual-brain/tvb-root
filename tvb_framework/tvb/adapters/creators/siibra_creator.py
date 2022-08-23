@@ -48,6 +48,9 @@ from tvb.core.neotraits.forms import StrField, SelectField, BoolField, EnvStrFie
 from tvb.core.neotraits.view_model import ViewModel, Str
 from tvb.core.services.user_service import UserService
 
+CLB_AUTH_TOKEN_KEY = 'HBP_AUTH_TOKEN'
+STORAGE_KEY_TOKEN = 'ebrains_token'
+
 
 # Following code is executed only once, when the application starts running
 def init_siibra_options():
@@ -75,8 +78,6 @@ def init_siibra_options():
 if 'SIIBRA_INIT_DONE' not in globals():
     ATLAS_OPTS, PARCELLATION_OPTS = init_siibra_options()
     SIIBRA_INIT_DONE = True
-
-EBRAINS_TOKEN = 'HBP_AUTH_TOKEN'
 
 
 class SiibraModel(ViewModel):
@@ -126,7 +127,7 @@ class SiibraModel(ViewModel):
 class SiibraCreatorForm(ABCAdapterForm):
     def __init__(self):
         super(SiibraCreatorForm, self).__init__()
-        self.ebrains_token = EnvStrField(SiibraModel.ebrains_token, name='ebrains_token')
+        self.ebrains_token = EnvStrField(SiibraModel.ebrains_token, name=STORAGE_KEY_TOKEN)
         self.atlas = SelectField(SiibraModel.atlas, name='atlas')
         self.parcellation = SelectField(SiibraModel.parcellation, name='parcellation')
         self.subject_ids = StrField(SiibraModel.subject_ids, name='subject_ids')
@@ -171,11 +172,10 @@ class SiibraCreator(ABCAdapter):
 
         # save token as user preference
         user = dao.get_user_by_id(self.user_id)
-        user.set_ebrains_token(ebrains_token)
+        user.set_preference(STORAGE_KEY_TOKEN, ebrains_token)
         self._user_service.edit_user(user)
-        # TODO: move the constant somewhere else, but not in IntrospectionRegistry, as it cannot be imported at startup
-        if EBRAINS_TOKEN not in os.environ:
-            os.environ[EBRAINS_TOKEN] = ebrains_token
+        # Always store in ENV, to have the latest user submitted value
+        os.environ[CLB_AUTH_TOKEN_KEY] = ebrains_token
 
         # list of all resulting indices for connectivities and possibly connectivity measures
         results = []

@@ -134,7 +134,6 @@ class IntrospectionRegistry(object):
 
     SIIBRA_CREATOR_MODULE = SiibraCreator.__module__
     SIIBRA_CREATOR_CLASS = SiibraCreator.__name__
-    CLB_AUTH_TOKEN_KEY = 'HBP_AUTH_TOKEN'
 
     MEASURE_METRICS_MODULE = TimeseriesMetricsAdapter.__module__
     MEASURE_METRICS_CLASS = TimeseriesMetricsAdapter.__name__

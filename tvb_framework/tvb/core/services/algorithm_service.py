@@ -37,7 +37,6 @@ Code related to launching/duplicating operations is placed here.
 """
 import os
 from inspect import getmro
-
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcadapter import ABCAdapterForm
@@ -49,7 +48,6 @@ from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, TraitUploadField, TEMPORARY_PREFIX, EnvStrField
 from tvb.core.services.exceptions import OperationException
 from tvb.core.utils import date2string
-from tvb.interfaces.web.controllers import common
 from tvb.storage.storage_interface import StorageInterface
 
 
@@ -124,24 +122,19 @@ class AlgorithmService(object):
             datatype_options.append((datatype, display_name))
         field.datatype_options = datatype_options
 
-    def fill_from_user_preferences(self, field):
-        """
-        Method to set the value of input field at startup with a User Preference;
-        Currently supports only the EBRAINS token preference
-        """
-        user = common.get_logged_user()
-        pref = user.get_ebrains_token()
-        field.unvalidated_data = pref
-
-    def _fill_form_with_datatypes(self, form, project_id, extra_conditions=None):
+    def _fill_form_with_datatypes(self, form, project_id, user, extra_conditions=None):
         for form_field in form.trait_fields:
             if isinstance(form_field, TraitDataTypeSelectField):
                 self.fill_selectfield_with_datatypes(form_field, project_id, extra_conditions)
             elif isinstance(form_field, EnvStrField):
-                self.fill_from_user_preferences(form_field)
+                # set the value of input field at startup with a User Preference
+                # e.g. EBRAINS token
+                pref = user.get_preference(form_field.name)
+                form_field.unvalidated_data = pref
         return form
 
-    def prepare_adapter_form(self, adapter_instance=None, form_instance=None, project_id=None, extra_conditions=None):
+    def prepare_adapter_form(self, adapter_instance=None, form_instance=None,
+                             project_id=None, user=None, extra_conditions=None):
         # type: (ABCAdapter, ABCAdapterForm, int, []) -> ABCAdapterForm
         form = None
         if form_instance is not None:
@@ -152,7 +145,7 @@ class AlgorithmService(object):
         if form is None:
             raise OperationException("Cannot prepare None form")
 
-        form = self._fill_form_with_datatypes(form, project_id, extra_conditions)
+        form = self._fill_form_with_datatypes(form, project_id, user, extra_conditions)
         return form
 
     def _prepare_upload_post_data(self, form, post_data, project_id):

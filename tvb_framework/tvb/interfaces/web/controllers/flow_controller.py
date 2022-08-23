@@ -347,9 +347,9 @@ class FlowController(BaseController):
                 title = title + " - " + group.displayname
 
             adapter_instance = self.algorithm_service.prepare_adapter(stored_adapter)
-
+            user = common.get_logged_user()
             adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance=adapter_instance,
-                                                                       project_id=project_id)
+                                                                       project_id=project_id, user=user)
             vm = self.context.get_view_model_from_session()
             if vm and type(vm) == adapter_form.get_view_model():
                 adapter_form.fill_from_trait(vm)

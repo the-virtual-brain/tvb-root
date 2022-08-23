@@ -34,13 +34,13 @@ import pandas as pd
 import pytest
 import siibra
 from tvb.adapters.creators import siibra_base as sb
-from tvb.config.init.introspector_registry import IntrospectionRegistry
+from tvb.adapters.creators.siibra_creator import CLB_AUTH_TOKEN_KEY
 from tvb.datatypes import connectivity, graph
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 
 
 def no_ebrains_auth_token():
-    hbp_auth = os.environ.get(IntrospectionRegistry.CLB_AUTH_TOKEN_KEY)
+    hbp_auth = os.environ.get(CLB_AUTH_TOKEN_KEY)
     return hbp_auth is None
 
 
