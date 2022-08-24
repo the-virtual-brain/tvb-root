@@ -62,7 +62,7 @@ USER_ROLES = [ROLE_ADMINISTRATOR, ROLE_CLINICIAN, ROLE_RESEARCHER]
 
 class User(Base):
     """
-    Contains the users informations.
+    Contains the users information.
     """
     __tablename__ = 'USERS'
 
@@ -134,6 +134,14 @@ class User(Base):
         if k not in self.preferences:
             self.preferences[k] = "%s,%s" % (DataTypeMetaData.KEY_STATE, DataTypeMetaData.KEY_SUBJECT)
         return self.preferences[k].split(',')
+
+    def set_preference(self, key, token):
+        self.preferences[key] = token
+
+    def get_preference(self, key):
+        if key not in self.preferences:
+            self.preferences[key] = ''
+        return self.preferences[key]
 
 
 class UserPreferences(Base):
