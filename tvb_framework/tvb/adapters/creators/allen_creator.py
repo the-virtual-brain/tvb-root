@@ -137,8 +137,8 @@ class AllenConnectomeBuilder(ABCAdapter):
         return [ConnectivityIndex, VolumeIndex, RegionVolumeMappingIndex, StructuralMRIIndex]
 
     def launch(self, view_model):
-        resolution = view_model.resolution
-        weighting = view_model.weighting
+        resolution = view_model.resolution.value
+        weighting = view_model.weighting.value
         inj_f_thresh = view_model.inj_f_thresh / 100.
         vol_thresh = view_model.vol_thresh
 
