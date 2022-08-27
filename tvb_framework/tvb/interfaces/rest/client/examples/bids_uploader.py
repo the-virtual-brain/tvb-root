@@ -26,9 +26,10 @@ possible_paths = {
     BIDSUploadDataTypeOptionsEnum.SURFACE: [],
     BIDSUploadDataTypeOptionsEnum.CONNECTIVITY: ["CoordsRows", "CoordsColumns"],
     BIDSUploadDataTypeOptionsEnum.FUNCTIONAL_CONNECTIVITY: ["CoordsRows", "CoordsColumns", "ModelEq", "ModelParam", "Network"],
-    BIDSUploadDataTypeOptionsEnum.TIME_SERIES: ["CoordsRows", "CoordsColumns", "ModelEq", "ModelParam", "Network"]
+    BIDSUploadDataTypeOptionsEnum.TIME_SERIES: ["CoordsRows", "CoordsColumns", "ModelEq", "ModelParam", "Network"],
+    "common_paths": ["CoordsRows", "CoordsColumns", "ModelEq", "ModelParam", "Network"]
 }
-possible_paths["common_paths"] = possible_paths[BIDSUploadDataTypeOptionsEnum.SURFACE] + possible_paths[BIDSUploadDataTypeOptionsEnum.CONNECTIVITY] + possible_paths[BIDSUploadDataTypeOptionsEnum.FUNCTIONAL_CONNECTIVITY] + possible_paths[BIDSUploadDataTypeOptionsEnum.TIME_SERIES]
+#possible_paths["common_paths"] = possible_paths[BIDSUploadDataTypeOptionsEnum.SURFACE] + possible_paths[BIDSUploadDataTypeOptionsEnum.CONNECTIVITY] + possible_paths[BIDSUploadDataTypeOptionsEnum.FUNCTIONAL_CONNECTIVITY] + possible_paths[BIDSUploadDataTypeOptionsEnum.TIME_SERIES]
 delimiter_mapper = {
     ' ': CSVDelimiterOptionsEnum.SPACE
 }
@@ -56,6 +57,8 @@ def upload_bids_data(tvb_client_instance, path):
     print(connectivity_dto)
 
 def get_abs_path(bids_root_dir, sub, path):
+    if os.path.exists(os.path.abspath(path)):
+        return os.path.abspath(path)
     if '../..' in path:
         path1 = path.replace('../..', bids_root_dir)
         if os.path.exists(path1):
@@ -112,12 +115,16 @@ def create_bids_dataset(bids_data_to_import, bids_root_dir, bids_file_name):
         for file_name in os.listdir(sub_contents_path):
             import_dependencies_paths.add(os.path.join(sub_contents_path, file_name))
         
-        json_files = [file_name for file_name in sub_contents if '.json' in file_name]
+        json_files = [os.path.join(sub_contents_path, file_name) for file_name in sub_contents if '.json' in os.path.splitext(file_name)[1]]
+
+        print(json_files)
+
+        # add json files content in abs path in import_dependencies_paths
         
         # Reading all json files in the alg(to import) dir and adding all dependencies path found in the json in the set
         for file in json_files:
             try:
-                file_info = json.load(open(sub_contents_path + '/' + file))
+                file_info = json.load(open(get_abs_path(bids_root_dir, sub, file)))
                 
                 for possible_path_key in possible_paths[bids_data_to_import]:
                     if isinstance(file_info[possible_path_key], list):
@@ -130,6 +137,8 @@ def create_bids_dataset(bids_data_to_import, bids_root_dir, bids_file_name):
                 logger.error("Exception occurred in reading json files: {}".format(e.__class__.__name__))
 
         for dependency_path in import_dependencies_paths: 
+            if os.path.splitext(dependency_path)[1] != '.json':
+                continue
             paths_queue.append(dependency_path)
             json_files_processed[dependency_path] = False
             
@@ -167,10 +176,9 @@ def create_bids_dataset(bids_data_to_import, bids_root_dir, bids_file_name):
             path_ar = p.split('/')
             file_dir = '/'.join(path_ar[0:len(path_ar)-1])
             file_name = path_ar[len(path_ar)-1]
-            files_to_copy = [fn for fn in os.listdir(file_dir) if file_name.split('.')[0] == fn.split('.')[0]]
-            for i in range(0,len(files_to_copy)):
-                files_to_copy[i] = file_dir + '/' + files_to_copy[i]
-                data_files.add(files_to_copy[i])
+            files_to_copy = [fn for fn in os.listdir(file_dir) if os.path.splitext(file_name)[0] == os.path.splitext(fn)[0]] 
+            for f in files_to_copy:
+                data_files.add(file_dir + '/' + f)
             
         for p in data_files:
             import_dependencies_paths.add(p)
@@ -187,8 +195,8 @@ if __name__ == '__main__':
     zip_file_dir = create_bids_dataset(BIDS_UPLOAD_CONTENT, BIDS_DIR, BIDS_DIR_NAME)
     logger.info("Created ZIP file successfully at {} ".format(zip_file_dir))
  
-    tvb_client = TVBClient(compute_rest_url())
-    tvb_client.browser_login()
-    upload_bids_data(tvb_client, zip_file_dir)
+    # tvb_client = TVBClient(compute_rest_url())
+    # tvb_client.browser_login()
+    # upload_bids_data(tvb_client, zip_file_dir)
 
 
