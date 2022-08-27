@@ -1,3 +1,4 @@
+from ntpath import join
 import os
 import json
 import uuid
@@ -34,7 +35,7 @@ delimiter_mapper = {
     ' ': CSVDelimiterOptionsEnum.SPACE
 }
 
-BIDS_UPLOAD_CONTENT = BIDSUploadDataTypeOptionsEnum.TIME_SERIES
+BIDS_UPLOAD_CONTENT = BIDSUploadDataTypeOptionsEnum.FUNCTIONAL_CONNECTIVITY
 BIDS_DIR_NAME = "BIDS_DEMO_DATSET - Copy"
 BIDS_DIR = "C:/Users/upadh/Documents/GitHub/tvb-root/tvb_framework/tvb/interfaces/rest/client/examples/BIDS_DEMO_DATSET - Copy"
 SUBJECT_PREFIX = 'sub'
@@ -62,21 +63,28 @@ def get_abs_path(bids_root_dir, sub, path):
     if '../..' in path:
         path1 = path.replace('../..', bids_root_dir)
         if os.path.exists(path1):
-            return path1
+            return os.path.abspath(path1)
     elif '..' in path:
         path1 = path.replace('..', bids_root_dir + '/' + sub)
         path2 = path.replace('..', bids_root_dir)
         if os.path.exists(path1):
-            return path1
+            return os.path.abspath(path1)
         if os.path.exists(path2):
-            return path2
-    return path
+            return os.path.abspath(path2)
+    return os.path.abspath(path)
 
 
 def create_archive(files_list, zip_name, base_dir):
-    base_dir_name = os.path.dirname(base_dir)
+    print("Creating file ziap nasida")
+    print(base_dir)
+    base_dir_name = os.path.dirname(os.path.abspath(base_dir))
+    print(base_dir_name)
+    print(os.path.dirname(os.path.abspath(base_dir)))
     with ZipFile(zip_name, 'w') as myzip:
         for file_name in files_list:
+            print(file_name)
+            print(file_name.split(base_dir_name))
+            print(file_name.split(os.path.dirname(os.path.abspath(base_dir))))
             myzip.write(file_name, arcname=file_name.split(base_dir_name)[1])
 
 
@@ -85,21 +93,26 @@ def create_bids_dataset(bids_data_to_import, bids_root_dir, bids_file_name):
     logger.info("Creating BIDS dataset for {}".format(bids_data_to_import))
     bids_file_base_dir = os.path.abspath(os.path.join(BIDS_DIR, os.pardir))
     temp_bids_dir_name = bids_file_name + '-' + str(uuid.uuid4()).split("-")[4]
-    temp_bids_dir = bids_file_base_dir + '/' + temp_bids_dir_name
-    temp_bids_zip_dir = temp_bids_dir + '.zip'
+    temp_bids_zip_dir = os.path.join(bids_file_base_dir, temp_bids_dir_name) + '.zip'
+
+    print("zip dir {}".format(temp_bids_zip_dir))
     
     files = os.listdir(bids_root_dir)
     subject_folders = []
 
     # First we find subject parent folders
     for file_name in files:
-        if os.path.basename(file_name).startswith(SUBJECT_PREFIX) and os.path.isdir(bids_root_dir + '/' + file_name):
+        if os.path.basename(file_name).startswith(SUBJECT_PREFIX) and os.path.isdir(os.path.join(bids_root_dir, file_name)):
             subject_folders.append(file_name)
-
+    
+    print(subject_folders)
     logger.info("Found {} subject folders in the".format(len(subject_folders)))
     # For each subject we read its content and sub-dirs
     for sub in subject_folders:
         sub_contents_path = bids_root_dir + '/' + sub + '/' + bids_data_to_import.value
+        print(sub_contents_path)
+        print(os.path.abspath(os.path.join(bids_root_dir, sub, bids_data_to_import.value)))
+        sub_contents_path = os.path.abspath(os.path.join(bids_root_dir, sub, bids_data_to_import.value))
         sub_contents = os.listdir(sub_contents_path)
         if len(sub_contents) == 0:
             continue
@@ -112,12 +125,16 @@ def create_bids_dataset(bids_data_to_import, bids_root_dir, bids_file_name):
         paths_queue = []
 
         # Addding path of all files present in the alg(to import) dir
-        for file_name in os.listdir(sub_contents_path):
-            import_dependencies_paths.add(os.path.join(sub_contents_path, file_name))
+        for file_name in sub_contents:
+            import_dependencies_paths.add(get_abs_path(bids_root_dir, sub, os.path.join(sub_contents_path, file_name)))
         
-        json_files = [os.path.join(sub_contents_path, file_name) for file_name in sub_contents if '.json' in os.path.splitext(file_name)[1]]
+        print(import_dependencies_paths)
+
+        json_files = [file_name for file_name in import_dependencies_paths if '.json' in os.path.splitext(file_name)[1]]
 
         print(json_files)
+
+        print(import_dependencies_paths)
 
         # add json files content in abs path in import_dependencies_paths
         
@@ -172,17 +189,35 @@ def create_bids_dataset(bids_data_to_import, bids_root_dir, bids_file_name):
 
         data_files = set()
 
+        print('import depedn pathj ais')
         for p in import_dependencies_paths:
-            path_ar = p.split('/')
-            file_dir = '/'.join(path_ar[0:len(path_ar)-1])
+            print(p)
+
+        for p in import_dependencies_paths:
+            print('path is {}'.format(p))
+            print(os.path.normpath(p))
+            print(os.path.abspath(p))
+            path_ar = p.split(os.sep)
+            print(path_ar)
+            file_dir = os.path.sep.join(path_ar[0:len(path_ar)-1])
+            print(file_dir)
+
+
+
             file_name = path_ar[len(path_ar)-1]
             files_to_copy = [fn for fn in os.listdir(file_dir) if os.path.splitext(file_name)[0] == os.path.splitext(fn)[0]] 
             for f in files_to_copy:
-                data_files.add(file_dir + '/' + f)
-            
+                data_files.add(get_abs_path(bids_root_dir, sub, os.path.join(file_dir, f)))
+
+        print("data files are")
         for p in data_files:
+            print(p)
             import_dependencies_paths.add(p)
         
+
+        print("final import depednm pathsss")
+        for f in import_dependencies_paths:
+            print(f)
         # Creating zip archive all paths present in the set
         logger.info("Creating ZIP archive of {} files".format(len(import_dependencies_paths)))
         create_archive(import_dependencies_paths, temp_bids_zip_dir, bids_root_dir)
