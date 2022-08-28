@@ -8,6 +8,7 @@ from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityImpo
 from tvb.adapters.uploaders.csv_connectivity_importer import CSVDelimiterOptionsEnum
 from tvb.basic.logger.builder import get_logger
 from tvb.datatypes.surfaces import SurfaceTypesEnum
+from tvb.interfaces.rest.client.examples.updated_code.bids_data_builder import BIDSDataBuilder
 from tvb.interfaces.rest.client.examples.utils import compute_tvb_data_path, monitor_operation, compute_rest_url
 from tvb.interfaces.rest.client.tvb_client import TVBClient
 from tvb.adapters.uploaders.bids_importer import BIDSImporter, BIDSImporterModel, BIDSUploadDataTypeOptionsEnum
@@ -35,7 +36,7 @@ delimiter_mapper = {
     ' ': CSVDelimiterOptionsEnum.SPACE
 }
 
-BIDS_UPLOAD_CONTENT = BIDSUploadDataTypeOptionsEnum.TIME_SERIES
+BIDS_UPLOAD_CONTENT = BIDSUploadDataTypeOptionsEnum.FUNCTIONAL_CONNECTIVITY
 BIDS_DIR = "C:/Users/upadh/Documents/GitHub/tvb-root/tvb_framework/tvb/interfaces/rest/client/examples/BIDS_DEMO_DATSET - Copy"
 SUBJECT_PREFIX = 'sub'
 
@@ -175,8 +176,12 @@ def create_bids_dataset(bids_data_to_import, bids_root_dir):
 
 if __name__ == '__main__':
     
-    zip_file_dir = create_bids_dataset(BIDS_UPLOAD_CONTENT, BIDS_DIR)
-    logger.info("Created ZIP file successfully at {} ".format(zip_file_dir))
+    # zip_file_dir = create_bids_dataset(BIDS_UPLOAD_CONTENT, BIDS_DIR)
+    # logger.info("Created ZIP file successfully at {} ".format(zip_file_dir))
+
+    bids_data_builder = BIDSDataBuilder(BIDS_UPLOAD_CONTENT, BIDS_DIR)
+    
+    print(bids_data_builder.create_dataset_subjects())
  
     # tvb_client = TVBClient(compute_rest_url())
     # tvb_client.browser_login()
