@@ -1,17 +1,9 @@
 import os
-from ntpath import join
-import os
 import json
 import uuid
 from zipfile import ZipFile
 
-from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityImporterModel
-from tvb.adapters.uploaders.csv_connectivity_importer import CSVDelimiterOptionsEnum
 from tvb.basic.logger.builder import get_logger
-from tvb.datatypes.surfaces import SurfaceTypesEnum
-from tvb.interfaces.rest.client.examples.utils import compute_tvb_data_path, monitor_operation, compute_rest_url
-from tvb.interfaces.rest.client.tvb_client import TVBClient
-from tvb.adapters.uploaders.bids_importer import BIDSImporter, BIDSImporterModel, BIDSUploadDataTypeOptionsEnum
 
 logger = get_logger(__name__)
 
