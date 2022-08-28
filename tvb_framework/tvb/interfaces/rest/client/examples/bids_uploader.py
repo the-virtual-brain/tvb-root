@@ -82,7 +82,7 @@ def create_archive(files_list, zip_name, base_dir):
 
 def create_bids_dataset(bids_data_to_import, bids_root_dir):
     logger.info("Creating BIDS dataset for {}".format(bids_data_to_import))
-    bids_file_base_dir = os.path.abspath(os.path.join(BIDS_DIR, os.pardir))
+    bids_file_base_dir = os.path.abspath(os.path.join(bids_root_dir, os.pardir))
     bids_file_name = os.path.split(os.path.normpath(bids_root_dir))[1]
     temp_bids_dir_name = bids_file_name + '-' + str(uuid.uuid4()).split("-")[4]
     temp_bids_zip_dir = os.path.join(bids_file_base_dir, temp_bids_dir_name) + '.zip'
