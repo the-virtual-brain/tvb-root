@@ -35,7 +35,7 @@ delimiter_mapper = {
     ' ': CSVDelimiterOptionsEnum.SPACE
 }
 
-BIDS_UPLOAD_CONTENT = BIDSUploadDataTypeOptionsEnum.SURFACE
+BIDS_UPLOAD_CONTENT = BIDSUploadDataTypeOptionsEnum.TIME_SERIES
 BIDS_DIR = "C:/Users/upadh/Documents/GitHub/tvb-root/tvb_framework/tvb/interfaces/rest/client/examples/BIDS_DEMO_DATSET - Copy"
 SUBJECT_PREFIX = 'sub'
 
@@ -99,7 +99,7 @@ def create_bids_dataset(bids_data_to_import, bids_root_dir):
     logger.info("Found {} subject folders in the".format(len(subject_folders)))
     # For each subject we read its content and sub-dirs
     for sub in subject_folders:
-        sub_contents_path = bids_root_dir + '/' + sub + '/' + bids_data_to_import.value
+        
         sub_contents_path = os.path.abspath(os.path.join(bids_root_dir, sub, bids_data_to_import.value))
         sub_contents = os.listdir(sub_contents_path)
         if len(sub_contents) == 0:
