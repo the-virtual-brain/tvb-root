@@ -74,4 +74,4 @@ def update():
             except Exception as excep:
                 LOGGER.exception(excep)
 
-    TvbProfile.current.manager.add_entries_to_config_file({stored.KEY_MATLAB_EXECUTABLE: get_matlab_executable()})
+    # TvbProfile.current.manager.add_entries_to_config_file({stored.KEY_MATLAB_EXECUTABLE: get_matlab_executable()})

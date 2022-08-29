@@ -197,16 +197,3 @@ class TestSettingsController(BaseTransactionalControllerTest):
         submit_data[stored.KEY_DB_URL] = "this URL should be invalid"
         result = json.loads(self.settings_c.check_db_url(**submit_data))
         assert result['status'] == 'not ok'
-
-    @pytest.mark.skipif(get_matlab_executable() is None, reason="Matlab or Octave not installed!")
-    def test_check_matlab_path(self):
-        """
-        Test that for a various Matlab paths, the correct check response is returned.
-        """
-        submit_data = {stored.KEY_MATLAB_EXECUTABLE: get_matlab_executable()}
-        result = json.loads(self.settings_c.validate_matlab_path(**submit_data))
-        assert result['status'] == 'ok'
-
-        submit_data[stored.KEY_MATLAB_EXECUTABLE] = "/this/path/should/be/invalid"
-        result = json.loads(self.settings_c.validate_matlab_path(**submit_data))
-        assert result['status'] == 'not ok'

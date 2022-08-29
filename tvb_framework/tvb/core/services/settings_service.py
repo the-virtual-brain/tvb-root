@@ -59,7 +59,6 @@ class SettingsService(object):
     KEY_KC_WEB_CONFIG = stored.KEY_KC_WEB_CONFIGURATION
     KEY_ENABLE_KC_LOGIN = stored.KEY_ENABLE_KC_LOGIN
     KEY_MAX_DISK_SPACE_USR = stored.KEY_MAX_DISK_SPACE_USR
-    KEY_MATLAB_EXECUTABLE = stored.KEY_MATLAB_EXECUTABLE
     KEY_PORT = stored.KEY_PORT
     KEY_SELECTED_DB = stored.KEY_SELECTED_DB
     KEY_DB_URL = stored.KEY_DB_URL
@@ -72,7 +71,7 @@ class SettingsService(object):
     # Display order for the keys. None means a separator/new line will be added
     KEYS_DISPLAY_ORDER = [KEY_ADMIN_DISPLAY_NAME, KEY_ADMIN_NAME, KEY_ADMIN_PWD, KEY_ADMIN_EMAIL, None,
                           KEY_KC_CONFIG, KEY_ENABLE_KC_LOGIN, KEY_KC_WEB_CONFIG, None, KEY_STORAGE,
-                          KEY_MAX_DISK_SPACE_USR, KEY_MATLAB_EXECUTABLE, KEY_SELECTED_DB,
+                          KEY_MAX_DISK_SPACE_USR, KEY_SELECTED_DB,
                           KEY_DB_URL, None,
                           KEY_PORT, None,
                           KEY_CLUSTER, KEY_CLUSTER_SCHEDULER,
@@ -96,10 +95,10 @@ class SettingsService(object):
                                'readonly': not first_run, 'type': 'text'},
             self.KEY_MAX_DISK_SPACE_USR: {'label': 'Max hard disk space per user (MBytes)',
                                           'value': int(TvbProfile.current.MAX_DISK_SPACE / 2 ** 10), 'type': 'text'},
-            self.KEY_MATLAB_EXECUTABLE: {'label': 'Optional Matlab or Octave path', 'type': 'text',
-                                         'value': TvbProfile.current.MATLAB_EXECUTABLE or get_matlab_executable() or '',
-                                         'description': 'Some analyzers will not be available when '
-                                                        'matlab/octave are not found'},
+            # self.KEY_MATLAB_EXECUTABLE: {'label': 'Optional Matlab or Octave path', 'type': 'text',
+            #                              'value': TvbProfile.current.MATLAB_EXECUTABLE or get_matlab_executable() or '',
+            #                              'description': 'Some analyzers will not be available when '
+            #                                             'matlab/octave are not found'},
             self.KEY_SELECTED_DB: {'label': 'Select one DB engine', 'value': TvbProfile.current.db.SELECTED_DB,
                                    'type': 'select', 'readonly': not first_run,
                                    'options': TvbProfile.current.db.ACEEPTED_DBS},
@@ -148,7 +147,7 @@ class SettingsService(object):
             connection.close()
         except Exception as excep:
             self.logger.exception(excep)
-            raise InvalidSettingsException('Could not connect to DB! ' 'Invalid URL:' + str(url))
+            raise InvalidSettingsException('Could not connect to DB! Invalid URL:' + str(url))
 
     @staticmethod
     def get_disk_free_space(storage_path):
@@ -187,10 +186,6 @@ class SettingsService(object):
         previous_db = TvbProfile.current.db.SELECTED_DB
         db_changed = new_db != previous_db
         storage_changed = new_storage != previous_storage
-
-        matlab_exec = data[self.KEY_MATLAB_EXECUTABLE]
-        if matlab_exec == 'None':
-            data[self.KEY_MATLAB_EXECUTABLE] = ''
 
         if TvbProfile.is_first_run() or storage_changed:
             self._check_tvb_folder(new_storage)

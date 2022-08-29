@@ -84,7 +84,7 @@ class TestDatatypeResource(RestResourceTest):
         assert result[1] is True
         assert os.path.basename(result[0]) == os.path.basename(result[2])
 
-    @pytest.mark.skipif(no_matlab(), reason="Matlab or Octave not installed!")
+    # @pytest.mark.skipif(no_matlab(), reason="Matlab or Octave not installed!")
     def test_server_get_operations_for_datatype(self, mocker):
         self._mock_user(mocker)
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')

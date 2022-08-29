@@ -139,27 +139,6 @@ class SettingsController(UserController):
             self.logger.error(excep)
             return {'status': 'not ok', 'message': 'The database URL is not valid.'}
 
-    @cherrypy.expose
-    @handle_error(redirect=False)
-    @jsonify
-    def validate_matlab_path(self, **data):
-        """
-        Check if the set path from the ui actually corresponds to a matlab executable.
-        """
-        submitted_path = data[self.settingsservice.KEY_MATLAB_EXECUTABLE]
-        if len(submitted_path) == 0:
-            return {'status': 'ok',
-                    'message': 'No Matlab/Ocatve path was given. Some analyzers will not be available.'}
-
-        if os.path.isfile(submitted_path):
-            version = check_matlab_version(submitted_path)
-            if version:
-                return {'status': 'ok', 'message': "Valid Matlab/Octave. Found version: '%s'." % (version,)}
-            else:
-                return {'status': 'not ok', 'message': "Invalid Matlab/Octave. Found version: '%s' ." % (version,)}
-        else:
-            return {'status': 'not ok', 'message': 'Invalid Matlab/Octave path.'}
-
 
 class DiskSpaceValidator(formencode.FancyValidator):
     """

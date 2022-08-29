@@ -51,7 +51,6 @@ class TestBCT(TransactionalTestCase):
     We do not verify that the algorithms are correct, because that is outside the purpose of TVB framework.
     """
 
-    @pytest.mark.skipif(no_matlab(), reason="Matlab or Octave not installed!")
     def transactional_setup_method(self):
         """
         Sets up the environment for running the tests;
@@ -78,7 +77,6 @@ class TestBCT(TransactionalTestCase):
         """
         self.clean_database(True)
 
-    @pytest.mark.skipif(no_matlab(), reason="Matlab or Octave not installed!")
     def test_bct_all(self):
         """
         Iterate all BCT algorithms and execute them.
@@ -86,14 +84,12 @@ class TestBCT(TransactionalTestCase):
 
         view_model = BaseBCTModel()
         view_model.connectivity = self.connectivity.gid
-        algo_category = dao.get_category_by_id(self.bct_adapters[0].stored_adapter.fk_category)
 
         for adapter_instance in self.bct_adapters:
             results = TestFactory.launch_synchronously(self.test_user.id, self.test_project, adapter_instance,
                                                         view_model)
             assert len(results) > 0
 
-    @pytest.mark.skipif(no_matlab(), reason="Matlab or Octave not installed!")
     def test_bct_descriptions(self):
         """
         Iterate all BCT algorithms and check that description has been extracted from *.m files.
