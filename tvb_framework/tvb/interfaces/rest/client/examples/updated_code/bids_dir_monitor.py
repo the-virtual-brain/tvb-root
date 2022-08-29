@@ -3,6 +3,10 @@ import os
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
 from tvb.interfaces.rest.client.examples.updated_code.bids_data_builder import BIDSDataBuilder
+from tvb.interfaces.rest.client.examples.utils import compute_tvb_data_path, monitor_operation, compute_rest_url
+from tvb.interfaces.rest.client.tvb_client import TVBClient
+from tvb.adapters.uploaders.bids_importer import BIDSImporter, BIDSImporterModel
+
 from threading import Thread
 
 from tvb.basic.logger.builder import get_logger
@@ -62,6 +66,10 @@ class BIDSDirWatcher:
         print("Starting file uploader thread...")
         upload_file_thread.start()
 
+        if self.IMPORT_DATA_IN_TVB:
+            self.tvb_client = TVBClient(compute_rest_url())
+            self.tvb_client.browser_login()
+
     def handle_file_added(self, event):
         print(f"File created! {event.src_path}")
         self.added_files.append(os.path.normpath(event.src_path))
@@ -103,8 +111,32 @@ class BIDSDirWatcher:
         print(subs_divided_paths)
 
         bids_data_builder = BIDSDataBuilder(bids_root_dir = self.DIRECTORY_TO_WATCH, init_json_files = subs_divided_paths)
-        print(bids_data_builder.create_dataset_json_files())
+        bids_zip_file = bids_data_builder.create_dataset_json_files()
+        print(bids_zip_file)
 
+        if self.IMPORT_DATA_IN_TVB:
+            self.upload_to_tvb(bids_zip_file)
+
+    def upload_to_tvb(self, file_path):
+        
+        projects_of_user = self.tvb_client.get_project_list()
+
+        if len(projects_of_user) == 0 :
+            return
+        
+        if self.TVB_PROJECT_ID is None:
+            self.TVB_PROJECT_ID = projects_of_user[0].gid
+        
+        print(self.TVB_PROJECT_ID)
+        print(projects_of_user[0].name)
+        model = BIDSImporterModel()
+        model.uploaded = file_path
+        operation_gid = self.tvb_client.launch_operation(self.TVB_PROJECT_ID, BIDSImporter, model)
+        monitor_operation(self.tvb_client, operation_gid)
+        print("Get the result of import...")
+        res = self.tvb_client.get_operation_results(operation_gid)
+        print(res)
+     
     def change_outside_sub_dir(self, file_path):
         print(file_path)
         print(os.path.abspath(file_path))
@@ -132,10 +164,4 @@ class BIDSDirWatcher:
             print(e)
             logger.err("Exception occurred in checking if added file is in sub directory")
         return True
-    
-
-
-
-    
-
     
