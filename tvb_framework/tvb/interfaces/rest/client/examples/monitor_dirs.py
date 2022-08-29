@@ -141,7 +141,8 @@ if __name__ == "__main__":
 
     bids_dir_watcher = BIDSDirWatcher(
         DIRECTORY_TO_WATCH = DIRECTORY_TO_WATCH,
-        UPLOAD_TRIGGER_INTERVAL = UPLOAD_TRIGGER_INTERVAL
+        UPLOAD_TRIGGER_INTERVAL = UPLOAD_TRIGGER_INTERVAL,
+        IMPORT_DATA_IN_TVB = True
     )
     bids_dir_watcher.init_watcher()
 
