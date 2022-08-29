@@ -7,6 +7,8 @@ from watchdog.events import PatternMatchingEventHandler
 from threading import Thread
 import os
 
+from tvb.interfaces.rest.client.examples.updated_code.bids_dir_monitor import BIDSDirWatcher
+
 DIRECTORY_TO_WATCH = "C:/Users/upadh/Documents/GitHub/tvb-root/tvb_framework/tvb/interfaces/rest/client/examples/BIDS_DATASET_MONITOR_DIR/"
 
 SUBJECT_PREFIX = 'sub'
@@ -128,16 +130,20 @@ def uploadFiles(added_files):
 
 
 if __name__ == "__main__":
-    watchdog_thread = Thread(target = initWatchDog)
-    upload_file_thread = Thread(target = initFileUpload)
+    # watchdog_thread = Thread(target = initWatchDog)
+    # upload_file_thread = Thread(target = initFileUpload)
     
-    print("Starting watchdog thread...")
-    watchdog_thread.start()
+    # print("Starting watchdog thread...")
+    # watchdog_thread.start()
     
-    print("Starting file uploader thread...")
-    upload_file_thread.start()
+    # print("Starting file uploader thread...")
+    # upload_file_thread.start()
 
-
+    bids_dir_watcher = BIDSDirWatcher(
+        DIRECTORY_TO_WATCH = DIRECTORY_TO_WATCH,
+        UPLOAD_TRIGGER_INTERVAL = UPLOAD_TRIGGER_INTERVAL
+    )
+    bids_dir_watcher.init_watcher()
 
 
 # few cases:
