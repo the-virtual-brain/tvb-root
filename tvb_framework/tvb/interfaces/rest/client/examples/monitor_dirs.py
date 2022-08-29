@@ -1,6 +1,7 @@
 
 from asyncio.log import logger
 import time
+from tvb.interfaces.rest.client.examples.updated_code.bids_data_builder import BIDSDataBuilder
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
 from threading import Thread
@@ -120,8 +121,9 @@ def uploadFiles(added_files):
     print("subject wise pathss")
     print(subs_divided_paths)
 
+    bids_data_builder = BIDSDataBuilder(bids_root_dir = DIRECTORY_TO_WATCH, init_json_files = subs_divided_paths)
 
-
+    print(bids_data_builder.create_dataset_json_files())
 
 
 
