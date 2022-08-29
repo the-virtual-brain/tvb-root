@@ -16,7 +16,7 @@ class BIDSDataBuilder:
     
     def __init__(self, bids_data_to_import = None, bids_root_dir = None, init_json_files = None):
         self.bids_data_to_import = bids_data_to_import
-        self.bids_root_dir = bids_root_dir
+        self.bids_root_dir = os.path.normpath(bids_root_dir)
         self.init_json_files = init_json_files
 
     def create_archive(self, files_list):
@@ -149,8 +149,11 @@ class BIDSDataBuilder:
         
         self.init_paths()
 
-        logger.info("Creating BIDS dataset with {} provided json files".format(len(self.init_json_files)))
-
+        json_files_count = 0
+        for f in self.init_json_files.values(): json_files_count += len(f)
+        
+        logger.info("Creating BIDS dataset with {} subjects and {} json files".format(len(self.init_json_files), json_files_count))
+        
         final_paths_set = set()
 
         for sub in self.init_json_files.keys():
