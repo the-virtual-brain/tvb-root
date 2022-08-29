@@ -36,7 +36,7 @@ delimiter_mapper = {
     ' ': CSVDelimiterOptionsEnum.SPACE
 }
 
-BIDS_UPLOAD_CONTENT = BIDSUploadDataTypeOptionsEnum.FUNCTIONAL_CONNECTIVITY
+BIDS_UPLOAD_CONTENT = BIDSUploadDataTypeOptionsEnum.TIME_SERIES
 BIDS_DIR = "C:/Users/upadh/Documents/GitHub/tvb-root/tvb_framework/tvb/interfaces/rest/client/examples/BIDS_DEMO_DATSET - Copy"
 SUBJECT_PREFIX = 'sub'
 
