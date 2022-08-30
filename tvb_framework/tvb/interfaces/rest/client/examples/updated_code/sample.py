@@ -36,4 +36,4 @@ if __name__ == '__main__':
 
     monitor_dir()
 
-    #build_bids_dataset()
+    build_bids_dataset()
