@@ -3,7 +3,7 @@ import os
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
 from tvb.interfaces.rest.client.examples.updated_code.bids_data_builder import BIDSDataBuilder
-from tvb.interfaces.rest.client.examples.utils import compute_tvb_data_path, monitor_operation, compute_rest_url
+from tvb.interfaces.rest.client.examples.utils import monitor_operation, compute_rest_url
 from tvb.interfaces.rest.client.tvb_client import TVBClient
 from tvb.adapters.uploaders.bids_importer import BIDSImporter, BIDSImporterModel
 
@@ -59,6 +59,8 @@ class BIDSDirWatcher:
             return
     
     def init_watcher(self):
+        if self.check_data() is False: return
+
         watchdog_thread = Thread(target = self.watchdog_thread)
         upload_file_thread = Thread(target = self.uploader_thread)
         
@@ -110,7 +112,7 @@ class BIDSDirWatcher:
         try:
             bids_data_builder = BIDSDataBuilder(bids_root_dir = self.DIRECTORY_TO_WATCH, init_json_files = subs_divided_paths)
             bids_zip_file = bids_data_builder.create_dataset_json_files()
-            logger.info("Succesfully built BIDS dataset")
+            logger.info("Successfully built BIDS dataset")
             logger.info("ZIP file location: {}".format(bids_zip_file))
         except Exception as e:
             logger.error("Exception occurred while creating BIDS dataset {}".format(e.__class__))
