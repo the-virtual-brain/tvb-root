@@ -1,15 +1,10 @@
 from tvb.basic.neotraits.api import TVBEnum
 from tvb.interfaces.rest.client.examples.updated_code.bids_data_builder import BIDSDataBuilder
 from tvb.interfaces.rest.client.examples.updated_code.bids_dir_monitor import BIDSDirWatcher
+from tvb.adapters.uploaders.bids_importer import BIDSImporter
 
-class BIDSUploadDataTypeOptionsEnum(TVBEnum):
-    BIDS = 'bids'
-    CONNECTIVITY = 'net'
-    SURFACE = 'coord'
-    FUNCTIONAL_CONNECTIVITY = 'spatial'
-    TIME_SERIES = 'ts'
 
-BIDS_UPLOAD_CONTENT = BIDSUploadDataTypeOptionsEnum.TIME_SERIES
+BIDS_UPLOAD_CONTENT = BIDSImporter.COORDS_TOKEN
 BIDS_DIR = "C:/Users/upadh/Documents/GitHub/tvb-root/tvb_framework/tvb/interfaces/rest/client/examples/BIDS_DEMO_DATSET - Copy"
 
 def build_bids_dataset():
@@ -36,4 +31,4 @@ if __name__ == '__main__':
 
     monitor_dir()
 
-    #build_bids_dataset()
+    build_bids_dataset()
