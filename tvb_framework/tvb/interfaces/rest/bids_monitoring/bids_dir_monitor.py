@@ -3,7 +3,7 @@ import time
 import os
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
-from tvb.interfaces.rest.client.examples.updated_code.bids_data_builder import BIDSDataBuilder
+from tvb.interfaces.rest.bids_monitoring.bids_data_builder import BIDSDataBuilder
 from tvb.interfaces.rest.client.examples.utils import monitor_operation, compute_rest_url
 from tvb.interfaces.rest.client.tvb_client import TVBClient
 from tvb.adapters.uploaders.bids_importer import BIDSImporter, BIDSImporterModel
@@ -160,7 +160,7 @@ class BIDSDirWatcher:
                 logger.info(
                     "Import was unsuccessful, no results found on operations")
             else:
-                logger.info("Successfully imported data into TVB project")
+                logger.info("Successfully imported the data into the TVB project")
         except Exception as e:
             logger.error(
                 "Error importing data into TVB project, Exception {}".format(e.__class__))

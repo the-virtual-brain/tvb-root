@@ -1,6 +1,6 @@
 import sys
-from tvb.interfaces.rest.client.examples.updated_code.bids_data_builder import BIDSDataBuilder
-from tvb.interfaces.rest.client.examples.updated_code.bids_dir_monitor import BIDSDirWatcher
+from tvb.interfaces.rest.bids_monitoring.bids_data_builder import BIDSDataBuilder
+from tvb.interfaces.rest.bids_monitoring.bids_dir_monitor import BIDSDirWatcher
 from tvb.adapters.uploaders.bids_importer import BIDSImporter
 
 
@@ -43,4 +43,4 @@ if __name__ == '__main__':
 
     monitor_dir()
 
-    build_bids_dataset()
+    # build_bids_dataset()
