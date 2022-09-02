@@ -51,24 +51,12 @@ from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.graph import CorrelationCoefficients
 from tvb.datatypes.surfaces import CorticalSurface
 from tvb.datatypes.time_series import TimeSeriesRegion
-from tvb.basic.neotraits.api import TVBEnum, EnumAttr
 
-
-class BIDSUploadDataTypeOptionsEnum(TVBEnum):
-    BIDS = 'bids'
-    CONNECTIVITY = 'net'
-    SURFACE = 'coord'
-    FUNCTIONAL_CONNECTIVITY = 'spatial'
-    TIME_SERIES = 'ts'
 
 class BIDSImporterModel(UploaderViewModel):
     uploaded = Str(
         label='BIDS derivatives dataset (zip)',
         doc="data compatible with BIDS Extension Proposal 032 (BEP032): BIDS Computational Model Specification"
-    )
-    bids_file_upload_type = EnumAttr(
-        default=BIDSUploadDataTypeOptionsEnum.BIDS,
-        label='File to be imported from the bids zip '
     )
 
 
@@ -147,33 +135,21 @@ class BIDSImporter(ABCUploader):
         connectivity = None
         ts_dict = None
 
-
-        bids_upload_type = view_model.bids_file_upload_type
-
-        bids_whole_import_condition = bids_upload_type is BIDSUploadDataTypeOptionsEnum.BIDS
-        connectivity_only_import_condition = bids_upload_type is BIDSUploadDataTypeOptionsEnum.CONNECTIVITY
-        surface_only_import_condition = bids_upload_type is BIDSUploadDataTypeOptionsEnum.SURFACE
-        timeseries_only_import_condition = bids_upload_type is BIDSUploadDataTypeOptionsEnum.TIME_SERIES
-        spatial_only_import_condition = bids_upload_type is BIDSUploadDataTypeOptionsEnum.FUNCTIONAL_CONNECTIVITY
-
         for subject_folder in subject_folders:
             net_folder = os.path.join(subject_folder, self.NET_TOKEN)
-            if os.path.exists(net_folder) and ( bids_whole_import_condition or connectivity_only_import_condition ):
+            if os.path.exists(net_folder):
                 connectivity = self.__build_connectivity(net_folder)
 
             coords_folder = os.path.join(subject_folder, self.COORDS_TOKEN)
-            if os.path.exists(coords_folder) and ( bids_whole_import_condition or surface_only_import_condition ):
+            if os.path.exists(coords_folder):
                 self.__build_surface(coords_folder)
 
             ts_folder = os.path.join(subject_folder, self.TS_TOKEN)
-            if os.path.exists(ts_folder) and ( bids_whole_import_condition or timeseries_only_import_condition ):
-                connectivity = self.__build_connectivity(net_folder)
+            if os.path.exists(ts_folder):
                 ts_dict = self.__build_time_series(ts_folder, connectivity)
 
             spatial_folder = os.path.join(subject_folder, self.SPATIAL_TOKEN)
-            if os.path.exists(spatial_folder) and ( bids_whole_import_condition or spatial_only_import_condition ):
-                connectivity = self.__build_connectivity(net_folder)
-                ts_dict = self.__build_time_series(ts_folder, connectivity)
+            if os.path.exists(spatial_folder):
                 self.__build_functional_connectivity(spatial_folder, ts_dict)
 
     def __is_subject_folder(self, file_name):
