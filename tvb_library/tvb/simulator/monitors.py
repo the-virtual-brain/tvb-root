@@ -438,7 +438,7 @@ class AfferentCouplingTemporalAverage(AfferentCoupling, TemporalAverage):
 # mhtodo: this is not a proper superclass but a mixin, it refers to fields that don't exist
 
 class Projection(Monitor):
-    "Base class monitor providing lead field suppport."
+    """Base class monitor providing lead field support."""
 
     region_mapping = Attr(
         RegionMapping,
@@ -451,7 +451,7 @@ class Projection(Monitor):
     obsnoise = Attr(
         noise.Noise,
         label="Observation Noise",
-        default=noise.Additive(),
+        default=noise.Additive,
         required=False,
         doc="""The monitor's noise source. It incorporates its
         own instance of Numpy's RandomState.""")

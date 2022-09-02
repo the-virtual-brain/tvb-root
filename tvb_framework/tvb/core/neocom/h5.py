@@ -36,7 +36,7 @@ from tvb.basic.neotraits.api import HasTraits
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_datatype import DataType
-from tvb.core.neocom._h5loader import Loader, DirLoader, TVBLoader, ViewModelLoader
+from tvb.core.neocom._h5loader import Loader, DirLoader, TVBLoader, ViewModelLoader, DtLoader
 from tvb.core.neocom._registry import Registry
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.neotraits.view_model import ViewModel
@@ -224,6 +224,24 @@ def determine_filepath(gid, base_dir):
     dir_loader = DirLoader(base_dir, REGISTRY, False)
     fname = dir_loader.find_file_by_gid(gid)
     return fname
+
+
+def store_ht(ht, base_dir):
+    # type: (HasTraits, str)-> str
+    """
+    Completely store any HasTraits object to the directory specified by base_dir
+    """
+    loader = DtLoader(base_dir, REGISTRY)
+    return loader.store(ht)
+
+
+def load_ht(gid, base_dir):
+    # type: (typing.Union[uuid.UUID, str], str)-> str
+    """
+    Completely load any HasTraits object with the gid specified from the base_dir directory
+    """
+    loader = DtLoader(base_dir, REGISTRY)
+    return loader.load(gid)
 
 
 def store_view_model(view_model, base_dir):

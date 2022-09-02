@@ -56,7 +56,6 @@ class RootDAO(object, metaclass=SESSION_META_CLASS):
     EXCEPTION_DATATYPE_GROUP = "DataTypeGroup"
     EXCEPTION_DATATYPE_SIMULATION = SIMULATION_DATATYPE_CLASS
 
-
     def store_entity(self, entity, merge=False):
         """
         Store in DB one generic entity.
@@ -74,7 +73,6 @@ class RootDAO(object, metaclass=SESSION_META_CLASS):
         saved_entity = self.session.query(entity.__class__).filter_by(id=entity.id).one()
         return saved_entity
 
-
     def store_entities(self, entities_list):
         """
         Store in DB a list of generic entities.
@@ -86,7 +84,6 @@ class RootDAO(object, metaclass=SESSION_META_CLASS):
         for entity in entities_list:
             stored_entities.append(self.session.query(entity.__class__).filter_by(id=entity.id).one())
         return stored_entities
-
 
     def get_generic_entity(self, entity_type, filter_value, select_field="id"):
         """
@@ -106,7 +103,6 @@ class RootDAO(object, metaclass=SESSION_META_CLASS):
         self.session.expunge_all()
         return result
 
-
     def remove_entity(self, entity_class, entity_id):
         """ 
         Find entity by Id and Type, end then remove it.
@@ -124,10 +120,7 @@ class RootDAO(object, metaclass=SESSION_META_CLASS):
             self.logger.exception(excep)
             return False
 
-
-    #
     # DATA_TYPE BUT GENERIC METHODS
-    #
 
     def remove_datatype(self, gid):
         """
@@ -138,7 +131,6 @@ class RootDAO(object, metaclass=SESSION_META_CLASS):
             extended_ent = self.get_generic_entity(entity.module + "." + entity.type, entity.id)
             self.session.delete(extended_ent[0])
         self.session.commit()
-
 
     def get_datatype_by_id(self, data_id):
         """

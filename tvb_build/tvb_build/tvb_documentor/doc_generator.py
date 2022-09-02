@@ -43,7 +43,7 @@ import tempfile
 import tvb
 from optparse import OptionParser
 from contextlib import contextmanager
-from sphinx.cmdline import main as sphinx_build
+from sphinx.cmd.build import build_main as sphinx_build
 from tvb.basic.logger.builder import get_logger
 from tvb_build.tvb_documentor.generate_modules import process_sources, GenOptions
 
@@ -131,7 +131,7 @@ class DocGenerator:
         if args is None:
             args = []
 
-        sphinx_args = ['anything',  # Ignored but must be there
+        sphinx_args = [ #'anything',  # Ignored but must be there
                        '-b', builder,  # Specify builder: html, dirhtml, singlehtml, txt, latex, pdf,
                        '-a',  # Use option "-a" : build all
                        '-q',  # Log only Warn and Error

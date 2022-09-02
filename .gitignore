@@ -26,7 +26,6 @@ coverage.xml
 /tvb_framework/tvb/interfaces/web/static/help/
 /tvb_build/docker/step1/
 
-/tvb_build/docker/keycloak_rest.json
-/tvb_build/docker/keycloak_web.json
+/tvb_build/docker/*keycloak*
 /tvb_build/docker/private_upload_key.pem
 /tvb_build/docker/public_key.pem

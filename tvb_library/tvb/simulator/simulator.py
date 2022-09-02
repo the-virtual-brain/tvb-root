@@ -74,13 +74,12 @@ class Simulator(HasTraits):
         label="Conduction Speed",
         default=3.0,
         required=False,
-        # range=basic.Range(lo=0.01, hi=100.0, step=1.0),
         doc="""Conduction speed for ``Long-range connectivity`` (mm/ms)""")
 
     coupling = Attr(
         field_type=coupling.Coupling,
         label="Long-range coupling function",
-        default=coupling.Linear(),
+        default=coupling.Linear,
         required=True,
         doc="""The coupling function is applied to the activity propagated
         between regions by the ``Long-range connectivity`` before it enters the local
@@ -115,7 +114,7 @@ class Simulator(HasTraits):
     model: Model = Attr(
         field_type=models.Model,
         label="Local dynamic model",
-        default=models.Generic2dOscillator(),
+        default=models.Generic2dOscillator,
         required=True,
         doc="""A tvb.simulator.Model object which describe the local dynamic
         equations, their parameters, and, to some extent, where connectivity
@@ -126,7 +125,7 @@ class Simulator(HasTraits):
     integrator = Attr(
         field_type=integrators.Integrator,
         label="Integration scheme",
-        default=integrators.HeunDeterministic(),
+        default=integrators.HeunDeterministic,
         required=True,
         doc="""A tvb.simulator.Integrator object which is
             an integration scheme with supporting attributes such as
@@ -154,7 +153,7 @@ class Simulator(HasTraits):
         main types exist: 1) simple, spatial and temporal, reductions (subsets
         or averages); 2) physiological measurements, such as EEG, MEG and fMRI.
         By default the Model's specified variables_of_interest are returned,
-        temporally downsampled from the raw integration rate to a sample rate of
+        temporally down-sampled from the raw integration rate to a sample rate of
         1024Hz.""")
 
     simulation_length = Float(

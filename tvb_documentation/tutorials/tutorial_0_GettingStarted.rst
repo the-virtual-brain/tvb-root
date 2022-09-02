@@ -197,10 +197,10 @@ Link And Share
 You should be able to see the *ModelingEpilepsy* project in your other account as well.
 
 
-------------------------
+--------------------------
 
 Export and Read a Datatype
----------------
+--------------------------
 
 1. Select *ModelingEpilepsy* as your current project.
 

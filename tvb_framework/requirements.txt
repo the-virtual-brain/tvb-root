@@ -29,7 +29,7 @@ nibabel
 sqlalchemy
 alembic
 allensdk
-werkzeug
+werkzeug==2.1.2
 gevent
 cherrypy
 MarkupSafe
@@ -39,3 +39,4 @@ pandas
 requests
 simplejson
 six
+siibra

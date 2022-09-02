@@ -34,10 +34,8 @@
 
 import json
 import uuid
-import numpy
 from abc import ABCMeta
 from six import add_metaclass
-
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
@@ -46,6 +44,7 @@ from tvb.adapters.datatypes.h5.surface_h5 import SPLIT_PICK_MAX_TRIANGLE, KEY_VE
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import URLGenerator
+from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import try_get_last_datatype
 from tvb.core.entities.storage import dao
@@ -542,6 +541,8 @@ class ConnectivityMeasureOnSurfaceViewer(SurfaceViewer):
             if region_maps:
                 region_map_index = region_maps[0]
 
+        if region_map_index is None:
+            raise LaunchException("Can not launch this viewer without a compatible RegionMapping entity in the current project!")
         surface_gid = region_map_index.fk_surface_gid
         surface_viewer_model = SurfaceViewerModel(surface=surface_gid,
                                                   region_map=region_map_index.gid,

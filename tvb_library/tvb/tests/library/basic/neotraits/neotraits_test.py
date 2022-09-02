@@ -29,11 +29,14 @@
 #
 
 import abc
+import copy
 import types
 import uuid
 import numpy
 import numpy as np
 import pytest
+from tvb.datatypes import connectivity
+from tvb.simulator import (simulator, models, coupling, integrators, monitors, noise)
 from tvb.basic.neotraits._core import TraitProperty
 from tvb.basic.neotraits.api import (
     HasTraits, Attr, NArray, Final, List, trait_property,
@@ -910,3 +913,60 @@ def test_function_attribute():
     with pytest.raises(TypeError):
         # out of bounds
         ainst.c = "Not a function"
+
+
+def test_deepcopy():
+    con = connectivity.Connectivity.from_file("connectivity_192.zip")
+    original = simulator.Simulator(
+            connectivity=con,
+            coupling=coupling.Linear(a=numpy.array([2e-4])),
+            integrator=integrators.EulerStochastic(dt=10.0),
+            model=models.Linear(gamma=numpy.array([-1e-2])),
+            monitors=(monitors.Raw(),),
+            simulation_length=60e3
+    )
+    clone = original.duplicate()    # deepcopy() called inside duplicate()
+
+    # random attrs
+    o_random_stream = original.integrator.noise.random_stream
+    c_random_stream = clone.integrator.noise.random_stream
+
+    # check that attr are not the same
+    assert original.integrator.noise != clone.integrator.noise
+    assert original.integrator.noise != integrators.IntegratorStochastic.noise.default
+    assert original.model != clone.model
+    assert original.coupling != clone.coupling
+    assert original.connectivity != clone.connectivity
+    # even in the case of random generators
+    assert o_random_stream is not c_random_stream
+
+    # but values of attr are the same
+    assert original.integrator.noise.ntau == clone.integrator.noise.ntau == 0
+    assert original.integrator.noise.dt is clone.integrator.noise.dt is None
+    assert original.model.gamma[0] == clone.model.gamma[0]
+    assert original.coupling.a[0] == clone.coupling.a[0]
+    assert original.connectivity.number_of_regions == clone.connectivity.number_of_regions == 0
+    # random generators
+    assert np.array_equal(o_random_stream.get_state()[1], c_random_stream.get_state()[1])
+    assert o_random_stream.beta(1.0, 2.0) == c_random_stream.beta(1.0, 2.0)
+
+    # configure simulation and modify original
+    original.model.gamma[0] = 0.5
+    original.integrator.noise.ntau = 2.0
+    original.configure()
+
+    # check that values of attr are now different and values from clone are did not change
+    assert original.integrator.noise.ntau != clone.integrator.noise.ntau
+    assert clone.integrator.noise.ntau == 0
+
+    assert original.integrator.noise.dt != clone.integrator.noise.dt
+    assert clone.integrator.noise.dt is None
+
+    assert original.model.gamma[0] != clone.model.gamma[0]
+
+    assert original.connectivity.number_of_regions != clone.connectivity.number_of_regions
+    assert clone.connectivity.number_of_regions == 0
+
+    # random generators
+    assert not np.array_equal(o_random_stream.get_state()[1], c_random_stream.get_state()[1])
+    assert o_random_stream.beta(1.0, 2.0) != c_random_stream.beta(1.0, 2.0)

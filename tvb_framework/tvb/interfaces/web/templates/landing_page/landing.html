@@ -18,7 +18,7 @@
                 <dt><input type="button" value="{{ app.label }}"
                            onclick="go_to_selected_site('{{ app.url }}')"
                            title="{{ app.description }}"/></dt>
-                <dd>{{ app.description }}</dd>
+                <dd>{{ app.description|safe }}</dd>
             </dl>
         {% endfor %}
     </section>

@@ -95,7 +95,7 @@ class BalloonModel(HasTraits):
     integrator = Attr(
         field_type=integrators_module.Integrator,
         label="Integration scheme",
-        default=integrators_module.HeunDeterministic(),
+        default=integrators_module.HeunDeterministic,
         required=True,
         doc=""" A tvb.simulator.Integrator object which is an integration
         scheme with supporting attributes such as integration step size and
@@ -263,7 +263,7 @@ class BalloonModel(HasTraits):
 
 
         # BOLD models
-        if self.bold_model == "nonlinear":
+        if self.bold_model.value == "nonlinear":
             """
             Non-linear BOLD model equations.
             Page 391. Eq. (13) top in [Stephan2007]_
