@@ -114,7 +114,7 @@ class BIDSDataBuilder:
         
         # For each subject we read its content and sub-dirs
         for sub in subject_folders:
-            sub_contents_path = os.path.abspath(os.path.join(self.bids_root_dir, sub, self.bids_data_to_import.value))
+            sub_contents_path = os.path.abspath(os.path.join(self.bids_root_dir, sub, self.bids_data_to_import))
             sub_contents = os.listdir(sub_contents_path)
             if len(sub_contents) == 0:
                 continue
