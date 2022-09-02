@@ -1,5 +1,7 @@
 ## BIDS data builder and directory monitor
 
+This module contains helper classes which can build BIDS datasets and import them into TVB projects. Along with this, the module also provides a way to monitor a BIDS directory and build datasets accordingly when new files are added.
+
 ### BIDSDataBuilder
 
 - Class for building BIDS dataset by providing 1) a set of json files and BIDS root directory or 2) a datatype from the subject directory (e.g. net, ts, coord, spatial)
@@ -29,5 +31,5 @@
 python launch_bids_monitor.py --rest-url=http://localhost:9090 --bids-dir=user/doc/BIDS_SAMPLE
 ```
 
-where provide `-rest-url`as the url on which TVB rest server is running and `-bids-dir as the BIDS root directory which'll be monitored for new files
+where provide `-rest-url` is the url on which TVB rest server is running and `-bids-dir` is the BIDS root directory which'll be monitored for new files
 
