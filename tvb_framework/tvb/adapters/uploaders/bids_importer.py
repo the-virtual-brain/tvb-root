@@ -130,12 +130,19 @@ class BIDSImporter(ABCUploader):
             raise LaunchException("Please select ZIP file which contains data to import")
 
         files = self.storage_interface.unpack_zip(view_model.uploaded, self.get_storage_path())
-        subject_folders = []
+        subject_folders = set()
 
         # First we find subject parent folders
         for file_name in files:
-            if os.path.basename(file_name).startswith(self.SUBJECT_PREFIX) and os.path.isdir(file_name):
-                subject_folders.append(file_name)
+            if self.__is_subject_folder(file_name):
+                subject_folders.add(file_name)
+
+        if len(subject_folders) == 0:
+            # Try to determine subject folders in a different manner
+            for file_name in files:
+                possible_subject_folder = os.path.dirname(os.path.dirname(file_name))
+                if self.__is_subject_folder(possible_subject_folder):
+                    subject_folders.add(possible_subject_folder)
 
         connectivity = None
         ts_dict = None
@@ -168,6 +175,9 @@ class BIDSImporter(ABCUploader):
                 connectivity = self.__build_connectivity(net_folder)
                 ts_dict = self.__build_time_series(ts_folder, connectivity)
                 self.__build_functional_connectivity(spatial_folder, ts_dict)
+
+    def __is_subject_folder(self, file_name):
+        return os.path.basename(file_name).startswith(self.SUBJECT_PREFIX) and os.path.isdir(file_name)
 
     def __build_connectivity(self, net_folder):
         weights_matrix = None
