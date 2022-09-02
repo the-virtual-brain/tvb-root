@@ -27,7 +27,7 @@ def monitor_dir():
     bids_dir_watcher = BIDSDirWatcher(
         DIRECTORY_TO_WATCH = BIDS_DIR,
         UPLOAD_TRIGGER_INTERVAL = 20,
-        IMPORT_DATA_IN_TVB = False
+        IMPORT_DATA_IN_TVB = True
     )
     bids_dir_watcher.init_watcher()
 
@@ -36,4 +36,4 @@ if __name__ == '__main__':
 
     monitor_dir()
 
-    build_bids_dataset()
+    #build_bids_dataset()
