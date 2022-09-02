@@ -1,1 +1,33 @@
-# TVB BIDS directory monitoring
+## BIDS data builder and directory monitor
+
+### BIDSDataBuilder
+
+- Class for building BIDS dataset by providing 1) a set of json files and BIDS root directory or 2) a datatype from the subject directory (e.g. net, ts, coord, spatial)
+- Contains utils for finding all dependencies of a subject json file.
+- Produces a zip file.
+- Takes following args
+   - BIDS_ROOT_DIR (reqd.)- BIDS root dir from which dataset will be created
+   - BIDS_DATA_TO_IMPORT - Accepts BIDSImporter net, ts, coord, spatial token  to build subject type specific dataset For e.g. if BIDSImporter.TS_TOKEN is provided then, it'll build a dataset containing only TS data and their dependencies
+   - INITIAL_JSON_FILES - A set of initial json files with which bids dataset to be built. This is used by BIDSDirWatcher
+
+### BIDSDirWatcher
+
+- Class for monitoring a BIDS directory and also builds datasets accordingly on new files
+- Runs two threads in parallel for 1) observing a directory and 2) building/importing dataset into TVB
+- Importing thread runs on a fixed interval (configurable), which also acts as a buffer time when large files are added
+- Contains utils for observing specific (subjects) directories changes only
+- Takes following args
+    - DIRECTORY_TO_WATCH (reqd.)- BIDS root dir on which is to be monitored
+    - UPLOAD_TRIGGER_INTERVAL - Importer thread interval in seconds
+    - IMPORT_DATA_IN_TVB - A flag for only creating dataset and storing and not importing into TVB projects
+    - TVB_PROJECT_ID - ID of TVB project on which dataset is to be imported
+
+
+[launch_bids_monitor.py](tvb_framework/tvb/interfaces/rest/bids_monitoring/launch_bids_monitor.py) contains sample code and it also accepts command line arguments. To start monitoring a bids directory run below command
+
+```
+python launch_bids_monitor.py --rest-url=http://localhost:9090 --bids-dir=user/doc/BIDS_SAMPLE
+```
+
+where provide `-rest-url`as the url on which TVB rest server is running and `-bids-dir as the BIDS root directory which'll be monitored for new files
+
