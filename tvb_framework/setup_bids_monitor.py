@@ -42,24 +42,23 @@ manifest_maker.template = 'MANIFEST_bids_monitor.in'
 
 VERSION = "1.0"
 
-TVB_TEAM = "Lia Domide, Paula Prodan, Bogdan Valean, Robert Vincze"
+TVB_TEAM = "Akash Upadhyay, Paula Prodan"
 
 TVB_INSTALL_REQUIREMENTS = ["tvb-rest-client", "watchdog"]
 
 # Packaging bids-monitor
-with open(os.path.join(os.path.dirname(__file__), 'README_bids-monitor.rst')) as fd:
+with open(os.path.join(os.path.dirname(__file__), 'README_bids_monitor.rst')) as fd:
     DESCRIPTION = fd.read()
 
-setuptools.setup(name="bids-monitor",
+setuptools.setup(name="tvb-bids-monitor",
                  version=VERSION,
                  packages=setuptools.find_packages(
                      exclude=['tvb.interfaces.web', 'tvb.interfaces.web.*', 'tvb.interfaces.command',
                               'tvb.interfaces.command.*', 'tvb.tests', 'tvb.tests.*']),
                  include_package_data=True,
                  install_requires=TVB_INSTALL_REQUIREMENTS,
-                 extras_require={'postgres': ["psycopg2"],
-                                 'test': ["pytest", "pytest-benchmark"]},
-                 description='A helper package for using BIDS directory module',
+                 extras_require={'test': ["pytest", "pytest-benchmark"]},
+                 description='A helper package containing BIDS directory monitor module',
                  long_description=DESCRIPTION,
                  license="GPL-3.0-or-later",
                  author=TVB_TEAM,
@@ -69,4 +68,4 @@ setuptools.setup(name="bids-monitor",
                  keywords='tvb rest client brain simulator neuroscience human animal neuronal dynamics models delay')
 
 # Clean after install
-shutil.rmtree('bids-monitor.egg-info', True)
+shutil.rmtree('tvb_bids_monitor.egg-info', True)

@@ -1,0 +1,9 @@
+include LICENSE
+include README_bids_monitor.rst
+include tvb/config/logger/*.conf
+recursive-include tvb *
+recursive-exclude tvb *.pyc
+prune tvb/tests
+prune README.rst
+prune MANIFEST_bids_monitor.in
+prune setup_bck.py
