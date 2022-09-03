@@ -35,7 +35,7 @@ from tvb.adapters.uploaders.bids_importer import BIDSImporter
 
 
 BIDS_UPLOAD_CONTENT = BIDSImporter.NET_TOKEN
-BIDS_DIR = "C:/Users/upadh/Documents/GitHub/tvb-root/tvb_framework/tvb/interfaces/rest/client/examples/BIDS_DEMO_DATSET - Copy"
+BIDS_DIR = ""
 
 
 def get_bids_dir():
