@@ -7,3 +7,10 @@ prune tvb/tests
 prune README.rst
 prune MANIFEST_bids_monitor.in
 prune setup_bck.py
+prune tvb/adapters
+prune tvb/core
+prune tvb/interfaces/rest/client
+prune tvb/interfaces/rest/commons
+prune tvb/interfaces/rest/server
+prune tvb/interfaces/web
+prune tvb/interfaces/command

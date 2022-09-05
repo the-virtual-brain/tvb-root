@@ -33,6 +33,9 @@ from tvb.interfaces.rest.bids_monitoring.bids_data_builder import BIDSDataBuilde
 from tvb.interfaces.rest.bids_monitoring.bids_dir_monitor import BIDSDirWatcher
 from tvb.adapters.uploaders.bids_importer import BIDSImporter
 
+from tvb.basic.logger.builder import get_logger
+
+logger = get_logger(__name__)
 
 BIDS_UPLOAD_CONTENT = BIDSImporter.NET_TOKEN
 BIDS_DIR = ""
@@ -48,16 +51,16 @@ def get_bids_dir():
 
 def build_bids_dataset():
     # A sample code to how to build BIDS dataset for each datatype using BIDSDataBuilder
-
+    logger.info('Building BIDS dataset for time series')
     bids_data_builder = BIDSDataBuilder(BIDS_UPLOAD_CONTENT, BIDS_DIR)
     zip_file_location = bids_data_builder.create_dataset_subjects()
-    print(zip_file_location)
+    logger.info("ZIP file location dir {} ".format(zip_file_location))
 
 
 def monitor_dir():
     # A sample code to how to monitor a directory using BIDSDirWatcher
     # and build BIDS dataset whenever new files are added
-
+    logger.info('Starting bids monitor')
     # Set IMPORT_DATA_IN_TVB to True to enable importing dataset into TVB
     bids_dir_watcher = BIDSDirWatcher(
         DIRECTORY_TO_WATCH=BIDS_DIR,

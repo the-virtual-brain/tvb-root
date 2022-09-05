@@ -238,11 +238,9 @@ class BIDSDataBuilder:
 
     def subject_build_data_check(self):
         if self.bids_root_dir is None:
-            print("BIDS root directory is empty")
             logger.info("BIDS root directory is empty")
             return False
         if self.bids_data_to_import is None:
-            print("BIDS data to import from the directory is not provided")
             logger.info(
                 "BIDS data to import from the directory is not provided")
             return False
@@ -250,7 +248,6 @@ class BIDSDataBuilder:
 
     def files_build_data_check(self):
         if self.init_json_files is None:
-            print("Provided inital files are None")
             logger.info("Provided inital files are None")
             return False
         return True

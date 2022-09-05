@@ -31,7 +31,7 @@ This module contains helper classes which can build BIDS datasets and import the
    $ python launch_bids_monitor.py --rest-url=http://localhost:9090 --bids-dir=user/doc/BIDS_SAMPLE
 ```
 
-where  `-rest-url` is the url on which TVB rest server is running and `-bids-dir` is the BIDS root directory which is to be monitored for new files
+where  `-rest-url` is the url on which TVB rest server is running and `-bids-dir` is the BIDS root directory which is to be monitored for new files. Please note that bids monitor will only trigger when files are added inside subject directories.
 
 Build BIDS dataset for time_series
 
