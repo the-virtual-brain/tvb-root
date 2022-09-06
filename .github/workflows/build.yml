@@ -34,7 +34,7 @@ jobs:
         if: steps.cache-local.outputs.cache-hit != 'true'
         run: |
           sudo apt install libbz2-dev libhdf5-serial-dev liblzo2-dev octave
-          python3 -m pip install --upgrade setuptools<60.0.0 pip wheel
+          python3 -m pip install --upgrade setuptools==60.0.2 pip wheel
           pip3 install --user --upgrade numpy
           python3 -m pip install scikit-build
           pip3 install --user -r tvb_framework/requirements.txt
