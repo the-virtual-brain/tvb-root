@@ -35,10 +35,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.local
-          key: pip44-${{ hashFiles('tvb_framework/requirements.txt') }}
+          key: pip-${{ hashFiles('tvb_framework/requirements.txt') }}
 
       - name: install tools and dependencies
-        if: steps.cache-local.outputs.cache-hit != 'true'
         run: |
           sudo apt install libbz2-dev libhdf5-serial-dev liblzo2-dev octave
           python3 -m pip install --upgrade setuptools==59.8.0 pip wheel
