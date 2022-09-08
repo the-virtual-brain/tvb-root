@@ -29,7 +29,7 @@
 #
 
 import bct
-from tvb.adapters.analyzers.bct_adapters import BaseBCT, BaseUndirected, bct_description, LABEL_CONNECTIVITY_BINARY
+from tvb.adapters.analyzers.bct_adapters import BaseBCT, BaseUndirected, LABEL_CONNECTIVITY_BINARY
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 
 BCT_GROUP_CENTRALITY = AlgorithmTransientGroup("Centrality Algorithms", "Brain Connectivity Toolbox", "bctcentrality")
@@ -39,16 +39,14 @@ class CentralityNodeBinary(BaseBCT):
     """
     """
     _ui_group = BCT_GROUP_CENTRALITY
-
     _ui_name = "Node Betweenness Centrality Binary: " + LABEL_CONNECTIVITY_BINARY
-    _ui_description = bct_description("betweenness_bin.m")
+    _ui_description = bct.betweenness_bin.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-
-        result = {'C': bct.betweenness_bin(connectivity.weights)}
-        measure_index = self.build_connectivity_measure(result, 'C', connectivity,
-                                                  "Node Betweenness Centrality Binary", "Nodes")
+        result = bct.betweenness_bin(connectivity.weights)
+        measure_index = self.build_connectivity_measure(result, connectivity,
+                                                        "Node Betweenness Centrality Binary", "Nodes")
         return [measure_index]
 
 
@@ -56,15 +54,14 @@ class CentralityNodeWeighted(BaseBCT):
     """
     """
     _ui_group = BCT_GROUP_CENTRALITY
-
     _ui_name = "Node Betweenness Centrality Weighted: Weighted (directed/undirected)  connection matrix"
-    _ui_description = bct_description("betweenness_wei.m")
+    _ui_description = bct.betweenness_wei.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        result = {'C': bct.betweenness_wei(connectivity.weights)}
-        measure_index = self.build_connectivity_measure(result, 'C', connectivity,
-                                                  "Node Betweenness Centrality Weighted", "Nodes")
+        result = bct.betweenness_wei(connectivity.weights)
+        measure_index = self.build_connectivity_measure(result, connectivity,
+                                                        "Node Betweenness Centrality Weighted", "Nodes")
         return [measure_index]
 
 
@@ -72,17 +69,13 @@ class CentralityEdgeBinary(CentralityNodeBinary):
     """
     """
     _ui_name = "Edge Betweenness Centrality Weighted Binary"
-    _ui_description = bct_description("edge_betweenness_bin.m")
+    _ui_description = bct.edge_betweenness_bin.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
         result = bct.edge_betweenness_bin(connectivity.weights)
-        result = {
-            'EBC': result[0],
-            'BC': result[1]
-        }
-        measure_index1 = self.build_connectivity_measure(result, 'EBC', connectivity, "Edge Betweenness Centrality Matrix")
-        measure_index2 = self.build_connectivity_measure(result, 'BC', connectivity, "Node Betweenness Centrality Vector")
+        measure_index1 = self.build_connectivity_measure(result[0], connectivity, "Edge Betweenness Centrality Matrix")
+        measure_index2 = self.build_connectivity_measure(result[1], connectivity, "Node Betweenness Centrality Vector")
         return [measure_index1, measure_index2]
 
 
@@ -90,17 +83,13 @@ class CentralityEdgeWeighted(CentralityNodeWeighted):
     """
     """
     _ui_name = "Edge Betweenness Centrality Weighted"
-    _ui_description = bct_description("edge_betweenness_wei.m")
+    _ui_description = bct.edge_betweenness_wei.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
         result = bct.edge_betweenness_wei(connectivity.weights)
-        result = {
-            'EBC': result[0],
-            'BC': result[1]
-        }
-        measure_index1 = self.build_connectivity_measure(result, 'EBC', connectivity, "Edge Betweenness Centrality Matrix")
-        measure_index2 = self.build_connectivity_measure(result, 'BC', connectivity, "Node Betweenness Centrality Vector")
+        measure_index1 = self.build_connectivity_measure(result[0], connectivity, "Edge Betweeness Centrality Matrix")
+        measure_index2 = self.build_connectivity_measure(result[1], connectivity, "Node Betweenness Centrality Vector")
         return [measure_index1, measure_index2]
 
 
@@ -108,16 +97,13 @@ class CentralityEigenVector(BaseUndirected):
     """
     """
     _ui_group = BCT_GROUP_CENTRALITY
-
     _ui_name = "EigenVector Centrality"
-    _ui_description = bct_description("eigenvector_centrality_und.m")
+    _ui_description = bct.eigenvector_centrality_und.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        result = {
-            'v': bct.eigenvector_centrality_und(connectivity.weights)
-        }
-        measure_index = self.build_connectivity_measure(result, 'v', connectivity, "Eigen vector centrality")
+        result = bct.eigenvector_centrality_und(connectivity.weights)
+        measure_index = self.build_connectivity_measure(result, connectivity, "Eigen vector centrality")
         return [measure_index]
 
 
@@ -125,20 +111,14 @@ class CentralityKCoreness(BaseUndirected):
     """
     """
     _ui_group = BCT_GROUP_CENTRALITY
-
     _ui_name = "K-coreness centrality BU: " + LABEL_CONNECTIVITY_BINARY
-    _ui_description = bct_description("kcoreness_centrality_bu.m")
+    _ui_description = bct.kcoreness_centrality_bu.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-
         result = bct.kcoreness_centrality_bu(connectivity.binarized_weights)
-        result = {
-            'coreness': result[0],
-            'kn': result[1]
-        }
-        measure_index1 = self.build_connectivity_measure(result, 'coreness', connectivity, "Node coreness BU")
-        measure_index2 = self.build_connectivity_measure(result, 'kn', connectivity, "Size of k-core")
+        measure_index1 = self.build_connectivity_measure(result[0], connectivity, "Node coreness BU")
+        measure_index2 = self.build_connectivity_measure(result[1], connectivity, "Size of k-core")
         return [measure_index1, measure_index2]
 
 
@@ -146,17 +126,13 @@ class CentralityKCorenessBD(CentralityNodeBinary):
     """
     """
     _ui_name = "K-coreness centrality BD"
-    _ui_description = bct_description("kcoreness_centrality_bd.m")
+    _ui_description = bct.kcoreness_centrality_bd.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
         result = bct.kcoreness_centrality_bd(connectivity.binarized_weights)
-        result = {
-            'coreness': result[0],
-            'kn': result[1]
-        }
-        measure_index1 = self.build_connectivity_measure(result, 'coreness', connectivity, "Node coreness BD")
-        measure_index2 = self.build_connectivity_measure(result, 'kn', connectivity, "Size of k-core")
+        measure_index1 = self.build_connectivity_measure(result[0], connectivity, "Node coreness BD")
+        measure_index2 = self.build_connectivity_measure(result[1], connectivity, "Size of k-core")
         return [measure_index1, measure_index2]
 
 
@@ -165,22 +141,17 @@ class CentralityShortcuts(CentralityNodeBinary):
     """
 
     _ui_name = "Centrality Shortcuts: Binary directed connection matrix"
-    _ui_description = bct_description("erange.m")
+    _ui_description = bct.erange.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
         result = bct.erange(connectivity.binarized_weights)
-        result = {
-            'Erange': result[0],
-            'eta': result[1],
-            'Eshort': result[2],
-            'fs': result[3]
-        }
 
-        measure_index1 = self.build_connectivity_measure(result, 'Erange', connectivity, "Range for each edge")
-        value1 = self.build_int_value_wrapper(result, 'eta', "Average range for entire graph")
-        measure_index2 = self.build_connectivity_measure(result, 'Eshort', connectivity, "Shortcut edges")
-        value2 = self.build_float_value_wrapper(result, 'fs', "Fraction of shortcuts in the graph")
+        measure_index1 = self.build_connectivity_measure(result[0], connectivity, "Range for each edge")
+        value1 = self.build_int_value_wrapper(result[1], "Average range for entire graph")
+        measure_index2 = self.build_connectivity_measure(result[2], connectivity, "Shortcut edges")
+        value2 = self.build_float_value_wrapper(result[3], "Fraction of shortcuts in the graph")
+
         return [measure_index1, value1, measure_index2, value2]
 
 
@@ -188,20 +159,16 @@ class FlowCoefficients(CentralityNodeBinary):
     """
     """
     _ui_name = "Node-wise flow coefficients"
-    _ui_description = bct_description("flow_coef_bd.m")
+    _ui_description = bct.flow_coef_bd.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
         result = bct.flow_coef_bd(connectivity.binarized_weights)
-        result = {
-            'fc': result[0],
-            'FC': result[1],
-            'total_flo': result[2]
-        }
-        measure_index1 = self.build_connectivity_measure(result, 'fc', connectivity, "Flow coefficient for each node")
-        value1 = self.build_float_value_wrapper(result, 'FC', "Average flow coefficient over the network")
-        measure_index2 = self.build_connectivity_measure(result, 'total_flo', connectivity,
-                                                   "Number of paths that flow across the central node")
+
+        measure_index1 = self.build_connectivity_measure(result[0], connectivity, "Flow coefficient for each node")
+        value1 = self.build_float_value_wrapper(result[1], "Average flow coefficient over the network")
+        measure_index2 = self.build_connectivity_measure(result[2], connectivity,
+                                                         "Number of paths that flow across the central node")
         return [measure_index1, value1, measure_index2]
 
 
@@ -209,16 +176,15 @@ class ParticipationCoefficient(BaseBCT):
     """
     """
     _ui_group = BCT_GROUP_CENTRALITY
-
     _ui_name = "Participation Coefficient: Binary/weighted, directed/undirected connection matrix"
-    _ui_description = bct_description("participation_coef.m")
+    _ui_description = bct.participation_coef.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        ci, q = bct.modularity_dir(connectivity.weights)
+        ci, _ = bct.modularity_dir(connectivity.weights)
         result = bct.participation_coef(connectivity.weights, ci)
-        result = {'P': result}
-        measure_index = self.build_connectivity_measure(result, 'P', connectivity, "Participation Coefficient")
+
+        measure_index = self.build_connectivity_measure(result, connectivity, "Participation Coefficient")
         return [measure_index]
 
 
@@ -226,17 +192,17 @@ class ParticipationCoefficientSign(ParticipationCoefficient):
     """
     """
     _ui_name = "Participation Coefficient Sign"
-    _ui_description = bct_description("participation_coef_sign.m")
+    _ui_description = bct.participation_coef_sign.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        ci, Q = bct.modularity_dir(connectivity.weights)
+        ci, _ = bct.modularity_dir(connectivity.weights)
         ppos, pneg = bct.participation_coef_sign(connectivity.binarized_weights, ci)
-        result = {'Ppos': ppos, 'Pneg': pneg}
-        measure_index1 = self.build_connectivity_measure(result, 'Ppos', connectivity,
-                                                   "Participation Coefficient from positive weights")
-        measure_index2 = self.build_connectivity_measure(result, 'Pneg', connectivity,
-                                                   "Participation Coefficient from negative weights")
+
+        measure_index1 = self.build_connectivity_measure(ppos, connectivity,
+                                                         "Participation Coefficient from positive weights")
+        measure_index2 = self.build_connectivity_measure(pneg, connectivity,
+                                                         "Participation Coefficient from negative weights")
         return [measure_index1, measure_index2]
 
 
@@ -245,11 +211,11 @@ class SubgraphCentrality(CentralityNodeBinary):
     """
 
     _ui_name = "Subgraph centrality of a network: Adjacency matrix (binary)"
-    _ui_description = bct_description("subgraph_centrality.m")
+    _ui_description = bct.subgraph_centrality.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        result = {'Cs': bct.subgraph_centrality(connectivity.binarized_weights)}
+        result = bct.subgraph_centrality(connectivity.binarized_weights)
 
-        measure_index = self.build_connectivity_measure(result, 'Cs', connectivity, "Subgraph Centrality")
+        measure_index = self.build_connectivity_measure(result, connectivity, "Subgraph Centrality")
         return [measure_index]

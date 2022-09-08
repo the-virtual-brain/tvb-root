@@ -27,10 +27,10 @@
 # Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-import bct
 
+import bct
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
-from tvb.adapters.analyzers.bct_adapters import BaseBCT, bct_description, BaseBCTForm
+from tvb.adapters.analyzers.bct_adapters import BaseBCT
 
 BCT_GROUP_DEGREE = AlgorithmTransientGroup("Degree and Similarity Algorithms",
                                            "Brain Connectivity Toolbox", "bctdegree")
@@ -41,14 +41,13 @@ class Degree(BaseBCT):
     """
     """
     _ui_group = BCT_GROUP_DEGREE
-
     _ui_name = "Degree: Undirected (binary/weighted) connection matrix"
-    _ui_description = bct_description("degrees_und.m")
+    _ui_description = bct.degrees_und.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        result = {'deg': bct.degrees_und(connectivity.weights)}
-        measure_index = self.build_connectivity_measure(result, 'deg', connectivity, "Node degree")
+        result = bct.degrees_und(connectivity.weights)
+        measure_index = self.build_connectivity_measure(result, connectivity, "Node degree")
         return [measure_index]
 
 
@@ -57,20 +56,16 @@ class DegreeIOD(Degree):
     """
 
     _ui_name = "Indegree and outdegree: Directed (binary/weighted) connection matrix"
-    _ui_description = bct_description("degrees_dir.m")
+    _ui_description = bct.degrees_dir.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
         result = bct.degrees_dir(connectivity.weights)
-        result = {
-            'id': result[0],
-            'od': result[1],
-            'deg': result[2]
-        }
-        measure_index1 = self.build_connectivity_measure(result, 'id', connectivity, "Node indegree")
-        measure_index2 = self.build_connectivity_measure(result, 'od', connectivity, "Node outdegree")
-        measure_index3 = self.build_connectivity_measure(result, 'deg', connectivity,
-                                                         "Node degree (indegree + outdegree)")
+
+        measure_index1 = self.build_connectivity_measure(result[0], connectivity, "Node indegree")
+        measure_index2 = self.build_connectivity_measure(result[1], connectivity, "Node outdegree")
+        measure_index3 = self.build_connectivity_measure(result[2], connectivity, "Node degree (indegree + outdegree)")
+
         return [measure_index1, measure_index2, measure_index3]
 
 
@@ -78,25 +73,23 @@ class JointDegree(Degree):
     """
     """
     _ui_name = "Joint Degree"
-    _ui_description = bct_description("jdegree.m")
+    _ui_description = bct.jdegree.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
         result = bct.jdegree(connectivity.weights)
-        result = {
-            'J': result[0],
-            'J_od': result[1],
-            'J_id': result[2],
-            'J_bl': result[3]
-        }
-        measure_index = self.build_connectivity_measure(result, 'J', connectivity,
-                                                        "Joint Degree JOD=" + str(result['J_od']) +
-                                                        ", JID=" + str(result['J_id']) +
-                                                        ", JBL=" + str(result['J_bl']),
+        result_j_od = result[1]
+        result_j_id = result[2]
+        result_j_bl = result[3]
+        measure_index = self.build_connectivity_measure(result[0], connectivity,
+                                                        "Joint Degree JOD=" + str(result_j_od) +
+                                                        ", JID=" + str(result_j_id) +
+                                                        ", JBL=" + str(result_j_bl),
                                                         "Connectivity Nodes", "Connectivity Nodes")
-        value1 = self.build_int_value_wrapper(result, 'J_od', "Number of vertices with od > id")
-        value2 = self.build_int_value_wrapper(result, 'J_id', "Number of vertices with id > od")
-        value3 = self.build_int_value_wrapper(result, 'J_bl', "Number of vertices with id = od")
+        value1 = self.build_int_value_wrapper(result_j_od, "Number of vertices with od > id")
+        value2 = self.build_int_value_wrapper(result_j_id, "Number of vertices with id > od")
+        value3 = self.build_int_value_wrapper(result_j_bl, "Number of vertices with id = od")
+
         return [measure_index, value1, value2, value3]
 
 
@@ -104,21 +97,17 @@ class MatchingIndex(Degree):
     """
     """
     _ui_name = "Matching Index: Connection/adjacency matrix"
-    _ui_description = bct_description("matching_ind.m")
+    _ui_description = bct.matching_ind.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
         result = bct.matching_ind(connectivity.weights)
-        result = {
-            'Min': result[0],
-            'Mout': result[1],
-            'Mall': result[2]
-        }
-        measure_index1 = self.build_connectivity_measure(result, 'Min', connectivity,
+
+        measure_index1 = self.build_connectivity_measure(result[0], connectivity,
                                                          "Matching index for incoming connections")
-        measure_index2 = self.build_connectivity_measure(result, 'Mout', connectivity,
+        measure_index2 = self.build_connectivity_measure(result[1], connectivity,
                                                          "Matching index for outgoing connections")
-        measure_index3 = self.build_connectivity_measure(result, 'Mall', connectivity,
+        measure_index3 = self.build_connectivity_measure(result[2], connectivity,
                                                          "Matching index for all connections")
         return [measure_index1, measure_index2, measure_index3]
 
@@ -127,12 +116,12 @@ class Strength(Degree):
     """
     """
     _ui_name = "Strength: Directed weighted connection matrix"
-    _ui_description = bct_description("strengths_und.m")
+    _ui_description = bct.strengths_und.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        result = {'strength': bct.strengths_und(connectivity.weights)}
-        measure_index = self.build_connectivity_measure(result, 'strength', connectivity, "Node strength")
+        result = bct.strengths_und(connectivity.weights)
+        measure_index = self.build_connectivity_measure(result, connectivity, "Node strength")
         return [measure_index]
 
 
@@ -140,19 +129,15 @@ class StrengthISOS(Strength):
     """
     """
     _ui_name = "Instrength and Outstrength"
-    _ui_description = bct_description("strengths_dir.m")
+    _ui_description = bct.strengths_dir.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
         result = bct.strengths_dir(connectivity.weights)
-        result = {
-            'is': result[0],
-            'os': result[1],
-            'strength': result[2]
-        }
-        measure_index1 = self.build_connectivity_measure(result, 'is', connectivity, "Node instrength")
-        measure_index2 = self.build_connectivity_measure(result, 'os', connectivity, "Node outstrength")
-        measure_index3 = self.build_connectivity_measure(result, 'strength', connectivity,
+
+        measure_index1 = self.build_connectivity_measure(result[0], connectivity, "Node instrength")
+        measure_index2 = self.build_connectivity_measure(result[1], connectivity, "Node outstrength")
+        measure_index3 = self.build_connectivity_measure(result[2], connectivity,
                                                          "Node strength (instrength + outstrength)")
         return [measure_index1, measure_index2, measure_index3]
 
@@ -161,23 +146,19 @@ class StrengthWeights(Strength):
     """
     """
     _ui_name = "Strength and Weight"
-    _ui_description = bct_description("strengths_und_sign.m")
+    _ui_description = bct.strengths_und_sign.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
         result = bct.strengths_und_sign(connectivity.weights)
-        result = {
-            'Spos': result[0],
-            'Sneg': result[1],
-            'vpos': result[2],
-            'vneg': result[3]
-        }
-        measure_index1 = self.build_connectivity_measure(result, 'Spos', connectivity,
+
+        measure_index1 = self.build_connectivity_measure(result[0], connectivity,
                                                          "Nodal strength of positive weights")
-        measure_index2 = self.build_connectivity_measure(result, 'Sneg', connectivity,
+        measure_index2 = self.build_connectivity_measure(result[1], connectivity,
                                                          "Nodal strength of negative weights")
-        value1 = self.build_float_value_wrapper(result, 'vpos', "Total positive weight")
-        value2 = self.build_float_value_wrapper(result, 'vneg', "Total negative weight")
+        value1 = self.build_float_value_wrapper(result[2], "Total positive weight")
+        value2 = self.build_float_value_wrapper(result[3], "Total negative weight")
+
         return [measure_index1, measure_index2, value1, value2]
 
 
@@ -185,21 +166,17 @@ class DensityDirected(BaseBCT):
     """
     """
     _ui_group = BCT_GROUP_DENSITY
-
     _ui_name = "Density Directed: Directed (weighted/binary) connection matrix"
-    _ui_description = bct_description("density_dir.m")
+    _ui_description = bct.density_dir.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
         result = bct.density_dir(connectivity.weights)
-        result = {
-            'kden': result[0],
-            'N': result[1],
-            'K': result[2]
-        }
-        value1 = self.build_float_value_wrapper(result, 'kden', title="Density")
-        value2 = self.build_int_value_wrapper(result, 'N', title="Number of vertices")
-        value3 = self.build_int_value_wrapper(result, 'K', title="Number of edges")
+
+        value1 = self.build_float_value_wrapper(result[0], title="Density")
+        value2 = self.build_int_value_wrapper(result[1], title="Number of vertices")
+        value3 = self.build_int_value_wrapper(result[2], title="Number of edges")
+
         return [value1, value2, value3]
 
 
@@ -207,17 +184,14 @@ class DensityUndirected(DensityDirected):
     """
     """
     _ui_name = "Density Unirected: Undirected (weighted/binary) connection matrix"
-    _ui_description = bct_description("density_und.m")
+    _ui_description = bct.density_und.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
         result = bct.density_und(connectivity.weights)
-        result = {
-            'kden': result[0],
-            'N': result[1],
-            'K': result[2]
-        }
-        value1 = self.build_float_value_wrapper(result, 'kden', title="Density")
-        value2 = self.build_int_value_wrapper(result, 'N', title="Number of vertices")
-        value3 = self.build_int_value_wrapper(result, 'K', title="Number of edges")
+
+        value1 = self.build_float_value_wrapper(result[0], title="Density")
+        value2 = self.build_int_value_wrapper(result[1], title="Number of vertices")
+        value3 = self.build_int_value_wrapper(result[2], title="Number of edges")
+
         return [value1, value2, value3]

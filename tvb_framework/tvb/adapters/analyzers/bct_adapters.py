@@ -28,39 +28,26 @@
 #
 #
 
-import os
 import bct
 from abc import abstractmethod
-
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.mapped_value import ValueWrapperIndex
 from tvb.adapters.datatypes.h5.mapped_value_h5 import ValueWrapper
-from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
-from tvb.core.utils import extract_matlab_doc_string
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.graph import ConnectivityMeasure
 
 BCT_GROUP_MODULARITY = AlgorithmTransientGroup("Modularity Algorithms", "Brain Connectivity Toolbox", "bct")
 BCT_GROUP_DISTANCE = AlgorithmTransientGroup("Distance Algorithms", "Brain Connectivity Toolbox", "bctdistance")
 
-BCT_PATH = os.path.join(TvbProfile.current.EXTERNALS_FOLDER_PARENT, "externals/BCT")
-BCT_PATH_ENV = 'BCT_PATH'
-if BCT_PATH_ENV in os.environ and os.path.exists(os.environ[BCT_PATH_ENV]) and os.path.isdir(os.environ[BCT_PATH_ENV]):
-    BCT_PATH = os.environ[BCT_PATH_ENV]
-
 LABEL_CONNECTIVITY_BINARY = "Binary (directed/undirected) connection matrix"
 LABEL_CONN_WEIGHTED_DIRECTED = "Weighted directed connection matrix"
 LABEL_CONN_WEIGHTED_UNDIRECTED = "Weighted undirected connection matrix"
-
-
-def bct_description(mat_file_name):
-    return extract_matlab_doc_string(os.path.join(BCT_PATH, mat_file_name))
 
 
 class BaseBCTModel(ViewModel):
@@ -103,15 +90,7 @@ class BaseUnidirectedBCTForm(BaseBCTForm):
 class BaseBCT(ABCAdapter):
     """
     Interface between Brain Connectivity Toolbox of Olaf Sporns and TVB Framework.
-    # This adapter requires BCT deployed locally, and Matlab or Octave installed separately of TVB.
     """
-
-    def __init__(self):
-        ABCAdapter.__init__(self)
-
-    @staticmethod
-    def can_be_active():
-        return True
 
     def get_form_class(self):
         return BaseBCTForm
@@ -129,25 +108,25 @@ class BaseBCT(ABCAdapter):
     def get_connectivity(self, view_model):
         return self.load_traited_by_gid(view_model.connectivity)
 
-    def build_connectivity_measure(self, result, key, connectivity, title="", label_x="", label_y=""):
+    def build_connectivity_measure(self, array_data, connectivity, title="", label_x="", label_y=""):
         measure = ConnectivityMeasure()
-        measure.array_data = result[key]
+        measure.array_data = array_data
         measure.connectivity = connectivity
         measure.title = title
         measure.label_x = label_x
         measure.label_y = label_y
         return self.store_complete(measure)
 
-    def build_float_value_wrapper(self, result, key, title=""):
+    def build_float_value_wrapper(self, result_value, title=""):
         value = ValueWrapper()
-        value.data_value = str(float(result[key]))
+        value.data_value = str(float(result_value))
         value.data_type = 'float'
         value.data_name = title
         return self.store_complete(value)
 
-    def build_int_value_wrapper(self, result, key, title=""):
+    def build_int_value_wrapper(self, result_int, title=""):
         value = ValueWrapper()
-        value.data_value = str(int(result[key]))
+        value.data_value = str(int(result_int))
         value.data_type = 'int'
         value.data_name = title
         return self.store_complete(value)
@@ -176,19 +155,13 @@ class ModularityOCSM(BaseBCT):
 
     _ui_name = "Compute optimal Community Structure and Modularity from a Directed (weighted or binary) connection " \
                "matrix: "
-    _ui_description = bct_description("modularity_dir.m")
+    _ui_description = bct.modularity_dir.__doc__
 
     def launch(self, view_model):
-        # Prepare parameters
         connectivity = self.get_connectivity(view_model)
         result = bct.modularity_dir(connectivity.weights)
-        result = {
-            'Ci': result[0],
-            'Q': result[1]
-        }
-        # Gather results
-        measure = self.build_connectivity_measure(result, 'Ci', connectivity, "Optimal Community Structure")
-        value = self.build_float_value_wrapper(result, 'Q', title="Maximized Modularity")
+        measure = self.build_connectivity_measure(result[0], connectivity, "Optimal Community Structure")
+        value = self.build_float_value_wrapper(result[1], title="Maximized Modularity")
         return [measure, value]
 
 
@@ -196,19 +169,13 @@ class ModularityOpCSMU(ModularityOCSM):
     """
     """
     _ui_name = "Optimal Community Structure and Modularity (Undirected):"
-    _ui_description = bct_description("modularity_und.m")
+    _ui_description = bct.modularity_und.__doc__
 
     def launch(self, view_model):
-        # Prepare parameters
         connectivity = self.get_connectivity(view_model)
         result = bct.modularity_und(connectivity.weights)
-        result = {
-            'Ci': result[0],
-            'Q': result[1]
-        }
-        # Gather results
-        measure = self.build_connectivity_measure(result, 'Ci', connectivity, "Optimal Community Structure")
-        value = self.build_float_value_wrapper(result, 'Q', title="Maximized Modularity")
+        measure = self.build_connectivity_measure(result[0], connectivity, "Optimal Community Structure")
+        value = self.build_float_value_wrapper(result[1], title="Maximized Modularity")
         return [measure, value]
 
 
@@ -221,13 +188,12 @@ class DistanceDBIN(BaseBCT):
     _ui_group = BCT_GROUP_DISTANCE
 
     _ui_name = "Distance binary matrix"
-    _ui_description = bct_description("distance_bin.m")
+    _ui_description = bct.distance_bin.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        result = {'D': bct.distance_bin(connectivity.weights)}
-
-        measure = self.build_connectivity_measure(result, 'D', connectivity, DISTANCE_MATRIX_TITLE)
+        result_arr = bct.distance_bin(connectivity.weights)
+        measure = self.build_connectivity_measure(result_arr, connectivity, DISTANCE_MATRIX_TITLE)
         return [measure]
 
 
@@ -235,13 +201,12 @@ class DistanceDWEI(DistanceDBIN):
     """
     """
     _ui_name = "Distance weighted matrix over a Weighted (directed/undirected) connection matrix"
-    _ui_description = bct_description("distance_wei.m")
+    _ui_description = bct.distance_wei.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
         result = bct.distance_wei(connectivity.weights)[0]
-        result = {'D': result}
-        measure = self.build_connectivity_measure(result, 'D', connectivity, DISTANCE_MATRIX_TITLE)
+        measure = self.build_connectivity_measure(result, connectivity, DISTANCE_MATRIX_TITLE)
         return [measure]
 
 
@@ -249,18 +214,13 @@ class DistanceRDM(DistanceDBIN):
     """
     """
     _ui_name = "Reachability and distance matrices (Breadth-first search)"
-    _ui_description = bct_description("breadthdist.m")
+    _ui_description = bct.breadthdist.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
         result = bct.breadthdist(connectivity.weights)
-        result = {
-            'R': result[0],
-            'D': result[1]
-        }
-
-        measure1 = self.build_connectivity_measure(result, 'R', connectivity, "Reachability matrix")
-        measure2 = self.build_connectivity_measure(result, 'D', connectivity, DISTANCE_MATRIX_TITLE)
+        measure1 = self.build_connectivity_measure(result[0], connectivity, "Reachability matrix")
+        measure2 = self.build_connectivity_measure(result[1], connectivity, DISTANCE_MATRIX_TITLE)
         return [measure1, measure2]
 
 
@@ -268,18 +228,13 @@ class DistanceRDA(DistanceRDM):
     """
     """
     _ui_name = "Reachability and distance matrices (Algebraic path count)"
-    _ui_description = bct_description("reachdist.m")
+    _ui_description = bct.reachdist.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
         result = bct.reachdist(connectivity.weights)
-        result = {
-            'R': result[0],
-            'D': result[1]
-        }
-
-        measure1 = self.build_connectivity_measure(result, 'R', connectivity, "Reachability matrix")
-        measure2 = self.build_connectivity_measure(result, 'D', connectivity, DISTANCE_MATRIX_TITLE)
+        measure1 = self.build_connectivity_measure(result[0], connectivity, "Reachability matrix")
+        measure2 = self.build_connectivity_measure(result[1], connectivity, DISTANCE_MATRIX_TITLE)
         return [measure1, measure2]
 
 
@@ -287,19 +242,14 @@ class DistanceNETW(DistanceDBIN):
     """
     """
     _ui_name = "Network walks"
-    _ui_description = bct_description("findwalks.m")
-    _matlab_code = "[Wq,twalk,wlq]  = findwalks(A);"
+    _ui_description = bct.findwalks.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
         result = bct.findwalks(connectivity.weights)
-        result = {
-            'Wq': result[0],
-            'twalk': result[1],
-            'wlq': result[2]
-        }
 
-        measure1 = self.build_connectivity_measure(result, 'Wq', connectivity, "3D matrix")
-        measure2 = self.build_connectivity_measure(result, 'wlq', connectivity, "Walk length distribution")
-        value = self.build_float_value_wrapper(result, 'twalk', title="Total number of walks found")
+        measure1 = self.build_connectivity_measure(result[0], connectivity, "3D matrix")
+        measure2 = self.build_connectivity_measure(result[2], connectivity, "Walk length distribution")
+        value = self.build_float_value_wrapper(result[1], title="Total number of walks found")
+
         return [measure1, value, measure2]
