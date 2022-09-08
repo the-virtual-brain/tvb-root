@@ -42,7 +42,6 @@ from formencode import validators
 from tvb.basic.profile import TvbProfile
 from tvb.core.services.exceptions import InvalidSettingsException
 from tvb.core.services.settings_service import SettingsService
-from tvb.core.utils import check_matlab_version
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.decorators import check_admin, using_template, jsonify, handle_error
@@ -217,22 +216,6 @@ class SurfaceVerticesNrValidator(formencode.FancyValidator):
             raise formencode.Invalid(msg % (value, self.MAX_VALUE), value, None)
 
 
-class MatlabValidator(formencode.FancyValidator):
-    """
-    Custom validator for the number of vertices allowed for a surface
-    """
-
-    def _convert_to_python(self, value, _):
-        """ 
-        Validation method for the Matlab Path.
-        """
-        version = check_matlab_version(value)
-        if version:
-            return value
-        else:
-            raise formencode.Invalid('No valid matlab installation was found at the path you provided.', '', None)
-
-
 class AsciiValidator(formencode.FancyValidator):
     """
     Allow only ascii strings
@@ -267,7 +250,6 @@ class SettingsForm(formencode.Schema):
     ENABLE_KEYCLOAK_LOGIN = validators.Bool()
     TVB_STORAGE = validators.UnicodeString(not_empty=True)
     USR_DISK_SPACE = DiskSpaceValidator(not_empty=True)
-    MATLAB_EXECUTABLE = MatlabValidator()
     MAXIMUM_NR_OF_THREADS = ThreadNrValidator()
     MAXIMUM_NR_OF_VERTICES_ON_SURFACE = SurfaceVerticesNrValidator()
     MAXIMUM_NR_OF_OPS_IN_RANGE = validators.Int(min=5, max=5000, not_empty=True)

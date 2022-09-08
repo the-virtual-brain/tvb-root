@@ -34,11 +34,10 @@
 """
 
 import os
-from time import sleep
-
 import pytest
 import tvb_data
 from PIL import Image
+from time import sleep
 from tvb.adapters.datatypes.db.mapped_value import ValueWrapperIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.adapters.exporters.export_manager import ExportManager
@@ -51,7 +50,6 @@ from tvb.core.services.exceptions import ImportException
 from tvb.core.services.figure_service import FigureService
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.project_service import ProjectService
-from tvb.core.utils import no_matlab
 from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
@@ -86,7 +84,7 @@ class TestImportService(BaseTestCase):
 
         self.delete_project_folders()
 
-    # @pytest.mark.skipif(no_matlab(), reason="Matlab or Octave not installed!")
+
     def test_import_export(self, user_factory, project_factory, value_wrapper_factory):
         """
         Test the import/export mechanism for a project structure.

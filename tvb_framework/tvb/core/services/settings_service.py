@@ -42,7 +42,7 @@ from tvb.basic.config import stored
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.services.exceptions import InvalidSettingsException
-from tvb.core.utils import get_matlab_executable, hash_password
+from tvb.core.utils import hash_password
 
 
 class SettingsService(object):
@@ -95,10 +95,6 @@ class SettingsService(object):
                                'readonly': not first_run, 'type': 'text'},
             self.KEY_MAX_DISK_SPACE_USR: {'label': 'Max hard disk space per user (MBytes)',
                                           'value': int(TvbProfile.current.MAX_DISK_SPACE / 2 ** 10), 'type': 'text'},
-            # self.KEY_MATLAB_EXECUTABLE: {'label': 'Optional Matlab or Octave path', 'type': 'text',
-            #                              'value': TvbProfile.current.MATLAB_EXECUTABLE or get_matlab_executable() or '',
-            #                              'description': 'Some analyzers will not be available when '
-            #                                             'matlab/octave are not found'},
             self.KEY_SELECTED_DB: {'label': 'Select one DB engine', 'value': TvbProfile.current.db.SELECTED_DB,
                                    'type': 'select', 'readonly': not first_run,
                                    'options': TvbProfile.current.db.ACEEPTED_DBS},

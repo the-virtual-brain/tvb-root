@@ -31,15 +31,12 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+
 import os
 import tvb_data.obj
-
 from tvb.adapters.uploaders.obj_importer import ObjSurfaceImporter
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.config import stored
-from tvb.basic.profile import TvbProfile
 from tvb.core.services.operation_service import OperationService
-from tvb.core.utils import get_matlab_executable
 from tvb.core.entities.storage import dao
 from tvb.datatypes.surfaces import SurfaceTypesEnum
 

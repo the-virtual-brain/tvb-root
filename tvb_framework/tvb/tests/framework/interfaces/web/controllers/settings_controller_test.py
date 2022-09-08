@@ -42,7 +42,7 @@ import cherrypy
 import pytest
 from tvb.basic.config import stored
 from tvb.basic.profile import TvbProfile
-from tvb.core.utils import get_matlab_executable, hash_password
+from tvb.core.utils import hash_password
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.settings_controller import SettingsController
 from tvb.storage.storage_interface import StorageInterface
@@ -67,7 +67,6 @@ class TestSettingsController(BaseTransactionalControllerTest):
                       'MAXIMUM_NR_OF_THREADS': 6,
                       'MAXIMUM_NR_OF_VERTICES_ON_SURFACE': 142,
                       'MAXIMUM_NR_OF_OPS_IN_RANGE': 16,
-                      'MATLAB_EXECUTABLE': '',
 
                       'DEPLOY_CLUSTER': 'True',
                       'CLUSTER_SCHEDULER': TvbProfile.current.cluster.SCHEDULER_OAR,

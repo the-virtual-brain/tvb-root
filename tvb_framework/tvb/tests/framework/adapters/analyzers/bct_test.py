@@ -32,15 +32,12 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-import pytest
 import os
 import tvb_data
-
 from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
 from tvb.core.entities.model.model_operation import Algorithm
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.utils import no_matlab
 from tvb.core.entities.storage import dao
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -86,8 +83,8 @@ class TestBCT(TransactionalTestCase):
         view_model.connectivity = self.connectivity.gid
 
         for adapter_instance in self.bct_adapters:
-            results = TestFactory.launch_synchronously(self.test_user.id, self.test_project, adapter_instance,
-                                                        view_model)
+            results = TestFactory.launch_synchronously(self.test_user.id, self.test_project,
+                                                       adapter_instance, view_model)
             assert len(results) > 0
 
     def test_bct_descriptions(self):

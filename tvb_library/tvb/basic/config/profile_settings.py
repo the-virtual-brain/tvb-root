@@ -83,12 +83,6 @@ class BaseSettingsProfile(object):
         if not self.env.is_distribution():
             self.EXTERNALS_FOLDER_PARENT = os.path.dirname(self.EXTERNALS_FOLDER_PARENT)
 
-        # The path to the matlab executable (if existent). Otherwise just return an empty string.
-        value = self.manager.get_attribute(stored.KEY_MATLAB_EXECUTABLE, '', str) or ''
-        if value == 'None':
-            value = ''
-        self.MATLAB_EXECUTABLE = value
-
         # Maximum number of vertices acceptable o be part of a surface at import time.
         self.MAX_SURFACE_VERTICES_NUMBER = self.manager.get_attribute(stored.KEY_MAX_NR_SURFACE_VERTEX, 300000, int)
         # Max number of ops that can be scheduled from UI in a PSE. To be correlated with the oarsub limitations
