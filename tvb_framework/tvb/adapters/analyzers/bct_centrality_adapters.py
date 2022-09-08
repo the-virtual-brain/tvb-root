@@ -29,6 +29,7 @@
 #
 
 import bct
+import numpy
 from tvb.adapters.analyzers.bct_adapters import BaseBCT, BaseUndirected, LABEL_CONNECTIVITY_BINARY
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 
@@ -44,7 +45,7 @@ class CentralityNodeBinary(BaseBCT):
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        result = bct.betweenness_bin(connectivity.weights)
+        result = bct.betweenness_bin(connectivity.binarized_weights)
         measure_index = self.build_connectivity_measure(result, connectivity,
                                                         "Node Betweenness Centrality Binary", "Nodes")
         return [measure_index]
@@ -54,7 +55,7 @@ class CentralityNodeWeighted(BaseBCT):
     """
     """
     _ui_group = BCT_GROUP_CENTRALITY
-    _ui_name = "Node Betweenness Centrality Weighted: Weighted (directed/undirected)  connection matrix"
+    _ui_name = "Node Betweenness Centrality Weighted: Weighted (directed/undirected) connection matrix"
     _ui_description = bct.betweenness_wei.__doc__
 
     def launch(self, view_model):
@@ -65,32 +66,36 @@ class CentralityNodeWeighted(BaseBCT):
         return [measure_index]
 
 
-class CentralityEdgeBinary(CentralityNodeBinary):
-    """
-    """
-    _ui_name = "Edge Betweenness Centrality Weighted Binary"
-    _ui_description = bct.edge_betweenness_bin.__doc__
+# class CentralityEdgeBinary(CentralityNodeBinary):
+#     """
+#     COMMENT OUT BECAUSE in v0.5.2:
+#     could not broadcast input array from shape (16,) into shape (15,)
+#     """
+#     _ui_name = "Edge Betweenness Centrality Binary"
+#     _ui_description = bct.edge_betweenness_bin.__doc__
+#
+#     def launch(self, view_model):
+#         connectivity = self.get_connectivity(view_model)
+#         result = bct.edge_betweenness_bin(connectivity.binarized_weights)
+#         measure_index1 = self.build_connectivity_measure(result[0], connectivity, "Edge Betweenness Centrality Matrix")
+#         measure_index2 = self.build_connectivity_measure(result[1], connectivity, "Node Betweenness Centrality Vector")
+#         return [measure_index1, measure_index2]
 
-    def launch(self, view_model):
-        connectivity = self.get_connectivity(view_model)
-        result = bct.edge_betweenness_bin(connectivity.weights)
-        measure_index1 = self.build_connectivity_measure(result[0], connectivity, "Edge Betweenness Centrality Matrix")
-        measure_index2 = self.build_connectivity_measure(result[1], connectivity, "Node Betweenness Centrality Vector")
-        return [measure_index1, measure_index2]
 
-
-class CentralityEdgeWeighted(CentralityNodeWeighted):
-    """
-    """
-    _ui_name = "Edge Betweenness Centrality Weighted"
-    _ui_description = bct.edge_betweenness_wei.__doc__
-
-    def launch(self, view_model):
-        connectivity = self.get_connectivity(view_model)
-        result = bct.edge_betweenness_wei(connectivity.weights)
-        measure_index1 = self.build_connectivity_measure(result[0], connectivity, "Edge Betweeness Centrality Matrix")
-        measure_index2 = self.build_connectivity_measure(result[1], connectivity, "Node Betweenness Centrality Vector")
-        return [measure_index1, measure_index2]
+# class CentralityEdgeWeighted(CentralityNodeWeighted):
+#     """
+#     COMMENT OUT BECAUSE in v0.5.2:
+#     could not broadcast input array from shape (16,) into shape (15,)
+#     """
+#     _ui_name = "Edge Betweenness Centrality Weighted"
+#     _ui_description = bct.edge_betweenness_wei.__doc__
+#
+#     def launch(self, view_model):
+#         connectivity = self.get_connectivity(view_model)
+#         result = bct.edge_betweenness_wei(connectivity.weights)
+#         measure_index1 = self.build_connectivity_measure(result[0], connectivity, "Edge Betweeness Centrality Matrix")
+#         measure_index2 = self.build_connectivity_measure(result[1], connectivity, "Node Betweenness Centrality Vector")
+#         return [measure_index1, measure_index2]
 
 
 class CentralityEigenVector(BaseUndirected):
@@ -176,13 +181,17 @@ class ParticipationCoefficient(BaseBCT):
     """
     """
     _ui_group = BCT_GROUP_CENTRALITY
-    _ui_name = "Participation Coefficient: Binary/weighted, directed/undirected connection matrix"
+    _ui_name = "Participation Coefficient"
     _ui_description = bct.participation_coef.__doc__
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
         ci, _ = bct.modularity_dir(connectivity.weights)
-        result = bct.participation_coef(connectivity.weights, ci)
+        try:
+            result = bct.participation_coef(connectivity.weights, ci)
+        except FloatingPointError as ex:
+            self.log.exception(ex)
+            result = numpy.zeros(connectivity.number_of_regions)
 
         measure_index = self.build_connectivity_measure(result, connectivity, "Participation Coefficient")
         return [measure_index]
@@ -197,7 +206,7 @@ class ParticipationCoefficientSign(ParticipationCoefficient):
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
         ci, _ = bct.modularity_dir(connectivity.weights)
-        ppos, pneg = bct.participation_coef_sign(connectivity.binarized_weights, ci)
+        ppos, pneg = bct.participation_coef_sign(connectivity.weights, ci)
 
         measure_index1 = self.build_connectivity_measure(ppos, connectivity,
                                                          "Participation Coefficient from positive weights")

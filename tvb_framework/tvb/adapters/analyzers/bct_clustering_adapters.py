@@ -29,6 +29,7 @@
 #
 
 import bct
+import numpy
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 from tvb.adapters.analyzers.bct_adapters import BaseBCT, BaseUndirected, LABEL_CONN_WEIGHTED_UNDIRECTED, \
     LABEL_CONN_WEIGHTED_DIRECTED
@@ -73,7 +74,11 @@ class ClusteringCoefficientWU(BaseUndirected):
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        result = bct.clustering_coef_wu(connectivity.scaled_weights())
+        try:
+            result = bct.clustering_coef_wu(connectivity.scaled_weights())
+        except FloatingPointError as ex:
+            self.log.exception(ex)
+            result = numpy.zeros(connectivity.number_of_regions)
         measure_index = self.build_connectivity_measure(result, connectivity, "Clustering Coefficient WU")
         return [measure_index]
 

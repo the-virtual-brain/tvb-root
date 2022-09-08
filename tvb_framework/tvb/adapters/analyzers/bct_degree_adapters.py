@@ -69,28 +69,29 @@ class DegreeIOD(Degree):
         return [measure_index1, measure_index2, measure_index3]
 
 
-class JointDegree(Degree):
-    """
-    """
-    _ui_name = "Joint Degree"
-    _ui_description = bct.jdegree.__doc__
-
-    def launch(self, view_model):
-        connectivity = self.get_connectivity(view_model)
-        result = bct.jdegree(connectivity.weights)
-        result_j_od = result[1]
-        result_j_id = result[2]
-        result_j_bl = result[3]
-        measure_index = self.build_connectivity_measure(result[0], connectivity,
-                                                        "Joint Degree JOD=" + str(result_j_od) +
-                                                        ", JID=" + str(result_j_id) +
-                                                        ", JBL=" + str(result_j_bl),
-                                                        "Connectivity Nodes", "Connectivity Nodes")
-        value1 = self.build_int_value_wrapper(result_j_od, "Number of vertices with od > id")
-        value2 = self.build_int_value_wrapper(result_j_id, "Number of vertices with id > od")
-        value3 = self.build_int_value_wrapper(result_j_bl, "Number of vertices with id = od")
-
-        return [measure_index, value1, value2, value3]
+# class JointDegree(Degree):
+#     """
+#     Commented because in bctpy 0.5.2 numpy can not index with floats (only ints)
+#     """
+#     _ui_name = "Joint Degree"
+#     _ui_description = bct.jdegree.__doc__
+#
+#     def launch(self, view_model):
+#         connectivity = self.get_connectivity(view_model)
+#         result = bct.jdegree(connectivity.weights)
+#         result_j_od = result[1]
+#         result_j_id = result[2]
+#         result_j_bl = result[3]
+#         measure_index = self.build_connectivity_measure(result[0], connectivity,
+#                                                         "Joint Degree JOD=" + str(result_j_od) +
+#                                                         ", JID=" + str(result_j_id) +
+#                                                         ", JBL=" + str(result_j_bl),
+#                                                         "Connectivity Nodes", "Connectivity Nodes")
+#         value1 = self.build_int_value_wrapper(result_j_od, "Number of vertices with od > id")
+#         value2 = self.build_int_value_wrapper(result_j_id, "Number of vertices with id > od")
+#         value3 = self.build_int_value_wrapper(result_j_bl, "Number of vertices with id = od")
+#
+#         return [measure_index, value1, value2, value3]
 
 
 class MatchingIndex(Degree):
@@ -134,12 +135,8 @@ class StrengthISOS(Strength):
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
         result = bct.strengths_dir(connectivity.weights)
-
-        measure_index1 = self.build_connectivity_measure(result[0], connectivity, "Node instrength")
-        measure_index2 = self.build_connectivity_measure(result[1], connectivity, "Node outstrength")
-        measure_index3 = self.build_connectivity_measure(result[2], connectivity,
-                                                         "Node strength (instrength + outstrength)")
-        return [measure_index1, measure_index2, measure_index3]
+        measure_index = self.build_connectivity_measure(result, connectivity, "Node instrength + outstrength")
+        return [measure_index]
 
 
 class StrengthWeights(Strength):
