@@ -334,17 +334,6 @@ function validateDb(db_url, tvb_storage) {
     });
 }
 
-function validateMatlabPath(matlab_path) {
-    const matlab_path_value = document.getElementById(matlab_path).value;
-    doAjaxCall({
-        async: false,
-        type: 'GET',
-        url: "/settings/validate_matlab_path",
-        data: {MATLAB_EXECUTABLE: matlab_path_value},
-        success: _on_validation_finished
-    });
-}
-
 function changeDBValue(selectComponent) {
     const component = eval(selectComponent);
     const selectedValue = $(component).val();

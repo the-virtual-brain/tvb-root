@@ -69,7 +69,6 @@ jobs:
 
       - name: run framework tests
         run: |
-          echo "MATLAB_EXECUTABLE=/usr/bin/octave" > ~/.tvb.configuration
           cd tvb_framework
           pytest tvb/tests/framework --profile=TEST_POSTGRES_PROFILE
 

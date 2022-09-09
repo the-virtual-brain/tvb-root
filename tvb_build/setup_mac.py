@@ -186,11 +186,6 @@ def _generate_distribution(final_name, library_path, version, extra_licensing_ch
 
     _copy_tvb_sources(library_abs_path)
 
-    bct_src = os.path.join("externals", "BCT")
-    bct_dst = os.path.join(DIST_FOLDER, library_path, "externals", "BCT")
-    print("- Copying " + bct_src + " to " + bct_dst)
-    shutil.copytree(bct_src, bct_dst)
-
     for extra in EXTRA_MODULES:
         _copy_module(extra, library_abs_path)
 
