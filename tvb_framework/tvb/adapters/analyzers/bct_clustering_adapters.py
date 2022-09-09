@@ -78,7 +78,9 @@ class ClusteringCoefficientWU(BaseUndirected):
             result = bct.clustering_coef_wu(connectivity.scaled_weights())
         except FloatingPointError as ex:
             self.log.exception(ex)
+            self.add_operation_additional_info("FloatingPointError got during computation, defaulted to 0s!")
             result = numpy.zeros(connectivity.number_of_regions)
+
         measure_index = self.build_connectivity_measure(result, connectivity, "Clustering Coefficient WU")
         return [measure_index]
 

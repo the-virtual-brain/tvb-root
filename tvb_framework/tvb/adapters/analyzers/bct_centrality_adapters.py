@@ -191,6 +191,7 @@ class ParticipationCoefficient(BaseBCT):
             result = bct.participation_coef(connectivity.weights, ci)
         except FloatingPointError as ex:
             self.log.exception(ex)
+            self.add_operation_additional_info("FloatingPointError got during computation, defaulted to 0s!")
             result = numpy.zeros(connectivity.number_of_regions)
 
         measure_index = self.build_connectivity_measure(result, connectivity, "Participation Coefficient")

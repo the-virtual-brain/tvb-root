@@ -180,7 +180,7 @@ class DensityDirected(BaseBCT):
 class DensityUndirected(DensityDirected):
     """
     """
-    _ui_name = "Density Unirected: Undirected (weighted/binary) connection matrix"
+    _ui_name = "Density Undirected: Undirected (weighted/binary) connection matrix"
     _ui_description = bct.density_und.__doc__
 
     def launch(self, view_model):
