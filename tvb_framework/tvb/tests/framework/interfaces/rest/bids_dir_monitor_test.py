@@ -1,14 +1,17 @@
-from fileinput import filename
 import pytest
-from tvb.interfaces.rest.bids_monitoring.bids_dir_monitor import BIDSDirWatcher
 import os
 import time
 import shutil
 
 from tvb.tests.framework.interfaces.rest.bids_data_builder_test import TestBIDSDataBuilder
+from tvb.interfaces.rest.bids_monitoring.bids_dir_monitor import BIDSDirWatcher
 
-BIDS_DATA_DIR = "C:/Users/upadh/Documents/GitHub/tvb-root/tvb_framework/tvb/interfaces/rest/client/examples/BIDS_DEMO_DATSET - Copy"
-BIDS_DATA_FOUND = True
+try:
+    import tvb_data.bids
+    BIDS_DATA_FOUND = True
+    BIDS_DATA_DIR = os.path.join(os.path.dirname(tvb_data.bids.__file__), 'BIDS_DEMO_DATASET')
+except ImportError:
+    BIDS_DATA_FOUND = False
 
 
 @pytest.mark.skipif(not BIDS_DATA_FOUND, reason="Older or incomplete tvb_data")
