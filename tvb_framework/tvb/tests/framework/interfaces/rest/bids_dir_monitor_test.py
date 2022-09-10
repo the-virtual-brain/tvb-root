@@ -68,7 +68,6 @@ class TestBIDSDirWatcher:
         while True:
             time.sleep(0.5)
             if bids_dir_watcher.current_dataset_loc is not "":
-                print(bids_dir_watcher.current_dataset_loc)
                 bids_dir_watcher.end_watcher()
                 break
         
