@@ -55,6 +55,7 @@ class BIDSDirWatcher:
         self.IMPORT_DATA_IN_TVB = IMPORT_DATA_IN_TVB
         self.TVB_PROJECT_ID = TVB_PROJECT_ID
         self.end_watcher_flag = False
+        self.current_dataset_loc = ""
 
     def check_data(self):
         if self.DIRECTORY_TO_WATCH is None:
@@ -162,6 +163,7 @@ class BIDSDirWatcher:
             bids_zip_file = bids_data_builder.create_dataset_json_files()
             logger.info("Successfully built BIDS dataset")
             logger.info("ZIP file location: {}".format(bids_zip_file))
+            self.current_dataset_loc = bids_zip_file
         except Exception as e:
             logger.error(
                 "Exception occurred while creating BIDS dataset {}".format(e.__class__))
