@@ -28,6 +28,7 @@
 #
 #
 
+from pickle import FALSE
 import time
 import os
 from watchdog.observers import Observer
@@ -53,6 +54,7 @@ class BIDSDirWatcher:
         self.UPLOAD_TRIGGER_INTERVAL = UPLOAD_TRIGGER_INTERVAL
         self.IMPORT_DATA_IN_TVB = IMPORT_DATA_IN_TVB
         self.TVB_PROJECT_ID = TVB_PROJECT_ID
+        self.end_watcher_flag = False
 
     def check_data(self):
         if self.DIRECTORY_TO_WATCH is None:
@@ -73,6 +75,8 @@ class BIDSDirWatcher:
         my_observer.start()
         try:
             while True:
+                if self.end_watcher_flag:
+                    break
                 time.sleep(5)
         except KeyboardInterrupt as e:
             my_observer.stop()
@@ -81,6 +85,8 @@ class BIDSDirWatcher:
     def uploader_thread(self):
         try:
             while True:
+                if self.end_watcher_flag:
+                    break
                 time.sleep(self.UPLOAD_TRIGGER_INTERVAL)
                 # uploading files currently present in the queue
                 if len(self.added_files) == 0:
@@ -110,6 +116,9 @@ class BIDSDirWatcher:
             self.tvb_client = TVBClient(compute_rest_url())
             self.tvb_client.browser_login()
             logger.info("Login Done")
+
+    def end_watcher(self):
+        self.end_watcher_flag = True
 
     def handle_file_added(self, event):
         self.added_files.append(os.path.normpath(event.src_path))
