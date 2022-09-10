@@ -16,8 +16,6 @@ except ImportError:
 
 @pytest.mark.skipif(not BIDS_DATA_FOUND, reason="Older or incomplete tvb_data")
 class TestBIDSDataBuilder:
-    def __init__(self):
-        return
 
     def setup_test_data(self):
         self.bids_connectivity_data = [
