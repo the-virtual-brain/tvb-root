@@ -38,7 +38,6 @@ import json
 import numpy
 from six import add_metaclass
 from abc import ABCMeta
-
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.adapters.datatypes.db.spectral import DataTypeMatrix
 from tvb.basic.neotraits.api import Attr
@@ -49,6 +48,7 @@ from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, StrField
 from tvb.core.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.core.utils import TVBJSONEncoder
 
 
 @add_metaclass(ABCMeta)
@@ -123,7 +123,7 @@ class ABCMappedArraySVGVisualizer(ABCSpaceDisplayer):
                          has_infinite_values=has_infinite_values,
                          viewer_title=title_suffix,
                          title=dtm_index.display_name + " - " + title_suffix,
-                         matrix_labels=json.dumps(labels))
+                         matrix_labels=json.dumps(labels, cls=TVBJSONEncoder))
         return view_pars
 
     def extract_source_labels(self, datatype_matrix):

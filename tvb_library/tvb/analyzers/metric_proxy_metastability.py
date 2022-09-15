@@ -62,10 +62,7 @@ def remove_mean(x, axis):
     # so we add it back m[:,:, np.newaxis, :]
     # Since the shape and axis are known only at runtime
     # Calculate the slicing dynamically
-    idx = [slice(None)] * x.ndim
-    idx[axis] = numpy.newaxis
-    return x - x.mean(axis=axis)[idx]
-
+    return x - numpy.expand_dims(x.mean(axis=axis), axis)
 
 
 r"""

@@ -263,7 +263,7 @@ class BalloonModel(HasTraits):
 
 
         # BOLD models
-        if self.bold_model == "nonlinear":
+        if self.bold_model.value == "nonlinear":
             """
             Non-linear BOLD model equations.
             Page 391. Eq. (13) top in [Stephan2007]_

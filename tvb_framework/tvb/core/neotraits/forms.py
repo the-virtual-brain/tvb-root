@@ -221,6 +221,10 @@ class StrField(TraitField):
     template = 'form_fields/str_field.html'
 
 
+class EnvStrField(TraitField):
+    template = 'form_fields/str_field.html'
+
+
 class BoolField(TraitField):
     template = 'form_fields/bool_field.html'
 
