@@ -34,11 +34,10 @@
 """
 
 import os
-from time import sleep
-
 import pytest
 import tvb_data
 from PIL import Image
+from time import sleep
 from tvb.adapters.datatypes.db.mapped_value import ValueWrapperIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.adapters.exporters.export_manager import ExportManager
@@ -51,11 +50,12 @@ from tvb.core.services.exceptions import ImportException
 from tvb.core.services.figure_service import FigureService
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.project_service import ProjectService
-from tvb.core.utils import no_matlab
 from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.core.services.figure_service_test import IMG_DATA
+
+FILE_IS_NONE = "Exported file is none"
 
 
 class TestImportService(BaseTestCase):
@@ -84,7 +84,7 @@ class TestImportService(BaseTestCase):
 
         self.delete_project_folders()
 
-    @pytest.mark.skipif(no_matlab(), reason="Matlab or Octave not installed!")
+
     def test_import_export(self, user_factory, project_factory, value_wrapper_factory):
         """
         Test the import/export mechanism for a project structure.
@@ -104,7 +104,7 @@ class TestImportService(BaseTestCase):
 
         # Export project as ZIP
         self.zip_path = ExportManager().export_project(test_project)
-        assert self.zip_path is not None, "Exported file is none"
+        assert self.zip_path is not None, FILE_IS_NONE
 
         # Remove the original project
         self.project_service.remove_project(test_project.id)
@@ -149,7 +149,7 @@ class TestImportService(BaseTestCase):
         assert 1 == count_operations, "Invalid ops before export!"
 
         self.zip_path = ExportManager().export_project(test_project)
-        assert self.zip_path is not None, "Exported file is none"
+        assert self.zip_path is not None, FILE_IS_NONE
 
         with pytest.raises(ImportException):
             self.import_service.import_project_structure(self.zip_path, test_user.id)
@@ -169,7 +169,7 @@ class TestImportService(BaseTestCase):
         assert sim_op.has_finished, "Simulation did not finish in the given time"
 
         self.zip_path = ExportManager().export_project(test_project)
-        assert self.zip_path is not None, "Exported file is none"
+        assert self.zip_path is not None, FILE_IS_NONE
         self.project_service.remove_project(test_project.id)
 
         self.import_service.import_project_structure(self.zip_path, test_user.id)
@@ -197,7 +197,7 @@ class TestImportService(BaseTestCase):
 
         # export, delete and the import project
         self.zip_path = ExportManager().export_project(project)
-        assert self.zip_path is not None, "Exported file is none"
+        assert self.zip_path is not None, FILE_IS_NONE
         self.project_service.remove_project(project.id)
 
         self.import_service.import_project_structure(self.zip_path, user.id)

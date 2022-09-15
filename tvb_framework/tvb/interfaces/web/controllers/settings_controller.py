@@ -42,7 +42,6 @@ from formencode import validators
 from tvb.basic.profile import TvbProfile
 from tvb.core.services.exceptions import InvalidSettingsException
 from tvb.core.services.settings_service import SettingsService
-from tvb.core.utils import check_matlab_version
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.decorators import check_admin, using_template, jsonify, handle_error
@@ -139,27 +138,6 @@ class SettingsController(UserController):
             self.logger.error(excep)
             return {'status': 'not ok', 'message': 'The database URL is not valid.'}
 
-    @cherrypy.expose
-    @handle_error(redirect=False)
-    @jsonify
-    def validate_matlab_path(self, **data):
-        """
-        Check if the set path from the ui actually corresponds to a matlab executable.
-        """
-        submitted_path = data[self.settingsservice.KEY_MATLAB_EXECUTABLE]
-        if len(submitted_path) == 0:
-            return {'status': 'ok',
-                    'message': 'No Matlab/Ocatve path was given. Some analyzers will not be available.'}
-
-        if os.path.isfile(submitted_path):
-            version = check_matlab_version(submitted_path)
-            if version:
-                return {'status': 'ok', 'message': "Valid Matlab/Octave. Found version: '%s'." % (version,)}
-            else:
-                return {'status': 'not ok', 'message': "Invalid Matlab/Octave. Found version: '%s' ." % (version,)}
-        else:
-            return {'status': 'not ok', 'message': 'Invalid Matlab/Octave path.'}
-
 
 class DiskSpaceValidator(formencode.FancyValidator):
     """
@@ -238,22 +216,6 @@ class SurfaceVerticesNrValidator(formencode.FancyValidator):
             raise formencode.Invalid(msg % (value, self.MAX_VALUE), value, None)
 
 
-class MatlabValidator(formencode.FancyValidator):
-    """
-    Custom validator for the number of vertices allowed for a surface
-    """
-
-    def _convert_to_python(self, value, _):
-        """ 
-        Validation method for the Matlab Path.
-        """
-        version = check_matlab_version(value)
-        if version:
-            return value
-        else:
-            raise formencode.Invalid('No valid matlab installation was found at the path you provided.', '', None)
-
-
 class AsciiValidator(formencode.FancyValidator):
     """
     Allow only ascii strings
@@ -288,7 +250,6 @@ class SettingsForm(formencode.Schema):
     ENABLE_KEYCLOAK_LOGIN = validators.Bool()
     TVB_STORAGE = validators.UnicodeString(not_empty=True)
     USR_DISK_SPACE = DiskSpaceValidator(not_empty=True)
-    MATLAB_EXECUTABLE = MatlabValidator()
     MAXIMUM_NR_OF_THREADS = ThreadNrValidator()
     MAXIMUM_NR_OF_VERTICES_ON_SURFACE = SurfaceVerticesNrValidator()
     MAXIMUM_NR_OF_OPS_IN_RANGE = validators.Int(min=5, max=5000, not_empty=True)

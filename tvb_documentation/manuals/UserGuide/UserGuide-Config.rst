@@ -21,7 +21,6 @@ Copy the following content and edit it to suit your needs. ::
 
     MAXIMUM_NR_OF_OPS_IN_RANGE=2000
     ADMINISTRATOR_EMAIL=jira.tvb@gmail.com
-    MATLAB_EXECUTABLE=/usr/bin/octave
     MAXIMUM_NR_OF_THREADS=4
     WEB_SERVER_PORT=8080
     LAST_CHECKED_CODE_VERSION=6507
