@@ -63,3 +63,23 @@ Performance evolution from a TVB version to another.
 
     Older Versions - Linux station
 
+
+ReferenceBackend vs NbMPRBackend
+---------------------------------
+
+Since version 2.6, a simulation backend based on Numba is available in TVB. For now, only the
+MontbrioPazoRoxin model is supported with this backend and the other configurations of the simulator
+are also constrained to certain values or types.
+Nevertheless, this backend looks promising if we analyse the benchmarking results below:
+
+
+.. toctree::
+   :maxdepth: 2
+
+   tvb_2.6.1_mac
+
+
+.. figure:: /_static/benchmarks-evolution.png
+
+    Recent Version - Mac station
+

@@ -63,7 +63,6 @@ class Config:
             join("..", "tvb_library", "tvb"): join(self.target_site_packages, "tvb"),
             join("..", "tvb_storage", "tvb"): join(self.target_site_packages, "tvb"),
             join("..", "tvb_bin", "tvb_bin"): join(self.target_site_packages, "tvb_bin"),
-            join("..", "externals", "BCT"): join(self.target_site_packages, "externals", "BCT"),
         }
 
         self.commands_map = commands_map

@@ -1,7 +1,7 @@
 @echo off
 
 rem Use this script to install TVB from the main code sources repo, to the current python installation
-rem set up external dependencies that we maintain as distutils packages in externals/
+
 cd ..
 
 cd tvb_framework

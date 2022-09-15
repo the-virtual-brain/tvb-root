@@ -36,7 +36,6 @@ TVB global configurations are predefined/read from here, for working with Framew
 
 import os
 import sys
-
 from tvb.basic.config import stored
 from tvb.basic.config.profile_settings import BaseSettingsProfile
 from tvb.basic.config.settings import DBSettings
@@ -124,9 +123,6 @@ class TestSQLiteProfile(WebSettingsProfile):
 
     def initialize_profile(self, change_logger_in_dev=False):
         super(TestSQLiteProfile, self).initialize_profile(change_logger_in_dev=change_logger_in_dev)
-
-        from tvb.core.utils import get_matlab_executable
-        self.MATLAB_EXECUTABLE = get_matlab_executable()
 
     def initialize_for_deployment(self):
         """

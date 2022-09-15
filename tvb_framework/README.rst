@@ -61,12 +61,6 @@ Your port **8080** should be free, as a CherryPy service will try to run there.
 Your default browser should automatically open http://localhost:8080/ which is the way to
 interact with TVB Web Interface.
 
-When using from sources (pypi or Github, not TVB_Distribution), if you want BCT adapters enabled, you should
-manually download BCT https://sites.google.com/site/bctnet/
-and set env variable **BCT_PATH** towards the directory where you unzip BCT, plus also have Octave or
-Matlab installed with command line API enabled.
-
-
 Testing
 =======
 

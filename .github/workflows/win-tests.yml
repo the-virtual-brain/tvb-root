@@ -1,0 +1,64 @@
+name: Test Win
+on: [push]
+
+jobs:
+  build:
+    name: Frw-Tests (3.10 Win)
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+
+      - name: put ~/.local/bin on $PATH
+        run: echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
+
+      - name: cache ~/.local for pip deps
+        id: cache-local
+        uses: actions/cache@v3
+        with:
+          path: ~/.local
+          key: pip-${{ hashFiles('tvb_framework/requirements.txt') }}
+
+      - name: install tools and dependencies
+        if: steps.cache-local.outputs.cache-hit != 'true'
+        run: |
+          python -m pip install --upgrade setuptools pip wheel
+          pip install --user --upgrade numpy cython
+          python -m pip install scikit-build
+          pip install --user -r tvb_framework/requirements.txt
+          pip install --user --no-build-isolation tvb-gdist
+
+      - name: cache data
+        id: cache-data
+        uses: actions/cache@v3
+        with:
+          path: tvb_data
+          key: tvbdata
+
+      - name: download data
+        if: steps.cache-data.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -OutFile C:\\TEMP\\tvb_data.zip -Uri "https://zenodo.org/record/4263723/files/tvb_data.zip?download=1"
+          Expand-Archive 'C:\\TEMP\\tvb_data.zip' C:\\tvb_data
+          del C:\\TEMP\\tvb_data.zip
+          cd C:\\tvb_data
+          python setup.py develop
+
+      - name: run framework tests
+        shell: pwsh
+        run: |
+          cd tvb_build
+          cmd /k "install_full_tvb.bat"
+          cd ../tvb_framework
+          pytest tvb/tests/framework
+
+
+
