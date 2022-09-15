@@ -38,7 +38,7 @@ It requires the user to first
 import matplotlib.pyplot as pyplot
 
 
-def plot(subplot, title, ymax, data1, label1, data2, label2, data3, label3):
+def plot(subplot, title, ymax, data1, label1, data2, label2, data3, label3, ylabel="seconds", xlabel="TVB version"):
     pyplot.subplot(subplot)
     pyplot.plot(x, data1, 'b', label=label1, marker='o')
     pyplot.plot(x, data2, 'g', label=label2, marker='o')
@@ -47,8 +47,8 @@ def plot(subplot, title, ymax, data1, label1, data2, label2, data3, label3):
                   mode="expand", borderaxespad=0., fontsize=10)
     pyplot.xticks(x, x_labels)
     pyplot.ylim(ymin=0, ymax=ymax)
-    pyplot.ylabel("seconds")
-    pyplot.xlabel("TVB version")
+    pyplot.ylabel(ylabel)
+    pyplot.xlabel(xlabel)
     pyplot.grid(True)
     pyplot.title(title)
 
@@ -100,3 +100,16 @@ plot(133, "LarterBreakspear 10000sec", 200,
 
 pyplot.show()
 figure.savefig("../../_static/benchmarks-evolution-mac.png")
+
+x = [1, 2]
+x_labels = ["ReferenceBackend", "NbMPRBackend"]
+figure = pyplot.figure(figsize=(6, 11))
+
+plot(111, "MontbrioPazoRoxin", 30,
+     [1.3, 0.1], "nodes=100, sim_length=1000ms",
+     [26.25, 1.9], "nodes=100, sim_length=20000ms",
+     [0.6, 0.08], "nodes=76, sim_length=1000ms",
+     "minutes", "TVB backend")
+
+pyplot.show()
+figure.savefig("../../_static/benchmarks-NbMPRBackend.png")

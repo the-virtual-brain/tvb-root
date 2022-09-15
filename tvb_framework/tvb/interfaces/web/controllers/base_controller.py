@@ -94,6 +94,16 @@ class BaseController(object):
                                                   subsection=WebStructure.SUB_SECTION_ALLEN,
                                                   description="Download data from Allen dataset and create a mouse connectome"))
 
+        siibra_algo = self.algorithm_service.get_algorithm_by_module_and_class(
+            IntrospectionRegistry.SIIBRA_CREATOR_MODULE,
+            IntrospectionRegistry.SIIBRA_CREATOR_CLASS
+        )
+        if siibra_algo and not siibra_algo.removed:
+            siibra_link = self.get_url_adapter(siibra_algo.fk_category, siibra_algo.id)
+            self.connectivity_submenu.append(dict(title='Siibra Connectivity', link=siibra_link,
+                                                  subsection=WebStructure.SUB_SECTION_SIIBRA,
+                                                  description='Import connectivities from EBRAINS KG using siibra'))
+
         self.burst_submenu = [dict(link=self.build_path('/burst'), subsection=WebStructure.SUB_SECTION_BURST,
                                    title='Simulation Cockpit', description='Manage simulations'),
                               dict(link=self.build_path('/burst/dynamic'), subsection='dynamic',
@@ -254,6 +264,11 @@ class BaseController(object):
         elif algorithm.module == IntrospectionRegistry.ALLEN_CREATOR_MODULE:
             result_template[common.KEY_SECTION] = WebStructure.SECTION_CONNECTIVITY
             result_template[common.KEY_SUB_SECTION] = WebStructure.SUB_SECTION_ALLEN
+            result_template[common.KEY_SUBMENU_LIST] = self.connectivity_submenu
+
+        elif algorithm.module == IntrospectionRegistry.SIIBRA_CREATOR_MODULE:
+            result_template[common.KEY_SECTION] = WebStructure.SECTION_CONNECTIVITY
+            result_template[common.KEY_SUB_SECTION] = WebStructure.SUB_SECTION_SIIBRA
             result_template[common.KEY_SUBMENU_LIST] = self.connectivity_submenu
 
         elif algorithm.algorithm_category.display:

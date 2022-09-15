@@ -60,7 +60,7 @@ setuptools.setup(name='tvb-storage',
                  license="GPL-3.0-or-later",
                  author=STORAGE_TEAM,
                  author_email='tvb.admin@thevirtualbrain.org',
-                 url='http://www.thevirtualbrain.org',
+                 url='https://www.thevirtualbrain.org',
                  download_url='https://github.com/the-virtual-brain/tvb-root',
                  keywords='tvb brain storage h5')
 

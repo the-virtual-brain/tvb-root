@@ -39,3 +39,5 @@ pandas
 requests
 simplejson
 six
+siibra
+bctpy

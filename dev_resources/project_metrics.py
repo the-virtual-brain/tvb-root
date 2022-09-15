@@ -38,8 +38,8 @@ import os
 
 INTROSPECT_FOLDER = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 IGNORED_LIST = {"__init__.py", "project_metrics.py"}
-IGNORED_FOR_TVB_LIST = ('tvb_contrib', 'externals', 'tvb/tests/framework', 'tvb/tests/library')
-IGNORED_FOR_TEST_LIST = ('tvb_contrib', 'externals')
+IGNORED_FOR_TVB_LIST = ('tvb_contrib', 'tvb/tests/framework', 'tvb/tests/library')
+IGNORED_FOR_TEST_LIST = ('tvb_contrib')
 
 TVB_LIST = []
 TVB_CODE_LINES = 0

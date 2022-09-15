@@ -189,7 +189,7 @@ class TestFlowController(BaseControllersTest):
         # Launch more operations that can be executed in parallel
         operations = []
         for i in range(TvbProfile.current.MAX_THREADS_NUMBER + 2):
-            operations.append(simulation_launch(self.test_user, self.test_project, 300))
+            operations.append(simulation_launch(self.test_user, self.test_project, 1000))
         # Wait until queue is actually full of Started operations
         preparing_operations = True
         while preparing_operations:

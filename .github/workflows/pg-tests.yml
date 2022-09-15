@@ -38,10 +38,9 @@ jobs:
           key: pip-${{ hashFiles('tvb_framework/requirements.txt') }}
 
       - name: install tools and dependencies
-        if: steps.cache-local.outputs.cache-hit != 'true'
         run: |
           sudo apt install libbz2-dev libhdf5-serial-dev liblzo2-dev octave
-          python3 -m pip install --upgrade setuptools pip wheel
+          python3 -m pip install --upgrade setuptools==59.8.0 pip wheel
           pip3 install --user --upgrade numpy psycopg2
           python3 -m pip install scikit-build
           pip3 install --user -r tvb_framework/requirements.txt
@@ -70,7 +69,6 @@ jobs:
 
       - name: run framework tests
         run: |
-          echo "MATLAB_EXECUTABLE=/usr/bin/octave" > ~/.tvb.configuration
           cd tvb_framework
           pytest tvb/tests/framework --profile=TEST_POSTGRES_PROFILE
 

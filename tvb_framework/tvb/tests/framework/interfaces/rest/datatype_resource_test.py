@@ -29,16 +29,13 @@
 #
 
 import os
-
 import flask
 import pytest
 import tvb_data
-
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.core.utils import no_matlab
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
-from tvb.interfaces.rest.server.resources.datatype.datatype_resource import RetrieveDatatypeResource, \
-    GetOperationsForDatatypeResource
+from tvb.interfaces.rest.server.resources.datatype.datatype_resource import RetrieveDatatypeResource
+from tvb.interfaces.rest.server.resources.datatype.datatype_resource import GetOperationsForDatatypeResource
 from tvb.interfaces.rest.server.resources.project.project_resource import GetDataInProjectResource
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.interfaces.rest.base_resource_test import RestResourceTest
@@ -84,7 +81,6 @@ class TestDatatypeResource(RestResourceTest):
         assert result[1] is True
         assert os.path.basename(result[0]) == os.path.basename(result[2])
 
-    @pytest.mark.skipif(no_matlab(), reason="Matlab or Octave not installed!")
     def test_server_get_operations_for_datatype(self, mocker):
         self._mock_user(mocker)
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
