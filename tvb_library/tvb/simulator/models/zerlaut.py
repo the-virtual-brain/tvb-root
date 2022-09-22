@@ -321,6 +321,18 @@ class ZerlautAdaptationFirstOrder(Model):
         domain=Range(lo=0.00, hi=0.1, step=0.001),
         doc="""external drive""")
 
+    tau_OU = NArray(
+        label=":math:`\ntau noise`",
+        default=numpy.array([5.0]),
+        domain=Range(lo=0.10, hi=10.0, step=0.01),
+        doc="""time constant noise""")
+
+    weight_noise =  NArray(
+        label=":math:`\nweight noise`",
+        default=numpy.array([10.5]),
+        domain=Range(lo=0., hi=50.0, step=1.0),
+        doc="""weight noise""")
+
     # Used for phase-plane axis ranges and to bound random initial() conditions.
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
@@ -328,6 +340,7 @@ class ZerlautAdaptationFirstOrder(Model):
                  "I": numpy.array([1e-3, 250.e-3]),
                  "W_e": numpy.array([0.0, 200.0]),
                  "W_i": numpy.array([0.0, 0.0]),
+                 "ou_drift": numpy.array([0.0,0.0]),
                  },
         doc="""The values for each state-variable should be set to encompass
         the expected dynamic range of that state-variable for the current
@@ -343,7 +356,7 @@ class ZerlautAdaptationFirstOrder(Model):
     variables_of_interest = List(
         of=str,
         label="Variables watched by Monitors",
-        choices=("E", "I", "W_e", "W_i"),
+        choices=("E", "I", "W_e", "W_i", "ou_drift"),
         default=("E",),
         doc="""This represents the default state-variables of this Model to be
                monitored. It can be overridden for each Monitor if desired. The
@@ -357,8 +370,8 @@ class ZerlautAdaptationFirstOrder(Model):
         doc="""The values for each state-variable should be set to encompass
             the boundaries of the dynamic range of that state-variable. Set None for one-sided boundaries""")
 
-    state_variables = 'E I W_e W_i'.split()
-    _nvar = 4
+    state_variables = 'E I W_e W_i ou_drift'.split()
+    _nvar = 5
     cvar = numpy.array([0], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.00):
@@ -372,6 +385,7 @@ class ZerlautAdaptationFirstOrder(Model):
         I = state_variables[1, :]
         W_e = state_variables[2, :]
         W_i = state_variables[3, :]
+        ou_drift = state_variables[4, :]
         derivative = numpy.empty_like(state_variables)
 
         # long-range coupling
@@ -382,7 +396,10 @@ class ZerlautAdaptationFirstOrder(Model):
         lc_I = local_coupling * I
 
         # external firing rate
-        Fe_ext = c_0 + lc_E
+        Fe_ext = c_0 + lc_E + self.weight_noise * noise
+        index_bad_input = numpy.where( Fe_ext*self.K_ext_e  < 0)
+        Fe_ext[index_bad_input] = 0.0
+
         Fi_ext = lc_I
 
         # Excitatory firing rate derivation
@@ -413,6 +430,7 @@ class ZerlautAdaptationFirstOrder(Model):
             self.g_L, self.C_m, self.E_L_i, self.N_tot,self.p_connect_e,
             self.p_connect_i, self.g, self.K_ext_e, self.K_ext_i)
         derivative[3] = -W_i / self.tau_w_i + self.b_i * I + self.a_i * (mu_V - self.E_L_i) / self.tau_w_i
+        derivative[4] = -ou_drift/self.tau_OU
 
         return derivative
 
@@ -614,6 +632,7 @@ class ZerlautAdaptationSecondOrder(ZerlautAdaptationFirstOrder):
                  "C_ii": numpy.array([0.5e-3, 0.0e-3]),  # variance is positive or null
                  "W_e": numpy.array([0.0, 200.0]),
                  "W_i": numpy.array([0.0, 0.0]),
+                 "ou_drift":numpy.array([0.0, 0.0]),
                  },
         doc="""The values for each state-variable should be set to encompass
         the expected dynamic range of that state-variable for the current
@@ -631,15 +650,15 @@ class ZerlautAdaptationSecondOrder(ZerlautAdaptationFirstOrder):
     variables_of_interest = List(
         of=str,
         label="Variables watched by Monitors",
-        choices=("E", "I", "C_ee", "C_ei", "C_ii", "W_e", "W_i"),
+        choices=("E", "I", "C_ee", "C_ei", "C_ii", "W_e", "W_i", "ou_drift"),
         default=("E",),
         doc="""This represents the default state-variables of this Model to be
                monitored. It can be overridden for each Monitor if desired. The
                corresponding state-variable indices for this model are :math:`E = 0`,
                :math:`I = 1`, :math:`C_ee = 2`, :math:`C_ei = 3`, :math:`C_ii = 4` and :math:`W = 5`.""")
 
-    state_variables = 'E I C_ee C_ei C_ii W_e W_i'.split()
-    _nvar = 7
+    state_variables = 'E I C_ee C_ei C_ii W_e W_i ou_drift'.split()
+    _nvar = 8
 
     def dfun(self, state_variables, coupling, local_coupling=0.00):
         r"""
@@ -681,6 +700,7 @@ class ZerlautAdaptationSecondOrder(ZerlautAdaptationFirstOrder):
         C_ii = state_variables[4, :]
         W_e = state_variables[5, :]
         W_i = state_variables[6, :]
+        ou_drift = state_variables[7,:]
         derivative = numpy.empty_like(state_variables)
 
         # long-range coupling
@@ -691,8 +711,12 @@ class ZerlautAdaptationSecondOrder(ZerlautAdaptationFirstOrder):
         lc_I = local_coupling * I
 
         # external firing rate for the different population
-        E_input_excitatory = c_0 + lc_E + self.external_input_ex_ex
-        E_input_inhibitory = c_0 + lc_E + self.external_input_in_ex
+        E_input_excitatory = c_0 + lc_E + self.external_input_ex_ex + self.weight_noise * ou_drift
+        index_bad_input = numpy.where( E_input_excitatory < 0)
+        E_input_excitatory[index_bad_input] = 0.0
+        E_input_inhibitory = c_0 + lc_E + self.external_input_in_ex + self.weight_noise * ou_drift
+        index_bad_input = numpy.where( E_input_inhibitory < 0)
+        E_input_inhibitory[index_bad_input] = 0.0
         I_input_excitatory = lc_I + self.external_input_ex_in
         I_input_inhibitory = lc_I + self.external_input_in_in
 
@@ -746,19 +770,15 @@ class ZerlautAdaptationSecondOrder(ZerlautAdaptationFirstOrder):
         # Excitatory firing rate derivation
         derivative[0] = (_TF_e - E
                          + .5 * C_ee * _diff2_fe_fe_e(E, I, E_input_excitatory, I_input_excitatory, W_e)
-                         + .5 * C_ei * _diff2_fe_fi(self.TF_excitatory, E, I, E_input_excitatory, I_input_excitatory,
-                                                    W_e)
-                         + .5 * C_ei * _diff2_fi_fe(self.TF_excitatory, E, I, E_input_excitatory, I_input_excitatory,
-                                                    W_e)
+                         + .5 * C_ei * _diff2_fe_fi(self.TF_excitatory, E, I, E_input_excitatory, I_input_excitatory, W_e)
+                         + .5 * C_ei * _diff2_fi_fe(self.TF_excitatory, E, I, E_input_excitatory, I_input_excitatory, W_e)
                          + .5 * C_ii * _diff2_fi_fi_e(E, I, E_input_excitatory, I_input_excitatory, W_e)
                          ) / self.T
         # Inhibitory firing rate derivation
         derivative[1] = (_TF_i - I
                          + .5 * C_ee * _diff2_fe_fe_i(E, I, E_input_inhibitory, I_input_inhibitory, W_i)
-                         + .5 * C_ei * _diff2_fe_fi(self.TF_inhibitory, E, I, E_input_inhibitory, I_input_inhibitory,
-                                                    W_i)
-                         + .5 * C_ei * _diff2_fi_fe(self.TF_inhibitory, E, I, E_input_inhibitory, I_input_inhibitory,
-                                                    W_i)
+                         + .5 * C_ei * _diff2_fe_fi(self.TF_inhibitory, E, I, E_input_inhibitory, I_input_inhibitory, W_i)
+                         + .5 * C_ei * _diff2_fi_fe(self.TF_inhibitory, E, I, E_input_inhibitory, I_input_inhibitory, W_i)
                          + .5 * C_ii * _diff2_fi_fi_i(E, I, E_input_inhibitory, I_input_inhibitory, W_i)
                          ) / self.T
         # Covariance excitatory-excitatory derivation
@@ -788,22 +808,23 @@ class ZerlautAdaptationSecondOrder(ZerlautAdaptationFirstOrder):
         mu_V, sigma_V, T_V = self.get_fluct_regime_vars(
             E, I,
             E_input_excitatory,
-            E_input_inhibitory,
+            I_input_excitatory,
             W_e, self.Q_e, self.tau_e, self.E_e,
             self.Q_i, self.tau_i, self.E_i,
             self.g_L, self.C_m, self.E_L_e, self.N_tot,
-            self.p_connect, self.g, self.K_ext_e, self.K_ext_i)
+            self.p_connect_e, self.p_connect_i, self.g, self.K_ext_e, self.K_ext_i)
         derivative[5] = -W_e / self.tau_w_e + self.b_e * E + self.a_e * (mu_V - self.E_L_e) / self.tau_w_e
 
         # Adaptation inhibitory
         mu_V, sigma_V, T_V = self.get_fluct_regime_vars(
             E, I,
-            I_input_excitatory,
+            E_input_inhibitory,
             I_input_inhibitory,
             W_i, self.Q_e, self.tau_e, self.E_e,
             self.Q_i, self.tau_i, self.E_i,
             self.g_L, self.C_m, self.E_L_i, self.N_tot,
-            self.p_connect, self.g, self.K_ext_e, self.K_ext_i)
+            self.p_connect_e, self.p_connect_i, self.g, self.K_ext_e, self.K_ext_i)
         derivative[6] = -W_i / self.tau_w_i + self.b_i * I + self.a_i * (mu_V - self.E_L_i) / self.tau_w_i
 
+        derivative[7] = -ou_drift/self.tau_OU
         return derivative
