@@ -396,7 +396,7 @@ class ZerlautAdaptationFirstOrder(Model):
         lc_I = local_coupling * I
 
         # external firing rate
-        Fe_ext = c_0 + lc_E + self.weight_noise * noise
+        Fe_ext = c_0 + lc_E + self.weight_noise * ou_drift
         index_bad_input = numpy.where( Fe_ext*self.K_ext_e  < 0)
         Fe_ext[index_bad_input] = 0.0
 
