@@ -333,6 +333,14 @@ class ZerlautAdaptationFirstOrder(Model):
         domain=Range(lo=0., hi=50.0, step=1.0),
         doc="""weight noise""")
 
+    S_i = NArray(
+        label="",
+        default=numpy.array([1.]),
+        domain=Range(lo=0., hi=2., step=0.01),
+        doc="""Scaling of the remote input for the inhibitory population with
+        respect to the excitatory population.""")
+
+
     # Used for phase-plane axis ranges and to bound random initial() conditions.
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
@@ -714,9 +722,11 @@ class ZerlautAdaptationSecondOrder(ZerlautAdaptationFirstOrder):
         E_input_excitatory = c_0 + lc_E + self.external_input_ex_ex + self.weight_noise * ou_drift
         index_bad_input = numpy.where( E_input_excitatory < 0)
         E_input_excitatory[index_bad_input] = 0.0
-        E_input_inhibitory = c_0 + lc_E + self.external_input_in_ex + self.weight_noise * ou_drift
+
+        E_input_inhibitory = self.S_i * c_0 + lc_E + self.external_input_in_ex + self.weight_noise * ou_drift
         index_bad_input = numpy.where( E_input_inhibitory < 0)
         E_input_inhibitory[index_bad_input] = 0.0
+
         I_input_excitatory = lc_I + self.external_input_ex_in
         I_input_inhibitory = lc_I + self.external_input_in_in
 
