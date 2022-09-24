@@ -635,9 +635,9 @@ class ZerlautAdaptationSecondOrder(ZerlautAdaptationFirstOrder):
         label="State Variable ranges [lo, hi]",
         default={"E": numpy.array([1e-3, 250.e-3]),  # actually the 100Hz should be replaced by 1/T_refrac
                  "I": numpy.array([1e-3, 250.e-3]),
-                 "C_ee": numpy.array([0.5e-3, 0.0e-3]),  # variance is positive or null
-                 "C_ei": numpy.array([0.5e-3, -0.5e-3]),  # the co-variance is in [-c_ee*c_ii,c_ee*c_ii]
-                 "C_ii": numpy.array([0.5e-3, 0.0e-3]),  # variance is positive or null
+                 "C_ee": numpy.array([0.0e-3, 0.5e-3]),  # variance is positive or null
+                 "C_ei": numpy.array([-0.5e-3, 0.5e-3]),  # the co-variance is in [-c_ee*c_ii,c_ee*c_ii]
+                 "C_ii": numpy.array([0.0e-3, 0.5e-3]),  # variance is positive or null
                  "W_e": numpy.array([0.0, 200.0]),
                  "W_i": numpy.array([0.0, 0.0]),
                  "ou_drift":numpy.array([0.0, 0.0]),
