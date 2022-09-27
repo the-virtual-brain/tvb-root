@@ -44,6 +44,8 @@ class Driver_Setup:
 		self.weights = self.connectivity.weights
 		self.lengths = self.connectivity.tract_lengths
 		self.tavg_period = 1.0
+		# Setting TP for bold
+		self.TR = (1.8/self.dt)
 		self.n_inner_steps = int(self.tavg_period / self.dt)
 
 		self.params = self.setup_params(
@@ -200,6 +202,7 @@ class Driver_Execute(Driver_Setup):
 		self.buf_len, self.states, self.n_work_items = ds.buf_len, ds.states, ds.n_work_items
 		self.n_inner_steps, self.n_params, self.dt = ds.n_inner_steps, ds.n_params, ds.dt
 		self.exposures, self.logger = ds.exposures, ds.logger
+		self.TR = ds.TR
 
 	def set_CUDAmodel_dir(self):
 		self.args.filename = os.path.join((os.path.dirname(os.path.abspath(__file__))),
@@ -263,7 +266,7 @@ class Driver_Execute(Driver_Setup):
 
 				step_fn = network_module.get_function(mod_func)
 
-				bold_func = "{}".format('_Z11bold_updateijfPfS_S_')
+				bold_func = "{}".format('_Z11bold_updatejfPfS_S_')
 				bold_fn = network_module.get_function(bold_func)
 
 		except FileNotFoundError as e:
@@ -424,9 +427,9 @@ class Driver_Execute(Driver_Setup):
 					event.record(streams[i % n_streams])
 
 					tavgk = 'tavg%d' % ((i + 1) % 2,)
-					bold_fn(np.uintc(self.args.n_regions), np.uintc(self.n_work_items),
+					bold_fn(np.uintc(self.args.n_regions),
 							# BOLD model dt is in s, requires 1e-3
-							np.float32(self.dt * self.n_inner_steps * 1e-3),
+							np.float32(self.TR * 1e-3),
 							gpu_data['bold_state'], gpu_data[tavgk], gpu_data['bold'],
 							# block=(couplings.size, 1, 1), grid=(speeds.size, 1), stream=stream)
 							# block=(args.n_coupling, 1, 1), grid=(speeds.size, 1), stream=stream)
