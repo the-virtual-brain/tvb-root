@@ -32,39 +32,46 @@ Service layer used for kubernetes calls.
 
 .. moduleauthor:: Bogdan Valean <bogdan.valean@codemart.ro>
 """
-from concurrent.futures.thread import ThreadPoolExecutor
-from subprocess import Popen, PIPE
 
 import requests
+from subprocess import Popen, PIPE
+from concurrent.futures.thread import ThreadPoolExecutor
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 
 LOGGER = get_logger(__name__)
+ENDPOINTS_FORMAT = 'https://kubernetes.default.svc/api/v1/namespaces/{}/endpoints/{}'
+PATH_TOKEN = '/var/run/secrets/kubernetes.io/serviceaccount/token'
 
 
-class KubeNotifier:
+class KubeNotifier(object):
+
     @staticmethod
     def get_pods(application):
-        sa_token = Popen(['cat', '/var/run/secrets/kubernetes.io/serviceaccount/token'], stdout=PIPE,
-                         stderr=PIPE).stdout.read().decode()
 
+        sa_token = Popen(['cat', PATH_TOKEN], stdout=PIPE, stderr=PIPE).stdout.read().decode()
         auth_header = {"Authorization": "Bearer {}".format(sa_token)}
         openshift_pods = None
+
         try:
             response = KubeNotifier.fetch_endpoints(auth_header, application)
             openshift_pods = response.json()['subsets'][0]['addresses']
+
         except Exception as e:
             LOGGER.error("Failed to retrieve openshift pods for application {}".format(application), e)
+
         return openshift_pods, auth_header
 
     @staticmethod
     def notify_pods(url, target_application=TvbProfile.current.web.OPENSHIFT_APPLICATION):
+
         if not TvbProfile.current.web.OPENSHIFT_DEPLOY:
             return
 
         LOGGER.info("Notify all pods with url {}".format(url))
         openshift_pods, auth_header = KubeNotifier.get_pods(target_application)
         url_pattern = "http://{}:" + str(TvbProfile.current.web.SERVER_PORT) + url
+
         with ThreadPoolExecutor(max_workers=len(openshift_pods)) as executor:
             for pod in openshift_pods:
                 pod_ip = pod['ip']
@@ -73,9 +80,8 @@ class KubeNotifier:
 
     @staticmethod
     def fetch_endpoints(auth_header, target_application=TvbProfile.current.web.OPENSHIFT_APPLICATION):
-        response = requests.get(
-            url='https://kubernetes.default.svc/api/v1/namespaces/{}/endpoints/{}'.format(
-                TvbProfile.current.web.OPENSHIFT_NAMESPACE, target_application),
-            verify=False, headers=auth_header)
+
+        endpoint_url = ENDPOINTS_FORMAT.format(TvbProfile.current.web.OPENSHIFT_NAMESPACE, target_application)
+        response = requests.get(url=endpoint_url, headers=auth_header)
         response.raise_for_status()
         return response
