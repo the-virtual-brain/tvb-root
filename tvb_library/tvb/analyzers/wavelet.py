@@ -114,7 +114,8 @@ def compute_continuous_wavelet_transform(time_series, frequencies, sample_period
     log.debug("freqs")
     log.debug(narray_describe(freqs))
 
-    sample_rate = time_series.sample_rate
+    # We need this to be kHz (see TVB-2946)
+    sample_rate = time_series.sample_rate/1000
 
     # Duke: code below is as given by Andreas Spiegler, I've just wrapped
     # some of the original argument names
