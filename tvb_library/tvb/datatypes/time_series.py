@@ -94,6 +94,18 @@ class TimeSeries(HasTraits):
         else:
             raise ValueError(f"{self.sample_period_unit} is not a recognized time unit")
 
+    @property
+    def sample_period_ms(self):
+        """:returns sample_period is ms """
+        if self.sample_period_unit in ("s", "sec"):
+            return 1000 * self.sample_period
+        elif self.sample_period_unit in ("ms", "msec"):
+            return self.sample_period
+        elif self.sample_period_unit in ("us", "usec"):
+            return self.sample_period / 1000.0
+        else:
+            raise ValueError(f"{self.sample_period_unit} is not a recognized time unit")
+
     def summary_info(self):
         """
         Gather scientifically interesting summary information from an instance of this datatype.
