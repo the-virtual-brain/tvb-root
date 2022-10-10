@@ -23,7 +23,8 @@ jobs:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
       - name: set up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
+        id: cp310
         with:
           python-version: "3.10"
 
@@ -35,9 +36,10 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.local
-          key: pip-${{ hashFiles('tvb_framework/requirements.txt') }}
+          key: pip-${{ steps.cp310.outputs.version }}-${{ hashFiles('tvb_framework/requirements.txt') }}
 
       - name: install tools and dependencies
+        if: steps.cache-local.outputs.cache-hit != 'true'
         run: |
           sudo apt install libbz2-dev libhdf5-serial-dev liblzo2-dev octave
           python3 -m pip install --upgrade setuptools==59.8.0 pip wheel
