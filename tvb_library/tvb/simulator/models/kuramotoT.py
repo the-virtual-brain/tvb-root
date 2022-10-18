@@ -52,5 +52,5 @@ def _numba_dfun_KuramotoT(vw, coupling, omega, local_coupling, dx):
     V = vw[0]
 
 
-    dx[0] = omega + c_pop1
+    dx[0] = omega + c_pop0
     
