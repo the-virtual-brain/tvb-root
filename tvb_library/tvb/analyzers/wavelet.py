@@ -79,10 +79,10 @@ def compute_continuous_wavelet_transform(time_series, frequencies, sample_period
 
     frequencies : Range
     The frequency resolution and range returned. Requested frequencies
-    are converted internally into appropriate scales.
+    are expected to be in kHz.
 
     sample_period : float
-    The sampling period of the computed wavelet spectrum.
+    The sampling period in ms of the computed wavelet spectrum.
 
     q_ratio : float
     NFC. Must be greater than 5. Ratios of the center frequencies to bandwidths.
@@ -99,8 +99,7 @@ def compute_continuous_wavelet_transform(time_series, frequencies, sample_period
         log.warning("Frequency step can't be 0! Trying default step, 2e-3.")
         frequencies.step = 0.002
 
-    freqs = numpy.arange(frequencies.lo, frequencies.hi,
-                         frequencies.step)
+    freqs = numpy.arange(frequencies.lo, frequencies.hi, frequencies.step)
 
     if (freqs.size == 0) or any(freqs <= 0.0):
         # TODO: Maybe should limit number of freqs... ~100 is probably a reasonable upper bound.
@@ -108,18 +107,18 @@ def compute_continuous_wavelet_transform(time_series, frequencies, sample_period
         log.debug("freqs")
         log.debug(narray_describe(freqs))
         frequencies = Range(lo=0.008, hi=0.060, step=0.002)
-        freqs = numpy.arange(frequencies.lo, frequencies.hi,
-                             frequencies.step)
+        freqs = numpy.arange(frequencies.lo, frequencies.hi, frequencies.step)
 
     log.debug("freqs")
     log.debug(narray_describe(freqs))
 
-    sample_rate = time_series.sample_rate
+    # We need this to be kHz (see TVB-2946)
+    sample_rate = time_series.sample_rate / 1000
 
     # Duke: code below is as given by Andreas Spiegler, I've just wrapped
     # some of the original argument names
     nf = len(freqs)
-    temporal_step = max((1, ReferenceBackend.iround(sample_period / time_series.sample_period)))
+    temporal_step = max((1, ReferenceBackend.iround(sample_period / time_series.sample_period_ms)))
     nt = int(numpy.ceil(ts_shape[0] / temporal_step))
 
     if not isinstance(q_ratio, numpy.ndarray):

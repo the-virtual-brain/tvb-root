@@ -16,21 +16,23 @@ jobs:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
       - name: set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
+        id: setPy
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: put ~/.local/bin on $PATH
         run: echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
 
-      - name: cache ~/.local for pip deps
-        id: cache-local
-        uses: actions/cache@v3
-        with:
-          path: ~/.local
-          key: pip-${{ matrix.python-version }}-${{ hashFiles('tvb_framework/requirements.txt') }}
+#      - name: cache ~/.local for pip deps
+#        id: cache-local
+#        uses: actions/cache@v3
+#        with:
+#          path: ~/.local
+#          key: pip--${{ steps.setPy.outputs.version }}-${{ hashFiles('tvb_framework/requirements.txt') }}
 
       - name: install tools and dependencies
+#        if: steps.cache-local.outputs.cache-hit != 'true'
         run: |
           sudo apt install libbz2-dev libhdf5-serial-dev liblzo2-dev octave
           python3 -m pip install --upgrade setuptools==59.8.0 pip wheel
