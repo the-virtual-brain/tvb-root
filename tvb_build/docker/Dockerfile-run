@@ -1,15 +1,13 @@
 FROM continuumio/miniconda3
 
-ARG TVB_USER=tvb_user
-ARG USER_HOME=/home/$TVB_USER
+ARG USER_HOME=/home
 ARG TVB_STORAGE=$USER_HOME/TVB_STORAGE
 ARG KEYCLOAK_CONFIG=$USER_HOME/keycloak_config
 ARG JUPYTER_CONFIG=$USER_HOME/.jupyter
 
-RUN useradd -ms /bin/bash $TVB_USER
 WORKDIR $USER_HOME
 
-RUN apt-get -y update && apt-get -y install build-essential gcc
+RUN apt-get -y update && apt-get -y install build-essential gcc rsync
 RUN apt-get -y update && apt-get -y install texlive-base texlive-formats-extra
 RUN apt-get -y update && apt-get -y install octave postgresql
 
@@ -22,7 +20,7 @@ RUN conda create -y --name tvb-run python=3.10 nomkl numba scipy numpy cython ps
 RUN conda install -y --name tvb-run -c conda-forge jupyterlab
 RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
 RUN /opt/conda/envs/tvb-run/bin/pip install lockfile scikit-build
-RUN /opt/conda/envs/tvb-run/bin/pip install syncrypto tvb-gdist
+RUN /opt/conda/envs/tvb-run/bin/pip install syncrypto
 
 # Jupyther notebook configurations: set password
 # tvb42
@@ -38,31 +36,38 @@ RUN wget https://zenodo.org/record/4263723/files/tvb_data.zip?download=1 -O tvb_
 
 WORKDIR $USER_HOME
 COPY requirements_group requirements.txt
+RUN conda install -y --name tvb-run imagecodecs
 RUN /opt/conda/envs/tvb-run/bin/pip install -r requirements.txt
 
 # make sure a copy of tvb-root exists inside, for users without Github clone
-USER $TVB_USER
 RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git
 
-USER root
 ARG LAST_SHA=LATEST
 RUN cd tvb-root; \
     git pull; \
     cd tvb_build; \
-    /opt/conda/envs/tvb-run/bin/pip install -r docker/requirements_group;\
-    /bin/bash -c "source activate tvb-run && /bin/bash install_full_tvb.sh"
+    /opt/conda/envs/tvb-run/bin/pip install -r docker/requirements_group; \
+    cd ../tvb_framework; \
+    /opt/conda/envs/tvb-run/bin/pip install -e . --no-deps; \
+    cd ../tvb_library; \
+    /opt/conda/envs/tvb-run/bin/pip install -e .; \
+    cd ../tvb_storage; \
+    /opt/conda/envs/tvb-run/bin/pip install -e .
 
-COPY --chown=$TVB_USER:$TVB_USER .tvb.configuration $USER_HOME/.tvb.configuration
+WORKDIR $USER_HOME
+COPY .tvb.configuration $USER_HOME/.tvb.configuration
 #COPY --chown=$TVB_USER:$TVB_USER .tvb.landing.page.configuration $USER_HOME/.tvb.landing.page.configuration
-COPY --chown=$TVB_USER:$TVB_USER step1/_help $USER_HOME/tvb-root/tvb_framework/tvb/interfaces/web/static/help
+COPY step1/_help $USER_HOME/tvb-root/tvb_framework/tvb/interfaces/web/static/help
 
-USER $TVB_USER
-RUN mkdir $USER_HOME/.tvb-temp; mkdir $USER_HOME/.tvb-temp/logs; mkdir -m777 $TVB_STORAGE $KEYCLOAK_CONFIG
+RUN mkdir $USER_HOME/.tvb-temp; mkdir $USER_HOME/.tvb-temp/logs; mkdir $TVB_STORAGE $KEYCLOAK_CONFIG
 
 ENV TVB_USER_HOME $USER_HOME
 #RUN chgrp -R 0 $USER_HOME && chmod -R g+rwX $USER_HOME
 WORKDIR $USER_HOME/tvb-root
 # MOUNT -v [local- tvb-root - clone]:$USER_HOME/tvb-root
+
+#ENV PKG_CHMOD="-R g+rwX"
+RUN chmod -R g+rwX $USER_HOME
 
 # For running all unit-tests inspect output in local tvb-root/tvb_bin/TEST_OUTPUT folder
 #CMD ["bash","-c","source activate tvb-run && cd tvb_build && bash install_full_tvb.sh && cd ../tvb_bin && service postgresql start && bash run_tests.sh postgres"]
@@ -77,4 +82,5 @@ WORKDIR $USER_HOME/tvb-root
 # bind port 8080
 # MOUNT -v [local- ~/TVB ]:$TVB_STORAGE
 #CMD ["bash","-c","source activate tvb-run && python -m tvb.interfaces.web.run_landing_page"]
+USER 1001
 CMD ["bash","-c","source activate tvb-run && cd tvb_bin && python -m tvb.interfaces.web.run WEB_PROFILE"]
