@@ -40,6 +40,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import List, Attr
 from tvb.contrib.scripts.datatypes.base import BaseModel
 from tvb.contrib.scripts.utils.data_structures_utils import is_integer, monopolar_to_bipolar
+from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.sensors import Sensors, SensorsEEG, SensorsMEG, SensorsInternal
 from tvb.datatypes.time_series import TimeSeries as TimeSeriesTVB
 from tvb.datatypes.time_series import TimeSeriesEEG as TimeSeriesEEGTVB
@@ -49,10 +50,6 @@ from tvb.datatypes.time_series import TimeSeriesSEEG as TimeSeriesSEEGTVB
 from tvb.datatypes.time_series import TimeSeriesSurface as TimeSeriesSurfaceTVB
 from tvb.datatypes.time_series import TimeSeriesVolume as TimeSeriesVolumeTVB
 from tvb.simulator.plot.utils import ensure_list
-
-from tvb.contrib.scripts.datatypes.base import BaseModel
-from tvb.contrib.scripts.utils.data_structures_utils import is_integer, monopolar_to_bipolar
-
 
 logger = get_logger(__name__)
 
@@ -648,8 +645,9 @@ TimeSeriesDict = {TimeSeries.__name__: TimeSeries,
                   TimeSeriesSEEG.__name__: TimeSeriesSEEG}
 
 if __name__ == "__main__":
-    kwargs = {"data": numpy.ones((4, 2, 10, 1)), "start_time": 0.0,
-              "labels_dimensions": {LABELS_ORDERING[1]: ["x", "y"]}}
+    connectivity = Connectivity.from_file()
+    kwargs = {"data": numpy.ones((4, 2, 10, 1)), "connectivity": connectivity,
+              "start_time": 0.0, "labels_dimensions": {LABELS_ORDERING[1]: ["x", "y"]}}
     ts = TimeSeriesRegion(**kwargs)
     tsy = ts.y
     print(tsy.squeezed)
