@@ -45,6 +45,8 @@ import tempfile
 
 from .templates import MakoUtilMix
 
+from tvb.simulator.lab import *
+
 
 class NpBackend(MakoUtilMix):
 
@@ -89,4 +91,71 @@ class NpBackend(MakoUtilMix):
         fns = [getattr(mod,n) for n in name.split(',')]
         return fns[0] if len(fns)==1 else fns
 
+    def _check_choices( self, val, choices):
+        if not isinstance(val, choices):
+            raise NotImplementedError("Unsupported simulator component. Given: {}\nExpected one of: {}".format(val, choices))
 
+    def check_compatibility(self,sim):
+        # monitors
+        if len(sim.monitors) > 1:
+            raise NotImplementedError("Configure with one monitor.")
+        self._check_choices(sim.monitors[0], monitors.Raw)
+        # integrators
+        self._check_choices(sim.integrator, 
+                (
+                    integrators.HeunStochastic,
+                    integrators.HeunDeterministic,
+                    integrators.EulerStochastic,
+                    integrators.EulerDeterministic,
+                    integrators.Identity,
+                    integrators.IdentityStochastic,
+                    integrators.RungeKutta4thOrderDeterministic,
+                )
+        )
+        # models 
+        self._check_choices(sim.model, models.MontbrioPazoRoxin) 
+        # coupling
+        self._check_choices(sim.coupling, 
+                (coupling.Linear, coupling.Sigmoidal))
+        # surface
+        if sim.surface is not None:
+            raise NotImplementedError("Surface simulation not supported.")
+        # stimulus evaluated outside the backend, no restrictions
+
+    def run_sim(self, sim, nstep=None, simulation_length=None, print_source=False):
+        assert nstep is not None or simulation_length is not None or sim.simulation_length is not None
+
+        self.check_compatibility(sim)
+
+        if nstep is None:
+            if simulation_length is None:
+                simulation_length = sim.simulation_length
+            nstep = int(np.ceil(simulation_length/sim.integrator.dt))
+
+        buf = sim.history.buffer[...,0]
+        rbuf = np.concatenate((buf[0:1], buf[1:][::-1]), axis=0)
+        state = np.transpose(rbuf, (1, 0, 2)).astype('f')
+        delays=False
+        t = np.arange( nstep ) * sim.integrator.dt
+
+
+        template = '<%include file="np-sim.py.mako"/>'
+        content = dict(sim=sim, np=np)
+        kernel = NpBackend().build_py_func(template, content, print_source=print_source)
+        dX = state.copy()
+        n_svar, _, n_node = state.shape
+        state = state.reshape((n_svar, sim.connectivity.horizon, n_node))
+
+        weights = sim.connectivity.weights.copy()
+        yh = np.empty((len(t),)+state[:,0].shape)
+
+        parmat = sim.model.spatial_parameter_matrix
+        np.random.seed(42) # !!!!! should respect integrator seed
+        args = state, weights, yh, parmat
+        if isinstance(sim.integrator, integrators.IntegratorStochastic):
+            args = args + (sim.integrator.noise.nsig,)
+        if delays:
+            args = args + (sim.connectivity.delay_indices,)
+        kernel(*args)
+
+        return (t, yh), 
