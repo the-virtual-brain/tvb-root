@@ -32,9 +32,9 @@ parameters. This default initialization is already happening, if you just landed
 for the first time. The button can be useful in case you started configuring a complex simulation
 and you lost track of the changes, to return to the safe defaults.
 
-The |upload_icon| button allows you to upload a JSON file. This file can be exported from a previously
+The |upload_icon| button allows you to upload a ZIP file. This file can be exported from a previously
 configured and run simulation (on the same or different TVB installation, as long as versions are compatible).
-Details on how to export such a JSON file can be found just bellow, when we explain the |pencil_icon| icon.
+Details on how to export such a ZIP file can be found just bellow, when we explain the |pencil_icon| icon.
 
 As main content in this left column, a history of all simulations is kept and can be
 accessed at any time.
@@ -71,8 +71,8 @@ and do not forget to press |save_icon| icon when you are done writing.
 It will be your job to optionally change something in the configuration and, when done, press the |play_icon| icon,
 to actually run this copy of the simulation.
 
-`Export JSON` is a new feature which allows you to create a text file, which stores the current simulation
-parameters. This text file will be downloaded from your browser window, and can be reused later. You could use it
+`Export ZIP` is a new feature which allows you to create a zip file, which stores the current simulation
+information (datatypes, models, integrators, etc, in H5 format). This zip file will be downloaded from your browser window, and can be reused later. You could use it
 on the same TVB installation, or on a totally different TVB server, in several manners:
 
     - from web GUI, using the |upload_icon| button, on this page (top of column `History`)
