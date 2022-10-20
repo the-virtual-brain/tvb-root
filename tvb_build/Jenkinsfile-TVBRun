@@ -29,8 +29,8 @@ pipeline {
                 unstash 'step1'
                 unzip zipFile: 'tvb_build/build/TVB_build_step1.zip', dir: 'tvb_build/docker/step1'
                 script {
-                    VERSION_TAG = "nonroot2"
-                    LAST_SHA = sh (script: "curl -s 'https://api.github.com/repos/the-virtual-brain/tvb-root/commits' | grep sha | head -1 | tr '\"' '_'", returnStdout: true).trim()
+                    VERSION_TAG = "nonroot6"
+                    LAST_SHA = 'abc6'
                     withDockerRegistry(credentialsId: 'tvb_on_docker_hub') {
                         def dockerContext = "tvb_build/docker"
                         def dockerFile = "${dockerContext}/Dockerfile-run"

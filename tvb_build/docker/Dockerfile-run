@@ -40,9 +40,9 @@ RUN conda install -y --name tvb-run imagecodecs
 RUN /opt/conda/envs/tvb-run/bin/pip install -r requirements.txt
 
 # make sure a copy of tvb-root exists inside, for users without Github clone
-RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git
+RUN git clone --branch HBP-195 --depth 1 https://github.com/the-virtual-brain/tvb-root.git
 
-ARG LAST_SHA=LATEST
+ARG LAST_SHA=BRANCH
 RUN cd tvb-root; \
     git pull; \
     cd tvb_build; \
