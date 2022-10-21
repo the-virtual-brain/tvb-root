@@ -57,7 +57,6 @@ Usage
 
 """
 
-import os
 import numpy
 import matplotlib.pyplot as plt
 import ipywidgets as widgets
@@ -116,7 +115,7 @@ class PowerSpectraInteractive(HasTraits):
         """
         super(PowerSpectraInteractive, self).__init__(**kwargs)
         LOG.debug(str(kwargs))
-        #figure
+        # figure
         self.fig = None
 
         # time-series
@@ -179,7 +178,6 @@ class PowerSpectraInteractive(HasTraits):
 
         display(fig)
 
-
     def add_selectors_widgets_to_lc_items(self):
         self.add_mode_selector()
         self.add_normalise_power_selector()
@@ -207,12 +205,12 @@ class PowerSpectraInteractive(HasTraits):
         """ Create the figure and time-series axes. """
 
         self.outer_box_layout = widgets.Layout(border='solid 1px white',
-                                    margin='3px 3px 3px 3px',
-                                    padding='2px 2px 2px 2px')
+                                               margin='3px 3px 3px 3px',
+                                               padding='2px 2px 2px 2px')
 
         self.box_layout = widgets.Layout(border='solid 1px black',
-                                    margin='3px 3px 3px 3px',
-                                    padding='2px 2px 2px 2px')
+                                         margin='3px 3px 3px 3px',
+                                         padding='2px 2px 2px 2px')
 
         self.other_layout = widgets.Layout(width='90%')
 
@@ -413,20 +411,6 @@ class PowerSpectraInteractive(HasTraits):
         self.calc_fft()
         self.plot_spectra()
 
-
-#    def plot_std(self):
-#        """ Plot """
-#        std = (self.spectra[:, self.variable, :, self.mode] +
-#               self.spectra_std[:, self.variable, :, self.mode])
-#        self.fft_ax.plot(self.frequency, std, "--")
-#
-#
-#    def plot_sem(self):
-#        """  """
-#        sem = (self.spectra[:, self.variable, :, self.mode] +
-#               self.spectra_sem[:, self.variable, :, self.mode])
-#        self.fft_ax.plot(self.frequency, sem, ":")
-
     def add_axes(self):
         self.fft_ax = self.fig.add_axes([0.15, 0.15, 0.75, 0.75])
 
@@ -529,6 +513,7 @@ def main_function(class_type=PowerSpectraInteractive):
     psi = PowerSpectraInteractive()
     psi.time_series = tsr
     psi.show()
+
 
 if __name__ == "__main__":
     main_function()

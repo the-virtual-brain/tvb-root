@@ -32,27 +32,13 @@ It inherits the Simulator class.
 """
 
 import numpy
-
 from tvb.basic.neotraits.api import Attr, NArray, Float, List, TupleEnum, EnumAttr
-from tvb.contrib.tests.cosimulation.parallel.ReducedWongWang import ReducedWongWangProxy
 from tvb.simulator.common import iround
 from tvb.simulator.simulator import Simulator, math
 from tvb.contrib.cosimulation.cosim_history import CosimHistory
 from tvb.contrib.cosimulation.cosim_monitors import CosimMonitor, CosimMonitorFromCoupling
 from tvb.contrib.cosimulation.exception import NumericalInstability
 
-
-class ContribModelsEnum(TupleEnum):
-    REDUCED_WONG_WANG_PROXY = (ReducedWongWangProxy, "Reduced Wong-Wang Proxy")
-
-
-# This class exists only for testing purposes
-class ContribTestSimulator(Simulator):
-    model = EnumAttr(
-        field_type=ContribModelsEnum,
-        label="Local dynamic model",
-        default=ContribModelsEnum.REDUCED_WONG_WANG_PROXY.instance,
-        required=True)
 
 
 class CoSimulator(Simulator):
@@ -88,12 +74,6 @@ class CoSimulator(Simulator):
                in milliseconds, must be an integral multiple
                of integration-step size. It defaults to simulator.integrator.dt""")
 
-    model = EnumAttr(
-        field_type=ContribModelsEnum,
-        label="Local dynamic model",
-        default=ContribModelsEnum.REDUCED_WONG_WANG_PROXY.instance,
-        required=True)
-
     synchronization_n_step = 0
     good_cosim_update_values_shape = (0, 0, 0, 0)
     cosim_history = None  # type: CosimHistory
@@ -123,17 +103,6 @@ class CoSimulator(Simulator):
                                  'the minimum delay time %g '
                                  'of all existing connections (i.e., of nonzero weight)!'
                                  % (self.synchronization_time, min_idelay * self.integrator.dt))
-
-    def _configure_cosimulation(self):
-        """This method will
-           - set the synchronization time and number of steps,
-           - check the time and the variable of interest are correct
-           - create and initialize CosimHistory,
-           - configure the cosimulation monitor
-           - zero connectivity weights to/from nodes modelled exclusively by the other cosimulator
-           """
-        # Configure the synchronizatin time and number of steps
-        self._configure_synchronization_time()
 
     def _configure_cosimulation(self):
         """This method will
