@@ -22,3 +22,4 @@ werkzeug
 gevent
 ipywidgets
 autopep8
+deprecation

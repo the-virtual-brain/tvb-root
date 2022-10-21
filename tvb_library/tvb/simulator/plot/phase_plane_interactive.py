@@ -65,7 +65,7 @@ import numpy
 import matplotlib.pyplot as plt
 import colorsys
 import matplotlib.widgets as widgets
-
+import deprecation
 from tvb.simulator.common import get_logger
 import tvb.simulator.models as models_module
 import tvb.simulator.integrators as integrators_module
@@ -92,6 +92,8 @@ def get_color(num_colours):
         yield "#{0:02x}{1:02x}{2:02x}".format(*col)
 
 
+@deprecation.deprecated(deprecated_in="2.7", removed_in="3.0",
+                        details="Use tvb-widgets instead")
 class PhasePlaneInteractive(HasTraits):
     """
     The GUI for the interactive phase-plane viewer provides sliders for setting:
@@ -248,14 +250,14 @@ class PhasePlaneInteractive(HasTraits):
             figure_window_title = "Interactive phase-plane: " + model_name
             figure_window_title += "   --   %s" % integrator_name
             self.ipp_fig = plt.figure(num=figure_window_title,
-                                        figsize=figsize,
-                                        facecolor=BACKGROUNDCOLOUR,
-                                        edgecolor=EDGECOLOUR)
+                                      figsize=figsize,
+                                      facecolor=BACKGROUNDCOLOUR,
+                                      edgecolor=EDGECOLOUR)
         except ValueError:
             LOG.info("My life would be easier if you'd update your PyLab...")
             self.ipp_fig = plt.figure(num=42, figsize=figsize,
-                                        facecolor=BACKGROUNDCOLOUR,
-                                        edgecolor=EDGECOLOUR)
+                                      facecolor=BACKGROUNDCOLOUR,
+                                      edgecolor=EDGECOLOUR)
 
         self.pp_ax = self.ipp_fig.add_axes([0.265, 0.2, 0.5, 0.75])
 

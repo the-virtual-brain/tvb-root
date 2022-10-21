@@ -34,6 +34,7 @@
 """
 
 import numpy
+import deprecation
 from matplotlib import pyplot
 from tvb.datatypes.projections import ProjectionMatrix
 from tvb.datatypes.sensors import Sensors
@@ -41,6 +42,8 @@ from tvb.simulator.plot.base_plotter import BasePlotter
 from tvb.simulator.plot.utils import compute_in_degree
 
 
+@deprecation.deprecated(deprecated_in="2.7", removed_in="3.0",
+                        details="Use tvb-widgets instead")
 class HeadPlotter(BasePlotter):
 
     def __init__(self, config=None):
