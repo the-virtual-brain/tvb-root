@@ -31,7 +31,7 @@ parameters:
 
   - name: OPENSHIFT_PROJECT_NAME
     displayName: Project Name
-    description: Project Name
+    description: Project Name/Openshift namespace
     value: "thevirtualbrain"
     required: true
 
@@ -46,6 +46,31 @@ parameters:
     description: TVB REST route
     value: "thevirtualbrain-rest.apps.hbp.eu"
     required: true
+
+  - name: LAST_CHECKED_CODE_VERSION
+    displayName: Last checked code version
+    description: TVB checks this number to decide if data migration is necessary at re-deploy
+    value: 17440
+    required: true
+
+  - name: TVB_STORAGE_PATH
+    displayName: TVB_STORAGE
+    description: TVB storage path within docker container
+    value: /home/TVB_STORAGE
+    required: true
+
+  - name: TVB_CONFIGURATION_PATH
+    displayName: .tvb.configuration
+    description: TVB configuration path within docker container
+    value: /home/.tvb.configuration
+    required: true
+
+  - name: TVB_KEYCLOAK_PATH
+    displayName: keycloak_config
+    description: Keycloak configuration folder path within docker container
+    value: /home/keycloak_config
+    required: true
+
 objects:
   - kind: "PersistentVolumeClaim"
     apiVersion: "v1"
@@ -76,7 +101,7 @@ objects:
   - kind: ConfigMap
     apiVersion: v1
     data:
-      .tvb.configuration: "ADMINISTRATOR_DISPLAY_NAME=Administrator\r\nADMINISTRATOR_NAME=admin\r\nADMINISTRATOR_PASSWORD=1a1dc91c907325c69271ddf0c944bc72\r\nADMINISTRATOR_EMAIL=jira.tvb@gmail.com\r\nADMINISTRATORS_GROUP=TVB-admins\r\nKEYCLOAK_CONFIGURATION=/home/tvb_user/keycloak_config/keycloak_config.json\r\nKEYCLOAK_WEB_CONFIGURATION=/home/tvb_user/keycloak_config/keycloak_web_config.json\r\nENABLE_KEYCLOAK_LOGIN=True\r\nTVB_STORAGE=/home/tvb_user/TVB_STORAGE/\r\nUSR_DISK_SPACE=5242880\r\nSELECTED_DB=postgres\r\nURL_VALUE=postgresql+psycopg2://pg-bouncer/tvb_hbp_database?user=${POSTGRESQL_USER}&password=${POSTGRESQL_PASSWORD}\r\nWEB_SERVER_PORT=8080\r\nCLUSTER_SCHEDULER=oar\r\nMAXIMUM_NR_OF_THREADS=4\r\nOP_BACKGROUND_JOB_INTERVAL=30\r\nMAXIMUM_NR_OF_OPS_IN_RANGE=2000\r\nMAXIMUM_NR_OF_VERTICES_ON_SURFACE=300000\r\nDEPLOY_CLUSTER=False\r\nLAST_CHECKED_FILE_VERSION=5\r\nLAST_CHECKED_CODE_VERSION=17437\r\nTRACE_USER_ACTIONS=True\r\nRUN_ON_HPC=False\r\nHPC_COMPUTE_SITE=DAINT-CSCS\r\nCRYPT_DATADIR=/home/tvb_user/.data\r\nCRYPT_PASSDIR=/home/tvb_user/.pass\r\nENCRYPT_STORAGE=False\r\nDECRYPT_PATH=/home/tvb_user/DECRYPT\r\nMAX_CONNECTIONS=0\r\nMAX_ASYNC_CONNECTION=0\r\nOPENSHIFT_DEPLOY=True\r\nOPENSHIFT_NAMESPACE=${OPENSHIFT_PROJECT_NAME}\r\nOPENSHIFT_APPLICATION=thevirtualbrain\r\nDATA_ENCRYPTION_HANDLER_APPLICATION=thevirtualbrain\r\nPROCESSING_OPERATIONS_APPLICATION=process-operations"
+      .tvb.configuration: "ADMINISTRATOR_DISPLAY_NAME=Administrator\r\nADMINISTRATOR_NAME=admin\r\nADMINISTRATOR_PASSWORD=1a1dc91c907325c69271ddf0c944bc72\r\nADMINISTRATOR_EMAIL=jira.tvb@gmail.com\r\nADMINISTRATORS_GROUP=group-TVB-admins\r\nKEYCLOAK_CONFIGURATION=${TVB_KEYCLOAK_PATH}/keycloak_config.json\r\nKEYCLOAK_WEB_CONFIGURATION=${TVB_KEYCLOAK_PATH}/keycloak_web_config.json\r\nENABLE_KEYCLOAK_LOGIN=True\r\nTVB_STORAGE=${TVB_STORAGE_PATH}\r\nUSR_DISK_SPACE=5242880\r\nSELECTED_DB=postgres\r\nURL_VALUE=postgresql+psycopg2://pg-bouncer/tvb_hbp_database?user=${POSTGRESQL_USER}&password=${POSTGRESQL_PASSWORD}\r\nWEB_SERVER_PORT=8080\r\nCLUSTER_SCHEDULER=oar\r\nMAXIMUM_NR_OF_THREADS=4\r\nOP_BACKGROUND_JOB_INTERVAL=30\r\nMAXIMUM_NR_OF_OPS_IN_RANGE=2000\r\nMAXIMUM_NR_OF_VERTICES_ON_SURFACE=300000\r\nDEPLOY_CLUSTER=False\r\nLAST_CHECKED_FILE_VERSION=5\r\nLAST_CHECKED_CODE_VERSION=${LAST_CHECKED_CODE_VERSION}\r\nTRACE_USER_ACTIONS=True\r\nRUN_ON_HPC=False\r\nHPC_COMPUTE_SITE=DAINT-CSCS\r\nCRYPT_DATADIR=/home/.data\r\nCRYPT_PASSDIR=/home/.pass\r\nENCRYPT_STORAGE=False\r\nDECRYPT_PATH=/home/DECRYPT\r\nMAX_CONNECTIONS=0\r\nMAX_ASYNC_CONNECTION=0\r\nOPENSHIFT_DEPLOY=True\r\nOPENSHIFT_NAMESPACE=${OPENSHIFT_PROJECT_NAME}\r\nOPENSHIFT_APPLICATION=thevirtualbrain\r\nDATA_ENCRYPTION_HANDLER_APPLICATION=thevirtualbrain\r\nPROCESSING_OPERATIONS_APPLICATION=process-operations"
     metadata:
       name: config-file
   - kind: ConfigMap
@@ -126,9 +151,9 @@ objects:
                 - containerPort: 8080
                   protocol: TCP
               volumeMounts:
-                - mountPath: /home/tvb_user/TVB_STORAGE/
+                - mountPath: ${TVB_STORAGE_PATH}
                   name: tvb-storage
-                - mountPath: /home/tvb_user/.tvb.configuration
+                - mountPath: ${TVB_CONFIGURATION_PATH}
                   name: cfgmap
                   subPath: .tvb.configuration
           volumes:
@@ -146,6 +171,18 @@ objects:
       paused: false
       revisionHistoryLimit: 5
       minReadySeconds: 0
+  - kind: RoleBinding
+    apiVersion: v1
+    metadata:
+      name: view-permissions
+    subjects:
+      - kind: ServiceAccount
+        name: default
+        namespace: ${OPENSHIFT_PROJECT_NAME}
+    roleRef:
+      kind: Role
+      name: view
+      label: kubernetes.io/bootstrapping=rbac-defaults
   # Process Operations
   - kind: "DeploymentConfig"
     apiVersion: v1
@@ -170,9 +207,9 @@ objects:
                 - containerPort: 8080
                   protocol: TCP
               volumeMounts:
-                - mountPath: /home/tvb_user/TVB_STORAGE/
+                - mountPath: ${TVB_STORAGE_PATH}
                   name: tvb-storage
-                - mountPath: /home/tvb_user/.tvb.configuration
+                - mountPath: ${TVB_CONFIGURATION_PATH}
                   name: cfgmap
                   subPath: .tvb.configuration
           volumes:
@@ -230,11 +267,11 @@ objects:
                 - containerPort: 9090
                   protocol: TCP
               volumeMounts:
-                - mountPath: /home/tvb_user/keycloak_config
+                - mountPath: ${TVB_KEYCLOAK_PATH}
                   name: keycloak-config
-                - mountPath: /home/tvb_user/TVB_STORAGE/
+                - mountPath: ${TVB_STORAGE_PATH}
                   name: tvb-storage
-                - mountPath: /home/tvb_user/.tvb.configuration
+                - mountPath: ${TVB_CONFIGURATION_PATH}
                   name: cfgmap
                   subPath: .tvb.configuration
           volumes:

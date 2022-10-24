@@ -80,10 +80,6 @@ class KubeNotifier(object):
 
     @staticmethod
     def fetch_endpoints(auth_header, target_application=TvbProfile.current.web.OPENSHIFT_APPLICATION):
-
-        session = requests.Session()
-        session.verify = False
-
         endpoint_url = ENDPOINTS_FORMAT.format(TvbProfile.current.web.OPENSHIFT_NAMESPACE, target_application)
         response = requests.get(url=endpoint_url, headers=auth_header)
         response.raise_for_status()
