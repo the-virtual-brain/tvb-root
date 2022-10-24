@@ -65,7 +65,7 @@ import numpy
 import matplotlib.pyplot as plt
 import colorsys
 import matplotlib.widgets as widgets
-import deprecation
+from deprecated import deprecated
 from tvb.simulator.common import get_logger
 import tvb.simulator.models as models_module
 import tvb.simulator.integrators as integrators_module
@@ -92,8 +92,7 @@ def get_color(num_colours):
         yield "#{0:02x}{1:02x}{2:02x}".format(*col)
 
 
-@deprecation.deprecated(deprecated_in="2.7", removed_in="3.0",
-                        details="Use tvb-widgets instead")
+@deprecated(reason="Use tvb-widgets instead")
 class PhasePlaneInteractive(HasTraits):
     """
     The GUI for the interactive phase-plane viewer provides sliders for setting:

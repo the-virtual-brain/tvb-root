@@ -43,7 +43,7 @@ LIBRARY_VERSION = "2.6.1"
 
 LIBRARY_TEAM = "Marmaduke Woodman, Stuart Knock, Paula Sanz Leon, Viktor Jirsa"
 
-LIBRARY_REQUIRED_PACKAGES = ["autopep8", "deprecation", "ipywidgets", "lxml", "mako>=1.1.4", "matplotlib",
+LIBRARY_REQUIRED_PACKAGES = ["autopep8", "Deprecated", "ipywidgets", "lxml", "mako>=1.1.4", "matplotlib",
                              "networkx", "numba", "numexpr", "numpy", "pylems", "requests", "scipy", "six"]
 
 LIBRARY_REQUIRED_EXTRA = ["h5py",  "pytest", "pytest-benchmark", "pytest-xdist", "tvb-gdist", "tvb-data"]

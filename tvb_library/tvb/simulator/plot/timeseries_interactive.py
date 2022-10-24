@@ -59,12 +59,12 @@ Usage
 """
 
 import numpy
-import deprecation
 import ipywidgets as widgets
 import matplotlib.pyplot as plt
 import tvb.datatypes.time_series as time_series_datatypes
 from IPython.display import display
 from matplotlib import rcParams
+from deprecated import deprecated
 from tvb.basic.neotraits.api import HasTraits, Attr, Int
 from tvb.simulator.common import get_logger
 from tvb.simulator.plot.utils import ensure_list, rotate_n_list_elements
@@ -82,8 +82,7 @@ BORDER_BLACK = 'solid 1px black'
 TIME_RESOLUTION = 1024  # 512 is too coarse; 2048 is a bit slow... ?Make it a traited attribute??
 
 
-@deprecation.deprecated(deprecated_in="2.7", removed_in="3.0",
-                        details="Use tvb-widgets instead")
+@deprecated(reason="Use tvb-widgets instead")
 class TimeSeriesInteractive(HasTraits):
     """
     For generating an interactive time-series figure, given one of TVB's 
@@ -605,8 +604,7 @@ class TimeSeriesInteractive(HasTraits):
                 display(self.its_fig.canvas)
 
 
-@deprecation.deprecated(deprecated_in="2.7", removed_in="3.0",
-                        details="Use tvb-widgets instead")
+@deprecated(reason="Use tvb-widgets instead")
 class TimeSeriesInteractivePlotter(TimeSeriesInteractive):
 
     def create_figure(self, **kwargs):
