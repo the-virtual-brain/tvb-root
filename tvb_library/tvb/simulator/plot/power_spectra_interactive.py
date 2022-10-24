@@ -57,7 +57,6 @@ Usage
 
 """
 
-import os
 import numpy
 import matplotlib.pyplot as plt
 import ipywidgets as widgets
@@ -116,7 +115,7 @@ class PowerSpectraInteractive(HasTraits):
         """
         super(PowerSpectraInteractive, self).__init__(**kwargs)
         LOG.debug(str(kwargs))
-        #figure
+        # figure
         self.fig = None
 
         # time-series
@@ -144,6 +143,7 @@ class PowerSpectraInteractive(HasTraits):
         self.window_length_selector = None
         self.window_function_selector = None
 
+        #
         possible_freq_steps = [2 ** x for x in range(-2, 7)]  # Hz
         self.possible_window_lengths = 1.0 / numpy.array(possible_freq_steps)  # s
         self.freq_step = 1.0 / self.window_length
@@ -178,9 +178,6 @@ class PowerSpectraInteractive(HasTraits):
 
         display(fig)
 
-    ##------------------------------------------------------------------------##
-    ##------------------ Functions for building the figure -------------------##
-    ##------------------------------------------------------------------------##
     def add_selectors_widgets_to_lc_items(self):
         self.add_mode_selector()
         self.add_normalise_power_selector()
@@ -208,12 +205,12 @@ class PowerSpectraInteractive(HasTraits):
         """ Create the figure and time-series axes. """
 
         self.outer_box_layout = widgets.Layout(border='solid 1px white',
-                                    margin='3px 3px 3px 3px',
-                                    padding='2px 2px 2px 2px')
+                                               margin='3px 3px 3px 3px',
+                                               padding='2px 2px 2px 2px')
 
         self.box_layout = widgets.Layout(border='solid 1px black',
-                                    margin='3px 3px 3px 3px',
-                                    padding='2px 2px 2px 2px')
+                                         margin='3px 3px 3px 3px',
+                                         padding='2px 2px 2px 2px')
 
         self.other_layout = widgets.Layout(width='90%')
 
@@ -438,6 +435,7 @@ class PowerSpectraInteractive(HasTraits):
             self.add_axes()
 
     def fft_ax_plot(self):
+        # import pdb; pdb.set_trace()
         # Plot the power spectra
         if self.normalise_power == "yes":
             self.fft_ax.plot(self.frequency,
@@ -454,14 +452,13 @@ class PowerSpectraInteractive(HasTraits):
         self.fft_ax.set(xlabel="Frequency (%s)" % self.units)
         self.fft_ax.set(ylabel="Power")
 
-        # Set x and y scale based on current radio button selection.
+        # Set x and y scale based on curent radio button selection.
         self.fft_ax.set_xscale(self.xscale)
         self.fft_ax.set_yscale(self.yscale)
 
         if hasattr(self.fft_ax, 'autoscale'):
             self.fft_ax.autoscale(enable=True, axis='both', tight=True)
 
-        # Plot the power spectra
         self.fft_ax_plot()
 
     def plot_figures(self):
@@ -471,7 +468,23 @@ class PowerSpectraInteractive(HasTraits):
         """ Plot the power spectra. """
         self.op.clear_output(wait=True)
         with plt.ioff():
-            self.plot_figure()
+            if not self.fig:
+                time_series_type = self.time_series.__class__.__name__
+                try:
+                    figure_window_title = "Interactive power spectra: " + time_series_type
+                    plt.close(figure_window_title)
+                    self.fig = plt.figure(num=figure_window_title,
+                                          figsize=(9, 4),
+                                          facecolor=BACKGROUNDCOLOUR,
+                                          edgecolor=EDGECOLOUR)
+                except ValueError:
+                    LOG.info("My life would be easier if you'd update your Pyplot...")
+                    figure_number = 42
+                    plt.close(figure_number)
+                    self.fig = plt.figure(num=figure_number,
+                                          figsize=(9, 4),
+                                          facecolor=BACKGROUNDCOLOUR,
+                                          edgecolor=EDGECOLOUR)
             self.add_axes()
             self.plot_figures()
 
@@ -500,6 +513,7 @@ def main_function(class_type=PowerSpectraInteractive):
     psi = PowerSpectraInteractive()
     psi.time_series = tsr
     psi.show()
+
 
 if __name__ == "__main__":
     main_function()
