@@ -34,11 +34,13 @@ from copy import deepcopy
 from enum import Enum
 
 import numpy
+import xarray as xr
 from six import string_types
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import List, Attr
 from tvb.contrib.scripts.datatypes.base import BaseModel
 from tvb.contrib.scripts.utils.data_structures_utils import is_integer, monopolar_to_bipolar
+from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.sensors import Sensors, SensorsEEG, SensorsMEG, SensorsInternal
 from tvb.datatypes.time_series import TimeSeries as TimeSeriesTVB
 from tvb.datatypes.time_series import TimeSeriesEEG as TimeSeriesEEGTVB
@@ -48,10 +50,6 @@ from tvb.datatypes.time_series import TimeSeriesSEEG as TimeSeriesSEEGTVB
 from tvb.datatypes.time_series import TimeSeriesSurface as TimeSeriesSurfaceTVB
 from tvb.datatypes.time_series import TimeSeriesVolume as TimeSeriesVolumeTVB
 from tvb.simulator.plot.utils import ensure_list
-
-from tvb.contrib.scripts.datatypes.base import BaseModel
-from tvb.contrib.scripts.utils.data_structures_utils import is_integer, monopolar_to_bipolar
-
 
 logger = get_logger(__name__)
 
@@ -103,39 +101,40 @@ def prepare_4d(data, logger):
 
 
 class TimeSeries(TimeSeriesTVB, BaseModel):
+
+    title = Attr(str, default="Time Series")
+
     logger = get_logger(__name__)
 
-    def __init__(self, data=None, **kwargs):
-        super(TimeSeries, self).__init__(**kwargs)
-        if data is not None:
-            self.data = prepare_4d(data, self.logger)
-            self.configure()
+    def __init__(self, **kwargs):
+        data = kwargs.pop("data", numpy.empty((0, 0, 0, 0)))
+        if isinstance(data, xr.DataArray):
+            super(TimeSeries, self).__init__(data=prepare_4d(data.values, self.logger), **kwargs)
+            self.configure_from_xarray_DataArray(data)
+        else:
+            super(TimeSeries, self).__init__(data=prepare_4d(data, self.logger), **kwargs)
+        self.configure()
 
-    def from_xarray_DataArray(self, xrdtarr, **kwargs):
+    def configure_from_xarray_DataArray(self, xrdtarr):
         # We assume that time is in the first dimension
         labels_ordering = xrdtarr.coords.dims
         labels_dimensions = {}
         for dim in labels_ordering[1:]:
             labels_dimensions[dim] = numpy.array(xrdtarr.coords[dim].values).tolist()
         if xrdtarr.name is not None and len(xrdtarr.name) > 0:
-            kwargs.update({"title": xrdtarr.name})
+            self.title = xrdtarr.name
+        self.labels_ordering = labels_ordering
+        self.labels_dimensions = labels_dimensions
         if xrdtarr.size == 0:
-            return self.duplicate(data=numpy.empty((0, 0, 0, 0)),
-                                  time=numpy.empty((0,)),
-                                  labels_ordering=labels_ordering,
-                                  labels_dimensions=labels_dimensions,
-                                  **kwargs)
-        return self.duplicate(data=xrdtarr.values,
-                              time=numpy.array(xrdtarr.coords[labels_ordering[0]].values),
-                              labels_ordering=labels_ordering,
-                              labels_dimensions=labels_dimensions,
-                              **kwargs)
+            self.time = numpy.array(xrdtarr.coords[labels_ordering[0]].values)
+        else:
+            self.time = numpy.empty((0,))
 
     def duplicate(self, **kwargs):
         duplicate = deepcopy(self)
+        duplicate.data = prepare_4d(kwargs.pop('data', self.data), self.logger)
         for attr, value in kwargs.items():
             setattr(duplicate, attr, value)
-        duplicate.data = prepare_4d(duplicate.data, self.logger)
         duplicate.configure()
         return duplicate
 
@@ -164,7 +163,7 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
         try:
             return self.labels_dimensions[dimension_label_or_index]
         except KeyError:
-            self.logger.error("There are no %s labels defined for this instance. Its shape is: %s",
+            self.logger.error("There are no %s labels defined for this instance. Its shape is: %s" %
                               (dimension_label_or_index, self.data.shape))
             raise
 
@@ -190,7 +189,7 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
         dim_index = self.get_dimension_index(dimension)
         for index in ensure_list(indices):
             if index < 0 or index > self.data.shape[dim_index]:
-                self.logger.error("Some of the given indices are out of %s range: [0, %s]",
+                self.logger.error("Some of the given indices are out of %s range: [0, %s]" %
                                   (self.get_dimension_name(dim_index), self.data.shape[dim_index]))
                 raise IndexError
 
@@ -646,8 +645,9 @@ TimeSeriesDict = {TimeSeries.__name__: TimeSeries,
                   TimeSeriesSEEG.__name__: TimeSeriesSEEG}
 
 if __name__ == "__main__":
-    kwargs = {"data": numpy.ones((4, 2, 10, 1)), "start_time": 0.0,
-              "labels_dimensions": {LABELS_ORDERING[1]: ["x", "y"]}}
+    connectivity = Connectivity.from_file()
+    kwargs = {"data": numpy.ones((4, 2, 10, 1)), "connectivity": connectivity,
+              "start_time": 0.0, "labels_dimensions": {LABELS_ORDERING[1]: ["x", "y"]}}
     ts = TimeSeriesRegion(**kwargs)
     tsy = ts.y
     print(tsy.squeezed)

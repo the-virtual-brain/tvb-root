@@ -322,7 +322,7 @@ class TimeSeries(HasTraits):
                                                             getattr(self, "labels_dimensions", None)))
         if labels_dimensions is not None:
             labels_dimensions = coords_to_dict(labels_dimensions)
-        if isinstance(labels_dimensions, dict):
+        if isinstance(labels_dimensions, dict) and len(labels_dimensions):
             assert [key in labels_ordering for key in labels_dimensions.keys()]
         return labels_ordering, labels_dimensions, kwargs
 
@@ -337,8 +337,6 @@ class TimeSeries(HasTraits):
             labels_dimensions[labels_ordering[0]] = time
         self.sample_period_unit = kwargs.pop('sample_period_unit', self.__class__.sample_period_unit.default)
         self.title = kwargs.pop('title', kwargs.pop("name", self.__class__.title.default))
-        for key, val in labels_dimensions.items():
-            labels_dimensions[key] = list(val)
         self._data = xr.DataArray(data, dims=list(labels_ordering), coords=labels_dimensions,
                                   name=str(self.title), attrs=kwargs.pop("attrs", None))
         super(TimeSeries, self).__init__(**kwargs)
@@ -502,9 +500,9 @@ class TimeSeries(HasTraits):
         try:
             return self.labels_dimensions[dimension_label_or_index]
         except KeyError:
-            logger.error("There are no %s labels defined for this instance: %s",
-                              (dimension_label_or_index, str(self._data.coords)))
-            raise
+            logger.warning("There are no %s labels defined for this instance: %s",
+                           (dimension_label_or_index, str(self._data.coords)))
+            return []
 
     def update_dimension_names(self, dim_names, dim_indices=None):
         dim_names = ensure_list(dim_names)
@@ -799,7 +797,7 @@ class TimeSeries(HasTraits):
         else:
             # TODO: find out if this part works, given that it is not really necessary
             # Now try to behave as if this was a getitem call:
-            for i_dim in range(1, 4):
+            for i_dim in range(1, self.nr_dimensions):
                 if self.get_dimension_name(i_dim) in self.labels_dimensions.keys() and \
                         attr_name in self.get_dimension_labels(i_dim):
                     return self.slice_data_across_dimension_by_label(attr_name, i_dim)
@@ -825,7 +823,7 @@ class TimeSeries(HasTraits):
             else:
                 # Now try to behave as if this was a setitem call:
                 slice_list = [slice(None)]  # for first dimension index, i.e., time
-                for i_dim in range(1, 4):
+                for i_dim in range(1, self.nr_dimensions):
                     if self.get_dimension_name(i_dim) in self.labels_dimensions.keys() and \
                             attr_name in self.get_dimension_labels(i_dim):
                         slice_list.append(attr_name)
@@ -1095,11 +1093,22 @@ class TimeSeriesRegion(TimeSeries):
 
     def configure(self):
         super(TimeSeriesRegion, self).configure()
-        if self.connectivity.number_of_regions != self.number_of_labels:
+        labels = self.get_dimension_labels(2)
+        number_of_labels = len(labels)
+        if number_of_labels == 0:
+            if self.number_of_labels == self.connectivity.region_labels.shape[0]:
+                self._data.assign_coords({self.labels_ordering[2]: self.connectivity.region_labels})
+            else:
+                logger.warning("RegionTimeSeries labels is empty!\n"
+                               "Labels can not be set from Connectivity, because RegionTimeSeries shape[2]=%d "
+                               "is not equal to the Connectivity size %d!\n"
+                               % (self.number_of_labels, self.connectivity.region_labels.shape[0]))
+                return
+        if self.connectivity.number_of_regions > number_of_labels:
             try:
-                labels = self.get_dimension_labels(2)
                 self.connectivity = HeadService().slice_connectivity(self.connectivity, labels)
-            except:
+            except Exception as e:
+                logger.warning(str(e))
                 logger.warning("Connectivity and RegionTimeSeries labels agreement failed!")
 
     def to_tvb_instance(self, **kwargs):
@@ -1200,12 +1209,23 @@ class TimeSeriesSensors(TimeSeries):
 
     def configure(self):
         super(TimeSeriesSensors, self).configure()
-        if self.sensors.number_of_sensors != self.number_of_labels:
+        labels = self.get_dimension_labels(2)
+        number_of_labels = len(labels)
+        if number_of_labels == 0:
+            if self.number_of_labels == self.sensors.number_of_sensors:
+                self._data.assign_coords({self.labels_ordering[2]: self.sensors.labels})
+            else:
+                logger.warning("SensorsTimeSeries labels is empty!\n"
+                               "Labels can not be set from Sensors, because SensorsTimeSeries shape[2]=%d "
+                               "is not equal to the Sensors size %d!\n"
+                               % (self.number_of_labels, self.sensors.number_of_sensors))
+                return
+        if self.sensors.number_of_sensors > number_of_labels:
             try:
-                labels = self.get_dimension_labels(2)
                 self.sensors = HeadService().slice_sensors(self.sensors, labels)
-            except:
-                logger.warning("Connectivity and RegionTimeSeries labels agreement failed!")
+            except Exception as e:
+                logger.warning(str(e))
+                logger.warning("Sensors and SensorsTimeSeries labels agreement failed!")
 
     def to_tvb_instance(self, datatype=TimeSeriesSensorsTVB, **kwargs):
         return datatype().from_xarray_DataArray(self._data, **kwargs)
