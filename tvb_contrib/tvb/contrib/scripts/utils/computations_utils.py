@@ -154,8 +154,6 @@ def curve_elbow_point(vals, interactive):
     # dif = np.diff(np.diff(np.diff(cumsum_vals)))
     # elbow = np.argmax(dif) + 2
     if interactive:
-        import matplotlib
-        matplotlib.use(FiguresConfig.MATPLOTLIB_BACKEND)
         from matplotlib import pyplot
         pyplot.ion()
         fig, ax = pyplot.subplots()
