@@ -52,7 +52,6 @@ class BasePlotter(object):
         self.config = config
         self.logger = get_logger(self.__class__.__name__)
         self.print_regions_indices = True
-        matplotlib.use(self.config.MATPLOTLIB_BACKEND)
         pyplot.rcParams["font.size"] = self.config.FONTSIZE
 
     def _check_show(self):
@@ -66,13 +65,17 @@ class BasePlotter(object):
             pyplot.close()
 
     @staticmethod
-    def _figure_filename(fig=pyplot.gcf(), figure_name=None):
+    def _figure_filename(fig=None, figure_name=None):
+        if fig is None:
+            fig = pyplot.gcf()
         if figure_name is None:
             figure_name = fig.get_label()
         figure_name = figure_name.replace(": ", "_").replace(" ", "_").replace("\t", "_").replace(",", "")
         return figure_name
 
-    def _save_figure(self, fig=pyplot.gcf(), figure_name=None):
+    def _save_figure(self, fig=None, figure_name=None):
+        if fig is None:
+            fig = pyplot.gcf()
         if self.config.SAVE_FLAG:
             figure_name = self._figure_filename(fig, figure_name)
             figure_name = figure_name[:numpy.min([100, len(figure_name)])] + '.' + self.config.FIG_FORMAT
