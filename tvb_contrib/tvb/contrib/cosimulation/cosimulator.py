@@ -40,7 +40,6 @@ from tvb.contrib.cosimulation.cosim_monitors import CosimMonitor, CosimMonitorFr
 from tvb.contrib.cosimulation.exception import NumericalInstability
 
 
-
 class CoSimulator(Simulator):
 
     exclusive = Attr(
