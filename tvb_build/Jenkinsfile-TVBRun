@@ -29,8 +29,8 @@ pipeline {
                 unstash 'step1'
                 unzip zipFile: 'tvb_build/build/TVB_build_step1.zip', dir: 'tvb_build/docker/step1'
                 script {
-                    VERSION_TAG = "nonroot15"
-                    LAST_SHA = 'abc15'
+                    VERSION_TAG = "nonroot20"
+                    LAST_SHA = 'abc20'
                     withDockerRegistry(credentialsId: 'tvb_on_docker_hub') {
                         def dockerContext = "tvb_build/docker"
                         def dockerFile = "${dockerContext}/Dockerfile-run"

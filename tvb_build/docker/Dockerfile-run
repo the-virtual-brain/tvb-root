@@ -55,6 +55,8 @@ RUN cd tvb-root; \
     cd ../tvb_storage; \
     $PIP install -e .
 
+RUN $PIP install kubernetes
+
 WORKDIR $USER_HOME
 COPY .tvb.configuration $USER_HOME/.tvb.configuration
 #COPY --chown=$TVB_USER:$TVB_USER .tvb.landing.page.configuration $USER_HOME/.tvb.landing.page.configuration
