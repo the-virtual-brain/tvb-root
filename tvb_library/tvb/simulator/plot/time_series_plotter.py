@@ -34,6 +34,7 @@
 """
 import matplotlib
 import numpy
+from deprecated import deprecated
 from matplotlib import pyplot, gridspec
 from matplotlib.colors import Normalize
 from six import string_types
@@ -75,6 +76,7 @@ def assert_time(time, n_times, time_unit="ms", logger=None):
     return time
 
 
+@deprecated(reason="Use tvb-widgets instead")
 class TimeSeriesPlotter(BasePlotter):
     linestyle = "-"
     linewidth = 1

@@ -48,28 +48,6 @@ pyreverse --project=noise $SIM_ROOT/noise.py
 dot -Tsvg classes_noise.dot > img/classes_noise.svg
 dot -Tfig classes_noise.dot > img/classes_noise.fig
 
-
-## Phase-Plane Interactive ##
-pyreverse --project=phase_plane_interactive $SIM_ROOT/plot/phase_plane_interactive.py
-
-dot -Tsvg classes_phase_plane_interactive.dot > img/classes_phase_plane_interactive.svg
-dot -Tfig classes_phase_plane_interactive.dot > img/classes_phase_plane_interactive.fig
-
-
-## Power-Spectra Interactive ##
-pyreverse --project=power_spectra_interactive $SIM_ROOT/plot/power_spectra_interactive.py
-
-dot -Tsvg classes_power_spectra_interactive.dot > img/classes_power_spectra_interactive.svg
-dot -Tfig classes_power_spectra_interactive.dot > img/classes_power_spectra_interactive.fig
-
-
-## Time-Series Interactive ##
-pyreverse --project=timeseries_interactive $SIM_ROOT/plot/timeseries_interactive.py
-
-dot -Tsvg classes_timeseries_interactive.dot > img/classes_timeseries_interactive.svg
-dot -Tfig classes_timeseries_interactive.dot > img/classes_timeseries_interactive.fig
-
-
 ## Clean up ##
 rm *dot
 rm img/*.fig
