@@ -50,7 +50,6 @@ class FiguresConfig(object):
     SAVE_FLAG = True
     SHOW_FLAG = False
     MOUSE_HOOVER = False
-    MATPLOTLIB_BACKEND = "Agg"  # "Qt4Agg"
     WEIGHTS_NORM_PERCENT = 99
     FONTSIZE = 10
     SMALL_FONTSIZE = 8

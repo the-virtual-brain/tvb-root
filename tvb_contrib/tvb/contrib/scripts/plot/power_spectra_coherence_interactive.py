@@ -52,20 +52,30 @@ Usage
     psi.time_series = tsr
     psi.show()
 
-
+.. moduleauthor:: Lionel Kusch <lkusch@thevirtualbrain.org>
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
 """
 
+import os
 import numpy
 import matplotlib.pyplot as plt
 import ipywidgets as widgets
-from IPython.core.display import display
-from tvb.simulator.plot.power_spectra_interactive import PowerSpectraInteractive, \
-    BACKGROUNDCOLOUR, EDGECOLOUR, AXCOLOUR, BUTTONCOLOUR, HOVERCOLOUR, LOG, main_function
+import tvb.datatypes.time_series as time_series_datatypes
+from tvb.simulator.common import get_logger
+from tvb.simulator.plot.utils import generate_region_demo_data
+from tvb.basic.neotraits.api import HasTraits, Int, Attr
+
+LOG = get_logger(__name__)
+
+BACKGROUNDCOLOUR = "slategrey"
+EDGECOLOUR = "darkslateblue"
+AXCOLOUR = "steelblue"
+BUTTONCOLOUR = "steelblue"
+HOVERCOLOUR = "blue"
 
 
-class PowerSpectraCoherenceInteractive(PowerSpectraInteractive):
+class PowerSpectraCoherenceInteractive(HasTraits):
     """
     The graphical interface for visualising the power-spectra (FFT) of a
     timeseries provide controls for setting:
@@ -77,8 +87,22 @@ class PowerSpectraCoherenceInteractive(PowerSpectraInteractive):
         - power normalisation [binary] (emphasise relative frequency contribution)
         - show std or sem [binary]
 
-
     """
+
+    time_series = Attr(
+        field_type=time_series_datatypes.TimeSeries,
+        label="Timeseries",
+        default=None,
+        doc=""" The timeseries to which the FFT is to be applied.""")
+
+    first_n = Int(
+        label="Display the first 'n'",
+        default=0,
+        doc="""Primarily intended for displaying the first N components of a 
+            surface PCA timeseries. Defaults to -1, meaning it'll display all
+            of 'space' (ie, regions or vertices or channels). In other words,
+            for Region or M/EEG timeseries you can ignore this, but, for a 
+            surface timeseries it really must be set.""")
 
     def __init__(self, **kwargs):
         """
@@ -87,8 +111,6 @@ class PowerSpectraCoherenceInteractive(PowerSpectraInteractive):
         show() method is called.
 
         """
-
-        super(PowerSpectraCoherenceInteractive, self).__init__(**kwargs)
         LOG.debug(str(kwargs))
 
         # figure
@@ -116,7 +138,7 @@ class PowerSpectraCoherenceInteractive(PowerSpectraInteractive):
     def _configure_time_from_time_series(self):
         if self.time_series is not None:
             if isinstance(self.time_series.time, numpy.ndarray) and \
-                len(self.time_series.time) == self.tpts:
+                    len(self.time_series.time) == self.tpts:
                 self.time = self.time_series.time.copy()
         self.window_length_max = self.time_series_length
         self._assert_window_length()
@@ -124,11 +146,22 @@ class PowerSpectraCoherenceInteractive(PowerSpectraInteractive):
     def configure(self):
         """ Separate configure cause traits be busted... """
         LOG.debug("time_series shape: %s" % str(self.time_series.data.shape))
-        super(PowerSpectraCoherenceInteractive, self).configure()
+
+        self.data = self.time_series.data[:, :, :self.first_n, :]
+        self.period = 1 / self.time_series.sample_rate
+        self.period_unit = "s"
+        self.max_freq = 0.5 / self.period
+        self.units = "Hz"
+        self.tpts = self.data.shape[0]
+        self.nsrs = self.data.shape[2]
+        self.time_series_length = self.tpts * self.period
+        self.time = numpy.arange(self.tpts) * self.period
+
         print('data.shape = %s' % str(self.data.shape))
         print("period = %g ms" % self.period)
         print("max_freq = %g %s" % (self.max_freq, self.units))
         print("time_series_length = %g ms" % self.time_series_length)
+
         self.regions = numpy.arange(self.data.shape[2]).astype('i')
         self.reg_xy_inds = {}
         self.data_xy = []
@@ -141,7 +174,6 @@ class PowerSpectraCoherenceInteractive(PowerSpectraInteractive):
         self.data_xy = numpy.array(self.data_xy).transpose(1, 2, 0, 3)
         self.reg_inds_sel = slice(0, self.regions.shape[0])
         self.reg_xy_inds_sel = numpy.arange(self.data_xy.shape[2]).astype('i')
-        self.nsrs = self.data.shape[2]
         self.nsrs_xy = self.nsrs * (self.nsrs - 1) / 2
         self.labels = ["channel_%0.3d" % k for k in range(self.nsrs)]
         self._configure_time_from_time_series()
@@ -157,7 +189,8 @@ class PowerSpectraCoherenceInteractive(PowerSpectraInteractive):
             self.possible_window_lengths[self.possible_window_lengths < self.window_length_max]
         active = numpy.argmin(numpy.abs(self.possible_window_lengths - self.window_length))
         wl_tup = tuple(self.possible_window_lengths)
-        self.window_length_selector = widgets.RadioButtons(options=wl_tup, value=wl_tup[active], layout=self.other_layout)
+        self.window_length_selector = widgets.RadioButtons(options=wl_tup, value=wl_tup[active],
+                                                           layout=self.other_layout)
         self.window_length_selector.observe(self.update_window_length, 'value')
 
         self.wls_box = widgets.VBox([widgets.Label('Segment Length'), self.window_length_selector],
@@ -177,7 +210,23 @@ class PowerSpectraCoherenceInteractive(PowerSpectraInteractive):
         self.rgs_box = widgets.VBox([widgets.Label('Regions'), self.reg_selector], layout=self.box_layout)
 
     def add_selectors_widgets_to_lc_items(self):
-        super(PowerSpectraCoherenceInteractive, self).add_selectors_widgets_to_lc_items()
+
+        self.add_mode_selector()
+        self.add_normalise_power_selector()
+        self.add_xscale_selector()
+        self.add_yscale_selector()
+        self.add_variable_selector()
+        self.add_window_function_selector()
+        self.add_window_length_selector()
+
+        self.mode_sv_box = widgets.VBox([self.ms_box, self.vs_box], layout=self.outer_box_layout)
+        self.xs_ys_box = widgets.VBox([self.xss_box, self.yss_box], layout=self.outer_box_layout)
+        self.np_box = widgets.VBox([self.nps_box], layout=self.outer_box_layout)
+        self.wf_box = widgets.VBox([self.wfs_box], layout=self.outer_box_layout)
+        self.wl_box = widgets.VBox([self.wls_box], layout=self.outer_box_layout)
+
+        self.lc_items.extend([self.mode_sv_box, self.xs_ys_box, self.np_box, self.wf_box, self.wl_box])
+
         self.add_freq_range_selector()
         self.add_regions_selector()
         self.rg_box = widgets.VBox([self.rgs_box], layout=self.outer_box_layout)
@@ -253,11 +302,6 @@ class PowerSpectraCoherenceInteractive(PowerSpectraInteractive):
             )
         self.coherence = numpy.array(self.coherence).transpose(1, 2, 0, 3)
         LOG.debug("coherence shape: %s" % str(self.spectra.shape))
-
-        # import pdb; pdb.set_trace()
-
-    #        self.spectra_std = numpy.std(numpy.abs(result[:nfreq]), axis=4)
-    #        self.spectra_sem = self.spectra_std / time_series.shape[4]
 
     ##------------------------------------------------------------------------##
     ##------------------ Functions for updating the figure -------------------##
@@ -357,7 +401,7 @@ class PowerSpectraCoherenceInteractive(PowerSpectraInteractive):
         self.plot_spectra()
 
     def add_axes(self):
-        super(PowerSpectraCoherenceInteractive, self).add_axes()
+        self.fft_ax = self.fig.add_axes([0.15, 0.15, 0.75, 0.75])
         self.coh_ax = self.fig.add_axes([0.15, 0.2, 0.7, 0.3])
 
     def fft_ax_plot(self):
@@ -366,7 +410,7 @@ class PowerSpectraCoherenceInteractive(PowerSpectraInteractive):
             self.fft_ax.clear()
             self.fft_ax.set(ylabel="PSD")
             self.fft_ax.plot(self._freqs, self.spectra_norm[self.plot_freqs_slice, self.variable,
-                                                      self.reg_inds_sel, self.mode])
+                                                            self.reg_inds_sel, self.mode])
         else:
             self.fft_ax.clear()
             self.fft_ax.set(ylabel="Power")
@@ -395,5 +439,27 @@ class PowerSpectraCoherenceInteractive(PowerSpectraInteractive):
         self.plot_coh()
 
 
+def main_function():
+    # Do some stuff that tests or makes use of this module...
+    LOG.info("Testing %s module..." % __file__)
+    file_path = os.path.join(os.getcwd(), "demo_data_region_16s_2048Hz.npy")
+    try:
+        data = numpy.load(file_path)
+    except IOError:
+        LOG.error("Can't load demo data. It will be created now running the generate_region_demo_data() function.")
+        generate_region_demo_data(file_path=file_path)
+        data = numpy.load(file_path)
+
+    period = 0.00048828125  # NOTE: Providing period in seconds
+    tsr = time_series_datatypes.TimeSeriesRegion()
+    tsr.data = data
+    tsr.sample_period = period
+    tsr.sample_period_unit = 's'
+
+    psi = PowerSpectraCoherenceInteractive()
+    psi.time_series = tsr
+    psi.show()
+
+
 if __name__ == "__main__":
-    main_function(PowerSpectraCoherenceInteractive)
+    main_function()

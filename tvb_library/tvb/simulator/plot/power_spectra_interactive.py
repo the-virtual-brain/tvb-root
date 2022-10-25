@@ -60,6 +60,7 @@ Usage
 import numpy
 import matplotlib.pyplot as plt
 import ipywidgets as widgets
+from deprecated import deprecated
 from IPython.core.display import display
 from tvb.simulator.common import get_logger
 import tvb.datatypes.time_series as time_series_datatypes
@@ -76,6 +77,7 @@ BUTTONCOLOUR = "steelblue"
 HOVERCOLOUR = "blue"
 
 
+@deprecated(reason="Use from tvb.contrib.scripts.plot PowerSpectraCoherenceInteractive")
 class PowerSpectraInteractive(HasTraits):
     """
     The graphical interface for visualising the power-spectra (FFT) of a

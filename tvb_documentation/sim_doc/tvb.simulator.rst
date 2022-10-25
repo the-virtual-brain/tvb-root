@@ -16,10 +16,6 @@
    tvb.simulator.noise
    tvb.simulator.monitors
    
-   tvb.simulator.plot.phase_plane_interactive
-   tvb.simulator.plot.power_spectra_interactive
-   tvb.simulator.plot.timeseries_interactive
-   
    tvb.simulator.devguide
 
 
