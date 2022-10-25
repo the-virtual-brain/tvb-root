@@ -52,7 +52,6 @@ class BasePlotter(object):
         self.config = config
         self.logger = get_logger(self.__class__.__name__)
         self.print_regions_indices = True
-        matplotlib.use(self.config.MATPLOTLIB_BACKEND)
         pyplot.rcParams["font.size"] = self.config.FONTSIZE
 
     def _check_show(self):
