@@ -28,7 +28,7 @@
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
 import numpy
-
+import pytest
 from tvb.basic.logger.builder import get_logger
 from tvb.contrib.simulator.models.brunel_wang import BrunelWang
 from tvb.contrib.simulator.models.epileptor import HMJEpileptor
@@ -47,6 +47,7 @@ from tvb.simulator.plot.phase_plane_interactive import PhasePlaneInteractive
 LOG = get_logger(__name__)
 
 
+@pytest.mark.skipif(True, reason="Because it opens a window for manual inspection")
 class TestContribModels(BaseTestCase):
 
     @staticmethod
@@ -97,7 +98,7 @@ class TestContribModels(BaseTestCase):
         self._show_model_figure("Liley Steynross", LileySteynRoss, 0.9)
 
     def test_morric_lecar(self):
-        self._show_model_figure("Morris Lecar", MorrisLecar, 2**-5)
+        self._show_model_figure("Morris Lecar", MorrisLecar, 2 ** -5)
 
     def test_wong_wang_model(self):
-        self._show_model_figure("Wong Wang", WongWang, 2**-5)
+        self._show_model_figure("Wong Wang", WongWang, 2 ** -5)
