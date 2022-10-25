@@ -47,7 +47,7 @@ from tvb.simulator.plot.phase_plane_interactive import PhasePlaneInteractive
 LOG = get_logger(__name__)
 
 
-@pytest.mark.skipif(True, reason="Because it opens a window for manual inspection")
+@pytest.mark.skip(reason="Because it opens a window for manual inspection")
 class TestContribModels(BaseTestCase):
 
     @staticmethod
