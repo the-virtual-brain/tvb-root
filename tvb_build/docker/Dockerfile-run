@@ -22,7 +22,7 @@ RUN conda create -y --name tvb-run python=3.10 nomkl numba scipy numpy cython ps
 RUN conda install -y --name tvb-run -c conda-forge jupyterlab
 RUN $PIP install --upgrade pip
 RUN $PIP install lockfile scikit-build
-RUN $PIP install syncrypto
+RUN $PIP install syncrypto kubernetes
 
 # Jupyther notebook configurations: set password
 # tvb42
@@ -41,8 +41,8 @@ COPY requirements_group requirements.txt
 RUN $PIP install -r requirements.txt
 
 # make sure a copy of tvb-root exists inside, for users without Github clone
-ARG LAST_SHA=BRANCH
-RUN git clone --branch HBP-196 --depth 1 https://github.com/the-virtual-brain/tvb-root.git
+RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git
+ARG LAST_SHA=LATEST
 
 RUN cd tvb-root; \
     git pull; \
@@ -54,8 +54,6 @@ RUN cd tvb-root; \
     $PIP install -e .; \
     cd ../tvb_storage; \
     $PIP install -e .
-
-RUN $PIP install kubernetes
 
 WORKDIR $USER_HOME
 COPY .tvb.configuration $USER_HOME/.tvb.configuration
