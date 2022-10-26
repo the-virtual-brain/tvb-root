@@ -342,12 +342,12 @@ class DataEncryptionRemoteHandler(DataEncryptionHandler):
             kwargs['folder'] = folder
         if TvbProfile.current.web.OPENSHIFT_DATA_ENCRYPTION_HANDLER_APPLICATION == "":
             raise TVBException("Openshift Data Encryption handler application is not defined")
-        openshift_pods, auth_header = KubeNotifier.get_pods(
-            TvbProfile.current.web.OPENSHIFT_DATA_ENCRYPTION_HANDLER_APPLICATION)
+        openshift_pods = KubeNotifier.get_pods(TvbProfile.current.web.OPENSHIFT_DATA_ENCRYPTION_HANDLER_APPLICATION)
         if len(openshift_pods) == 0:
             raise TVBException("Openshift Data Encryption handler app not found")
         encryption_app = openshift_pods[0]
-        url = "http://{}:{}/kube/data_encryption_handler/{}".format(encryption_app['ip'], str(TvbProfile.current.web.SERVER_PORT), method)
+        auth_header = KubeNotifier.get_authorization_header()
+        url = "http://{}:{}/kube/data_encryption_handler/{}".format(encryption_app.ip, str(TvbProfile.current.web.SERVER_PORT), method)
         return requests.post(url=url, headers=auth_header, data=kwargs)
 
     @synchronized(lock)
