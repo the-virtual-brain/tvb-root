@@ -102,6 +102,4 @@ class KubeNotifier(object):
     @staticmethod
     def check_token(authorization_token):
         expected_token = KubeNotifier.get_authorization_token()
-        LOGGER.info(f"Auth token is: {authorization_token}")
-        LOGGER.info(f"Expected token is: {expected_token}")
         assert authorization_token == expected_token
