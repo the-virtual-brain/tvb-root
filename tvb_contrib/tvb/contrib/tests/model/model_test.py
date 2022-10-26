@@ -41,7 +41,7 @@ from tvb.contrib.simulator.models.liley_steynross import LileySteynRoss
 from tvb.contrib.simulator.models.morris_lecar import MorrisLecar
 from tvb.contrib.simulator.models.wong_wang import WongWang
 from tvb.simulator.integrators import HeunDeterministic
-from tvb.tests.framework.core.base_testcase import BaseTestCase
+# from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.simulator.plot.phase_plane_interactive import PhasePlaneInteractive
 
 LOG = get_logger(__name__)
