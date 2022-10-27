@@ -28,7 +28,6 @@
 #
 #
 
-from pickle import FALSE
 import time
 import os
 from watchdog.observers import Observer
