@@ -115,6 +115,8 @@ class DirLoader(object):
             if gid is None:
                 raise ValueError("Neither gid nor filename is provided to load!")
             fname = self.find_file_by_gid(gid)
+        if not os.path.isabs(fname):
+            fname = os.path.join(self.base_dir, fname)
 
         sub_dt_refs = []
 
@@ -134,7 +136,7 @@ class DirLoader(object):
         return datatype
 
     def store(self, datatype, fname=None):
-        # type: (HasTraits, str) -> None
+        # type: (HasTraits, str) -> str
         h5file_cls = self.registry.get_h5file_for_datatype(type(datatype))
         if fname is None:
             path = self.path_for(h5file_cls, datatype.gid)
@@ -155,6 +157,8 @@ class DirLoader(object):
             subdt = getattr(datatype, traited_attr.field_name)
             if subdt is not None:  # Because a non required reference may be not populated
                 self.store(subdt)
+
+        return path
 
     def path_for(self, h5_file_class, gid):
         """
