@@ -1,13 +1,14 @@
 ======================================================================================================================================
  The Virtual Brain (TVB)
  Version: 2.7 - build ?????
- Release Date: ?? November 2022
+ Release Date: 10 November 2022
  Description: Siibra and bctpy integration
 ======================================================================================================================================
-    * Bug fixes
+    * Bug fixes (e.g. Wavelet adapter, allenSDK compatibility, mutable neotraits, neocom.DirLoader)
     * BCT analyzers - switch to bctpy library
     * Siibra integration
     * BIDS monitoring module
+    * add deepcopy implementation on HasTraits
 
 ======================================================================================================================================
  The Virtual Brain (TVB)
