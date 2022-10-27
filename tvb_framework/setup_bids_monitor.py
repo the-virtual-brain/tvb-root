@@ -40,7 +40,7 @@ from setuptools.command.egg_info import manifest_maker
 
 manifest_maker.template = 'MANIFEST_bids_monitor.in'
 
-VERSION = "1.0"
+VERSION = "2.7"
 
 TVB_TEAM = "Akash Upadhyay, Paula Prodan"
 
@@ -55,7 +55,7 @@ setuptools.setup(name="tvb-bids-monitor",
                  packages=setuptools.find_packages(
                      exclude=['tvb.interfaces.web', 'tvb.interfaces.web.*', 'tvb.interfaces.command',
                               'tvb.interfaces.command.*', 'tvb.tests', 'tvb.tests.*', 'tvb.interfaces.rest'
-                              'tvb.interfaces.rest.*', 'tvb.adapters', 'tvb.adapters.*' 'tvb.core',
+                              'tvb.interfaces.rest.*', 'tvb.adapters', 'tvb.adapters.*', 'tvb.core',
                               'tvb.core.*']),
                  include_package_data=True,
                  install_requires=TVB_INSTALL_REQUIREMENTS,
