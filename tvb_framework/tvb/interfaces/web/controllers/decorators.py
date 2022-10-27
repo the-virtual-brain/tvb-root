@@ -212,9 +212,9 @@ def check_kube_user(func):
         if not authorization:
             raise cherrypy.HTTPError(HTTPStatus.UNAUTHORIZED, "Token is missing")
         try:
-            KubeNotifier.fetch_endpoints({"Authorization": authorization})
+            KubeNotifier.check_token(authorization)
             return func(*a, **b)
-        except Exception as e:
+        except AssertionError as e:
             raise cherrypy.HTTPError(HTTPStatus.UNAUTHORIZED, e)
 
     return deco

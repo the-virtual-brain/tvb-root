@@ -46,14 +46,14 @@ if __name__ == '__main__':
     conn_ht.configure()
 
     # Store in a given folder the HasTraits entity
-    PATH = "."
+    PATH = ".."
     h5.store_complete_to_dir(conn_ht, PATH)
 
     # Reproduce the just written file name containing GUID
     file_name = h5.path_by_dir(PATH, ConnectivityH5, conn_ht.gid)
 
     # Load back from a file name a HasTraits instance
-    conn_back = h5.load(file_name)
+    conn_back = h5.load(file_name, with_references=True)
 
     # Check that the loaded and written entities are correct
     assert conn_ht.number_of_regions == 76

@@ -1,5 +1,7 @@
 pipeline {
-    agent any
+    agent {
+        label 'docker_build'
+    }
 
     environment {
         FULL_DOCKER_IMAGE_NAME = 'thevirtualbrain/tvb-run'
