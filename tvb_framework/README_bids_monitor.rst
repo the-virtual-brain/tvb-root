@@ -28,7 +28,7 @@ BIDSDirWatcher
     - TVB_PROJECT_ID - ID of TVB project on which dataset is to be imported
 
 
-[launch_bids_monitor.py](tvb_framework/tvb/interfaces/rest/bids_monitoring/launch_bids_monitor.py) contains sample code and it also accepts command line arguments. To start monitoring a bids directory run below command
+[launch_bids_monitor.py](tvb_framework/tvb/interfaces/rest/bids_monitor/launch_bids_monitor.py) contains sample code and it also accepts command line arguments. To start monitoring a bids directory run below command
 
 .. code-block::
 
@@ -41,7 +41,7 @@ Build BIDS dataset for time_series
 
 .. code-block:: python
 
-    from tvb.interfaces.rest.bids_monitoring.bids_data_builder import BIDSDataBuilder
+    from tvb.interfaces.rest.bids_monitor.bids_data_builder import BIDSDataBuilder
     from tvb.adapters.uploaders.bids_importer import BIDSImporter
 
     bids_data_builder = BIDSDataBuilder(BIDSImporter.TS_TOKEN, BIDS_DIR)
@@ -53,7 +53,7 @@ Monitor a BIDS directory for new files
 
 .. code-block:: python
 
-    from tvb.interfaces.rest.bids_monitoring.bids_dir_monitor import BIDSDirWatcher
+    from tvb.interfaces.rest.bids_monitor.bids_dir_monitor import BIDSDirWatcher
 
     bids_dir_watcher = BIDSDirWatcher(
           DIRECTORY_TO_WATCH=BIDS_DIR,

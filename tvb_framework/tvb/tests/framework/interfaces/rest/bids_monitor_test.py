@@ -35,8 +35,8 @@ import pytest
 import os
 
 from tvb.adapters.uploaders.bids_importer import BIDSImporter
-from tvb.interfaces.rest.bids_monitoring.bids_data_builder import BIDSDataBuilder
-from tvb.interfaces.rest.bids_monitoring.bids_dir_monitor import BIDSDirWatcher
+from tvb.interfaces.rest.bids_monitor.bids_data_builder import BIDSDataBuilder
+from tvb.interfaces.rest.bids_monitor.bids_dir_monitor import BIDSDirWatcher
 from tvb.storage.storage_interface import StorageInterface
 
 try:

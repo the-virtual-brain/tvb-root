@@ -30,7 +30,7 @@
 
 import sys
 from tvb.basic.logger.builder import get_logger
-from tvb.interfaces.rest.bids_monitoring.bids_dir_monitor import BIDSDirWatcher
+from tvb.interfaces.rest.bids_monitor.bids_dir_monitor import BIDSDirWatcher
 
 logger = get_logger(__name__)
 
