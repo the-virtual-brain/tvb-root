@@ -29,9 +29,6 @@
 #
 import os
 import numpy
-from tvb.adapters.datatypes.h5.projections_h5 import ProjectionMatrixH5
-from tvb.core.adapters.abcadapter import ABCAdapter
-
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, EEGViewModel, HeunStochasticViewModel, \
     TemporalAverageViewModel
 from tvb.core.entities.storage import dao
@@ -55,6 +52,15 @@ def test_store_load_rec(tmpdir, connectivity_factory, region_mapping_factory):
     store_to_dir(region_mapping, str(tmpdir), recursive=True)
 
     rmap = load_from_dir(str(tmpdir), region_mapping.gid, recursive=True)
+    numpy.testing.assert_equal(connectivity.weights, rmap.connectivity.weights)
+
+
+def test_store_load_rec_path(tmpdir, connectivity_factory, region_mapping_factory):
+    connectivity = connectivity_factory(2)
+    region_mapping = region_mapping_factory(connectivity=connectivity)
+    region_mapping_path = store_to_dir(region_mapping, str(tmpdir), recursive=True)
+
+    rmap = load(region_mapping_path, with_references=True)
     numpy.testing.assert_equal(connectivity.weights, rmap.connectivity.weights)
 
 
