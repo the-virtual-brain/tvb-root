@@ -59,13 +59,15 @@ logger = get_logger(__name__)
 MAX_LBLS_IN_LEGEND = 10
 
 
-def coords_to_dict(coords):
+def assert_coords_dict(coords):
     if isinstance(coords, dict):
-        return coords
+        val_fun = lambda val: val
+    else:
+        val_fun = lambda val: val.values
     d = {}
     for key, val in zip(list(coords.keys()),
-                        list([value.values for value in coords.values()])):
-        d[key] = val
+                        list([val_fun(value) for value in coords.values()])):
+        d[key] = list(val)
     return d
 
 
@@ -209,7 +211,7 @@ class TimeSeries(HasTraits):
 
     @property
     def labels_dimensions(self):
-        return coords_to_dict(self._data.coords)
+        return assert_coords_dict(self._data.coords)
 
     @property
     def space_labels(self):
@@ -235,7 +237,7 @@ class TimeSeries(HasTraits):
         # including a xr.DataArray or None
         data = kwargs.pop("data", xarr.values)
         dims = kwargs.pop("dims", kwargs.pop("labels_ordering", xarr.dims))
-        coords = kwargs.pop("coords", kwargs.pop("labels_dimensions", coords_to_dict(xarr.coords)))
+        coords = kwargs.pop("coords", kwargs.pop("labels_dimensions", assert_coords_dict(xarr.coords)))
         attrs = kwargs.pop("attrs", None)
         time = kwargs.pop("time", coords.pop(dims[0], None))
         if time is not None and len(time) > 0:
@@ -321,7 +323,7 @@ class TimeSeries(HasTraits):
         labels_dimensions = kwargs.pop("coords", kwargs.pop("labels_dimensions",
                                                             getattr(self, "labels_dimensions", None)))
         if labels_dimensions is not None:
-            labels_dimensions = coords_to_dict(labels_dimensions)
+            labels_dimensions = assert_coords_dict(labels_dimensions)
         if isinstance(labels_dimensions, dict) and len(labels_dimensions):
             assert [key in labels_ordering for key in labels_dimensions.keys()]
         return labels_ordering, labels_dimensions, kwargs
@@ -426,7 +428,7 @@ class TimeSeries(HasTraits):
         if isinstance(_data, xr.DataArray):
             # If we have a DataArray input, we should set defaults through it
             _labels_ordering = list(_data.dims)
-            _labels_dimensions = dict(coords_to_dict(_data.coords))
+            _labels_dimensions = dict(assert_coords_dict(_data.coords))
             if _data.name is not None and len(_data.name) > 0:
                 _title = _data.name
             else:
@@ -434,7 +436,7 @@ class TimeSeries(HasTraits):
         else:
             # Otherwise, we should set defaults through self
             _labels_ordering = list(self._data.dims)
-            _labels_dimensions = dict(coords_to_dict(self._data.coords))
+            _labels_dimensions = dict(assert_coords_dict(self._data.coords))
             _title = self.title
             # Also, in this case we have to generate a new output DataArray...
             data = kwargs.pop("data", None)
@@ -447,7 +449,7 @@ class TimeSeries(HasTraits):
         # Now set the rest of the properties...
         kwargs["labels_ordering"] = kwargs.pop("dims", kwargs.pop("labels_ordering", _labels_ordering))
         kwargs["labels_dimensions"] = kwargs.pop("labels_dimensions",
-                                                 coords_to_dict(kwargs.pop("coords", _labels_dimensions)))
+                                                 assert_coords_dict(kwargs.pop("coords", _labels_dimensions)))
         # ...with special care for time related ones:
         time = kwargs["labels_dimensions"].get(kwargs["labels_ordering"][0], None)
         time = kwargs.pop("time", time)

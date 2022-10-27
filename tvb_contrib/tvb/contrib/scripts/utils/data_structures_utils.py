@@ -31,7 +31,11 @@
 """
 
 import re
-from collections import OrderedDict, Hashable
+from collections import OrderedDict
+try:
+    from collections import Hashable
+except ImportError:
+    from collections.abc import Hashable
 import itertools
 from copy import deepcopy
 import numpy as np
