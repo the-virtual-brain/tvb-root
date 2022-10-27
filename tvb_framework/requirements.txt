@@ -41,3 +41,5 @@ simplejson
 six
 siibra
 bctpy
+kubernetes
+watchdog

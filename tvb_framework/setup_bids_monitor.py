@@ -29,7 +29,7 @@
 #
 
 """
-This is used to package the tvb-rest-client separately.
+This is used to package the BIDS directory monitor separately.
 """
 
 import os
@@ -38,37 +38,36 @@ import shutil
 import setuptools
 from setuptools.command.egg_info import manifest_maker
 
-manifest_maker.template = 'MANIFEST_rest_client.in'
+manifest_maker.template = 'MANIFEST_bids_monitor.in'
 
 VERSION = "2.7"
 
-TVB_TEAM = "Lia Domide, Paula Prodan, Bogdan Valean, Robert Vincze"
+TVB_TEAM = "Akash Upadhyay, Paula Prodan"
 
-TVB_INSTALL_REQUIREMENTS = ["alembic", "h5py", "nibabel", "numpy", "Pillow", "psutil",
-                            "pyAesCrypt", "requests", "scipy", "simplejson", "sqlalchemy",
-                            "tvb-data", "tvb-gdist", "tvb-library", "tvb-storage", "werkzeug"]
+TVB_INSTALL_REQUIREMENTS = ["tvb-rest-client", "watchdog"]
 
-# Packaging tvb-rest-client
-with open(os.path.join(os.path.dirname(__file__), 'README_rest_client.rst')) as fd:
+# Packaging bids-monitor
+with open(os.path.join(os.path.dirname(__file__), 'tvb/interfaces/rest/bids_monitoring/README.md')) as fd:
     DESCRIPTION = fd.read()
 
-setuptools.setup(name="tvb-rest-client",
+setuptools.setup(name="tvb-bids-monitor",
                  version=VERSION,
                  packages=setuptools.find_packages(
                      exclude=['tvb.interfaces.web', 'tvb.interfaces.web.*', 'tvb.interfaces.command',
-                              'tvb.interfaces.command.*', 'tvb.tests', 'tvb.tests.*']),
+                              'tvb.interfaces.command.*', 'tvb.tests', 'tvb.tests.*', 'tvb.interfaces.rest'
+                              'tvb.interfaces.rest.*', 'tvb.adapters', 'tvb.adapters.*', 'tvb.core',
+                              'tvb.core.*']),
                  include_package_data=True,
                  install_requires=TVB_INSTALL_REQUIREMENTS,
-                 extras_require={'postgres': ["psycopg2"],
-                                 'test': ["pytest", "pytest-benchmark"]},
-                 description='A helper package for preparing and sending requests towards the TVB REST API',
+                 extras_require={'test': ["pytest", "pytest-benchmark"]},
+                 description='A helper package containing BIDS directory monitor module',
                  long_description=DESCRIPTION,
                  license="GPL-3.0-or-later",
                  author=TVB_TEAM,
                  author_email='tvb.admin@thevirtualbrain.org',
-                 url='https://www.thevirtualbrain.org',
+                 url='http://www.thevirtualbrain.org',
                  download_url='https://github.com/the-virtual-brain/tvb-root',
                  keywords='tvb rest client brain simulator neuroscience human animal neuronal dynamics models delay')
 
 # Clean after install
-shutil.rmtree('tvb_rest_client.egg-info', True)
+shutil.rmtree('tvb_bids_monitor.egg-info', True)
