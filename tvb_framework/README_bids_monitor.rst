@@ -30,11 +30,16 @@ BIDSDirWatcher
 
 [launch_bids_monitor.py](tvb_framework/tvb/interfaces/rest/bids_monitoring/launch_bids_monitor.py) contains sample code and it also accepts command line arguments. To start monitoring a bids directory run below command
 
+.. code-block::
+
     $ python launch_bids_monitor.py --rest-url=http://localhost:9090 --bids-dir=user/doc/BIDS_SAMPLE
+..
 
 where  `-rest-url` is the url on which TVB rest server is running and `-bids-dir` is the BIDS root directory which is to be monitored for new files. Please note that bids monitor will only trigger when files are added inside subject directories.
 
 Build BIDS dataset for time_series
+
+.. code-block:: python
 
     from tvb.interfaces.rest.bids_monitoring.bids_data_builder import BIDSDataBuilder
     from tvb.adapters.uploaders.bids_importer import BIDSImporter
@@ -42,17 +47,21 @@ Build BIDS dataset for time_series
     bids_data_builder = BIDSDataBuilder(BIDSImporter.TS_TOKEN, BIDS_DIR)
     zip_file_location = bids_data_builder.create_dataset_subjects()
     print(zip_file_location)
+..
 
 Monitor a BIDS directory for new files
 
+.. code-block:: python
+
     from tvb.interfaces.rest.bids_monitoring.bids_dir_monitor import BIDSDirWatcher
-   
+
     bids_dir_watcher = BIDSDirWatcher(
           DIRECTORY_TO_WATCH=BIDS_DIR,
           UPLOAD_TRIGGER_INTERVAL=20,
           IMPORT_DATA_IN_TVB=True
     )
     bids_dir_watcher.init_watcher()
+..
 
 Some implementation details
 ---------------------------
