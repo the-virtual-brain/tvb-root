@@ -115,7 +115,7 @@ class DirLoader(object):
             if gid is None:
                 raise ValueError("Neither gid nor filename is provided to load!")
             fname = self.find_file_by_gid(gid)
-        if not os.path.isabs(fname):
+        elif not os.path.isabs(fname):
             fname = os.path.join(self.base_dir, fname)
 
         sub_dt_refs = []
