@@ -207,14 +207,14 @@ def load_with_references_from_dir(base_dir, gid):
 
 
 def store_to_dir(datatype, base_dir, recursive=False):
-    # type: (HasTraits, str, bool) -> None
+    # type: (HasTraits, str, bool) -> str
     """
     Stores the given datatype in the given directory.
     The name and location of the stored file(s) is chosen for you by this function.
     If recursive is true than datatypes referenced by this one are stored as well.
     """
     loader = DirLoader(base_dir, REGISTRY, recursive)
-    loader.store(datatype)
+    return loader.store(datatype)
 
 
 def determine_filepath(gid, base_dir):
