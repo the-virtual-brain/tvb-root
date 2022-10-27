@@ -42,3 +42,4 @@ six
 siibra
 bctpy
 kubernetes
+watchdog
