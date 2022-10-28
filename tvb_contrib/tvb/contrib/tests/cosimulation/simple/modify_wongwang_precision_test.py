@@ -176,15 +176,14 @@ class TestModifyWongWangRate(TestModifyWongWang):
             np.testing.assert_array_equal(result_all[0][1][i][0][:len(id_proxy)]*np.NAN,
                                           result_3_all[1][i+sync_steps, 0, :len(id_proxy)])
         # After the delays impact the simulation, there is some difference for rate
-        diffs = []
-        for i in range(np.min(sim_3.connectivity.idelays[np.nonzero(sim_3.connectivity.idelays)]) + 1,
-                       simulation_n_steps):
+        idelays = np.copy(sim_3.connectivity.idelays)
+        idelays = idelays[len(id_proxy):,:len(id_proxy)]
+        min_delay = idelays[np.nonzero(idelays)].min()
+        for i in range(min_delay + 1, simulation_n_steps):
             diff = result_all[0][1][i][0][len(id_proxy):] - result_3_all[1][i + sync_steps, 0, len(id_proxy):]
-            # assert np.sum(diff) != 0.0  # TODO: Find out why it fails for the first two iterations!
-            diffs.append(np.sum(diff))
+            assert np.isnan(diff.sum())
             np.testing.assert_array_equal(result_all[0][1][i][0][:len(id_proxy)]*np.NAN,
                                           result_3_all[1][i + sync_steps, 0, :len(id_proxy)])
-        assert np.sum(diffs) != 0.0
 
         # The beginning is good for S
         for i in range(np.min(sim_3.connectivity.idelays[np.nonzero(sim_3.connectivity.idelays)]) + 1):
@@ -193,15 +192,14 @@ class TestModifyWongWangRate(TestModifyWongWang):
             np.testing.assert_array_equal(result_all[0][1][i][1][:len(id_proxy)]*np.NAN,
                                           result_3_all[1][i+sync_steps, 1, :len(id_proxy)])
         # After the delays impact the simulation, there is some difference for S
-        diffs = []
-        for i in range(np.min(sim_3.connectivity.idelays[np.nonzero(sim_3.connectivity.idelays)]) + 1,
-                       simulation_n_steps):
+        idelays = np.copy(sim_3.connectivity.idelays)
+        idelays = idelays[len(id_proxy):,:len(id_proxy)]
+        min_delay = idelays[np.nonzero(idelays)].min()
+        for i in range(min_delay + 1, simulation_n_steps):
             diff = result_all[0][1][i][1][len(id_proxy):] - result_3_all[1][i + sync_steps, 1, len(id_proxy):]
-            # assert np.sum(diff) != 0.0  # TODO: Find out why it fails for the first two iterations!
-            diffs.append(np.sum(diff))
+            assert np.isnan(diff.sum())
             np.testing.assert_array_equal(result_all[0][1][i][1][:len(id_proxy)]*np.NAN,
                                           result_3_all[1][i + sync_steps, 1, :len(id_proxy)])
-        assert np.sum(diffs) != 0.0
 
     def test_with_proxy_bad_input(self):
         connectivity, coupling, integrator, monitors, sim, result, result_all = self._reference_simulation()
@@ -249,15 +247,14 @@ class TestModifyWongWangRate(TestModifyWongWang):
             np.testing.assert_array_compare(operator.__ne__, result_all[0][1][i][0][:len(id_proxy)],
                                             result_4_all[1][i+sync_steps, 0, :len(id_proxy)])
         # After the delays impact the simulation, there is some difference for rate
-        diffs = []
-        for i in range(np.min(sim_4.connectivity.idelays[np.nonzero(sim_4.connectivity.idelays)])+1,
-                       simulation_n_steps):
+        idelays = np.copy(sim_4.connectivity.idelays)
+        idelays = idelays[len(id_proxy):,:len(id_proxy)]
+        min_delay = idelays[np.nonzero(idelays)].min()
+        for i in range(min_delay + 1, simulation_n_steps):
             diff = result_all[0][1][i][0][len(id_proxy):] - result_4_all[1][i+sync_steps, 0, len(id_proxy):]
-            # assert np.sum(diff) != 0.0  # TODO: Find out why it fails for the first two iterations!
-            diffs.append(np.sum(diff))
+            assert np.sum(diff) != 0.0
             np.testing.assert_array_compare(operator.__ne__, result_all[0][1][i][0][:len(id_proxy)],
                                             result_4_all[1][i+sync_steps, 0, :len(id_proxy)])
-        assert np.sum(diffs) != 0.0
 
         # The beginning is good for S
         for i in range(np.min(sim_4.connectivity.idelays[np.nonzero(sim_4.connectivity.idelays)])+1):
@@ -266,15 +263,14 @@ class TestModifyWongWangRate(TestModifyWongWang):
             np.testing.assert_array_equal(result_all[0][1][i][1][:len(id_proxy)]*np.NAN,
                                           result_4_all[1][i+sync_steps, 1, :len(id_proxy)])
         # After the delays impact the simulation, there is some difference for S
-        diffs = []
-        for i in range(np.min(sim_4.connectivity.idelays[np.nonzero(sim_4.connectivity.idelays)])+1,
-                       simulation_n_steps):
+        idelays = np.copy(sim_4.connectivity.idelays)
+        idelays = idelays[len(id_proxy):,:len(id_proxy)]
+        min_delay = idelays[np.nonzero(idelays)].min()
+        for i in range(min_delay + 1, simulation_n_steps):
             diff = result_all[0][1][i][1][len(id_proxy):] - result_4_all[1][i+sync_steps, 1, len(id_proxy):]
-            # assert np.sum(diff) != 0.0  # TODO: Find out why it fails for the first two iterations!
-            diffs.append(np.sum(diff))
+            assert np.sum(diff) != 0.0  # TODO: Find out why it fails for the first two iterations!
             np.testing.assert_array_equal(result_all[0][1][i][1][:len(id_proxy)]*np.NAN,
                                           result_4_all[1][i+sync_steps, 1, :len(id_proxy)])
-        assert np.sum(diffs) != 0.0
 
     def test_with_proxy_right_input(self):
         connectivity, coupling, integrator, monitors, sim, result, result_all = self._reference_simulation()

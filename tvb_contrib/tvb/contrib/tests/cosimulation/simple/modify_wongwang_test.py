@@ -134,15 +134,14 @@ class TestModifyWongWangSimple(TestModifyWongWang):
             np.testing.assert_array_equal(result_all[0][1][i][0][:len(id_proxy)]*np.NAN,
                                           result_3_all[1][i+sync_steps, 0, :len(id_proxy)])
         # After the delays impact the simulation, there is some difference for S
-        diffs = []
-        for i in range(np.min(sim_3.connectivity.idelays[np.nonzero(sim_3.connectivity.idelays)]) + 1,
-                       int(SIMULATION_LENGTH/integrator.dt)):
+        idelays = np.copy(sim_3.connectivity.idelays)
+        idelays = idelays[len(id_proxy):,:len(id_proxy)]
+        min_delay = idelays[np.nonzero(idelays)].min()
+        for i in range(min_delay + 1, int(SIMULATION_LENGTH/integrator.dt)):
             diff = result_all[0][1][i][0][len(id_proxy):] - result_3_all[1][i + sync_steps, 0, len(id_proxy):]
-            # assert np.sum(diff) != 0.0  # TODO: Find out why it fails for the first two iterations!
-            diffs.append(np.sum(diff))
+            assert np.isnan(diff.sum())
             np.testing.assert_array_equal(result_all[0][1][i][0][:len(id_proxy)]*np.NAN,
                                           result_3_all[1][i + sync_steps, 0, :len(id_proxy)])
-        assert np.sum(diffs) != 0.0
 
     def test_with_proxy_bad_input(self):
         connectivity, coupling, integrator, monitors, sim, result, result_all = self._reference_simulation()
@@ -190,16 +189,15 @@ class TestModifyWongWangSimple(TestModifyWongWang):
                                             result_all[0][1][i][0][:len(id_proxy)],
                                             result_4_all[1][i+sync_steps, 0, :len(id_proxy)])
         # After the delays impact the simulation, there is some difference for for rate and S
-        diffs = []
-        for i in range(np.min(sim_4.connectivity.idelays[np.nonzero(sim_4.connectivity.idelays)])+1,
-                       int(SIMULATION_LENGTH/integrator.dt)):
+        idelays = np.copy(sim_4.connectivity.idelays)
+        idelays = idelays[len(id_proxy):,:len(id_proxy)]
+        min_delay = idelays[np.nonzero(idelays)].min()
+        for i in range(min_delay + 1, int(SIMULATION_LENGTH/integrator.dt)):
             diff = result_all[0][1][i][0][len(id_proxy):] - result_4_all[1][i+sync_steps, 0, len(id_proxy):]
-            # assert np.sum(diff) != 0.0  # TODO: Find out why it fails for the first two iterations!
-            diffs.append(np.sum(diff))
+            assert np.sum(diff) != 0.0  # TODO: Find out why it fails for the first two iterations!
             np.testing.assert_array_compare(operator.__ne__,
                                             result_all[0][1][i][0][:len(id_proxy)],
                                             result_4_all[1][i+sync_steps, 0, :len(id_proxy)])
-        assert np.sum(diffs) != 0.0
 
     def test_with_proxy_right_input(self):
         connectivity, coupling, integrator, monitors, sim, result, result_all = self._reference_simulation()
@@ -268,7 +266,6 @@ class TestModifyWongWangSimple(TestModifyWongWang):
                             initial_conditions=init,
                             )
         sim_6.configure()
-        result_2_all = sim_6.run()[0][1][:, 0, 0, 0]  # run the first steps because the history is delayed
 
         sim_to_sync_time = int(SIMULATION_LENGTH / synchronization_time)
         sync_steps = int(synchronization_time / integrator.dt)
@@ -279,6 +276,8 @@ class TestModifyWongWangSimple(TestModifyWongWang):
         coupling_future = sim_6.loop_cosim_monitor_output()
 
         for i in range(sim_to_sync_time):
-            result_2 = sim_6.run()[0][1][:, 0, 0, 0]
-            np.testing.assert_array_equal(result[i*sync_steps:(i+1)*sync_steps]*np.NAN, result_2)
-            assert np.sum(np.isnan(sim_6.loop_cosim_monitor_output()[0][1])) == 0.0
+            result_2 = sim_6.run(
+                cosim_updates=[np.arange(i * synchronization_time, (i + 1) * synchronization_time, 0.1)-synchronization_time,
+                               np.zeros((int(synchronization_time/0.1),1,1,1))])[0][1][:, 0, 0, 0]
+            np.testing.assert_array_equal(result[i*sync_steps:(i+1)*sync_steps]*0.0, result_2)
+            assert np.sum(np.isnan(sim_6.loop_cosim_monitor_output()[0][1])) == 9

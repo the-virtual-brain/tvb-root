@@ -28,7 +28,7 @@
 .. moduleauthor:: Lionel Kusch <lkusch@thevirtualbrain.org>
 .. moduleauthor:: Dionysios Perdikis <dionperd@gmail.com>
 """
-
+import numpy
 
 SYNCHRONIZATION_TIME = 1.0
 
@@ -36,6 +36,7 @@ SYNCHRONIZATION_TIME = 1.0
 def adjust_connectivity_delays(connectivity):
     connectivity.configure()
     # Note that not even self-connections can have a time delay below the synchronization time of cosimulation!
-    connectivity.tract_lengths[connectivity.delays < 1.0] = SYNCHRONIZATION_TIME * connectivity.speed
+    connectivity.tract_lengths[numpy.logical_and(connectivity.delays < SYNCHRONIZATION_TIME,
+                                                 connectivity.weights != 0)] = SYNCHRONIZATION_TIME * connectivity.speed
     connectivity.configure()
     return connectivity
