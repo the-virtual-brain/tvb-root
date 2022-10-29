@@ -50,11 +50,10 @@ class TestUpdateModel(BaseTestCase):
 
         # Test the the update function
         sim = TvbSim(weight, delay, proxy_id, resolution_simulation, synchronization_time)
-        time, result = sim(resolution_simulation,[np.array([resolution_simulation]), firing_rate])
         for i in range(0, 100):
             time, result = sim(synchronization_time,
                                [np.arange(i * synchronization_time, (i + 1) * synchronization_time,
-                                          resolution_simulation),
+                                          resolution_simulation)-synchronization_time,
                                 np.repeat(firing_rate.reshape(1, 2),
                                           int(synchronization_time / resolution_simulation), axis=0)])
         assert True

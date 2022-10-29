@@ -40,7 +40,6 @@ from tvb.contrib.cosimulation.cosim_monitors import CosimMonitor, CosimMonitorFr
 from tvb.contrib.cosimulation.exception import NumericalInstability
 
 
-
 class CoSimulator(Simulator):
 
     exclusive = Attr(
@@ -192,7 +191,6 @@ class CoSimulator(Simulator):
             state_output = numpy.copy(self.cosim_history.query(step - self.synchronization_n_step))
             # Update the cosimulation history for the delayed monitor and the next update of history
             self.cosim_history.update(step, state_copy)
-            state_copy[:, self.proxy_inds] = 0.0
         else:
             state_output = state
         # Update TVB history to allow for all types of coupling
