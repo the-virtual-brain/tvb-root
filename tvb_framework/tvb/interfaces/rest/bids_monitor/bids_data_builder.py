@@ -38,9 +38,7 @@ from tvb.basic.logger.builder import get_logger
 logger = get_logger(__name__)
 
 SUBJECT_PREFIX = 'sub'
-POSSIBLE_PATHS = {
-    "common_paths": ["CoordsRows", "CoordsColumns", "ModelEq", "ModelParam", "Network"]
-}
+POSSIBLE_ATTR_WITH_PATHS = ["CoordsRows", "CoordsColumns", "ModelEq", "ModelParam", "Network"]
 
 
 class BIDSDataBuilder:
@@ -96,7 +94,7 @@ class BIDSDataBuilder:
                     json_data = json.load(
                         open(self.get_abs_path(self.bids_root_dir, sub, path)))
 
-                    for possible_path_key in POSSIBLE_PATHS["common_paths"]:
+                    for possible_path_key in POSSIBLE_ATTR_WITH_PATHS:
                         if json_data.get(possible_path_key) != None:
                             if isinstance(json_data[possible_path_key], list):
                                 for path1 in json_data[possible_path_key]:

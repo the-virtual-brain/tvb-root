@@ -65,3 +65,6 @@ jobs:
       
       - name: run rateml tests
         run: cd tvb_library/tvb/tests/library/simulator/ && pytest rateml_test.py
+
+      - name: run contrib tests
+        run: cd tvb_contrib && python3 -m pytest
