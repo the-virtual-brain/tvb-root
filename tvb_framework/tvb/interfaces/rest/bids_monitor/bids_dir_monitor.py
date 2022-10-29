@@ -28,12 +28,11 @@
 #
 #
 
-from pickle import FALSE
 import time
 import os
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
-from tvb.interfaces.rest.bids_monitoring.bids_data_builder import BIDSDataBuilder
+from tvb.interfaces.rest.bids_monitor.bids_data_builder import BIDSDataBuilder
 from tvb.interfaces.rest.client.examples.utils import monitor_operation, compute_rest_url
 from tvb.interfaces.rest.client.tvb_client import TVBClient
 from tvb.adapters.uploaders.bids_importer import BIDSImporter, BIDSImporterModel

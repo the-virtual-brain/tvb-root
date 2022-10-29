@@ -29,41 +29,28 @@
 #
 
 import sys
-from tvb.interfaces.rest.bids_monitoring.bids_data_builder import BIDSDataBuilder
-from tvb.interfaces.rest.bids_monitoring.bids_dir_monitor import BIDSDirWatcher
-from tvb.adapters.uploaders.bids_importer import BIDSImporter
-
 from tvb.basic.logger.builder import get_logger
+from tvb.interfaces.rest.bids_monitor.bids_dir_monitor import BIDSDirWatcher
 
 logger = get_logger(__name__)
 
-BIDS_UPLOAD_CONTENT = BIDSImporter.NET_TOKEN
-BIDS_DIR = ""
-
 
 def get_bids_dir():
+    bids_dir = None
     if len(sys.argv) > 0:
         for arg in sys.argv:
             if arg.startswith('--bids-dir'):
-                BIDS_DIR = arg.split('=')[1]
-    return BIDS_DIR
+                bids_dir = arg.split('=')[1]
+    return bids_dir
 
 
-def build_bids_dataset():
-    # A sample code to how to build BIDS dataset for each datatype using BIDSDataBuilder
-    logger.info('Building BIDS dataset for time series')
-    bids_data_builder = BIDSDataBuilder(BIDS_UPLOAD_CONTENT, BIDS_DIR)
-    zip_file_location = bids_data_builder.create_dataset_subjects()
-    logger.info("ZIP file location dir {} ".format(zip_file_location))
-
-
-def monitor_dir():
+def monitor_dir(bids_dir):
     # A sample code to how to monitor a directory using BIDSDirWatcher
     # and build BIDS dataset whenever new files are added
     logger.info('Starting bids monitor')
     # Set IMPORT_DATA_IN_TVB to True to enable importing dataset into TVB
     bids_dir_watcher = BIDSDirWatcher(
-        DIRECTORY_TO_WATCH=BIDS_DIR,
+        DIRECTORY_TO_WATCH=bids_dir,
         UPLOAD_TRIGGER_INTERVAL=20,
         IMPORT_DATA_IN_TVB=True
     )
@@ -71,10 +58,9 @@ def monitor_dir():
 
 
 if __name__ == '__main__':
+    """
+    Receives as arguments the BIDS directory to monitor and the TVB REST server URL
+    e.g. python launch_bids_monitor.py --bids-dir=user/doc/BIDS_SAMPLE --rest-url=http://localhost:9090
 
-    # If bids dir is provided as command line args
-    BIDS_DIR = get_bids_dir()
-
-    monitor_dir()
-
-    # build_bids_dataset()
+    """
+    monitor_dir(get_bids_dir())
