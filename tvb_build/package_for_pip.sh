@@ -42,5 +42,20 @@ rm -R dist
 rm -R build
 cd ..
 
+echo "============================="
+echo " Packing: tvb-bids-monitor"
+echo "============================="
+cd tvb_framework
+mv setup.py setup_bck.py
+mv setup_bids_monitor.py setup.py
+python setup.py sdist
+python setup.py bdist_wheel
+mv setup.py setup_bids_monitor.py
+mv setup_bck.py setup.py
+mv dist/* ../dist/
+rm -R dist
+rm -R build
+cd ..
+
 ## After manual check, do the actual deploy on Pypi
 # twine upload dist/*

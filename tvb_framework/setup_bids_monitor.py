@@ -47,7 +47,7 @@ TVB_TEAM = "Akash Upadhyay, Paula Prodan"
 TVB_INSTALL_REQUIREMENTS = ["tvb-rest-client", "watchdog"]
 
 # Packaging bids-monitor
-with open(os.path.join(os.path.dirname(__file__), 'tvb/interfaces/rest/bids_monitoring/README.md')) as fd:
+with open(os.path.join(os.path.dirname(__file__), 'README_bids_monitor.rst')) as fd:
     DESCRIPTION = fd.read()
 
 setuptools.setup(name="tvb-bids-monitor",
