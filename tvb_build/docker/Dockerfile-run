@@ -27,7 +27,7 @@ ARG PIP=$ENV_BIN/pip
 WORKDIR $USER_HOME
 
 RUN mkdir tvb-root
-COPY --from=node_base --chown=$TVB_USER:$TVB_USER $USER_HOME/tvb-root tvb-root
+COPY --from=node_base $USER_HOME/tvb-root tvb-root
 
 RUN apt-get -y update && apt-get -y install build-essential gcc rsync
 RUN apt-get -y update && apt-get -y install texlive-base texlive-formats-extra
