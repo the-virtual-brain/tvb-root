@@ -126,9 +126,9 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
         self.labels_ordering = labels_ordering
         self.labels_dimensions = labels_dimensions
         if xrdtarr.size == 0:
-            self.time = numpy.array(xrdtarr.coords[labels_ordering[0]].values)
-        else:
             self.time = numpy.empty((0,))
+        else:
+            self.time = numpy.array(xrdtarr.coords[labels_ordering[0]].values)
 
     def duplicate(self, **kwargs):
         duplicate = deepcopy(self)
