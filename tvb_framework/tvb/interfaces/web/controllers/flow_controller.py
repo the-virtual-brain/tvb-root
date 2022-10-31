@@ -695,7 +695,7 @@ class FlowController(BaseController):
     def refresh_subform(self, data_name, subform_label, spatial_model_key):
         data_class = TVBEnum.string_to_enum(self.enum_members, data_name).value
 
-        spatial_model = common.get_from_session(spatial_model_key)
+        spatial_model = common.get_view_model_from_session(spatial_model_key)
         equation_info = spatial_model.get_equation_information()
         setattr(spatial_model, equation_info[subform_label], data_class())
 
