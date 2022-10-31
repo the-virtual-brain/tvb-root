@@ -34,7 +34,7 @@ pipeline {
                     withDockerRegistry(credentialsId: 'tvb_on_docker_hub') {
                         def dockerContext = "tvb_build/docker"
                         def dockerFile = "${dockerContext}/Dockerfile-run"
-                        def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}:'pipeline'", "--build-arg LAST_SHA='${LAST_SHA}' -f ${dockerFile} ${dockerContext}")
+                        def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}:'pipeline1'", "--build-arg LAST_SHA='${LAST_SHA}' -f ${dockerFile} ${dockerContext}")
                         dockerImage.push()
                     }
                 }
@@ -43,7 +43,7 @@ pipeline {
     }
     post {
         changed {
-            mail to: 'paula.popa@codemart.ro lia.domide@codemart.ro',
+            mail to: 'paula.popa@codemart.ro',
             subject: "Jenkins Pipeline ${currentBuild.fullDisplayName} changed status",
             body: """
                 Result: ${currentBuild.result}
