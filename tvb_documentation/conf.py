@@ -23,7 +23,7 @@ from tvb.basic.profile import TvbProfile
 # If your documentation needs a minimal Sphinx version, state it here.
 #needs_sphinx = '1.0'
 math_ext = 'sphinx.ext.mathjax'
-mathjax_path = 'MathJax/MathJax.js?config=TeX-AMS-MML_HTMLorMML'
+mathjax_path = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
@@ -46,7 +46,7 @@ source_suffix = '.rst'
 #source_encoding = 'utf-8-sig'
 
 # The master toctree document.
-master_doc = 'index'
+root_doc = 'index'  # since version 4.0 master_doc was renamed to root_doc
 
 # General information about the project.
 project = u'TVB'
@@ -144,6 +144,14 @@ html_favicon = "_static/favicon.ico"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
+# These paths are either relative to html_static_path
+# or fully qualified paths (eg. https://...)
+html_css_files = [
+    'tvb_design/base.css',
+]
+
+html_style = 'default.css'
+
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
 #html_last_updated_fmt = '%b %d, %Y'
@@ -233,7 +241,7 @@ latex_logo = 'manuals/styles/TVB_logo.pdf'
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, project_target_name, project_name, [author_names], 1)]
+man_pages = [(root_doc, project_target_name, project_name, [author_names], 1)]
 
 # If true, show URL addresses after external links.
 #man_show_urls = False
@@ -244,7 +252,7 @@ man_pages = [(master_doc, project_target_name, project_name, [author_names], 1)]
 # Grouping the document tree into Texinfo files. List of tuples
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
-texinfo_documents = [(master_doc, project_target_name, project_name, author_names,
+texinfo_documents = [(root_doc, project_target_name, project_name, author_names,
                       project_target_name, 'TVB Documentation Project.', 'Miscellaneous'), ]
 
 # Documents to append as an appendix to all manuals.
