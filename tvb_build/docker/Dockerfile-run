@@ -1,3 +1,20 @@
+# use node image
+FROM node:16 AS node_base
+
+ARG USER_HOME=/home
+
+WORKDIR $USER_HOME
+
+RUN echo "NODE Version:" && node --version
+RUN echo "NPM Version:" && npm --version
+# clone repo from branch HBP-176
+RUN git clone --branch pipeline_update --depth 1 https://github.com/the-virtual-brain/tvb-root.git
+
+# install node dependencies and build JS bundle
+RUN cd tvb-root/tvb_bids; \
+    yarn install; \
+    yarn webpack --config webpack.config.js
+
 FROM continuumio/miniconda3
 
 ARG USER_HOME=/home
@@ -8,6 +25,9 @@ ARG ENV_BIN=/opt/conda/envs/tvb-run/bin
 ARG PIP=$ENV_BIN/pip
 
 WORKDIR $USER_HOME
+
+RUN mkdir tvb-root
+COPY --from=node_base --chown=$TVB_USER:$TVB_USER $USER_HOME/tvb-root tvb-root
 
 RUN apt-get -y update && apt-get -y install build-essential gcc rsync
 RUN apt-get -y update && apt-get -y install texlive-base texlive-formats-extra
@@ -41,7 +61,7 @@ COPY requirements_group requirements.txt
 RUN $PIP install -r requirements.txt
 
 # make sure a copy of tvb-root exists inside, for users without Github clone
-RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git
+#RUN git clone --branch pipeline_update--depth 1 https://github.com/the-virtual-brain/tvb-root.git
 ARG LAST_SHA=LATEST
 
 RUN cd tvb-root; \
@@ -58,7 +78,7 @@ RUN cd tvb-root; \
 WORKDIR $USER_HOME
 COPY .tvb.configuration $USER_HOME/.tvb.configuration
 #COPY --chown=$TVB_USER:$TVB_USER .tvb.landing.page.configuration $USER_HOME/.tvb.landing.page.configuration
-COPY step1/_help $USER_HOME/tvb-root/tvb_framework/tvb/interfaces/web/static/help
+#COPY step1/_help $USER_HOME/tvb-root/tvb_framework/tvb/interfaces/web/static/help
 
 RUN mkdir $USER_HOME/.tvb-temp; mkdir $USER_HOME/.tvb-temp/logs; mkdir $TVB_STORAGE $KEYCLOAK_CONFIG
 
