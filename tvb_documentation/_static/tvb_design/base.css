@@ -535,7 +535,7 @@ div.sphinxsidebar p.topless a {
     margin-left: -17px;
 }
 
-div.sphinxsidebar a.reference tt, 
+div.sphinxsidebar a.reference code,
 div.sphinxsidebar p.topless a tt {
     color: inherit;
 }
@@ -562,7 +562,7 @@ div.sphinxsidebar a[rel="nofollow"]:hover {
     transition: opacity 0.3s ease;
 }
 
-div.sphinxsidebar a.reference:hover tt, 
+div.sphinxsidebar a.reference:hover code,
 div.sphinxsidebar p.topless a:hover tt {
     color: inherit;
 }
