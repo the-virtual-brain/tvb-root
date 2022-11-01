@@ -209,7 +209,7 @@ class HPCClientBase(BackendClient):
         ret = {}
         try:
             for path, meta in working_dir.contents(base)['content'].items():
-                path_url = working_dir.path_urls['files'] + path
+                path_url = working_dir.links['files'] + path
                 path = path[1:]  # strip leading '/'
                 if meta['isDirectory']:
                     ret[path] = unicore_client.PathDir(working_dir, path_url, path)
