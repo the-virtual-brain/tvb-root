@@ -8,7 +8,7 @@ WORKDIR $USER_HOME
 RUN echo "NODE Version:" && node --version
 RUN echo "NPM Version:" && npm --version
 # clone repo from branch HBP-176
-RUN git clone --branch pipeline_update --depth 1 https://github.com/the-virtual-brain/tvb-root.git
+RUN git clone --branch HBP-176 --depth 1 https://github.com/the-virtual-brain/tvb-root.git
 
 # install node dependencies and build JS bundle
 RUN cd tvb-root/tvb_bids; \
@@ -61,7 +61,7 @@ COPY requirements_group requirements.txt
 RUN $PIP install -r requirements.txt
 
 # make sure a copy of tvb-root exists inside, for users without Github clone
-#RUN git clone --branch pipeline_update--depth 1 https://github.com/the-virtual-brain/tvb-root.git
+#RUN git clone --branch HBP-176--depth 1 https://github.com/the-virtual-brain/tvb-root.git
 ARG LAST_SHA=LATEST
 
 RUN cd tvb-root; \
