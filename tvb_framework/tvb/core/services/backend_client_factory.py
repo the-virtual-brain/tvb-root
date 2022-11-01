@@ -58,9 +58,9 @@ class BackendClientFactory(object):
         if TvbProfile.current.hpc.IS_HPC_RUN:
             if not TvbProfile.current.hpc.CAN_RUN_HPC:
                 raise InvalidSettingsException("We can not enable HPC run. Most probably pyunicore is not installed!")
-            if adapter_type is get_class_by_name("{}.{}".format(SIMULATOR_MODULE, SIMULATOR_CLASS)):
-                # Return an entity capable to submit jobs to HPC.
-                return HPCSchedulerClient()
+            # if adapter_type is get_class_by_name("{}.{}".format(SIMULATOR_MODULE, SIMULATOR_CLASS)):
+            #     # Return an entity capable to submit jobs to HPC.
+            #     return HPCSchedulerClient()
             if adapter_type is get_class_by_name(
                     "{}.{}".format(IPPIPELINE_CREATOR_MODULE, IPPIPELINE_CREATOR_CLASS)):
                 return HPCPipelineClient()
