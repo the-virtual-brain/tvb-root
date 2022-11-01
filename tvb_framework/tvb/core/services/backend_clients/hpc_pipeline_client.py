@@ -319,11 +319,14 @@ class HPCPipelineClient(HPCClientBase):
         stdout_f = 'stdout'
 
         for index, working_dir in enumerate(working_dirs):
-            stderr = working_dir.stat(stderr_f)
-            stdout = working_dir.stat(stdout_f)
+            try:
+                stderr = working_dir.stat(stderr_f)
+                stdout = working_dir.stat(stdout_f)
 
-            stderr.download(os.path.join(local_logs_dir, str(index) + '_' + stderr_f))
-            stdout.download(os.path.join(local_logs_dir, str(index) + '_' + stdout_f))
+                stderr.download(os.path.join(local_logs_dir, str(index) + '_' + stderr_f))
+                stdout.download(os.path.join(local_logs_dir, str(index) + '_' + stdout_f))
+            except HTTPError as e:
+                LOGGER.warning("Exception when trying to download main stderr/stout from HPC: {}".format(e))
 
             try:
                 output_list = HPCClientBase._listdir(working_dir, base='intermediary_logs')
