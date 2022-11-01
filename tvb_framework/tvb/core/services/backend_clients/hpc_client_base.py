@@ -159,7 +159,7 @@ class HPCClientBase(BackendClient):
             job_description['haveClientStageIn'] = "true"
 
         with closing(
-                pyunicore_client.transport.post(url=pyunicore_client.site_urls['jobs'], json=job_description)) as resp:
+                pyunicore_client.transport.post(url=pyunicore_client.links['jobs'], json=job_description)) as resp:
             job_url = resp.headers['Location']
 
         job = Job(pyunicore_client.transport, job_url)
