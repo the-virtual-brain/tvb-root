@@ -1,5 +1,13 @@
 .. _benchmark_tvb_261:
 
+ReferenceBackend vs NbMPRBackend
+---------------------------------
+
+Since version 2.6, a simulation backend based on Numba is available in TVB. For now, only the
+``MontbrioPazoRoxin`` model is supported with this backend and the other configurations of the simulator
+are also constrained to certain values or types.
+Nevertheless, this backend looks promising if we analyse the benchmarking results below:
+
 
 **********************
 Benchmarks - TVB 2.6.1
@@ -21,7 +29,7 @@ Benchmarks - TVB 2.6.1
 +------------+-----------------------------------------------------------------+
 
 
-Below are the results of benchmarking the ReferenceBackend vs the NbMPRBackend.
+Below are the results of benchmarking the ``ReferenceBackend`` vs the ``NbMPRBackend``.
 All unspecified parameters have the default values.
 
 +--------------------+------------------------------------+
