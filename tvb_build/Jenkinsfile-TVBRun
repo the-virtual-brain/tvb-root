@@ -30,11 +30,11 @@ pipeline {
                 unzip zipFile: 'tvb_build/build/TVB_build_step1.zip', dir: 'tvb_build/docker/step1'
                 script {
                     VERSION_TAG = sh(script: "curl -s 'https://raw.githubusercontent.com/the-virtual-brain/tvb-root/master/tvb_framework/setup.py' | grep VERSION | head -1 | tr -d 'VERSION = \"'", returnStdout: true). trim()
-                    LAST_SHA = sh (script: "curl -s 'https://api.github.com/repos/the-virtual-brain/tvb-root/commits' | grep sha | head -1 | tr '\"' '_'", returnStdout: true).trim()
+                    LAST_SHA = 'abc2'
                     withDockerRegistry(credentialsId: 'tvb_on_docker_hub') {
                         def dockerContext = "tvb_build/docker"
                         def dockerFile = "${dockerContext}/Dockerfile-run"
-                        def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}:'pipeline1'", "--build-arg LAST_SHA='${LAST_SHA}' -f ${dockerFile} ${dockerContext}")
+                        def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}:'pipeline2'", "--build-arg LAST_SHA='${LAST_SHA}' -f ${dockerFile} ${dockerContext}")
                         dockerImage.push()
                     }
                 }
