@@ -9,14 +9,18 @@
                     {{ ght.generate_help_tooltip(field.label, field.doc) }}
                 {% endif %}
             </dt>
-            <dd>
-                {{ field | safe }}
-                <p class="errorMessage">
-                    {% for error in field.errors %}
-                        <span> {{ error }} </span>
-                    {% endfor %}
-                </p>
-            </dd>
+
+            {% if not field.only_label %}
+                <dd>
+                    {{ field | safe }}
+                    <p class="errorMessage">
+                        {% for error in field.errors %}
+                            <span> {{ error }} </span>
+                        {% endfor %}
+                    </p>
+                </dd>
+            {% endif %}
+
         {% endfor %}
     </dl>
 </fieldset>

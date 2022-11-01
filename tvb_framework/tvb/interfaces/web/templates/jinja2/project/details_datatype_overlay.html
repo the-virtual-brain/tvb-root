@@ -66,6 +66,9 @@
         {% import 'form_fields/generate_help_tooltip.html' as ght with context %}
 
         {% if exporters %}
+{#            <button class="action action-export" onclick="window.location='/project/import_tvb_ready_datatypes/{{ entity_gid }}';">Import#}
+{#                TVB-ready data#}
+{#            </button>#}
             <form id="export_form" data-ajax="false" method="post" enctype="multipart/form-data">
                 <fieldset>
                     <dl>
@@ -102,6 +105,14 @@
         {% else %}
             <label>No exporters are currently available for this DataType.</label>
         {% endif %}
+
+{#    </section>#}
+{##}
+{#    <!--! Overlay: Project Imports -->#}
+{#    <section id="overlayTabContent_5" class="node-data node-export ">#}
+{#        <button class="action action-export" onclick="window.location='/project/import_tvb_ready_datatypes';">Import#}
+{#            TVB-ready data#}
+{#        </button>#}
 
     </section>
 </div>

@@ -71,3 +71,6 @@ VIEW_MODEL2ADAPTER = {}
 
 DATATYPE_MEASURE_INDEX_MODULE = 'tvb.adapters.datatypes.db.mapped_value'
 DATATYPE_MEASURE_INDEX_CLASS = 'DatatypeMeasureIndex'
+
+IPPIPELINE_CREATOR_MODULE = "tvb.adapters.creators.pipeline_creator"
+IPPIPELINE_CREATOR_CLASS = "IPPipelineCreator"

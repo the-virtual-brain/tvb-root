@@ -35,12 +35,13 @@ Class responsible for all TVB exports (datatype or project).
 """
 import shutil
 from cgi import FieldStorage
-from cherrypy._cpreqbody import Part
 
+from cherrypy._cpreqbody import Part
 from tvb.adapters.exporters.abcexporter import ABCExporter
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
 from tvb.adapters.exporters.tvb_export import TVBExporter
 from tvb.adapters.exporters.tvb_linked_export import TVBLinkedExporter
+from tvb.adapters.exporters.zip_exporter import ZipExporter
 from tvb.basic.logger.builder import get_logger
 from tvb.config import TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
 from tvb.core.entities.model import model_operation
@@ -62,6 +63,7 @@ class ExportManager(object):
         # If new exporters supported, they should be added here
         self._register_exporter(TVBExporter())
         self._register_exporter(TVBLinkedExporter())
+        self._register_exporter(ZipExporter())
         self.storage_interface = StorageInterface()
 
     def _register_exporter(self, exporter):

@@ -154,7 +154,13 @@ class OperationOverlayDetails(CommonDetails):
 
         # If the operation was executed in another process or as a cluster then show the pid/job_id
         if op_pid is not None:
-            if op_pid.pid is not None:
+            if type(op_pid) == list:
+                job_ids = []
+                for op_ident in op_pid:
+                    job_ids.append(op_ident.job_id)
+                self.job_id = job_ids
+                self.metadata['job_id'] = {"name": "Cluster job Id", "disabled": "True"}
+            elif op_pid.pid is not None:
                 self.pid = op_pid.pid
                 self.metadata['pid'] = {"name": "Process pid", "disabled": "True"}
             elif op_pid.job_id is not None:

@@ -29,28 +29,16 @@
 #
 
 """
-.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
+.. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
+from tvb.basic.neotraits.api import HasTraits, Attr
 
-from abc import abstractmethod
 
-
-class BackendClient(object):
-    """
-    Interface for a backend client that runs operations asynchronously on a specific environment
-    """
-
-    @staticmethod
-    @abstractmethod
-    def execute(operation_id, user_name_label, adapter_instance, auth_token=""):
-        """
-        Start operation asynchronously
-        """
-
-    @staticmethod
-    @abstractmethod
-    def stop_operation(operation_id):
-        """
-        Stop the thread for a given operation id
-        """
-        return True
+class TraitsWithParameters(HasTraits):
+    parameters = Attr(
+        field_type=dict,
+        label="Parameters in a dictionary.",
+        default=lambda: {},
+        doc="""Should be a list of the parameters and their meaning, Traits
+                should be able to take defaults and sensible ranges from any
+                traited information that was provided.""")

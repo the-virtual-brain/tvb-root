@@ -121,6 +121,14 @@ class TraitField(Field):
 TEMPORARY_PREFIX = ".tmp"
 
 
+class ValidatedTraitUploadField(TraitField):
+    template = 'form_fields/validated_upload_field.html'
+
+    def __init__(self, traited_attribute, required_type, name, disabled=False):
+        super(ValidatedTraitUploadField, self).__init__(traited_attribute, name, disabled)
+        self.required_type = required_type
+
+
 class TraitUploadField(TraitField):
     template = 'form_fields/upload_field.html'
 
@@ -485,6 +493,15 @@ class LabelField(TraitField):
             self.label_message = label_message
 
 
+class SimpleLabelField(Field):
+    template = 'form_fields/label_field.html'
+
+    def __init__(self, label_message):
+        super(SimpleLabelField, self).__init__(label_message, label=label_message)
+        self.label_message = label_message
+        self.only_label = True
+
+
 class FormField(Field):
     template = 'form_fields/form_field.html'
 
@@ -532,6 +549,7 @@ class Form(object):
         for field in self.fields:
             if not field.validate():
                 valid = False
+                break
         return valid
 
     def get_errors_dict(self):

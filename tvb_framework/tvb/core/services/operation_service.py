@@ -47,7 +47,7 @@ from inspect import isclass
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
-from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS, MEASURE_METRICS_MODEL_CLASS, ALGORITHMS
+from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS, MEASURE_METRICS_MODEL_CLASS, ALGORITHMS, IPPIPELINE_CREATOR_MODULE, IPPIPELINE_CREATOR_CLASS
 from tvb.core.adapters.abcadapter import ABCAdapter, AdapterLaunchModeEnum
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.generic_attributes import GenericAttributes
@@ -88,7 +88,7 @@ class OperationService:
     ######## Methods related to launching operations start here ##############################
     ##########################################################################################
 
-    def initiate_operation(self, current_user, project, adapter_instance, visible=True, model_view=None):
+    def initiate_operation(self, current_user, project, adapter_instance, visible=True, model_view=None, auth_token=None):
         """
         Gets the parameters of the computation from the previous inputs form,
         and launches a computation (on the cluster or locally).
@@ -105,7 +105,7 @@ class OperationService:
         if adapter_instance.launch_mode == AdapterLaunchModeEnum.SYNC_SAME_MEM:
             return self.initiate_prelaunch(operation, adapter_instance)
         else:
-            return self._send_to_cluster(operation, adapter_instance, current_user.username)
+            return self._send_to_cluster(operation, adapter_instance, current_user.username, auth_token)
 
     @staticmethod
     def prepare_metadata(algo_category, burst=None, current_ga=GenericAttributes()):
@@ -199,6 +199,14 @@ class OperationService:
 
         self.store_view_model(operation, project, view_model)
 
+        if view_model.__module__ == IPPIPELINE_CREATOR_MODULE:
+            storage_path = StorageInterface().get_project_folder(project.name, str(operation.id))
+            dest_path = os.path.join(storage_path, view_model.PIPELINE_DATASET_FILE)
+            StorageInterface.copy_file(view_model.mri_data, dest_path)
+            view_model.mri_data = dest_path
+            h5.store_view_model(view_model, storage_path)
+            view_model.to_json(storage_path)
+
         return operation
 
     @staticmethod
@@ -266,10 +274,10 @@ class OperationService:
             self.launch_operation(next_op.id)
         return result_msg
 
-    def _send_to_cluster(self, operation, adapter_instance, current_username="unknown"):
+    def _send_to_cluster(self, operation, adapter_instance, current_username="unknown", auth_token=""):
         """ Initiate operation on cluster"""
         try:
-            BackendClientFactory.execute(str(operation.id), current_username, adapter_instance)
+            BackendClientFactory.execute(str(operation.id), current_username, adapter_instance, auth_token)
         except TVBException as ex:
             self._handle_exception(ex, {}, ex.message, operation)
         except Exception as excep:
@@ -342,7 +350,7 @@ class OperationService:
     def _range_name(range_no):
         return PARAM_RANGE_PREFIX + str(range_no)
 
-    def fire_operation(self, adapter_instance, current_user, project_id, visible=True, view_model=None):
+    def fire_operation(self, adapter_instance, current_user, project_id, visible=True, view_model=None, auth_token=None):
         """
         Launch an operation, specified by AdapterInstance, for current_user and project with project_id.
         """
@@ -352,7 +360,7 @@ class OperationService:
             project = dao.get_project_by_id(project_id)
 
             result = self.initiate_operation(current_user, project, adapter_instance, visible,
-                                             model_view=view_model)
+                                             model_view=view_model, auth_token=auth_token)
             self.logger.info("Finished operation launch:" + operation_name)
             return result
 

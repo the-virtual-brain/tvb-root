@@ -29,28 +29,50 @@
 #
 
 """
-.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
+Classes and enums for the 3 analysis levels relevant for the image processing pipeline.
+
+.. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
 
-from abc import abstractmethod
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range, TVBEnum
+from tvb.core.neotraits.traits_with_parameters import TraitsWithParameters
 
 
-class BackendClient(object):
-    """
-    Interface for a backend client that runs operations asynchronously on a specific environment
-    """
+class TemplateRegOptionsEnum(str, TVBEnum):
+    ANTS_TEMPLATE_REG = "ants"
+    FSL_TEMPLATE_REG = "fsl"
 
-    @staticmethod
-    @abstractmethod
-    def execute(operation_id, user_name_label, adapter_instance, auth_token=""):
-        """
-        Start operation asynchronously
-        """
 
-    @staticmethod
-    @abstractmethod
-    def stop_operation(operation_id):
-        """
-        Stop the thread for a given operation id
-        """
-        return True
+class PipelineAnalysisLevel(TraitsWithParameters):
+    pass
+
+
+class PreprocAnalysisLevel(PipelineAnalysisLevel):
+    parameters = Attr(
+        field_type=dict,
+        label="Linear Parameters",
+        default=lambda: {})
+
+    def __str__(self):
+        return "preproc"
+
+
+class ParticipantAnalysisLevel(PipelineAnalysisLevel):
+    parameters = Attr(
+        field_type=dict,
+        label="Linear Parameters",
+        default=lambda: {"streamlines": 1,
+                         "template_reg": TemplateRegOptionsEnum.ANTS_TEMPLATE_REG})
+
+    def __str__(self):
+        return "participant"
+
+
+class GroupAnalysisLevel(PipelineAnalysisLevel):
+    parameters = Attr(
+        field_type=dict,
+        label="Linear Parameters",
+        default=lambda: {"group_participant_label": "default", "session_label": "default"})
+
+    def __str__(self):
+        return "group"

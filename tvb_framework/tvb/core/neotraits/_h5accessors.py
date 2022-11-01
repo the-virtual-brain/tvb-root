@@ -36,6 +36,7 @@ import numpy
 import scipy.sparse
 
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range, TVBEnum
+from tvb.core.pipeline import analysis_levels
 from tvb.datatypes import equations
 from tvb.storage.h5.file.exceptions import MissingDataSetException
 
@@ -260,9 +261,9 @@ class DataSet(Accessor):
         return DataSetMetaData.from_dict(meta)
 
 
-class EquationScalar(Accessor):
+class ScalarWithParameters(Accessor):
     """
-    An attribute in a h5 file that corresponds to a traited Equation.
+    An attribute in a h5 file that corresponds to a traited object with parameters.
     """
     KEY_TYPE = 'type'
     KEY_PARAMETERS = 'parameters'
@@ -277,30 +278,37 @@ class EquationScalar(Accessor):
                      If the traited attribute is not a member of a HasTraits then
                      it has no name and you have to provide this parameter
         """
-        super(EquationScalar, self).__init__(trait_attribute, h5file, name)
+        super(ScalarWithParameters, self).__init__(trait_attribute, h5file, name)
 
     def store(self, data):
-        # type: (Equation) -> None
+        # type: (HasTraits) -> None
         data = self.trait_attribute._validate_set(None, data)
 
-        eq_meta_dict = {self.KEY_TYPE: str(type(data).__name__),
-                        self.KEY_PARAMETERS: data.parameters}
+        parameters_meta_dict = {self.KEY_TYPE: str(type(data).__name__),
+                                self.KEY_PARAMETERS: data.parameters}
 
-        self.owner.storage_manager.set_metadata({self.field_name: json.dumps(eq_meta_dict)})
+        self.owner.storage_manager.set_metadata({self.field_name: json.dumps(parameters_meta_dict)})
 
     def load(self):
-        # type: () -> Equation
-        eq_meta_dict = json.loads(self.owner.storage_manager.get_metadata()[self.field_name])
+        # type: () -> HasTraits
+        parameters_meta_dict = json.loads(self.owner.storage_manager.get_metadata()[self.field_name])
 
-        if eq_meta_dict is None:
-            return eq_meta_dict
+        if parameters_meta_dict is None:
+            return parameters_meta_dict
 
-        eq_type = eq_meta_dict[self.KEY_TYPE]
-        eq_class = getattr(equations, eq_type)
-        eq_instance = eq_class()
-        parameters_dict = eq_meta_dict[self.KEY_PARAMETERS]
-        eq_instance.parameters = parameters_dict
-        return eq_instance
+        traits_type = parameters_meta_dict[self.KEY_TYPE]
+        traits_class = getattr(self.get_traits_class(self.field_name), traits_type)
+        traits_instance = traits_class()
+        parameters_dict = parameters_meta_dict[self.KEY_PARAMETERS]
+        traits_instance.parameters = parameters_dict
+        return traits_instance
+
+    @staticmethod
+    def get_traits_class(key_type):
+        return {
+            'equation': equations,
+            'analysis_level': analysis_levels
+        }[key_type]
 
 
 class Reference(Uuid):

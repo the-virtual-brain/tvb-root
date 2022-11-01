@@ -51,6 +51,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.services.exceptions import ServicesBaseException, ProjectServiceException
 from tvb.core.services.import_service import ImportService
+from tvb.core.services.hpc_operation_service import HPCOperationService
 from tvb.core.services.operation_service import OperationService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
@@ -246,6 +247,12 @@ class ProjectController(BaseController):
         """
         if (project_id is None) or (not int(project_id)):
             self.redirect('/project')
+
+        if TvbProfile.current.hpc.IS_HPC_RUN:
+            auth_token = common.get_from_session(common.KEY_AUTH_TOKEN)
+            current_user = common.get_logged_user()
+            HPCOperationService.check_pipeline_operations_job(auth_token=auth_token, algos=["IPPipelineCreator"],
+                                                     current_user_id=current_user.id)
 
         ## Toggle filters
         filters = self.__get_operations_filters()
@@ -692,6 +699,31 @@ class ProjectController(BaseController):
 
         self.logger.debug("Data exported in file: " + str(file_path))
         return serve_file(file_path, "application/x-download", "attachment", file_name)
+
+    # @cherrypy.expose
+    # @handle_error(redirect=False)
+    # @check_user
+    # def import_tvb_ready_datatypes(self, data_gid):
+    #     zip_dt = dao.get_datatype_by_gid(data_gid)
+    #     zip_path = zip_dt.zip_path
+    #
+    #     storage_interface = StorageInterface()
+    #     operation = dao.get_operation_by_id(zip_dt.fk_from_operation)
+    #     operation_folder = storage_interface.get_project_folder(operation.project.name, str(operation.id))
+    #
+    #     results_folder = os.path.join(operation_folder, "results")
+    #     storage_interface.unpack_zip(zip_path, results_folder)
+    #
+    #     tvb_ready_folder = os.path.join(results_folder, "results", "tvb-ready")
+    #
+    #     conn_path = os.path.join(tvb_ready_folder, "connectivity_76.zip")
+    #     conn_importer_vm = ZIPConnectivityImporterModel(uploaded=conn_path)
+    #     conn_importer_instance = ZIPConnectivityImporter()
+    #
+    #     OperationService().fire_operation(conn_importer_instance, common.get_logged_user(), operation.fk_launched_in,
+    #                                       view_model=conn_importer_vm)
+    #
+    #     common.set_important_message("Launched an operation.")
 
     @cherrypy.expose
     @handle_error(redirect=False)

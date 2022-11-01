@@ -202,11 +202,15 @@ class HPCSettings(object):
     HPC related specifications
     """
     HPC_LAUNCHER_SH_SCRIPT = "hpcLauncher"
+    HPC_PIPELINE_LAUNCHER_SH_SCRIPT = "tvb_image_processing_pipeline.sh"
+    HPC_PIPELINE_JSON_PARSER = "json_parser.py"
 
     UNICORE_RESOURCER_KEY = 'Resources'
     UNICORE_ARGS_KEY = 'Arguments'
     UNICORE_EXE_KEY = 'Executable'
     UNICORE_PROJECT_KEY = 'Project'
+    UNICORE_JOB_NAME = 'Name'
+    UNICORE_IMPORTS_KEY = 'Imports'
 
     JOB_STATUS_KEY = 'status'
     JOB_MOUNT_POINT_KEY = 'mountPoint'
@@ -225,6 +229,8 @@ class HPCSettings(object):
         self.HPC_COMPUTE_SITE = manager.get_attribute(stored.KEY_HPC_COMPUTE_SITE)
         self.CRYPT_DATADIR = manager.get_attribute(stored.KEY_CRYPT_DATADIR)
         self.CRYPT_PASSDIR = manager.get_attribute(stored.KEY_CRYPT_PASSDIR)
+        self.PIPELINE_SCRIPT_URL = manager.get_attribute(stored.KEY_PIPELINE_SCRIPT_URL, '')
+        self.PIPELINE_JSON_PARSER_URL = manager.get_attribute(stored.KEY_PIPELINE_JSON_PARSER_URL, '')
 
 
 class WebSettings(object):

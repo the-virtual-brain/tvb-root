@@ -31,7 +31,7 @@
 from ._h5accessors import DataSet, DataSetMetaData, Uuid, JsonRange
 from ._h5accessors import Scalar, Enum, Reference, Accessor, ReferenceList
 from ._h5accessors import SparseMatrix, SparseMatrixMetaData
-from ._h5accessors import Json, JsonFinal, EquationScalar
+from ._h5accessors import Json, JsonFinal, ScalarWithParameters
 from ._h5core import H5File, ViewModelH5
 
 import h5py

@@ -38,8 +38,9 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import HasTraits, TupleEnum, Attr, List, NArray, Range, EnumAttr, Final, TVBEnum
 from tvb.basic.neotraits.ex import TraitFinalAttributeError
 from tvb.core.entities.generic_attributes import GenericAttributes
-from tvb.core.neotraits.h5 import EquationScalar, SparseMatrix, ReferenceList
+from tvb.core.neotraits.h5 import ScalarWithParameters, SparseMatrix, ReferenceList
 from tvb.core.neotraits.h5 import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json, JsonRange, Enum
+from tvb.core.neotraits.traits_with_parameters import TraitsWithParameters
 from tvb.core.neotraits.view_model import DataTypeGidAttr
 from tvb.core.utils import string2date, date2string
 from tvb.datatypes.equations import Equation, EquationsEnum
@@ -313,8 +314,8 @@ class ViewModelH5(H5File):
                     continue
                 elif attr.field_type is uuid.UUID:
                     ref = Uuid(attr, self)
-                elif issubclass(attr.field_type, (Equation, EquationsEnum)):
-                    ref = EquationScalar(attr, self)
+                elif issubclass(attr.field_type, (Equation, EquationsEnum, TraitsWithParameters)):
+                    ref = ScalarWithParameters(attr, self)
                 elif attr.field_type is Range:
                     ref = JsonRange(attr, self)
                 elif isinstance(attr, Final):

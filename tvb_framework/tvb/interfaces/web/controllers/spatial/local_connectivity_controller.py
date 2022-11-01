@@ -58,9 +58,6 @@ NO_OF_CUTOFF_POINTS = 20
 LOAD_EXISTING_URL = SpatioTemporalController.build_path('/spatial/localconnectivity/load_local_connectivity')
 RELOAD_DEFAULT_PAGE_URL = SpatioTemporalController.build_path('/spatial/localconnectivity/reset_local_connectivity')
 
-# Between steps/pages we keep a LocalConnectivityCreatorModel in session at this key
-KEY_LCONN = "local-conn"
-
 
 @traced
 class LocalConnectivityController(SpatioTemporalController):

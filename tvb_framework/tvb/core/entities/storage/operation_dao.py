@@ -51,7 +51,6 @@ class OperationDAO(RootDAO):
     OPERATION RELATED METHODS
     """
 
-
     def get_operation_by_id(self, operation_id):
         """Retrieve OPERATION entity for a given Identifier."""
 
@@ -63,7 +62,6 @@ class OperationDAO(RootDAO):
         operation.algorithm
 
         return operation
-
 
     def try_get_operation_by_id(self, operation_id):
         """
@@ -77,7 +75,6 @@ class OperationDAO(RootDAO):
         except SQLAlchemyError:
             self.logger.exception("Operation not found for ID %s, we will return None" % operation_id)
             return None
-
 
     def get_operation_by_gid(self, operation_gid):
         """Retrieve OPERATION entity for a given gid."""
@@ -100,16 +97,15 @@ class OperationDAO(RootDAO):
             self.logger.exception("When fetching gid %s" % operation_gid)
             return None
 
-
     def get_all_operations_for_uploaders(self, project_id):
         """
         Returns all finished upload operations.
         """
         try:
             result = self.session.query(Operation).join(Algorithm).join(AlgorithmCategory).filter(
-                                        AlgorithmCategory.rawinput == True).filter(
-                                        Operation.fk_launched_in == project_id).filter(
-                                        Operation.status == STATUS_FINISHED).all()
+                AlgorithmCategory.rawinput == True).filter(
+                Operation.fk_launched_in == project_id).filter(
+                Operation.status == STATUS_FINISHED).all()
             return result
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
@@ -127,20 +123,22 @@ class OperationDAO(RootDAO):
             self.logger.exception(excep)
             return None
 
-    def get_operations_for_hpc_job(self):
+    def get_operations_for_hpc_job(self, algos_list=None, current_user_id=None):
         status = [STATUS_PENDING, STATUS_STARTED]
-        algorithm_classname = "SimulatorAdapter"
+        if algos_list is None:
+            algos_list = ["SimulatorAdapter"]
         queue_full = False
         try:
-            result = self.session.query(Operation).join(Algorithm) \
-                .filter(Algorithm.classname == algorithm_classname) \
+            result_query = self.session.query(Operation).join(Algorithm) \
+                .filter(Algorithm.classname.in_(algos_list)) \
                 .filter(Operation.status.in_(status)) \
-                .filter(Operation.queue_full == queue_full).all()
-            return result
+                .filter(Operation.queue_full == queue_full)
+            if current_user_id is not None:
+                result_query = result_query.filter(Operation.fk_launched_by == current_user_id)
+            return result_query.all()
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
             return None
-
 
     def is_upload_operation(self, operation_gid):
         """
@@ -154,7 +152,6 @@ class OperationDAO(RootDAO):
         except SQLAlchemyError:
             return False
 
-
     def count_resulted_datatypes(self, operation_id):
         """
         Returns the number of resulted datatypes from the specified operation.
@@ -166,15 +163,18 @@ class OperationDAO(RootDAO):
             self.logger.exception(excep)
             return None
 
-
-    def get_operation_process_for_operation(self, operation_id):
+    def get_operation_process_for_operation(self, operation_id, allow_multiple_results=False):
         """
         Get the OperationProcessIdentifier for this operation id.
         """
         try:
             result = self.session.query(OperationProcessIdentifier
                                         ).filter(OperationProcessIdentifier.fk_from_operation == operation_id
-                                                 ).one()
+                                                 )
+            if allow_multiple_results:
+                result = result.all()
+            else:
+                result = result.one()
         except NoResultFound:
             self.logger.debug("No operation process found for operation id=%s." % (str(operation_id),))
             result = None
@@ -182,7 +182,6 @@ class OperationDAO(RootDAO):
             self.logger.exception(excep)
             result = None
         return result
-
 
     def get_operations_with_error_in_project(self, project_id):
         """
@@ -218,7 +217,6 @@ class OperationDAO(RootDAO):
             self.logger.exception(excep)
         return result
 
-
     def compute_disk_size_for_started_ops(self, user_id):
         """ Get all the disk space that should be reserved for the started operations of this user. """
         try:
@@ -229,7 +227,6 @@ class OperationDAO(RootDAO):
             self.logger.exception(excep)
             expected_hdd_size = 0
         return expected_hdd_size or 0
-
 
     def get_filtered_operations(self, project_id, filter_chain, page_start=0,
                                 page_size=DEFAULT_PAGE_SIZE, is_count=False):
@@ -276,7 +273,6 @@ class OperationDAO(RootDAO):
             self.logger.exception(excep)
             return 0 if is_count else None
 
-
     def get_results_for_operation(self, operation_id, filters=None):
         """
         Retrieve DataTypes entities, resulted after executing an operation.
@@ -300,7 +296,6 @@ class OperationDAO(RootDAO):
             self.logger.exception(excep)
             return None
 
-
     def set_operation_and_group_visibility(self, entity_gid, is_visible, is_operation_group=False):
         """
         Sets the operation visibility.
@@ -320,7 +315,6 @@ class OperationDAO(RootDAO):
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
 
-
     def get_operationgroup_by_gid(self, gid):
         """Retrieve by GID"""
         try:
@@ -329,7 +323,6 @@ class OperationDAO(RootDAO):
         except SQLAlchemyError:
             return None
 
-
     def get_operationgroup_by_id(self, op_group_id):
         """Retrieve by ID"""
         try:
@@ -337,7 +330,6 @@ class OperationDAO(RootDAO):
             return result
         except SQLAlchemyError:
             return None
-
 
     def get_operation_numbers(self, proj_id):
         """
@@ -355,7 +347,6 @@ class OperationDAO(RootDAO):
 
         return finished, started, failed, canceled, pending
 
-
     #
     # CATEGORY RELATED METHODS
     #
@@ -370,7 +361,6 @@ class OperationDAO(RootDAO):
             categories = []
         return categories
 
-
     def get_uploader_categories(self):
         """Retrieve categories with raw_input = true"""
         try:
@@ -379,7 +369,6 @@ class OperationDAO(RootDAO):
             self.logger.exception(excep)
             result = []
         return result
-
 
     def get_raw_categories(self):
         """Retrieve categories with raw_input = true"""
@@ -390,7 +379,6 @@ class OperationDAO(RootDAO):
             result = []
         return result
 
-
     def get_visualisers_categories(self):
         """Retrieve categories with display = true"""
         try:
@@ -399,7 +387,6 @@ class OperationDAO(RootDAO):
             self.logger.exception(excep)
             result = []
         return result
-
 
     def get_launchable_categories(self, elimin_viewers=False):
         """Retrieve algorithm categories which can be launched on right-click (optionally filter visualizers)"""
@@ -413,7 +400,6 @@ class OperationDAO(RootDAO):
             result = []
         return result
 
-
     def get_category_by_id(self, categ_id):
         """Retrieve category with given id"""
         try:
@@ -422,7 +408,6 @@ class OperationDAO(RootDAO):
             self.logger.exception(excep)
             result = None
         return result
-
 
     def filter_category(self, displayname, rawinput, display, launchable, order_nr):
         """Retrieve category with given id"""
@@ -434,7 +419,6 @@ class OperationDAO(RootDAO):
             return result
         except NoResultFound:
             return None
-
 
     #
     # ALGORITHM RELATED METHODS
@@ -457,7 +441,6 @@ class OperationDAO(RootDAO):
             self.logger.exception(ex)
             return None
 
-
     def get_algorithm_by_module(self, module_name, class_name):
         try:
             result = self.session.query(Algorithm).filter_by(module=module_name, classname=class_name).one()
@@ -465,7 +448,6 @@ class OperationDAO(RootDAO):
             return result
         except SQLAlchemyError:
             return None
-
 
     def get_applicable_adapters(self, compatible_class_names, launch_categ):
         """
@@ -482,7 +464,6 @@ class OperationDAO(RootDAO):
             self.logger.exception("Could not retrieve applicable Adapters ...")
             return []
 
-
     def get_adapters_from_categories(self, categories):
         """
         Retrieve a list of stored adapters in the given categories.
@@ -496,7 +477,6 @@ class OperationDAO(RootDAO):
         except SQLAlchemyError:
             self.logger.exception("Could not retrieve Adapters ...")
             return []
-
 
     #
     # RESULT FIGURE RELATED CODE

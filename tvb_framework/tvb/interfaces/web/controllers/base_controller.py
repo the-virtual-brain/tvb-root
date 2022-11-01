@@ -38,7 +38,6 @@ This is the main UI entry point.
 """
 
 import os
-
 import cherrypy
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
@@ -92,7 +91,23 @@ class BaseController(object):
             allen_link = self.get_url_adapter(allen_algo.fk_category, allen_algo.id)
             self.connectivity_submenu.append(dict(title="Allen Connectome Builder", link=allen_link,
                                                   subsection=WebStructure.SUB_SECTION_ALLEN,
-                                                  description="Download data from Allen dataset and create a mouse connectome"))
+                                                  description="Download data from Allen dataset and create a mouse "
+                                                              "connectome"))
+
+        is_ebrain_running = True  # This should be true only when the EBRAIN deployment is running and
+        # when the current user has an HPC account linked (or a SA exists...)
+
+        pipeline_algo = self.algorithm_service.get_algorithm_by_module_and_class(
+            IntrospectionRegistry.IP_PIPELINE_MODULE,
+            IntrospectionRegistry.IP_PIPELINE_CLASS
+        )
+
+        if is_ebrain_running and pipeline_algo and not pipeline_algo.removed:
+            # Only add the Image Preprocessing Creator if tvb is deployed on EBRAINS
+            pipeline_link = self.get_url_adapter(pipeline_algo.fk_category, pipeline_algo.id)
+            self.connectivity_submenu.append(dict(title="Image Preprocessing Pipeline", link=pipeline_link,
+                                                  subsection=WebStructure.SUB_SECTION_IP_PIPELINE,
+                                                  description="Launch Image Preprocessing pipeline"))
 
         siibra_algo = self.algorithm_service.get_algorithm_by_module_and_class(
             IntrospectionRegistry.SIIBRA_CREATOR_MODULE,
@@ -271,6 +286,11 @@ class BaseController(object):
             result_template[common.KEY_SUB_SECTION] = WebStructure.SUB_SECTION_SIIBRA
             result_template[common.KEY_SUBMENU_LIST] = self.connectivity_submenu
 
+        elif algorithm.module == IntrospectionRegistry.IP_PIPELINE_MODULE:
+            result_template[common.KEY_SECTION] = WebStructure.SECTION_CONNECTIVITY
+            result_template[common.KEY_SUB_SECTION] = WebStructure.SUB_SECTION_IP_PIPELINE
+            result_template[common.KEY_SUBMENU_LIST] = self.connectivity_submenu
+
         elif algorithm.algorithm_category.display:
             ## We are having a visualizer:
             if is_burst:
@@ -384,7 +404,7 @@ class BaseController(object):
             project.operations_pending = pending
             common.add2session(common.KEY_PROJECT, project)
 
-    @using_template('form_fields/form')
+    @using_template('form_fields/form_field')
     def render_adapter_form(self, adapter_form, is_callout=False):
         show_online_help = common.get_logged_user().is_online_help_active()
         return {'adapter_form': adapter_form, 'showOnlineHelp': show_online_help, 'isCallout': is_callout}
