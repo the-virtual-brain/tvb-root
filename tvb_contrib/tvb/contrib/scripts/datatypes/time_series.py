@@ -113,7 +113,6 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
             self.configure_from_xarray_DataArray(data)
         else:
             super(TimeSeries, self).__init__(data=prepare_4d(data, self.logger), **kwargs)
-        self.configure()
 
     def configure_from_xarray_DataArray(self, xrdtarr):
         # We assume that time is in the first dimension
