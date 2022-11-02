@@ -233,7 +233,7 @@ class DocGenerator:
             args = ['-d', doctrees_folder]
 
             try:
-                opts = GenOptions(None, 'rst', auto_api_folder, 'Project', 10, True, None)
+                opts = GenOptions(None, 'rst', auto_api_folder, 'Project', 3, True, None)
                 # create RST files for the package structure
                 process_sources(opts, tvb.__path__, self.EXCLUDES)
 
