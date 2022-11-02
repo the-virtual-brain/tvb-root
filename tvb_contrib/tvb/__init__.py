@@ -27,8 +27,8 @@
 #
 
 """
-We want tvb package to extend over 3 folders:
-tvb_library, tvb_framework and tvb_contrib.
+We want tvb package to extend over multiple folders:
+web framework, scientific library, storage and contributors module.
 """
 
 from pkgutil import extend_path
