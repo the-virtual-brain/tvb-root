@@ -110,12 +110,11 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
         data = kwargs.pop("data", numpy.empty((0, 0, 0, 0)))
         if isinstance(data, xr.DataArray):
             super(TimeSeries, self).__init__(data=prepare_4d(data.values, self.logger), **kwargs)
-            self.configure_from_xarray_DataArray(data)
+            self.initialze_from_xarray_DataArray(data)
         else:
             super(TimeSeries, self).__init__(data=prepare_4d(data, self.logger), **kwargs)
-        self.configure()
 
-    def configure_from_xarray_DataArray(self, xrdtarr):
+    def initialze_from_xarray_DataArray(self, xrdtarr):
         # We assume that time is in the first dimension
         labels_ordering = xrdtarr.coords.dims
         labels_dimensions = {}
@@ -126,9 +125,9 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
         self.labels_ordering = labels_ordering
         self.labels_dimensions = labels_dimensions
         if xrdtarr.size == 0:
-            self.time = numpy.array(xrdtarr.coords[labels_ordering[0]].values)
-        else:
             self.time = numpy.empty((0,))
+        else:
+            self.time = numpy.array(xrdtarr.coords[labels_ordering[0]].values)
 
     def duplicate(self, **kwargs):
         duplicate = deepcopy(self)
