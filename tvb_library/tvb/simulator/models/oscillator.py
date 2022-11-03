@@ -328,6 +328,26 @@ class Generic2dOscillator(ModelNumbaDfun):
     _nvar = 2
     cvar = numpy.array([0], dtype=numpy.int32)
 
+    coupling_terms = Final(
+        label="Coupling terms",
+        # how to unpack coupling array
+        default=["coupling_V", "coupling_W"]
+    )
+
+    state_variable_dfuns = Final(
+        label="Drift functions",
+        default={
+            "V": "d * tau * (alpha * W - f * V**3 + e * V**2 + g * V + gamma * I + gamma * coupling_V)",
+            "W": "d * (a + b * V + c * V**2 - beta * W) / tau"
+        }
+    )
+
+    parameter_names = List(
+        of=str,
+        label="List of parameters for this model",
+        default="tau I a b c d e f g alpha beta gamma".split()
+    )
+
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
         V = state_variables[0, :]
         W = state_variables[1, :]
