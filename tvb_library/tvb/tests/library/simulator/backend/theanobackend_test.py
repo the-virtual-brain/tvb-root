@@ -55,7 +55,7 @@ from .backendtestbase import BaseTestDfun
 
 class TestTheanoDfun(BaseTestDfun):
 
-    def _test_dfun(self, model_):
+    def _test_dfun(self, model_, **model_params):
         """Test a Python cfun template."""
 
         class sim:  # dummy sim
@@ -67,7 +67,7 @@ class TestTheanoDfun(BaseTestDfun):
         import theano.tensor as tt
         <%include file="theano-dfuns.py.mako"/>
         '''
-        kernel = TheanoBackend().build_py_func(template, dict(sim=sim, theano=theano),
+        kernel = TheanoBackend().build_py_func(template, dict(sim=sim, theano=theano, params=model_params),
                                                name='dfuns', print_source=True)
 
         cX_numpy = np.random.rand(2, 128, 1)

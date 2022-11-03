@@ -31,7 +31,11 @@
 def dfuns(dX, state, cX, parmat):
 
 % for par in sim.model.global_parameter_names:
+    % if par in params:
+    ${par} = ${params[par]}
+    % else:
     ${par} = ${getattr(sim.model, par)[0]}
+    % endif
 % endfor
 
 % for par in sim.model.spatial_parameter_names:
