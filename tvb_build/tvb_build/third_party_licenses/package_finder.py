@@ -163,6 +163,8 @@ def _get_module_version(module_name):
             return SETUPTOOLS_PACKAGE_VERSION[pkg_search_name]
     except ImportError:
         pass
+    except ValueError:
+        pass
     return 'unknown'
 
 
