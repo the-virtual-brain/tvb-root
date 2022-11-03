@@ -9,6 +9,7 @@
     * Siibra integration
     * BIDS monitoring module
     * add deepcopy implementation on HasTraits
+    * Projects can be marked as read-only (useful for shared projects like DefaultProject on OKD EBRAINS)
 
 ======================================================================================================================================
  The Virtual Brain (TVB)
