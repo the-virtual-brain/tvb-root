@@ -1,5 +1,13 @@
 .. _benchmark_tvb_261:
 
+ReferenceBackend vs NbMPRBackend
+---------------------------------
+
+Since version 2.6, a simulation backend based on Numba is available in TVB. For now, only the
+``MontbrioPazoRoxin`` model is supported with this backend and the other configurations of the simulator
+are also constrained to certain values or types.
+Nevertheless, this backend looks promising if we analyse the benchmarking results below:
+
 
 **********************
 Benchmarks - TVB 2.6.1
@@ -9,19 +17,19 @@ Benchmarks - TVB 2.6.1
 +------------+-----------------------------------------------------------------+
 |                               System Info                                    |
 +============+=================================================================+
-|OS          | OS X Monterey  12.0.1                                       |
+|OS          | OS X Monterey  12.0.1                                           |
 +------------+-----------------------------------------------------------------+
-|Memory      | 16 GB                                           |
+|Memory      | 16 GB                                                           |
 +------------+-----------------------------------------------------------------+
-|Processor   | Apple M1 Pro                                  |
+|Processor   | Apple M1 Pro                                                    |
 +------------+-----------------------------------------------------------------+
-|TVB version | 2.6.1 - Mac x64                                            |
+|TVB version | 2.6.1 - Mac x64                                                 |
 +------------+-----------------------------------------------------------------+
 |Run on      | 19.08.2022                                                      |
 +------------+-----------------------------------------------------------------+
 
 
-Below are the results of benchmarking the ReferenceBackend vs the NbMPRBackend.
+Below are the results of benchmarking the ``ReferenceBackend`` vs the ``NbMPRBackend``.
 All unspecified parameters have the default values.
 
 +--------------------+------------------------------------+
@@ -45,7 +53,7 @@ All unspecified parameters have the default values.
 |      Results                                                                                      |
 +-----------------------+------------------------+--------+-------+-----------+---------+-----------+
 |       Backend         |        Model           | Sim.   | Nodes |Conduction | time    | Execution |
-                        |                        | Length |       |speed      | step    | time      |
+|                       |                        | Length |       |speed      | step    | time      |
 +-----------------------+------------------------+--------+-------+-----------+---------+-----------+
 |                       |                        |    (ms)|       |    (mm/ms)|     (ms)| min:sec   |
 +=======================+========================+========+=======+===========+=========+===========+

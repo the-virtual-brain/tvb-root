@@ -252,20 +252,20 @@ div.footer {
 }
 
 /* --- Main: Overflow breadcrumb links */
-#tvb_header + div.related ul li.nav-main + li:not([class]) {
+#tvb_header + div.related ul li.nav-main + li.nav-item {
     clear: both;
     margin-left: 297px;
     margin-top: 30px;
 }
 
-#tvb_header + div.related ul li.nav-main + li:not([class]):before {
+#tvb_header + div.related ul li.nav-main + li.nav-item:before {
     content: "Current path: ";
     color: #627986;
     display: inline-block;
     padding-left: 5px;
 }
 
-#tvb_header + div.related ul li:not([class]) {
+#tvb_header + div.related ul li.nav-item {
     font-size: 13px;
     padding-bottom: 10px;
     padding-right: 10px;
@@ -275,7 +275,7 @@ div.footer {
     letter-spacing: 0;
 }
 
-#tvb_header + div.related ul li:not([class]):not(:last-child):after {
+#tvb_header + div.related ul li.nav-item:not(:last-child):after {
     content: ">";
     color: #627986;
     font-weight: bold;
@@ -284,13 +284,13 @@ div.footer {
     top: 3px;
 }
 
-#tvb_header + div.related ul li:not([class]) a, 
-#tvb_header + div.related ul li:not([class]) a tt {
+#tvb_header + div.related ul li.nav-item a,
+#tvb_header + div.related ul li.nav-item a tt {
     color: #184343;
 }
 
-#tvb_header + div.related ul li:not([class]) a:hover, 
-#tvb_header + div.related ul li:not([class]) a:hover tt {
+#tvb_header + div.related ul li.nav-item a:hover,
+#tvb_header + div.related ul li.nav-item a:hover tt {
     color: #2d86b1;
 }
 
@@ -363,7 +363,7 @@ div.document + div.related ul li.right {
 
 /* --- Backup: Navigation links */
 div.document + div.related ul li.nav-main a, 
-div.document + div.related ul li:not([class]) a {
+div.document + div.related ul li.nav-item a {
     padding-right: 20px;
     color: #2d86b1;
     color: #184343;
@@ -371,31 +371,31 @@ div.document + div.related ul li:not([class]) a {
 }
 
 div.document + div.related ul li.nav-main a:hover, 
-div.document + div.related ul li:not([class]) a:hover {
+div.document + div.related ul li.nav-item a:hover {
     color: #184343;
     color: #2d86b1;
     transition: color 0.3s ease;
 }
 
 /* --- Backup: Overflow breadcrumb links */
-div.document + div.related ul li.nav-main + li:not([class]) {
+div.document + div.related ul li.nav-main + li.nav-item {
     clear: both;
 }
 
-div.document + div.related ul li.nav-main + li:not([class]):before {
+div.document + div.related ul li.nav-main + li.nav-item:before {
     content: "Current path: ";
     color: #627986;
     display: inline-block;
     padding-left: 5px;
 }
 
-div.document + div.related ul li:not([class]) {
+div.document + div.related ul li.nav-item {
     font-size: 13px;
     padding-bottom: 10px;
     position: relative;
 }
 
-div.document + div.related ul li:not([class]):not(:last-child):after {
+div.document + div.related ul li.nav-item:not(:last-child):after {
     content: ">";
     color: #627986;
     font-weight: bold;
@@ -404,11 +404,11 @@ div.document + div.related ul li:not([class]):not(:last-child):after {
     top: 2px;
 }
 
-div.document + div.related ul li:not([class]) a tt {
+div.document + div.related ul li.nav-item a tt {
     color: inherit;
 }
 
-div.document + div.related ul li:not([class]) a:hover tt {
+div.document + div.related ul li.nav-item a:hover tt {
     color: inherit;
 }
 
@@ -513,7 +513,7 @@ div.sphinxsidebar div.sphinxsidebarwrapper > ul li {
 
 div.sphinxsidebar div.sphinxsidebarwrapper > ul ul {
     margin-top: 0;
-    margin-left: 378
+    margin-left: 378px;
 }
 
 div.sphinxsidebar div.sphinxsidebarwrapper p.topless {
@@ -535,7 +535,7 @@ div.sphinxsidebar p.topless a {
     margin-left: -17px;
 }
 
-div.sphinxsidebar a.reference tt, 
+div.sphinxsidebar a.reference code,
 div.sphinxsidebar p.topless a tt {
     color: inherit;
 }
@@ -562,7 +562,7 @@ div.sphinxsidebar a[rel="nofollow"]:hover {
     transition: opacity 0.3s ease;
 }
 
-div.sphinxsidebar a.reference:hover tt, 
+div.sphinxsidebar a.reference:hover code,
 div.sphinxsidebar p.topless a:hover tt {
     color: inherit;
 }
