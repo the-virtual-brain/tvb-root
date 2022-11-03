@@ -221,6 +221,7 @@ Here you can associate model parameter configurations to connectivity nodes.
       Region model configuration.
 
 In case of an integration scheme with noise, a new button appears which allows the noise configuration:
+
 .. figure:: screenshots/configure_noise_button.jpg
       :width: 90%
       :align: center
@@ -249,7 +250,7 @@ more complexity by spatially varying the model parameters.
       :width: 90%
       :align: center
 
-      Region noise configuration.
+      Set up surface model.
  
 In order to do that, click on `Set up surface model`. A new configuration page 
 will be loaded.
