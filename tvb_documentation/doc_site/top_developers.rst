@@ -26,6 +26,7 @@ You can view open issues on TVB's Jira |open_issues|. You can see ongoing activi
    /manuals/UserGuide/Complete_Dataset_Description
    /manuals/UserGuide/DataExchange
 
+   /dsl/tvb_dsl
    /api/index
 
 

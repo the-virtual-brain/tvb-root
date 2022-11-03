@@ -795,7 +795,7 @@ class MEG(Projection):
 
 
 class iEEG(Projection):
-    "Forward solution for intracranial EEG (not ECoG!)."
+    """Forward solution for intracranial EEG (not ECoG!)."""
 
     projection = Attr(
         projections_module.ProjectionSurfaceSEEG,
@@ -817,7 +817,8 @@ class iEEG(Projection):
     def analytic(self, loc, ori):
         r"""Compute the projection matrix -- simple distance weight for now.
         Equation 12 from sarvas1987basic (point dipole in homogeneous space):
-          V(r) = 1/(4*pi*\sigma)*Q*(r-r_0)/|r-r_0|^3
+
+             V(r) = 1/(4*pi*\sigma)*Q*(r-r_0)/|r-r_0|^3
         """
         r_0, Q = loc, ori
         V_r = numpy.zeros((self.sensors.locations.shape[0], r_0.shape[0]))
