@@ -19,13 +19,6 @@ pipeline {
                 }
             }
         }
-        stage ('Start rest server') {
-            steps {
-                sh 'docker rm -f ${REST_CONTAINER} || true'
-                writeFile file: 'keycloak/keycloak_config.json', text: params.KC_CONFIG
-                sh 'docker run -p 9090:9090 -d -v "/opt/jenkins_home/workspace/$JOB_NAME/keycloak/":/home/tvb_user/keycloak_config --name ${REST_CONTAINER} ${FULL_DOCKER_IMAGE_NAME}:${LATEST_TAG} /bin/bash -c "source activate tvb-run && cd tvb_build && /bin/bash install_full_tvb.sh && cd ../tvb_bin && python -m tvb.interfaces.web.run WEB_PROFILE"'
-            }
-        }
         stage ('Build TVB documentation') {
             agent {
                 docker {
@@ -61,27 +54,6 @@ pipeline {
                     bash package_for_pip.sh
                 '''
                 archiveArtifacts artifacts: 'dist/*'
-            }
-        }
-        stage ('Run REST client tests') {
-            agent {
-                docker {
-                    image '${FULL_DOCKER_IMAGE_NAME}:${LATEST_TAG}'
-                    args '--link=${REST_CONTAINER}'
-                }
-            }
-            steps {
-                sh '''#!/bin/bash
-                    source activate tvb-run
-                    cd tvb_build
-                    bash install_full_tvb.sh
-                    cd ../tvb_bin
-                    rm -rf TEST_OUTPUT
-                    mkdir TEST_OUTPUT
-                    pytest --pyargs tvb.interfaces.rest.client.tests  --junitxml=TEST_OUTPUT/results_REST-client.xml > TEST_OUTPUT/results_REST-client.out 2>&1
-                    exit 0
-                '''
-                 junit 'tvb_bin/TEST_OUTPUT/results_*.xml'
             }
         }
         stage ('Compute coverage') {

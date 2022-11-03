@@ -401,8 +401,6 @@ class TimeSeries(HasTraits):
                                           coords=kwargs.pop("coords", kwargs.pop("labels_dimensions", None)),
                                           attrs=kwargs.pop("attrs", None))
             super(TimeSeries, self).__init__(**kwargs)
-        if data is not None:
-            self.configure()
 
     def summary_info(self):
         """

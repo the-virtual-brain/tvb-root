@@ -161,7 +161,7 @@ def _get_module_version(module_name):
         pkg_search_name = module_name.replace('-', '').replace('_', '').lower()
         if pkg_search_name in SETUPTOOLS_PACKAGE_VERSION:
             return SETUPTOOLS_PACKAGE_VERSION[pkg_search_name]
-    except ImportError:
+    except Exception:
         pass
     return 'unknown'
 
