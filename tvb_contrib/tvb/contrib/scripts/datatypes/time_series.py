@@ -110,11 +110,11 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
         data = kwargs.pop("data", numpy.empty((0, 0, 0, 0)))
         if isinstance(data, xr.DataArray):
             super(TimeSeries, self).__init__(data=prepare_4d(data.values, self.logger), **kwargs)
-            self.configure_from_xarray_DataArray(data)
+            self.initialze_from_xarray_DataArray(data)
         else:
             super(TimeSeries, self).__init__(data=prepare_4d(data, self.logger), **kwargs)
 
-    def configure_from_xarray_DataArray(self, xrdtarr):
+    def initialze_from_xarray_DataArray(self, xrdtarr):
         # We assume that time is in the first dimension
         labels_ordering = xrdtarr.coords.dims
         labels_dimensions = {}
