@@ -80,6 +80,7 @@ class TestTimeSeries:
         ts_from_2D = datatype(data=data, labels_dimensions={TimeSeriesDimensions.SPACE.value: ["r1", "r2", "r3"]},
                               start_time=start_time, sample_period=sample_period,
                               sample_period_unit=sample_period_unit)
+        ts_from_2D.configure()
         assert ts_from_2D.data.ndim == 4
         assert ts_from_2D.data.shape == (3, 1, 3, 1)
 
