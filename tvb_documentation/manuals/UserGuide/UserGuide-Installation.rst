@@ -61,8 +61,9 @@ These scripts will start and control |TVB|.
 Launching the GUI
 .................
 
-For Mac users the `TVB_Distribution` folder contains an application file `tvb.app`.
-To start |TVB| in your web browser double click `tvb.app`.
+For Mac users the `TVB_Distribution` folder contains an application file `tvb-[version].dmg`.
+To start |TVB| in your web browser double click `tvb*.dmg`, and follow the instruction to copy a `tvb-*.app`
+into your Applications folder. The double click on the new `Applications\tvb-*.app`.
 Please be patient, as depending on your computer resources, the startup process might take about 1-2 minutes.
 
 .. figure:: screenshots/install_mac_error.png
