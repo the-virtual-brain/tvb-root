@@ -209,19 +209,6 @@ Launching any uploader with success will generate you a new leaf in the Tree
 displayed centrally on this page.
 
 
-The central area also contains a Graph view.
-The main target for the Graph view is to show you in a mixed manner both DataTypes and Operations.
-The edges that link the Graph are of type: 'Operation generated DataType' and 'DataType is input for Operation'.
-When switching from the Tree display to the Graph display, the same node (if DataType) remains selected.
-This way you could filter entities in the Tree display, check generic meta-data, then switch to the Graph display and see what Operation was parent for this entity.
-
-.. figure:: screenshots/data_graph.jpg
-    :width: 90%
-    :align: center
-
-    A graph view of the project's data-structure
-
-
 .. this is a hack needed by the online help. The Project page docs have to include the
    visualizers docs because visualizers launched from the project page live in it's context.
    The body of the only directive is emitted only when the online_help tag is defined
