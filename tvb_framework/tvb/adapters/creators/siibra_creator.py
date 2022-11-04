@@ -57,8 +57,11 @@ def init_siibra_options():
     """"
     Initialize siibra options for atlas and parcellations
     """
-    atlases = [atlas.name for atlas in list(siibra.atlases)]
-    parcellations = [parcellation.name for parcellation in list(siibra.parcellations)]
+    # should use `atlases = [a.name for a in list(siibra.atlases)]`, but only the default one has data
+    atlases = [siibra_base.DEFAULT_ATLAS]   # list with atlases names
+    # should get only valid parcellations for default atlas, but only newest version of Julich parcellation
+    # has data and corresponds with the current API of siibra
+    parcellations = [siibra_base.DEFAULT_PARCELLATION]
 
     atlas_dict = {}
     parcellation_dict = {}
