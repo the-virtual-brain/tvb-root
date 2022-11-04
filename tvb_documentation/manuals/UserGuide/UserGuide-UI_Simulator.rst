@@ -32,9 +32,9 @@ parameters. This default initialization is already happening, if you just landed
 for the first time. The button can be useful in case you started configuring a complex simulation
 and you lost track of the changes, to return to the safe defaults.
 
-The |upload_icon| button allows you to upload a JSON file. This file can be exported from a previously
+The |upload_icon| button allows you to upload a ZIP file. This file can be exported from a previously
 configured and run simulation (on the same or different TVB installation, as long as versions are compatible).
-Details on how to export such a JSON file can be found just bellow, when we explain the |pencil_icon| icon.
+Details on how to export such a ZIP file can be found just bellow, when we explain the |pencil_icon| icon.
 
 As main content in this left column, a history of all simulations is kept and can be
 accessed at any time.
@@ -71,8 +71,8 @@ and do not forget to press |save_icon| icon when you are done writing.
 It will be your job to optionally change something in the configuration and, when done, press the |play_icon| icon,
 to actually run this copy of the simulation.
 
-`Export JSON` is a new feature which allows you to create a text file, which stores the current simulation
-parameters. This text file will be downloaded from your browser window, and can be reused later. You could use it
+`Export ZIP` is a new feature which allows you to create a zip file, which stores the current simulation
+information (datatypes, models, integrators, etc, in H5 format). This zip file will be downloaded from your browser window, and can be reused later. You could use it
 on the same TVB installation, or on a totally different TVB server, in several manners:
 
     - from web GUI, using the |upload_icon| button, on this page (top of column `History`)
@@ -95,22 +95,17 @@ Configure a Simulation
 
 |
 
-A simulation is configured from the middle column.
+A simulation is configured in multiple steps in a wizard-like workflow.
 
 On the top of this column there is:
-  - a field to enter the new simulation name,
-  - the `Launch` button on the top right to start the simulation, and
-  - the `Configure Interface` button to select which of the simulation 
-    components are visible.
-  - links to pages that allow detailed configuration
-
-    - region model configuration
-    - region noise configuration
-    - surface level configuration (available for surface simulations)
+  - a dropdown field to choose a connectivity,
+  - a field to enter the conduction speed for the "Long-range connectivity",
+  - a dropdown field to choose the coupling function
+  - a Next button for the next step of the configuration
 
 |
 
-    .. image:: screenshots/simulator_configuration_buttons.jpg
+    .. image:: screenshots/configure_new_sim.jpg
        :width: 90%
        :align: center
 
@@ -134,7 +129,20 @@ In this column you can change all the configurable parameters of a simulation:
     - Integration Step Size
 
   - Monitors
+  - Sampling period
+  - Model Variables to watch
   - Simulation Length
+  - Simulation name
+
+After choosing "Spatiotemporal stimulus" there will be the option to configure Spatial Vector and set up region Model
+
+|
+
+    .. image:: screenshots/configure_new_sim_buttons.jpg
+       :width: 70%
+       :align: center
+
+|
 
 You can find more detailed information by clicking on the |interrogationicon| 
 icon next to each element.
@@ -212,6 +220,15 @@ Here you can associate model parameter configurations to connectivity nodes.
 
       Region model configuration.
 
+In case of an integration scheme with noise, a new button appears which allows the noise configuration:
+
+.. figure:: screenshots/configure_noise_button.jpg
+      :width: 90%
+      :align: center
+
+      Configure noise.
+
+
 The `Configure noise` button leads to the region noise page.
 Here you can associate noise dispersions to connectivity nodes.
 Select some nodes using any of the selection components or the 3d view.
@@ -228,6 +245,12 @@ Surface-based simulations
 
 If you are launching a surface-based simulation, then it is possible to add 
 more complexity by spatially varying the model parameters.
+
+.. figure:: screenshots/set_up_surface_model_button.jpg
+      :width: 90%
+      :align: center
+
+      Set up surface model.
  
 In order to do that, click on `Set up surface model`. A new configuration page 
 will be loaded.
