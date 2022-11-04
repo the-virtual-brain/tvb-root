@@ -614,7 +614,7 @@ class SimulatorController(BurstBaseController):
 
         if not self.simulator_service.operation_service.fits_disk_size(SimulatorAdapter(), session_stored_simulator,
                                                                        self.context.project.id, len_range):
-            return {'size': f"Max operation size has been exceeded"}
+            return {'error': self.MAX_SIZE_ERROR_MSG}
 
         burst_config = self.burst_service.prepare_burst_for_pse(burst_config)
         session_stored_simulator.operation_group_gid = uuid.UUID(burst_config.operation_group.gid)
@@ -662,7 +662,7 @@ class SimulatorController(BurstBaseController):
 
         if not self.simulator_service.operation_service.fits_disk_size(SimulatorAdapter(), session_stored_simulator,
                                                                        self.context.project.id):
-            return {'size': f"Max operation size has been exceeded"}
+            return {'error': self.MAX_SIZE_ERROR_MSG}
 
         burst_config.start_time = datetime.now()
         session_burst_config = self.burst_service.store_burst(burst_config)

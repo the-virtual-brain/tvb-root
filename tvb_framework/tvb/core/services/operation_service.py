@@ -90,6 +90,9 @@ class OperationService:
 
     def fits_disk_size(self, adapter_instance, view_model, project_id, range_length=1):
         project = dao.get_project_by_id(project_id)
+        if project.max_operation_size is None:
+            return True
+
         adapter_instance.configure(view_model)
         adapter_required_memory = adapter_instance.get_required_disk_size(view_model)
         return adapter_required_memory * range_length < project.max_operation_size

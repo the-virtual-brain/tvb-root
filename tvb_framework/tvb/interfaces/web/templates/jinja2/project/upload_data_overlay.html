@@ -12,11 +12,13 @@
                                 onClick="showOverlayProgress()">Upload
                         </button>
                     </li>
-                    <li>
-                        <label class="errorMessage" style="border-top: 10px">
-                            Imports are disabled for this project!
-                        </label>
-                    </li>
+                    {% if disable_imports %}
+                        <li>
+                            <label class="errorMessage">
+                                Imports are disabled for this project!
+                            </label>
+                        </li>
+                    {% endif %}
                 </ul>
             </fieldset>
 
