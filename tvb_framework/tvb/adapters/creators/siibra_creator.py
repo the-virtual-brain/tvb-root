@@ -111,12 +111,13 @@ class SiibraModel(ViewModel):
         required=True,
         default='000',
         doc="""The list of all subject IDs for which the structural and optionally functional connectivities
-        The IDs can be specified in 2 ways:
+        The IDs can be specified in 3 ways:
         1. individually, delimited by a semicolon symbol: 000;001;002
         2. As a range, specifying the first and last IDs: 000-050 will retrieve all the subjects starting with 
         subject 000 until subject 050 (51 subjects)
         A combination of the 2 methods is also supported: 000-005;010 will retrieve all the subjects starting with 
-        subject 000 until subject 005 (6 subjects) AND subject 010 (so 7 subjects in total)""")
+        subject 000 until subject 005 (6 subjects) AND subject 010 (so 7 subjects in total)
+        3. Using the keyword 'all' (without apostrophes) to get the connectivities for all the available subjects """)
 
     fc = Attr(
         field_type=bool,
