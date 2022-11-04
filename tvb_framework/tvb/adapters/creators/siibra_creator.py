@@ -57,8 +57,11 @@ def init_siibra_options():
     """"
     Initialize siibra options for atlas and parcellations
     """
-    atlases = [atlas.name for atlas in list(siibra.atlases)]
-    parcellations = [parcellation.name for parcellation in list(siibra.parcellations)]
+    # should use `atlases = [a.name for a in list(siibra.atlases)]`, but only the default one has data
+    atlases = [siibra_base.DEFAULT_ATLAS]   # list with atlases names
+    # should get only valid parcellations for default atlas, but only newest version of Julich parcellation
+    # has data and corresponds with the current API of siibra
+    parcellations = [siibra_base.DEFAULT_PARCELLATION]
 
     atlas_dict = {}
     parcellation_dict = {}
@@ -84,7 +87,7 @@ class SiibraModel(ViewModel):
     ebrains_token = Str(
         label='EBRAINS token',
         required=True,
-        doc='Token provided by EBRAINS for accessing the Knowledge Graph'
+        doc='Auth Token provided by EBRAINS lab `clb_oauth.get_token()` for accessing the Knowledge Graph'
     )
 
     atlas = EnumAttr(
@@ -92,7 +95,7 @@ class SiibraModel(ViewModel):
         default=ATLAS_OPTS[siibra_base.DEFAULT_ATLAS],
         label='Atlas',
         required=True,
-        doc='Atlas to be used'
+        doc='Atlas to be used (only the compatible ones listed)'
     )
 
     parcellation = EnumAttr(
@@ -100,7 +103,7 @@ class SiibraModel(ViewModel):
         default=PARCELLATION_OPTS[siibra_base.DEFAULT_PARCELLATION],
         label='Parcellation',
         required=True,
-        doc='Parcellation to be used'
+        doc='Parcellation to be used (only TVB compatible ones listed here)'
     )
 
     subject_ids = Str(
@@ -108,12 +111,13 @@ class SiibraModel(ViewModel):
         required=True,
         default='000',
         doc="""The list of all subject IDs for which the structural and optionally functional connectivities
-        The IDs can be specified in 2 ways:
-        1. individually, delimited by a semicolon symbol: 000;001;002
+        The IDs can be specified in 3 ways: <br/>
+        1. individually, delimited by a semicolon symbol: 000;001;002<br/>
         2. As a range, specifying the first and last IDs: 000-050 will retrieve all the subjects starting with 
-        subject 000 until subject 050 (51 subjects)
+        subject 000 until subject 050 (51 subjects)<br/>
         A combination of the 2 methods is also supported: 000-005;010 will retrieve all the subjects starting with 
-        subject 000 until subject 005 (6 subjects) AND subject 010 (so 7 subjects in total)""")
+        subject 000 until subject 005 (6 subjects) AND subject 010 (so 7 subjects in total)<br/>
+        3. Using the keyword 'all' (without apostrophes) to get the connectivities for all the available subjects """)
 
     fc = Attr(
         field_type=bool,
