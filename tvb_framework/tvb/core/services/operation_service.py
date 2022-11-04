@@ -88,6 +88,12 @@ class OperationService:
     ######## Methods related to launching operations start here ##############################
     ##########################################################################################
 
+    def fits_disk_size(self, adapter_instance, view_model, project_id, range_length=1):
+        project = dao.get_project_by_id(project_id)
+        adapter_instance.configure(view_model)
+        adapter_required_memory = adapter_instance.get_required_disk_size(view_model)
+        return adapter_required_memory * range_length < project.max_size
+
     def initiate_operation(self, current_user, project, adapter_instance, visible=True, model_view=None):
         """
         Gets the parameters of the computation from the previous inputs form,

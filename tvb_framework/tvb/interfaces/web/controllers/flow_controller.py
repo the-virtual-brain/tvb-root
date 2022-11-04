@@ -305,6 +305,10 @@ class FlowController(BaseController):
 
             adapter_instance.submit_form(form)
 
+            if not self.operation_services.fits_disk_size(adapter_instance, view_model, project_id):
+                common.set_important_message(f"Max operation size has been exceeded")
+                return {}
+
             if issubclass(type(adapter_instance), ABCDisplayer):
                 adapter_instance.current_project_id = project_id
                 adapter_instance.user_id = user.id

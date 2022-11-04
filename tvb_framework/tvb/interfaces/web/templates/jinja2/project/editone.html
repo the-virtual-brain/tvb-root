@@ -82,7 +82,28 @@
                     <dd>
                         <p class="field-data"><input tabindex='3' id="administrator" type="text"
                                                      value="{{ data.administrator if ('administrator' in data) else '' }}"
-                                                     disabled="disabled"/></p>
+                                                     disabled="disabled"/>
+                        </p>
+                    </dd>
+
+                    <dt>
+                        <label for="disable_imports">Disable imports for this project</label>
+                    </dt>
+
+                    <dd>
+                        <p class="field-data"><input tabindex='4' id="disable_imports" type="checkbox"
+                                                     name="disable_imports" {{ 'checked' if data.disable_imports }} {{ 'disabled' if not editUsersEnabled }}/>
+                        </p>
+                    </dd>
+
+                    <dt>
+                        <label for="max_size">Max allowed size for one operation (KB)</label>
+                    </dt>
+
+                    <dd>
+                        <p class="field-data"><input tabindex='5' id="max_size" type="number" name="max_size"
+                                                     value="{{ data.max_size }}" {{ 'disabled' if not editUsersEnabled }}/>
+                        </p>
                     </dd>
                 </dl>
             </fieldset>

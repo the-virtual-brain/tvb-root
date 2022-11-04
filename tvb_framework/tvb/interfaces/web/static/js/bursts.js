@@ -590,6 +590,9 @@ function launchNewPSEBurst(currentForm) {
             if ('error' in result) {
                 displayMessage(result.error, "errorMessage");
             }
+            if ('size' in result) {
+                displayMessage(result.size, "errorMessage");
+            }
         },
         error: function () {
             displayMessage("Error when launching simulation. Please check te logs or contact your administrator.", "errorMessage");
@@ -619,6 +622,9 @@ function launchNewBurst(currentForm, launchMode) {
             }
             if ('error' in result) {
                 displayMessage(result.error, "errorMessage");
+            }
+            if ('size' in result) {
+                displayMessage(result.size, "errorMessage");
             }
         },
         error: function () {

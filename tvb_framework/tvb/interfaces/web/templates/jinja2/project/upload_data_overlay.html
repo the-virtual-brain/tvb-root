@@ -8,8 +8,14 @@
             <fieldset class="toolbar-inline">
                 <ul>
                     <li>
-                        <button type="submit" class="action action-upload" onClick="showOverlayProgress()">Upload
+                        <button type="submit" class="action action-upload disabled" {{ 'disabled' if disable_imports }}
+                                onClick="showOverlayProgress()">Upload
                         </button>
+                    </li>
+                    <li>
+                        <label class="errorMessage" style="border-top: 10px">
+                            Imports are disabled for this project!
+                        </label>
                     </li>
                 </ul>
             </fieldset>
