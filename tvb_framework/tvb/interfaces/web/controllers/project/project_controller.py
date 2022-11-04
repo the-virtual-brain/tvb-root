@@ -174,7 +174,7 @@ class ProjectController(BaseController):
                 # Only when we do not have submitted data,
                 # populate fields with initial values for edit.
                 data = dict(name=current_project.name, description=current_project.description,
-                            disable_imports=current_project.disable_imports, max_size=current_project.max_size)
+                            disable_imports=current_project.disable_imports, max_operation_size=current_project.max_operation_size)
             data["administrator"] = current_project.administrator.display_name
             admin_username = current_project.administrator.username
             self._mark_selected(current_project)
@@ -736,4 +736,4 @@ class EditForm(formencode.Schema):
     project_id = validators.UnicodeString(not_empty=False)
     visited_pages = validators.UnicodeString(not_empty=False)
     disable_imports = validators.Bool()
-    max_size = validators.UnicodeString(not_empty=False)
+    max_operation_size = validators.UnicodeString(not_empty=False)

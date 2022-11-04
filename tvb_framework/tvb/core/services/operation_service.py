@@ -92,7 +92,7 @@ class OperationService:
         project = dao.get_project_by_id(project_id)
         adapter_instance.configure(view_model)
         adapter_required_memory = adapter_instance.get_required_disk_size(view_model)
-        return adapter_required_memory * range_length < project.max_size
+        return adapter_required_memory * range_length < project.max_operation_size
 
     def initiate_operation(self, current_user, project, adapter_instance, visible=True, model_view=None):
         """

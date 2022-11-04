@@ -178,7 +178,7 @@ class Project(Base, Exportable):
     gid = Column(String, unique=True)
     version = Column(Integer)
     disable_imports = Column(Boolean, default=False)
-    max_size = Column(Integer)
+    max_operation_size = Column(Integer)
 
     administrator = relationship(User)
 
@@ -193,10 +193,10 @@ class Project(Base, Exportable):
 
     members = []
 
-    def __init__(self, name, fk_admin, max_size, description='', disable_imports=False):
+    def __init__(self, name, fk_admin, max_operation_size, description='', disable_imports=False):
         self.name = name
         self.fk_admin = fk_admin
-        self.max_size = max_size
+        self.max_operation_size = max_operation_size
         self.description = description
         self.disable_imports = disable_imports
         self.gid = utils.generate_guid()

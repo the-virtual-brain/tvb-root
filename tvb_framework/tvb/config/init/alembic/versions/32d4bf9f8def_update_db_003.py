@@ -20,7 +20,7 @@ def upgrade():
 
     new_column_1 = Column('disable_imports', Boolean, default=False)
     op.add_column('PROJECTS', new_column_1)
-    new_column_2 = Column('max_size', Integer, default=None)
+    new_column_2 = Column('max_operation_size', Integer, default=None)
     op.add_column('PROJECTS', new_column_2)
 
     existent_column = Column('name', String)
@@ -28,7 +28,7 @@ def upgrade():
     projects_table = tables['PROJECTS']
     conn.execute(projects_table.update().values({"disable_imports": False}))
     conn.execute(projects_table.update().values({"disable_imports": True}).where(existent_column == 'Default_Project'))
-    conn.execute(projects_table.update().values({"max_size": 10000}).where(existent_column == 'Default_Project'))
+    conn.execute(projects_table.update().values({"max_operation_size": 10000}).where(existent_column == 'Default_Project'))
 
     conn.execute('COMMIT')
 
