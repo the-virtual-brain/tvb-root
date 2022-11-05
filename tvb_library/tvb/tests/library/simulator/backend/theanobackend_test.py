@@ -41,7 +41,7 @@ import theano.tensor as tt
 from theano.tensor.random.utils import RandomStream
 
 from tvb.simulator.backend.theano import TheanoBackend
-# from tvb.simulator.coupling import Sigmoidal, Linear
+from tvb.simulator.coupling import Sigmoidal, Linear, Difference
 # from tvb.simulator.integrators import (EulerDeterministic, EulerStochastic,
 #     HeunDeterministic, HeunStochastic, IntegratorStochastic,
 #     RungeKutta4thOrderDeterministic, Identity, IdentityStochastic,
@@ -50,13 +50,61 @@ from tvb.simulator.backend.theano import TheanoBackend
 # from tvb.datatypes.connectivity import Connectivity
 from tvb.simulator.models.oscillator import Generic2dOscillator
 
-from .backendtestbase import BaseTestDfun
+from .backendtestbase import BaseTestDfun, BaseTestCoupling
+
+
+class TestTheanoCoupling(BaseTestCoupling):
+
+    def _test_cfun(self, cfun, **cparams):
+        """Test a Python cfun template."""
+
+        sim = self._prep_sim(cfun)
+
+        # prep & invoke kernel
+        template = f'''
+        import numpy as np
+        import theano
+        import theano.tensor as tt
+        <%include file="theano-coupling.py.mako"/>
+        '''
+        kernel = TheanoBackend().build_py_func(template, dict(sim=sim, theano=theano, params=cparams),
+                                               name='coupling', print_source=True)
+
+        fill = np.r_[:sim.history.buffer.size]
+        fill = np.reshape(fill, sim.history.buffer.shape[:-1])
+        sim.history.buffer[..., 0] = fill
+        sim.current_state[:] = fill[0,:,:,None]
+        buf = sim.history.buffer[...,0]
+        print(sim.history.buffer.size)
+        print(sim.history.nnz_idelays)
+        # kernel has history in reverse order except 1st element 🤕
+        rbuf = np.concatenate((buf[0:1], buf[1:][::-1]), axis=0)
+
+        state_numpy = np.transpose(rbuf, (1, 0, 2)).astype('f')
+        state = tt.as_tensor_variable(state_numpy, name="state")
+
+        weights = sim.connectivity.weights.astype('f')
+
+        cX_numpy = np.zeros_like(state_numpy[:,0])
+        print(cX_numpy.shape)
+        cX = tt.as_tensor_variable(cX_numpy, name="cX")
+
+        cX = kernel(cX, weights, state, sim.connectivity.delay_indices)
+        # do comparison
+        (t, y), = sim.run()
+        np.testing.assert_allclose(cX.eval(), y[0,:,:,0], 1e-5, 1e-6)
+
+    def test_linear(self):
+        self._test_cfun(Linear())
+
+    def test_difference(self):
+        self._test_cfun(Difference())
 
 
 class TestTheanoDfun(BaseTestDfun):
 
-    def _test_dfun(self, model_, **model_params):
-        """Test a Python cfun template."""
+    def _test_dfun(self, model_, **mparams):
+        """Test a Python dfun template."""
 
         class sim:  # dummy sim
             model = model_
@@ -67,7 +115,7 @@ class TestTheanoDfun(BaseTestDfun):
         import theano.tensor as tt
         <%include file="theano-dfuns.py.mako"/>
         '''
-        kernel = TheanoBackend().build_py_func(template, dict(sim=sim, theano=theano, params=model_params),
+        kernel = TheanoBackend().build_py_func(template, dict(sim=sim, theano=theano, params=mparams),
                                                name='dfuns', print_source=True)
 
         cX_numpy = np.random.rand(2, 128, 1)

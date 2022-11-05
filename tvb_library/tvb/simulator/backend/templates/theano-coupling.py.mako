@@ -28,31 +28,52 @@
 #
 #
 
-def dfuns(dX, state, cX, parmat):
+import numpy as np
+import theano
+import theano.tensor as tt
 
-% for par in sim.model.global_parameter_names:
+def coupling(cX, weights, state
+% if sim.connectivity.idelays.any():
+    , delay_indices
+% endif
+):
+
+    n_svar = state.eval().shape[0]
+    n_cvar = cX.eval().shape[0]
+    n_node = cX.eval().shape[1]
+    assert cX.eval().shape[1] == weights.shape[0] == weights.shape[1] == state.eval().shape[2]
+
+% for par in sim.coupling.parameter_names:
     % if par in params:
     ${par} = ${params[par]}
     % else:
-    ${par} = ${getattr(sim.model, par)[0]}
-    % endif
+    ${par} = ${getattr(sim.coupling, par)[0]}
+    %endif
+% endfor
+## generate code per cvar
+% for cvar, cterm in zip(sim.model.cvar, sim.model.coupling_terms):
+
+## don't generate x_i if not required
+% if 'x_i' in sim.coupling.pre_expr:
+    x_i = tt.transpose(tt.reshape(tt.tile(state[${cvar}, 0], (1, n_node)), (n_node, n_node)))
+% endif
+## if no non-zero idelays, use current state
+% if sim.connectivity.idelays.any():
+    x_j = tt.flatten(state[${cvar}])[delay_indices]
+% else:
+    x_j = tt.tile(state[${cvar}, 0], (n_node, 1))
+% endif
+## apply weights, do summation and store
+    gx = tt.sum(weights * (${sim.coupling.pre_expr}), axis=-1)
+    cX = tt.set_subtensor(cX[${loop.index}], ${sim.coupling.post_expr})
 % endfor
 
-% for par in sim.model.spatial_parameter_names:
-    ${par} = parmat[${loop.index}]
-% endfor
 
-% for cterm in sim.model.coupling_terms:
-    ${cterm} = cX[${loop.index}]
-% endfor
+## A buffer of (time,nodes), ix is idelays, nn in np.tile(...)
+## delay_indices = idelays * nn + np.r_[:nn]
+## use A.flat[delay_] and np.roll(state,1,axis=1)
 
-% for svar in sim.model.state_variables:
-    ${svar} = state[${loop.index}]
-% endfor
+## but better to have state (svar, time, node)
+## to use single
 
-    # compute dfuns
-% for svar in sim.model.state_variables:
-    dX = tt.set_subtensor(dX[${loop.index}], ${sim.model.state_variable_dfuns[svar]});
-% endfor
-
-    return dX
+    return cX

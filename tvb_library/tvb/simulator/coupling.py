@@ -479,6 +479,10 @@ class Difference(SparseCoupling):
         domain=Range(lo=0.0, hi=10., step=0.1),
         doc="Rescales the connection strength.",)
 
+    parameter_names = 'a'.split()
+    pre_expr = 'x_j - x_i'
+    post_expr = 'a * gx'
+
     def __str__(self):
         return simple_gen_astr(self, 'a')
 
