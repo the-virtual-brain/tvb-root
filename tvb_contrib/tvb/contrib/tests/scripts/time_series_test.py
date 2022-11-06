@@ -29,11 +29,12 @@
 """
 .. moduleauthor:: Dionysios Perdikis <Denis@tvb.invalid>
 """
+
 import numpy
 import pytest
-
 from tvb.contrib.scripts.datatypes.time_series import TimeSeries, TimeSeriesDimensions, PossibleVariables
 from tvb.contrib.scripts.datatypes.time_series_xarray import TimeSeries as TimeSeriesXarray
+from tvb.simulator.plot.config import FiguresConfig
 
 
 class TestTimeSeries:
@@ -270,3 +271,14 @@ class TestTimeSeries:
                          sample_period_unit=sample_period_unit)
         assert ts_4D.data.shape == (3, 3, 4, 4)
         assert ts_4D.x.data.shape == (3, 1, 4, 4)
+
+    def test_plot_ts_xarray(self):
+        data, start_time, sample_period, sample_period_unit = self._prepare_dummy_time_series(2)
+        ts_xarray = TimeSeriesXarray(data=data, labels_dimensions={TimeSeriesDimensions.SPACE.value: ["r1", "r2", "r3"],
+                                                                   TimeSeriesDimensions.VARIABLES.value: ["SV1"]},
+                                     start_time=start_time, sample_period=sample_period,
+                                     sample_period_unit=sample_period_unit)
+        ts_xarray.configure()
+        ts_xarray.plot_timeseries(plotter_config=FiguresConfig(),
+                        hue="Region" if data.shape[2] > 10 else None,
+                        per_variable=data.shape[1] > 3)
