@@ -44,8 +44,9 @@ from tvb.core.adapters.abcuploader import ABCUploaderForm
 from tvb.core.entities.filters.chain import FilterChain, InvalidFilterChainInput
 from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
+from tvb.core.entities.model.model_project import User
 from tvb.core.entities.storage import dao
-from tvb.core.neotraits.forms import TraitDataTypeSelectField, TraitUploadField, TEMPORARY_PREFIX, EnvStrField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, TraitUploadField, TEMPORARY_PREFIX, UserSessionStrField
 from tvb.core.services.exceptions import OperationException
 from tvb.core.utils import date2string
 from tvb.storage.storage_interface import StorageInterface
@@ -126,8 +127,8 @@ class AlgorithmService(object):
         for form_field in form.trait_fields:
             if isinstance(form_field, TraitDataTypeSelectField):
                 self.fill_selectfield_with_datatypes(form_field, project_id, extra_conditions)
-            elif isinstance(form_field, EnvStrField):
-                # set the value of input field at startup with a User Preference
+            elif isinstance(form_field, UserSessionStrField):
+                # set the value of input field on load from user session, if exists
                 # e.g. EBRAINS token
                 pref = user.get_preference(form_field.name)
                 form_field.unvalidated_data = pref
@@ -135,7 +136,7 @@ class AlgorithmService(object):
 
     def prepare_adapter_form(self, adapter_instance=None, form_instance=None,
                              project_id=None, user=None, extra_conditions=None):
-        # type: (ABCAdapter, ABCAdapterForm, int, []) -> ABCAdapterForm
+        # type: (ABCAdapter, ABCAdapterForm, int, User, []) -> ABCAdapterForm
         form = None
         if form_instance is not None:
             form = form_instance
@@ -171,7 +172,7 @@ class AlgorithmService(object):
                 post_data[form_field.name] = file_name
 
     def fill_adapter_form(self, adapter_instance, post_data, project_id, user):
-        # type: (ABCAdapter, dict, int) -> ABCAdapterForm
+        # type: (ABCAdapter, dict, int, User) -> ABCAdapterForm
         form = self.prepare_adapter_form(adapter_instance=adapter_instance, project_id=project_id, user=user)
         if isinstance(form, ABCUploaderForm):
             self._prepare_upload_post_data(form, post_data, project_id)
@@ -180,6 +181,11 @@ class AlgorithmService(object):
             form.fill_from_post_plus_defaults(post_data)
         else:
             form.fill_from_post(post_data)
+
+        for field in form.fields:
+            if isinstance(field, UserSessionStrField) and field.name in post_data and post_data[field.name]:
+                # These attributes will end in session on the current user
+                setattr(user, field.name, post_data[field.name])
 
         return form
 

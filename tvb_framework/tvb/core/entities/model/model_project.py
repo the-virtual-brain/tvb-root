@@ -139,9 +139,12 @@ class User(Base):
         self.preferences[key] = token
 
     def get_preference(self, key):
-        if key not in self.preferences:
-            self.preferences[key] = ''
-        return self.preferences[key]
+        if key in self.preferences:
+            return self.preferences[key]
+        if hasattr(self, key):
+            return getattr(self, key)
+        return ""
+
 
 
 class UserPreferences(Base):
