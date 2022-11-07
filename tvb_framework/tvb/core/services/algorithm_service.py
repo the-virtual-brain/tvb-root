@@ -130,7 +130,7 @@ class AlgorithmService(object):
             elif isinstance(form_field, UserSessionStrField):
                 # set the value of input field on load from user session, if exists
                 # e.g. EBRAINS token
-                pref = user.get_preference(form_field.name)
+                pref = user.get_preference(form_field.key)
                 form_field.unvalidated_data = pref
         return form
 
@@ -185,7 +185,7 @@ class AlgorithmService(object):
         for field in form.fields:
             if isinstance(field, UserSessionStrField) and field.name in post_data and post_data[field.name]:
                 # These attributes will end in session on the current user
-                setattr(user, field.name, post_data[field.name])
+                setattr(user, field.key, post_data[field.name])
 
         return form
 
