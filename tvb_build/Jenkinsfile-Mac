@@ -24,7 +24,7 @@ pipeline {
                     conda update -n base -c defaults conda
                     conda env remove --name mac-distribution
                     conda create -y --name mac-distribution python=3.10 nomkl numba scipy numpy cython psycopg2
-                    conda install -y --name mac-distribution -c conda-forge jupyterlab tvb-gdist
+                    conda install -y --name mac-distribution -c conda-forge jupyterlab tvb-gdist tvb-data
 
                     /Applications/anaconda3/envs/mac-distribution/bin/pip install --upgrade pip
                     /Applications/anaconda3/envs/mac-distribution/bin/pip install lockfile scikit-build
