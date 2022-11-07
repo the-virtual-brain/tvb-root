@@ -114,7 +114,8 @@ class TestProjectService(TransactionalTestCase):
         initial_projects = dao.get_projects_for_user(self.test_user.id)
         assert len(initial_projects) == 1, "Database initialization probably failed!"
 
-        edited_data = dict(name="test_project", description="test_description", users=[])
+        edited_data = dict(name="test_project", description="test_description",
+                           users=[], max_operation_size=None, disable_imports=False)
         edited_project = self.project_service.store_project(self.test_user, False, selected_project.id, **edited_data)
         assert not os.path.exists(proj_root), "Previous folder not deleted"
         proj_root = self.storage_interface.get_project_folder(edited_project.name)
@@ -156,7 +157,8 @@ class TestProjectService(TransactionalTestCase):
         """
         Searching for an un-existing project.
         """
-        data = dict(name="test_project", description="test_description", users=[])
+        data = dict(name="test_project", description="test_description", users=[], max_operation_size=None,
+                    disable_imports=False)
         initial_projects = dao.get_projects_for_user(self.test_user.id)
         assert len(initial_projects) == 0, "Database reset probably failed!"
         project = self.project_service.store_project(self.test_user, True, None, **data)

@@ -128,7 +128,9 @@ class TestProjectController(BaseTransactionalControllerTest):
                     description="Some test descript.",
                     users=[],
                     administrator=self.test_user.username,
-                    visited_pages=None)
+                    visited_pages=None,
+                    max_operation_size=None,
+                    disable_imports=False)
         cherrypy.request.method = "POST"
         self._expect_redirect('/project/viewall', self.project_c.editone, save=True, **data)
         projects = dao.get_projects_for_user(self.test_user.id)
