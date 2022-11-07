@@ -54,3 +54,4 @@ bctpy
 Deprecated
 kubernetes
 watchdog
+requests-toolbelt>=0.10
