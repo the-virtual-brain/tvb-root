@@ -161,7 +161,7 @@ def project_factory():
 
         if users is None:
             users = []
-        data = dict(name=name, description=description, users=users)
+        data = dict(name=name, description=description, users=users, max_operation_size=None, disable_imports=False)
         return ProjectService().store_project(admin, True, None, **data)
 
     return build

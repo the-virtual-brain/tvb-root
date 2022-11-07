@@ -40,7 +40,7 @@ from tvb.adapters.forms.model_forms import get_form_for_model
 from tvb.adapters.forms.monitor_forms import get_form_for_monitor
 from tvb.adapters.forms.noise_forms import get_form_for_noise
 from tvb.adapters.simulator.range_parameters import RangeParametersCollector
-from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterForm
+from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterForm, SimulatorAdapter
 from tvb.adapters.forms.simulator_fragments import *
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.file.simulator.view_model import AdditiveNoiseViewModel, BoldViewModel
@@ -607,8 +607,15 @@ class SimulatorController(BurstBaseController):
         burst_config = self.context.burst_config
         burst_config.start_time = datetime.now()
         burst_config.range1 = range_param1.to_json()
+        len_range = len(range_param1.get_range_values())
         if range_param2:
             burst_config.range2 = range_param2.to_json()
+            len_range *= len(range_param2.get_range_values())
+
+        if not self.simulator_service.operation_service.fits_max_operation_size(SimulatorAdapter(), session_stored_simulator,
+                                                                                self.context.project.id, len_range):
+            return {'error': self.MAX_SIZE_ERROR_MSG}
+
         burst_config = self.burst_service.prepare_burst_for_pse(burst_config)
         session_stored_simulator.operation_group_gid = uuid.UUID(burst_config.operation_group.gid)
         session_stored_simulator.ranges = json.dumps(burst_config.ranges)
@@ -653,6 +660,10 @@ class SimulatorController(BurstBaseController):
                                                                                        SimulationHistoryIndex)
             session_stored_simulator.history_gid = simulation_state_index[0].gid
 
+        if not self.simulator_service.operation_service.fits_max_operation_size(SimulatorAdapter(), session_stored_simulator,
+                                                                                self.context.project.id):
+            return {'error': self.MAX_SIZE_ERROR_MSG}
+
         burst_config.start_time = datetime.now()
         session_burst_config = self.burst_service.store_burst(burst_config)
 
@@ -695,7 +706,7 @@ class SimulatorController(BurstBaseController):
         try:
             burst_config = self.burst_service.load_burst_configuration(burst_config_id)
             storage_path = StorageInterface().get_project_folder(self.context.project.name,
-                                                                str(burst_config.fk_simulation))
+                                                                 str(burst_config.fk_simulation))
             simulator = h5.load_view_model(burst_config.simulator_gid, storage_path)
             last_loaded_form_url = self.get_url_for_final_fragment(burst_config)
             self.context.init_session_at_burst_loading(burst_config, simulator, last_loaded_form_url)

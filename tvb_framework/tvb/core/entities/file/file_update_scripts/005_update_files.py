@@ -48,9 +48,9 @@ from tvb.basic.neotraits.api import Range
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
-from tvb.core.entities.model.db_update_scripts.helper import get_burst_for_migration
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
-from tvb.core.entities.storage import dao
+from tvb.core.entities.storage import dao, SA_SESSIONMAKER
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import REGISTRY
@@ -1112,6 +1112,55 @@ def _migrate_general_part(input_file):
     return root_metadata, storage_manager
 
 
+def _get_burst_for_migration(burst_id, burst_match_dict, date_format, selected_db):
+    """
+    This method is supposed to only be used when migrating from version 4 to version 5.
+    It finds a BurstConfig in the old format (when it did not inherit from HasTraitsIndex), deletes it
+    and returns its parameters.
+    """
+    session = SA_SESSIONMAKER()
+    burst_params = session.execute("""SELECT * FROM "BURST_CONFIGURATION" WHERE id = """ + burst_id).fetchone()
+    session.close()
+
+    if burst_params is None:
+        return None, False
+
+    burst_params_dict = {'datatypes_number': burst_params['datatypes_number'],
+                         'dynamic_ids': burst_params['dynamic_ids'], 'range_1': burst_params['range1'],
+                         'range_2': burst_params['range2'], 'fk_project': burst_params['fk_project'],
+                         'name': burst_params['name'], 'status': burst_params['status'],
+                         'error_message': burst_params['error_message'], 'start_time': burst_params['start_time'],
+                         'finish_time': burst_params['finish_time'], 'fk_simulation': burst_params['fk_simulation'],
+                         'fk_operation_group': burst_params['fk_operation_group'],
+                         'fk_metric_operation_group': burst_params['fk_metric_operation_group']}
+
+    if selected_db == 'sqlite':
+        burst_params_dict['start_time'] = string2date(burst_params_dict['start_time'], date_format=date_format)
+        burst_params_dict['finish_time'] = string2date(burst_params_dict['finish_time'], date_format=date_format)
+
+    if burst_id not in burst_match_dict:
+        burst_config = BurstConfiguration(burst_params_dict['fk_project'])
+        burst_config.datatypes_number = burst_params_dict['datatypes_number']
+        burst_config.dynamic_ids = burst_params_dict['dynamic_ids']
+        burst_config.error_message = burst_params_dict['error_message']
+        burst_config.finish_time = burst_params_dict['finish_time']
+        burst_config.fk_metric_operation_group = burst_params_dict['fk_metric_operation_group']
+        burst_config.fk_operation_group = burst_params_dict['fk_operation_group']
+        burst_config.fk_project = burst_params_dict['fk_project']
+        burst_config.fk_simulation = burst_params_dict['fk_simulation']
+        burst_config.name = burst_params_dict['name']
+        burst_config.range1 = burst_params_dict['range_1']
+        burst_config.range2 = burst_params_dict['range_2']
+        burst_config.start_time = burst_params_dict['start_time']
+        burst_config.status = burst_params_dict['status']
+        new_burst = True
+    else:
+        burst_config = dao.get_burst_by_id(burst_match_dict[burst_id])
+        new_burst = False
+
+    return burst_config, new_burst
+
+
 def update(input_file, burst_match_dict):
     """
     :param input_file: the file that needs to be converted to a newer file storage version.
@@ -1244,8 +1293,8 @@ def update(input_file, burst_match_dict):
 
             if 'TimeSeries' in class_name and 'Importer' not in algorithm.classname \
                     and time_series_gid is None:
-                burst_config, new_burst = get_burst_for_migration(possible_burst_id, burst_match_dict,
-                                                                  DATE_FORMAT_V4_DB, TvbProfile.current.db.SELECTED_DB)
+                burst_config, new_burst = _get_burst_for_migration(possible_burst_id, burst_match_dict,
+                                                                   DATE_FORMAT_V4_DB, TvbProfile.current.db.SELECTED_DB)
                 if burst_config:
                     root_metadata['parent_burst'] = _parse_gid(burst_config.gid)
                     burst_config.simulator_gid = vm.gid.hex

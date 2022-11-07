@@ -109,7 +109,8 @@ class ProjectService:
         if started_operations > 0:
             raise ProjectServiceException("A project can not be renamed while operations are still running!")
         if is_create:
-            current_proj = Project(new_name, current_user.id, data["description"])
+            current_proj = Project(new_name, current_user.id, data["max_operation_size"], data["description"],
+                                   data["disable_imports"])
             self.storage_interface.get_project_folder(current_proj.name)
         else:
             try:
@@ -121,6 +122,8 @@ class ProjectService:
                 self.storage_interface.rename_project(current_proj.name, new_name)
             current_proj.name = new_name
             current_proj.description = data["description"]
+            current_proj.disable_imports = data["disable_imports"]
+            current_proj.max_operation_size = data['max_operation_size']
         # Commit to make sure we have a valid ID
         current_proj.refresh_update_date()
         _, metadata_proj = current_proj.to_dict()
