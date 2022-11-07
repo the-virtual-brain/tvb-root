@@ -612,8 +612,8 @@ class SimulatorController(BurstBaseController):
             burst_config.range2 = range_param2.to_json()
             len_range *= len(range_param2.get_range_values())
 
-        if not self.simulator_service.operation_service.fits_disk_size(SimulatorAdapter(), session_stored_simulator,
-                                                                       self.context.project.id, len_range):
+        if not self.simulator_service.operation_service.fits_max_operation_size(SimulatorAdapter(), session_stored_simulator,
+                                                                                self.context.project.id, len_range):
             return {'error': self.MAX_SIZE_ERROR_MSG}
 
         burst_config = self.burst_service.prepare_burst_for_pse(burst_config)
@@ -660,8 +660,8 @@ class SimulatorController(BurstBaseController):
                                                                                        SimulationHistoryIndex)
             session_stored_simulator.history_gid = simulation_state_index[0].gid
 
-        if not self.simulator_service.operation_service.fits_disk_size(SimulatorAdapter(), session_stored_simulator,
-                                                                       self.context.project.id):
+        if not self.simulator_service.operation_service.fits_max_operation_size(SimulatorAdapter(), session_stored_simulator,
+                                                                                self.context.project.id):
             return {'error': self.MAX_SIZE_ERROR_MSG}
 
         burst_config.start_time = datetime.now()

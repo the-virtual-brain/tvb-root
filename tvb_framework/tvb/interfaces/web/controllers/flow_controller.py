@@ -305,7 +305,7 @@ class FlowController(BaseController):
 
             adapter_instance.submit_form(form)
 
-            if not self.operation_services.fits_disk_size(adapter_instance, view_model, project_id):
+            if not self.operation_services.fits_max_operation_size(adapter_instance, view_model, project_id):
                 common.set_error_message(self.MAX_SIZE_ERROR_MSG)
                 return {}
 

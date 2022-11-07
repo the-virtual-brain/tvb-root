@@ -88,7 +88,7 @@ class OperationService:
     ######## Methods related to launching operations start here ##############################
     ##########################################################################################
 
-    def fits_disk_size(self, adapter_instance, view_model, project_id, range_length=1):
+    def fits_max_operation_size(self, adapter_instance, view_model, project_id, range_length=1):
         project = dao.get_project_by_id(project_id)
         if project.max_operation_size is None:
             return True

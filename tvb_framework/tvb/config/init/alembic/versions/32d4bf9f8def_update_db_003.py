@@ -27,8 +27,8 @@ def upgrade():
 
     projects_table = tables['PROJECTS']
     conn.execute(projects_table.update().values({"disable_imports": False}))
-    conn.execute(projects_table.update().values({"disable_imports": True}).where(existent_column == 'Default_Project'))
-    conn.execute(projects_table.update().values({"max_operation_size": 10000}).where(existent_column == 'Default_Project'))
+    conn.execute(projects_table.update().values({"disable_imports": True, "max_operation_size": 1500}).where(
+        existent_column == 'Default_Project'))
 
     conn.execute('COMMIT')
 
