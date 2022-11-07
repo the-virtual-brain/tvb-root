@@ -610,7 +610,7 @@ class SimulatorController(BurstBaseController):
         len_range = len(range_param1.get_range_values())
         if range_param2:
             burst_config.range2 = range_param2.to_json()
-            len_range += len(range_param2.get_range_values())
+            len_range *= len(range_param2.get_range_values())
 
         if not self.simulator_service.operation_service.fits_disk_size(SimulatorAdapter(), session_stored_simulator,
                                                                        self.context.project.id, len_range):

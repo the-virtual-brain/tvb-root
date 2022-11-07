@@ -735,5 +735,5 @@ class EditForm(formencode.Schema):
     administrator = validators.UnicodeString(not_empty=False)
     project_id = validators.UnicodeString(not_empty=False)
     visited_pages = validators.UnicodeString(not_empty=False)
+    max_operation_size = validators.Int(not_empty=False, min=0)
     disable_imports = validators.Bool()
-    max_operation_size = validators.UnicodeString(not_empty=False)

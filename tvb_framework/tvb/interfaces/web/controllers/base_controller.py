@@ -60,7 +60,7 @@ class BaseController(object):
     """
     This class contains the methods served at the root of the Web site.
     """
-    MAX_SIZE_ERROR_MSG = "Max operation size has been exceeded"
+    MAX_SIZE_ERROR_MSG = "Max operation size has been exceeded. The current project admin can change this limit in Project - Basic Properties"
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
