@@ -36,27 +36,39 @@ pipeline {
             }
         }
         stage ('Install TVB') {
-                steps {
-                    unstash 'step1'
-                    sh '''#!/bin/bash
-                        source /Applications/anaconda3/etc/profile.d/conda.sh
-                        conda activate mac-distribution
-                        cd tvb_build
-                        /bin/bash install_full_tvb.sh
-                    '''
-                }
+            steps {
+                unstash 'step1'
+                sh '''#!/bin/bash
+                    source /Applications/anaconda3/etc/profile.d/conda.sh
+                    conda activate mac-distribution
+                    cd tvb_build
+                    /bin/bash install_full_tvb.sh
+                '''
             }
+        }
         stage ('Build TVB Distribution') {
-                steps {
-                    sh '''#!/bin/bash
-                        source /Applications/anaconda3/etc/profile.d/conda.sh
-                        conda activate mac-distribution
-                        echo "Start setup_mac"
-                        python tvb_build/setup_mac.py
-                    '''
-                    archiveArtifacts artifacts: 'TVB_Mac*.zip'
-                }
+            steps {
+                sh '''#!/bin/bash
+                    source /Applications/anaconda3/etc/profile.d/conda.sh
+                    conda activate mac-distribution
+                    echo "Start setup_mac"
+                    python tvb_build/setup_mac.py
+                '''
+                archiveArtifacts artifacts: 'TVB_Mac*.zip'
             }
+        }
+        stage ('Tests on SqLite') {
+            steps {
+                sh '''#!/bin/bash
+                    source /Applications/anaconda3/etc/profile.d/conda.sh
+                    conda activate mac-distribution
+                    cd tvb_bin
+                    /bin/bash run_tests.sh
+                    exit 0
+                '''
+                junit 'tvb_bin/TEST_OUTPUT/results_*.xml'
+            }
+        }
     }
     post {
         changed {
@@ -65,7 +77,8 @@ pipeline {
             body: """
                 Result: ${currentBuild.result}
                 Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'
-                Check console output at ${env.BUILD_URL}"""
+                Check console output at ${env.BUILD_URL}
+                """
         }
     }
 }
