@@ -2,7 +2,7 @@ numba
 numpy
 scipy
 networkx
-scikit-learn
+scikit-learn<=1.1.2
 scikit-image
 cython
 numexpr
@@ -49,7 +49,7 @@ lxml
 pylems
 docutils
 Pillow
-siibra<=0.3a24
+siibra
 bctpy
 Deprecated
 kubernetes
