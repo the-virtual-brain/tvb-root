@@ -99,6 +99,7 @@ class BaseController(object):
             IntrospectionRegistry.SIIBRA_CREATOR_MODULE,
             IntrospectionRegistry.SIIBRA_CREATOR_CLASS
         )
+        # TODO temporary disable SIIBRA in tvb-web-gui TVB-3044
         if False and siibra_algo and not siibra_algo.removed:
             siibra_link = self.get_url_adapter(siibra_algo.fk_category, siibra_algo.id)
             self.connectivity_submenu.append(dict(title='Siibra Connectivity', link=siibra_link,
