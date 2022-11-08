@@ -45,8 +45,8 @@ VERSION = "2.7"
 TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Prodan, Paula Sansz Leon, Marmaduke Woodman"
 
 TVB_INSTALL_REQUIREMENTS = ["alembic", "allensdk", "bctpy", "cherrypy", "flask", "flask-restx",
-                            "formencode", "gevent", "h5py", "Jinja2", "nibabel", "numpy", "pandas",
-                            "Pillow", "psutil", "python-keycloak", "requests", "scikit-learn",
+                            "formencode", "gevent", "h5py", "Jinja2", "matplotlib<3.6", "nibabel", "numpy", "pandas",
+                            "Pillow", "psutil", "python-keycloak", "requests", "requests-toolbelt>=0.10", "scikit-learn",
                             "scipy", "siibra", "simplejson", "six", "sqlalchemy", "tvb-data", "tvb-gdist",
                             "tvb-library", "tvb-storage", "werkzeug"]
 
