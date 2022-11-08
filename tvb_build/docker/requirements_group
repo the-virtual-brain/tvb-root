@@ -2,7 +2,7 @@ numba
 numpy
 scipy
 networkx
-scikit-learn
+scikit-learn<=1.1.2
 scikit-image
 cython
 numexpr
