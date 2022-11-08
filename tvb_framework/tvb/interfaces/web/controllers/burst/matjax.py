@@ -37,7 +37,7 @@ of the dynamic models in Simulator/Phase Plane.
 """
 
 from tvb.adapters.forms.model_forms import ModelsEnum
-
+from docutils.core import publish_parts
 
 def configure_matjax_doc():
     """
@@ -52,7 +52,8 @@ def configure_matjax_doc():
         models_docs.append({
             'name': clz_name.replace(' ', '_'),
             'inline_description': _dfun_math_directives_to_matjax(clz),
-            'description': _format_doc(clz.__doc__)
+            # 'description': _format_doc(clz.__doc__).replace('\n', '<br/>')  # I let this here since the html parse has a small flaw regarding some overlapping text  and we might consider switching back to plain text
+            'description': publish_parts(clz.__doc__, writer_name='html')['html_body']
         })
 
     return models_docs
