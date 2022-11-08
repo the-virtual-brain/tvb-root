@@ -49,7 +49,7 @@ lxml
 pylems
 docutils
 Pillow
-siibra
+siibra<=0.3a24
 bctpy
 Deprecated
 kubernetes
