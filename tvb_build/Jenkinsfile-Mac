@@ -24,7 +24,7 @@ pipeline {
                     conda update -n base -c defaults conda
                     conda env remove --name mac-distribution
                     conda create -y --name mac-distribution python=3.10 nomkl numba scipy numpy cython psycopg2
-                    conda install -y --name mac-distribution -c conda-forge jupyterlab tvb-gdist tvb-data
+                    conda install -y --name mac-distribution -c conda-forge jupyterlab tvb-gdist
 
                     /Applications/anaconda3/envs/mac-distribution/bin/pip install --upgrade pip
                     /Applications/anaconda3/envs/mac-distribution/bin/pip install lockfile scikit-build
@@ -32,6 +32,9 @@ pipeline {
                     /Applications/anaconda3/envs/mac-distribution/bin/pip install pyobjc python-magic-bin six dmgbuild
 
                     /Applications/anaconda3/envs/mac-distribution/bin/pip install -r docker/requirements_group
+
+                    cd /Users/codemart/WORK/DATA
+                    /Applications/anaconda3/envs/mac-distribution/bin/python setup.py develop
                 '''
             }
         }
