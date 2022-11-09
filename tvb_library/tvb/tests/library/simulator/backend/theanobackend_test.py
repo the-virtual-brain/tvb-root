@@ -42,15 +42,17 @@ from theano.tensor.random.utils import RandomStream
 
 from tvb.simulator.backend.theano import TheanoBackend
 from tvb.simulator.coupling import Sigmoidal, Linear, Difference
-# from tvb.simulator.integrators import (EulerDeterministic, EulerStochastic,
-#     HeunDeterministic, HeunStochastic, IntegratorStochastic,
-#     RungeKutta4thOrderDeterministic, Identity, IdentityStochastic,
-#     VODEStochastic)
-# from tvb.simulator.noise import Additive, Multiplicative
-# from tvb.datatypes.connectivity import Connectivity
+from tvb.simulator.integrators import (
+    EulerDeterministic, EulerStochastic,
+    HeunDeterministic, HeunStochastic,
+    IntegratorStochastic,RungeKutta4thOrderDeterministic,
+    Identity, IdentityStochastic,
+    VODEStochastic)
+from tvb.simulator.noise import Additive, Multiplicative
+from tvb.datatypes.connectivity import Connectivity
 from tvb.simulator.models.oscillator import Generic2dOscillator
 
-from .backendtestbase import BaseTestDfun, BaseTestCoupling
+from .backendtestbase import BaseTestDfun, BaseTestCoupling, BaseTestIntegrate
 
 
 class TestTheanoCoupling(BaseTestCoupling):
@@ -75,8 +77,6 @@ class TestTheanoCoupling(BaseTestCoupling):
         sim.history.buffer[..., 0] = fill
         sim.current_state[:] = fill[0,:,:,None]
         buf = sim.history.buffer[...,0]
-        print(sim.history.buffer.size)
-        print(sim.history.nnz_idelays)
         # kernel has history in reverse order except 1st element 🤕
         rbuf = np.concatenate((buf[0:1], buf[1:][::-1]), axis=0)
 
@@ -86,7 +86,6 @@ class TestTheanoCoupling(BaseTestCoupling):
         weights = sim.connectivity.weights.astype('f')
 
         cX_numpy = np.zeros_like(state_numpy[:,0])
-        print(cX_numpy.shape)
         cX = tt.as_tensor_variable(cX_numpy, name="cX")
 
         cX = kernel(cX, weights, state, sim.connectivity.delay_indices)
@@ -135,3 +134,86 @@ class TestTheanoDfun(BaseTestDfun):
         """Test Generic2dOscillator model"""
         oscillator_model = Generic2dOscillator()
         self._test_dfun(oscillator_model)
+
+
+class TestTheanoIntegrate(BaseTestIntegrate):
+
+    def _test_dfun(self, state, cX, lc):
+        return -state*cX**2/state.shape[1]
+
+    def _eval_cg(self, integrator_, state, weights_):
+        class sim:
+            integrator = integrator_
+            connectivity = Connectivity.from_file()
+            class model:
+                state_variables = 'foo', 'bar'
+        sim.connectivity.speed = np.r_[np.inf]
+        sim.connectivity.configure()
+        sim.integrator.configure()
+        sim.connectivity.set_idelays(sim.integrator.dt)
+        template = '''
+import numpy as np
+import theano
+import theano.tensor as tt
+def coupling(cX, weights, state): 
+    cX = tt.set_subtensor(cX[:], weights.dot(state[:,0].T).T)
+    return cX
+def dfuns(dX, state, cX, parmat):
+    dX = tt.set_subtensor(dX, -state*cX**2/state.shape[1])
+    return dX
+<%include file="theano-integrate.py.mako" />
+'''
+        integrate = TheanoBackend().build_py_func(template, dict(sim=sim, np=np, theano=theano, tt=tt),
+                                                  name='integrate', print_source=True)
+        parmat = tt.zeros(0)
+        dX = tt.zeros(shape=(integrator_.n_dx,)+state[:,0].eval().shape)
+        cX = tt.zeros_like(state[:,0])
+        np.random.seed(42)
+        args = state, weights_, parmat, dX, cX
+
+        if isinstance(sim.integrator, IntegratorStochastic):
+            # dynamic noise
+            if isinstance(sim.integrator.noise, Additive):
+                n_node = sim.connectivity.weights.shape[0]
+                n_svar = len(sim.model.state_variables)
+                D = tt.sqrt(2 * sim.integrator.noise.nsig)
+                dWt = np.random.randn(n_svar, n_node)
+                dWt = tt.as_tensor_variable(dWt)
+                dyn_noise = tt.sqrt(sim.integrator.dt) * D * dWt
+            else:
+                raise NotImplementedError
+            args = args + (dyn_noise, )
+            # args = args + (sim.integrator.noise.nsig, )
+        state = integrate(*args)
+        return state
+
+    def _test_integrator(self, Integrator):
+        if issubclass(Integrator, IntegratorStochastic):
+            integrator = Integrator(dt=0.1, noise=Additive(nsig=np.r_[0.01]))
+            integrator.noise.dt = integrator.dt
+        else:
+            integrator = Integrator(dt=0.1)
+        nn = 76
+        state_numpy = np.random.randn(2, 1, nn)
+        state = tt.as_tensor_variable(state_numpy, name="state")
+
+        weights_numpy = np.random.randn(nn, nn)
+        weights = tt.as_tensor_variable(weights_numpy, name="weights")
+
+        cx_numpy = weights_numpy.dot(state_numpy[:,0].T).T
+        cx = weights.dot(state[:,0].T).T
+
+        assert cx_numpy.shape == (2, nn)
+        expected = integrator.scheme(state_numpy[:,0], self._test_dfun, cx_numpy, 0, 0)
+        # actual = state
+        np.random.seed(42)
+        actual = self._eval_cg(integrator, state, weights)
+        np.testing.assert_allclose(actual[:,0].eval(), expected)
+
+    def test_euler(self): self._test_integrator(EulerDeterministic)
+    def test_eulers(self): self._test_integrator(EulerStochastic)
+    def test_heun(self): self._test_integrator(HeunDeterministic)
+    def test_heuns(self): self._test_integrator(HeunStochastic)
+    def test_rk4(self): self._test_integrator(RungeKutta4thOrderDeterministic)
+    def test_id(self): self._test_integrator(Identity)
+    def test_ids(self): self._test_integrator(IdentityStochastic)
