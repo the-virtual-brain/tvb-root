@@ -28,33 +28,40 @@
 #
 #
 
-def dfuns(dX, state, cX, parmat):
+import numpy as np
+import theano
+import theano.tensor as tt
 
-% for par in sim.model.global_parameter_names:
-    % if par in mparams:
-    ${par} = ${params[par]}
-    % else:
-    ${par} = ${getattr(sim.model, par)[0]}
-    % endif
-% endfor
+<%include file="theano-coupling.py.mako" />
+<%include file="theano-dfuns.py.mako" />
+<%include file="theano-integrate.py.mako" />
 
-% for par in sim.model.spatial_parameter_names:
-    ${par} = parmat[${loop.index}]
-% endfor
+<%
+    from tvb.simulator.integrators import IntegratorStochastic
+    stochastic = isinstance(sim.integrator, IntegratorStochastic)
+    any_delays = sim.connectivity.idelays.any()
+%>
 
-    pi = np.pi
+def kernel(state, weights, trace, parmat
+           ${', nsig' if stochastic else ''}
+           ${', idelays' if any_delays else ''}
+           ):
 
-% for cterm in sim.model.coupling_terms:
-    ${cterm} = cX[${loop.index}]
-% endfor
+    # problem dimensions
+    n_node = ${sim.connectivity.weights.shape[0]}
+    n_svar = ${len(sim.model.state_variables)}
+    n_cvar = ${len(sim.model.cvar)}
+    nt = ${int(sim.simulation_length/sim.integrator.dt)}
 
-% for svar in sim.model.state_variables:
-    ${svar} = state[${loop.index}]
-% endfor
+    # work space arrays
+    dX = tt.zeros((${sim.integrator.n_dx}, n_svar, n_node))
+    cX = tt.zeros((n_cvar, n_node))
 
-    # compute dfuns
-% for svar in sim.model.state_variables:
-    dX = tt.set_subtensor(dX[${loop.index}], ${sim.model.state_variable_dfuns[svar]});
-% endfor
+    for t in range(nt):
+        state = integrate(state, weights, parmat, dX, cX
+           ${', nsig' if stochastic else ''}
+           ${', idelays' if any_delays else ''}
+           )
+        trace = tt.set_subtensor(trace[t], state[:,0])
 
-    return dX
+    return trace

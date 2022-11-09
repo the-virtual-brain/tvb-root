@@ -52,7 +52,115 @@ from tvb.simulator.noise import Additive, Multiplicative
 from tvb.datatypes.connectivity import Connectivity
 from tvb.simulator.models.oscillator import Generic2dOscillator
 
-from .backendtestbase import BaseTestDfun, BaseTestCoupling, BaseTestIntegrate
+from .backendtestbase import BaseTestDfun, BaseTestCoupling, BaseTestIntegrate, BaseTestSim
+
+
+class TestTheanoSim(BaseTestSim):
+
+    def _test_mpr(self, integrator, delays=False):
+        sim, state_numpy, t, y = self._create_sim(
+            integrator,
+            inhom_mmpr=True,
+            delays=delays
+        )
+        template = '<%include file="theano-sim.py.mako"/>'
+        content = dict(sim=sim, np=np, theano=theano, tt=tt, mparams={}, cparams={})
+        kernel = TheanoBackend().build_py_func(template, content, print_source=True)
+
+        state = tt.as_tensor_variable(state_numpy, name="state")
+        dX = state.copy()
+        n_svar, _, n_node = state.eval().shape
+
+        if not delays:
+            self.assertEqual(sim.connectivity.horizon, 1)  # for now
+
+        state = state.reshape((n_svar, sim.connectivity.horizon, n_node))
+
+        weights_numpy = sim.connectivity.weights.copy()
+        weights = tt.as_tensor_variable(weights_numpy, name="weights")
+
+        yh_numpy = np.zeros((len(t),)+state.eval()[:,0].shape)
+        yh = tt.as_tensor_variable(yh_numpy, name="yh")
+
+        parmat = sim.model.spatial_parameter_matrix
+        self.assertEqual(parmat.shape[0], 1)
+        self.assertEqual(parmat.shape[1], weights.eval().shape[1])
+        np.random.seed(42)
+
+        args = state, weights, yh, parmat
+        if isinstance(integrator, IntegratorStochastic):
+            args = args + (integrator.noise.nsig,)
+        if delays:
+            args = args + (sim.connectivity.delay_indices,)
+
+        yh = kernel(*args)
+        self._check_match(y, yh.eval())
+
+    def _test_mvar(self, integrator):
+        pass # TODO
+
+    def _test_osc(self, integrator, delays=False):
+        sim, state_numpy, t, y = self._create_osc_sim(
+            integrator,
+            delays=delays
+        )
+        template = '<%include file="theano-sim.py.mako"/>'
+        content = dict(sim=sim, np=np, theano=theano, tt=tt, mparams={}, cparams={})
+        kernel = TheanoBackend().build_py_func(template, content, print_source=True)
+
+        state = tt.as_tensor_variable(state_numpy, name="state")
+        dX = state.copy()
+        n_svar, _, n_node = state.eval().shape
+
+        if not delays:
+            self.assertEqual(sim.connectivity.horizon, 1)  # for now
+
+        state = state.reshape((n_svar, sim.connectivity.horizon, n_node))
+
+        weights_numpy = sim.connectivity.weights.copy()
+        weights = tt.as_tensor_variable(weights_numpy, name="weights")
+
+        yh_numpy = np.zeros((len(t),)+state.eval()[:,0].shape)
+        yh = tt.as_tensor_variable(yh_numpy, name="yh")
+
+        parmat = sim.model.spatial_parameter_matrix
+        self.assertEqual(parmat.shape[0], 0)
+        np.random.seed(42)
+
+        args = state, weights, yh, parmat
+        if isinstance(integrator, IntegratorStochastic):
+            args = args + (integrator.noise.nsig,)
+        if delays:
+            args = args + (sim.connectivity.delay_indices,)
+
+        yh = kernel(*args)
+        self._check_match(y, yh.eval())
+
+    def _test_integrator(self, Integrator, delays=False):
+        dt = 0.01
+        if issubclass(Integrator, IntegratorStochastic):
+            integrator = Integrator(dt=dt, noise=Additive(nsig=np.r_[dt]))
+            integrator.noise.dt = integrator.dt
+        else:
+            integrator = Integrator(dt=dt)
+        if isinstance(integrator, (Identity, IdentityStochastic)):
+            self._test_mvar(integrator, delays=delays)
+        else:
+            # self._test_mpr(integrator, delays=delays)
+            self._test_osc(integrator, delays=delays)
+
+    # TODO move to BaseTestSim to avoid duplicating all the methods
+
+    def test_euler(self): self._test_integrator(EulerDeterministic)
+    def test_eulers(self): self._test_integrator(EulerStochastic)
+    def test_heun(self): self._test_integrator(HeunDeterministic)
+    def test_heuns(self): self._test_integrator(HeunStochastic)
+    def test_rk4(self): self._test_integrator(RungeKutta4thOrderDeterministic)
+    def test_deuler(self): self._test_integrator(EulerDeterministic, delays=True)
+    def test_deulers(self): self._test_integrator(EulerStochastic, delays=True)
+    def test_dheun(self): self._test_integrator(HeunDeterministic, delays=True)
+    def test_dheuns(self): self._test_integrator(HeunStochastic, delays=True)
+    def test_drk4(self): self._test_integrator(RungeKutta4thOrderDeterministic, delays=True)
 
 
 class TestTheanoCoupling(BaseTestCoupling):
@@ -69,7 +177,7 @@ class TestTheanoCoupling(BaseTestCoupling):
         import theano.tensor as tt
         <%include file="theano-coupling.py.mako"/>
         '''
-        kernel = TheanoBackend().build_py_func(template, dict(sim=sim, theano=theano, params=cparams),
+        kernel = TheanoBackend().build_py_func(template, dict(sim=sim, theano=theano, cparams=cparams),
                                                name='coupling', print_source=True)
 
         fill = np.r_[:sim.history.buffer.size]
@@ -83,7 +191,8 @@ class TestTheanoCoupling(BaseTestCoupling):
         state_numpy = np.transpose(rbuf, (1, 0, 2)).astype('f')
         state = tt.as_tensor_variable(state_numpy, name="state")
 
-        weights = sim.connectivity.weights.astype('f')
+        weights_numpy = sim.connectivity.weights.astype('f')
+        weights = tt.as_tensor_variable(weights_numpy, name="weights")
 
         cX_numpy = np.zeros_like(state_numpy[:,0])
         cX = tt.as_tensor_variable(cX_numpy, name="cX")
@@ -114,7 +223,7 @@ class TestTheanoDfun(BaseTestDfun):
         import theano.tensor as tt
         <%include file="theano-dfuns.py.mako"/>
         '''
-        kernel = TheanoBackend().build_py_func(template, dict(sim=sim, theano=theano, params=mparams),
+        kernel = TheanoBackend().build_py_func(template, dict(sim=sim, theano=theano, mparams=mparams),
                                                name='dfuns', print_source=True)
 
         cX_numpy = np.random.rand(2, 128, 1)
@@ -134,6 +243,10 @@ class TestTheanoDfun(BaseTestDfun):
         """Test Generic2dOscillator model"""
         oscillator_model = Generic2dOscillator()
         self._test_dfun(oscillator_model)
+
+    def test_py_mpr_symmetric(self):
+        "Test symmetric MPR model"
+        self._test_dfun(self._prep_model())
 
 
 class TestTheanoIntegrate(BaseTestIntegrate):
@@ -159,7 +272,7 @@ def coupling(cX, weights, state):
     cX = tt.set_subtensor(cX[:], weights.dot(state[:,0].T).T)
     return cX
 def dfuns(dX, state, cX, parmat):
-    dX = tt.set_subtensor(dX, -state*cX**2/state.shape[1])
+    dX = tt.set_subtensor(dX[:], -state*cX**2/state.shape[1])
     return dX
 <%include file="theano-integrate.py.mako" />
 '''
@@ -173,17 +286,17 @@ def dfuns(dX, state, cX, parmat):
 
         if isinstance(sim.integrator, IntegratorStochastic):
             # dynamic noise
-            if isinstance(sim.integrator.noise, Additive):
-                n_node = sim.connectivity.weights.shape[0]
-                n_svar = len(sim.model.state_variables)
-                D = tt.sqrt(2 * sim.integrator.noise.nsig)
-                dWt = np.random.randn(n_svar, n_node)
-                dWt = tt.as_tensor_variable(dWt)
-                dyn_noise = tt.sqrt(sim.integrator.dt) * D * dWt
-            else:
-                raise NotImplementedError
-            args = args + (dyn_noise, )
-            # args = args + (sim.integrator.noise.nsig, )
+            # if isinstance(sim.integrator.noise, Additive):
+            #     n_node = sim.connectivity.weights.shape[0]
+            #     n_svar = len(sim.model.state_variables)
+            #     D = tt.sqrt(2 * sim.integrator.noise.nsig)
+            #     dWt = np.random.randn(n_svar, n_node)
+            #     dWt = tt.as_tensor_variable(dWt)
+            #     dyn_noise = tt.sqrt(sim.integrator.dt) * D * dWt
+            # else:
+            #     raise NotImplementedError
+            # args = args + (dyn_noise, )
+            args = args + (sim.integrator.noise.nsig, )
         state = integrate(*args)
         return state
 

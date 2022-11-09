@@ -321,12 +321,12 @@ class Generic2dOscillator(ModelNumbaDfun):
         of=str,
         label="Variables or quantities available to Monitors",
         choices=("V", "W", "V + W", "V - W"),
-        default=("V",),
+        default=("V", "W"),
         doc="The quantities of interest for monitoring for the generic 2D oscillator.")
 
     state_variables = ('V', 'W')
     _nvar = 2
-    cvar = numpy.array([0], dtype=numpy.int32)
+    cvar = numpy.array([0, 1], dtype=numpy.int32)
 
     coupling_terms = Final(
         label="Coupling terms",

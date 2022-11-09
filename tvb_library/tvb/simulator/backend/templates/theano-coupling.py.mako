@@ -41,10 +41,10 @@ def coupling(cX, weights, state
     n_svar = state.eval().shape[0]
     n_cvar = cX.eval().shape[0]
     n_node = cX.eval().shape[1]
-    assert cX.eval().shape[1] == weights.shape[0] == weights.shape[1] == state.eval().shape[2]
+    assert cX.eval().shape[1] == weights.eval().shape[0] == weights.eval().shape[1] == state.eval().shape[2]
 
 % for par in sim.coupling.parameter_names:
-    % if par in params:
+    % if par in cparams:
     ${par} = ${params[par]}
     % else:
     ${par} = ${getattr(sim.coupling, par)[0]}

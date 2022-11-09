@@ -40,6 +40,7 @@ import numpy as np
 
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
 from tvb.simulator.models.linear import Linear as LinearModel
+from tvb.simulator.models.oscillator import Generic2dOscillator
 from tvb.datatypes.connectivity import Connectivity
 from tvb.simulator.integrators import (EulerDeterministic, IntegratorStochastic,
     Identity)
@@ -76,6 +77,39 @@ class BaseTestSim(unittest.TestCase):
         state = np.transpose(rbuf, (1, 0, 2)).astype('f')
         self.assertEqual(state.shape[0], 2)
         self.assertEqual(state.shape[2], conn.weights.shape[0])
+        if isinstance(sim.integrator, IntegratorStochastic):
+            sim.integrator.noise.reset_random_stream()
+        if run_sim:
+            (t,y), = sim.run()
+            return sim, state, t, y
+        else:
+            return sim
+
+    def _create_osc_sim(self, integrator=None, delays=False,
+            run_sim=True):
+        osc = Generic2dOscillator()
+        conn = Connectivity.from_file()
+        conn.speed = np.r_[3.0 if delays else np.inf]
+        if integrator is None:
+            dt = 0.01
+            integrator = EulerDeterministic(dt=dt)
+        else:
+            dt = integrator.dt
+        sim = Simulator(
+            connectivity=conn,
+            model=osc,
+            integrator=integrator,
+            monitors=[Raw()],
+            simulation_length=0.1)  # 10 steps
+        sim.configure()
+        if not delays:
+            self.assertTrue((conn.idelays == 0).all())
+        buf = sim.history.buffer[...,0]
+        # kernel has history in reverse order except 1st element 🤕
+        rbuf = np.concatenate((buf[0:1], buf[1:][::-1]), axis=0)
+        state = np.transpose(rbuf, (1, 0, 2)).astype('f')
+        #self.assertEqual(state.shape[0], 2)
+        #self.assertEqual(state.shape[2], conn.weights.shape[0])
         if isinstance(sim.integrator, IntegratorStochastic):
             sim.integrator.noise.reset_random_stream()
         if run_sim:
