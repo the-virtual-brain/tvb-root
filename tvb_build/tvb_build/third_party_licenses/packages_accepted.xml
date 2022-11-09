@@ -71,7 +71,7 @@
         <description value="This library is distributed with TVB's package"/>
     </dependency>
     <dependency env="[win,mac,linux]" name="bctpy">
-        <full-name value="Brain Connectivity Toolbox (BCT)"/>
+        <full-name value="Brain Connectivity Toolbox (BCT) Python"/>
         <project-home value="https://pypi.org/project/bctpy/"/>
         <version value="0.5.2"/>
         <usage value="static linking"/>
@@ -1573,7 +1573,7 @@
     <dependency env="[win,linux]" name="pyzmq">
         <full-name value="zeromq"/>
         <project-home value="http://zguide.zeromq.org"/>
-        <version value="[19.0.2,22.0.3]"/>
+        <version value="[23.2.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_zmq.txt"/>
         <license-type value="LGPLv3_"/>
@@ -1583,7 +1583,7 @@
     <dependency env="[win,mac,linux]" name="requests">
         <full-name value="Requests"/>
         <project-home value="https://pypi.python.org/pypi/requests"/>
-        <version value="[2.25.1]"/>
+        <version value="[2.28.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_req.txt"/>
         <license-type value="Apache_ 2"/>
@@ -1593,7 +1593,7 @@
     <dependency env="[win,linux]" name="requests-toolbelt">
         <full-name value="Requests Toolbelt"/>
         <project-home value="https://pypi.python.org/pypi/requests-toolbelt"/>
-        <version value="[0.8.0,0.9.1]"/>
+        <version value="[0.10.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_req_toolbelt.txt"/>
         <license-type value="Apache_ 2"/>
@@ -1603,7 +1603,7 @@
     <dependency env="[win,mac,linux]" name="requests_toolbelt">
         <full-name value="Requests Toolbelt"/>
         <project-home value="https://pypi.python.org/pypi/requests-toolbelt"/>
-        <version value="[0.8.0,0.9.1]"/>
+        <version value="[0.10.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_req_toolbelt.txt"/>
         <license-type value="Apache_ 2"/>
@@ -1623,7 +1623,7 @@
     <dependency env="[win,linux]" name="scikit-image">
         <full-name value="Scikit Image"/>
         <project-home value="http://scikit-image.org/"/>
-        <version value="[0.14.2]"/>
+        <version value="[0.19.3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_scikit_image.txt"/>
         <license-type value="BSD_ modified"/>
@@ -1663,7 +1663,7 @@
     <dependency env="[win,linux,mac]" name="scikit-learn">
         <full-name value="Scikits Learn"/>
         <project-home value="http://scikit-learn.org/"/>
-        <version value="[0.23.2,0.24.1]"/>
+        <version value="[1.1.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_scikits_learn.txt"/>
         <license-type value="BSD_ 3rd clause"/>
@@ -1673,7 +1673,7 @@
     <dependency env="[win,mac,linux]" name="sklearn">
         <full-name value="Scikits Learn"/>
         <project-home value="http://scikit-learn.org/"/>
-        <version value="[0.23.2,0.24.1]"/>
+        <version value="[1.1.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_scikits_learn.txt"/>
         <license-type value="BSD_ 3rd clause"/>
@@ -1833,7 +1833,7 @@
     <dependency env="[win,mac,linux]" name="tables">
         <full-name value="PyTables"/>
         <project-home value="http://www.pytables.org/moin/License"/>
-        <version value="3.5.1"/>
+        <version value="3.7.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytables.txt"/>
         <license-type value="BSD_"/>
@@ -1883,7 +1883,7 @@
     <dependency env="[linux,mac]" name="terminado">
         <full-name value="Terminado"/>
         <project-home value="https://pypi.python.org/pypi/terminado"/>
-        <version value="[0.9.2]"/>
+        <version value="[0.17.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_terminado.txt"/>
         <license-type value="BSD_"/>
@@ -2013,7 +2013,7 @@
     <dependency env="[win,linux]" name="wheel">
         <full-name value="A built-package format for Python."/>
         <project-home value="https://bitbucket.org/pypa/wheel"/>
-        <version value="[0.36.2]"/>
+        <version value="[0.37.1]"/>
         <usage value="packaging"/>
         <license value="LICENSE_wheel.txt"/>
         <license-type value="MIT_"/>
@@ -2043,7 +2043,7 @@
     <dependency env="[win]" name="yaml">
         <full-name value="PyYAML"/>
         <project-home value="http://pyyaml.org/wiki/PyYAML"/>
-        <version value="5.4.1"/>
+        <version value="6.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pyyaml.txt"/>
         <license-type value="MIT_"/>
@@ -2083,7 +2083,7 @@
     <dependency env="[win,mac,linux]" name="zmq">
         <full-name value="zeromq"/>
         <project-home value="http://zguide.zeromq.org"/>
-        <version value="[19.0.2,22.0.3]"/>
+        <version value="[23.2.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_zmq.txt"/>
         <license-type value="LGPLv3_"/>
@@ -2103,7 +2103,7 @@
     <dependency env="win" name="zope.interface">
         <full-name value="Zope Interface"/>
         <project-home value="https://pypi.python.org/pypi/zope.interface"/>
-        <version value="5.2.0"/>
+        <version value="5.5.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_zope.txt"/>
         <license-type value="ZPL 2.1"/>
@@ -2933,7 +2933,7 @@
     <dependency env="[win,mac,linux]" name="zipp">
         <full-name value="zipp"/>
         <project-home value="https://github.com/jaraco/zipp"/>
-        <version value="3.4.0"/>
+        <version value="3.10.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_zipp.txt"/>
         <license-type value="MIT_"/>
