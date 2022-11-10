@@ -151,6 +151,16 @@ class ProjectService:
         self.logger.debug("Edit/Save OK for project:" + str(current_proj.id) + ' by user:' + current_user.username)
         return current_proj
 
+    def remove_member_from_project(self, proj_id, user_id):
+        """
+        remove a user from the list of members of that project
+        """
+        try:
+            dao.delete_members_for_project(proj_id, [user_id])
+        except Exception as error:
+            self.logger.exception(f'An error has occurred while trying to leave project {proj_id}')
+            raise ProjectServiceException(str(error))
+
     def find_project(self, project_id):
         """
         Simply retrieve Project entity from Database.

@@ -35,6 +35,8 @@
 import os
 
 import pytest
+import sqlalchemy
+
 import tvb_data
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.model import model_datatype, model_project, model_operation
@@ -72,6 +74,58 @@ class TestProjectService(TransactionalTestCase):
         Remove project folders.
         """
         self.delete_project_folders()
+
+    def _setup_project_and_members(self, members_names=['test_user1', 'test_user2'], proj_name='test_project', proj_descr="description"):
+        """
+        creates a project with test_user as owner and create users from a list of names
+        and add them as members to project, returns created users
+        """
+        members = [TestFactory.create_user(name) for name in members_names]
+        initial_projects = dao.get_projects_for_user(self.test_user.id)
+        assert len(initial_projects) == 0, "Database reset probably failed!"
+        TestFactory.create_project(self.test_user, proj_name, proj_descr, users=[m.id for m in members])
+        return members
+
+    def test_remove_user_from_project(self):
+        """
+        tests that a user can leave a project of which he is a member
+        """
+        user1, user2 = self._setup_project_and_members()
+        test_user_projects = dao.get_projects_for_user(self.test_user.id)
+        project = test_user_projects[0]
+        users_for_project = dao.get_members_of_project(project.id)
+        for user in users_for_project:
+            assert user.id in [user1.id, user2.id, self.test_user.id], "Users not stored properly."
+
+        self.project_service.remove_member_from_project(project.id, user1.id)
+        users_for_project = dao.get_members_of_project(project.id)
+        assert user1.id not in [user.id for user in users_for_project]
+
+    def test_remove_user_from_project(self):
+        """
+        tests removing a user from a project of which he is not a member
+        """
+        user_not_in_project = TestFactory.create_user('no_project')
+        self._setup_project_and_members()
+        test_user_projects = dao.get_projects_for_user(self.test_user.id)
+        project = test_user_projects[0]
+        users_for_project = dao.get_members_of_project(project.id)
+        assert user_not_in_project.id not in [user.id for user in users_for_project]
+        self.project_service.remove_member_from_project(project.id, user_not_in_project.id)
+        users_for_project = dao.get_members_of_project(project.id)
+        assert user_not_in_project.id not in [user.id for user in users_for_project]
+
+    def test_remove_user_from_project(self):
+        """
+        tests removing a user from a non-existing project
+        """
+        user = TestFactory.create_user('no_project')
+        user_projects = dao.get_projects_for_user(user.id)
+        assert len(user_projects) == 0, 'User should not have a project!'
+        non_existing_id = 99999
+        with pytest.raises(sqlalchemy.exc.NoResultFound):
+            _ = dao.get_project_by_id(non_existing_id)
+        self.project_service.remove_member_from_project(non_existing_id, user.id)
 
     def test_create_project_happy_flow(self):
 
