@@ -55,7 +55,7 @@ def init_test_env():
     """
     # Set a default test profile, for when running tests from dev-env.
     from tvb.basic.profile import TvbProfile
-    if TvbProfile.CURRENT_PROFILE_NAME is None:
+    if TvbProfile.CURRENT_PROFILE_NAME != TvbProfile.TEST_SQLITE_PROFILE:
         profile = TvbProfile.TEST_SQLITE_PROFILE
         if len(sys.argv) > 1:
             for i in range(1, len(sys.argv) - 1):
@@ -241,7 +241,7 @@ def transactional_test(func, callback=None):
                         LOGGER.debug(args[0].__class__.__name__ + "->" + func.__name__
                                      + "- Transactional TEARDOWN starting...")
                         args[0].transactional_teardown_method_TVB()
-                    args[0].delete_project_folders()
+                    # args[0].delete_project_folders()
             finally:
                 session_maker.rollback_transaction()
                 session_maker.close_transaction()
