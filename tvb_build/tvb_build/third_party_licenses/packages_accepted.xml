@@ -750,6 +750,26 @@
         <copyright-notice value="Copyright (c) Michael Vella, Robert C. Cannon, Sharon Crook, Andrew P. Davison, Gautham Ganapathy, Hugh P. C. Robinson, R. Angus Silver, Padraig Gleeson and Michiel. A. van der Vlag"/>
         <description value="Dependency for TVB DSL"/>
     </dependency>
+    <dependency env="[win,linux, mac]" name="lems">
+        <full-name value="lems_lib"/>
+        <project-home value="https://github.com/LEMS/pylems"/>
+        <version value="0.6.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_lems.txt"/>
+        <license-type value="LGPL_"/>
+        <copyright-notice value="Copyright (c) Michael Vella, Robert C. Cannon, Sharon Crook, Andrew P. Davison, Gautham Ganapathy, Hugh P. C. Robinson, R. Angus Silver, Padraig Gleeson and Michiel. A. van der Vlag"/>
+        <description value="Dependency for TVB DSL"/>
+    </dependency>
+    <dependency env="[win,linux, mac]" name="pylems">
+        <full-name value="pylems"/>
+        <project-home value="https://github.com/LEMS/pylems"/>
+        <version value="0.6.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_lems.txt"/>
+        <license-type value="LGPL_"/>
+        <copyright-notice value="Copyright (c) Michael Vella, Robert C. Cannon, Sharon Crook, Andrew P. Davison, Gautham Ganapathy, Hugh P. C. Robinson, R. Angus Silver, Padraig Gleeson and Michiel. A. van der Vlag"/>
+        <description value="Dependency for TVB DSL"/>
+    </dependency>
     <dependency env="mac" name="libtatlas.dylib">
         <full-name value="Atlas"/>
         <project-home value="http://math-atlas.sourceforge.net/"/>
@@ -1163,7 +1183,7 @@
     <dependency env="[win,mac,linux]" name="numba">
         <full-name value="Numba"/>
         <project-home value="http://numba.pydata.org/"/>
-        <version value="[0.51.2]"/>
+        <version value="[0.56.3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_numba.txt"/>
         <license-type value="BSD_"/>
@@ -1173,7 +1193,7 @@
     <dependency env="[win,mac,linux]" name="numexpr">
         <full-name value="NumExpr"/>
         <project-home value="http://code.google.com/pnumexpr/"/>
-        <version value="[2.7.2,2.7.3]"/>
+        <version value="[2.8.4]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_numexpr.txt"/>
         <license-type value="MIT_"/>
@@ -1183,7 +1203,7 @@
     <dependency env="[win,mac,linux]" name="numpy">
         <full-name value="Numpy"/>
         <project-home value="http://numpy.scipy.org/license.html#license"/>
-        <version value="1.18.5"/>
+        <version value="1.21.5"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_numpy.txt"/>
         <license-type value="BSD_"/>
@@ -1543,7 +1563,7 @@
     <dependency env="[win,mac,linux]" name="pytz">
         <full-name value="PyTZ: TimeZone Library for Python"/>
         <project-home value="http://pytz.sourceforge.net/"/>
-        <version value="[2021.1]"/>
+        <version value="[2022.5]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytz.txt"/>
         <license-type value="MIT_"/>
@@ -1553,7 +1573,7 @@
     <dependency env="[win,linux]" name="pywavelets">
         <full-name value="Python wavelet transforms module"/>
         <project-home value="https://pypi.org/project/PyWavelets/"/>
-        <version value="[1.1.1]"/>
+        <version value="[1.4.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pywavelets.txt"/>
         <license-type value="MIT_"/>
@@ -1783,7 +1803,7 @@
     <dependency env="[win,mac,linux]" name="sqlalchemy">
         <full-name value="SQL-Alchemy"/>
         <project-home value="http://www.sqlalchemy.org/"/>
-        <version value="[1.3.23]"/>
+        <version value="[1.4.43]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_sqlalchemy_0.6.6.txt"/>
         <license-type value="MIT_"/>
@@ -1883,7 +1903,7 @@
     <dependency env="[win,linux,mac]" name="tempora">
         <full-name value="Tempora"/>
         <project-home value="https://pypi.python.org/pypi/tempora"/>
-        <version value="[0.0.0,1.9,1.14.1,1.10]"/>
+        <version value="[5.0.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_tempora.txt"/>
         <license-type value="MIT_"/>
@@ -1913,7 +1933,7 @@
     <dependency env="[mac,linux]" name="traitlets">
         <full-name value="Traitlets"/>
         <project-home value="http://ipython.org/"/>
-        <version value="[5.0.5]"/>
+        <version value="[5.5.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_ipython.txt"/>
         <license-type value="BSD_ revised"/>
@@ -2163,7 +2183,7 @@
     <dependency env="[win,mac,linux]" name="pyunicore">
         <full-name value="pyUnicore"/>
         <project-home value="https://sourceforge.net/p/unicore/wiki/REST_API/"/>
-        <version value="0.6.0"/>
+        <version value="0.11.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pyAesCrypt.txt"/>
         <license-type value="BSD_ 2nd clause"/>
@@ -2223,7 +2243,7 @@
     <dependency env="[win,mac,linux]" name="werkzeug">
         <full-name value="Werkzeug"/>
         <project-home value="https://palletsprojects.com/p/werkzeug/"/>
-        <version value="2.0.1"/>
+        <version value="2.1.2"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_werkzeug.txt"/>
         <license-type value="BSD_ 3 clause"/>
@@ -2666,7 +2686,7 @@
         <version value="1.2.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_nest-asyncio.txt"/>
-        <license-type value="BSD_2"/>
+        <license-type value="BSD_ 2"/>
         <copyright-notice value="Copyright (c) 2018-2020, Ewald de Wit"/>
         <description value="This module patches asyncio to allow nested use of asyncio.run and loop.run_until_complete."/>
     </dependency>
@@ -2756,7 +2776,7 @@
         <version value="3.2.3"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytest-benchmark.txt"/>
-        <license-type value="BSD_2"/>
+        <license-type value="BSD_ 2"/>
         <copyright-notice value="Copyright (c) 2014-2019, Ionel Cristian Mărieș"/>
         <description value="A pytest fixture for benchmarking code"/>
      </dependency>
@@ -2766,7 +2786,7 @@
         <version value="3.2.3"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytest-benchmark.txt"/>
-        <license-type value="BSD_2"/>
+        <license-type value="BSD_ 2"/>
         <copyright-notice value="Copyright (c) 2014-2019, Ionel Cristian Mărieș"/>
         <description value="A pytest fixture for benchmarking code"/>
      </dependency>
