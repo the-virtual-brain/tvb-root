@@ -509,7 +509,7 @@ class SimulatorController(BurstBaseController):
             previous_form_action_url=previous_form_action_url)
 
         form_action_url, if_bold_url = self.get_urls_for_next_monitor_fragment(next_monitor, current_monitor)
-        self.monitors_handler.update_monitor(current_monitor, session_stored_simulator.is_surface_simulation)
+        self.monitors_handler.update_monitor(current_monitor, session_stored_simulator)
         return self.monitors_handler.handle_next_fragment_for_monitors(self.context, rendering_rules, current_monitor,
                                                                        next_monitor, False, form_action_url,
                                                                        if_bold_url)

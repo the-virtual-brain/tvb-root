@@ -45,12 +45,9 @@ class MonitorsWizardHandler:
         self.next_monitors_dict = None
         self.all_monitors_dict = get_ui_name_to_monitor_dict(True)
 
-        for ui_name, monitor_vm in self.all_monitors_dict.items():
-            self.all_monitors_dict[ui_name] = monitor_vm()
-
     def set_monitors_list_on_simulator(self, session_stored_simulator, monitor_names):
-        self.build_list_of_monitors_from_names(monitor_names, session_stored_simulator.is_surface_simulation)
-        session_stored_simulator.monitors = list(self.all_monitors_dict[monitor] for monitor in monitor_names)
+        self._build_list_of_monitors_from_names(monitor_names, session_stored_simulator.is_surface_simulation)
+        session_stored_simulator.monitors = list(self.all_monitors_dict[monitor]() for monitor in monitor_names)
 
     def clear_next_monitors_dict(self):
         if self.next_monitors_dict:
@@ -62,9 +59,9 @@ class MonitorsWizardHandler:
         for monitor in simulator.monitors:
             monitor_names.append(monitor_dict[type(monitor)])
 
-        self.build_list_of_monitors_from_names(monitor_names, simulator.is_surface_simulation)
+        self._build_list_of_monitors_from_names(monitor_names, simulator.is_surface_simulation)
 
-    def build_list_of_monitors_from_names(self, monitor_names, is_surface):
+    def _build_list_of_monitors_from_names(self, monitor_names, is_surface):
         self.next_monitors_dict = dict()
         monitors_dict = get_ui_name_to_monitor_dict(is_surface)
         count = 0
@@ -153,6 +150,8 @@ class MonitorsWizardHandler:
     def prepare_monitor_legend(is_surface_simulation, monitor):
         return get_monitor_to_ui_name_dict(is_surface_simulation)[type(monitor)] + ' monitor'
 
-    def update_monitor(self, monitor, is_surface):
-        monitor_name = get_monitor_to_ui_name_dict(is_surface)[type(monitor)]
-        self.all_monitors_dict[monitor_name] = monitor
+    @staticmethod
+    def update_monitor(monitor, simulator):
+        for idx, m in enumerate(simulator.monitors):
+            if type(m) == type(monitor):
+                simulator.monitors[idx] = monitor
