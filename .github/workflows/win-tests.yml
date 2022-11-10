@@ -34,6 +34,7 @@ jobs:
           python -m pip install scikit-build
           pip install --user -r tvb_framework/requirements.txt
           pip install --user --no-build-isolation tvb-gdist
+          pip3 install --user Theano-PyMC
 
       - name: cache data
         id: cache-data

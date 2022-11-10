@@ -86,7 +86,7 @@ def integrate(state, weights, parmat, dX, cX
 % endif
 % if isinstance(sim.integrator, HeunStochastic):
     z = noise(sigma)
-    dX = tt.set_subtensor(dX[1], dfuns(dX[1], state[:,0] + dt * dX[0], cX, parmat))
+    dX = tt.set_subtensor(dX[1], dfuns(dX[1], state[:,0] + dt * dX[0] + z, cX, parmat))
     next_state = state[:,0] + dt / 2 * (dX[0] + dX[1]) + z
 % endif
 % if isinstance(sim.integrator, Identity):
@@ -96,9 +96,9 @@ def integrate(state, weights, parmat, dX, cX
     next_state = dX[0] + noise(sigma)
 % endif
 % if isinstance(sim.integrator, RungeKutta4thOrderDeterministic):
-    dX = dfuns(dX[1], state[:,0] + dt / 2 * dX[0], cX, parmat)
-    dX = dfuns(dX[2], state[:,0] + dt / 2 * dX[1], cX, parmat)
-    dX = dfuns(dX[3], state[:,0] + dt * dX[2], cX, parmat)
+    dX = tt.set_subtensor(dX[1], dfuns(dX[1], state[:,0] + dt / 2 * dX[0], cX, parmat))
+    dX = tt.set_subtensor(dX[2], dfuns(dX[2], state[:,0] + dt / 2 * dX[1], cX, parmat))
+    dX = tt.set_subtensor(dX[3], dfuns(dX[3], state[:,0] + dt * dX[2], cX, parmat))
     next_state = state[:,0] + dt / 6 * (dX[0] + 2*(dX[1] + dX[2]) + dX[3])
 % endif
     state = tt.set_subtensor(state[:], tt.roll(state, 1, axis=1))

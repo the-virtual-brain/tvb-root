@@ -33,6 +33,7 @@ jobs:
           python3 -m pip install --upgrade pip
           pip3 install --user -r tvb_library/requirements.txt
           pip3 install --user --no-build-isolation tvb-gdist
+          pip3 install --user Theano-PyMC
 
       - name: setup tvb
         run: cd tvb_library && python3 setup.py develop --user --no-deps
