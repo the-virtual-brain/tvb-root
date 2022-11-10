@@ -71,7 +71,7 @@
                                    type="text"
                                    name="name"
                                    value="{{ data.name if ('name' in data) else '' }}"
-                                   {{ 'disabled' if not editUsersEnabled }} />
+                                   {{ 'readonly="readonly"' if not editUsersEnabled }} />
                         </p>
                         {% if 'name' in errors %}
                         <p class="field-comment errorMessage">{{ errors.name }}</p>
