@@ -24,7 +24,7 @@
                         <li>
                             <button type="submit" tabindex="50" class="action action-leave"
                                     value="Leave Project" name="leave"
-                                    onclick="showQuestionOverlay('Are you sure you want to leave the project {{ data.name }}?', 'console.log(\'leaving project: \',\'{{ data.project_id }}\')');
+                                    onclick="showQuestionOverlay('Are you sure you want to leave the project {{ data.name }}?', 'leaveProject(\'{{ data.project_id }}\', \'editProjectForm\')');
                                                     return false; ">Leave Project
                             </button>
                         </li>
