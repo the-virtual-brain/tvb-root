@@ -59,7 +59,7 @@ from tvb.core.services.import_service import OPERATION_XML, ImportService, Opera
 from tvb.core.utils import date2string, string2date
 from tvb.datatypes.sensors import SensorTypesEnum
 from tvb.storage.h5.file.exceptions import MissingDataSetException, IncompatibleFileManagerException, \
-    FileMigrationException, MissingMatlabOctavePathException
+    FileMigrationException
 from tvb.storage.storage_interface import StorageInterface
 
 LOGGER = get_logger(__name__)
@@ -1279,9 +1279,7 @@ def update(input_file, burst_match_dict):
             algorithm = dao.get_algorithm_by_module(alg_json['module'], alg_json['classname'])
 
             if algorithm is None:
-                raise MissingMatlabOctavePathException(alg_json['classname'] + 'data file could not be migrated.'
-                                                                               ' Please specify a valid path to locally'
-                                                                               ' installed Matlab or Octave!')
+                raise FileMigrationException(alg_json['classname'] + 'data file could not be migrated.')
             operation.algorithm = algorithm
             operation.fk_from_algo = algorithm.id
 

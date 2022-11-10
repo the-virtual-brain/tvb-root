@@ -13,7 +13,9 @@ pipeline {
         stage ('Build docker image') {
             steps {
                 script {
-                    LAST_SHA = sh (script: "curl -s 'https://api.github.com/repos/the-virtual-brain/tvb-root/commits' | grep sha | head -1 | tr '\"' '_'", returnStdout: true).trim()
+                    withCredentials([usernamePassword(credentialsId: 'tvb-revision', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                        LAST_SHA = sh (script: "curl -s -H 'Authorization: Bearer $GIT_PASSWORD' 'https://api.github.com/repos/the-virtual-brain/tvb-root/commits' | grep sha | head -1 | cut -d ':' -f2 | tr -d '\",'", returnStdout: true).trim()
+                    }
                     def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}", "--build-arg LAST_SHA='${LAST_SHA}' -f tvb_build/docker/Dockerfile-build tvb_build/docker")
                     dockerImage.push('${LATEST_TAG}')
                 }
@@ -26,16 +28,15 @@ pipeline {
                 }
             }
             steps {
-                sh '''#!/bin/bash
-                    source activate tvb-docs
-                    cd tvb_build
-                    bash install_full_tvb.sh
-                    python build_step1.py $GIT_BRANCH
-                '''
                 withCredentials([usernamePassword(credentialsId: 'tvb-revision', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
-                        sh '''#!/bin/bash
-                            git commit tvb_library/tvb/basic/config/tvb.version -m "Update GIT revision number automatically from Jenkins" && git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/the-virtual-brain/tvb-root.git HEAD:${GIT_BRANCH//origin\\/} || true
-                        '''
+                    sh '''#!/bin/bash
+                        source activate tvb-docs
+                        cd tvb_build
+                        bash install_full_tvb.sh
+                        python build_step1.py $GIT_BRANCH $GIT_PASSWORD
+
+                        git commit tvb_library/tvb/basic/config/tvb.version -m "Update GIT revision number automatically from Jenkins" && git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/the-virtual-brain/tvb-root.git HEAD:${GIT_BRANCH//origin\\/} || true
+                     '''
                  }
                 archiveArtifacts artifacts: 'tvb_build/build/*.zip'
             }

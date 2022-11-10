@@ -103,7 +103,7 @@ class IntrospectionRegistry(object):
     This registry gathers classes that have a role in generating DB tables and rows.
     It is used at introspection time, for the following operations:
         - fill-in all rows in the ALGORITHM_CATEGORIES table
-        - fill-in all rows in the ALGORITHMS table. Will add BCT algorithms only if Matlab/Octave path is set
+        - fill-in all rows in the ALGORITHMS table
         - generate DB tables for all datatype indexes
         - keep an evidence of the datatype index removers
     All classes that subclass AlgorithmCategoryConfig, ABCAdapter, ABCRemover, HasTraitsIndex should be imported here
