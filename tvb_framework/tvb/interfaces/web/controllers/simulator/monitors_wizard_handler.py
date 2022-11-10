@@ -144,7 +144,7 @@ class MonitorsWizardHandler(object):
         return get_monitor_to_ui_name_dict(is_surface_simulation)[type(monitor)] + ' monitor'
 
     @staticmethod
-    def update_monitor(monitor, simulator):
+    def update_monitor(monitor_vm_instance, simulator):
         for idx, m in enumerate(simulator.monitors):
-            if type(m) == type(monitor):
-                simulator.monitors[idx] = monitor
+            if type(m) == type(monitor_vm_instance):
+                simulator.monitors[idx] = monitor_vm_instance
