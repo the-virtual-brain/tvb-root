@@ -712,7 +712,6 @@ class SimulatorController(BurstBaseController):
             self.context.init_session_at_burst_loading(burst_config, simulator, last_loaded_form_url)
 
             form = self.prepare_first_fragment()
-            self.monitors_handler.build_list_of_monitors_from_view_models(self.context.simulator)
             rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
                                                               is_simulation_readonly_load=True, is_first_fragment=True)
             return rendering_rules.to_dict()
@@ -726,7 +725,6 @@ class SimulatorController(BurstBaseController):
     def _prepare_first_fragment_for_burst_copy(self, burst_config_id, burst_name_format):
         simulator, burst_config_copy = self.burst_service.prepare_data_for_burst_copy(
             burst_config_id, burst_name_format, self.context.project)
-        self.monitors_handler.build_list_of_monitors_from_view_models(simulator)
 
         last_loaded_form_url = self.get_url_for_final_fragment(burst_config_copy)
         self.context.init_session_at_copy_preparation(burst_config_copy, simulator, last_loaded_form_url)
@@ -755,7 +753,6 @@ class SimulatorController(BurstBaseController):
     def reset_simulator_configuration(self):
         burst_config = BurstConfiguration(self.context.project.id)
         self.context.init_session_at_sim_reset(burst_config, SimulatorWizzardURLs.SET_CONNECTIVITY_URL)
-        self.monitors_handler.clear_next_monitors_dict()
 
         form = self.prepare_first_fragment()
         rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
@@ -818,7 +815,6 @@ class SimulatorController(BurstBaseController):
                 dts_folder = os.path.join(sim_folder, StorageInterface.EXPORTED_SIMULATION_DTS_DIR)
                 ImportService().import_list_of_operations(self.context.project, dts_folder, False, None)
 
-                self.monitors_handler.build_list_of_monitors_from_view_models(simulator)
                 if burst_config.is_pse_burst():
                     last_loaded_form_url = SimulatorWizzardURLs.LAUNCH_PSE_URL
                 self.context.init_session_at_sim_config_from_zip(burst_config, simulator, last_loaded_form_url)

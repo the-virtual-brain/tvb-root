@@ -36,46 +36,39 @@ from tvb.adapters.forms.equation_forms import get_form_for_equation
 from tvb.adapters.forms.monitor_forms import AdditiveNoiseViewModel, get_ui_name_to_monitor_dict, \
     get_form_for_monitor, BoldViewModel, get_monitor_to_ui_name_dict
 from tvb.adapters.forms.simulator_fragments import SimulatorMonitorFragment, SimulatorFinalFragment
+from tvb.basic.logger.builder import get_logger
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.interfaces.web.controllers.simulator.simulator_wizzard_urls import SimulatorWizzardURLs
 
 
-class MonitorsWizardHandler:
+class MonitorsWizardHandler(object):
+
     def __init__(self):
-        self.next_monitors_dict = None
+        self.logger = get_logger(self.__class__.__module__)
         self.all_monitors_dict = get_ui_name_to_monitor_dict(True)
 
     def set_monitors_list_on_simulator(self, session_stored_simulator, monitor_names):
-        self._build_list_of_monitors_from_names(monitor_names, session_stored_simulator.is_surface_simulation)
-        session_stored_simulator.monitors = list(self.all_monitors_dict[monitor]() for monitor in monitor_names)
+        list_vms = []
+        for monitor in monitor_names:
+            if monitor not in self.all_monitors_dict:
+                self.logger.error("Trying to configure not matched monitor " + str(monitor))
+            else:
+                list_vms.append(self.all_monitors_dict[monitor]())
+        session_stored_simulator.monitors = list_vms
 
-    def clear_next_monitors_dict(self):
-        if self.next_monitors_dict:
-            self.next_monitors_dict.clear()
+    @staticmethod
+    def get_current_and_next_monitor_form(current_monitor_vm_name, simulator):
 
-    def build_list_of_monitors_from_view_models(self, simulator):
-        monitor_names = []
-        monitor_dict = get_monitor_to_ui_name_dict(simulator.is_surface_simulation)
-        for monitor in simulator.monitors:
-            monitor_names.append(monitor_dict[type(monitor)])
+        current_monitor_index = 0
+        for idx, m in enumerate(simulator.monitors):
+            if type(m).__name__ == current_monitor_vm_name:
+                current_monitor_index = idx
+                break
 
-        self._build_list_of_monitors_from_names(monitor_names, simulator.is_surface_simulation)
-
-    def _build_list_of_monitors_from_names(self, monitor_names, is_surface):
-        self.next_monitors_dict = dict()
-        monitors_dict = get_ui_name_to_monitor_dict(is_surface)
-        count = 0
-        for monitor_name in monitor_names:
-            monitor_vm = monitors_dict[monitor_name].__name__
-            self.next_monitors_dict[monitor_vm] = count
-            count = count + 1
-
-    def get_current_and_next_monitor_form(self, current_monitor_name, simulator):
-        current_monitor_index = self.next_monitors_dict[current_monitor_name]
         current_monitor = simulator.monitors[current_monitor_index]
         next_monitor_index = current_monitor_index + 1
 
-        if next_monitor_index < len(self.next_monitors_dict):
+        if next_monitor_index < len(simulator.monitors):
             return current_monitor, simulator.monitors[next_monitor_index]
         return current_monitor, None
 
