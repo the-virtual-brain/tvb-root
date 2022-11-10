@@ -258,8 +258,3 @@ Requirements for computation/storage power, dependent on the number of parallel 
   Surface level simulations are much more memory intensive scaling with the number of vertices.
 
 - **Disk space** is also important, as simulating only 10 ms on surface level may occupy around 300MB of disk space. A minimum of 50GB of space per user is a rough approximation.
-
-- Optional **MatLab or Octave** -
-  A special feature in TVB is utilizing functions from the Brain Connectivity Toolbox.
-  This feature thus requires a MatLab or Octave package on your computer (installed, activated and added to your OS' global PATH variable).
-  The Brain Connectivity Toolbox doesn't need to be installed or enabled separately in any way, as TVB will temporarily append it to your MatLab/Octave path.
