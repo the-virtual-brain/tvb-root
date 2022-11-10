@@ -96,7 +96,7 @@
         <version value="[5.0.1]"/>
         <usage value="static linking"/>
         <license value="LICENSE_bleach.txt"/>
-        <license-type value="Apache_"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright (c) 2014-2017, Mozilla Foundation"/>
         <description value="An easy safelist-based HTML-sanitizing tool."/>
     </dependency>
@@ -236,7 +236,7 @@
         <version value="[6.5.0]"/>
         <usage value="unit tests"/>
         <license value="LICENSE_coverage.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright (c) 2009-2015, Ned Batchelder, et al."/>
         <description value="Testing - Coming with Anaconda env"/>
     </dependency>
@@ -2156,7 +2156,7 @@
         <version value="5.0.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pyAesCrypt.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright (C) 2021 Marco Bellaccini"/>
         <description value="pyAesCrypt is a Python 3 file-encryption module and script that uses AES256-CBC to encrypt/decrypt files and binary streams."/>
     </dependency>
@@ -2236,7 +2236,7 @@
         <version value="0.15.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_xarray.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright 2014-2019, xarray Developers"/>
         <description value="Xarray (formerly xray) is an open source project and Python package that makes working with labelled multi-dimensional arrays."/>
     </dependency>
@@ -2246,7 +2246,7 @@
         <version value="0.4.2"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_syncrypto.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright 2015 Qing Liang (https://github.com/liangqing)"/>
         <description value="Two-way synchronization between a folder and its ciphertext."/>
     </dependency>
@@ -2256,7 +2256,7 @@
         <version value="3.6.2"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_syncrypto.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright 2013-2020 aio-libs collaboration."/>
         <description value="Async http client/server framework"/>
     </dependency>
@@ -2266,7 +2266,7 @@
         <version value="9.0.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_aniso8601.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright (c) 2021, Brandon Nielsen"/>
         <description value="Python parser"/>
     </dependency>
@@ -2326,7 +2326,7 @@
         <version value="1.10"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_async-generator.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="© Copyright The async_generator authors."/>
         <description value="Python 3.6 added async generators. "/>
     </dependency>
@@ -2336,7 +2336,7 @@
         <version value="1.10"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_async-generator.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="© Copyright The async_generator authors."/>
         <description value="Python 3.6 added async generators. "/>
     </dependency>
@@ -2346,7 +2346,7 @@
         <version value="3.0.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_async-timeout.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright 2016-2020 aio-libs collaboration."/>
         <description value="asyncio-compatible timeout context manager."/>
     </dependency>
@@ -2356,7 +2356,7 @@
         <version value="3.0.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_async-timeout.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright 2016-2020 aio-libs collaboration."/>
         <description value="asyncio-compatible timeout context manager."/>
     </dependency>
@@ -2366,7 +2366,7 @@
         <version value="2.10.3"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_babel.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright (c) 2013-2020 by the Babel Team"/>
         <description value="Babel is an integrated collection of utilities that assist in internationalizing and localizing Python applications, with an emphasis on web-based applications."/>
     </dependency>
@@ -2446,7 +2446,7 @@
         <version value="1.5.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_distro.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value=""/>
         <description value="distro provides information about the OS distribution it runs on, such as a reliable machine-readable ID, or version information."/>
     </dependency>
@@ -2456,7 +2456,7 @@
         <version value="0.14.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_ecdsa.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright (c) 2010 Brian Warner"/>
         <description value="This is an easy-to-use implementation of ECDSA cryptography (Elliptic Curve Digital Signature Algorithm)."/>
     </dependency>
@@ -2626,7 +2626,7 @@
         <version value="4.7.6"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_multidict.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright 2016-2017 Andrew Svetlov"/>
         <description value="Multidict is dict-like collection of key-value pairs where key might be occurred more than once in the container."/>
     </dependency>
@@ -2636,7 +2636,7 @@
         <version value="4.7.2"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_rsa.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright 2011 Sybren A. Stüvel sybren@stuvel.eu"/>
         <description value="Pure Python RSA implementation"/>
     </dependency>
@@ -2686,7 +2686,7 @@
         <version value="0.9.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_prometheus-client.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright (c) Brian Brazil"/>
         <description value="Use by notebooks"/>
     </dependency>
@@ -2696,7 +2696,7 @@
         <version value="0.9.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_prometheus-client.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright (c) Brian Brazil"/>
         <description value="Use by notebooks"/>
     </dependency>
@@ -2736,7 +2736,7 @@
         <version value="0.4.8"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pyasn1.txt"/>
-        <license-type value="BSD_2"/>
+        <license-type value="BSD_ 2"/>
         <copyright-notice value="Copyright (c) 2005-2020, Ilya Etingof etingof@gmail.com All rights reserved."/>
         <description value="ASN.1 types and codecs"/>
      </dependency>
@@ -2796,7 +2796,7 @@
         <version value="1.0.4"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_python-editor.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright (c) 2019 Peter Ruibal"/>
         <description value="Used by alembic"/>
      </dependency>
@@ -2936,7 +2936,7 @@
         <version value="1.6.3"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_yarl.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright 2016-2018, Andrew Svetlov and aio-libs team"/>
         <description value="Url library"/>
      </dependency>
