@@ -30,7 +30,7 @@ pipeline {
                             cd tvb_build
                             bash install_full_tvb.sh
                             python build_step1.py $GIT_BRANCH $GIT_PASSWORD
-
+                            cd ..
                             git commit tvb_library/tvb/basic/config/tvb.version -m "Update GIT revision number automatically from Jenkins" && git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/the-virtual-brain/tvb-root.git HEAD:${GIT_BRANCH//origin\\/} || true
                          '''
                      }
