@@ -182,11 +182,9 @@ class DynamicModelController(BurstBaseController):
         }
 
     def _update_integrator(self, dynamic, integrator):
-        dynamic.integrator = integrator
-        dynamic.model.integrator = integrator
-        dynamic.model.configure()
         self._configure_integrator_noise(integrator, dynamic.model)
-        dynamic.phase_plane = phase_space_d3(dynamic.model, dynamic.integrator)
+        dynamic.integrator = integrator
+        dynamic.phase_plane.integrator = integrator
 
     def _change_integrator(self, dynamic, field_value):
         integrator = TVBEnum.string_to_enum(list(IntegratorViewModelsEnum), field_value).instance

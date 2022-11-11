@@ -41,6 +41,7 @@ from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.core.utils import TVBJSONEncoder
 from tvb.datatypes.connectivity import Connectivity
 
 
@@ -91,7 +92,7 @@ class ConnectivityEdgeBundle(ABCDisplayer):
 
         connectivity = self.load_traited_by_gid(view_model.connectivity)
 
-        pars = {"labels": json.dumps(connectivity.region_labels.tolist()),
+        pars = {"labels": json.dumps(connectivity.region_labels.tolist(), cls=TVBJSONEncoder),
                 "url_base": URLGenerator.paths2url(view_model.connectivity,
                                                    attribute_name="weights", flatten="True")
                 }

@@ -128,7 +128,7 @@ class TestFactory(object):
         """
         if users is None:
             users = []
-        data = dict(name=name, description=description, users=users)
+        data = dict(name=name, description=description, users=users, max_operation_size=None, disable_imports=False)
         return ProjectService().store_project(admin, True, None, **data)
 
     @staticmethod
@@ -392,6 +392,8 @@ class ExtremeTestFactory(object):
                 data = dict(name='GeneratedProject' + str(i) + '_' + str(j),
                             description='test_desc',
                             users=ExtremeTestFactory.get_users_ids(random.randint(0, nr_users - 3),
-                                                                   nr_users, current_user.id, users))
+                                                                   nr_users, current_user.id, users),
+                            max_operation_size=None,
+                            disable_imports=False)
                 ProjectService().store_project(current_user, True, None, **data)
                 ExtremeTestFactory.VALIDATION_DICT[current_user.id] += 1

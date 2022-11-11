@@ -74,7 +74,8 @@ EXCLUDES_PYD = [
 # libpq dependencies on dynamic psycopg linux 32
 EXCLUDES_SO = [
     '_psutil_linux.so', '_psutil_posix.so', 'gdist.so', '_scandir.so',
-    '_posixsubprocess.so' # already reported as subprocess32
+    '_posixsubprocess.so', # already reported as subprocess32
+    '_cffi_backend.cpython-310-x86_64-linux-gnu.so'
 ]
 
 EXCLUDES_DYLIB = [
@@ -103,7 +104,6 @@ EXTRA_MODULES = {
     'hdf5': '1.8.17',
     'jit': '2.0.1',
     'd3': '3',
-    'bct': '2017',
     'lems': "unknown",
     'python': PYTHON_VERSION,
     'zlib': '1.0',

@@ -32,11 +32,13 @@
 Functions responsible for collecting and rendering the descriptions and the documentations
 of the dynamic models in Simulator/Phase Plane.
 
+.. moduleauthor:: David Bacter <david.bacter@codemart.ro>
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
 
 from tvb.adapters.forms.model_forms import ModelsEnum
+from docutils.core import publish_parts
 
 
 def configure_matjax_doc():
@@ -52,7 +54,10 @@ def configure_matjax_doc():
         models_docs.append({
             'name': clz_name.replace(' ', '_'),
             'inline_description': _dfun_math_directives_to_matjax(clz),
-            'description': _format_doc(clz.__doc__)
+            # 'description': _format_doc(clz.__doc__).replace('\n', '<br/>')
+            # I let this here since the html parse has a small flaw regarding some overlapping text
+            # and we might consider switching back to plain text
+            'description': publish_parts(clz.__doc__, writer_name='html')['html_body']
         })
 
     return models_docs
@@ -64,8 +69,6 @@ def _dfun_math_directives_to_matjax(model):
     It converts them in html text that will be interpreted by mathjax
     The parsing is simplistic, not a full rst parser.
     """
-
-
     try:
         doc = model.dfun.__doc__
     except AttributeError:
@@ -85,8 +88,10 @@ def _dfun_math_directives_to_matjax(model):
 
     return 'Documentation is missing. '
 
+
 def _format_doc(doc):
     return _multiline_math_directives_to_matjax(doc).replace('&', '&amp;').replace('.. math::', '')
+
 
 def _multiline_math_directives_to_matjax(doc):
     """

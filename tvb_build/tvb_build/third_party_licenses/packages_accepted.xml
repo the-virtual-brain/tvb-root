@@ -3,7 +3,7 @@
     <dependency env="[win,mac,linux]" name="allensdk">
         <full-name value="AllenSDK"/>
         <project-home value="https://github.com/AllenInstitute/AllenSDK"/>
-        <version value="[2.7.0,2.8.0]"/>
+        <version value="[2.7.0,2.8.0,0.16.3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_allen.txt"/>
         <license-type value="BSD_ 2nd clause"/>
@@ -33,7 +33,7 @@
     <dependency env="[mac,linux]" name="attr">
         <full-name value="Attr"/>
         <project-home value="https://pypi.python.org/pypi/attrs"/>
-        <version value="[20.3.0]"/>
+        <version value="[22.1.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_attrs.txt"/>
         <license-type value="MIT_"/>
@@ -43,7 +43,7 @@
     <dependency env="[win,linux]" name="attrs">
         <full-name value="Attrs"/>
         <project-home value="https://pypi.python.org/pypi/attrs"/>
-        <version value="[20.3.0]"/>
+        <version value="[22.1.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_attrs.txt"/>
         <license-type value="MIT_"/>
@@ -63,17 +63,27 @@
     <dependency env="[win,mac,linux]" name="bct">
         <full-name value="Brain Connectivity Toolbox (BCT)"/>
         <project-home value="https://sites.google.com/site/bctnet/"/>
-        <version value="2017"/>
+        <version value="0.5.0"/>
         <usage value="static linking"/>
         <license value="LICENSE_bct.txt"/>
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2009 Indiana University"/>
-        <description value="This library is distributed with TVB's package, user will need to separately install Matlab in order to make us of its code."/>
+        <description value="This library is distributed with TVB's package"/>
+    </dependency>
+    <dependency env="[win,mac,linux]" name="bctpy">
+        <full-name value="Brain Connectivity Toolbox (BCT) Python"/>
+        <project-home value="https://pypi.org/project/bctpy/"/>
+        <version value="0.5.2"/>
+        <usage value="static linking"/>
+        <license value="LICENSE_bctpy.txt"/>
+        <license-type value="GPLv3_"/>
+        <copyright-notice value="Copyright (c) 2013-2020 BCT team "/>
+        <description value="This library is distributed inside TVB's package"/>
     </dependency>
     <dependency env="[win,linux]" name="beautifulsoup4">
         <full-name value="Beautiful Soup (BS4)"/>
         <project-home value="http://www.crummy.com/software/BeautifulSoup"/>
-        <version value="[4.9.3]"/>
+        <version value="[4.11.1]"/>
         <usage value="static linking"/>
         <license value="LICENSE_bs4.txt"/>
         <license-type value="MIT_"/>
@@ -83,10 +93,10 @@
     <dependency env="[win,linux]" name="bleach">
         <full-name value="Bleach"/>
         <project-home value="https://pypi.python.org/pypi/bleach"/>
-        <version value="[3.3.0]"/>
+        <version value="[5.0.1]"/>
         <usage value="static linking"/>
         <license value="LICENSE_bleach.txt"/>
-        <license-type value="Apache_"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright (c) 2014-2017, Mozilla Foundation"/>
         <description value="An easy safelist-based HTML-sanitizing tool."/>
     </dependency>
@@ -103,7 +113,7 @@
     <dependency env="[win,mac,linux]" name="bs4">
         <full-name value="Beautiful Soup (BS4)"/>
         <project-home value="http://www.crummy.com/software/BeautifulSoup"/>
-        <version value="[4.3.2,4.6.0,4.7.1,4.9.3]"/>
+        <version value="[4.11.1]"/>
         <usage value="static linking"/>
         <license value="LICENSE_bs4.txt"/>
         <license-type value="MIT_"/>
@@ -113,7 +123,7 @@
     <dependency env="[win,mac,linux]" name="certifi">
         <full-name value="Certifi"/>
         <project-home value="http://certifi.io/en/latest/"/>
-        <version value="[2020.12.5]"/>
+        <version value="[2022.9.24]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_certifi.txt"/>
         <license-type value="ISC_"/>
@@ -123,7 +133,7 @@
     <dependency env="[win,mac,linux]" name="cffi">
         <full-name value="CFFI"/>
         <project-home value="http://cffi.readthedocs.io/en/latest/#"/>
-        <version value="[1.14.5]"/>
+        <version value="[1.15.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_cffi.txt"/>
         <license-type value="MIT_"/>
@@ -153,7 +163,7 @@
     <dependency env="[win,mac,linux]" name="cherrypy">
         <full-name value="CherryPy Server"/>
         <project-home value="http://www.cherrypy.org"/>
-        <version value="[18.6.0]"/>
+        <version value="[18.8.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_CherryPy.txt"/>
         <license-type value="BSD_"/>
@@ -163,7 +173,7 @@
     <dependency env="[win,mac,linux]" name="cheroot">
         <full-name value="Cheroot"/>
         <project-home value="https://pypi.python.org/pypi/Cheroot"/>
-        <version value="[8.5.2]"/>
+        <version value="[8.6.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_cheroot.txt"/>
         <license-type value="BSD_"/>
@@ -173,7 +183,7 @@
     <dependency env="[win]" name="click">
         <full-name value="Click"/>
         <project-home value="http://github.com/mitsuhiko/click"/>
-        <version value="7.1.2"/>
+        <version value="8.1.3"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_click.txt"/>
         <license-type value="BSD_"/>
@@ -223,10 +233,10 @@
     <dependency env="[win,linux]" name="coverage">
         <full-name value="Coverage"/>
         <project-home value="https://pypi.python.org/pypi/coverage"/>
-        <version value="[5.4,5.5]"/>
+        <version value="[6.5.0]"/>
         <usage value="unit tests"/>
         <license value="LICENSE_coverage.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright (c) 2009-2015, Ned Batchelder, et al."/>
         <description value="Testing - Coming with Anaconda env"/>
     </dependency>
@@ -243,7 +253,7 @@
     <dependency env="[win,linux]" name="cycler">
         <full-name value="Cycler"/>
         <project-home value="http://matplotlib.org/cycler/"/>
-        <version value="0.10.0"/>
+        <version value="0.11.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_cycler.txt"/>
         <license-type value="BSD_"/>
@@ -253,7 +263,7 @@
     <dependency env="[win,linux]" name="cython">
         <full-name value="Cython"/>
         <project-home value="http://cython.org/"/>
-        <version value="[0.29.22]"/>
+        <version value="[0.29.32]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_cython.txt"/>
         <license-type value="Apache_ 2"/>
@@ -303,7 +313,7 @@
     <dependency env="[win,mac,linux]" name="dateutil">
         <full-name value="python-dateutil"/>
         <project-home value="https://dateutil.readthedocs.org/en/latest/"/>
-        <version value="[2.8.1]"/>
+        <version value="[2.8.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_dateutil.txt"/>
         <license-type value="BSD_"/>
@@ -740,6 +750,26 @@
         <copyright-notice value="Copyright (c) Michael Vella, Robert C. Cannon, Sharon Crook, Andrew P. Davison, Gautham Ganapathy, Hugh P. C. Robinson, R. Angus Silver, Padraig Gleeson and Michiel. A. van der Vlag"/>
         <description value="Dependency for TVB DSL"/>
     </dependency>
+    <dependency env="[win,linux, mac]" name="lems">
+        <full-name value="lems_lib"/>
+        <project-home value="https://github.com/LEMS/pylems"/>
+        <version value="0.6.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_lems.txt"/>
+        <license-type value="LGPL_"/>
+        <copyright-notice value="Copyright (c) Michael Vella, Robert C. Cannon, Sharon Crook, Andrew P. Davison, Gautham Ganapathy, Hugh P. C. Robinson, R. Angus Silver, Padraig Gleeson and Michiel. A. van der Vlag"/>
+        <description value="Dependency for TVB DSL"/>
+    </dependency>
+    <dependency env="[win,linux, mac]" name="pylems">
+        <full-name value="pylems"/>
+        <project-home value="https://github.com/LEMS/pylems"/>
+        <version value="0.6.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_lems.txt"/>
+        <license-type value="LGPL_"/>
+        <copyright-notice value="Copyright (c) Michael Vella, Robert C. Cannon, Sharon Crook, Andrew P. Davison, Gautham Ganapathy, Hugh P. C. Robinson, R. Angus Silver, Padraig Gleeson and Michiel. A. van der Vlag"/>
+        <description value="Dependency for TVB DSL"/>
+    </dependency>
     <dependency env="mac" name="libtatlas.dylib">
         <full-name value="Atlas"/>
         <project-home value="http://math-atlas.sourceforge.net/"/>
@@ -1153,7 +1183,7 @@
     <dependency env="[win,mac,linux]" name="numba">
         <full-name value="Numba"/>
         <project-home value="http://numba.pydata.org/"/>
-        <version value="[0.51.2]"/>
+        <version value="[0.56.3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_numba.txt"/>
         <license-type value="BSD_"/>
@@ -1163,7 +1193,7 @@
     <dependency env="[win,mac,linux]" name="numexpr">
         <full-name value="NumExpr"/>
         <project-home value="http://code.google.com/pnumexpr/"/>
-        <version value="[2.7.2,2.7.3]"/>
+        <version value="[2.8.4]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_numexpr.txt"/>
         <license-type value="MIT_"/>
@@ -1173,7 +1203,7 @@
     <dependency env="[win,mac,linux]" name="numpy">
         <full-name value="Numpy"/>
         <project-home value="http://numpy.scipy.org/license.html#license"/>
-        <version value="1.18.5"/>
+        <version value="1.21.5"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_numpy.txt"/>
         <license-type value="BSD_"/>
@@ -1513,11 +1543,11 @@
     <dependency env="[win,mac,linux]" name="python">
         <full-name value="Python"/>
         <project-home value="http://docs.python.org/license.html"/>
-        <version value="[3.7.9,3.7.10]"/>
+        <version value="[3.10.6]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_python.txt"/>
         <license-type value="PSF_"/>
-        <copyright-notice value="Copyright (c) 1990-2012, Python Software Foundation. "/>
+        <copyright-notice value="Copyright (c) 1990-2022, Python Software Foundation. "/>
         <description value="Most of TVB code will probably be in Python. Multiple Python libraries, some of them listed below, use Python Software Foundation "/>
     </dependency>
     <dependency env="[win,linux]" name="python-dateutil">
@@ -1533,7 +1563,7 @@
     <dependency env="[win,mac,linux]" name="pytz">
         <full-name value="PyTZ: TimeZone Library for Python"/>
         <project-home value="http://pytz.sourceforge.net/"/>
-        <version value="[2021.1]"/>
+        <version value="[2022.5]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytz.txt"/>
         <license-type value="MIT_"/>
@@ -1543,7 +1573,7 @@
     <dependency env="[win,linux]" name="pywavelets">
         <full-name value="Python wavelet transforms module"/>
         <project-home value="https://pypi.org/project/PyWavelets/"/>
-        <version value="[1.1.1]"/>
+        <version value="[1.4.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pywavelets.txt"/>
         <license-type value="MIT_"/>
@@ -1563,7 +1593,7 @@
     <dependency env="[win,linux]" name="pyzmq">
         <full-name value="zeromq"/>
         <project-home value="http://zguide.zeromq.org"/>
-        <version value="[19.0.2,22.0.3]"/>
+        <version value="[23.2.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_zmq.txt"/>
         <license-type value="LGPLv3_"/>
@@ -1573,7 +1603,7 @@
     <dependency env="[win,mac,linux]" name="requests">
         <full-name value="Requests"/>
         <project-home value="https://pypi.python.org/pypi/requests"/>
-        <version value="[2.25.1]"/>
+        <version value="[2.28.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_req.txt"/>
         <license-type value="Apache_ 2"/>
@@ -1583,7 +1613,7 @@
     <dependency env="[win,linux]" name="requests-toolbelt">
         <full-name value="Requests Toolbelt"/>
         <project-home value="https://pypi.python.org/pypi/requests-toolbelt"/>
-        <version value="[0.8.0,0.9.1]"/>
+        <version value="[0.10.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_req_toolbelt.txt"/>
         <license-type value="Apache_ 2"/>
@@ -1593,7 +1623,7 @@
     <dependency env="[win,mac,linux]" name="requests_toolbelt">
         <full-name value="Requests Toolbelt"/>
         <project-home value="https://pypi.python.org/pypi/requests-toolbelt"/>
-        <version value="[0.8.0,0.9.1]"/>
+        <version value="[0.10.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_req_toolbelt.txt"/>
         <license-type value="Apache_ 2"/>
@@ -1613,7 +1643,7 @@
     <dependency env="[win,linux]" name="scikit-image">
         <full-name value="Scikit Image"/>
         <project-home value="http://scikit-image.org/"/>
-        <version value="[0.14.2]"/>
+        <version value="[0.19.3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_scikit_image.txt"/>
         <license-type value="BSD_ modified"/>
@@ -1653,7 +1683,7 @@
     <dependency env="[win,linux,mac]" name="scikit-learn">
         <full-name value="Scikits Learn"/>
         <project-home value="http://scikit-learn.org/"/>
-        <version value="[0.23.2,0.24.1]"/>
+        <version value="[1.1.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_scikits_learn.txt"/>
         <license-type value="BSD_ 3rd clause"/>
@@ -1663,7 +1693,7 @@
     <dependency env="[win,mac,linux]" name="sklearn">
         <full-name value="Scikits Learn"/>
         <project-home value="http://scikit-learn.org/"/>
-        <version value="[0.23.2,0.24.1]"/>
+        <version value="[1.1.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_scikits_learn.txt"/>
         <license-type value="BSD_ 3rd clause"/>
@@ -1680,6 +1710,16 @@
         <copyright-notice value="Copyright (c) 2001, 2002 Enthought, Inc. Copyright (c) 2003-2009 SciPy Developers."/>
         <description value="SciPy is freely available. It is distributed as Open Source software, meaning that you have complete access to the source code and can use it in anyway allowed by its liberal BSD_ license."/>
     </dependency>
+    <dependency env="[win,mac,linux]" name="siibra">
+        <full-name value="siibra"/>
+        <project-home value="https://github.com/FZJ-INM1-BDA/siibra-python"/>
+        <version value="0.3a27"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_siibra.txt"/>
+        <license-type value="Apache_ 2"/>
+        <copyright-notice value="Copyright 2020-2021, Forschungszentrum J&#252;lich GmbH"/>
+        <description value="Software interface for interacting with brain atlases."/>
+     </dependency>
     <dependency env="[win,linux]" name="simplegeneric">
         <full-name value="Simplegeneric"/>
         <project-home value="https://pypi.python.org/pypi/simplegeneric"/>
@@ -1763,7 +1803,7 @@
     <dependency env="[win,mac,linux]" name="sqlalchemy">
         <full-name value="SQL-Alchemy"/>
         <project-home value="http://www.sqlalchemy.org/"/>
-        <version value="[1.3.23]"/>
+        <version value="[1.4.43]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_sqlalchemy_0.6.6.txt"/>
         <license-type value="MIT_"/>
@@ -1823,7 +1863,7 @@
     <dependency env="[win,mac,linux]" name="tables">
         <full-name value="PyTables"/>
         <project-home value="http://www.pytables.org/moin/License"/>
-        <version value="3.5.1"/>
+        <version value="3.7.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytables.txt"/>
         <license-type value="BSD_"/>
@@ -1863,7 +1903,7 @@
     <dependency env="[win,linux,mac]" name="tempora">
         <full-name value="Tempora"/>
         <project-home value="https://pypi.python.org/pypi/tempora"/>
-        <version value="[0.0.0,1.9,1.14.1,1.10]"/>
+        <version value="[5.0.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_tempora.txt"/>
         <license-type value="MIT_"/>
@@ -1873,7 +1913,7 @@
     <dependency env="[linux,mac]" name="terminado">
         <full-name value="Terminado"/>
         <project-home value="https://pypi.python.org/pypi/terminado"/>
-        <version value="[0.9.2]"/>
+        <version value="[0.17.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_terminado.txt"/>
         <license-type value="BSD_"/>
@@ -1893,7 +1933,7 @@
     <dependency env="[mac,linux]" name="traitlets">
         <full-name value="Traitlets"/>
         <project-home value="http://ipython.org/"/>
-        <version value="[5.0.5]"/>
+        <version value="[5.5.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_ipython.txt"/>
         <license-type value="BSD_ revised"/>
@@ -2003,7 +2043,7 @@
     <dependency env="[win,linux]" name="wheel">
         <full-name value="A built-package format for Python."/>
         <project-home value="https://bitbucket.org/pypa/wheel"/>
-        <version value="[0.36.2]"/>
+        <version value="[0.37.1]"/>
         <usage value="packaging"/>
         <license value="LICENSE_wheel.txt"/>
         <license-type value="MIT_"/>
@@ -2033,7 +2073,7 @@
     <dependency env="[win]" name="yaml">
         <full-name value="PyYAML"/>
         <project-home value="http://pyyaml.org/wiki/PyYAML"/>
-        <version value="5.4.1"/>
+        <version value="6.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pyyaml.txt"/>
         <license-type value="MIT_"/>
@@ -2073,7 +2113,7 @@
     <dependency env="[win,mac,linux]" name="zmq">
         <full-name value="zeromq"/>
         <project-home value="http://zguide.zeromq.org"/>
-        <version value="[19.0.2,22.0.3]"/>
+        <version value="[23.2.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_zmq.txt"/>
         <license-type value="LGPLv3_"/>
@@ -2093,7 +2133,7 @@
     <dependency env="win" name="zope.interface">
         <full-name value="Zope Interface"/>
         <project-home value="https://pypi.python.org/pypi/zope.interface"/>
-        <version value="5.2.0"/>
+        <version value="5.5.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_zope.txt"/>
         <license-type value="ZPL 2.1"/>
@@ -2113,7 +2153,7 @@
     <dependency env="[win,mac,linux]" name="alembic">
         <full-name value="Alembic"/>
         <project-home value="https://alembic.sqlalchemy.org/"/>
-        <version value="[1.5.4,1.5.5]"/>
+        <version value="[1.8.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_alembic.txt"/>
         <license-type value="MIT_"/>
@@ -2136,14 +2176,14 @@
         <version value="5.0.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pyAesCrypt.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright (C) 2021 Marco Bellaccini"/>
         <description value="pyAesCrypt is a Python 3 file-encryption module and script that uses AES256-CBC to encrypt/decrypt files and binary streams."/>
     </dependency>
     <dependency env="[win,mac,linux]" name="pyunicore">
         <full-name value="pyUnicore"/>
         <project-home value="https://sourceforge.net/p/unicore/wiki/REST_API/"/>
-        <version value="0.6.0"/>
+        <version value="0.11.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pyAesCrypt.txt"/>
         <license-type value="BSD_ 2nd clause"/>
@@ -2203,7 +2243,7 @@
     <dependency env="[win,mac,linux]" name="werkzeug">
         <full-name value="Werkzeug"/>
         <project-home value="https://palletsprojects.com/p/werkzeug/"/>
-        <version value="2.0.1"/>
+        <version value="2.1.2"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_werkzeug.txt"/>
         <license-type value="BSD_ 3 clause"/>
@@ -2216,7 +2256,7 @@
         <version value="0.15.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_xarray.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright 2014-2019, xarray Developers"/>
         <description value="Xarray (formerly xray) is an open source project and Python package that makes working with labelled multi-dimensional arrays."/>
     </dependency>
@@ -2226,7 +2266,7 @@
         <version value="0.4.2"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_syncrypto.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright 2015 Qing Liang (https://github.com/liangqing)"/>
         <description value="Two-way synchronization between a folder and its ciphertext."/>
     </dependency>
@@ -2236,7 +2276,7 @@
         <version value="3.6.2"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_syncrypto.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright 2013-2020 aio-libs collaboration."/>
         <description value="Async http client/server framework"/>
     </dependency>
@@ -2246,14 +2286,14 @@
         <version value="9.0.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_aniso8601.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright (c) 2021, Brandon Nielsen"/>
         <description value="Python parser"/>
     </dependency>
     <dependency env="[win,mac,linux]" name="anyio">
         <full-name value="anyio"/>
         <project-home value="https://github.com/agronholm/anyio"/>
-        <version value="2.2.0"/>
+        <version value="3.6.2"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_anyio.txt"/>
         <license-type value="MIT_"/>
@@ -2263,7 +2303,7 @@
     <dependency env="[win,mac,linux]" name="argon2">
         <full-name value="argon2"/>
         <project-home value="https://argon2-cffi.readthedocs.io/"/>
-        <version value="20.1.0"/>
+        <version value="21.3.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_argon2.txt"/>
         <license-type value="MIT_"/>
@@ -2273,7 +2313,17 @@
     <dependency env="[win,mac,linux]" name="argon2-cffi">
         <full-name value="argon2"/>
         <project-home value="https://argon2-cffi.readthedocs.io/"/>
-        <version value="20.1.0"/>
+        <version value="21.3.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_argon2.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2015 Hynek Schlawack"/>
+        <description value="Argon2 is a secure password hashing algorithm. It is designed to have both a configurable runtime as well as memory consumption."/>
+    </dependency>
+    <dependency env="[win,mac,linux]" name="argon2-cffi-bindings">
+        <full-name value="argon2"/>
+        <project-home value="https://argon2-cffi.readthedocs.io/"/>
+        <version value="21.2.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_argon2.txt"/>
         <license-type value="MIT_"/>
@@ -2296,7 +2346,7 @@
         <version value="1.10"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_async-generator.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="© Copyright The async_generator authors."/>
         <description value="Python 3.6 added async generators. "/>
     </dependency>
@@ -2306,7 +2356,7 @@
         <version value="1.10"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_async-generator.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="© Copyright The async_generator authors."/>
         <description value="Python 3.6 added async generators. "/>
     </dependency>
@@ -2316,7 +2366,7 @@
         <version value="3.0.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_async-timeout.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright 2016-2020 aio-libs collaboration."/>
         <description value="asyncio-compatible timeout context manager."/>
     </dependency>
@@ -2326,17 +2376,17 @@
         <version value="3.0.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_async-timeout.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright 2016-2020 aio-libs collaboration."/>
         <description value="asyncio-compatible timeout context manager."/>
     </dependency>
     <dependency env="[win,mac,linux]" name="babel">
         <full-name value="Babel"/>
         <project-home value="http://babel.pocoo.org/en/latest/"/>
-        <version value="2.9.0"/>
+        <version value="2.10.3"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_babel.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright (c) 2013-2020 by the Babel Team"/>
         <description value="Babel is an integrated collection of utilities that assist in internationalizing and localizing Python applications, with an emphasis on web-based applications."/>
     </dependency>
@@ -2353,7 +2403,7 @@
     <dependency env="[win,mac,linux]" name="cryptography">
         <full-name value="cryptography"/>
         <project-home value="https://github.com/pyca/cryptography"/>
-        <version value="3.3.1"/>
+        <version value="35.0.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_crypto.txt"/>
         <license-type value="BSD_"/>
@@ -2416,7 +2466,7 @@
         <version value="1.5.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_distro.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value=""/>
         <description value="distro provides information about the OS distribution it runs on, such as a reliable machine-readable ID, or version information."/>
     </dependency>
@@ -2426,7 +2476,7 @@
         <version value="0.14.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_ecdsa.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright (c) 2010 Brian Warner"/>
         <description value="This is an easy-to-use implementation of ECDSA cryptography (Elliptic Curve Digital Signature Algorithm)."/>
     </dependency>
@@ -2495,7 +2545,7 @@
         <project-home value="https://launchpad.net/pylockfile"/>
         <version value="0.12.2"/>
         <usage value="dynamic linking"/>
-        <license value=""/>
+        <license value="LICENSE_lockfile.txt"/>
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright 2015 Openstack"/>
         <description value="Used by syncrypto"/>
@@ -2596,7 +2646,7 @@
         <version value="4.7.6"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_multidict.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright 2016-2017 Andrew Svetlov"/>
         <description value="Multidict is dict-like collection of key-value pairs where key might be occurred more than once in the container."/>
     </dependency>
@@ -2606,7 +2656,7 @@
         <version value="4.7.2"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_rsa.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright 2011 Sybren A. Stüvel sybren@stuvel.eu"/>
         <description value="Pure Python RSA implementation"/>
     </dependency>
@@ -2615,8 +2665,8 @@
         <project-home value="https://github.com/rly/ndx-events"/>
         <version value="0.2.0"/>
         <usage value="dynamic linking"/>
-        <license value=""/>
-        <license-type value="BSD_3"/>
+        <license value="LICENSE_ndx_events.txt"/>
+        <license-type value="BSD_ 3rd clause"/>
         <copyright-notice value="Copyright 2021  Ryan Ly, Ben Dichter, Oliver Rabel, and Andrew Tritt"/>
         <description value="This is an NWB extension for storing timestamped event data and TTL pulses."/>
     </dependency>
@@ -2625,8 +2675,8 @@
         <project-home value="https://github.com/rly/ndx-events"/>
         <version value="0.2.0"/>
         <usage value="dynamic linking"/>
-        <license value=""/>
-        <license-type value="BSD_3"/>
+        <license value="LICENSE_ndx_events.txt"/>
+        <license-type value="BSD_ 3rd clause"/>
         <copyright-notice value="Copyright 2021  Ryan Ly, Ben Dichter, Oliver Rabel, and Andrew Tritt"/>
         <description value="This is an NWB extension for storing timestamped event data and TTL pulses."/>
     </dependency>
@@ -2636,7 +2686,7 @@
         <version value="1.2.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_nest-asyncio.txt"/>
-        <license-type value="BSD_2"/>
+        <license-type value="BSD_ 2"/>
         <copyright-notice value="Copyright (c) 2018-2020, Ewald de Wit"/>
         <description value="This module patches asyncio to allow nested use of asyncio.run and loop.run_until_complete."/>
     </dependency>
@@ -2656,7 +2706,7 @@
         <version value="0.9.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_prometheus-client.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright (c) Brian Brazil"/>
         <description value="Use by notebooks"/>
     </dependency>
@@ -2666,7 +2716,7 @@
         <version value="0.9.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_prometheus-client.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright (c) Brian Brazil"/>
         <description value="Use by notebooks"/>
     </dependency>
@@ -2706,7 +2756,7 @@
         <version value="0.4.8"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pyasn1.txt"/>
-        <license-type value="BSD_2"/>
+        <license-type value="BSD_ 2"/>
         <copyright-notice value="Copyright (c) 2005-2020, Ilya Etingof etingof@gmail.com All rights reserved."/>
         <description value="ASN.1 types and codecs"/>
      </dependency>
@@ -2726,7 +2776,7 @@
         <version value="3.2.3"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytest-benchmark.txt"/>
-        <license-type value="BSD_2"/>
+        <license-type value="BSD_ 2"/>
         <copyright-notice value="Copyright (c) 2014-2019, Ionel Cristian Mărieș"/>
         <description value="A pytest fixture for benchmarking code"/>
      </dependency>
@@ -2736,7 +2786,7 @@
         <version value="3.2.3"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytest-benchmark.txt"/>
-        <license-type value="BSD_2"/>
+        <license-type value="BSD_ 2"/>
         <copyright-notice value="Copyright (c) 2014-2019, Ionel Cristian Mărieș"/>
         <description value="A pytest fixture for benchmarking code"/>
      </dependency>
@@ -2766,7 +2816,7 @@
         <version value="1.0.4"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_python-editor.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright (c) 2019 Peter Ruibal"/>
         <description value="Used by alembic"/>
      </dependency>
@@ -2836,7 +2886,7 @@
         <version value="0.11.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_seaborn.txt"/>
-        <license-type value="BSD_3"/>
+        <license-type value="BSD_ 3rd clause"/>
         <copyright-notice value="Copyright (c) 2012-2021, Michael L. Waskom"/>
         <description value="Seaborn is a library for making statistical graphics in Python. It is built on top of matplotlib and closely integrated with pandas data structures."/>
      </dependency>
@@ -2846,7 +2896,7 @@
         <version value="1.5.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_send2trash.txt"/>
-        <license-type value="BSD_3"/>
+        <license-type value="BSD_ 3rd clause"/>
         <copyright-notice value="Copyright (c) 2017, Virgil Dupras"/>
         <description value="Send2Trash is a small package that sends files to the Trash (or Recycle Bin) natively and on all platforms."/>
      </dependency>
@@ -2876,7 +2926,7 @@
         <version value="2.1.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_threadpoolctl.txt"/>
-        <license-type value="BSD_3"/>
+        <license-type value="BSD_ 3rd clause"/>
         <copyright-notice value="Copyright (c) 2019, threadpoolctl contributors"/>
         <description value="Python helpers to limit the number of threads used in the threadpool-backed"/>
      </dependency>
@@ -2906,14 +2956,14 @@
         <version value="1.6.3"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_yarl.txt"/>
-        <license-type value="Apache_2"/>
+        <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright 2016-2018, Andrew Svetlov and aio-libs team"/>
         <description value="Url library"/>
      </dependency>
     <dependency env="[win,mac,linux]" name="zipp">
         <full-name value="zipp"/>
         <project-home value="https://github.com/jaraco/zipp"/>
-        <version value="3.4.0"/>
+        <version value="3.10.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_zipp.txt"/>
         <license-type value="MIT_"/>
@@ -2936,7 +2986,7 @@
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pyqt.txt"/>
-        <license-type value="GPL_v3"/>
+        <license-type value="GPLv3_"/>
         <copyright-notice value="Copyright Riverbank Computing Limited"/>
         <description value=""/>
      </dependency>
