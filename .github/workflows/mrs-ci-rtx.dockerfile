@@ -2,7 +2,7 @@ FROM nvidia/cuda:11.2.2-devel-ubuntu20.04
 
 RUN apt-get update && apt-get install -y git build-essential python3-pip wget
 
-RUN pip install numba scipy 'numpy<=1.20' networkx scikit-learn cython numexpr psutil \
+RUN pip install numba scipy 'numpy<=1.20' Theano-PyMC networkx scikit-learn cython numexpr psutil \
         pytest pytest-cov pytest-xdist pytest-benchmark pytest-mock matplotlib h5py>=2.10 \
         typing BeautifulSoup4 subprocess32 flask-restx python-keycloak mako pyAesCrypt \
         pyunicore formencode cfflib jinja2==2.11.3 nibabel sqlalchemy alembic allensdk \
