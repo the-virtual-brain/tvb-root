@@ -44,6 +44,7 @@ from tvb.core.neocom import h5
 from tvb.core.adapters.abcdisplayer import URLGenerator
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.core.utils import TVBJSONEncoder
 from tvb.datatypes.graph import CorrelationCoefficients
 
 
@@ -105,7 +106,7 @@ class PearsonCorrelationCoefficientVisualizer(ABCMappedArraySVGVisualizer):
             if not labels:
                 labels = None
 
-        pars = dict(matrix_labels=json.dumps([labels, labels]),
+        pars = dict(matrix_labels=json.dumps([labels, labels], cls=TVBJSONEncoder),
                     matrix_shape=json.dumps(matrix_shape),
                     viewer_title='Cross Correlation Matrix Plot',
                     url_base=URLGenerator.build_h5_url(cc_gid, 'get_correlation_data', parameter=''),

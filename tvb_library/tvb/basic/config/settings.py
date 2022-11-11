@@ -36,8 +36,6 @@ Do not instantiate these classes directly, but rather use them through TvpProfil
 """
 
 import os
-
-import requests
 from tvb.basic.config import stored
 
 
@@ -49,10 +47,10 @@ class VersionSettings(object):
     SVN_GIT_MIGRATION_REVISION = 10000
 
     # Current release number
-    BASE_VERSION = "2.7"
+    BASE_VERSION = "2.7.1"
 
     # Current DB version. Create a new migration script from command line and copy its gid here
-    DB_STRUCTURE_VERSION = '32d4bf9f8cab'
+    DB_STRUCTURE_VERSION = '32d4bf9f8def'
 
     # This is the version of the data stored in H5 and XML files
     # and should be used by next versions to know how to import
@@ -99,15 +97,6 @@ class VersionSettings(object):
 
         number = ''.join([ch for ch in version_string if ch.isdigit()])
         return int(number)
-
-    @staticmethod
-    def fetch_current_revision(branch):
-        url = f'https://api.github.com/repos/the-virtual-brain/tvb-root/commits'
-        params = {'per_page': 1, 'sha': branch}
-        resp = requests.get(url, params)
-        last_link = resp.links.get('last')
-        branch_revision = int(last_link['url'].split('&page=')[1])
-        return VersionSettings.SVN_GIT_MIGRATION_REVISION + branch_revision
 
 
 class ClusterSettings(object):

@@ -152,7 +152,9 @@ class BaseSettingsProfile(object):
             tcl_root = os.path.dirname(os.path.dirname(os.path.dirname(library_folder)))
             self.env.setup_tk_tcl_environ(tcl_root)
 
-            self.env.setup_python_path(library_folder, os.path.join(library_folder, 'site-packages.zip'),
+            self.env.setup_python_path(library_folder,
+                                       os.path.join(library_folder, 'site-packages'),
+                                       os.path.join(library_folder, 'site-packages.zip'),
                                        os.path.join(library_folder, 'lib-dynload'))
 
         if self.env.is_linux_deployment():

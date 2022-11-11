@@ -42,6 +42,7 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.core.utils import TVBJSONEncoder
 from tvb.datatypes.graph import ConnectivityMeasure
 
 
@@ -107,7 +108,7 @@ class HistogramViewer(ABCDisplayer):
 
     @staticmethod
     def gather_params_dict(labels_list, values_list, title):
-        params = dict(title=title, labels=json.dumps(labels_list), isSingleMode=True,
+        params = dict(title=title, labels=json.dumps(labels_list, cls=TVBJSONEncoder), isSingleMode=True,
                       data=json.dumps(values_list), colors=json.dumps(values_list),
                       xposition='center' if min(values_list) < 0 else 'bottom',
                       minColor=min(values_list), maxColor=max(values_list))

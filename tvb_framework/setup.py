@@ -40,15 +40,15 @@ import os
 import shutil
 import setuptools
 
-VERSION = "2.7"
+VERSION = "2.7.1"
 
 TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Prodan, Paula Sansz Leon, Marmaduke Woodman"
 
-TVB_INSTALL_REQUIREMENTS = ["alembic", "allensdk", "bctpy", "cherrypy", "flask", "flask-restx",
-                            "formencode", "gevent", "h5py", "Jinja2", "nibabel", "numpy", "pandas",
-                            "Pillow", "psutil", "python-keycloak", "requests", "scikit-learn",
-                            "scipy", "siibra", "simplejson", "six", "sqlalchemy", "tvb-data", "tvb-gdist",
-                            "tvb-library", "tvb-storage", "werkzeug"]
+TVB_INSTALL_REQUIREMENTS = ["alembic", "allensdk", "bctpy", "cherrypy", "docutils", "flask", "flask-restx",
+                            "formencode", "gevent", "h5py", "Jinja2", "matplotlib==3.5.3", "nibabel", "numpy", "pandas",
+                            "Pillow", "psutil", "python-keycloak", "requests", "requests-toolbelt>=0.10",
+                            "scikit-learn", "scipy", "siibra", "simplejson", "six", "sqlalchemy", "tables==3.7.0",
+                            "tvb-data", "tvb-gdist", "tvb-library", "tvb-storage", "werkzeug"]
 
 # Packaging tvb-framework with REST server inside
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
@@ -57,7 +57,9 @@ with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
 setuptools.setup(name="tvb-framework",
                  version=VERSION,
                  packages=setuptools.find_packages(
-                     exclude=['tvb.interfaces.rest.client', 'tvb.interfaces.rest.client.*']),
+                     exclude=[
+                         'tvb.interfaces.rest.bids_monitor', 'tvb.interfaces.rest.bids_monitor.*',
+                         'tvb.interfaces.rest.client', 'tvb.interfaces.rest.client.*']),
                  include_package_data=True,
                  install_requires=TVB_INSTALL_REQUIREMENTS,
                  extras_require={'postgres': ["psycopg2"],

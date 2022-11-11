@@ -401,8 +401,6 @@ class TimeSeries(HasTraits):
                                           coords=kwargs.pop("coords", kwargs.pop("labels_dimensions", None)),
                                           attrs=kwargs.pop("attrs", None))
             super(TimeSeries, self).__init__(**kwargs)
-        if data is not None:
-            self.configure()
 
     def summary_info(self):
         """
@@ -865,7 +863,7 @@ class TimeSeries(HasTraits):
             kwargs["add_legend"] = False
         output = data.plot(x=time, **kwargs)
         pyplot.gcf().suptitle(figname)
-        pyplot.gcf().canvas.set_window_title(figname)
+        pyplot.gcf().canvas.manager.set_window_title(figname)
         pyplot.gcf().tight_layout()
         # TODO: Something better than this temporary hack for base_plotter functionality
         if plotter_config is not None:
@@ -1045,7 +1043,7 @@ class TimeSeries(HasTraits):
             axes[i_var].set_yticks(yticks)
             axes[i_var].set_yticklabels(yticklabels)
             axes[i_var].set_title(var)
-        pyplot.gcf().canvas.set_window_title(figname)
+        pyplot.gcf().canvas.manager.set_window_title(figname)
         if plotter_config is not None:
             save_show_figure(plotter_config, figname, fig)
         return fig, axes
