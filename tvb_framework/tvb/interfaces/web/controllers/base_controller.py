@@ -60,6 +60,7 @@ class BaseController(object):
     """
     This class contains the methods served at the root of the Web site.
     """
+    MAX_SIZE_ERROR_MSG = "Max operation size has been exceeded. The current project admin can change this limit in Project - Basic Properties"
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
@@ -98,7 +99,8 @@ class BaseController(object):
             IntrospectionRegistry.SIIBRA_CREATOR_MODULE,
             IntrospectionRegistry.SIIBRA_CREATOR_CLASS
         )
-        if siibra_algo and not siibra_algo.removed:
+        # TODO temporary disable SIIBRA in tvb-web-gui TVB-3044
+        if False and siibra_algo and not siibra_algo.removed:
             siibra_link = self.get_url_adapter(siibra_algo.fk_category, siibra_algo.id)
             self.connectivity_submenu.append(dict(title='Siibra Connectivity', link=siibra_link,
                                                   subsection=WebStructure.SUB_SECTION_SIIBRA,

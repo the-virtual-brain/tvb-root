@@ -34,7 +34,7 @@ jobs:
       - name: install tools and dependencies
 #        if: steps.cache-local.outputs.cache-hit != 'true'
         run: |
-          sudo apt install libbz2-dev libhdf5-serial-dev liblzo2-dev octave
+          sudo apt install libbz2-dev libhdf5-serial-dev liblzo2-dev
           python3 -m pip install --upgrade setuptools==59.8.0 pip wheel
           pip3 install --user --upgrade numpy
           python3 -m pip install scikit-build

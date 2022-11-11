@@ -11,7 +11,7 @@ WORKDIR $USER_HOME
 
 RUN apt-get -y update && apt-get -y install build-essential gcc rsync
 RUN apt-get -y update && apt-get -y install texlive-base texlive-formats-extra
-RUN apt-get -y update && apt-get -y install octave postgresql
+RUN apt-get -y update && apt-get -y install postgresql
 
 USER postgres
 RUN service postgresql start && createdb -O postgres tvb-test && psql --command "ALTER USER postgres WITH PASSWORD 'postgres';"
@@ -19,7 +19,7 @@ RUN service postgresql start && createdb -O postgres tvb-test && psql --command 
 USER root
 RUN conda update -n base -c defaults conda; conda init bash
 RUN conda create -y --name tvb-run python=3.10 nomkl numba scipy numpy cython psycopg2
-RUN conda install -y --name tvb-run -c conda-forge jupyterlab
+RUN conda install -y --name tvb-run -c conda-forge jupyterlab tvb-gdist
 RUN $PIP install --upgrade pip
 RUN $PIP install lockfile scikit-build
 RUN $PIP install syncrypto

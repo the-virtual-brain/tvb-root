@@ -222,7 +222,7 @@ class ABCAdapter(object):
         """
         To be overridden where needed (e.g. Matlab dependent adapters).
         :return: By default True, and False when the current Adapter can not be executed in the current env
-        for various reasons (e.g. no Matlab or Octave installed)
+        for various reasons
         """
         return True
 

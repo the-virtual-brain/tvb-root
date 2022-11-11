@@ -76,12 +76,16 @@ class AllenConnectModel(ViewModel):
     resolution = EnumAttr(
         label="Spatial resolution (micron)",
         default=ResolutionOptionsEnum.ONE_HUNDRED,
-        doc="""Definition of the weights of the connectivity :""")
+        doc="""resolution""")
 
     weighting = EnumAttr(
         label="Definition of the weights of the connectivity :",
         default=WeightsOptionsEnum.PROJECTION_DENSITY_INJECTION_DENSITY,
-        doc="""""")
+        doc="""
+            1: download injection density <br/>
+            2: download projection density <br/>
+            3: download projection energy <br/>
+            """)
 
     inj_f_thresh = Float(
         label="Injected percentage of voxels in the inj site",

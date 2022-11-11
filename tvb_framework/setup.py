@@ -44,11 +44,11 @@ VERSION = "2.7"
 
 TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Prodan, Paula Sansz Leon, Marmaduke Woodman"
 
-TVB_INSTALL_REQUIREMENTS = ["alembic", "allensdk", "bctpy", "cherrypy", "flask", "flask-restx",
-                            "formencode", "gevent", "h5py", "Jinja2", "nibabel", "numpy", "pandas",
-                            "Pillow", "psutil", "python-keycloak", "requests", "scikit-learn",
-                            "scipy", "siibra", "simplejson", "six", "sqlalchemy", "tvb-data", "tvb-gdist",
-                            "tvb-library", "tvb-storage", "werkzeug"]
+TVB_INSTALL_REQUIREMENTS = ["alembic", "allensdk", "bctpy", "cherrypy", "docutils", "flask", "flask-restx",
+                            "formencode", "gevent", "h5py", "Jinja2", "matplotlib==3.5.3", "nibabel", "numpy", "pandas",
+                            "Pillow", "psutil", "python-keycloak", "requests", "requests-toolbelt>=0.10", "scikit-learn",
+                            "scipy", "siibra", "simplejson", "six", "sqlalchemy", "tables==3.7.0", "tvb-data",
+                            "tvb-gdist", "tvb-library", "tvb-storage", "werkzeug"]
 
 # Packaging tvb-framework with REST server inside
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:

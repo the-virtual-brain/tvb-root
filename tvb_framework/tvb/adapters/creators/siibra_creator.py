@@ -36,20 +36,17 @@ the EBRAINS Knowledge Graph using siibra
 """
 
 import os
-import siibra
 from tvb.adapters.creators import siibra_base
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.basic.neotraits._attr import Attr, EnumAttr
 from tvb.basic.neotraits._core import TVBEnum
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
-from tvb.core.entities.storage import dao
-from tvb.core.neotraits.forms import StrField, SelectField, BoolField, EnvStrField
+from tvb.core.neotraits.forms import StrField, SelectField, BoolField, UserSessionStrField
 from tvb.core.neotraits.view_model import ViewModel, Str
-from tvb.core.services.user_service import UserService
+from tvb.core.services.user_service import KEY_AUTH_TOKEN
 
 CLB_AUTH_TOKEN_KEY = 'HBP_AUTH_TOKEN'
-STORAGE_KEY_TOKEN = 'ebrains_token'
 
 
 # Following code is executed only once, when the application starts running
@@ -58,7 +55,7 @@ def init_siibra_options():
     Initialize siibra options for atlas and parcellations
     """
     # should use `atlases = [a.name for a in list(siibra.atlases)]`, but only the default one has data
-    atlases = [siibra_base.DEFAULT_ATLAS]   # list with atlases names
+    atlases = [siibra_base.DEFAULT_ATLAS]  # list with atlases names
     # should get only valid parcellations for default atlas, but only newest version of Julich parcellation
     # has data and corresponds with the current API of siibra
     parcellations = [siibra_base.DEFAULT_PARCELLATION]
@@ -131,7 +128,7 @@ class SiibraModel(ViewModel):
 class SiibraCreatorForm(ABCAdapterForm):
     def __init__(self):
         super(SiibraCreatorForm, self).__init__()
-        self.ebrains_token = EnvStrField(SiibraModel.ebrains_token, name=STORAGE_KEY_TOKEN)
+        self.ebrains_token = UserSessionStrField(SiibraModel.ebrains_token, name="ebrains_token", key=KEY_AUTH_TOKEN)
         self.atlas = SelectField(SiibraModel.atlas, name='atlas')
         self.parcellation = SelectField(SiibraModel.parcellation, name='parcellation')
         self.subject_ids = StrField(SiibraModel.subject_ids, name='subject_ids')
@@ -159,7 +156,6 @@ class SiibraCreator(ABCAdapter):
 
     _ui_name = "Siibra Connectivity Creator"
     _ui_description = "Create Structural and Functional Connectivities from the EBRAINS KG using siibra"
-    _user_service = UserService()
 
     def get_form_class(self):
         return SiibraCreatorForm
@@ -174,11 +170,6 @@ class SiibraCreator(ABCAdapter):
         subject_ids = view_model.subject_ids
         compute_fc = view_model.fc
 
-        # save token as user preference
-        user = dao.get_user_by_id(self.user_id)
-        user.set_preference(STORAGE_KEY_TOKEN, ebrains_token)
-        self._user_service.edit_user(user)
-        # Always store in ENV, to have the latest user submitted value
         os.environ[CLB_AUTH_TOKEN_KEY] = ebrains_token
 
         # list of all resulting indices for connectivities and possibly connectivity measures
