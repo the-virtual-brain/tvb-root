@@ -42,7 +42,7 @@ STORAGE_VERSION = "2.7"
 
 STORAGE_TEAM = "Lia Domide, Paula Prodan, Bogdan Valean, Robert Vincze"
 
-STORAGE_REQUIRED_PACKAGES = ["cryptography", "h5py", "kubernetes", "numpy", "pyAesCrypt", "scipy"]
+STORAGE_REQUIRED_PACKAGES = ["cryptography", "h5py", "kubernetes", "numpy", "pyAesCrypt", "requests"]
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
     DESCRIPTION = fd.read()
@@ -56,7 +56,7 @@ setuptools.setup(name='tvb-storage',
                      'test': ["pytest", "decorator"],
                      'encrypt': ["syncrypto"]},
                  description='A package which handles the storage of TVB data',
-                 long_description="",
+                 long_description=DESCRIPTION,
                  license="GPL-3.0-or-later",
                  author=STORAGE_TEAM,
                  author_email='tvb.admin@thevirtualbrain.org',
