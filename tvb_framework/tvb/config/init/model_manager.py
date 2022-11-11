@@ -99,6 +99,11 @@ def initialize_startup():
             alembic_cfg.attributes['connection'] = connection
             command.upgrade(alembic_cfg, TvbProfile.current.version.DB_STRUCTURE_VERSION)
         LOGGER.info("Database already has some data, will not be re-created!")
+
+        # Alembic throws an error if we use alembic_cfg with a connection that has been already closed
+        del alembic_cfg.attributes['connection']
+        command.stamp(alembic_cfg, 'head')
+
     return is_db_empty
 
 

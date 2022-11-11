@@ -30,13 +30,13 @@
 
 
 import json
-
 import numpy
 from tvb.adapters.visualizers.pearson_cross_correlation import PearsonCorrelationCoefficientVisualizerForm, \
     PearsonCorrelationCoefficientVisualizerModel
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.core.adapters.abcdisplayer import URLGenerator
 from tvb.core.neocom import h5
+from tvb.core.utils import TVBJSONEncoder
 from tvb.datatypes.graph import CorrelationCoefficients
 
 
@@ -76,7 +76,7 @@ class PearsonEdgeBundle(ABCSpaceDisplayer):
 
         if not labels:
             labels = None
-        pars = dict(matrix_labels=json.dumps(labels),
+        pars = dict(matrix_labels=json.dumps(labels, cls=TVBJSONEncoder),
                     matrix_shape=json.dumps(matrix_shape),
                     viewer_title='Pearson Edge Bundle',
                     url_base=URLGenerator.build_h5_url(view_model.datatype.hex, 'get_correlation_data', flatten="True",

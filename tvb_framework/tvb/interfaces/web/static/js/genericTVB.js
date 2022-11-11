@@ -388,6 +388,12 @@ function removeProject(projectId, formId) {
     form.submit();
 }
 
+function leaveProject(projectId, formId) {
+    const form = document.getElementById(formId);
+    form.action = deploy_context + "/project/editone/" + projectId + "/?leave=Leave";
+    form.submit();
+}
+
 // ---------------END PROJECT ------------------------
 
 

@@ -18,7 +18,10 @@
                         <dd>
                             {% for model in model_description %}
                                 <div id="data_model_{{ model.name }}" style="display:none">
-                                    {{ ght.generate_help_tooltip(model.label, model.doc) }}
+                                    <div>
+                                        {{ ght.generate_help_tooltip(model.name, model.description) }}
+                                        {{model.inline_description}}
+                                    </div>
                                 </div>
                             {% endfor %}
                         </dd>
