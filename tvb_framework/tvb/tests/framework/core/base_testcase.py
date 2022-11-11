@@ -38,7 +38,6 @@ import os
 import sys
 from functools import wraps
 from types import FunctionType
-
 from tvb.config.init.initializer import initialize
 from tvb.config.init.model_manager import reset_database
 from tvb.core.neocom.h5 import REGISTRY
@@ -88,6 +87,8 @@ from tvb.core.entities.model.model_project import *
 from tvb.core.entities.model.model_datatype import *
 import decorator
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
+from tvb.basic.logger.builder import get_logger
+from tvb.basic.profile import TvbProfile
 
 LOGGER = get_logger(__name__)
 
@@ -134,9 +135,8 @@ class BaseTestCase(object):
         # Now if the database is clean we can delete also project folders on disk
         if delete_folders:
             self.delete_project_folders()
-        dao.store_entity(
-            User(TvbProfile.current.web.admin.SYSTEM_USER_NAME, TvbProfile.current.web.admin.SYSTEM_USER_NAME, None,
-                 None, True, None))
+        dao.store_entity(User(TvbProfile.current.web.admin.SYSTEM_USER_NAME,
+                              TvbProfile.current.web.admin.SYSTEM_USER_NAME, None, None, True, None))
 
     def cancel_all_operations(self):
         """
@@ -241,7 +241,7 @@ def transactional_test(func, callback=None):
                         LOGGER.debug(args[0].__class__.__name__ + "->" + func.__name__
                                      + "- Transactional TEARDOWN starting...")
                         args[0].transactional_teardown_method_TVB()
-                    # args[0].delete_project_folders()
+                    args[0].delete_project_folders()
             finally:
                 session_maker.rollback_transaction()
                 session_maker.close_transaction()
