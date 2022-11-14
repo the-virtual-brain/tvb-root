@@ -746,7 +746,7 @@
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_lems.txt"/>
-        <license-type value="LGPL_"/>
+        <license-type value="LGPLv3_"/>
         <copyright-notice value="Copyright (c) Michael Vella, Robert C. Cannon, Sharon Crook, Andrew P. Davison, Gautham Ganapathy, Hugh P. C. Robinson, R. Angus Silver, Padraig Gleeson and Michiel. A. van der Vlag"/>
         <description value="Dependency for TVB DSL"/>
     </dependency>
@@ -756,7 +756,7 @@
         <version value="0.6.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_lems.txt"/>
-        <license-type value="LGPL_"/>
+        <license-type value="LGPLv3_"/>
         <copyright-notice value="Copyright (c) Michael Vella, Robert C. Cannon, Sharon Crook, Andrew P. Davison, Gautham Ganapathy, Hugh P. C. Robinson, R. Angus Silver, Padraig Gleeson and Michiel. A. van der Vlag"/>
         <description value="Dependency for TVB DSL"/>
     </dependency>
@@ -766,7 +766,7 @@
         <version value="0.6.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_lems.txt"/>
-        <license-type value="LGPL_"/>
+        <license-type value="LGPLv3_"/>
         <copyright-notice value="Copyright (c) Michael Vella, Robert C. Cannon, Sharon Crook, Andrew P. Davison, Gautham Ganapathy, Hugh P. C. Robinson, R. Angus Silver, Padraig Gleeson and Michiel. A. van der Vlag"/>
         <description value="Dependency for TVB DSL"/>
     </dependency>
