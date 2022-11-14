@@ -36,6 +36,7 @@ the EBRAINS Knowledge Graph using siibra
 """
 
 import os
+from siibra.retrieval.requests import SiibraHttpRequestError
 from tvb.adapters.creators import siibra_base
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
@@ -175,8 +176,11 @@ class SiibraCreator(ABCAdapter):
         # list of all resulting indices for connectivities and possibly connectivity measures
         results = []
 
-        conn_dict, conn_measures_dict = siibra_base.get_connectivities_from_kg(atlas, parcellation, subject_ids,
-                                                                               compute_fc)
+        try:
+            conn_dict, conn_measures_dict = siibra_base.get_connectivities_from_kg(atlas, parcellation, subject_ids,
+                                                                                    compute_fc)
+        except SiibraHttpRequestError:  # this type of Error is raised in case of invalid token, but it might change?
+            raise ConnectionError(f'Invalid EBRAINS authentication token. Please provide a new one.')
 
         # list of indexes after store_complete() is called on each struct. conn. and conn. measures
         conn_indices = []
