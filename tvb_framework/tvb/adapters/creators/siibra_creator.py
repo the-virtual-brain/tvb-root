@@ -179,8 +179,13 @@ class SiibraCreator(ABCAdapter):
         try:
             conn_dict, conn_measures_dict = siibra_base.get_connectivities_from_kg(atlas, parcellation, subject_ids,
                                                                                     compute_fc)
-        except SiibraHttpRequestError:  # this type of Error is raised in case of invalid token, but it might change?
-            raise ConnectionError(f'Invalid EBRAINS authentication token. Please provide a new one.')
+        except SiibraHttpRequestError as e:
+            if e.response.status_code in [401, 403]:
+                raise ConnectionError('Invalid EBRAINS authentication token. Please provide a new one.')
+            else:
+                raise ConnectionError('We could not complete the operation. '
+                                      'Please check the logs and contact the development team from TVB, siibra or EBRAINS KG.')
+
 
         # list of indexes after store_complete() is called on each struct. conn. and conn. measures
         conn_indices = []
