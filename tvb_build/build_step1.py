@@ -45,6 +45,7 @@ The second phase includes the source code and depends on the zip produced by thi
 import os
 import shutil
 import sys
+import requests
 
 import tvb_bin
 import tvb_data
@@ -163,7 +164,16 @@ def _copy_demos_collapsed(to_copy):
                 shutil.copytree(src, dest, ignore=ignore_patters)
 
 
-def ensure_tvb_current_revision(branch=None):
+def fetch_current_revision(branch, token, revision_increment):
+    url = f'https://api.github.com/repos/the-virtual-brain/tvb-root/commits'
+    params = {'per_page': 1, 'sha': branch}
+    resp = requests.get(url, params, headers={'Authorization': f"Bearer {token}"})
+    last_link = resp.links.get('last')
+    branch_revision = int(last_link['url'].split('&page=')[1])
+    return revision_increment + branch_revision
+
+
+def ensure_tvb_current_revision(branch=None, token=None):
     """
     Enforce later revision number is written in 'tvb.version' file
     """
@@ -175,7 +185,7 @@ def ensure_tvb_current_revision(branch=None):
         branch = "master"
 
     print('Current branch {}'.format(branch))
-    real_version_number = VersionSettings.fetch_current_revision(branch)
+    real_version_number = fetch_current_revision(branch, token, VersionSettings.SVN_GIT_MIGRATION_REVISION)
 
     with open(os.path.join(config_folder, 'tvb.version'), 'r') as version_file:
         version_line = version_file.read()
@@ -242,5 +252,8 @@ if __name__ == '__main__':
         branch = sys.argv[1]
         if branch.startswith("origin/"):
             branch = branch.replace("origin/","")
-    ensure_tvb_current_revision(branch)
+    token = None
+    if len(sys.argv) > 2:
+        token = sys.argv[2]
+    ensure_tvb_current_revision(branch, token)
     build_step1()

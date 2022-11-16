@@ -28,7 +28,7 @@
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
 import numpy
-
+import pytest
 from tvb.basic.logger.builder import get_logger
 from tvb.contrib.simulator.models.brunel_wang import BrunelWang
 from tvb.contrib.simulator.models.epileptor import HMJEpileptor
@@ -41,12 +41,13 @@ from tvb.contrib.simulator.models.liley_steynross import LileySteynRoss
 from tvb.contrib.simulator.models.morris_lecar import MorrisLecar
 from tvb.contrib.simulator.models.wong_wang import WongWang
 from tvb.simulator.integrators import HeunDeterministic
-from tvb.tests.framework.core.base_testcase import BaseTestCase
+from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator.plot.phase_plane_interactive import PhasePlaneInteractive
 
 LOG = get_logger(__name__)
 
 
+@pytest.mark.skip(reason="Because it opens a window for manual inspection")
 class TestContribModels(BaseTestCase):
 
     @staticmethod
@@ -97,7 +98,7 @@ class TestContribModels(BaseTestCase):
         self._show_model_figure("Liley Steynross", LileySteynRoss, 0.9)
 
     def test_morric_lecar(self):
-        self._show_model_figure("Morris Lecar", MorrisLecar, 2**-5)
+        self._show_model_figure("Morris Lecar", MorrisLecar, 2 ** -5)
 
     def test_wong_wang_model(self):
-        self._show_model_figure("Wong Wang", WongWang, 2**-5)
+        self._show_model_figure("Wong Wang", WongWang, 2 ** -5)

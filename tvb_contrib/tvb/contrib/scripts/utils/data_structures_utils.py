@@ -32,6 +32,10 @@
 
 import re
 from collections import OrderedDict
+try:
+    from collections import Hashable
+except ImportError:
+    from collections.abc import Hashable
 import itertools
 from copy import deepcopy
 import numpy as np
@@ -796,12 +800,12 @@ def copy_object_attributes(obj1, obj2, attr1, attr2=None, deep_copy=False, check
 
 
 def sort_events_by_x_and_y(events, x="senders", y="times",
-                           filter_x=None, filter_y=None, exclude_x=[], exclude_y=[]):
+                           filter_x=None, filter_y=None, exclude_x=[], exclude_y=[], hashfun=str):
     xs = np.array(flatten_list(events[x]))
     if filter_x is None:
-        xlabels = np.unique(xs).tolist()
+        xlabels = np.unique(xs, axis=0).tolist()
     else:
-        xlabels = np.unique(flatten_list(filter_x)).tolist()
+        xlabels = np.unique(flatten_list(filter_x), axis=0).tolist()
     for xlbl in exclude_x:
         try:
             xlabels.remove(xlbl)
@@ -818,13 +822,17 @@ def sort_events_by_x_and_y(events, x="senders", y="times",
     ys = np.array(ys)
     sorted_events = OrderedDict()
     for xlbl in xlabels:
-        sorted_events[xlbl] = np.sort(ys[xs == xlbl])
+        if not isinstance(xlbl, Hashable):
+            key = hashfun(xlbl)
+        else:
+            key = xlbl
+        sorted_events[key] = np.sort(ys[np.where((xs == xlbl).all(axis=-1))])
     return sorted_events
 
 
 def data_xarray_from_continuous_events(events, times, senders, variables=[],
                                        filter_senders=None, exclude_senders=[], name=None,
-                                       dims_names=["Variable", "Neuron", "Time"]):
+                                       dims_names=["Time", "Variable", "Neuron"]):
     unique_times = np.unique(times).tolist()
     if filter_senders is None:
         filter_senders = np.unique(senders).tolist()
@@ -838,12 +846,12 @@ def data_xarray_from_continuous_events(events, times, senders, variables=[],
         variables = list(events.keys())
     dims_names = ensure_list(dims_names)
     coords = OrderedDict()
-    coords[dims_names[0]] = variables
-    coords[dims_names[1]] = filter_senders
-    coords[dims_names[2]] = unique_times
+    coords[dims_names[0]] = unique_times
+    coords[dims_names[1]] = variables
+    coords[dims_names[2]] = filter_senders
     n_senders = len(filter_senders)
     n_times = len(unique_times)
-    data = np.empty((len(variables), n_senders, n_times))
+    data = np.empty((n_times, len(variables), n_senders))
     last_time = times[0]
     i_time = unique_times.index(last_time)
     i_sender = -1
@@ -866,7 +874,7 @@ def data_xarray_from_continuous_events(events, times, senders, variables=[],
             if time != unique_times[i_time]:
                 i_time = unique_times.index(time)
         for i_var, var in enumerate(variables):
-            data[i_var, i_sender, i_time] = events[var][id]
+            data[i_time, i_var, i_sender] = events[var][id]
     try:
         from xarray import DataArray
         return DataArray(data, dims=list(coords.keys()), coords=coords, name=name)

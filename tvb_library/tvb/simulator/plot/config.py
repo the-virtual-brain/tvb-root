@@ -50,11 +50,13 @@ class FiguresConfig(object):
     SAVE_FLAG = True
     SHOW_FLAG = False
     MOUSE_HOOVER = False
-    MATPLOTLIB_BACKEND = "Agg"  # "Qt4Agg"
     WEIGHTS_NORM_PERCENT = 99
     FONTSIZE = 10
     SMALL_FONTSIZE = 8
     LARGE_FONTSIZE = 12
+    MAX_VARS_IN_COLS = 3
+    MAX_REGIONS_IN_ROWS = 10
+    MIN_REGIONS_FOR_RASTER_PLOT = 9
 
     def largest_size(self):
         import sys

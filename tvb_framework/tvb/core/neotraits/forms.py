@@ -221,8 +221,13 @@ class StrField(TraitField):
     template = 'form_fields/str_field.html'
 
 
-class EnvStrField(TraitField):
+class UserSessionStrField(TraitField):
     template = 'form_fields/str_field.html'
+
+    def __init__(self, trait_attribute, name=None, disabled=False, key=None):
+        # type: (Attr, str, bool, str) -> None
+        self.key = key # Key in session
+        super(UserSessionStrField, self).__init__(trait_attribute, name, disabled)
 
 
 class BoolField(TraitField):
@@ -349,7 +354,6 @@ class SelectField(TraitField):
         data_as_enum = TVBEnum.string_to_enum(self.choices, self.unvalidated_data)
         if self.unvalidated_data != self.missing_value and data_as_enum is None \
                 and (self.unvalidated_data is not None or self.display_none_choice is False):
-
             raise ValueError("the entered value is not among the choices for this field!")
 
         self.data = data_as_enum
@@ -412,7 +416,6 @@ class DynamicSelectField(TraitField):
         data_as_object = self.__string_to_object()
         if self.unvalidated_data != self.missing_value and data_as_object is None \
                 and (self.unvalidated_data is not None or self.display_none_choice is False):
-
             raise ValueError("the entered value is not among the choices for this field!")
 
         self.data = data_as_object

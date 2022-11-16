@@ -64,6 +64,9 @@ from tvb.interfaces.web.structure import WebStructure
 from tvb.storage.h5.utils import string2bool
 from tvb.storage.storage_interface import StorageInterface
 
+PROJECT_PAGE = '/project'
+PROJECT_VIEW_ALL_PAGE = '/project/viewall'
+
 
 @traced('generate_call_out_control', exclude=True)
 class ProjectController(BaseController):
@@ -89,7 +92,7 @@ class ProjectController(BaseController):
         """
         current_project = common.get_current_project()
         if current_project is None:
-            self.redirect("/project/viewall")
+            self.redirect(PROJECT_VIEW_ALL_PAGE)
         template_specification = dict(mainContent="project/project_submenu", title="TVB Project Menu")
         return self.fill_default_attributes(template_specification)
 
@@ -135,7 +138,7 @@ class ProjectController(BaseController):
         except ServicesBaseException as excep:
             self.logger.warning(excep.message)
             common.set_error_message(excep.message)
-        self.redirect('/project/viewall')
+        self.redirect(PROJECT_VIEW_ALL_PAGE)
 
     def _remove_project(self, project_id):
         """Private method for removing project."""
@@ -151,16 +154,21 @@ class ProjectController(BaseController):
 
     @expose_page
     @settings
-    def editone(self, project_id=None, cancel=False, save=False, delete=False, **data):
+    def editone(self, project_id=None, cancel=False, save=False, delete=False, leave=False, **data):
         """
         Create or change Project. When project_id is empty we create a 
         new entity, otherwise we are to edit and existent one.
         """
         if cherrypy.request.method == 'POST' and cancel:
-            self.redirect('/project')
+            self.redirect(PROJECT_PAGE)
         if cherrypy.request.method == 'POST' and delete:
             self._remove_project(project_id)
-            self.redirect('/project/viewall')
+            self.redirect(PROJECT_VIEW_ALL_PAGE)
+        if cherrypy.request.method == 'POST' and leave:
+            current_user = common.get_logged_user()
+            self.logger.warning(f'User {current_user.display_name} will be removed from project {project_id}')
+            self.project_service.remove_member_from_project(project_id, current_user.id)
+            self.redirect(PROJECT_VIEW_ALL_PAGE)
 
         current_user = common.get_logged_user()
         is_create = False
@@ -173,7 +181,8 @@ class ProjectController(BaseController):
             if not save:
                 # Only when we do not have submitted data,
                 # populate fields with initial values for edit.
-                data = dict(name=current_project.name, description=current_project.description)
+                data = dict(name=current_project.name, description=current_project.description,
+                            disable_imports=current_project.disable_imports, max_operation_size=current_project.max_operation_size)
             data["administrator"] = current_project.administrator.display_name
             admin_username = current_project.administrator.username
             self._mark_selected(current_project)
@@ -191,14 +200,14 @@ class ProjectController(BaseController):
                     self.storage_interface.sync_folders(project_folder)
                     self.storage_interface.remove_folder(project_folder)
                 self._mark_selected(saved_project)
-                self.redirect('/project/viewall')
+                self.redirect(PROJECT_VIEW_ALL_PAGE)
         except formencode.Invalid as excep:
             self.logger.debug(str(excep))
             template_specification[common.KEY_ERRORS] = excep.unpack_errors()
         except ProjectServiceException as excep:
             self.logger.debug(str(excep))
             common.set_error_message(excep.message)
-            self.redirect('/project/viewall')
+            self.redirect(PROJECT_VIEW_ALL_PAGE)
 
         all_users, members, pages = self.user_service.get_users_for_project(current_user.username, project_id)
         template_specification['usersList'] = all_users
@@ -245,7 +254,7 @@ class ProjectController(BaseController):
         Display table of operations for a given project selected
         """
         if (project_id is None) or (not int(project_id)):
-            self.redirect('/project')
+            self.redirect(PROJECT_PAGE)
 
         ## Toggle filters
         filters = self.__get_operations_filters()
@@ -511,7 +520,7 @@ class ProjectController(BaseController):
         try:
             int(project_id)
         except (ValueError, TypeError):
-            self.redirect('/project')
+            self.redirect(PROJECT_PAGE)
 
         if first_level is None or second_level is None:
             first_level, second_level = self.get_project_structure_grouping()
@@ -553,6 +562,7 @@ class ProjectController(BaseController):
         template_specification['uploadAlgorithms'] = upload_algorithms
         template_specification['projectId'] = project_id
         template_specification['algorithmsInterface'] = algorithms_interface
+        template_specification['disable_imports'] = dao.get_project_by_id(project_id).disable_imports
 
         return self.flow_controller.fill_default_attributes(template_specification)
 
@@ -733,3 +743,5 @@ class EditForm(formencode.Schema):
     administrator = validators.UnicodeString(not_empty=False)
     project_id = validators.UnicodeString(not_empty=False)
     visited_pages = validators.UnicodeString(not_empty=False)
+    max_operation_size = validators.Int(not_empty=False, min=0)
+    disable_imports = validators.Bool()
