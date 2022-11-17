@@ -55,7 +55,7 @@ def coupling(cX, weights, state
 
 ## don't generate x_i if not required
 % if 'x_i' in sim.coupling.pre_expr:
-    x_i = tt.transpose(tt.reshape(tt.tile(state[${cvar}, 0], (1, n_node)), (n_node, n_node)))
+    x_i = tt.transpose(tt.reshape(tt.tile(state[${cvar}, 0], (1, n_node)), (n_node, n_node))) # Reshaping and transposing to match the order of indexing between x_i and x_j
 % endif
 ## if no non-zero idelays, use current state
 % if sim.connectivity.idelays.any():
