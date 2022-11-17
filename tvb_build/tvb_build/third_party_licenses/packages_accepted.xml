@@ -330,6 +330,16 @@
         <copyright-notice value="Copyright (c) 2005-2015, Michele Simionato"/>
         <description value="Better living through Python with decorators"/>
     </dependency>
+    <dependency env="[win,mac,linux]" name="deprecated">
+        <full-name value="Deprecated module"/>
+        <project-home value="https://pypi.org/project/Deprecated/"/>
+        <version value="1.2.13"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_deprecated.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2017 Laurent LAPORTE"/>
+        <description value="Used to annotated methods or classes in TVB root as deprecated."/>
+    </dependency>
     <dependency env="[win]" name="distributed">
         <full-name value="Distributed"/>
         <project-home value="https://distributed.readthedocs.io/en/latest/"/>
@@ -720,6 +730,16 @@
         <copyright-notice value="Copyright (c) Jupyter Development Team. Distributed under the terms of the Modified BSD License."/>
         <description value=""/>
     </dependency>
+    <dependency env="[win,mac,linux]" name="kubernetes">
+        <full-name value="Kubernetes Python client"/>
+        <project-home value="https://github.com/kubernetes-client/python"/>
+        <version value="25.3.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_kubernetes.txt"/>
+        <license-type value="Apache_ 2"/>
+        <copyright-notice value="Copyright (c) 2016 The Kubernetes Authors."/>
+        <description value="Used by tvb-storage module in Open Shift deployments"/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="nbclassic">
         <full-name value="Jupyter Notebook as a Jupyter Server Extension"/>
         <project-home value="https://jupyter.org/"/>
@@ -1009,6 +1029,26 @@
         <license-type value="BSD_ (PSF_ based)"/>
         <copyright-notice value="Copyright (c) 2002 - 2012 John Hunter, Darren Dale, Eric Firing, Michael Droettboom and the matplotlib development team; 2012 - 2014 The matplotlib development team"/>
         <description value=""/>
+    </dependency>
+    <dependency env="[win,mac,linux]" name="matplotlib_inline">
+        <full-name value="MatplotlibInline"/>
+        <project-home value="https://pypi.org/project/matplotlib-inline/"/>
+        <version value="[0.1.6]"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_matplotlib_inline.txt"/>
+        <license-type value="BSD_ 3 clause"/>
+        <copyright-notice value="Copyright (c) 2019-2022, IPython Development Team."/>
+        <description value="Matplotlib Inline Back-end for IPython and Jupyter"/>
+    </dependency>
+    <dependency env="[win,mac,linux]" name="matplotlib-inline">
+        <full-name value="Matplotlib-Inline"/>
+        <project-home value="https://pypi.org/project/matplotlib-inline/"/>
+        <version value="[0.1.6]"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_matplotlib_inline.txt"/>
+        <license-type value="BSD_ 3 clause"/>
+        <copyright-notice value="Copyright (c) 2019-2022, IPython Development Team."/>
+        <description value="Matplotlib Inline Back-end for IPython and Jupyter"/>
     </dependency>
     <dependency env="[win,linux,mac]" name="mistune">
         <full-name value="Mistune"/>
