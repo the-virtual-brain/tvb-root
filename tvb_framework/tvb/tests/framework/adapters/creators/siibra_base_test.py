@@ -42,6 +42,7 @@ from tvb.tests.framework.core.base_testcase import BaseTestCase
 def no_ebrains_auth_token():
     hbp_auth = os.environ.get(CLB_AUTH_TOKEN_KEY)
     client_id = os.environ.get("KEYCLOAK_CLIENT_ID")
+    # KEYCLOAK_CLIENT_ID has priority for us in unit-tests
     if client_id and CLB_AUTH_TOKEN_KEY in os.environ:
         del os.environ[CLB_AUTH_TOKEN_KEY]
     return (not hbp_auth) and (not client_id)
