@@ -38,7 +38,7 @@ Tests for the NumPy backend.
 import numpy as np
 
 from tvb.simulator.backend.np import NpBackend
-from tvb.simulator.coupling import Sigmoidal, Linear
+from tvb.simulator.coupling import Sigmoidal, Linear, Difference
 from tvb.simulator.integrators import (EulerDeterministic, EulerStochastic,
     HeunDeterministic, HeunStochastic, IntegratorStochastic, 
     RungeKutta4thOrderDeterministic, Identity, IdentityStochastic,
@@ -164,6 +164,7 @@ class TestNpCoupling(BaseTestCoupling):
 
     def test_np_linear(self): self._test_cfun(Linear())
     def test_np_sigmoidal(self): self._test_cfun(Sigmoidal())
+    def test_np_difference(self): self._test_cfun(Difference())
 
 
 class TestNpDfun(BaseTestDfun):

@@ -51,7 +51,7 @@ def coupling(cX, weights, state
 
 ## don't generate x_i if not required
 % if 'x_i' in sim.coupling.pre_expr:
-    x_i = np.tile(state[${cvar}, 0], (1, n_node)).reshape((n_node, n_node), order="F")
+    x_i = np.tile(state[${cvar}, 0], (1, n_node)).reshape((n_node, n_node)).T
 % endif
 ## if no non-zero idelays, use current state
 % if sim.connectivity.idelays.any():
