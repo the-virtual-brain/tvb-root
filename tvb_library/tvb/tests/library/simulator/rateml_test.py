@@ -30,7 +30,7 @@ dic_regex_mincount = {r'^__global':1,
 					  r'state\(\(\(':1,
 					  r'state\(\(t':2,
 					  r'tavg\(':1,
-					  r'= params\(\d\)\;$':2}
+					  r'= params\(\d\)\;$':1}
 def compiler_opts():
 	opts = ['--ptxas-options=-v', '-maxrregcount=32', '-lineinfo']
 	opts.append('-lineinfo')
