@@ -28,11 +28,12 @@
 #
 #
 
-def dfuns(dX, state, cX, parmat):
-
+def dfuns(dX, state, cX, parmat, pm_model = None):
 % for par in sim.model.global_parameter_names:
     % if par in mparams:
-    ${par} = ${params[par]}
+    with pm_model:
+        ${par}_star = pm.Normal("${par}_star", mu=0.0, sd=1.0)
+        ${par} = pm.Deterministic("${par}", ${mparams[par]["mu"]} + ${mparams[par]["sd"]} * ${par}_star)
     % else:
     ${par} = ${getattr(sim.model, par)[0]}
     % endif

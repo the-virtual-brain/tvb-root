@@ -36,6 +36,7 @@ def coupling(cX, weights, state
 % if sim.connectivity.idelays.any():
     , delay_indices
 % endif
+, pm_model = None
 ):
 
     n_svar = state.eval().shape[0]
@@ -45,7 +46,9 @@ def coupling(cX, weights, state
 
 % for par in sim.coupling.parameter_names:
     % if par in cparams:
-    ${par} = ${params[par]}
+    with pm_model:
+        ${par}_star = pm.Normal("${par}_star", mu=0.0, sd=1.0)
+        ${par} = pm.Deterministic("${par}", ${cparams[par]["mu"]} + ${cparams[par]["sd"]} * ${par}_star)
     % else:
     ${par} = ${getattr(sim.coupling, par)[0]}
     %endif
