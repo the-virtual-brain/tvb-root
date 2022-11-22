@@ -72,7 +72,9 @@ jobs:
 
       - name: run framework tests
         env:
-          HBP_AUTH_TOKEN: ${{ secrets.HBP_AUTH_TOKEN }}   # needed for siibra tests
+          HBP_AUTH_TOKEN: ${{ secrets.HBP_AUTH_TOKEN }}   # token or (secret+id) are needed for siibra tests
+          KEYCLOAK_CLIENT_ID: ${{ secrets.KEYCLOAK_CLIENT_ID }} # KEYCLOAK_CLIENT_ID & SECRET have priority in tests
+          KEYCLOAK_CLIENT_SECRET: ${{ secrets.KEYCLOAK_CLIENT_SECRET }}
         run: pytest -v tvb_framework  --cov --cov-report=xml --ignore=tvb_framework/tvb/interfaces/rest/client/tests/rest_test.py && mv coverage.xml coverage-framework.xml
 
       - name: run storage tests
