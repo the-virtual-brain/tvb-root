@@ -287,16 +287,11 @@ __global__ void zerlaut(
                                    +TF_inhibitory(E-df, I, E_input_inhibitory, I_input_inhibitory, W_i, E_L_i)
                                    )/powdf;
 
+            // the _diff2_fe_fi implementation is equal to _diff2_fi_fe
             float _diff2_fe_fi = (TF_excitatory(E+df, I+df, E_input_excitatory, I_input_excitatory, W_e, E_L_e)
                                  -TF_excitatory(E+df, I-df, E_input_excitatory, I_input_excitatory, W_e, E_L_e)
                                  -TF_excitatory(E-df, I+df, E_input_excitatory, I_input_excitatory, W_e, E_L_e)
                                  +TF_excitatory(E-df, I-df, E_input_excitatory, I_input_excitatory, W_e, E_L_e)
-                                 )/(4*powdf);
-
-            float _diff2_fi_fe = (TF_inhibitory(E+df, I+df, E_input_inhibitory, I_input_inhibitory, W_i, E_L_i)
-                                 -TF_inhibitory(E+df, I-df, E_input_inhibitory, I_input_inhibitory, W_i, E_L_i)
-                                 -TF_inhibitory(E-df, I+df, E_input_inhibitory, I_input_inhibitory, W_i, E_L_i)
-                                 +TF_inhibitory(E-df, I-df, E_input_inhibitory, I_input_inhibitory, W_i, E_L_i)
                                  )/(4*powdf);
 
             float _diff2_fi_fi_e = (TF_excitatory(E, I+df, E_input_excitatory, I_input_excitatory, W_e, E_L_e)
@@ -325,7 +320,7 @@ __global__ void zerlaut(
             // Inhibitory firing rate derivation
             dI = dt * ((_TF_i - I
                 + .5*C_ee*_diff2_fe_fe_i
-                + C_ei*_diff2_fi_fe
+                + C_ei*_diff2_fe_fi
                 + .5*C_ii*_diff2_fi_fi_i
                     )/T);
 
@@ -333,16 +328,16 @@ __global__ void zerlaut(
             dC_ee = dt * ((_TF_e*(1./T-_TF_e)/N_e
                 + powf((_TF_e-E), 2)
                 + 2.*C_ee*_diff_fe_e
-                + 2.*C_ei*_diff_fi_i
+                + 2.*C_ei*_diff_fi_e
                 - 2.*C_ee
                     )/T);
 
             // Covariance excitatory-inhibitory or inhibitory-excitatory derivation
             dC_ei = dt * (((_TF_e-E)*(_TF_i-I)
-                + C_ee*_diff_fe_e
-                + C_ei*_diff_fe_i
-                + C_ei*_diff_fi_e
-                + C_ii*_diff_fi_i
+                + C_ee*_diff_fe_i
+                + C_ei*_diff_fi_i
+                + C_ei*_diff_fe_e
+                + C_ii*_diff_fi_e
                 - 2.*C_ei
                     )/T);
 
@@ -350,7 +345,7 @@ __global__ void zerlaut(
             dC_ii = dt * ((_TF_i*(1./T-_TF_i)/N_i
                 + powf((_TF_i-I), 2)
                 + 2.*C_ii*_diff_fi_i
-                + 2.*C_ei*_diff_fe_e
+                + 2.*C_ei*_diff_fe_i
                 - 2.*C_ii
                     )/T);
 
