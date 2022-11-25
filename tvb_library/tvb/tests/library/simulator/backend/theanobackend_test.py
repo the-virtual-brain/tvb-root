@@ -38,7 +38,6 @@ Tests for the theano backend.
 import numpy as np
 import theano
 import theano.tensor as tt
-from theano.tensor.random.utils import RandomStream
 
 from tvb.simulator.backend.theano import TheanoBackend
 from tvb.simulator.coupling import Sigmoidal, Linear, Difference
@@ -105,7 +104,7 @@ class TestTheanoSim(BaseTestSim):
             delays=delays
         )
         template = '<%include file="theano-sim.py.mako"/>'
-        content = dict(sim=sim, np=np, theano=theano, tt=tt, mparams={}, cparams={})
+        content = dict(sim=sim, np=np, theano=theano, tt=tt)
         kernel = TheanoBackend().build_py_func(template, content, print_source=True)
 
         state = tt.as_tensor_variable(state_numpy, name="state")
@@ -177,7 +176,7 @@ class TestTheanoCoupling(BaseTestCoupling):
         import theano.tensor as tt
         <%include file="theano-coupling.py.mako"/>
         '''
-        kernel = TheanoBackend().build_py_func(template, dict(sim=sim, theano=theano, cparams=cparams),
+        kernel = TheanoBackend().build_py_func(template, dict(sim=sim, theano=theano),
                                                name='coupling', print_source=True)
 
         fill = np.r_[:sim.history.buffer.size]
@@ -223,7 +222,7 @@ class TestTheanoDfun(BaseTestDfun):
         import theano.tensor as tt
         <%include file="theano-dfuns.py.mako"/>
         '''
-        kernel = TheanoBackend().build_py_func(template, dict(sim=sim, theano=theano, mparams=mparams),
+        kernel = TheanoBackend().build_py_func(template, dict(sim=sim, theano=theano),
                                                name='dfuns', print_source=True)
 
         cX_numpy = np.random.rand(2, 128, 1)
