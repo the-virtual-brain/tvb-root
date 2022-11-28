@@ -38,7 +38,7 @@ Here we define entities for Operations and Algorithms.
 
 import json
 from datetime import datetime
-from sqlalchemy import Boolean, Integer, String, DateTime, Column, ForeignKey
+from sqlalchemy import Boolean, Integer, String, DateTime, Column, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship, backref
 from tvb.basic.logger.builder import get_logger
 from tvb.config import TVB_IMPORTER_CLASS, TVB_IMPORTER_MODULE
@@ -129,10 +129,12 @@ class Algorithm(Base):
 
     algorithm_category = relationship(AlgorithmCategory,
                                       backref=backref('ALGORITHMS', order_by=id, cascade="delete, all"))
+    # explicit/composite unique constraint.  'name' is optional.
+    UniqueConstraint("module", "classname", name="uq_class")
 
     def __init__(self, module, classname, category_key, group_name=None, group_description=None,
                  display_name='', description="", subsection_name=None, last_introspection_check=None):
-
+        # type: (str, str, int, str, str, str, str, str, DateTime) -> None
         self.module = module
         self.classname = classname
         self.fk_category = category_key
