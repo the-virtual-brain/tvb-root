@@ -68,3 +68,7 @@ Some implementation details
 * The module triggers an import in TVB only for new files added to the BIDS_DIR, not for the files that already exist in the BIDS_DIR at start-up
 * Files are imported by default in the first project of the user
 * If the imported file has dependencies, all dependencies and the file will be imported in TVB, even if the dependencies might already exist
+
+Acknowledgments
+---------------
+This project has received funding from GSOC program 2022.

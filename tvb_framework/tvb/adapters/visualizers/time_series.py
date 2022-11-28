@@ -47,6 +47,7 @@ from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.core.utils import TVBJSONEncoder
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.time_series import TimeSeries
 
@@ -181,7 +182,7 @@ class TimeSeriesDisplay(ABCSpaceDisplayer):
                 labels.append("Node-" + str(n))
 
         pars = {'baseURL': URLGenerator.build_base_h5_url(time_series_index.gid),
-                'labels': labels, 'labels_json': json.dumps(labels),
+                'labels': labels, 'labels_json': json.dumps(labels, cls=TVBJSONEncoder),
                 'ts_title': time_series_index.title, 'preview': preview, 'figsize': figsize,
                 'shape': repr(shape), 't0': ts[0],
                 'dt': ts[1] - ts[0] if len(ts) > 1 else 1,

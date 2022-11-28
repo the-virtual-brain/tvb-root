@@ -95,6 +95,7 @@ class UserController(BaseController):
                     kc_user_info = AuthorizationManager(
                         TvbProfile.current.KEYCLOAK_WEB_CONFIG).get_keycloak_instance().userinfo(auth_token)
                     user = self.user_service.get_external_db_user(kc_user_info)
+                    setattr(user, KEY_AUTH_TOKEN, auth_token)
                 else:
                     username = data[KEY_USERNAME]
                     password = data[KEY_PASSWORD]
@@ -159,10 +160,6 @@ class UserController(BaseController):
                 user = common.get_logged_user()
                 common.add2session(common.KEY_USER, self.user_service.get_user_by_id(user.id))
                 common.set_error_message("Could not save changes. Probably wrong old password!!")
-        else:
-            # Update session user since disk size might have changed from last time to profile.
-            user = self.user_service.get_user_by_id(user.id)
-            common.add2session(common.KEY_USER, user)
 
         template_specification['user_used_disk_human'] = format_bytes_human(
             self.user_service.compute_user_generated_disk_size(user.id))

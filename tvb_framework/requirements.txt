@@ -12,7 +12,7 @@ pytest-cov
 pytest-xdist
 pytest-benchmark
 pytest-mock
-matplotlib
+matplotlib==3.5.3
 h5py
 typing
 BeautifulSoup4

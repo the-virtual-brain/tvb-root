@@ -2,7 +2,7 @@ numba
 numpy
 scipy
 networkx
-scikit-learn
+scikit-learn<=1.1.2
 scikit-image
 cython
 numexpr
@@ -54,3 +54,4 @@ bctpy
 Deprecated
 kubernetes
 watchdog
+requests-toolbelt>=0.10

@@ -35,7 +35,7 @@
 import os
 import numpy
 from tvb.core.entities.load import load_entity_by_gid
-from tvb.core.neotraits.forms import TraitDataTypeSelectField, TraitUploadField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, TraitUploadField, UserSessionStrField
 
 
 def _review_operation_inputs_for_adapter_model(form_fields, form_model, view_model):
@@ -49,6 +49,10 @@ def _review_operation_inputs_for_adapter_model(form_fields, form_model, view_mod
         attr_vm = getattr(view_model, field.name)
         if attr_vm and type(field) == TraitUploadField:
             attr_vm = os.path.basename(attr_vm)
+        if attr_vm and type(field) == UserSessionStrField:
+            # Don't show UserSession actual value, as these might contain a secret, instead show the env Variable
+            changed_attr[field.label] = "SECRET ${%s}" % field.name
+            continue
 
         if isinstance(field, TraitDataTypeSelectField):
             data_type = None

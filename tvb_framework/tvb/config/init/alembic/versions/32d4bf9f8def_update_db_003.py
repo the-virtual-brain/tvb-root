@@ -29,40 +29,42 @@
 #
 
 """
-Install TVB Storage package for developers.
-Execute:
-    python setup.py install/develop
+Revision ID: 32d4bf9f8def
+Create Date: 2022-11-04
+
 """
+from alembic import op
+from sqlalchemy import Column, Boolean, Integer, String
+from tvb.core.neotraits.db import Base
 
-import os
-import shutil
-import setuptools
+# revision identifiers, used by Alembic.
+revision = '32d4bf9f8def'
+down_revision = '32d4bf9f8cab'
 
-STORAGE_VERSION = "2.7.1"
+conn = op.get_bind()
 
-STORAGE_TEAM = "Lia Domide, Paula Prodan, Bogdan Valean, Robert Vincze"
 
-STORAGE_REQUIRED_PACKAGES = ["cryptography", "h5py", "kubernetes", "numpy", "pyAesCrypt", "requests"]
+def upgrade():
+    # Get tables
+    tables = Base.metadata.tables
 
-with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
-    DESCRIPTION = fd.read()
+    new_column_1 = Column('disable_imports', Boolean, default=False)
+    op.add_column('PROJECTS', new_column_1)
+    new_column_2 = Column('max_operation_size', Integer, default=None)
+    op.add_column('PROJECTS', new_column_2)
 
-setuptools.setup(name='tvb-storage',
-                 version=STORAGE_VERSION,
-                 packages=setuptools.find_packages(),
-                 include_package_data=True,
-                 install_requires=STORAGE_REQUIRED_PACKAGES,
-                 extras_require={
-                     'test': ["pytest", "decorator"],
-                     'encrypt': ["syncrypto"]},
-                 description='A package which handles the storage of TVB data',
-                 long_description=DESCRIPTION,
-                 license="GPL-3.0-or-later",
-                 author=STORAGE_TEAM,
-                 author_email='tvb.admin@thevirtualbrain.org',
-                 url='https://www.thevirtualbrain.org',
-                 download_url='https://github.com/the-virtual-brain/tvb-root',
-                 keywords='tvb brain storage h5')
+    existent_column = Column('name', String)
 
-# Cleanup after EGG install. These are created by running setup.py in the source tree
-shutil.rmtree('tvb_storage.egg-info', True)
+    projects_table = tables['PROJECTS']
+    conn.execute(projects_table.update().values({"disable_imports": False}))
+    conn.execute(projects_table.update().values({"disable_imports": True, "max_operation_size": 1500}).where(
+        existent_column == 'Default_Project'))
+
+    conn.execute('COMMIT')
+
+
+def downgrade():
+    """
+    Downgrade currently not supported
+    """
+    pass

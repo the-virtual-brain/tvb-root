@@ -4,8 +4,7 @@ pipeline {
     }
 
     environment {
-        FULL_DOCKER_IMAGE_NAME = 'docker-repository.codemart.ro/tvb-build'
-        LATEST_TAG = 'latest'
+        FULL_DOCKER_IMAGE_NAME = 'docker-repository.codemart.ro/tvb-build:latest'
         REST_CONTAINER = 'rest-server'
     }
 
@@ -13,68 +12,60 @@ pipeline {
         stage ('Build docker image') {
             steps {
                 script {
-                    LAST_SHA = sh (script: "curl -s 'https://api.github.com/repos/the-virtual-brain/tvb-root/commits' | grep sha | head -1 | tr '\"' '_'", returnStdout: true).trim()
+                    withCredentials([usernamePassword(credentialsId: 'tvb-revision', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                        LAST_SHA = sh (script: "curl -s -H 'Authorization: Bearer $GIT_PASSWORD' 'https://api.github.com/repos/the-virtual-brain/tvb-root/commits' | grep sha | head -1 | cut -d ':' -f2 | tr -d '\",'", returnStdout: true).trim()
+                    }
                     def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}", "--build-arg LAST_SHA='${LAST_SHA}' -f tvb_build/docker/Dockerfile-build tvb_build/docker")
-                    dockerImage.push('${LATEST_TAG}')
+                    dockerImage.push()
                 }
             }
         }
         stage ('Build TVB documentation') {
-            agent {
-                docker {
-                    image '${FULL_DOCKER_IMAGE_NAME}:${LATEST_TAG}'
-                }
-            }
             steps {
-                sh '''#!/bin/bash
-                    source activate tvb-docs
-                    cd tvb_build
-                    bash install_full_tvb.sh
-                    python build_step1.py $GIT_BRANCH
-                '''
-                withCredentials([usernamePassword(credentialsId: 'tvb-revision', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                withDockerContainer(image: '${FULL_DOCKER_IMAGE_NAME}') {
+                    withCredentials([usernamePassword(credentialsId: 'tvb-revision', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
                         sh '''#!/bin/bash
+                            source activate tvb-docs
+                            cd tvb_build
+                            bash install_full_tvb.sh
+                            python build_step1.py $GIT_BRANCH $GIT_PASSWORD
+                            cd ..
                             git commit tvb_library/tvb/basic/config/tvb.version -m "Update GIT revision number automatically from Jenkins" && git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/the-virtual-brain/tvb-root.git HEAD:${GIT_BRANCH//origin\\/} || true
-                        '''
+                         '''
+                     }
                  }
                 archiveArtifacts artifacts: 'tvb_build/build/*.zip'
             }
         }
         stage ('Build for Pypi') {
-            agent {
-                docker {
-                    image '${FULL_DOCKER_IMAGE_NAME}:${LATEST_TAG}'
-                }
-            }
             steps {
-                sh '''#!/bin/bash
-                    rm -rf dist
-                    source activate tvb-run
-                    cd tvb_build
-                    bash package_for_pip.sh
-                '''
+                withDockerContainer(image: '${FULL_DOCKER_IMAGE_NAME}') {
+                    sh '''#!/bin/bash
+                        rm -rf dist
+                        source activate tvb-run
+                        cd tvb_build
+                        bash package_for_pip.sh
+                    '''
+                }
                 archiveArtifacts artifacts: 'dist/*'
             }
         }
         stage ('Compute coverage') {
-            agent {
-                docker {
-                    image '${FULL_DOCKER_IMAGE_NAME}:${LATEST_TAG}'
-                }
-            }
             steps {
-                sh '''#!/bin/bash
-                    source activate tvb-run
-                    rm -rf TEST_OUTPUT
-                    mkdir TEST_OUTPUT
-                    cd tvb_build
-                    bash install_full_tvb.sh
-                    cd ../tvb_library
-                    py.test --cov-config .coveragerc --cov=tvb tvb/tests --cov-branch --cov-report xml:../TEST_OUTPUT/coverage_lib.xml --junitxml=../TEST_OUTPUT/results_lib.xml
-                    cd ../tvb_framework
-                    py.test --cov-config .coveragerc --cov=tvb tvb/tests --cov-branch --cov-report xml:../TEST_OUTPUT/coverage_frw.xml --junitxml=../TEST_OUTPUT/results_frw.xml
-                    exit 0
-                '''
+                withDockerContainer(image: '${FULL_DOCKER_IMAGE_NAME}') {
+                    sh '''#!/bin/bash
+                        source activate tvb-run
+                        rm -rf TEST_OUTPUT
+                        mkdir TEST_OUTPUT
+                        cd tvb_build
+                        bash install_full_tvb.sh
+                        cd ../tvb_library
+                        py.test --cov-config .coveragerc --cov=tvb tvb/tests --cov-branch --cov-report xml:../TEST_OUTPUT/coverage_lib.xml --junitxml=../TEST_OUTPUT/results_lib.xml
+                        cd ../tvb_framework
+                        py.test --cov-config .coveragerc --cov=tvb tvb/tests --cov-branch --cov-report xml:../TEST_OUTPUT/coverage_frw.xml --junitxml=../TEST_OUTPUT/results_frw.xml
+                        exit 0
+                    '''
+                }
                  junit 'TEST_OUTPUT/results_*.xml'
                  step([$class: 'CoberturaPublisher', autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'TEST_OUTPUT/coverage_*.xml', failUnhealthy: false, failUnstable: false, maxNumberOfBuilds: 0, onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false])
             }

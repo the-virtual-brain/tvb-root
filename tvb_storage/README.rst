@@ -1,6 +1,8 @@
 tvb-storage
 -----------
 
+Part of TVB Distribution package.
+
 Module used for Files Storage of TVB data.
 Currently it has a H5 backend only, but future implementations are intended.
 It contains files read&write mechanisms,
