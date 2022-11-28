@@ -99,17 +99,15 @@ def init_siibra_params(atlas_name, parcellation_name, subject_ids):
     if atlas and parcellation:
         compatible = check_atlas_parcellation_compatible(atlas, parcellation)
         if not compatible:
-            LOGGER.error(f'Atlas {atlas.name} does not contain parcellation {parcellation.name}. '
-                         f'Please choose a different atlas and/or parcellation')
-            return
+            raise ValueError(f'Atlas \'{atlas.name}\' does not contain parcellation \'{parcellation.name}\'. '
+                             f'Please choose a different atlas and/or parcellation.')
 
     if atlas and not parcellation:
         LOGGER.warning(f'No parcellation was provided, so a default one will be selected.')
         parcellations = get_parcellations_for_atlas(atlas)
         no_parcellations = len(parcellations)
         if no_parcellations < 1:
-            LOGGER.error(f'No default parcellation was found for atlas {atlas.name}!')
-            return
+            raise AttributeError(f'No default parcellation was found for atlas {atlas.name}!')
         if no_parcellations > 1:
             LOGGER.info(
                 f'Multiple parcellations were found for atlas {atlas.name}. An arbitrary one will be selected.')
@@ -120,8 +118,7 @@ def init_siibra_params(atlas_name, parcellation_name, subject_ids):
         atlases = get_atlases_for_parcellation(parcellation)
         no_atlases = len(atlases)
         if no_atlases < 1:
-            LOGGER.error(f'No default atlas containing parcellation {parcellation.name} was found!')
-            return
+            raise AttributeError(f'No default atlas containing parcellation {parcellation.name} was found!')
         if no_atlases > 1:
             LOGGER.info(
                 f'Multiple atlases containing parcellation {parcellation_name} were found. '
@@ -263,8 +260,8 @@ def get_connectivity_component(parcellation, component):
     all_conns = siibra.get_features(parcellation, modality)
 
     if len(all_conns) == 0:
-        LOGGER.error(f'No connectivity {component} were found in parcellation {parcellation}!')
-        return None
+        raise AttributeError(f'No connectivity component \'{Component2Modality(component).name}\' was found '
+                             f'in parcellation \'{parcellation}\'!')
     return all_conns
 
 
@@ -286,7 +283,7 @@ def get_regions_positions(regions):
     """ Given a list of regions, compute the positions of their centroids """
     LOGGER.info(f'Computing positions for regions')
     positions = []
-    space = siibra.spaces.MNI152_2009C_NONL_ASYM  # commonly used space in other examples
+    space = siibra.spaces.MNI152_2009C_NONL_ASYM  # commonly used space in the documentation
 
     for r in regions:
         centroid = compute_centroids(r, space)
@@ -339,10 +336,8 @@ def get_tvb_connectivities_from_kg(atlas=None, parcellation=None, subject_ids=No
     tracts = get_connectivity_component(parcellation, Component2Modality.TRACTS)
 
     if not weights or not tracts:
-        LOGGER.error(
-            f'Could not find both weights and tract lengths from parcellation {parcellation.name}, so a connectivity '
-            f'cannot be computed')
-        return
+        raise AttributeError(f'Could not find both weights and tract lengths from parcellation \'{parcellation.name}\', '
+                             f'so a connectivity cannot be computed')
 
     if subject_ids != 'all':
         weights, tracts = filter_structural_connectivity_by_id(weights, tracts, subject_ids)

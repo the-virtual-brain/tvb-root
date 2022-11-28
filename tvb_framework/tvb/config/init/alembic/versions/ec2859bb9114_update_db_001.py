@@ -38,7 +38,6 @@ from sqlalchemy.engine.reflection import Inspector
 from sqlalchemy import Column, String, Integer
 import uuid
 import json
-
 from sqlalchemy.sql.schema import UniqueConstraint
 from tvb.basic.profile import TvbProfile
 from tvb.core.neotraits.db import Base
@@ -47,9 +46,7 @@ from tvb.basic.logger.builder import get_logger
 # revision identifiers, used by Alembic.
 revision = 'ec2859bb9114'
 down_revision = None
-
 conn = op.get_bind()
-
 LOGGER = get_logger(__name__)
 
 
