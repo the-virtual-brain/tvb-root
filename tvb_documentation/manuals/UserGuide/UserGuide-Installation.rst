@@ -61,8 +61,9 @@ These scripts will start and control |TVB|.
 Launching the GUI
 .................
 
-For Mac users the `TVB_Distribution` folder contains an application file `tvb.app`.
-To start |TVB| in your web browser double click `tvb.app`.
+For Mac users the `TVB_Distribution` folder contains an application file `tvb-[version].dmg`.
+To start |TVB| in your web browser double click `tvb*.dmg`, and follow the instruction to copy a `tvb-*.app`
+into your Applications folder. The double click on the new `Applications\tvb-*.app`.
 Please be patient, as depending on your computer resources, the startup process might take about 1-2 minutes.
 
 .. figure:: screenshots/install_mac_error.png
@@ -257,8 +258,3 @@ Requirements for computation/storage power, dependent on the number of parallel 
   Surface level simulations are much more memory intensive scaling with the number of vertices.
 
 - **Disk space** is also important, as simulating only 10 ms on surface level may occupy around 300MB of disk space. A minimum of 50GB of space per user is a rough approximation.
-
-- Optional **MatLab or Octave** -
-  A special feature in TVB is utilizing functions from the Brain Connectivity Toolbox.
-  This feature thus requires a MatLab or Octave package on your computer (installed, activated and added to your OS' global PATH variable).
-  The Brain Connectivity Toolbox doesn't need to be installed or enabled separately in any way, as TVB will temporarily append it to your MatLab/Octave path.

@@ -284,7 +284,8 @@ class TestUserService(TransactionalTestCase):
         admin = dao.get_user_by_name("test_user1")
         member1 = dao.get_user_by_name("test_user2")
         member2 = dao.get_user_by_name("test_user4")
-        data = dict(name="test_proj", description="test_desc", users=[member1.id, member2.id])
+        data = dict(name="test_proj", description="test_desc", users=[member1.id, member2.id], max_operation_size=None,
+                    disable_imports=False)
         project = ProjectService().store_project(admin, True, None, **data)
         all_users, members, pag = self.user_service.get_users_for_project(admin.username, project.id)
         assert len(members) == 3, "More members than there should be."
@@ -317,7 +318,8 @@ class TestUserService(TransactionalTestCase):
             user_ids.append(user.id)
 
         admin = dao.get_user_by_name("test_user_no1")
-        data = dict(name='test_proj', description='test_desc', users=user_ids)
+        data = dict(name='test_proj', description='test_desc', users=user_ids, max_operation_size=None,
+                    disable_imports=False)
         project = ProjectService().store_project(admin, True, None, **data)
 
         page_users, all_users, pag = self.user_service.get_users_for_project(admin.username, project.id, 2)

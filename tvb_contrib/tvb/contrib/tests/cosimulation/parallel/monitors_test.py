@@ -33,6 +33,7 @@ import numpy as np
 
 import tvb.simulator.lab as lab
 from tvb.tests.library.base_testcase import BaseTestCase
+from tvb.contrib.tests.cosimulation.synchronization_time_set import SYNCHRONIZATION_TIME, adjust_connectivity_delays
 from tvb.contrib.tests.cosimulation.parallel.ReducedWongWang import ReducedWongWangProxy
 from tvb.contrib.cosimulation.cosim_monitors import RawCosim, RawVoiCosim, RawDelayed, \
     RawVoiDelayed, CosimCoupling
@@ -55,6 +56,7 @@ class TestMonitors(BaseTestCase):
         model = lab.models.ReducedWongWang(tau_s=np.random.rand(76))
         connectivity = lab.connectivity.Connectivity().from_file()
         connectivity.speed = np.array([4.0])
+        connectivity = adjust_connectivity_delays(connectivity)
         coupling = lab.coupling.Linear(a=np.array(0.0154))
         integrator = lab.integrators.HeunDeterministic(dt=0.1, bounded_state_variable_indices=np.array([0]),
                                                        state_variable_boundaries=np.array([[0.0, 1.0]]))
@@ -82,7 +84,7 @@ class TestMonitors(BaseTestCase):
         np.random.seed(42)
         model_1 = ReducedWongWangProxy(tau_s=np.random.rand(76))
         # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
-        synchronization_time = 1.0
+        synchronization_time = SYNCHRONIZATION_TIME
         sim_1 = CoSimulator(
             voi=np.array([0]),
             synchronization_time=synchronization_time,

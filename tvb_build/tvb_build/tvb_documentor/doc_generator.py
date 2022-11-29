@@ -95,7 +95,7 @@ class DocGenerator:
                     USER_GUIDE_UI_STIMULUS, USER_GUIDE_UI_USER, DATA_EXCHANGE]
 
     # paths relative to the tvb package that should not be documented
-    EXCLUDES = ['simulator/plot', 'interfaces/web/templates', 'tests']
+    EXCLUDES = ['simulator/plot', 'interfaces/web/templates', 'tests', "contrib"]
 
     # Folders to be bundled with the documentation site distribution zip. Paths relative to root conf.py.
     IPYNB_FOLDERS = ['demos', 'tutorials']
@@ -233,7 +233,7 @@ class DocGenerator:
             args = ['-d', doctrees_folder]
 
             try:
-                opts = GenOptions(None, 'rst', auto_api_folder, 'Project', 10, True, None)
+                opts = GenOptions(None, 'rst', auto_api_folder, 'Project', 3, True, None)
                 # create RST files for the package structure
                 process_sources(opts, tvb.__path__, self.EXCLUDES)
 

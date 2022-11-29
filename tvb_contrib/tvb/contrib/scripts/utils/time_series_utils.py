@@ -32,7 +32,7 @@
 
 from itertools import cycle
 import numpy as np
-from matplotlib.mlab import demean
+from matplotlib.mlab import detrend_mean
 from scipy.interpolate import interp1d, griddata
 from scipy.signal import butter, filtfilt, welch, periodogram, spectrogram, decimate
 from scipy.stats import zscore
@@ -98,7 +98,7 @@ NORMALIZATION_METHODS = ["zscore", "mean", "min", "max", "baseline", "baseline-a
 
 
 def normalize_signals(signals, normalization=None, axis=None, percent=None):
-    # Following pylab demean:
+    # Following matplotlibl.mlab detrend_mean:
 
     def matrix_subtract_along_axis(x, y, axis=0):
         "Return x minus y, where y corresponds to some statistic of x along the specified axis"
@@ -127,7 +127,7 @@ def normalize_signals(signals, normalization=None, axis=None, percent=None):
             elif isequal_string(norm, "minmax"):
                 signals = normalize_signals(signals, ["min", "max"], axis=axis)
             elif isequal_string(norm, "mean"):
-                signals = demean(signals, axis=ax)
+                signals = detrend_mean(signals, axis=ax)
             elif isequal_string(norm, "baseline"):
                 if prcnd is None:
                     prcnd = 1

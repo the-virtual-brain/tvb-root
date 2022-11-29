@@ -32,7 +32,6 @@ It inherits the Simulator class.
 """
 
 import numpy
-
 from tvb.basic.neotraits.api import Attr, NArray, Float, List, TupleEnum, EnumAttr
 from tvb.simulator.common import iround
 from tvb.simulator.simulator import Simulator, math
@@ -192,7 +191,6 @@ class CoSimulator(Simulator):
             state_output = numpy.copy(self.cosim_history.query(step - self.synchronization_n_step))
             # Update the cosimulation history for the delayed monitor and the next update of history
             self.cosim_history.update(step, state_copy)
-            state_copy[:, self.proxy_inds] = 0.0
         else:
             state_output = state
         # Update TVB history to allow for all types of coupling

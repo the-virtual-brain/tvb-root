@@ -8,9 +8,17 @@
             <fieldset class="toolbar-inline">
                 <ul>
                     <li>
-                        <button type="submit" class="action action-upload" onClick="showOverlayProgress()">Upload
+                        <button type="submit" class="action action-upload" {{ 'disabled' if disable_imports }}
+                                onClick="showOverlayProgress()">Upload
                         </button>
                     </li>
+                    {% if disable_imports %}
+                        <li>
+                            <p class="errorMessage" style="padding-top: 7px">
+                                Uploads are disabled for this project. The current project admin can enable them in Project - Basic Properties
+                            </p>
+                        </li>
+                    {% endif %}
                 </ul>
             </fieldset>
 

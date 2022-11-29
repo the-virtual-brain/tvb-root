@@ -103,16 +103,6 @@ class FileMigrationException(TVBException):
         TVBException.__init__(self, message)
 
 
-class MissingMatlabOctavePathException(FileMigrationException):
-    """
-    Exception to be thrown in case of an unexpected problem
-    when migrating an H5 file to a newer version.
-    """
-
-    def __init__(self, message):
-        super().__init__(message)
-
-
 class UnsupportedFileStorageException(TVBException):
     """
     Exception to be thrown in case of an unsupported file storage is chosen.
@@ -127,5 +117,6 @@ class RenameWhileSyncEncryptingException(TVBException):
     """
     Exception to be thrown in case a project is to be renamed during sync encryption.
     """
+
     def __init__(self, message):
         super().__init__(message)

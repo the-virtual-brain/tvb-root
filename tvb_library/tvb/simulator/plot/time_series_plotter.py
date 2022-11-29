@@ -34,6 +34,7 @@
 """
 import matplotlib
 import numpy
+from deprecated import deprecated
 from matplotlib import pyplot, gridspec
 from matplotlib.colors import Normalize
 from six import string_types
@@ -75,6 +76,7 @@ def assert_time(time, n_times, time_unit="ms", logger=None):
     return time
 
 
+@deprecated(reason="Use tvb-widgets instead")
 class TimeSeriesPlotter(BasePlotter):
     linestyle = "-"
     linewidth = 1
@@ -371,6 +373,7 @@ class TimeSeriesPlotter(BasePlotter):
                 self.HighlightingDataCursor(line, formatter='{label}'.format, bbox=dict(fc='white'),
                                             arrowprops=dict(arrowstyle='simple', fc='white', alpha=0.5))
 
+        pyplot.gcf().tight_layout()
         self._save_figure(pyplot.gcf(), figure_name)
         self._check_show()
         return pyplot.gcf(), axes, lines

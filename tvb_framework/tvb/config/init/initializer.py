@@ -34,7 +34,6 @@
 from datetime import datetime
 import shutil
 import threading
-
 from tvb.adapters.datatypes.db import DATATYPE_REMOVERS
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
@@ -47,7 +46,7 @@ from tvb.core.code_versions.code_update_manager import CodeUpdateManager
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.entities.model.model_operation import Algorithm, AlgorithmCategory
 from tvb.core.entities.model.model_project import User, ROLE_ADMINISTRATOR
-from tvb.core.entities.storage import dao, SA_SESSIONMAKER
+from tvb.core.entities.storage import dao, transactional, SA_SESSIONMAKER
 from tvb.core.entities.storage.session_maker import build_db_engine
 from tvb.core.neotraits.db import Base
 from tvb.core.services.project_service import initialize_storage
@@ -168,7 +167,9 @@ class Introspector(object):
 
         return algo_category_instance.id
 
+    @transactional
     def _populate_algorithms(self, algo_category_class, algo_category_id):
+        # type: (type, int) -> None
         for adapter_class in self.introspection_registry.ADAPTERS[algo_category_class]:
             try:
                 if not adapter_class.can_be_active():

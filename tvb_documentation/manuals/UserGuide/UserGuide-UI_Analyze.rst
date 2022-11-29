@@ -209,8 +209,7 @@ The resulting spectrogram of wavelet power can be viewed with the `Wavelet viewe
 Brain Connectivity Toolbox Analyzers
 ....................................
 
-If you have `matlab` or `octave` installed and available through the command 
-line then all the algorithms offered by `Brain Connectivity Toolbox` (BCT) 
+All the algorithms offered by `Brain Connectivity Toolbox` (BCT)
 can be used directly from |TVB| interface and the results can later be displayed
 in one of our visualizers.
 

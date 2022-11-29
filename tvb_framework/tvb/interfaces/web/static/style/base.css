@@ -75,6 +75,16 @@ color: #c8d4de;
 -moz-transition: color .5s ease;
 }
 
+/* style action buttons behaviour on hover and click */
+button.action:hover {
+   box-shadow: 0 0 11px rgba(33,33,33,.2);
+}
+button.action:active {
+   transform: scale(0.97);
+   box-shadow: 0 0 20px rgba(33,33,33,.2);
+}
+/* end action buttons style */
+
 /* !-------------------------------------------- */
 /* !LAYOUT: Header bar */
 /* !-------------------------------------------- */

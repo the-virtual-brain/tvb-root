@@ -33,7 +33,6 @@
 """
 
 import os
-import sys
 import json
 from datetime import datetime
 import uuid
@@ -42,11 +41,6 @@ from hashlib import md5
 import numpy
 import six
 from tvb.basic.profile import TvbProfile
-from tvb.basic.logger.builder import get_logger
-from tvb.core.decorators import user_environment_execution
-
-MATLAB = "matlab"
-OCTAVE = "octave"
 
 CHAR_SEPARATOR = "__"
 CHAR_SPACE = "--"

@@ -2,7 +2,7 @@ numba
 numpy
 scipy
 networkx
-scikit-learn
+scikit-learn<=1.1.2
 scikit-image
 cython
 numexpr
@@ -12,7 +12,7 @@ pytest-cov
 pytest-xdist
 pytest-benchmark
 pytest-mock
-matplotlib
+matplotlib==3.5.3
 h5py
 typing
 BeautifulSoup4
@@ -51,3 +51,7 @@ docutils
 Pillow
 siibra
 bctpy
+Deprecated
+kubernetes
+watchdog
+requests-toolbelt>=0.10

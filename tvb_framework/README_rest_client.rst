@@ -87,3 +87,9 @@ Attempt to login and start using the client API to send requests, by calling dif
 
     monitor_operation(tvb_client, operation_gid)
 ..
+
+Acknowledgments
+===============
+This project has received funding from the European Union’s Horizon 2020 Framework Programme for Research and
+Innovation under the Specific Grant Agreement Nos. 785907 (Human Brain Project SGA2), 945539 (Human Brain Project SGA3)
+and VirtualBrainCloud 826421.
