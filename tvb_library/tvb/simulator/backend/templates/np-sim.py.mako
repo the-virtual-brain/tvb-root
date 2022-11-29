@@ -49,7 +49,7 @@ def kernel(state, weights, trace, parmat
     n_node = ${sim.connectivity.weights.shape[0]}
     n_svar = ${len(sim.model.state_variables)}
     n_cvar = ${len(sim.model.cvar)}
-    nt = ${int(sim.simulation_length/sim.integrator.dt)}
+    nt = ${nstep} 
 
     # work space arrays
     dX = np.zeros((${sim.integrator.n_dx}, n_svar, n_node))
