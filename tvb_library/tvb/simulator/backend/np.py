@@ -113,6 +113,9 @@ class NpBackend(MakoUtilMix):
                 )
         )
         # models 
+        if sim.model.number_of_modes > 1:
+            # this is a limitation e.g. by how nsig is now handled
+            raise NotImplementedError("Only models with 1 mode are supported")
         self._check_choices(sim.model, models.MontbrioPazoRoxin) 
         # coupling
         self._check_choices(sim.coupling, 
@@ -138,7 +141,7 @@ class NpBackend(MakoUtilMix):
         t = np.arange(1, nstep+1 ) * sim.integrator.dt 
 
         template = '<%include file="np-sim.py.mako"/>'
-        content = dict(sim=sim, np=np)
+        content = dict(sim=sim, np=np, nstep=nstep)
         kernel = self.build_py_func(template, content, print_source=print_source)
         dX = state.copy()
         n_svar, _, n_node = state.shape
@@ -151,7 +154,11 @@ class NpBackend(MakoUtilMix):
         args = state, weights, yh, parmat
         if isinstance(sim.integrator, integrators.IntegratorStochastic):
             np.random.seed(sim.integrator.noise.noise_seed) 
-            args = args + (sim.integrator.noise.nsig,)
+            if len(sim.integrator.noise.nsig.shape) > 1:
+                nsig = sim.integrator.noise.nsig[:,0] # no modes for now
+            else:
+                nsig = sim.integrator.noise.nsig
+            args = args + (nsig,)
         if sim.connectivity.has_delays:
             args = args + (sim.connectivity.delay_indices,)
         kernel(*args)

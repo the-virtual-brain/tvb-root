@@ -69,10 +69,13 @@ class TestNpSim(BaseTestSim):
     def _test_mvar(self, integrator):
         pass # TODO
 
-    def _test_integrator(self, Integrator, delays=False):
+    def _test_integrator(self, Integrator, delays=False, nsig=False):
         dt = 0.01
         if issubclass(Integrator, IntegratorStochastic):
-            integrator = Integrator(dt=dt, noise=Additive(nsig=np.r_[dt]))
+            if nsig:
+                integrator = Integrator(dt=dt, noise=Additive(nsig=np.r_[dt,dt*2]))
+            else:
+                integrator = Integrator(dt=dt, noise=Additive(nsig=np.r_[dt]))
             integrator.noise.dt = integrator.dt
         else:
             integrator = Integrator(dt=dt)
@@ -81,10 +84,11 @@ class TestNpSim(BaseTestSim):
         else:
             self._test_mpr(integrator, delays=delays)
 
-    # TODO move to BaseTestSim to avoid duplicating all the methods
 
+    # TODO move to BaseTestSim to avoid duplicating all the methods
     def test_euler(self): self._test_integrator(EulerDeterministic)
     def test_eulers(self): self._test_integrator(EulerStochastic)
+    def test_eulersn(self): self._test_integrator(EulerStochastic, nsig=True)
     def test_heun(self): self._test_integrator(HeunDeterministic)
     def test_heuns(self): self._test_integrator(HeunStochastic)
     def test_rk4(self): self._test_integrator(RungeKutta4thOrderDeterministic)
