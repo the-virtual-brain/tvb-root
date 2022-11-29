@@ -53,32 +53,18 @@ from .backendtestbase import (BaseTestSim, BaseTestCoupling, BaseTestDfun,
 class TestNpSim(BaseTestSim):
 
     def _test_mpr(self, integrator, delays=False):
-        sim, state, t, y = self._create_sim(
+        sim = self._create_sim(
             integrator,
             inhom_mmpr=True,
-            delays=delays
+            delays=delays,
+            run_sim=False
         )
-        template = '<%include file="np-sim.py.mako"/>'
-        content = dict(sim=sim, np=np)
-        kernel = NpBackend().build_py_func(template, content, print_source=True)
-        dX = state.copy()
-        n_svar, _, n_node = state.shape
-        if not delays:
-            self.assertEqual(sim.connectivity.horizon, 1)  # for now
-        state = state.reshape((n_svar, sim.connectivity.horizon, n_node))
-        weights = sim.connectivity.weights.copy()
-        yh = np.empty((len(t),)+state[:,0].shape)
-        parmat = sim.model.spatial_parameter_matrix
-        self.assertEqual(parmat.shape[0], 1)
-        self.assertEqual(parmat.shape[1], weights.shape[1])
-        np.random.seed(42)
-        args = state, weights, yh, parmat
-        if isinstance(integrator, IntegratorStochastic):
-            args = args + (integrator.noise.nsig,)
-        if delays:
-            args = args + (sim.connectivity.delay_indices,)
-        kernel(*args)
+
+        (th, yh), = NpBackend().run_sim(sim, print_source=True)
+        (t, y), = sim.run()
+
         self._check_match(y, yh)
+        np.testing.assert_allclose(t, th)
 
     def _test_mvar(self, integrator):
         pass # TODO

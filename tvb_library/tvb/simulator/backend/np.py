@@ -135,13 +135,11 @@ class NpBackend(MakoUtilMix):
         buf = sim.history.buffer[...,0]
         rbuf = np.concatenate((buf[0:1], buf[1:][::-1]), axis=0)
         state = np.transpose(rbuf, (1, 0, 2)).astype('f')
-        delays=False
-        t = np.arange( nstep ) * sim.integrator.dt
-
+        t = np.arange(1, nstep+1 ) * sim.integrator.dt 
 
         template = '<%include file="np-sim.py.mako"/>'
         content = dict(sim=sim, np=np)
-        kernel = NpBackend().build_py_func(template, content, print_source=print_source)
+        kernel = self.build_py_func(template, content, print_source=print_source)
         dX = state.copy()
         n_svar, _, n_node = state.shape
         state = state.reshape((n_svar, sim.connectivity.horizon, n_node))
@@ -150,11 +148,11 @@ class NpBackend(MakoUtilMix):
         yh = np.empty((len(t),)+state[:,0].shape)
 
         parmat = sim.model.spatial_parameter_matrix
-        np.random.seed(42) # !!!!! should respect integrator seed
         args = state, weights, yh, parmat
         if isinstance(sim.integrator, integrators.IntegratorStochastic):
+            np.random.seed(sim.integrator.noise.noise_seed) 
             args = args + (sim.integrator.noise.nsig,)
-        if delays:
+        if sim.connectivity.has_delays:
             args = args + (sim.connectivity.delay_indices,)
         kernel(*args)
 
