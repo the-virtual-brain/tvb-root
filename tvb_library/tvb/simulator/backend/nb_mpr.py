@@ -100,7 +100,7 @@ class NbMPRBackend(MakoUtilMix):
         # stimulus evaluated outside the backend, no restrictions
 
 
-    def run_sim(self, sim, nstep=None, simulation_length=None, chunksize=100000, compatibility_mode=False):
+    def run_sim(self, sim, nstep=None, simulation_length=None, chunksize=100000, compatibility_mode=False, print_source=False):
         assert nstep is not None or simulation_length is not None or sim.simulation_length is not None
 
         self.check_compatibility(sim)
@@ -110,10 +110,10 @@ class NbMPRBackend(MakoUtilMix):
             nstep = int(np.ceil(simulation_length/sim.integrator.dt))
 
         if isinstance(sim.monitors[0], monitors.Raw):
-            svar_bufs = self._run_sim_plain(sim, nstep, compatibility_mode=compatibility_mode)
+            svar_bufs = self._run_sim_plain(sim, nstep, compatibility_mode=compatibility_mode, print_source=print_source)
             time = np.arange(svar_bufs[0].shape[1]) * sim.integrator.dt
         elif isinstance(sim.monitors[0], monitors.TemporalAverage):
-            svar_bufs = self._run_sim_tavg_chunked(sim, nstep, chunksize=chunksize, compatibility_mode=compatibility_mode)
+            svar_bufs = self._run_sim_tavg_chunked(sim, nstep, chunksize=chunksize, compatibility_mode=compatibility_mode, print_source=print_source)
             T = sim.monitors[0].period
             time = np.arange(svar_bufs[0].shape[1]) * T + 0.5 * T
         else:
@@ -124,13 +124,13 @@ class NbMPRBackend(MakoUtilMix):
         )
         return (time, data),   
 
-    def _run_sim_plain(self, sim, nstep=None, compatibility_mode=False):
+    def _run_sim_plain(self, sim, nstep=None, compatibility_mode=False, print_source=True):
         template = '<%include file="nb-montbrio.py.mako"/>'
         content = dict(
                 compatibility_mode=compatibility_mode, 
                 sim=sim
         ) 
-        integrate = self.build_py_func(template, content, name='integrate', print_source=True)
+        integrate = self.build_py_func(template, content, name='integrate', print_source=print_source)
 
         horizon = sim.connectivity.horizon
         buf_len = horizon + nstep
@@ -170,10 +170,10 @@ class NbMPRBackend(MakoUtilMix):
         N, T = ts.shape
         return np.mean(ts.reshape(N,T//istep,istep),-1) # length of ts better be multiple of istep 
 
-    def _run_sim_tavg_chunked(self, sim, nstep, chunksize, compatibility_mode=False):
+    def _run_sim_tavg_chunked(self, sim, nstep, chunksize, compatibility_mode=False, print_source=False):
         template = '<%include file="nb-montbrio.py.mako"/>'
         content = dict(sim=sim, compatibility_mode=compatibility_mode) 
-        integrate = self.build_py_func(template, content, name='integrate', print_source=False)
+        integrate = self.build_py_func(template, content, name='integrate', print_source=print_source)
         # chunksize in number of steps 
         horizon = sim.connectivity.horizon
         N = sim.connectivity.number_of_regions
