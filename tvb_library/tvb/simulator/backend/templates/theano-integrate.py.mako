@@ -46,26 +46,27 @@
 
 ## TODO handle multiplicative noise
 % if isinstance(sim.integrator, IntegratorStochastic):
-def noise(sigma):
+def noise(nsig):
     n_node = ${sim.connectivity.weights.shape[0]}
     n_svar = ${len(sim.model.state_variables)}
     sqrt_dt = ${np.sqrt(sim.integrator.dt)}
     dWt = np.random.randn(n_svar, n_node)
     dWt = tt.as_tensor_variable(dWt)
-    D = tt.sqrt(2 * sigma)
+    D = tt.sqrt(2 * nsig)
     return sqrt_dt * D * dWt
-    ## return sigma
+    ## return nsig
 % else:
 # no noise function rendered for integrator ${type(sim.integrator)}
 % endif
 
 def integrate(state, weights, parmat, dX, cX
 % if isinstance(sim.integrator, IntegratorStochastic):
-    , sigma
+    , nsig
 % endif
 % if sim.connectivity.idelays.any():
     , delay_indices
 % endif
+, **iparams
 ):
     dt = ${sim.integrator.dt}
     cX = coupling(cX, weights, state
@@ -78,14 +79,14 @@ def integrate(state, weights, parmat, dX, cX
     next_state = state[:,0] + dt * dX[0]
 % endif
 % if isinstance(sim.integrator, EulerStochastic):
-    next_state = state[:,0] + dt * dX[0] + noise(sigma)
+    next_state = state[:,0] + dt * dX[0] + noise(nsig)
 % endif
 % if isinstance(sim.integrator, HeunDeterministic):
     dX = tt.set_subtensor(dX[1], dfuns(dX[1], state[:,0] + dt * dX[0], cX, parmat))
     next_state = state[:,0] + dt / 2 * (dX[0] + dX[1])
 % endif
 % if isinstance(sim.integrator, HeunStochastic):
-    z = noise(sigma)
+    z = noise(nsig)
     dX = tt.set_subtensor(dX[1], dfuns(dX[1], state[:,0] + dt * dX[0] + z, cX, parmat))
     next_state = state[:,0] + dt / 2 * (dX[0] + dX[1]) + z
 % endif
@@ -93,7 +94,7 @@ def integrate(state, weights, parmat, dX, cX
     next_state = dX[0]
 % endif
 % if isinstance(sim.integrator, IdentityStochastic):
-    next_state = dX[0] + noise(sigma)
+    next_state = dX[0] + noise(nsig)
 % endif
 % if isinstance(sim.integrator, RungeKutta4thOrderDeterministic):
     dX = tt.set_subtensor(dX[1], dfuns(dX[1], state[:,0] + dt / 2 * dX[0], cX, parmat))
