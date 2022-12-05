@@ -108,9 +108,6 @@ class Driver_Setup:
 	def tvb_connectivity(self, tvbnodes):
 		white_matter = connectivity.Connectivity.from_file(source_file="connectivity_"+str(tvbnodes)+".zip")
 		# white_matter = connectivity.Connectivity.from_file(source_file="paupau.zip")
-		# white_matter = connectivity.Connectivity.from_file(source_file="hcp-001.zip")
-		# np.fill_diagonal(white_matter.weights, 0.)
-		# white_matter.weights = white_matter.weights/np.max(white_matter.weights)
 		white_matter.configure()
 		return white_matter
 
@@ -480,7 +477,6 @@ class Driver_Execute(Driver_Setup):
 		self.release_gpumem(gpu_data)
 
 		self.logger.info('kernel finished')
-
 		return tavg, bold
 
 
@@ -505,14 +501,8 @@ class Driver_Execute(Driver_Setup):
 		tic = time.time()
 
 		tavg0, bold = self.run_simulation()
-
 		decimate = 1
 		bold = bold[::decimate, :]
-
-		# for i in range(0, self.n_work_items, 10):
-		# 	plt.plot((bold[:, :, i]), 'k', alpha=.2)
-		# 	plt.show()
-
 		toc = time.time()
 		elapsed = toc - tic
 
@@ -533,7 +523,6 @@ class Driver_Execute(Driver_Setup):
 if __name__ == '__main__':
 
 	driver_setup = Driver_Setup()
-
 	tavgGPU, boldGPU = Driver_Execute(driver_setup).run_all()
 	print('GPU_tavg_shape', tavgGPU.shape)
 	print('GPU_bold_shape', boldGPU.shape)
