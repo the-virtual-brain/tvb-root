@@ -117,7 +117,7 @@ class RateML:
         parser.add_argument('-d', '--destination', default='',
                             help="destination folder location")
 
-        args = parser.parse_args()
+        args, unknown = parser.parse_known_args()
         return args
 
     @staticmethod
