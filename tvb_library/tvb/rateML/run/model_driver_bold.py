@@ -44,6 +44,8 @@ class Driver_Setup:
 		self.weights = self.connectivity.weights
 		self.lengths = self.connectivity.tract_lengths
 		self.tavg_period = 1.0
+		# Setting TP for bold
+		self.TR = (1.8/self.dt)
 		self.n_inner_steps = int(self.tavg_period / self.dt)
 
 		self.params = self.setup_params(
@@ -117,9 +119,9 @@ class Driver_Setup:
 		parser.add_argument('-s1', '--n_sweep_arg1', default=4, help='num grid points for 2st parameter', type=int)
 		parser.add_argument('-n', '--n_time', default=400, help='number of time steps to do', type=int)
 		parser.add_argument('-v', '--verbose', default=False, help='increase logging verbosity', action='store_true')
-		parser.add_argument('-m', '--model', default='epileptor', help="neural mass model to be used during the simulation")
-		parser.add_argument('-s', '--states', default=6, type=int, help="number of states for model")
-		parser.add_argument('-x', '--exposures', default=2, type=int, help="number of exposures for model")
+		parser.add_argument('-m', '--model', default='montbrio_heun', help="neural mass model to be used during the simulation")
+		parser.add_argument('-s', '--states', default=2, type=int, help="number of states for model")
+		parser.add_argument('-x', '--exposures', default=1, type=int, help="number of exposures for model")
 		parser.add_argument('-l', '--lineinfo', default=False, help='generate line-number information for device code.', action='store_true')
 		parser.add_argument('-bx', '--blockszx', default=8, type=int, help="gpu block size x")
 		parser.add_argument('-by', '--blockszy', default=8, type=int, help="gpu block size y")
@@ -142,8 +144,9 @@ class Driver_Setup:
 		'''
 		This code generates the parameters ranges that need to be set
 		'''
-		sweeparam0 = np.linspace(0.0, 2.0, n0)
-		sweeparam1 = np.linspace(1.6, 3.0, n1)
+
+		sweeparam0 = np.linspace(.5, 1.5, n0)
+		sweeparam1 = np.linspace(1, 10, n1)
 		params = itertools.product(
 		sweeparam0,
 		sweeparam1,
@@ -196,6 +199,7 @@ class Driver_Execute(Driver_Setup):
 		self.buf_len, self.states, self.n_work_items = ds.buf_len, ds.states, ds.n_work_items
 		self.n_inner_steps, self.n_params, self.dt = ds.n_inner_steps, ds.n_params, ds.dt
 		self.exposures, self.logger = ds.exposures, ds.logger
+		self.TR = ds.TR
 
 	def set_CUDAmodel_dir(self):
 		self.args.filename = os.path.join((os.path.dirname(os.path.abspath(__file__))),
@@ -223,8 +227,10 @@ class Driver_Execute(Driver_Setup):
 		try:
 			with open(source_file, 'r') as fd:
 				source = fd.read()
-				source = source.replace('pi', '%ff' % (np.pi, ))
-				source = source.replace('inf', 'INFINITY')
+				source = source.replace('M_PI_F', '%ff' % (np.pi, ))
+				# TODO fix for whole words only. Only uppercase is permitted
+				# source = source.replace('pi', '%ff' % (np.pi, ))
+				# source = source.replace('inf', 'INFINITY')
 				opts = ['--ptxas-options=-v', '-maxrregcount=32']
 				if lineinfo:
 					opts.append('-lineinfo')
@@ -257,11 +263,14 @@ class Driver_Execute(Driver_Setup):
 
 				step_fn = network_module.get_function(mod_func)
 
+				bold_func = "{}".format('_Z11bold_updatejfPfS_S_')
+				bold_fn = network_module.get_function(bold_func)
+
 		except FileNotFoundError as e:
 			self.logger.error('%s.\n  Generated model filename should match model on cmdline', e)
 			exit(1)
 
-		return step_fn #}}}
+		return step_fn, bold_fn #}}}
 
 	def cf(self, array):#{{{
 		# coerce possibly mixed-stride, double precision array to C-order single precision
@@ -305,11 +314,14 @@ class Driver_Execute(Driver_Setup):
 
 		# setup data#{{{
 		data = { 'weights': self.weights, 'lengths': self.lengths, 'params': self.params.T }
+		# print('pT', self.params[118][:])
 		base_shape = self.n_work_items,
 		for name, shape in dict(
 			tavg0=(self.exposures, self.args.n_regions,),
 			tavg1=(self.exposures, self.args.n_regions,),
 			state=(self.buf_len, self.states * self.args.n_regions),
+			bold_state=(4, self.args.n_regions),
+			bold=(self.args.n_regions,),
 			).items():
 			# memory error exception for compute device
 			try:
@@ -320,10 +332,14 @@ class Driver_Execute(Driver_Setup):
 							 e, self.args.n_sweep_arg0, self.args.n_sweep_arg1)
 				exit(1)
 
+		# shape bold_state = (boldvars, regions, workitems)
+		# initialize f, v ,q to 1., to avoid /0 nans
+		data['bold_state'][1:] = 1.0
+
 		gpu_data = self.make_gpu_data(data)#{{{
 
 		# setup CUDA stuff#{{{
-		step_fn = self.make_kernel(
+		step_fn, bold_fn = self.make_kernel(
 			source_file=self.args.filename,
 			warp_size=32,
 			# block_dim_x=self.args.n_sweep_arg0,
@@ -341,9 +357,11 @@ class Driver_Execute(Driver_Setup):
 		streams = [drv.Stream() for i in range(n_streams)]
 		events = [drv.Event() for i in range(n_streams)]
 		tavg_unpinned = []
+		bold_unpinned = []
 
 		try:
 			tavg = drv.pagelocked_zeros((n_streams,) + data['tavg0'].shape, dtype=np.float32)
+			bold = drv.pagelocked_zeros((n_streams,) + data['bold'].shape, dtype=np.float32)
 		except drv.MemoryError as e:
 			self.logger.error(
 				'%s.\n\t Please check the parameter dimensions, %d parameters are too large for this GPU',
@@ -404,6 +422,16 @@ class Driver_Execute(Driver_Setup):
 							block=final_block_dim, grid=final_grid_dim)
 
 					event.record(streams[i % n_streams])
+
+					tavgk = 'tavg%d' % ((i + 1) % 2,)
+					bold_fn(np.uintc(self.args.n_regions),
+							# BOLD model dt is in s, requires 1e-3
+							np.float32(self.TR * 1e-3),
+							gpu_data['bold_state'], gpu_data[tavgk], gpu_data['bold'],
+							# block=(couplings.size, 1, 1), grid=(speeds.size, 1), stream=stream)
+							# block=(args.n_coupling, 1, 1), grid=(speeds.size, 1), stream=stream)
+							block=final_block_dim, grid=final_grid_dim, stream=stream)
+
 				except drv.LaunchError as e:
 					self.logger.error('%s', e)
 					exit(1)
@@ -414,18 +442,22 @@ class Driver_Execute(Driver_Setup):
 				if i >= n_streams:
 					stream.synchronize()
 					tavg_unpinned.append(tavg[i % n_streams].copy())
+					bold_unpinned.append(bold[i % n_streams].copy())
 
 				drv.memcpy_dtoh_async(tavg[i % n_streams], gpu_data[tavgk].ptr, stream=stream)
+				drv.memcpy_dtoh_async(bold[i % n_streams], gpu_data['bold'].ptr, stream=stream)
 
 			# recover uncopied data from pinned buffer
 			if nstep > n_streams:
 				for i in range(nstep % n_streams, n_streams):
 					stream.synchronize()
 					tavg_unpinned.append(tavg[i].copy())
+					bold_unpinned.append(bold[i].copy())
 
 			for i in range(nstep % n_streams):
 				stream.synchronize()
 				tavg_unpinned.append(tavg[i].copy())
+				bold_unpinned.append(bold[i].copy())
 
 		except drv.LogicError as e:
 			self.logger.error('%s. Check the number of states of the model or '
@@ -436,16 +468,17 @@ class Driver_Execute(Driver_Setup):
 			self.logger.error('%s', e)
 			exit(1)
 
-
 		# self.logger.info('kernel finish..')
 		# release pinned memory
 		tavg = np.array(tavg_unpinned)
+		bold = np.array(bold_unpinned)
 
 		# also release gpu_data
 		self.release_gpumem(gpu_data)
 
 		self.logger.info('kernel finished')
-		return tavg
+		return tavg, bold
+
 
 	def plot_output(self, tavg):
 		for i in range(0, self.n_work_items):
@@ -457,13 +490,19 @@ class Driver_Execute(Driver_Setup):
 		pickle.dump(tavg, tavg_file)
 		tavg_file.close()
 
+		bold_file = open('bold_gpu_'+datetime.now().strftime("%d%m%Y_%H:%M:%S"), 'wb')
+		pickle.dump(bold, bold_file)
+		bold_file.close()
+
 	def run_all(self):
 
 		np.random.seed(79)
 
 		tic = time.time()
 
-		tavg0 = self.run_simulation()
+		tavg0, bold = self.run_simulation()
+		decimate = 1
+		bold = bold[::decimate, :]
 		toc = time.time()
 		elapsed = toc - tic
 
@@ -471,54 +510,19 @@ class Driver_Execute(Driver_Setup):
 			self.compare_with_ref(tavg0)
 
 		self.plot_output(tavg0) if self.args.plot_data is not None else None
-		self.write_output(tavg0) if self.args.write_data else None
+		self.write_output(tavg0, bold) if self.args.write_data else None
 		self.logger.info('Output shape (simsteps, states, bnodes, n_params) %s', tavg0.shape)
 		self.logger.info('Finished CUDA simulation successfully in: {0:.3f}'.format(elapsed))
 		self.logger.info('and in {0:.3f} M step/s'.format(
-			1e-6 * self.args.n_time * self.n_inner_steps * self.n_work_items / elapsed))
+			1e-6 * self.args.n_time * self.n_inner_steps * self.n_work_items/ elapsed))
 
-		return tavg0
+		return tavg0, bold
+		# return tavg0
 
 
 if __name__ == '__main__':
 
 	driver_setup = Driver_Setup()
-	tavgGPU = Driver_Execute(driver_setup).run_all()
-
-	simtime = driver_setup.args.n_time
-	# simtime = 10
-	regions = driver_setup.args.n_regions
-	g = 1.0
-	# g = 0.0042
-	s = 1.0
-	dt = driver_setup.dt
-	period = 1
-
-	# generic model definition
-	model = driver_setup.args.model.capitalize()+'T'
-
-	# non generic model names
-	# model = 'MontbrioT'
-	# model = 'RwongwangT'
-	# model = 'OscillatorT'
-	# model = 'DumontGutkin'
-	# model = 'MontbrioPazoRoxin'
-	# model='Generic2dOscillator'
-	(time, tavgCPU) = regularRun(simtime, g, s, dt, period).simulate_python(model)
-
-	print('CPUshape', tavgCPU.shape)
-	print('GPUshape', tavgGPU.shape)
-
-	# check for deviation tolerance between GPU and CPU
-	# for basic coupling and period = 1
-	# using euler deterministic solver
-	max_err = []
-	x = 0
-	for t in range(0, simtime):
-		# print(t, 'tol:', np.max(np.abs(actual[t] - expected[t, :, :, 0])))
-		# print(t, 'tol:', np.max(np.abs(tavgCPU[t,:,:,0], tavgGPU[t,:,:,0])))
-		# print(t)
-		# print('C', tavgCPU[t,:,:,0])
-		# print('G', tavgGPU[t,:,:,0])
-		# print(t, 'tol:', np.max(np.abs(tavgCPU[t,:,:,0] - tavgGPU[t,:,:,0])))
-		np.testing.assert_allclose(tavgCPU[t, :, :, 0], tavgGPU[t, :, :, 0], 2e-5 * t * 2, 1e-5 * t * 2)
+	tavgGPU, boldGPU = Driver_Execute(driver_setup).run_all()
+	print('GPU_tavg_shape', tavgGPU.shape)
+	print('GPU_bold_shape', boldGPU.shape)
