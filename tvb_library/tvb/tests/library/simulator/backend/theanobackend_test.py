@@ -36,8 +36,10 @@ Tests for the theano backend.
 """
 
 import numpy as np
-import theano
-import theano.tensor as tt
+# import theano
+# import theano.tensor as tt
+import aesara as theano
+import aesara.tensor as tt
 
 from tvb.simulator.backend.theano import TheanoBackend
 from tvb.simulator.coupling import Sigmoidal, Linear, Difference
@@ -172,8 +174,10 @@ class TestTheanoCoupling(BaseTestCoupling):
         # prep & invoke kernel
         template = f'''
         import numpy as np
-        import theano
-        import theano.tensor as tt
+        # import theano
+        # import theano.tensor as tt
+        import aesara as theano
+        import aesara.tensor as tt
         <%include file="theano-coupling.py.mako"/>
         '''
         kernel = TheanoBackend().build_py_func(template, dict(sim=sim, theano=theano),
@@ -218,8 +222,10 @@ class TestTheanoDfun(BaseTestDfun):
 
         template = '''
         import numpy as np
-        import theano
-        import theano.tensor as tt
+        # import theano
+        # import theano.tensor as tt
+        import aesara as theano
+        import aesara.tensor as tt
         <%include file="theano-dfuns.py.mako"/>
         '''
         kernel = TheanoBackend().build_py_func(template, dict(sim=sim, theano=theano),
@@ -265,8 +271,10 @@ class TestTheanoIntegrate(BaseTestIntegrate):
         sim.connectivity.set_idelays(sim.integrator.dt)
         template = '''
 import numpy as np
-import theano
-import theano.tensor as tt
+# import theano
+# import theano.tensor as tt
+import aesara as theano
+import aesara.tensor as tt
 def coupling(cX, weights, state): 
     cX = tt.set_subtensor(cX[:], weights.dot(state[:,0].T).T)
     return cX

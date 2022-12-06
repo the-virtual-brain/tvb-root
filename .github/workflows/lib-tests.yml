@@ -33,7 +33,10 @@ jobs:
           python3 -m pip install --upgrade pip
           pip3 install --user -r tvb_library/requirements.txt
           pip3 install --user --no-build-isolation tvb-gdist
-          pip3 install --user Theano-PyMC
+    
+      - name: unconditionally install recent dependencies
+        run: |
+          pip3 install --user aesara
 
       - name: setup tvb
         run: cd tvb_library && python3 setup.py develop --user --no-deps

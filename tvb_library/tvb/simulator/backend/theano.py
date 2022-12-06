@@ -39,7 +39,7 @@ code.
 import os
 import sys
 import importlib
-import theano
+import aesara as theano
 import autopep8
 import tempfile
 
