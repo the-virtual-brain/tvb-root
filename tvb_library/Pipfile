@@ -1,0 +1,23 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+numba = "*"
+pytest = "*"
+matplotlib = "*"
+tvb-data = "*"
+scipy = "*"
+mako = "*"
+autopep8 = "*"
+
+[dev-packages]
+pytest = "*"
+pytest-cov = "*"
+pytest-xdist = "*"
+pytest-benchmark = "*"
+pytest-mock = "*"
+
+[requires]
+python_version = "3.9"
