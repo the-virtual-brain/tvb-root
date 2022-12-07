@@ -25,7 +25,7 @@ jobs:
           python3 -V
           python3 -m pip install --upgrade pip
           pip3 install pipenv
-          cd tvb_library && pipenv install --python $(which python3)
+          cd tvb_library && pipenv install -d --python $(which python3)
         
       # - name: cache ~/.local for pip deps
       #   id: cache-local
