@@ -20,51 +20,57 @@ jobs:
       - name: put ~/.local/bin on $PATH
         run: echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
 
-      - name: cache ~/.local for pip deps
-        id: cache-local
-        uses: actions/cache@v3
-        with:
-          path: ~/.local
-          key: ${{ runner.os }}-pip-${{ hashFiles('tvb_library/requirements.txt') }}
-
-      - name: pip install dependencies
-        if: steps.cache-local.outputs.cache-hit != 'true'
+      - name: setup env with pipenv
         run: |
           python3 -m pip install --upgrade pip
-          pip3 install --user -r tvb_library/requirements.txt
-          pip3 install --user --no-build-isolation tvb-gdist
+          pip3 install pipenv
+          cd tvb_library && pipenv install
+        
+      # - name: cache ~/.local for pip deps
+      #   id: cache-local
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: ~/.local
+      #     key: ${{ runner.os }}-pip-${{ hashFiles('tvb_library/requirements.txt') }}
 
-      - name: setup tvb
-        run: cd tvb_library && python3 setup.py develop --user --no-deps
+      # - name: pip install dependencies
+      #   if: steps.cache-local.outputs.cache-hit != 'true'
+      #   run: |
+      #     python3 -m pip install --upgrade pip
+      #     pip3 install --user -r tvb_library/requirements.txt
+      #     pip3 install --user --no-build-isolation tvb-gdist
 
-      - name: cache data
-        id: cache-data
-        uses: actions/cache@v3
-        with:
-          path: tvb_data
-          key: tvb-data
+      # - name: setup tvb
+      #   run: cd tvb_library && python3 setup.py develop --user --no-deps
 
-      - name: download data
-        if: steps.cache-data.outputs.cache-hit != 'true'
-        run: |
-          wget -q https://zenodo.org/record/4263723/files/tvb_data.zip?download=1 -O tvb_data.zip
-          mkdir tvb_data
-          unzip tvb_data.zip -d tvb_data
-          rm tvb_data.zip
+      # - name: cache data
+      #   id: cache-data
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: tvb_data
+      #     key: tvb-data
 
-      - name: setup data
-        run: |
-          cd tvb_data
-          python3 setup.py develop
+      # - name: download data
+      #   if: steps.cache-data.outputs.cache-hit != 'true'
+      #   run: |
+      #     wget -q https://zenodo.org/record/4263723/files/tvb_data.zip?download=1 -O tvb_data.zip
+      #     mkdir tvb_data
+      #     unzip tvb_data.zip -d tvb_data
+      #     rm tvb_data.zip
+
+      # - name: setup data
+      #   run: |
+      #     cd tvb_data
+      #     python3 setup.py develop
 
       - name: run library tests
-        run: cd tvb_library && python3 -m pytest -n12 --ignore=tvb/tests/library/simulator/rateml_test.py
+        run: cd tvb_library && pipenv run python3 -m pytest -n12 --ignore=tvb/tests/library/simulator/rateml_test.py
 
       - name: run library benchmarks
-        run: cd tvb_library && python3 -m pytest --benchmark-only --ignore=tvb/tests/library/simulator/rateml_test.py
+        run: cd tvb_library && pipenv run python3 -m pytest --benchmark-only --ignore=tvb/tests/library/simulator/rateml_test.py
       
       - name: run rateml tests
-        run: cd tvb_library/tvb/tests/library/simulator/ && pytest rateml_test.py
+        run: cd tvb_library/tvb/tests/library/simulator/ && pipenv run pytest rateml_test.py
 
       - name: run contrib tests
-        run: cd tvb_contrib && python3 -m pytest
+        run: cd tvb_contrib && pipenv run python3 -m pytest
