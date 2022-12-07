@@ -64,6 +64,9 @@ jobs:
       #     cd tvb_data
       #     python3 setup.py develop
 
+      - name: importlib_metadata?
+        run: cd tvb_library && pipenv install importlib_metadata
+
       - name: run library tests
         run: cd tvb_library && pipenv run python3 -m pytest -n12 --ignore=tvb/tests/library/simulator/rateml_test.py
 
