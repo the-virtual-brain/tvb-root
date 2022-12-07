@@ -7,10 +7,11 @@ name = "pypi"
 numba = "*"
 pytest = "*"
 matplotlib = "*"
-tvb-data = "*"
 scipy = "*"
 mako = "*"
 autopep8 = "*"
+tvb-gdist = "*"
+pylems = "*"
 
 [dev-packages]
 pytest = "*"
