@@ -12,6 +12,7 @@ mako = "*"
 autopep8 = "*"
 tvb-gdist = "*"
 pylems = "*"
+h5py = "*"
 
 [dev-packages]
 pytest = "*"
