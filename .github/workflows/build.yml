@@ -40,7 +40,7 @@ jobs:
           python3 -m pip install scikit-build
           pip3 install --user -r tvb_framework/requirements.txt
           pip3 install --user --no-build-isolation tvb-gdist
-          pip3 install --user Theano-PyMC
+          pip3 install --user aesara
 
       - name: setup tvb
         run: |
