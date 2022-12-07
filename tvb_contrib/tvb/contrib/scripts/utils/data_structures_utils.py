@@ -820,13 +820,18 @@ def sort_events_by_x_and_y(events, x="senders", y="times",
         except:
             pass
     ys = np.array(ys)
-    sorted_events = OrderedDict()
+    keys = []
     for xlbl in xlabels:
         if not isinstance(xlbl, Hashable):
-            key = hashfun(xlbl)
+            keys.append(hashfun(xlbl))
         else:
-            key = xlbl
-        sorted_events[key] = np.sort(ys[np.where((xs == xlbl).all(axis=-1))])
+            keys.append(xlbl)
+    if len(ys):
+        sorted_events = OrderedDict()
+        for key, xlbl in zip(keys, xlabels):
+            sorted_events[key] = np.sort(ys[np.where((xs == xlbl).all(axis=-1))])
+    else:
+        sorted_events = OrderedDict(zip(keys, [np.array([])]*len(keys)))
     return sorted_events
 
 

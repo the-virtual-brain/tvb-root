@@ -25,6 +25,8 @@ import matplotlib.pyplot as plt
 import time
 import tqdm
 
+from datetime import datetime
+
 here = os.path.dirname(os.path.abspath(__file__))
 
 class Driver_Setup:
@@ -242,7 +244,16 @@ class Driver_Execute(Driver_Setup):
 					exit(1)
 
 				# generic func signature creation
+				# i = int
+				# j = unsigned int
+				# f = float
+				# Pf = pointer to float
+				# S_ = repeat the former
 				mod_func = "{}{}{}{}".format('_Z', len(args.model), args.model, 'jjjjjfPfS_S_S_S_')
+				# print(mod_func)
+				# mod_func = "_Z12montbrioheunjjjjjfPfS_S_S_S_"
+
+				# step_fn = network_module.get_function('montbrio_heun')
 
 				step_fn = network_module.get_function(mod_func)
 
@@ -437,11 +448,12 @@ class Driver_Execute(Driver_Setup):
 		return tavg
 
 	def plot_output(self, tavg):
-		plt.plot((tavg[:, self.args.plot_data, :, 0]), 'k', alpha=.2)
-		plt.show()
+		for i in range(0, self.n_work_items):
+			plt.plot((tavg[:, self.args.plot_data, :, i]), 'k', alpha=.2)
+			plt.show()
 
-	def write_output(self, tavg):
-		tavg_file = open('tavg_data', 'wb')
+	def write_output(self, tavg, bold):
+		tavg_file = open('tavg_gpu_'+datetime.now().strftime("%d%m%Y_%H:%M:%S"), 'wb')
 		pickle.dump(tavg, tavg_file)
 		tavg_file.close()
 

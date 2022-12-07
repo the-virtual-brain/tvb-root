@@ -332,7 +332,7 @@ class SigmoidalJansenRit(Coupling):
     Jansen and Rit model, of the following form
 
     .. math::
-        c_{min} + (c_{max} - c_{min}) / (1.0 + \exp(-a(x-midpoint)/\sigma))
+        c_{min} + (c_{max} - c_{min}) / (1.0 + \exp(-r(x-midpoint)/\sigma))
 
     Assumes that x has have two state variables.
 
@@ -356,15 +356,15 @@ class SigmoidalJansenRit(Coupling):
         domain=Range(lo=-1000.0, hi=1000.0, step=10.0),
         doc="Midpoint of the linear portion of the sigmoid",)
 
-    r  = NArray(
+    r = NArray(
         label=r":math:`r`",
-        default=numpy.array([1.0,]),
+        default=numpy.array([0.56,]),
         domain=Range(lo=0.01, hi=1000.0, step=10.0),
         doc="the steepness of the sigmoidal transformation",)
 
     a = NArray(
         label=r":math:`a`",
-        default=numpy.array([0.56,]),
+        default=numpy.array([1.0,]),
         domain=Range(lo=0.01, hi=1000.0, step=10.0),
         doc="Scaling of the coupling term",)
 
@@ -372,7 +372,8 @@ class SigmoidalJansenRit(Coupling):
         return simple_gen_astr(self, 'cmin cmax midpoint a r')
 
     def pre(self, x_i, x_j):
-        pre = self.cmax / (1.0 + numpy.exp(self.r * (self.midpoint - (x_j[:, 0] - x_j[:, 1]))))
+        pre = self.cmin + \
+              (self.cmax - self.cmin) / (1.0 + numpy.exp(self.r * (self.midpoint - (x_j[:, 0] - x_j[:, 1]))))
         return pre[:, numpy.newaxis]
 
     def post(self, gx):

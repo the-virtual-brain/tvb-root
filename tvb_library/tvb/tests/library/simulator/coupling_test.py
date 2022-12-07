@@ -138,8 +138,8 @@ class TestCoupling(BaseTestCase):
         assert k.cmin == 0.0
         assert k.cmax == 2.0 * 0.0025
         assert k.midpoint == 6.0
-        assert k.r == 1.0
-        assert k.a == 0.56
+        assert k.r == 0.56
+        assert k.a == 1.0
         self._apply_coupling_2sv(k)
 
 
