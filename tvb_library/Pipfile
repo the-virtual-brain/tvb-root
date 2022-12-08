@@ -13,6 +13,7 @@ autopep8 = "*"
 tvb-gdist = "*"
 pylems = "*"
 h5py = "*"
+tqdm = "*"
 
 [dev-packages]
 pytest = "*"
