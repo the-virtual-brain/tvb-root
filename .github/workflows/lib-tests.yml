@@ -51,18 +51,17 @@ jobs:
       #     path: tvb_data
       #     key: tvb-data
 
-      # - name: download data
-      #   if: steps.cache-data.outputs.cache-hit != 'true'
-      #   run: |
-      #     wget -q https://zenodo.org/record/4263723/files/tvb_data.zip?download=1 -O tvb_data.zip
-      #     mkdir tvb_data
-      #     unzip tvb_data.zip -d tvb_data
-      #     rm tvb_data.zip
+      - name: download data
+        run: |
+          wget -q https://zenodo.org/record/4263723/files/tvb_data.zip?download=1 -O tvb_data.zip
+          mkdir tvb_data
+          unzip tvb_data.zip -d tvb_data
+          rm tvb_data.zip
 
-      # - name: setup data
-      #   run: |
-      #     cd tvb_data
-      #     python3 setup.py develop
+      - name: setup data
+        run: |
+          cd tvb_data
+          python3 setup.py develop
 
       - name: importlib_metadata?
         run: cd tvb_library && pipenv install importlib_metadata
