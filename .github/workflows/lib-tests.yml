@@ -60,8 +60,7 @@ jobs:
 
       - name: setup data
         run: |
-          cd tvb_data
-          pipenv run python3 setup.py develop
+          cd tvb_library && pipenv run bash -c 'cd ../tvb_data && python3 setup.py develop'
 
       - name: importlib_metadata?
         run: cd tvb_library && pipenv install importlib_metadata
