@@ -75,4 +75,4 @@ jobs:
         run: cd tvb_library/tvb/tests/library/simulator/ && pipenv run pytest rateml_test.py
 
       - name: run contrib tests
-        run: cd tvb_contrib && pipenv run python3 -m pytest
+        run: cd tvb_library && pipenv run bash -c 'cd ../tvb_contrib && python3 -m pytest'
