@@ -1,0 +1,23 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+numba = "*"
+pytest = "*"
+matplotlib = "*"
+scipy = "*"
+mako = "*"
+autopep8 = "*"
+tvb-gdist = "*"
+pylems = "*"
+h5py = "*"
+tqdm = "*"
+
+[dev-packages]
+pytest = "*"
+pytest-cov = "*"
+pytest-xdist = "*"
+pytest-benchmark = "*"
+pytest-mock = "*"
