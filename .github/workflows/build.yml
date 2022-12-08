@@ -4,7 +4,7 @@ on: [push]
 jobs:
   build:
     name: Test and Inspect
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted,ubuntu22]
     strategy:
       fail-fast: false
       matrix:

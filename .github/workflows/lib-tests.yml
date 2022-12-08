@@ -3,7 +3,7 @@ on: [push]
 jobs:
   lib-tests:
     
-    runs-on: self-hosted
+    runs-on: [self-hosted,gpu]
 
     steps:
 
