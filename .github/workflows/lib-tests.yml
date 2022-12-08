@@ -75,4 +75,4 @@ jobs:
         run: cd tvb_library && pipenv run bash -c 'pipenv install pycuda && cd tvb/tests/library/simulator/ && pytest rateml_test.py'
 
       - name: run contrib tests
-        run: cd tvb_library && pipenv run bash -c 'cd ../tvb_contrib && python3 -m pytest'
+        run: cd tvb_library && pipenv run bash -c 'pipenv install xarray && python setup.py develop --no-deps && cd ../tvb_contrib && python3 -m pytest'
