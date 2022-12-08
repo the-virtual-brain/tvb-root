@@ -21,6 +21,3 @@ pytest-cov = "*"
 pytest-xdist = "*"
 pytest-benchmark = "*"
 pytest-mock = "*"
-
-[requires]
-python_version = "3.9"
