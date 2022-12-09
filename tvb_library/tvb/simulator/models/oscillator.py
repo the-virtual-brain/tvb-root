@@ -326,7 +326,7 @@ class Generic2dOscillator(ModelNumbaDfun):
 
     state_variables = ('V', 'W')
     _nvar = 2
-    cvar = numpy.array([0, 1], dtype=numpy.int32)
+    cvar = numpy.array([0], dtype=numpy.int32)
 
     coupling_terms = Final(
         label="Coupling terms",
