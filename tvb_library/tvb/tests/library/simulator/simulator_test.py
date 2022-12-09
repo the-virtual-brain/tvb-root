@@ -336,7 +336,8 @@ class TestSimulator(BaseTestCase):
         )
 
         test_simulator.sim._loop_update_stimulus(1, stimulus)
-        self.assert_equal(numpy.count_nonzero(stimulus), len(test_simulator.stim_nodes))
+        self.assert_equal(numpy.count_nonzero(stimulus),
+                          len(test_simulator.stim_nodes) * len(test_simulator.sim.model.stvar))
         assert numpy.allclose(stimulus[test_simulator.sim.model.stvar, test_simulator.stim_nodes, :],
                               test_simulator.stim_value,
                               1.0 / numpy.finfo("single").max)
