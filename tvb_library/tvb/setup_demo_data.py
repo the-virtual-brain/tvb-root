@@ -17,16 +17,19 @@ def setup_data(path):
     except:
         pass
 
+    fullzipname = os.path.join(path, "tvb_data.zip")
+    data_dir = os.path.join(path, "tvb_data")
+
+    for dir in (path, data_dir):
+        if not os.path.exists(dir):
+            os.mkdir(dir)
+
     if not os.path.exists("tvb_data.zip"):
         urllib.request.urlretrieve(
             "https://zenodo.org/record/4263723/files/tvb_data.zip?download=1",
-            os.path.join(path, "tvb_data.zip"))
+            fullzipname)
 
-    data_dir = os.path.join(path, "tvb_data")
-    if not os.path.exists(data_dir):
-        os.mkdir(data_dir)
-
-    with zipfile.ZipFile("tvb_data.zip") as zf:
+    with zipfile.ZipFile(fullzipname) as zf:
         zf.extractall(data_dir)
 
     subprocess.check_call(
