@@ -4,7 +4,7 @@ on: [push]
 jobs:
   build:
     name: Test and Inspect
-    runs-on: self-hosted
+    runs-on: [self-hosted, docker]
     strategy:
       fail-fast: false
       matrix:

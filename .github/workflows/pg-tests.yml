@@ -4,7 +4,7 @@ on: [push]
 jobs:
   build:
     name: Frw-Tests (3.10 PG-SQL)
-    runs-on: self-hosted
+    runs-on: [self-hosted, docker]
 
     services:
       postgres:
