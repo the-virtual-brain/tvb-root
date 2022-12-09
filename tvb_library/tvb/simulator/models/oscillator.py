@@ -321,7 +321,7 @@ class Generic2dOscillator(ModelNumbaDfun):
         of=str,
         label="Variables or quantities available to Monitors",
         choices=("V", "W", "V + W", "V - W"),
-        default=("V", "W"),
+        default=("V",),
         doc="The quantities of interest for monitoring for the generic 2D oscillator.")
 
     state_variables = ('V', 'W')
