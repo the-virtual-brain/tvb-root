@@ -39,7 +39,7 @@ def dfuns(dX, state, cX, parmat, **mparams):
 
     pi = np.pi
 
-% for cterm in sim.model.coupling_terms:
+% for _, cterm in zip(sim.model.cvar, sim.model.coupling_terms):
     ${cterm} = cX[${loop.index}]
 % endfor
 
