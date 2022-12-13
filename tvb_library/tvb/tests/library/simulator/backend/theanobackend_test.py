@@ -53,8 +53,8 @@ from tvb.simulator.noise import Additive, Multiplicative
 from tvb.datatypes.connectivity import Connectivity
 from tvb.simulator.models.oscillator import Generic2dOscillator
 
-from .backendtestbase import BaseTestDfun, BaseTestCoupling, BaseTestIntegrate, BaseTestSim
-
+#from .backendtestbase import BaseTestDfun, BaseTestCoupling, BaseTestIntegrate, BaseTestSim
+from tvb.tests.library.simulator.backend.backendtestbase import BaseTestDfun, BaseTestCoupling, BaseTestIntegrate, BaseTestSim
 
 class TestTheanoSim(BaseTestSim):
 
@@ -135,7 +135,7 @@ class TestTheanoSim(BaseTestSim):
             args = args + (sim.connectivity.delay_indices,)
 
         yh = kernel(*args)
-        self._check_match(y, yh.eval())
+        self._check_match(y, yh.eval()[:, sim.model.cvar, :])
 
     def _test_integrator(self, Integrator, delays=False):
         dt = 0.01

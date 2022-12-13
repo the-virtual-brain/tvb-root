@@ -102,12 +102,17 @@ class BaseTestSim(unittest.TestCase):
             monitors=[Raw()],
             simulation_length=0.1)  # 10 steps
         sim.configure()
+        sim.initial_conditions = np.zeros((conn.horizon, sim.model.nvar, conn.number_of_regions, 1))
+        sim.configure()
         if not delays:
             self.assertTrue((conn.idelays == 0).all())
         buf = sim.history.buffer[...,0]
         # kernel has history in reverse order except 1st element 🤕
         rbuf = np.concatenate((buf[0:1], buf[1:][::-1]), axis=0)
-        state = np.transpose(rbuf, (1, 0, 2)).astype('f')
+        #state = sim.initial_conditions[1:]
+        #state = np.transpose(rbuf, (1, 0, 2)).astype('f')
+        state = np.zeros((sim.model.nvar, conn.horizon, conn.number_of_regions))
+        print(state.shape)
         #self.assertEqual(state.shape[0], 2)
         #self.assertEqual(state.shape[2], conn.weights.shape[0])
         if isinstance(sim.integrator, IntegratorStochastic):
