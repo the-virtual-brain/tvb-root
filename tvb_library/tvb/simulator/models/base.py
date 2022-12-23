@@ -31,6 +31,9 @@ This module defines the common imports and abstract base class for model definit
 import abc
 import numpy
 import typing
+
+from rst2html import rst2html
+
 from tvb.basic.neotraits.api import HasTraits
 
 
@@ -113,7 +116,9 @@ class Model(HasTraits):
     #     return info
 
     def set_title(self):
-        self.title = '{} <br/>DOC: {}'.format(self.__class__.__name__, self.dfun.__doc__)
+        doc = rst2html(self.dfun.__doc__, report_level=5)[0]
+        self.title = '{} <br/>DOC: {}'.format(self.__class__.__name__, doc)
+        # self.title = '{} <br/>DOC: {}'.format(self.__class__.__name__, self.dfun.__doc__)
 
     @property
     def nvar(self):
