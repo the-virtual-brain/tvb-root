@@ -105,6 +105,16 @@ class Model(HasTraits):
         self.update_derived_parameters()
         self._build_observer()
 
+    # def summary_info(self):
+    #     info = super().summary_info()
+    #
+    #     info['doc'] = type(self).dfun.__doc__
+    #
+    #     return info
+
+    def set_title(self):
+        self.title = '{} <br/>DOC: {}'.format(self.__class__.__name__, self.dfun.__doc__)
+
     @property
     def nvar(self):
         """ The number of state variables in this model. """
