@@ -201,7 +201,7 @@ class Model(HasTraits):
 
         out = [state.copy()]
         if self.number_of_modes == 3:
-            coupling = numpy.tile(coupling, (1,1,3))
+            coupling = numpy.tile(coupling, (1, 1, 3))
         for i in range(n_step):
             state += dt * self.dfun(state, coupling)
             if i % n_skip == 0:
@@ -211,7 +211,7 @@ class Model(HasTraits):
 
     @property
     def spatial_param_reshape(self):
-        "Returns reshape argument for a spatialized parameter."
+        """Returns reshape argument for a spatialized parameter."""
         return -1, 1
 
     def _spatialize_model_parameters(self, sim):
@@ -249,7 +249,7 @@ class Model(HasTraits):
     @property
     def spatial_parameter_names(self):
         return [_ for _ in self.parameter_names if getattr(self, _).size != 1]
-    
+
     @property
     def global_parameter_names(self):
         return [_ for _ in self.parameter_names if getattr(self, _).size == 1]
@@ -257,13 +257,12 @@ class Model(HasTraits):
     @property
     def spatial_parameter_matrix(self):
         names = self.spatial_parameter_names
-        matrix = numpy.array([getattr(self,_).reshape((-1,)) for _ in names])
+        matrix = numpy.array([getattr(self, _).reshape((-1,)) for _ in names])
         return matrix
-    
 
 
 class ModelNumbaDfun(Model):
-    "Base model for Numba-implemented dfuns."
+    """Base model for Numba-implemented dfuns."""
 
     @property
     def spatial_param_reshape(self):
