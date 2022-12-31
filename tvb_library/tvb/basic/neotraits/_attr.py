@@ -149,7 +149,7 @@ class Attr(_Attr):
         # This is consistent with how class fields work before they are assigned and become instance bound
         if self.field_name not in instance.__dict__:
             if (self.field_type != types.FunctionType and isinstance(self.default, types.FunctionType)
-                    or inspect.isclass( self.default) and issubclass(self.default, self.field_type)):
+                    or inspect.isclass(self.default) and issubclass(self.default, self.field_type)):
                 default = self.default()
             else:
                 default = self.default
@@ -614,7 +614,7 @@ class Range(object):
     def __init__(self, lo, hi, step=1.0):
         self.lo = lo
         self.hi = hi
-        self.step = step
+        self.step = step if hi - lo > step else abs(hi - lo)
 
     def __contains__(self, item):
         """ true if item between lo and high. ignores the step"""
