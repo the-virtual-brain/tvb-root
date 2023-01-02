@@ -54,6 +54,8 @@ from tvb.core.neotraits.view_model import Str, ViewModel
 from tvb.datatypes.graph import CorrelationCoefficients
 from tvb.datatypes.time_series import TimeSeriesRegion, TimeSeries
 
+WARNING_MSG = "File {} does not exist."
+
 
 class TumorDatasetImporterModel(ViewModel):
     data_file = Str(
@@ -103,10 +105,12 @@ class TumorDatasetImporter(ABCAdapter):
         return -1
 
     def __import_tumor_connectivity(self, conn_folder, patient, user_tag):
+
         connectivity_zip = os.path.join(conn_folder, self.CONN_ZIP_FILE)
         if not os.path.exists(connectivity_zip):
-            self.log.warning("File {} does not exist.".format(connectivity_zip))
+            self.log.warning(WARNING_MSG.format(connectivity_zip))
             return
+
         import_conn_adapter = self.build_adapter_from_class(ZIPConnectivityImporter)
         operation = dao.get_operation_by_id(self.operation_id)
         import_conn_adapter.extract_operation_data(operation)
@@ -126,10 +130,12 @@ class TumorDatasetImporter(ABCAdapter):
         return connectivity_index.gid
 
     def __import_time_series_csv_datatype(self, hrf_folder, connectivity_gid, patient, user_tag):
+
         path = os.path.join(hrf_folder, self.TIME_SERIES_CSV_FILE)
         if not os.path.exists(path):
-            self.log.warning("File {} does not exist.".format(path))
+            self.log.warning(WARNING_MSG.format(path))
             return
+
         with open(path) as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=CSVDelimiterOptionsEnum.COMMA.value)
             ts = list(csv_reader)
@@ -182,10 +188,12 @@ class TumorDatasetImporter(ABCAdapter):
         return ts_gid
 
     def __import_pearson_coefficients_datatype(self, fc_folder, patient, user_tag, ts_gid):
+
         path = os.path.join(fc_folder, self.FC_MAT_FILE)
         if not os.path.exists(path):
-            self.log.warning("File {} does not exist.".format(path))
+            self.log.warning(WARNING_MSG.format(path))
             return
+
         result = ABCUploader.read_matlab_data(path, self.FC_DATASET_NAME)
         result = result.reshape((result.shape[0], result.shape[1], 1, 1))
 
