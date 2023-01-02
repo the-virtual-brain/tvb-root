@@ -8,6 +8,7 @@
     * Change default param values in SigmoidalJansenRit coupling for r (the steepness of the sigmoidal transformation)
       and a (scaling of the coupling term) to better match the TVB mathematics paper Sanz Leon et al, 2015
       https://www.sciencedirect.com/science/article/pii/S1053811915000051?via%3Dihub#bb0575
+    * Convert TumorDatasetCreator into TumorDatasetImporter
 
 ======================================================================================================================================
  The Virtual Brain (TVB)

@@ -37,7 +37,6 @@ from cherrypy.lib.static import serve_file
 from formencode import validators
 from simplejson import JSONEncoder
 import tvb.core.entities.model.model_operation as model
-from tvb.adapters.creators.tumor_dataset_creator import TumorDatasetCreator
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
@@ -525,15 +524,12 @@ class ProjectController(BaseController):
         self._mark_selected(selected_project)
         data = self.project_service.get_filterable_meta()
         filters = StaticFiltersFactory.build_datatype_filters(selected=visibility_filter)
-        tumor_creator_algorithm = dao.get_algorithm_by_module(TumorDatasetCreator.__module__,
-                                                              TumorDatasetCreator.__name__)
 
         template_specification = dict(mainContent="project/structure",
                                       title=selected_project.name,
                                       project=selected_project, data=data,
                                       firstLevelSelection=first_level, secondLevelSelection=second_level,
-                                      filterInputValue=filter_input, filters=filters,
-                                      tumorCreatorAlgorithmId=tumor_creator_algorithm.id)
+                                      filterInputValue=filter_input, filters=filters)
         return self.fill_default_attributes(template_specification, 'data')
 
     @expose_fragment("overlay")

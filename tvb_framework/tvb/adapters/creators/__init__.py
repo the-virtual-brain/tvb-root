@@ -25,4 +25,4 @@
 #
 
 ALL_CREATORS = ["allen_creator", "connectivity_creator", "local_connectivity_creator", "siibra_creator",
-                "stimulus_creator", "tumor_dataset_creator"]
+                "stimulus_creator"]

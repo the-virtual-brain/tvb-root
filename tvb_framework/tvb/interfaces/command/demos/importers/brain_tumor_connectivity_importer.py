@@ -31,12 +31,10 @@ Import connectivities from Brain Tumor zip archives
 .. moduleauthor:: Bogdan Valean <bogdan.valean@codemart.ro>
 """
 import sys
-
 from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporter, RegionMappingImporterModel
 from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporter, ZIPSurfaceImporterModel
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.readers import try_get_absolute_path
-from tvb.config import DEFAULT_PROJECT_GID
 from tvb.interfaces.command.lab import *
 
 CONN_ZIP_FILE = "SC.zip"
