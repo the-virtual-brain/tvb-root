@@ -614,7 +614,7 @@ class Range(object):
     def __init__(self, lo, hi, step=1.0):
         self.lo = lo
         self.hi = hi
-        self.step = step if hi - lo > step else abs(hi - lo)
+        self.step = step if abs(hi - lo) > abs(step) else abs(hi - lo)
 
     def __contains__(self, item):
         """ true if item between lo and high. ignores the step"""

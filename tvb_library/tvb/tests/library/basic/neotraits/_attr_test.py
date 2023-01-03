@@ -33,22 +33,20 @@ class TestRange(BaseTestCase):
     def assert_with_epsilon_error(self, list_one, list_two):
         epsilon = 0.000001
         value_for_return = True
-        print("Value: ", len(list_one))
-        if(len(list_one) != len(list_two)):
+        if len(list_one) != len(list_two):
             return False
         for i in range(0, len(list_one)):
-            if((list_one[i] + epsilon) <= list_two[i] <= (list_one[i] + epsilon)):
+            if (list_one[i] + epsilon) <= list_two[i] <= (list_one[i] + epsilon):
                 continue
-            elif ((list_one[i] - epsilon) <= list_two[i] <= (list_one[i] - epsilon)):
+            elif (list_one[i] - epsilon) <= list_two[i] <= (list_one[i] - epsilon):
                 continue
-            elif ((list_one[i] - epsilon) <= list_two[i] <= (list_one[i] + epsilon)):
+            elif (list_one[i] - epsilon) <= list_two[i] <= (list_one[i] + epsilon):
                 continue
-            elif ((list_one[i] + epsilon) <= list_two[i] <= (list_one[i] - epsilon)):
+            elif (list_one[i] + epsilon) <= list_two[i] <= (list_one[i] - epsilon):
                 continue
             else:
                 value_for_return = False
         return value_for_return
-
 
     def test_generates_range_with_start_and_stop_provided(self):
         floats = list(Range(lo=0.0, hi=3.0, step=1.0).to_array())
@@ -64,7 +62,8 @@ class TestRange(BaseTestCase):
 
     def test_generates_range_with_start_stop_and_periodic_repeating_step(self):
         floats = list(Range(lo=0.0, hi=1.1, step=1. / 3).to_array())
-        assert TestRange.assert_with_epsilon_error(self, floats, list([0.0, 0.333333333333, 0.666666666666, 0.999999999999]))
+        assert TestRange.assert_with_epsilon_error(self, floats,
+                                                   list([0.0, 0.333333333333, 0.666666666666, 0.999999999999]))
 
     def test_generates_range_with_negative_end(self):
         floats = list(Range(lo=1.0, hi=-3.0, step=-1.0).to_array())
