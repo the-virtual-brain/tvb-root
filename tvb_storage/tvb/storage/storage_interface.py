@@ -34,11 +34,9 @@ All calls to methods from this module must be done through this class.
 import os
 import uuid
 from datetime import datetime
-
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
-from tvb.storage.h5.encryption.data_encryption_handler import FoldersQueueConsumer, \
-    encryption_handler
+from tvb.storage.h5.encryption.data_encryption_handler import FoldersQueueConsumer, encryption_handler
 from tvb.storage.h5.encryption.encryption_handler import EncryptionHandler
 from tvb.storage.h5.encryption.import_export_encryption_handler import ImportExportEncryptionHandler
 from tvb.storage.h5.file.exceptions import RenameWhileSyncEncryptingException, FileStructureException
@@ -122,9 +120,6 @@ class StorageInterface:
 
     def get_allen_mouse_cache_folder(self, project_name):
         return self.files_helper.get_allen_mouse_cache_folder(project_name)
-
-    def get_tumor_dataset_folder(self):
-        return self.files_helper.get_tumor_dataset_folder()
 
     @staticmethod
     def copy_file(source, dest, dest_postfix=None, buffer_size=1024 * 1024):

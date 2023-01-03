@@ -31,66 +31,58 @@ Import Brain Tumor dataset
 .. moduleauthor:: Bogdan Valean <bogdan.valean@codemart.ro>
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
+
 import csv
 import os
 import uuid
-import requests
-import time
-from pathlib import Path
 import numpy as np
 import json
-
 from tvb.adapters.datatypes.db.graph import CorrelationCoefficientsIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.graph_h5 import CorrelationCoefficientsH5
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5
 from tvb.adapters.uploaders.csv_connectivity_importer import CSVDelimiterOptionsEnum
 from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporter, ZIPConnectivityImporterModel
-from tvb.basic.logger.builder import get_logger
 from tvb.config.algorithm_categories import DEFAULTDATASTATE_RAW_DATA
-from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
-from tvb.core.adapters.abcuploader import ABCUploader
+from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
-from tvb.basic.neotraits.api import Final
-from tvb.core.neotraits.view_model import ViewModel
+from tvb.core.neotraits.forms import TraitUploadField
+from tvb.core.neotraits.view_model import Str, ViewModel
 from tvb.datatypes.graph import CorrelationCoefficients
 from tvb.datatypes.time_series import TimeSeriesRegion, TimeSeries
-from tvb.storage.storage_interface import StorageInterface
+
+WARNING_MSG = "File {} does not exist."
 
 
-class TumorDatasetCreatorModel(ViewModel):
-    tumor_dataset_url = Final(
-        label='URL for downloading the Tumor Dataset',
-        default='https://kg.ebrains.eu/proxy/export?container=https://object.cscs.ch/v1/AUTH_6ebec77683fb4' \
-                '72f94d352be92b5a577/hbp-d000001_TVB_brain_tumor_pub'
+class TumorDatasetImporterModel(ViewModel):
+    data_file = Str(
+        label='Tumor Dataset (BIDS + zip)'
     )
 
 
-class TumorDatasetImporterForm(ABCAdapterForm):
+class TumorDatasetImporterForm(ABCUploaderForm):
+
+    def __init__(self):
+        super(TumorDatasetImporterForm, self).__init__()
+        self.data_file = TraitUploadField(TumorDatasetImporterModel.data_file, '.zip', 'data_file')
 
     @staticmethod
-    def get_required_datatype():
-        pass
-
-    @staticmethod
-    def get_filters():
-        pass
-
-    @staticmethod
-    def get_input_name():
-        return None
+    def get_upload_information():
+        return {
+            'data_file': '.zip'
+        }
 
     @staticmethod
     def get_view_model():
-        return TumorDatasetCreatorModel
+        return TumorDatasetImporterModel
 
 
-class TumorDatasetCreator(ABCAdapter):
-
-    _ui_name = "Import Tumor Dataset"
-    _ui_description = "Download Tumor Dataset from the web and import it into TVB."
+class TumorDatasetImporter(ABCAdapter):
+    _ui_name = "Tumor Dataset"
+    _ui_description = "Download manually Tumor Dataset from the EBRAINS KG and import it into TVB."
 
     MAXIMUM_DOWNLOAD_RETRIES = 3
     SLEEP_TIME = 3
@@ -99,9 +91,6 @@ class TumorDatasetCreator(ABCAdapter):
     FC_MAT_FILE = "FC.mat"
     FC_DATASET_NAME = "FC_cc_DK68"
     TIME_SERIES_CSV_FILE = "HRF.csv"
-    TUMOR_ZIP_FILE_NAME = 'tumor_brain_dataset.zip'
-
-    logger = get_logger(__name__)
 
     def get_form_class(self):
         return TumorDatasetImporterForm
@@ -116,10 +105,12 @@ class TumorDatasetCreator(ABCAdapter):
         return -1
 
     def __import_tumor_connectivity(self, conn_folder, patient, user_tag):
+
         connectivity_zip = os.path.join(conn_folder, self.CONN_ZIP_FILE)
         if not os.path.exists(connectivity_zip):
-            self.logger.error("File {} does not exist.".format(connectivity_zip))
+            self.log.warning(WARNING_MSG.format(connectivity_zip))
             return
+
         import_conn_adapter = self.build_adapter_from_class(ZIPConnectivityImporter)
         operation = dao.get_operation_by_id(self.operation_id)
         import_conn_adapter.extract_operation_data(operation)
@@ -139,7 +130,12 @@ class TumorDatasetCreator(ABCAdapter):
         return connectivity_index.gid
 
     def __import_time_series_csv_datatype(self, hrf_folder, connectivity_gid, patient, user_tag):
+
         path = os.path.join(hrf_folder, self.TIME_SERIES_CSV_FILE)
+        if not os.path.exists(path):
+            self.log.warning(WARNING_MSG.format(path))
+            return
+
         with open(path) as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=CSVDelimiterOptionsEnum.COMMA.value)
             ts = list(csv_reader)
@@ -192,12 +188,16 @@ class TumorDatasetCreator(ABCAdapter):
         return ts_gid
 
     def __import_pearson_coefficients_datatype(self, fc_folder, patient, user_tag, ts_gid):
+
         path = os.path.join(fc_folder, self.FC_MAT_FILE)
+        if not os.path.exists(path):
+            self.log.warning(WARNING_MSG.format(path))
+            return
+
         result = ABCUploader.read_matlab_data(path, self.FC_DATASET_NAME)
         result = result.reshape((result.shape[0], result.shape[1], 1, 1))
 
         project = dao.get_project_by_id(self.current_project_id)
-        user = dao.get_user_by_id(project.fk_admin)
 
         pearson_gid = uuid.uuid4()
         h5_path = "CorrelationCoefficients_{}.h5".format(pearson_gid.hex)
@@ -226,66 +226,35 @@ class TumorDatasetCreator(ABCAdapter):
         pearson_correlation_index.has_valid_time_series = False
         dao.store_entity(pearson_correlation_index)
 
+    def __import_from_folder(self, datatype_folder, patient, user_tag):
+        conn_gid = self.__import_tumor_connectivity(datatype_folder, patient, user_tag)
+        # The Time Series are invisible in the UI and are imported
+        # just so we can link them with the Pearson Coefficients
+        ts_gid = self.__import_time_series_csv_datatype(datatype_folder, conn_gid, patient, user_tag)
+        self.__import_pearson_coefficients_datatype(datatype_folder, patient, user_tag, ts_gid)
+
     def launch(self, view_model):
         # type: (TumorDatasetImporterModel) -> []
         """
         Download the Tumor Dataset and then import its data
-        (currently only the connectivties and pearson coefficients are imported).
+        (currently only the connectivities and pearson coefficients (FC) are imported).
         """
+        structure = self.storage_interface.unpack_zip(view_model.data_file, self.get_storage_path())
+        subject_folders = {}
+        for name in structure:
+            if os.path.isdir(name):
+                user_tag = os.path.split(name)[1]
+                if user_tag.startswith("sub-"):
+                    subject_folders[user_tag] = name
 
-        storage_interface = StorageInterface()
-        folder = storage_interface.get_tumor_dataset_folder()
-        download_path = os.path.join(folder, self.TUMOR_ZIP_FILE_NAME)
-        import_path = os.path.join(os.path.dirname(download_path), 'TVB_brain_tumor', 'derivatives', 'TVB')
+        for patient, patient_path in subject_folders.items():
+            root_folder_imported = False
+            for user_tag in os.listdir(patient_path):
+                datatype_folder = os.path.join(patient_path, user_tag)
+                if os.path.isdir(datatype_folder):
+                    self.__import_from_folder(datatype_folder, patient, user_tag)
+                elif not root_folder_imported:
+                    root_folder_imported = True
+                    self.__import_from_folder(patient_path, patient, "")
 
-        if not os.path.exists(import_path):
-            was_downloaded = self.__download_tumor_dataset(0, download_path, self.MAXIMUM_DOWNLOAD_RETRIES,
-                                                           view_model.tumor_dataset_url)
-
-            if was_downloaded is False:
-                return
-
-            storage_interface.unpack_zip(download_path, os.path.dirname(download_path))
-            os.remove(download_path)
-
-        for patient in os.listdir(import_path):
-            patient_path = os.path.join(import_path, patient)
-            if os.path.isdir(patient_path):
-                user_tags = os.listdir(patient_path)
-                for user_tag in user_tags:
-                    datatype_folder = os.path.join(patient_path, user_tag)
-
-                    conn_gid = self.__import_tumor_connectivity(datatype_folder, patient, user_tag)
-
-                    # The Time Series are invisible in the UI and are imported
-                    # just so we can link them with the Pearson Coefficients
-                    ts_gid = self.__import_time_series_csv_datatype(datatype_folder, conn_gid, patient, user_tag)
-                    self.__import_pearson_coefficients_datatype(datatype_folder, patient, user_tag, ts_gid)
-
-        self.logger.debug("Importing Tumor Dataset has been successfully completed!")
-
-    def __download_tumor_dataset(self, start_byte, file_name, retry_no, tumor_dataset_url):
-        if retry_no == 0:
-            self.logger.error(
-                "The download of the tumor dataset has failed. The maximum number of retries ({}) has been reached!"
-                    .format(self.MAXIMUM_DOWNLOAD_RETRIES))
-            return False
-
-        resume_header = {'Range': f'bytes={start_byte}'}
-
-        try:
-            r = requests.get(tumor_dataset_url, stream=True, headers=resume_header)
-
-            with open(file_name, 'ab') as f:
-                for chunk in r.iter_content(chunk_size=1024):
-                    f.write(chunk)
-
-            self.logger.debug("The download of the tumor dataset has been successfully completed!")
-            return True
-
-        except Exception:
-            self.logger.warning("An unexpected error has appeared while downloading the tumor dataset."
-                                " Trying the download again, number of retries left is {}!".format(retry_no - 1))
-            time.sleep(self.SLEEP_TIME)
-            next_start_byte = Path(file_name).stat().st_size
-            return self.__download_tumor_dataset(next_start_byte, file_name, retry_no - 1, tumor_dataset_url)
+        self.log.debug("Importing Tumor Dataset has been successfully completed!")
