@@ -26,30 +26,6 @@ jobs:
           python3 -m pip install --upgrade pip
           pip3 install pipenv
           cd tvb_library && pipenv install -d --python $(which python3)
-        
-      # - name: cache ~/.local for pip deps
-      #   id: cache-local
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: ~/.local
-      #     key: ${{ runner.os }}-pip-${{ hashFiles('tvb_library/requirements.txt') }}
-
-      # - name: pip install dependencies
-      #   if: steps.cache-local.outputs.cache-hit != 'true'
-      #   run: |
-      #     python3 -m pip install --upgrade pip
-      #     pip3 install --user -r tvb_library/requirements.txt
-      #     pip3 install --user --no-build-isolation tvb-gdist
-
-      # - name: setup tvb
-      #   run: cd tvb_library && python3 setup.py develop --user --no-deps
-
-      # - name: cache data
-      #   id: cache-data
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: tvb_data
-      #     key: tvb-data
 
       - name: download data
         run: |
