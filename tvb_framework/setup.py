@@ -40,7 +40,7 @@ VERSION = "2.7.2"
 
 TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Prodan, Paula Sansz Leon, Marmaduke Woodman"
 
-TVB_INSTALL_REQUIREMENTS = ["alembic", "allensdk", "bctpy", "cherrypy", "docutils", "flask", "flask-restx",
+TVB_INSTALL_REQUIREMENTS = ["alembic", "bctpy", "cherrypy", "docutils", "flask", "flask-restx",
                             "formencode", "gevent", "h5py", "Jinja2", "matplotlib==3.5.3", "nibabel", "numpy", "pandas",
                             "Pillow", "psutil", "python-keycloak", "requests", "requests-toolbelt>=0.10",
                             "scikit-learn", "scipy", "siibra", "simplejson", "six", "sqlalchemy", "tables==3.7.0",
@@ -60,6 +60,7 @@ setuptools.setup(name="tvb-framework",
                  install_requires=TVB_INSTALL_REQUIREMENTS,
                  extras_require={'postgres': ["psycopg2"],
                                  'hpc': ["pyunicore"],
+                                 'extra': ["allensdk"],
                                  'test': ["pytest", "pytest-benchmark", "pytest-mock", "BeautifulSoup4"]},
                  description='A package for performing whole brain simulations',
                  long_description=DESCRIPTION,

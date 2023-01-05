@@ -1,8 +1,8 @@
 ======================================================================================================================================
  The Virtual Brain (TVB)
- Version: 2.7.2 - build ?????
+ Version: 2.7.2 - build 17798
  Release Date: 5 January 2023
- Description:
+ Description: Fix Tumor import and update copyright text
 ======================================================================================================================================
 
     * Change default param values in SigmoidalJansenRit coupling for r (the steepness of the sigmoidal transformation)
