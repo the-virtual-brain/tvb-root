@@ -45,7 +45,7 @@ class Driver_Setup:
 		self.n_inner_steps = int(self.tavg_period / self.dt)
 
 		self.params = self.setup_params(
-		% for pc in range(len(XML.parameters)):
+		% for pc in range(len(sweeppar)):
 		self.args.n_sweep_arg${pc},
 		% endfor
 		)
@@ -112,7 +112,7 @@ class Driver_Setup:
 		parser = argparse.ArgumentParser(description='Run parameter sweep.')
 
 		# for every parameter that needs to be swept, the size can be set
-		% for pc in range(len(XML.parameters)):
+		% for pc in range(len(sweeppar)):
 		parser.add_argument('-s${pc}', '--n_sweep_arg${pc}', default=4, help='num grid points for ${pc+1}st parameter', type=int)
 		% endfor
 		parser.add_argument('-n', '--n_time', default=400, help='number of time steps to do', type=int)
@@ -136,18 +136,18 @@ class Driver_Setup:
 
 
 	def setup_params(self,
-		% for pc in range(len(XML.parameters)):
+		% for pc in range(len(sweeppar)):
 		n${pc},
 		% endfor
 		):
 		'''
 		This code generates the parameters ranges that need to be set
 		'''
-		% for pc, par_var in enumerate(XML.parameters):
-		sweeparam${pc} = np.linspace(${par_var.dimension}, n${pc})
+		% for pc, par_var in enumerate(sweeppar):
+		sweeparam${pc} = np.linspace(${par_var.minval}, ${par_var.maxval}, n${pc})
 		% endfor
 		params = itertools.product(
-		% for pc in range(len(XML.parameters)):
+		% for pc in range(len(sweeppar)):
 		sweeparam${pc},
 		% endfor
 		)

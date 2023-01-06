@@ -208,6 +208,8 @@
     <xs:complexType name="StateVariable">
 
         <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="minval" type="xs:string" use="optional"/>
+        <xs:attribute name="maxval" type="xs:string" use="optional"/>
         <xs:attribute name="dimension" type="xs:string" use="optional" default="none"/>
         <xs:attribute name="exposure" type="xs:string" use="optional"/>
         <xs:attribute name="description" type="xs:string" use="optional"/>
@@ -394,6 +396,8 @@
         <xs:attribute name="name" type="xs:string" use="required"/>
         <xs:attribute name="dimension" type="xs:string" use="optional" default="none"/>
         <xs:attribute name="description" type="xs:string" use="optional"/>
+        <xs:attribute name="minval" type="xs:string" use="optional"/>
+        <xs:attribute name="maxval" type="xs:string" use="optional"/>
     </xs:complexType>
 
 

@@ -180,49 +180,25 @@ class RateML:
         xmlschema.assertValid(etree.parse(self.xml_location))
         logger.info("True validation of {0} against {1}".format(self.xml_location, xsd_fname))
 
-    def pp_bound(self, model):
+    def pp_params(self, model):
 
-        # check if boundaries for state variables are present. contruct is not necessary in pymodels
-        # python only
-        svboundaries = False
-        for i, sv in enumerate(model.component_types['derivatives'].dynamics.state_variables):
-            if sv.exposure != 'None' and sv.exposure != '' and sv.exposure:
-                svboundaries = True
-                continue
+        # sort the parameters for regular, parameter sweep, coupling and noise relations
+        variables = []
+        sweepparams = []
+        couplingfunction = []
+        stochasint = True
+        for i, sv in enumerate(model.component_types['rateml_model'].parameters):
+            if "parametersweep" in sv.description:
+                sweepparams.append(sv)
+            elif 'couplingfunction' in sv.description:
+                couplingfunction.append(sv)
+            elif "noiseparameter" in sv.description and sv.minval == 0:
+                stochasint = False
+            else:
+                variables.append(sv)
 
-        return svboundaries
+        return variables, sweepparams, couplingfunction, stochasint
 
-    def pp_cplist(self, model):
-
-        # check for component_types containing coupling in name and gather data.
-        # multiple coupling functions could be defined in xml
-        # cuda only
-        couplinglist = list()
-        for i, cplists in enumerate(model.component_types):
-            if 'coupling' in cplists.name:
-                couplinglist.append(cplists)
-
-        return couplinglist
-
-    def pp_noise(self, model):
-
-        # only check whether noise is there, if so then activate it
-        # cuda only
-        noisepresent = False
-        for ct in (model.component_types):
-            if ct.name == 'noise':
-                noisepresent = True
-
-        # see if nsig derived parameter is present for noise
-        # cuda only
-        modellist = model.component_types['derivatives']
-        nsigpresent = False
-        if noisepresent == True:
-            for dprm in (modellist.derived_parameters):
-                if (dprm.name == 'nsig' or dprm.name == 'NSIG'):
-                    nsigpresent = True
-
-        return noisepresent, nsigpresent
 
     # check for power symbol and parse to python (**) or c power (powf(x, y))
     def swap_language_specific_terms(self, model_str):
@@ -247,14 +223,14 @@ class RateML:
     # if values are equal then that is the inital value
     def init_statevariables(self, model):
 
-        modellist = model.component_types['derivatives'].dynamics.state_variables
+        modellist = model.component_types['rateml_model'].dynamics.state_variables
         for sv in modellist:
-            splitdim = list(sv.dimension.split(","))
-            sv_rnd = np.random.uniform(low=float(splitdim[0]), high=float(splitdim[1]))
-            model.component_types['derivatives'].dynamics.state_variables[sv.name].dimension = sv_rnd
+            if sv.maxval:
+                sv_rnd = np.random.uniform(low=float(sv.minval), high=float(sv.maxval))
+                model.component_types['rateml_model'].dynamics.state_variables[sv.name].dimension = sv_rnd
 
     def load_model(self):
-        """Load model from filename"""
+        """Load model from filename amd do some preprocessing on the template to easify rendering"""
 
         # instantiate LEMS lib
         model = Model()
@@ -262,15 +238,12 @@ class RateML:
 
         self.XSD_validate_XML()
 
-        # Do some preprocessing on the template to easify rendering
-        noisepresent, nsigpresent = self.pp_noise(model)
-        couplinglist = self.pp_cplist(model)
-        svboundaries = self.pp_bound(model)
+        p0, p1, p2, p3 = self.pp_params(model)
 
         if self.language == 'cuda':
             self.init_statevariables(model)
 
-        return model, svboundaries, couplinglist, noisepresent, nsigpresent
+        return model, p0, p1, p2, p3
 
     def render(self):
         """
@@ -278,23 +251,26 @@ class RateML:
         this function is similar for all languages. its .render arguments are overloaded.
         """
 
-        model, svboundaries, couplinglist, noisepresent, nsigpresent = self.load_model()
+        model, variables, sweeppar, couplingfunctions,\
+            stochasint = self.load_model()
 
-        derivative_list = model.component_types['derivatives']
+        derivative_list = model.component_types['rateml_model']
 
-        model_str = self.render_model(derivative_list, svboundaries, couplinglist, noisepresent, nsigpresent)
+        model_str = self.render_model(derivative_list, variables, sweeppar,
+                                      couplingfunctions, stochasint)
 
         model_str = self.swap_language_specific_terms(model_str)
 
         # render driver only in case of cuda
         if self.language == 'cuda':
-            driver_str = self.render_driver(derivative_list)
+            driver_str = self.render_driver(derivative_list, sweeppar)
         else:
             driver_str = None
 
         return model_str, driver_str
 
-    def render_model(self, derivative_list, svboundaries, couplinglist, noisepresent, nsigpresent):
+    def render_model(self, derivative_list, variables, sweeppar,
+                     couplingfunctions, stochasint):
 
         if self.language == 'python':
             model_class_name = self.model_filename.capitalize() + 'T'
@@ -304,24 +280,22 @@ class RateML:
         # start templating
         model_str = self.set_template(self.language).render(
             modelname=model_class_name,  # all
-            const=derivative_list.constants,  # all
             dynamics=derivative_list.dynamics,  # all
             exposures=derivative_list.exposures,  # all
-            params=derivative_list.parameters,  # cuda
-            derparams=derivative_list.derived_parameters,  # cuda
-            svboundaries=svboundaries,  # python
-            coupling=couplinglist,  # cuda
-            noisepresent=noisepresent,  # cuda
-            nsigpresent=nsigpresent,  # cuda
+            stochasint=stochasint,  # cuda
+            variables=variables, # all
+            sweeppar=sweeppar, # cuda
+            couplingfunctions=couplingfunctions # cuda
         )
 
         return model_str
 
-    def render_driver(self, derivative_list):
+    def render_driver(self, derivative_list, sweeppar):
 
         driver_str = self.set_template('driver').render(
             model=self.model_filename,
             XML=derivative_list,
+            sweeppar=sweeppar
         )
 
         return driver_str

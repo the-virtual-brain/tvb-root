@@ -65,67 +65,65 @@ e.g. '\&lt(=);' for the "less than or equal to" and '\&gt(=);' for the "greater 
 For a complete description of LEMS, refer to https://www.frontiersin.org/articles/10.3389/fninf.2014.00079/full
 
 ### Derivatives
-To define the time derivatives of the model, a component type with the name: “derivatives”, should be created. 
+To define the time derivatives of the model, a component type with the name: “rateml_model”, should be created. 
 This component type can hold other constructs which define the initialization and dynamics definition of the model. 
 ```xml
-<ComponentType name="derivatives">
+<ComponentType name="rateml_model">
     <!-- Place subconstructs here -->
 </ComponentType>
 ```
 \
-The **Parameter** construct defines variables to be used in a parameter sweep. 
-The name keyword specifies the name and the dimension keyword specifies the range of parameter. 
-Any number of parameters can be entered. Every thread spawned will hold a unique parameter combination which can 
-be simulated on the GPU. Parameter is only supported by CUDA models. In this example the coupling parameters obtain the range entered in the 
-dimension field. The number of evenly spaced samples is entered as argument when the model file is executed. 
-The first minimum of the first parameter range will set the temporal buffer for the models.
+The **Parameter** construct defines variables to be used in the model.
+It is used for defining variables, parameters to sweep, stochastic intergration and coupling function for the GPU model.
+The name keyword specifies the name of the variable.
+The minval and maxval keywords have different usage according to the function of the parameter. 
+The description keyword determines the function of the parameter. 
+
+Use the description "parametersweep" for setting this parameter to be swept in the GPU model. 
+Each thread spawned holds a parameter combination. 
+Any number of parameters can be entered.
+The minval and maxval keywords are the ranges of the values of the sweep.
+The number of evenly spaced samples is entered as argument when the model file is executed. 
 See the section model_driver.py below for more information on CUDA model execution.
+
+Use the description "couplingfunction" to set up the properties of the coupling for the GPU model.
+The minval keyword sets the function of the coupling and thus determines the interaction of the nodes. 
+The maxval keyword selects the state to which the coupling applies. 
+The sigma0 is the hardcoded variable holding the delayed nodes and can be used in the function. 
+The end result is stored in cpop0 variable. 
+Multiple coupling function can be set. The sigma and cpop variables will enumerate accordingly.
+
+Use the description "noiseparameter" to enables stochastic intergration using the forward euler method. 
+The parameter name should be nsig which is the noise attenuation factor. 
+When set to '0' the integration will be done deterministically.
+
+If a random description is used the parameter will be a regular variable in the python or cuda model.
+
 ```xml
-<Parameter name="speed" dimension='0.0, 2.0'/>
-<Parameter name="coupling" dimension='1.6, 3.0'/>
-<Parameter name="tau" dimension='10, 15'/>
-```
-\
-The **DerivedParameter** construct can be used to form temporary variables using Parameters. 
-This construct is only supported by the CUDA models and will generate a float with the const keyword, 
-which is initialized with the expression. Special derived parameters are “rec_speed_dt” and “nsig”. 
-If “rec_speed_dt” is not defined the coupling will not have a temporal aspect, meaning that the delay between 
-nodes will be set to 0. If the added noise needs to be amplified the keyword “nsig” should be used. 
-See coupling and noise sections for more information.
-```xml
-<DerivedParameter name="[name]" expression="[expression]"/>
-```
-\
-The **Constant** construct is used to create constants of the type float. 
-The value field represents the initial value and a description can be entered optionally in the description field. 
-(TODO. Description bug in LEMS: The description attibute is mapped to the symbol attribute in LEMS.py. 
-For now no description field does not translate to description field in Python generations). 
-For the Python models a domain can be specified, this can be done in the dimension field. 
-Either the domain in the format as listed is entered or left blank to exclude it. 
-This domain is used to generate GUI slider bars and value validation in the TVB Framework. 
-For the CUDA models, the dimension field can be omitted.
-```xml
-<Constant name="[name]" domain="lo=[value], hi=[value], step=[value]" default="[value]" description="[optional]"/>
+<Parameter name="global_coupling" minval='1.0' maxval='2.0' dimension="" description="parametersweep"/>
+<Parameter name="cpop0" dimension="" minval="sin(sigma0 - theta)" maxval="0" description="couplingfunction"/>
+<Parameter name="nsig" minval="0.5" dimension="" description="noiseparameter"/>
+<Parameter name="tau" dimension="" minval="1.0" description="???"/>
+
 ```
 \
 The **Exposures** construct specifies variables that the user wants to monitor and that are returned by 
-the computing kernel: name is the name of the variable to be monitored. This field can also be used to enter a 
-mathematical operation to be performed on the variable of interest. 
-The dimension field is unused but should be present.
-See the section on the intepreter which operations are permitted.
-```xml
-<Exposure name="[name]" dimension=""/>
-```
-\
-The **StateVariable** construct is used to define the state variables of the model. 
-The state variables are initialized with a random value from the range in the dimension field. 
-When low == high, this is the initial value. 
-The exposure field sets the state variables' upper and lower boundaries. 
+the computing kernel: 
+The name keyword is the name of the state to be monitored. 
+The dimension keyword is unused but should be present.
+The minval and maxval keywords determine the boundaries of the to be observed state.
 These boundaries ensure that the values of state variables stay within the set boundaries and resets the state 
 if the boundaries are exceeded.
 ```xml
+<Exposure name="[name]" minval="0" maxval="INF" dimension=""/>
+```
+\
+The **StateVariable** construct is used to define the state variables of the model. 
+The state variables are initialized with a random value from the range in the minval/maxval fields. 
+When low == high, this is the initial value.
+```xml
 <Dynamics>
-    <StateVariable name="[name]" dimension="[low, high]" exposure="[lower_bound, upper_bound]"/>
+    <StateVariable name="[name]" minval="0" maxval="2.0" dimension=""/>
 </Dynamics>
 ```
 \
@@ -165,77 +163,6 @@ The **TimeDerivative** construct defines the model dynamics in terms of  derivat
     <TimeDerivative variable="[name]" value="[expression]"/>
 </Dynamics>
 ```
-
-### Coupling for CUDA models
-To define **coupling functions**, which is only applicable for CUDA models, the user can create a coupling 
-component type. To identify this coupling component type, the name field should include the phrase coupling. 
-It will construct a double for loop in which for every node, every other node's state is fetched according 
-to connection delay, multiplied by connection weight. It is possible to create more coupling functions relating 
-to other neuron populations for example. The Python models have coupling functionality defined in a separate class 
-which contains pre-defined functions for pre- and post synaptic behavior. See 'numba and Python coupling' section below.
-```xml
-<ComponentType name="coupling_[name]">
-    <!-- Place subconstructs here -->
-</ComponentType>
-
-<ComponentType name="coupling_[name2]">
-    <!-- Place subconstructs here -->
-</ComponentType>
-```
-\
-The coupling **Parameter** construct specifies the variable that stores intermediate results from computing 
-coupling inputs and its dimension field indicates which state variable the coupling computation should consider and 
-which is fetched from memory. The dimension cannot exceed the number of state variables and start from 0.
-For example, for the Epileptor model which consists of 6 states, either one of them could 
-(theoretically) be considered in computing the coupling. Selecting the first state, would mean a 0 in the dimension field.
-This functionality has been added to give the user more freedom in defining the coupling function. 
-The dimension field indicates the nth defined statevariable of which values are fetched from memory. The parameter 
-name should appear in the user defined 'pre' or 'post' coupling function, if temporal model aspects are desired.
-```xml
-<Parameter name="[name]" dimension='[0-n]'/>
-```
-\
-The coupling **DerivedParameter** construct defines the name of the variable to store the final coupling result and 
-the value field contains a function that transforms the sums of all inputs to a specific node. 
-This variable, 'dp_name', can be used to incorporate the coupling value in the dynamics of the model and 
-is eventually used to 'export' the coupling value out of the for loops. This value should then be used in 
-time derivative definition 
-Syntax: [name] *= [expression].
-```xml
-<DerivedParameter name="[dp_name]" value="[expression]"/>
-```
-\
-The **DerivedVariable** construct can be used to enter a 'pre'- and 'post'-synaptic coupling function. 
-The final result is that the pre- is multiplied with the post synaptic coupling function and again multiplied 
-with the weights of the node. This result is assigned to 'dp_name', which is shown on line 16 of the listing below. 
-If the derivatives component type does not have a derived parameter named 'rec_speed_dt' the coupling function will 
-not have the delay aspect and thus does not have a temporal component. The listing below also shows the fetching of 
-the delays and the usage of 'rec_speed_dt'. If 'rec_speed_dt' is not defined 'dij' will be set to 0. Other variables 
-or constants defined inside or outside of this component type, can also be used to populate this function.
-```xml
-<Dynamics>
-    <!-- Construct to define the pre and post coupling function
-        Name should always be 'pre' and 'post'
-        [dp_name] += node_weight * [pre.expression] * [post.expression] -->
-    <DerivedVariable name="[pre]" value="[expression]"/>
-    <DerivedVariable name="[post]" value="[expression]"/>
-</Dynamics>
-```
-\
-Example for the coupling:
-```xml
-<ComponentType name="coupling_function">
-    <Parameter name="V_j" dimension='1'/>
-    <DerivedParameter name="c_pop1" value="global_coupling"/>
-    <Constant name="c_a" dimension="" value="1" description="Rescales the connection strength."/>
-
-    <Dynamics>
-        <DerivedVariable name="pre" value="sin(V_j - V)"/>
-        <DerivedVariable name="post" value="c_a"/>
-    </Dynamics>
-
-</ComponentType>
-```
 \
 The **generated coupling for CUDA models** from the example has the following generic structure:
 The mutable fields corresponding to the coupling syntax are highlighted between ```_<>_```, which displays the mapping
@@ -243,7 +170,7 @@ between the XML and the C code.
 ```c
 // Loop over nodes
 for (int i_node = 0; i_node < n_node; i_node++){
-    _<c_pop1>_ = 0.0f;
+    _<cpopN>_ = 0.0f;
     // fetching the first node for coupling calculations
     V = state((t) % nh, i_node + 0 * n_node);
     unsigned int i_n = i_node * n_node
@@ -255,9 +182,9 @@ for (int i_node = 0; i_node < n_node; i_node++){
             // Get the delay between node i and node j
             unsigned int dij = lengths[i_n + j_node] * rec_speed_dt;
             // Get the state of node j which is delayed by dij
-            float _<V_j>_ = state(((t - dij + nh) % nh), j_node + _<1>_ * n_node);
-            // Sum using coupling function (constant * weight * pre * post)
-            _<c_pop1>_ += _<c_a>_ * _<wij>_ * _<sin(V_j - V)>_;
+            float sgmaN = state(((t - dij + nh) % nh), j_node + _<N>_ * n_node);
+            // Sum using coupling function
+            _<cpopN>_ += wij * _<sin(V_j - V)>_;
         }
 }
 // Export c_pop1 outside loop and process
@@ -266,22 +193,6 @@ _<c_pop1>_ *= _<global_coupling>_;
 ...
 ```
 *Listing 1. Generated CUDA code for the coupling functionality*
-
-### Noise for CUDA models
-To specify **noise addition** to the model dynamics, a component type with the name 'noise' can be defined, 
-which is only applicable for CUDA models. The CUDA models make use of the Curand library to add a random value 
-to the calculated derivatives, which is comparable to Gaussian noise (curand_normal).
-As is mentioned in the derivatives section, if the derivatives component type has 
-a derived parameter with the name 'nsig' a noise amplification of value will be used to amplify the noise. 
-Specifying:
-```xml
-<ComponentType name="noise"/>
-```
-will add this line to the model, in which nsig is the noise amplifier V is the current state and dV is 
-the numerical solution step of the derivatives: 
-```c
-V += nsig * curand_normal(&crndst) + dV;
-```
 
 ### Numba and Python coupling for regular TVB models
 In RateML the dynamics of the Python rate models are integrated using Numba vectorization (Lam et al., 2015). 

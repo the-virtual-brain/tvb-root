@@ -1,3 +1,33 @@
+// -*- coding: utf-8 -*-
+//
+//
+// TheVirtualBrain-Scientific Package. This package holds all simulators, and
+// analysers necessary to run brain-simulations. You can use it stand alone or
+// in conjunction with TheVirtualBrain-Framework Package. See content of the
+// documentation-folder for more details. See also http://www.thevirtualbrain.org
+//
+// (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+//
+// This program is free software: you can redistribute it and/or modify it under the
+// terms of the GNU General Public License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any later version.
+// This program is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+// PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License along with this
+// program.  If not, see <http://www.gnu.org/licenses/>.
+//
+//
+//   CITATION:
+// When using The Virtual Brain for scientific publications, please cite it as follows:
+//
+//  Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
+//  Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
+//      The Virtual Brain: a simulator of primate brain network dynamics.
+//   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+//
+//
+
 #include <stdio.h> // for printf
 #define PI_2 (2 * M_PI_F)
 #define PI M_PI_F
@@ -18,13 +48,13 @@
 #include <curand.h>
 #include <stdbool.h>
 
-__device__ float wrap_it_V(float V)
+__device__ float wrap_it_theta(float theta)
 {
-    float Vdim[] = {-2, 1};
-    if (V < Vdim[0]) V = Vdim[0];
-    else if (V > Vdim[1]) V = Vdim[1];
+    float thetadim[] = {0.0, 100};
+    if (theta < thetadim[0]) theta = thetadim[0];
+    else if (theta > thetadim[1]) theta = thetadim[1];
 
-    return V;
+    return theta;
 }
 
 __global__ void kuramoto(
@@ -57,23 +87,19 @@ __global__ void kuramoto(
 
     // regular constants
     const float omega = 60.0 * 2.0 * 3.1415927 / 1e3;
+    const float nsig = 0.5;
 
-    // coupling constants, coupling itself is hardcoded in kernel
-    const float a = 1;
-
-    // coupling parameters
-    float c_pop0 = 0.0;
-
-    // derived parameters
-    const float rec_n = 1.0f / n_node;
+    // fixed constant for coupling, dependant on global_speed
     const float rec_speed_dt = 1.0f / global_speed / (dt);
-    const float nsig = sqrt(dt) * sqrt(2.0 * 1e-5);
 
+    // the dynamic derived variables declarations
+    float c_pop0 = 0.0;
 
     curandState crndst;
     curand_init(id + (unsigned int) clock64(), 0, 0, &crndst);
 
-    float V = 0.0;
+    // init the state var with random value from [minval, maxval] or minval
+    float theta = 68.826696632858;
 
     float dV = 0.0;
 
@@ -81,7 +107,7 @@ __global__ void kuramoto(
     float dij = 0.0;
     float wij = 0.0;
 
-    float V_j = 0.0;
+    float cpop0 = 0.0;
 
     //***// This is only initialization of the observable
     for (unsigned int i_node = 0; i_node < n_node; i_node++)
@@ -98,13 +124,13 @@ __global__ void kuramoto(
     //***// This is the loop over nodes, which also should stay the same
         for (int i_node = 0; i_node < n_node; i_node++)
         {
-            c_pop0 = 0.0f;
+            cpop0 = 0.0f;
 
             if (t == (i_step)){
                 tavg(i_node + 0 * n_node) = 0;
             }
 
-            V = state((t) % nh, i_node + 0 * n_node);
+            theta = state((t) % nh, i_node + 0 * n_node);
 
             // This variable is used to traverse the weights and lengths matrix, which is really just a vector. It is just a displacement. /
             unsigned int i_n = i_node * n_node;
@@ -122,30 +148,31 @@ __global__ void kuramoto(
                 dij_i = (int)dij;
 
                 //***// Get the state of node j which is delayed by dij
-                V_j = state(((t - dij_i + nh) % nh), j_node + 0 * n_node);
+                float sigma0 = state(((t - dij_i + nh) % nh), j_node + 0 * n_node);
 
-                // Sum it all together using the coupling function. Kuramoto coupling: (postsyn * presyn) == ((a) * (sin(xj - xi))) 
-                c_pop0 += wij * a * sin(V_j - V);
+                // Sum it all together using the coupling function.
+                cpop0 += wij * sin(sigma_0 - theta);
+
             } // j_node */
 
-            // global coupling handling, rec_n used to scale nodes
-            c_pop0 *= global_coupling;
+            // the dynamic derived variables declarations
+            c_pop0 = cpop0 * global_coupling;
 
 
             // Integrate with forward euler
             dV = dt * (omega + c_pop0);
 
-            // Add noise because component_type Noise is present in model
-            V += nsig * curand_normal(&crndst) + dV;
+            // Add noise or not if nsig = 0
+            theta += nsig * curand_normal(&crndst) + dV;
 
             // Wrap it within the limits of the model
-            V = wrap_it_V(V);
+            theta = wrap_it_theta(theta);
 
             // Update the state
-            state((t + 1) % nh, i_node + 0 * n_node) = V;
+            state((t + 1) % nh, i_node + 0 * n_node) = theta;
 
             // Update the observable
-            tavg(i_node + 0 * n_node) += V/n_step;
+            tavg(i_node + 0 * n_node) += theta/n_step;
 
             // sync across warps executing nodes for single sim, before going on to next time step
             __syncthreads();

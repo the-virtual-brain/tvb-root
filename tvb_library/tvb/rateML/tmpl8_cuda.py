@@ -49,10 +49,10 @@
 #include <stdbool.h>
 
 % for state_var in (dynamics.state_variables):
-    % if (not state_var.exposure == "None" and not state_var.exposure == "none"):
+    % if (state_var.maxval):
 __device__ float wrap_it_${state_var.name}(float ${state_var.name})
 {
-    float ${state_var.name}dim[] = {${state_var.exposure}};
+    float ${state_var.name}dim[] = {${state_var.minval}, ${state_var.maxval}};
     if (${state_var.name} < ${state_var.name}dim[0]) ${state_var.name} = ${state_var.name}dim[0];
     else if (${state_var.name} > ${state_var.name}dim[1]) ${state_var.name} = ${state_var.name}dim[1];
 
@@ -87,38 +87,17 @@ __global__ void ${modelname}(
     // unpack params
     // These are the two parameters which are usually explore in fitting in this model
     ## printing the to be sweeped parameters
-    % for paramcounter, par_var in enumerate(params):
+    % for paramcounter, par_var in enumerate(sweeppar):
     const float ${par_var.name} = params(${paramcounter});
     % endfor
 
     // regular constants
-% for item in const:
-    const float ${item.name} = ${item.value};
+% for item in variables:
+    const float ${item.name} = ${item.minval};
 % endfor /
 
-    // coupling constants, coupling itself is hardcoded in kernel
-% for m in range(len(coupling)):
-    % for cc in (coupling[m].constants):
-    const float ${cc.name} = ${cc.value};
-    %endfor /
-% endfor
-
-    // coupling parameters
-% for m in range(len(coupling)):
-    % for cc in (coupling[m].derived_parameters):
-    float ${cc.name} = 0.0;
-    %endfor /
-% endfor
-
-    % if derparams:
-    // derived parameters
-    % if nsigpresent==False and noisepresent==True:
-    const float nsig = 1;
-    % endif /
-    % for par_var in derparams:
-    const float ${par_var.name} = ${par_var.value};
-    % endfor /
-    %endif /
+    // fixed constant for coupling, dependant on global_speed
+    const float rec_speed_dt = 1.0f / global_speed / (dt);
 
     % if dynamics.derived_variables:
     // the dynamic derived variables declarations
@@ -134,13 +113,18 @@ __global__ void ${modelname}(
     % endfor
     % endif \
 
-    % if noisepresent==True:
+    % if stochasint:
     curandState crndst;
     curand_init(id + (unsigned int) clock64(), 0, 0, &crndst);
     % endif
 
+    // init the state var with random value from [minval, maxval] or minval
     % for state_var in (dynamics.state_variables):
+        % if state_var.maxval:
     float ${state_var.name} = ${state_var.dimension};
+        % else:
+    float ${state_var.name} = ${state_var.minval};
+        % endif
     % endfor /
 
     % for td in (dynamics.time_derivatives):
@@ -151,10 +135,8 @@ __global__ void ${modelname}(
     float dij = 0.0;
     float wij = 0.0;
 
-    % for m in range(len(coupling)):
-        % for cp in (coupling[m].parameters):
-    float ${cp.name} = 0.0;
-        % endfor /
+    % for m in range(len(couplingfunctions)):
+    float ${couplingfunctions[m].name} = 0.0;
     %endfor
 
     //***// This is only initialization of the observable
@@ -172,10 +154,8 @@ __global__ void ${modelname}(
     //***// This is the loop over nodes, which also should stay the same
         for (int i_node = 0; i_node < n_node; i_node++)
         {
-            % for m in range(len(coupling)):
-                % for cdp in (coupling[m].derived_parameters):
-            ${cdp.name} = 0.0f;
-                %endfor
+            % for m in range(len(couplingfunctions)):
+            ${couplingfunctions[m].name} = 0.0f;
             % endfor /
 
             if (t == (i_step)){
@@ -198,45 +178,22 @@ __global__ void ${modelname}(
                 if (wij == 0.0)
                     continue;
 
-                % if 'rec_speed_dt' in derparams and derparams['rec_speed_dt'].value != '0':
                 // Get the delay between node i and node j
                 dij = lengths[i_n + j_node] * rec_speed_dt;
                 dij = dij + 0.5;
                 dij_i = (int)dij;
-                    % else:
-                // no delay specified
-                dij_i = 0;
-                % endif
 
                 //***// Get the state of node j which is delayed by dij
-                % for m in range(len(coupling)):
-                    % for cp in (coupling[m].parameters):
-                ${cp.name} = state(((t - dij_i + nh) % nh), j_node + ${cp.dimension} * n_node);
-                    % endfor /
+                % for m in range(len(couplingfunctions)):
+                float sigma${m} = state(((t - dij_i + nh) % nh), j_node + ${couplingfunctions[m].maxval} * n_node);
                 %endfor
 
-                // Sum it all together using the coupling function. Kuramoto coupling: (postsyn * presyn) == ((a) * (sin(xj - xi))) \
-                % for ml in range(len(coupling)):
-                    ## only do this if pre or post is specified
-                    % if coupling[ml].dynamics.derived_variables and \
-                        (coupling[ml].dynamics.derived_variables['pre'].value != 'None' or \
-                         coupling[ml].dynamics.derived_variables['post'].value != 'None'):
-                    % for cdp in (coupling[ml].derived_parameters):
-
-                ${cdp.name} += wij * ${coupling[ml].dynamics.derived_variables['post'].value} * ${coupling[ml].dynamics.derived_variables['pre'].value};
-                    %endfor
-                    % endif
-                % endfor /
-            } // j_node */
-
-            // global coupling handling, rec_n used to scale nodes
-            % for m in range(len(coupling)):
-                % for cdp in (coupling[m].derived_parameters):
-                    % if cdp.value and (cdp.value !='None' and cdp.value !='none'):
-            ${cdp.name} *= ${cdp.value};
-                    % endif /
+                // Sum it all together using the coupling function.
+                % for ml in range(len(couplingfunctions)):
+                ${couplingfunctions[ml].name} += wij * ${couplingfunctions[ml].minval};
                 % endfor
-            % endfor \
+
+            } // j_node */
 
             % if dynamics.derived_variables:
             // the dynamic derived variables declarations
@@ -269,8 +226,8 @@ __global__ void ${modelname}(
             ${tim_der.variable} = dt * (${tim_der.value});
             % endfor
 
-            % if noisepresent:
-            // Add noise because component_type Noise is present in model
+            % if stochasint:
+            // Add noise or not if nsig = 0
             % for ds, td in zip(dynamics.state_variables, dynamics.time_derivatives):
             ${ds.name} += nsig * curand_normal(&crndst) + ${td.variable};
             % endfor /
@@ -283,11 +240,7 @@ __global__ void ${modelname}(
 
             // Wrap it within the limits of the model
             % for state_var in (dynamics.state_variables):
-                % if state_var.exposure == 'PI':
-            ${state_var.name} = wrap_it_${state_var.exposure}(${state_var.name});
-                % elif (not state_var.exposure == "None" and not state_var.exposure == "none"):
             ${state_var.name} = wrap_it_${state_var.name}(${state_var.name});
-                % endif
             % endfor /
 
             // Update the state

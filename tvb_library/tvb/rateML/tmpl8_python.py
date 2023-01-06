@@ -35,32 +35,46 @@ from numba import guvectorize, float64
 from tvb.basic.neotraits.api import NArray, Final, List, Range
 
 class ${modelname}(ModelNumbaDfun):
-    %for mconst in const:
-        ${NArray(mconst)}
-    %endfor
 
+    %for para in variables:
+    ${para.name} = NArray(
+        %if not (para.maxval):
+        label = ":math:`${para.name}`",
+        default = numpy.array([${para.minval}]),
+        domain = Range(lo=0.0, hi=1000.0, step=0.1),
+        doc = """${para.description}"""
+        %endif
+    )
+
+    %endfor
+\
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
         default={\
 %for itemA in dynamics.state_variables:
-"${itemA.name}": numpy.array([${itemA.dimension}])${'' if loop.last else ', \n\t\t\t\t '}\
+    % if itemA.maxval:
+"${itemA.name}": numpy.array([${itemA.minval}, ${itemA.maxval}])${'' if loop.last else ', \n\t\t\t\t '}\
+    % else:
+"${itemA.name}": numpy.array([${itemA.minval}, numpy.inf])${'' if loop.last else ', \n\t\t\t\t '}\
+    % endif
 %endfor
 },
         doc="""state variables"""
     )
 
-% if svboundaries:
     state_variable_boundaries = Final(
         label="State Variable boundaries [lo, hi]",
         default={\
-%for limit in dynamics.state_variables:
-% if (limit.exposure!='None' and limit.exposure!=''):
-"${limit.name}": numpy.array([${limit.exposure}])${'' if loop.last else ', \n\t\t\t\t '}\
+%for limit in exposures:
+% if (limit.minval!='' and limit.maxval!=''):
+"${limit.name}": numpy.array([${limit.minval}, ${limit.maxval}])${'' if loop.last else ', \n\t\t\t\t '}\
+%else:
+"${limit.name}": numpy.array([-numpy.inf, numpy.inf])${'' if loop.last else ', \n\t\t\t\t '}\
 % endif
 %endfor
 },
     )
-% endif \
+\
 
     variables_of_interest = List(
         of=str,
@@ -76,12 +90,6 @@ class ${modelname}(ModelNumbaDfun):
 '${choice.name}', \
 %endfor
 ),
-
-##         default=(\
-## %for defa in (dynamics.state_variables):
-## '${defa.name}', \
-## %endfor
-## ),
         doc="Variables to monitor"
     )
 
@@ -103,8 +111,10 @@ ${i},\
         vw_ = vw.reshape(vw.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
         deriv = _numba_dfun_${modelname}(vw_, c_, \
-%for itemE in const:
+%for itemE in variables:
+    # %if not (para.maxval):
 self.${itemE.name}, \
+    # %endif
 %endfor
 local_coupling)
 
@@ -112,12 +122,12 @@ local_coupling)
 
 ## signature is always the number of constants +4. the extras are vw, c_0, lc_0 and dx.
 @guvectorize([(float64[:], float64[:], \
-% for i in range(const.__len__()+1):
+% for i in range(variables.__len__()+1):
 float64, \
 % endfor
-float64[:])], '(n),(m)' + ',()'*${const.__len__()+1} + '->(n)', nopython=True)
+float64[:])], '(n),(m)' + ',()'*${variables.__len__()+1} + '->(n)', nopython=True)
 def _numba_dfun_${modelname}(vw, coupling, \
-% for itemI in const:
+% for itemI in variables:
 ${itemI.name}, \
 % endfor
 local_coupling, dx):
@@ -162,15 +172,3 @@ local_coupling, dx):
     dx[${j}] = ${itemH.value}
     % endfor \
     \
-    ## TVB numpy constant declarations /
-    <%def name="NArray(nconst)">
-    ${nconst.name} = NArray(
-        label=":math:`${nconst.name}`",
-        default=numpy.array([${nconst.value}]),
-        % if (nconst.dimension != "None" and nconst.dimension != ""):
-        domain=Range(${nconst.dimension}),
-        % endif
-        doc="""${nconst.description}"""
-    )\
-    ##self.${nconst.name} = ${nconst.name}
-    </%def>
