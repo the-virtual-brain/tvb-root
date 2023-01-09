@@ -55,7 +55,7 @@ EXCLUDES = [
     'queue', 'stdsuites', 'wxpython',
     # We exclude bellow shorter names for packages already introspected (mainly Mac)
     "foundation", "exceptionhandling", "pytest_cov", "pypiwin32", "pyyaml", "msgpack-python", "tlz",
-    "objc", "appkit", "pyobjctools", "cocoa",
+    "objc", "appkit", "pyobjctools", "cocoa", '_argon2_cffi_bindings',
     "ipykernel", "ipython_genutils", "nbformat", "nbconvert",
     'finder', 'unittest', 'email', 'encodings', 'multiprocessing', 'json', 'curses', 'importlib', 'xml', 'logging'
 ]
@@ -64,14 +64,14 @@ EXCLUDES_DLL = []
 
 # Windows *.pyds that are part of python standard libs
 EXCLUDES_PYD = [
-    '_psutil_windows.pyd', 'gdist.pyd', "_cffi_backend.pyd", "_scandir.pyd", "_yaml.pyd"
+    '_psutil_windows.pyd', 'gdist.pyd', "_cffi_backend.pyd", "_scandir.pyd", "_yaml.pyd", "_cffi_backend.cp310-win_amd64.pyd"
 ]
 
 # libpq dependencies on dynamic psycopg linux 32
 EXCLUDES_SO = [
-    '_psutil_linux.so', '_psutil_posix.so', 'gdist.so', '_scandir.so',
+    '_psutil_linux.so', '_psutil_posix.so', 'gdist.so', '_scandir.so', 'gdist.cpython-310-darwin.so',
     '_posixsubprocess.so', # already reported as subprocess32
-    '_cffi_backend.cpython-310-x86_64-linux-gnu.so'
+    '_cffi_backend.cpython-310-x86_64-linux-gnu.so', '_cffi_backend.cpython-310-darwin.so'
 ]
 
 EXCLUDES_DYLIB = [
