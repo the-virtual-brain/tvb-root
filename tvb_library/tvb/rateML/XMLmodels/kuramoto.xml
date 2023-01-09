@@ -1,22 +1,37 @@
 <Lems description="Kuramoto Base type of any cell/population which has a (dimensionless) rate _R.">
 
-    <ComponentType name="derivatives">
+    <ComponentType name="rateml_model" extends="baseCellMembPot">
 
-        <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
-        <Parameter name="global_speed" dimension='1.0, 1.0'/>
-        <Parameter name="global_coupling" dimension='1.0, 1.0'/>
+        <!-- Parameters with max will be assumed to be swept. sweep data will be matched by order of entry -->
+        <!--  global_speed needs either to be swept or set as a single variable -->
+        <Parameter name="global_speed" minval='1.0' maxval='2.0' dimension="" description="parametersweep"/>
+        <Parameter name="global_coupling" minval='1.0' maxval='2.0' dimension="" description="parametersweep"/>
+        <!-- Parameters with only min will be initial value -->
+        <Parameter name="omega" minval='60.0 * 2.0 * 3.1415927 / 1e3' dimension=""/>
+        <!-- Nsig is special. Noise attenuation factor. If set to 0, no stochastic integration -->
+        <Parameter name="nsig" minval="0.5" dimension="" description="noiseparameter"/>
+        <!-- Coupling parameters are special. Used for coupling when description is "couplingfunction"
+         for the accumulation of nodes interaction use hardcoded value sigma, maxval sets the state to which
+         the coupling should apply -->
+        <Parameter name="cpop0" minval="sin(sigma_0 - theta)" maxval="0" dimension="" description="couplingfunction"/>
+<!--        <Parameter name="cpop1" minval="sin(sigma1 - V)" maxval="2" dimension="" description="couplingfunction"/>-->
 
-        <DerivedParameter name="rec_n" value="1.0f / n_node"/>
-        <DerivedParameter name="rec_speed_dt" value="1.0f / global_speed / (dt)"/>
-        <DerivedParameter name="nsig" value="sqrt(dt) * sqrt(2.0 * 1e-5)"/>
+<!--        <Parameter name="rec_n" minval="1.0f / n_node" dimension=""/>-->
 
-        <Constant name="omega" value="60.0 * 2.0 * 3.1415927 / 1e3" dimension=""  description="sets the base line frequency for the Kuramoto oscillator in [rad/ms]"/>
+        <!--Network dependency, fixed for now -->
+        <Attachments name="synapses" type="basePointCurrentDL"/>
 
-        <Exposure name="V" dimension="V" />
+        <Exposure name="theta" minval='1.0' maxval='2.0' dimension="" />
 
         <Dynamics>
-            <!-- For CUDA models a single value for dimension is required -->
-            <StateVariable name="V" dimension="0.0, 0.0" exposure="-2, 1"/>
+            <!-- what do we need voltage for and why is it a state? -->
+<!--            <StateVariable dimension="voltage" exposure="v" name="v"/>-->
+
+            <!-- For CUDA models a single value for dimension is required. Dimension range is random init for py
+             exposure is simulation bounds-->
+            <StateVariable name="theta" minval="0.0" maxval="100" dimension="" exposure=""/>
+            <!-- Cuda only for scaling the nodes coupled effect -->
+            <DerivedVariable name="c_pop0" value="cpop0 * global_coupling"/>
             <!-- For python models a dimension range is required -->
             <!-- <StateVariable name="V" dimension="0.0, numpy.pi * 2.0" exposure="-2, 1"/>-->
 
@@ -24,28 +39,4 @@
         </Dynamics>
 
     </ComponentType>
-
-    <ComponentType name="coupling_function">
-
-<!--        variables for pre synaptic function-->
-        <Parameter name="V_j" dimension='0'/>
-        <DerivedParameter name="c_pop0" value="global_coupling"/>
-
-        <Constant name="a" value="1" dimension="" description="Rescales the connection strength."/>
-
-<!--        variables for post synaptic function-->
-<!--        <Requirement name="wij" dimension=''/>-->
-        <Dynamics>
-            <DerivedVariable name="pre" value="sin(V_j - V)"/>
-            <DerivedVariable name="post" value="a"/>
-        </Dynamics>
-
-        <!-- Handle local coupling result, full expression is c_0 *= 'value'. Name option is hardcoded -->
-
-
-    </ComponentType>
-
-    <!-- If noise needs to be present, just specify the component type. Detail might be added later -->
-    <ComponentType name="noise" />
-
 </Lems>
