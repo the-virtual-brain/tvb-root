@@ -243,7 +243,7 @@
     <dependency env="[win,linux]" name="coverage">
         <full-name value="Coverage"/>
         <project-home value="https://pypi.python.org/pypi/coverage"/>
-        <version value="[7.0.4]"/>
+        <version value="[7.0.2,7.0.4]"/>
         <usage value="unit tests"/>
         <license value="LICENSE_coverage.txt"/>
         <license-type value="Apache_ 2"/>
@@ -333,11 +333,11 @@
     <dependency env="[win,linux]" name="decorator">
         <full-name value="Decorator module"/>
         <project-home value="https://github.com/micheles/decorator"/>
-        <version value="[4.4.2]"/>
+        <version value="[5.1.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_decorator.txt"/>
-        <license-type value="BSD_"/>
-        <copyright-notice value="Copyright (c) 2005-2015, Michele Simionato"/>
+        <license-type value="BSD_ 2 clauses"/>
+        <copyright-notice value="Copyright (c) 2005-2018, Michele Simionato"/>
         <description value="Better living through Python with decorators"/>
     </dependency>
     <dependency env="[win,mac,linux]" name="deprecated">
@@ -362,18 +362,18 @@
     </dependency>
     <dependency env="[win,linux]" name="docutils">
         <full-name value="DocUtils"/>
-        <project-home value="http://docutils.sourceforge.net/"/>
-        <version value="0.16"/>
+        <project-home value="https://sourceforge.net/projects/docutils/"/>
+        <version value="0.19"/>
         <usage value="generating documentation"/>
         <license value="LICENSE_docutils.txt"/>
-        <license-type value="Public Domain"/>
+        <license-type value="BSD_ or Public Domain"/>
         <copyright-notice value="The persons who have associated their work with this project (the Dedicator: David Goodger and the many contributors to the Docutils project) hereby dedicate the entire copyright, less few exception, in the work of authorship known as Docutils identified below (the Work) to the public domain."/>
         <description value="Documentation - Coming with Anaconda env"/>
     </dependency>
     <dependency env="[win,linux]" name="entrypoints">
         <full-name value="Entrypoints"/>
         <project-home value="https://pypi.python.org/pypi/entrypoints"/>
-        <version value="[0.2.3,0.3]"/>
+        <version value="[0.4]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_entrypoints.txt"/>
         <license-type value="MIT_"/>
@@ -513,7 +513,7 @@
     <dependency env="[win,mac,linux]" name="ipython">
         <full-name value="iPython"/>
         <project-home value="http://ipython.org/"/>
-        <version value="[8.8.0]"/>
+        <version value="[8.7.0,8.8.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_ipython.txt"/>
         <license-type value="BSD_ revised"/>
@@ -1303,20 +1303,20 @@
     <dependency env="[mac,linux]" name="openssl">
         <full-name value="Python OpenSSL"/>
         <project-home value="http://docs.python.org/license.html#openssl"/>
-        <version value="[22.0.0, 23.0.0]"/>
+        <version value="[20.0.1,22.0.0,23.0.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_openssl.txt"/>
-        <license-type value="BSD_"/>
+        <license-type value="BSD_ style"/>
         <copyright-notice value="Copyright (c) 1998-2008 The OpenSSL Project.  All rights reserved."/>
         <description value="Package part of Python's distribution."/>
     </dependency>
     <dependency env="[linux]" name="pyopenssl">
         <full-name value="Python OpenSSL lib"/>
         <project-home value="https://pyopenssl.org/en/stable/"/>
-        <version value="[22.0.0]"/>
+        <version value="[20.0.1,22.0.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_openssl.txt"/>
-        <license-type value="Apache_ 2"/>
+        <license-type value="BSD_ syle"/>
         <copyright-notice value="Copyright (c) 1998-2008 The OpenSSL Project.  All rights reserved."/>
         <description value=""/>
     </dependency>
@@ -1562,8 +1562,8 @@
     </dependency>
     <dependency env="[win,linux]" name="pyparsing">
         <full-name value="PyParsing"/>
-        <project-home value="http://pyparsing.wikispaces.com/"/>
-        <version value="[2.4.7]"/>
+        <project-home value="https://pypi.org/project/pyparsing/"/>
+        <version value="[3.0.9]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pyparsing.txt"/>
         <license-type value="MIT_"/>
@@ -1730,6 +1730,26 @@
         <copyright-notice value="Copyright 2014 Ian Cordasco, Cory Benfield"/>
         <description value="Package needed for AllenSDK"/>
     </dependency>
+    <dependency env="[win,linux]" name="requests-oauthlib">
+        <full-name value="Requests Oauthlib"/>
+        <project-home value="https://pypi.org/project/requests-oauthlib/"/>
+        <version value="[1.3.1]"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_req_oauthlib.txt"/>
+        <license-type value="ISC_"/>
+        <copyright-notice value="Copyright (c) 2014 Kenneth Reitz."/>
+        <description value="first-class OAuth library support for Requests."/>
+    </dependency>
+    <dependency env="[win,mac,linux]" name="requests_oauthlib">
+        <full-name value="Requests_Oauthlib"/>
+        <project-home value="https://pypi.org/project/requests-oauthlib/"/>
+        <version value="[1.3.1]"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_req_oauthlib.txt"/>
+        <license-type value="ISC_"/>
+        <copyright-notice value="Copyright (c) 2014 Kenneth Reitz."/>
+        <description value="first-class OAuth library support for Requests."/>
+    </dependency>
     <dependency env="[win,linux]" name="scandir">
         <full-name value="Scandir"/>
         <project-home value="https://pypi.python.org/pypi/scandir"/>
@@ -1763,7 +1783,7 @@
     <dependency env="[win,mac]" name="skbuild">
         <full-name value="Scikits Build"/>
         <project-home value="https://scikit-build.readthedocs.io/en/latest/"/>
-        <version value="[0.16.4]"/>
+        <version value="[0.16.4,unknown]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_scikits_build.txt"/>
         <license-type value="MIT_"/>
@@ -2583,30 +2603,30 @@
     <dependency env="[win,mac,linux]" name="defusedxml">
         <full-name value="defusedxml"/>
         <project-home value="https://github.com/tiran/defusedxml"/>
-        <version value="0.6.0"/>
+        <version value="0.7.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_defusedxml.txt"/>
-        <license-type value="BSD_"/>
-        <copyright-notice value="Copyright (c) 2021 Christian Heimes"/>
+        <license-type value="PSF_"/>
+        <copyright-notice value="Copyright (c) 2013-2022 by Christian Heimes"/>
         <description value="The dateutil module provides powerful extensions to the standard datetime module, available in Python."/>
     </dependency>
     <dependency env="[win,mac,linux]" name="distro">
         <full-name value="distro"/>
-        <project-home value="https://github.com/nir0s/distro"/>
-        <version value="1.5.0"/>
+        <project-home value="https://github.com/python-distro/distro"/>
+        <version value="1.8.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_distro.txt"/>
         <license-type value="Apache_ 2"/>
-        <copyright-notice value=""/>
+        <copyright-notice value="Copyright (c) Nir Cohen and other distro developers"/>
         <description value="distro provides information about the OS distribution it runs on, such as a reliable machine-readable ID, or version information."/>
     </dependency>
     <dependency env="[win,mac,linux]" name="ecdsa">
         <full-name value="ecdsa"/>
         <project-home value="https://github.com/tlsfuzzer/python-ecdsa"/>
-        <version value="0.14.1"/>
+        <version value="0.18.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_ecdsa.txt"/>
-        <license-type value="Apache_ 2"/>
+        <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2010 Brian Warner"/>
         <description value="This is an easy-to-use implementation of ECDSA cryptography (Elliptic Curve Digital Signature Algorithm)."/>
     </dependency>
@@ -2653,10 +2673,10 @@
     <dependency env="[win,mac,linux]" name="itsdangerous">
         <full-name value="itsdangerous"/>
         <project-home value="https://palletsprojects.com/p/itsdangerous/"/>
-        <version value="1.1.0"/>
+        <version value="2.1.2"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_itsdangerous.txt"/>
-        <license-type value="BSD_"/>
+        <license-type value="BSD_ 3 clause"/>
         <copyright-notice value="Copyright 2011 Pallets"/>
         <description value="Various helpers to pass data to untrusted environments and to get it back safe and sound. Used by flask"/>
     </dependency>
@@ -2703,7 +2723,7 @@
     <dependency env="[win,mac,linux]" name="joblib">
         <full-name value="Joblib"/>
         <project-home value="https://joblib.readthedocs.io/"/>
-        <version value="1.0.1"/>
+        <version value="1.2.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_joblib.txt"/>
         <license-type value="BSD_"/>
@@ -2733,7 +2753,7 @@
     <dependency env="[win,mac,linux]" name="jwt">
         <full-name value="JWT"/>
         <project-home value="https://github.com/davedoesdev/python-jwt"/>
-        <version value="2.0.1"/>
+        <version value="2.6.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jwt.txt"/>
         <license-type value="MIT_"/>
@@ -2747,7 +2767,7 @@
         <usage value="dynamic linking"/>
         <license value="LICENSE_jwt.txt"/>
         <license-type value="MIT_"/>
-        <copyright-notice value="Copyright (c) 2013 David Halls https://github.com/davedoesdev/"/>
+        <copyright-notice value="Copyright (c) 2013 David Halls"/>
         <description value="Module for generating and verifying JSON Web Tokens."/>
     </dependency>
     <dependency env="[win,mac,linux]" name="kiwisolver">
@@ -2830,25 +2850,25 @@
         <copyright-notice value="Copyright (c) 2013-2017 David Halter and others"/>
         <description value="Python parser"/>
     </dependency>
-    <dependency env="[win,mac,linux]" name="prometheus-client">
+    <dependency env="[win,linux]" name="prometheus-client">
         <full-name value="prometheus-client"/>
         <project-home value="https://github.com/prometheus/client_python"/>
-        <version value="0.9.0"/>
+        <version value="0.15.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_prometheus-client.txt"/>
         <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright (c) Brian Brazil"/>
-        <description value="Use by notebooks"/>
+        <description value="Used by notebooks"/>
     </dependency>
     <dependency env="[win,mac,linux]" name="prometheus_client">
         <full-name value="prometheus_client"/>
         <project-home value="https://github.com/prometheus/client_python"/>
-        <version value="0.9.0"/>
+        <version value="0.15.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_prometheus-client.txt"/>
         <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright (c) Brian Brazil"/>
-        <description value="Use by notebooks"/>
+        <description value="Used by notebooks"/>
     </dependency>
     <dependency env="[win,mac,linux]" name="psycopg2-binary">
         <full-name value="psycopg2-binary"/>
@@ -2863,11 +2883,11 @@
     <dependency env="[win,mac,linux]" name="py-cpuinfo">
         <full-name value="py-cpuinfo"/>
         <project-home value="https://github.com/workhorsy/py-cpuinfo"/>
-        <version value="7.0.0"/>
+        <version value="9.0.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_py-cpuinfo.txt"/>
         <license-type value="MIT_"/>
-        <copyright-notice value="Copyright (c) 2014-2021 Matthew Brennan Jones matthew.brennan.jones@gmail.com"/>
+        <copyright-notice value="Copyright (c) 2014-2022 Matthew Brennan Jones matthew.brennan.jones@gmail.com"/>
         <description value=""/>
      </dependency>
     <dependency env="[win,mac,linux]" name="cpuinfo">
@@ -2879,6 +2899,16 @@
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2014-2021 Matthew Brennan Jones matthew.brennan.jones@gmail.com"/>
         <description value=""/>
+     </dependency>
+    <dependency env="[win,mac,linux]" name="pyasn1">
+        <full-name value="pyasn1"/>
+        <project-home value="https://github.com/etingof/pyasn1"/>
+        <version value="0.4.8"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_pyasn1.txt"/>
+        <license-type value="BSD_ 2 clause"/>
+        <copyright-notice value="Copyright (c) 2005-2020, Ilya Etingof etingof@gmail.com All rights reserved."/>
+        <description value="ASN.1 types and codecs"/>
      </dependency>
     <dependency env="[win,mac,linux]" name="pyasn1_modules">
         <full-name value="pyasn1"/>
@@ -2963,7 +2993,7 @@
     <dependency env="[win,mac,linux]" name="pyrsistent">
         <full-name value="pyrsistent"/>
         <project-home value="https://github.com/tobgu/pyrsistent/"/>
-        <version value="0.17.3"/>
+        <version value="[0.18.0,0.19.3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pyrsistent.txt"/>
         <license-type value="MIT_"/>
