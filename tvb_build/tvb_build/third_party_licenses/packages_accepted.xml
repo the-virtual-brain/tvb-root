@@ -393,7 +393,7 @@
     <dependency env="[win,mac,linux]" name="formencode">
         <full-name value="Formencode"/>
         <project-home value="http://www.formencode.org/en/latest/index.html"/>
-        <version value="[2.0.0]"/>
+        <version value="[2.0.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_python.txt"/>
         <license-type value="PSF_"/>
@@ -503,7 +503,7 @@
     <dependency env="[win.linux]" name="imageio">
         <full-name value="imageio"/>
         <project-home value="http://imageio.github.io/"/>
-        <version value="[2.9.0]"/>
+        <version value="[2.23.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_imageio.txt"/>
         <license-type value="BSD_ 2nd clause"/>
@@ -2633,7 +2633,7 @@
     <dependency env="[win,mac,linux]" name="greenlet">
         <full-name value="greenlet"/>
         <project-home value="https://greenlet.readthedocs.io"/>
-        <version value="[0.4.11,0.4.17]"/>
+        <version value="[2.0.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_greenlet.txt"/>
         <license-type value="MIT_"/>

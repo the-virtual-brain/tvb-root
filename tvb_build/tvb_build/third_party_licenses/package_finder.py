@@ -64,7 +64,8 @@ EXCLUDES_DLL = []
 
 # Windows *.pyds that are part of python standard libs
 EXCLUDES_PYD = [
-    '_psutil_windows.pyd', 'gdist.pyd', "_cffi_backend.pyd", "_scandir.pyd", "_yaml.pyd", "_cffi_backend.cp310-win_amd64.pyd"
+    '_psutil_windows.pyd', 'gdist.pyd', "_cffi_backend.pyd", "_scandir.pyd", "_yaml.pyd",
+    "_cffi_backend.cp310-win_amd64.pyd", "gdist.cp310-win_amd64.pyd"
 ]
 
 # libpq dependencies on dynamic psycopg linux 32
