@@ -73,6 +73,7 @@ EXCLUDES_SO = [
     '_psutil_linux.so', '_psutil_posix.so', 'gdist.so', '_scandir.so',
     'pvectorc.cpython-310-x86_64-linux-gnu.so', # part of pyrsistent
     'gdist.cpython-310-darwin.so', 'gdist.cpython-310-x86_64-linux-gnu.so',
+    '_watchdog_fsevents.cpython-310-darwin.so',
     '_posixsubprocess.so', # already reported as subprocess32
     '_cffi_backend.cpython-310-x86_64-linux-gnu.so', '_cffi_backend.cpython-310-darwin.so'
 ]
