@@ -97,7 +97,7 @@ class BaseSettingsProfile(object):
         try:
             import tvb_bin
             return os.path.dirname(os.path.abspath(tvb_bin.__file__))
-        except ImportError:
+        except (ImportError, TypeError):
             return "."
 
     @property
