@@ -1636,7 +1636,7 @@
         <version value="[3.10.8]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_python.txt"/>
-        <license-type value="PSF_"/>
+        <license-type value="PSF_ or ZERO-CLAUSE BSD_"/>
         <copyright-notice value="Copyright (c) 1990-2022, Python Software Foundation. "/>
         <description value="Most of TVB code will probably be in Python. Multiple Python libraries, some of them listed below, use Python Software Foundation "/>
     </dependency>
