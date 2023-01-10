@@ -36,7 +36,7 @@ from setuptools.command.egg_info import manifest_maker
 
 manifest_maker.template = 'MANIFEST_bids_monitor.in'
 
-VERSION = "2.7.2"
+VERSION = "2.7.3"
 
 TVB_TEAM = "Akash Upadhyay, Paula Prodan"
 
