@@ -1183,7 +1183,7 @@
     <dependency env="[win,mac,linux]" name="nibabel">
         <full-name value="Nibabel"/>
         <project-home value="http://nipy.sourceforge.net/nibabel/"/>
-        <version value="[4.0.2]"/>
+        <version value="[4.0.2,5.0.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_nibabel.txt"/>
         <license-type value="MIT_"/>
@@ -1843,7 +1843,7 @@
     <dependency env="[win,mac,linux]" name="simplejson">
         <full-name value="Simple JSON"/>
         <project-home value="https://github.com/simplejson"/>
-        <version value="[3.18.1]"/>
+        <version value="[3.18.0,3.18.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_simplejson.txt"/>
         <license-type value="MIT_ or PSF_"/>
@@ -1913,7 +1913,7 @@
     <dependency env="[win,mac,linux]" name="sqlalchemy">
         <full-name value="SQL-Alchemy"/>
         <project-home value="http://www.sqlalchemy.org/"/>
-        <version value="[1.4.46]"/>
+        <version value="[1.4.45,1.4.46]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_sqlalchemy.txt"/>
         <license-type value="MIT_"/>
@@ -2553,7 +2553,7 @@
     <dependency env="[win,mac,linux]" name="cryptography">
         <full-name value="cryptography"/>
         <project-home value="https://github.com/pyca/cryptography"/>
-        <version value="[3.4.8,39.0.0]"/>
+        <version value="[3.4.8,37.0.4,39.0.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_crypto.txt"/>
         <license-type value="BSD_"/>
