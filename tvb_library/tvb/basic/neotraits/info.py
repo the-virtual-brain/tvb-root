@@ -29,6 +29,11 @@ Functions that inform a user about the state of a traited class or object.
 
 Some of these functions are here so that they won't clutter the core trait implementation.
 """
+try:
+    from docutils.core import publish_parts
+except ImportError:
+    def publish_parts(param1, param2):
+        return param1
 
 import numpy
 import typing
@@ -143,7 +148,7 @@ def trait_object_repr_html(self):
     result = [
         '<table>',
         '<h3>{}</h3>'.format(cls.__name__),
-        '<thead><tr><th></th><th style="text-align:left;width:40%">value</th></tr></thead>',
+        '<thead><tr><th></th><th style="text-align:left;width:80%">value</th></tr></thead>',
         '<tbody>',
     ]
 
@@ -156,3 +161,22 @@ def trait_object_repr_html(self):
     result += ['</tbody></table>']
 
     return '\n'.join(result)
+
+
+def prepare_html(doc):
+    """create html (that can be rendered by MathJax) from the description received as parameter"""
+    kwargs = {
+        'writer_name': 'html',
+        'settings_overrides': {
+            '_disable_config': True,
+            'report_level': 5,
+            'math_output': "MathJax /dummy.js",
+        },
+    }
+
+    html = publish_parts(doc, **kwargs)['html_body']
+
+    html = html.replace('div class="document"', 'div class="document" id="mathjax-body"', 1)
+    html += r'<script>MathJax.Hub.Queue(["Typeset", MathJax.Hub, "mathjax-body"]);</script>'
+
+    return html
