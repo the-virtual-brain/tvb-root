@@ -29,6 +29,8 @@ Functions that inform a user about the state of a traited class or object.
 
 Some of these functions are here so that they won't clutter the core trait implementation.
 """
+import uuid
+
 try:
     from docutils.core import publish_parts
 except ImportError:
@@ -165,6 +167,9 @@ def trait_object_repr_html(self):
 
 def prepare_html(doc):
     """create html (that can be rendered by MathJax) from the description received as parameter"""
+
+    html_id = uuid.uuid1()
+
     kwargs = {
         'writer_name': 'html',
         'settings_overrides': {
@@ -176,7 +181,7 @@ def prepare_html(doc):
 
     html = publish_parts(doc, **kwargs)['html_body']
 
-    html = html.replace('div class="document"', 'div class="document" id="mathjax-body"', 1)
-    html += r'<script>MathJax.Hub.Queue(["Typeset", MathJax.Hub, "mathjax-body"]);</script>'
+    html = html.replace('div class="document"', f'div class="document" id="{html_id}"', 1)
+    html += fr'<script>MathJax.Hub.Queue(["Typeset", MathJax.Hub, "{html_id}"]);</script>'
 
     return html
