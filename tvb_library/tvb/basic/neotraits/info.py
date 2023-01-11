@@ -29,16 +29,16 @@ Functions that inform a user about the state of a traited class or object.
 
 Some of these functions are here so that they won't clutter the core trait implementation.
 """
+
 import uuid
+import numpy
+import typing
 
 try:
     from docutils.core import publish_parts
 except ImportError:
-    def publish_parts(param1, param2):
+    def publish_parts(param1, _param2):
         return param1
-
-import numpy
-import typing
 
 
 def auto_docstring(cls):

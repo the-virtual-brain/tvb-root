@@ -28,13 +28,11 @@
 This module defines the common imports and abstract base class for model definitions.
 
 """
-import abc
 
+import abc
 import numpy
 import typing
-
 from tvb.basic.neotraits.api import HasTraits
-
 from tvb.basic.neotraits.info import prepare_html
 
 
