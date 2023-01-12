@@ -336,8 +336,7 @@ class Epileptor(ModelNumbaDfun):
                 a x_{1}^{3} - b x_{1}^2 & \text{if } x_{1} <0\\
                 -(slope - x_{2} + 0.6(z-4)^2) x_{1} &\text{if }x_{1} \geq 0
                 \end{cases}
-        and:
-            .. math::
+
                 f_{2}(x_{2}) =
                 \begin{cases}
                 0 & \text{if } x_{2} <-0.25\\
@@ -373,6 +372,7 @@ class Epileptor2D(ModelNumbaDfun):
             \dot{z_{i}} &=& r(h - z_{i})
 
         with
+        .. math::
             h =
             \begin{cases}
             x_{0} + 3 / (exp((x_{1} + 0.5)/0.1)) & \text{if } modification\\
@@ -508,10 +508,14 @@ class Epileptor2D(ModelNumbaDfun):
         Computes the derivatives of the state-variables of the Epileptor 2D
         with respect to time.
         Equations and default parameters are taken from [Proixetal_2014]:
+
         .. math::
             \dot{x_{1,i}} &=& - x_{1,i}^{3} - 2x_{1,i}^{2}  + 1 - z_{i} + I_{ext1,i} \\
             \dot{z_{i}} &=& r(h - z_{i})
+
         with
+
+        .. math::
             h =
             \begin{cases}
             x_{0} + 3 / (exp((x_{1} + 0.5)/0.1)) & \text{if } modification\\

@@ -609,7 +609,7 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
         been modified to ensure stability for negative :math:`d^*`
 
             .. math::
-                    \dot{z} = -c(\sqrt{x-x_{s}^2+y^2} - d^* + 0.1(z-0.5)^7)
+                    \dot{z} &= -c(\sqrt{x-x_{s}^2+y^2} - d^* + 0.1(z-0.5)^7)
 
         Where :math:`\mu_1, \mu_2` and :math:`\nu` lie on a great arc of a
         sphere of radius R parametrised by the unit vectors E and F.
@@ -627,7 +627,7 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
         of radius R parametrised by G, H and L, M respectively.
 
             .. math::
-                A &= R(G \cos(uA) + H \sin(uA))
+                A &= R(G \cos(uA) + H \sin(uA)) \\
                 B &= R(L \cos(uB) + M \sin(uB))
 
         Finally :math:`x_s` is the x-coordinate of the resting state
