@@ -384,6 +384,11 @@ class DecoBalancedExcInh(ReducedWongWangExcInh):
         return derivative
 
     def dfun(self, x, c, local_coupling=0.0, **kwargs):
+        r"""
+        Numpy dfun for transcriptional model presented in [Deco_2020],
+        Dynamical consequences of regional heterogeneity in the brain’s
+        transcriptional landscape
+        """
         x_ = x.reshape(x.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T + local_coupling * x[0]
         deriv = _numba_dfun_bei(x_, c_,
