@@ -108,7 +108,7 @@ class Model(HasTraits):
     def set_title(self):
         doc = self.dfun.__doc__
         html = prepare_html(doc)
-        self.title = '{} <br/>DOC: {}'.format(self.__class__.__name__, html)
+        self.title = '{} <br/> {}'.format(self.__class__.__name__, html)
 
     @property
     def nvar(self):
