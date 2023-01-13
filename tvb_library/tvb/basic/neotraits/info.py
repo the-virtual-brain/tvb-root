@@ -166,22 +166,27 @@ def trait_object_repr_html(self):
 
 
 def prepare_html(doc):
-    """create html (that can be rendered by MathJax) from the description received as parameter"""
+    # type: (str) -> str
+    """
+    Create html (that can be further enhanced by MathJax) from the description received as parameter
+    """
+    try:
+        html_id = uuid.uuid1()
 
-    html_id = uuid.uuid1()
+        kwargs = {
+            'writer_name': 'html',
+            'settings_overrides': {
+                '_disable_config': True,
+                'report_level': 5,
+                'math_output': "MathJax /dummy.js",
+            },
+        }
 
-    kwargs = {
-        'writer_name': 'html',
-        'settings_overrides': {
-            '_disable_config': True,
-            'report_level': 5,
-            'math_output': "MathJax /dummy.js",
-        },
-    }
+        html = publish_parts(doc, **kwargs)['html_body']
 
-    html = publish_parts(doc, **kwargs)['html_body']
+        html = html.replace('div class="document"', f'div class="document" id="{html_id}"', 1)
+        html += fr'<script>MathJax.Hub.Queue(["Typeset", MathJax.Hub, "{html_id}"]);</script>'
 
-    html = html.replace('div class="document"', f'div class="document" id="{html_id}"', 1)
-    html += fr'<script>MathJax.Hub.Queue(["Typeset", MathJax.Hub, "{html_id}"]);</script>'
-
+    except Exception:
+        html = str(doc)
     return html
