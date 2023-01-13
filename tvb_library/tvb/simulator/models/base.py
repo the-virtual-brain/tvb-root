@@ -28,12 +28,12 @@
 This module defines the common imports and abstract base class for model definitions.
 
 """
-
 import abc
 import numpy
 import typing
 from tvb.basic.neotraits.api import HasTraits
-from tvb.basic.neotraits.info import prepare_html
+
+
 
 
 class Model(HasTraits):
@@ -104,11 +104,6 @@ class Model(HasTraits):
         self._nintvar = numpy.sum(self.state_variable_mask)
         self.update_derived_parameters()
         self._build_observer()
-
-    def set_title(self):
-        doc = self.dfun.__doc__
-        html = prepare_html(doc)
-        self.title = '{} <br/> {}'.format(self.__class__.__name__, html)
 
     @property
     def nvar(self):

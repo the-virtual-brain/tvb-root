@@ -147,9 +147,17 @@ def trait_object_str(self):
 
 def trait_object_repr_html(self):
     cls = type(self)
+
+    subtitle = None
+    if hasattr(self, "dfun"):
+        subtitle = self.dfun.__doc__
+    elif hasattr(cls, "__doc_old__"):
+        subtitle = cls.__doc_old__
+
     result = [
         '<table>',
         '<h3>{}</h3>'.format(cls.__name__),
+        '<p>{}</p>'.format(prepare_html(subtitle)) if subtitle is not None else "",
         '<thead><tr><th></th><th style="text-align:left;width:80%">value</th></tr></thead>',
         '<tbody>',
     ]
