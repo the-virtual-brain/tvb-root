@@ -1,0 +1,205 @@
+<Lems description="Zerlaut Goldberg">
+
+    <ComponentType name="derivatives">
+
+        <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
+        <Parameter name="global_coupling" dimension='0.5, 0.5'/>
+        <Parameter name="b_e" dimension='0, 120'/>
+        <Parameter name="E_L_e" dimension='-80, -60'/>
+        <Parameter name="E_L_i" dimension='-80, -60'/>
+        <Parameter name="T" dimension='5, 40'/>
+
+        <DerivedParameter name="rec_n" value="1 / n_node"/>
+        <DerivedParameter name="rec_speed_dt" value="1.0f / global_speed / (dt)"/>
+        <DerivedParameter name="nsig" value="sqrt(dt) * sqrt(2.0 * 1e-3)"/>
+        <DerivedParameter name="local_coupling" value="0.0"/>
+
+        <Constant name="g_L" value="10.0"/>
+        <Constant name="E_L_e" dimension="" value="-63.0"/>
+        <Constant name="E_L_i" dimension="" value="-65.0"/>
+        <Constant name="C_m" dimension="" value="200.0" />
+        <Constant name="b_e" dimension="" value="60.0" />
+        <Constant name="a_e" dimension="" value="0.0" />
+        <Constant name="b_i" dimension="" value="0.0" />
+        <Constant name="a_i" dimension="" value="0.0" />
+        <Constant name="tau_w_e" dimension="" value="500.0" />
+        <Constant name="tau_w_i" dimension="" value="1.0" />
+        <Constant name="E_e" dimension="" value="0.0" />
+        <Constant name="E_i" dimension="" value="-80.0" />
+        <Constant name="Q_e" dimension="" value="1.5" />
+        <Constant name="Q_i" dimension="" value="5.0" />
+        <Constant name="tau_e" dimension="" value="5.0" />
+        <Constant name="tau_i" dimension="" value="5.0" />
+        <Constant name="N_tot" dimension="" value="10000" />
+        <Constant name="p_connect_e" dimension="" value="0.05" />
+        <Constant name="p_connect_i" dimension="" value="0.05" />
+        <Constant name="g" dimension="" value="0.2" />
+        <Constant name="T" dimension="" value="40.0" />
+        <Constant name="P_e" dimension="" value="[-0.0498, 0.00506, -0.025, 0.0014, -0.00041, 0.0105, -0.036, 0.0074, 0.0012, -0.0407]" />
+        <Constant name="P_i" dimension="" value="[-0.0514, 0.004, -0.0083, 0.0002, -0.0005, 0.0014, -0.0146, 0.0045, 0.0028, -0.0153]" />
+        <Constant name="external_input_ex_ex" dimension="" value="0.315*1e-3" />
+        <Constant name="external_input_ex_in" dimension="" value="0.000" />
+        <Constant name="external_input_in_ex" dimension="" value="0.315*1e-3" />
+        <Constant name="external_input_in_in" dimension="" value="0.000" />
+        <Constant name="tau_OU" dimension="" value="5.0" />
+        <Constant name="weight_noise" dimension="" value="1e-4" />
+        <Constant name="K_ext_e" dimension="" value="400" />
+        <Constant name="K_ext_i" dimension="" value="0" />
+
+        <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
+        and for dimension enter the reduction functionality-->
+        <Exposure name="E" dimension="E"/>
+<!--        <Exposure name="I" dimension="I"/>-->
+<!--        <Exposure name="C_ee" dimension="C_ee"/>-->
+<!--        <Exposure name="C_ei" dimension="C_ei"/>-->
+<!--        <Exposure name="C_ii" dimension="C_ii"/>-->
+<!--        <Exposure name="W_e" dimension="W_e"/>-->
+<!--        <Exposure name="W_i" dimension="W_i"/>-->
+
+        <Dynamics>
+            <StateVariable name="E" dimension="0.0, 0.0" exposure="" />
+            <StateVariable name="I" dimension="0.0, 0.0" exposure="None"/>
+            <StateVariable name="C_ee" dimension="0.0, 0.0" exposure="None"/>
+            <StateVariable name="C_ei" dimension="0.0, 0.0" exposure="None"/>
+            <StateVariable name="C_ii" dimension="0.0, 0.0" exposure="None"/>
+            <StateVariable name="W_e" dimension="100.0, 100.0" exposure="None"/>
+            <StateVariable name="W_i" dimension="0.0, 0.0" exposure="None"/>
+<!--            <StateVariable name="noise" dimension="0.0, 0.0" />-->
+
+            <DerivedVariable name="E_input_excitatory" value="c_pop0+lc_E+external_input_ex_ex + weight_noise * noise"/>
+
+            <DerivedVariable name="E_input_inhibitory" value="c_pop0+lc_E+external_input_in_ex + weight_noise * noise"/>
+
+            <DerivedVariable name="I_input_excitatory" value="lc_I+external_input_ex_in"/>
+            <DerivedVariable name="I_input_inhibitory" value="lc_I+external_input_in_in"/>
+
+            <!-- Function def on top manually -->
+            <DerivedVariable name="_TF_e" value="TF_excitatory(E, I, E_input_excitatory, I_input_excitatory, W_e, E_L_e)"/>
+            <DerivedVariable name="_TF_i" value="TF_inhibitory(E, I, E_input_inhibitory, I_input_inhibitory, W_i, E_L_i)"/>
+            <DerivedVariable name="_diff_fe_e" value="(TF_excitatory(E+df, I, E_input_excitatory, I_input_excitatory, W_e, E_L_e)
+                               -TF_excitatory(E-df, I, E_input_excitatory, I_input_excitatory, W_e, E_L_e)
+                               )/(2*df*1e3)"/>
+            <DerivedVariable name="_diff_fe_i" value="(TF_inhibitory(E+df, I, E_input_inhibitory, I_input_inhibitory, W_i, E_L_i)
+                               -TF_inhibitory(E-df, I, E_input_inhibitory, I_input_inhibitory, W_i, E_L_i)
+                               )/(2*df*1e3)"/>
+
+            <DerivedVariable name="_diff_fi_e" value="(TF_excitatory(E, I+df, E_input_excitatory, I_input_excitatory, W_e, E_L_e)
+                               -TF_excitatory(E, I-df, E_input_excitatory, I_input_excitatory, W_e, E_L_e)
+                               )/(2*df*1e3)"/>
+            <DerivedVariable name="_diff_fi_i" value="(TF_inhibitory(E, I+df, E_input_inhibitory, I_input_inhibitory, W_i, E_L_i)
+                               -TF_inhibitory(E, I-df, E_input_inhibitory, I_input_inhibitory, W_i, E_L_i)
+                               )/(2*df*1e3)"/>
+
+            <DerivedVariable name="_diff2_fe_fe_e" value="(TF_excitatory(E+df, I, E_input_excitatory, I_input_excitatory, W_e, E_L_e)
+                                   -2*_TF_e
+                                   +TF_excitatory(E-df, I, E_input_excitatory, I_input_excitatory, W_e, E_L_e)
+                                   )/powdf"/>
+            <DerivedVariable name="_diff2_fe_fe_i" value="(TF_inhibitory(E+df, I, E_input_inhibitory, I_input_inhibitory, W_i, E_L_i)
+                                   -2*_TF_i
+                                   +TF_inhibitory(E-df, I, E_input_inhibitory, I_input_inhibitory, W_i, E_L_i)
+                                   )/powdf"/>
+
+            <DerivedVariable name="_diff2_fe_fi" value="(TF_excitatory(E+df, I+df, E_input_excitatory, I_input_excitatory, W_e, E_L_e)
+                                 -TF_excitatory(E+df, I-df, E_input_excitatory, I_input_excitatory, W_e, E_L_e)
+                                 -TF_excitatory(E-df, I+df, E_input_excitatory, I_input_excitatory, W_e, E_L_e)
+                                 +TF_excitatory(E-df, I-df, E_input_excitatory, I_input_excitatory, W_e, E_L_e)
+                                 )/(4*powdf)"/>
+            <DerivedVariable name="_diff2_fi_fe" value="(TF_inhibitory(E+df, I+df, E_input_inhibitory, I_input_inhibitory, W_i, E_L_i)
+                                 -TF_inhibitory(E+df, I-df, E_input_inhibitory, I_input_inhibitory, W_i, E_L_i)
+                                 -TF_inhibitory(E-df, I+df, E_input_inhibitory, I_input_inhibitory, W_i, E_L_i)
+                                 +TF_inhibitory(E-df, I-df, E_input_inhibitory, I_input_inhibitory, W_i, E_L_i)
+                                 )/(4*powdf)"/>
+
+            <DerivedVariable name="_diff2_fi_fi_e" value="(TF_excitatory(E, I+df, E_input_excitatory, I_input_excitatory, W_e, E_L_e)
+                                   -2*_TF_e
+                                   +TF_excitatory(E, I-df, E_input_excitatory, I_input_excitatory, W_e, E_L_e)
+                                   )/powdf"/>
+            <DerivedVariable name="_diff2_fi_fi_i" value="(TF_inhibitory(E, I+df, E_input_inhibitory, I_input_inhibitory, W_i, E_L_i)
+                                   -2*_TF_i
+                                   +TF_inhibitory(E, I-df, E_input_inhibitory, I_input_inhibitory, W_i, E_L_i)
+                                   )/powdf"/>
+
+            <DerivedVariable name="_dummyPointerVar1_" value="get_fluct_regime_vars(E, I, E_input_excitatory, I_input_excitatory, W_e, E_L_e,
+                                    &mu_V, &sigma_V, &T_V)"/>
+            <DerivedVariable name="_dummyPointerVar2_" value="(E, I, E_input_inhibitory, I_input_inhibitory, W_i, E_L_i,
+                                    &mu_V, &sigma_V, &T_V)"/>
+
+            <ConditionalDerivedVariable name="E_input_excitatory">
+                <Case condition="E_input_excitatory &lt; 0.0" value="E_input_excitatory"/>
+                <Case condition="else" value="0.0"/>
+            </ConditionalDerivedVariable>
+
+            <ConditionalDerivedVariable name="E_input_excitatory">
+                <Case condition="E_input_inhibitory &lt; 0.0" value="E_input_inhibitory"/>
+                <Case condition="else" value="0.0"/>
+            </ConditionalDerivedVariable>
+
+            <TimeDerivative variable="dE" value="(_TF_e - E
+                         + .5*C_ee*   ( E, I, E_input_excitatory, I_input_excitatory, W_e)
+                         + .5*C_ei*   (TF_excitatory, E, I, E_input_excitatory, I_input_excitatory, W_e)
+                         + .5*C_ei*   (TF_excitatory, E, I, E_input_excitatory, I_input_excitatory, W_e)
+                         + .5*C_ii*   ( E, I, E_input_excitatory, I_input_excitatory, W_e)
+                         )/T"/>
+            <TimeDerivative variable="dI" value="(_TF_i - I
+                         + .5*C_ee*   ( E, I, E_input_inhibitory, I_input_inhibitory, W_i)
+                         + .5*C_ei*   (TF_inhibitory, E, I, E_input_inhibitory, I_input_inhibitory, W_i)
+                         + .5*C_ei*   (TF_inhibitory, E, I, E_input_inhibitory, I_input_inhibitory, W_i)
+                         + .5*C_ii*   ( E, I, E_input_inhibitory, I_input_inhibitory, W_i)
+                         )/T"/>
+
+            <TimeDerivative variable="dC_ee" value="(_TF_e*(1./T-_TF_e)/N_e
+                         + (_TF_e-E)**2
+                         + 2.*C_ee*_diff_fe_TF_e
+                         + 2.*C_ei*_diff_fi_TF_i
+                         - 2.*C_ee
+                         )/T"/>
+
+            <TimeDerivative variable="dC_ei" value="((_TF_e-E)*(_TF_i-I)
+                         + C_ee*_diff_fe_TF_e
+                         + C_ei*_diff_fe_TF_i
+                         + C_ei*_diff_fi_TF_e
+                         + C_ii*_diff_fi_TF_i
+                         - 2.*C_ei
+                         )/T"/>
+
+            <TimeDerivative variable="dC_ii" value="(_TF_i*(1./T-_TF_i)/N_i
+                         + (_TF_i-I)**2
+                         + 2.*C_ii*_diff_fi_TF_i
+                         + 2.*C_ei*_diff_fe_TF_e
+                         - 2.*C_ii
+                         )/T"/>
+
+            <TimeDerivative variable="dW_e" value="-W_e/tau_w_e+b_e*E+a_e*(mu_V-E_L_e)/tau_w_e"/>
+
+            <TimeDerivative variable="dW_i" value="-W_i/tau_w_i+b_i*I+a_i*(mu_V-E_L_i)/tau_w_i"/>
+
+            <TimeDerivative variable="dW_i" value="-W_i/tau_w_i+b_i*I+a_i*(mu_V-E_L_i)/tau_w_i"/>
+
+
+        </Dynamics>
+
+    </ComponentType>
+
+    <ComponentType name="coupling_function">
+
+<!--        variables for pre synaptic function-->
+        <Parameter name="V_j" dimension='0'/>
+
+        <!-- Handle local coupling result, full expression is 'name' *= 'expression'-->
+        <DerivedParameter name="c_pop0" value="global_coupling"/>
+
+        <!-- Used in coupling -->
+        <Constant name="c_a" dimension="" value="1" description="Rescales the connection strength."/>
+
+        <!-- variables for post synaptic function-->
+        <!-- <Requirement name="wij" dimension=''/>-->
+        <Dynamics>
+            <DerivedVariable name="pre" value="V_j"/>
+            <DerivedVariable name="post" value="0.3"/>
+        </Dynamics>
+
+    </ComponentType>
+
+<!--    <ComponentType name="noise"/>-->
+
+</Lems>

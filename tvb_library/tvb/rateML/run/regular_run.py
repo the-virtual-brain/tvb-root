@@ -9,7 +9,7 @@ from tvb.rateML.XML2model import RateML
 
 class regularRun:
 
-	def __init__(self, sim_length, g, s, dt, period, omega = 60, filename='connectivity_68.zip'):
+	def __init__(self, sim_length, g, s, dt, period, omega = 60, filename='connectivity_zerlaut_68.zip'):
 	# def __init__(self, sim_length, g, s, dt, period, omega = 60, filename='paupau.zip'):
 		self.sim_length = sim_length
 		self.g = np.array([g])
@@ -47,28 +47,28 @@ class regularRun:
 	def simulate_python(self, modelExec):
 		# Initialize Model
 		model = self.tvb_python_model(modelExec)
+		# zerlaut setup
+		noises = noise.Additive(nsig=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]), ntau=0.0)
+		integrator = integrators.HeunStochastic(dt=.1, noise=noises)
 		# Initialize integrator
-		# integrator = integrators.EulerDeterministic(dt=self.dt)
-		# integrator = integrators.EulerStochastic(dt=1, noise=noise.Additive(nsig=np.array([1e-5])))
-		integrator = integrators.EulerDeterministic(dt=self.dt)#, noise=noise.Additive(nsig=np.array([1e-5])))
 		# Initialize Monitors
 		monitorsen = (monitors.TemporalAverage(period=self.period))
 		# Initialize Simulator
 		sim = simulator.Simulator(model=model, connectivity=self.connectivity,
-								  coupling=self.coupling,
+								  coupling=coupling.Linear(a=np.array(self.g), b=np.array(0.0)),
 								  integrator=integrator,
 								  monitors=[monitorsen])
 		sim.configure()
-		sim.history.buffer[:] = 0.0
-		sim.current_state[:] = 0.0
-		print('shb', sim.history.buffer.shape)  # ('n_time', 'n_cvar', 'n_node', 'n_mode')
+		# sim.history.buffer[:] = 0.0
+		# sim.current_state[:] = 0.0
+		# print('shb', sim.history.buffer.shape)  # ('n_time', 'n_cvar', 'n_node', 'n_mode')
 
 		(time, data) = sim.run(simulation_length=self.sim_length)[0]
 
 		# pad some zeros to make it equivalent to GPU for comparison
 		# CPU is now +1 timestep longer
-		data = np.insert(data, 0, 0, axis=0)
-		data = data[:-1]
+		# data = np.insert(data, 0, 0, axis=0)
+		# data = data[:-1]
 
 		# print('ds',data.shape)
 		plt.plot((data[:, 0, :, 0]), 'k', alpha=.2)
@@ -83,14 +83,13 @@ if __name__ == '__main__':
 	#
 	# RateML(model_filename, language)
 
-	simtime = 20
-	g = 1
+	simtime = 2000
+	g = .4
 	# g = 0.0042
-	s = 1.0
+	s = 4.0
 	dt = .1
-	period = 1
+	period = 10
 
-	model = 'OscillatorT'
-	# model = 'MontbrioPazoRoxin'
-	# model='Generic2dOscillator'
+	model = 'Zerlaut_adaptation_second_order'
+
 	(time, data) = regularRun(simtime, g, s, dt, period).simulate_python(model)
