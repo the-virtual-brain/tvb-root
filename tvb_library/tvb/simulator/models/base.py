@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,10 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+#
 
 """
 This module defines the common imports and abstract base class for model definitions.
@@ -203,7 +201,7 @@ class Model(HasTraits):
 
         out = [state.copy()]
         if self.number_of_modes == 3:
-            coupling = numpy.tile(coupling, (1,1,3))
+            coupling = numpy.tile(coupling, (1, 1, 3))
         for i in range(n_step):
             state += dt * self.dfun(state, coupling)
             if i % n_skip == 0:
@@ -213,7 +211,7 @@ class Model(HasTraits):
 
     @property
     def spatial_param_reshape(self):
-        "Returns reshape argument for a spatialized parameter."
+        """Returns reshape argument for a spatialized parameter."""
         return -1, 1
 
     def _spatialize_model_parameters(self, sim):
@@ -251,7 +249,7 @@ class Model(HasTraits):
     @property
     def spatial_parameter_names(self):
         return [_ for _ in self.parameter_names if getattr(self, _).size != 1]
-    
+
     @property
     def global_parameter_names(self):
         return [_ for _ in self.parameter_names if getattr(self, _).size == 1]
@@ -259,13 +257,12 @@ class Model(HasTraits):
     @property
     def spatial_parameter_matrix(self):
         names = self.spatial_parameter_names
-        matrix = numpy.array([getattr(self,_).reshape((-1,)) for _ in names])
+        matrix = numpy.array([getattr(self, _).reshape((-1,)) for _ in names])
         return matrix
-    
 
 
 class ModelNumbaDfun(Model):
-    "Base model for Numba-implemented dfuns."
+    """Base model for Numba-implemented dfuns."""
 
     @property
     def spatial_param_reshape(self):

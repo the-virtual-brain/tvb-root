@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -38,11 +34,9 @@ All calls to methods from this module must be done through this class.
 import os
 import uuid
 from datetime import datetime
-
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
-from tvb.storage.h5.encryption.data_encryption_handler import FoldersQueueConsumer, \
-    encryption_handler
+from tvb.storage.h5.encryption.data_encryption_handler import FoldersQueueConsumer, encryption_handler
 from tvb.storage.h5.encryption.encryption_handler import EncryptionHandler
 from tvb.storage.h5.encryption.import_export_encryption_handler import ImportExportEncryptionHandler
 from tvb.storage.h5.file.exceptions import RenameWhileSyncEncryptingException, FileStructureException
@@ -126,9 +120,6 @@ class StorageInterface:
 
     def get_allen_mouse_cache_folder(self, project_name):
         return self.files_helper.get_allen_mouse_cache_folder(project_name)
-
-    def get_tumor_dataset_folder(self):
-        return self.files_helper.get_tumor_dataset_folder()
 
     @staticmethod
     def copy_file(source, dest, dest_postfix=None, buffer_size=1024 * 1024):
