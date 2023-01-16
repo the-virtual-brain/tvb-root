@@ -9,6 +9,7 @@ dist/
 # ide's
 .idea/
 .ipynb_checkpoints/
+**/.DS_Store
 
 # testing
 .benchmarks/

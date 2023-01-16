@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,19 +19,15 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
 """
 Test for tvb.simulator.coupling module
 
-.. moduleauthor:: Paula Sanz Leon <sanzleon.paula@gmail.com>
+.. moduleauthor:: Paula Sanz Leon <paula@tvb.invalid>
 
 """
 
@@ -138,8 +134,8 @@ class TestCoupling(BaseTestCase):
         assert k.cmin == 0.0
         assert k.cmax == 2.0 * 0.0025
         assert k.midpoint == 6.0
-        assert k.r == 1.0
-        assert k.a == 0.56
+        assert k.r == 0.56
+        assert k.a == 1.0
         self._apply_coupling_2sv(k)
 
 

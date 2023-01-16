@@ -53,6 +53,8 @@ RUN cd tvb-root; \
     cd ../tvb_library; \
     $PIP install -e .; \
     cd ../tvb_storage; \
+    $PIP install -e .; \
+    cd ../tvb_bin; \
     $PIP install -e .
 
 WORKDIR $USER_HOME

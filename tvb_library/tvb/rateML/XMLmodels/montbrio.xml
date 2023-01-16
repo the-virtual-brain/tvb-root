@@ -4,13 +4,13 @@
 
         <!-- Powers should be entered as {powee^power} -->
         <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
-        <Parameter name="global_speed" dimension='1.0, 1.0'/>
-        <Parameter name="global_coupling" dimension='1.0, 1.0'/>
+<!--         <Parameter name="nsig" dimension='0.01, 0.05'/> -->
+        <Parameter name="global_coupling" dimension='0.33, 0.5'/>
 
         <DerivedParameter name="rec_n" value="1 / n_node"/>
         <!-- The parameters with name 'rec_speed_dt' is conidered to be integral part of tv coupling calculation
          if not present, the delay part of coupling will be 0 for each node -->
-        <DerivedParameter name="rec_speed_dt" value="1.0f / global_speed / dt"/>
+        <DerivedParameter name="rec_speed_dt" value="1.0f / 1.0 / dt"/>
         <!-- nsig is the default variable for noise amplitude. Is equal to 1 if not defined -->
         <DerivedParameter name="nsig" value="0.01"/>
 
@@ -29,7 +29,7 @@
         Choices and default list with a (,) separator-->
         <Exposure name="r" dimension="r"/>
         <Exposure name="V" dimension="V"/>
-        
+
         <Dynamics>
             <!-- "State variable ranges [lo, hi]" values are entered with keyword "default" -->
             <!-- For each state variable a set of boundaries can be added to encompass the boundaries of the dynamic range -->
@@ -45,10 +45,9 @@
 <!--            <DerivedVariable name="Coupling_global" value="alpha * c_pop1"/>-->
 <!--            <DerivedVariable name="Coupling_local" value="(1-alpha) * r"/>-->
 <!--            <DerivedVariable name="Coupling_Term_r" value="Coupling_global + Coupling_local"/>-->
-<!--            <DerivedVariable name="Coupling_Term_V" value="Coupling_global + Coupling_local"/>-->
 
             <TimeDerivative variable="dr" value="1/tau * (Delta / (pi * tau) + 2 * V * r)"/>
-            <TimeDerivative variable="dV" value="1/tau * ({V^2} - {pi^2} * {tau^2} * {r^2} + eta + J * tau * r + I + cr * c_pop0 + cv * c_pop1)"/>
+            <TimeDerivative variable="dV" value="1/tau * ({V^2} - {pi^2} * {tau^2} * {r^2} + eta + J * tau * r + I + cr * c_pop0)"/>
 
         </Dynamics>
 
@@ -70,24 +69,24 @@
 
     </ComponentType>
 
-    <ComponentType name="coupling_function_1">
+<!--     <ComponentType name="coupling_function_1"> -->
 
 <!--        variables for pre synaptic function-->
-        <Parameter name="V_j" dimension='1'/>
-        <DerivedParameter name="c_pop1" value="global_coupling"/>
+<!--         <Parameter name="V_j" dimension='1'/> -->
+<!--         <DerivedParameter name="c_pop1" value="global_coupling"/> -->
 
-        <Dynamics>
-            <DerivedVariable name="pre" value="V_j"/>
-            <DerivedVariable name="post" value="1"/>
-        </Dynamics>
+<!--         <Dynamics> -->
+<!--             <DerivedVariable name="pre" value="V_j"/> -->
+<!--             <DerivedVariable name="post" value="1"/> -->
+<!--         </Dynamics> -->
 
         <!-- Handle local coupling result, full expression is c_0 *= 'value'. Name option is hardcoded -->
 
 
-    </ComponentType>
+<!--     </ComponentType> -->
 
 
     <!-- If noise needs to be present, just specify the component type. Detail might be added later -->
-<!--    <ComponentType name="noise"/>-->
+   <ComponentType name="noise"/>
 
 </Lems>
