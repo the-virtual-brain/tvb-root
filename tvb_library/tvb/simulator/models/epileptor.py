@@ -336,7 +336,8 @@ class Epileptor(ModelNumbaDfun):
                 a x_{1}^{3} - b x_{1}^2 & \text{if } x_{1} <0\\
                 -(slope - x_{2} + 0.6(z-4)^2) x_{1} &\text{if }x_{1} \geq 0
                 \end{cases}
-
+        and:
+            .. math::
                 f_{2}(x_{2}) =
                 \begin{cases}
                 0 & \text{if } x_{2} <-0.25\\
