@@ -92,7 +92,7 @@ def auto_docstring(cls):
     return doc
 
 
-def narray_summary_info(ar, ar_name='', omit_shape=False):
+def narray_summary_info(ar, ar_name='', omit_shape=False, condensed_form=False):
     # type: (numpy.ndarray, str, bool) -> typing.Dict[str, str]
     """
     A 2 column table represented as a dict of str->str
@@ -101,23 +101,35 @@ def narray_summary_info(ar, ar_name='', omit_shape=False):
         return {'is None': 'True'}
 
     ret = {}
-    if not omit_shape:
-        ret.update({'shape': str(ar.shape), 'dtype': str(ar.dtype)})
 
-    if ar.size == 0:
-        ret['is empty'] = 'True'
+    if condensed_form:
+        condensed_desc = ""
+        if ar.shape == (1,):
+            condensed_desc += str(ar.item())
+        else:
+            condensed_desc += '[min, median, max] = [{:g}, {:g}, {:g}], '.format(ar.min(), numpy.median(ar), ar.max())
+            condensed_desc += f'shape = {str(ar.shape)}'
+
+        ret.update({ar_name : condensed_desc})
         return ret
-
-    if ar.dtype.kind in 'iufc':
-        has_nan = numpy.isnan(ar).any()
-        if has_nan:
-            ret['has NaN'] = 'True'
-        ret['[min, median, max]'] = '[{:g}, {:g}, {:g}]'.format(ar.min(), numpy.median(ar), ar.max())
-
-    if ar_name:
-        return {ar_name + ' ' + k: v for k, v in ret.items()}
     else:
-        return ret
+        if not omit_shape:
+            ret.update({'shape': str(ar.shape), 'dtype': str(ar.dtype)})
+
+        if ar.size == 0:
+            ret['is empty'] = 'True'
+            return ret
+
+        if ar.dtype.kind in 'iufc':
+            has_nan = numpy.isnan(ar).any()
+            if has_nan:
+                ret['has NaN'] = 'True'
+            ret['[min, median, max]'] = '[{:g}, {:g}, {:g}]'.format(ar.min(), numpy.median(ar), ar.max())
+
+        if ar_name:
+            return {ar_name + ' ' + k: v for k, v in ret.items()}
+        else:
+            return ret
 
 
 def narray_describe(ar):

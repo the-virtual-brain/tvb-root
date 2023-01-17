@@ -299,7 +299,7 @@ class HasTraits(object):
             try:
                 attr_field = getattr(self, aname)
                 if isinstance(attr_field, numpy.ndarray):
-                    ret.update(narray_summary_info(attr_field, ar_name=aname))
+                    ret.update(narray_summary_info(attr_field, ar_name=aname, condensed_form=True))
                 elif isinstance(attr_field, HasTraits):
                     ret[aname] = attr_field.title
                 else:
