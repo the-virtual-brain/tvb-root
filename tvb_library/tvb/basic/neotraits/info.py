@@ -97,17 +97,17 @@ def narray_summary_info(ar, ar_name='', omit_shape=False, condensed_form=False):
     """
     A 2 column table represented as a dict of str->str
     """
+
     if ar is None:
-        return {'is None': 'True'}
+        return {f'{ar_name} is None': 'True'} if ar_name else {'is None': 'True'}
+
+    if ar.size == 0:
+        return {f'{ar_name} is empty': 'True'} if ar_name else {'is empty': 'True'}
 
     ret = {}
 
     if not omit_shape:
         ret.update({'shape': str(ar.shape), 'dtype': str(ar.dtype)})
-
-    if ar.size == 0:
-        ret['is empty'] = 'True'
-        return ret
 
     if ar.dtype.kind in 'iufc':
         has_nan = numpy.isnan(ar).any()
@@ -120,11 +120,15 @@ def narray_summary_info(ar, ar_name='', omit_shape=False, condensed_form=False):
         if ar.shape == (1,):
             condensed_desc += str(ar.item())
         else:
-            condensed_desc += '[min, median, max]= ' + ret.get('[min, median, max]', '')
-            condensed_desc += f' shape= {str(ar.shape)}' if 'shape' in ret else ''
-            condensed_desc += f' is empty= {ret["is empty"]}' if 'is empty' in ret else ''
-            condensed_desc += f' has NaN= {ret["has NaN"]}' if 'has NaN' in ret else ''
-        return {ar_name: condensed_desc}
+            if '[min, median, max]' in ret:
+                condensed_desc += '[min, median, max]= ' + ret['[min, median, max]']
+            if 'shape' in ret:
+                condensed_desc += f' shape= {str(ar.shape)}'
+            if 'is empty' in ret:
+                condensed_desc += f' is empty= {ret["is empty"]}'
+            if 'has NaN' in ret:
+                condensed_desc += f' has NaN= {ret["has NaN"]}'
+        return {ar_name: condensed_desc} if ar_name else {'': condensed_desc}
 
     if ar_name:
         return {ar_name + ' ' + k: v for k, v in ret.items()}
