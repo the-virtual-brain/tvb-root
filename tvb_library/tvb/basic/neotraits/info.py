@@ -102,34 +102,34 @@ def narray_summary_info(ar, ar_name='', omit_shape=False, condensed_form=False):
 
     ret = {}
 
+    if not omit_shape:
+        ret.update({'shape': str(ar.shape), 'dtype': str(ar.dtype)})
+
+    if ar.size == 0:
+        ret['is empty'] = 'True'
+        return ret
+
+    if ar.dtype.kind in 'iufc':
+        has_nan = numpy.isnan(ar).any()
+        if has_nan:
+            ret['has NaN'] = 'True'
+        ret['[min, median, max]'] = '[{:g}, {:g}, {:g}]'.format(ar.min(), numpy.median(ar), ar.max())
+
     if condensed_form:
         condensed_desc = ""
         if ar.shape == (1,):
             condensed_desc += str(ar.item())
         else:
-            condensed_desc += '[min, median, max] = [{:g}, {:g}, {:g}], '.format(ar.min(), numpy.median(ar), ar.max())
-            condensed_desc += f'shape = {str(ar.shape)}'
+            condensed_desc += '[min, median, max]= ' + ret.get('[min, median, max]', '')
+            condensed_desc += f' shape= {str(ar.shape)}' if 'shape' in ret else ''
+            condensed_desc += f' is empty= {ret["is empty"]}' if 'is empty' in ret else ''
+            condensed_desc += f' has NaN= {ret["has NaN"]}' if 'has NaN' in ret else ''
+        return {ar_name: condensed_desc}
 
-        ret.update({ar_name : condensed_desc})
-        return ret
+    if ar_name:
+        return {ar_name + ' ' + k: v for k, v in ret.items()}
     else:
-        if not omit_shape:
-            ret.update({'shape': str(ar.shape), 'dtype': str(ar.dtype)})
-
-        if ar.size == 0:
-            ret['is empty'] = 'True'
-            return ret
-
-        if ar.dtype.kind in 'iufc':
-            has_nan = numpy.isnan(ar).any()
-            if has_nan:
-                ret['has NaN'] = 'True'
-            ret['[min, median, max]'] = '[{:g}, {:g}, {:g}]'.format(ar.min(), numpy.median(ar), ar.max())
-
-        if ar_name:
-            return {ar_name + ' ' + k: v for k, v in ret.items()}
-        else:
-            return ret
+        return ret
 
 
 def narray_describe(ar):
