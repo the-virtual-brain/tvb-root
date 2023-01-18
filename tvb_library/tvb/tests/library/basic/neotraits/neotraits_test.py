@@ -778,9 +778,7 @@ def test_summary_info():
     assert summary['Type'] == 'A'
     assert summary['title'] == 'the red rose'
     assert summary['a'] == "'ana'"
-    assert summary['b dtype'].startswith('int')
-    assert summary['b shape'].startswith('(3')
-    assert summary['b [min, median, max]'] == '[0, 1, 2]'
+    assert summary['b'] == '[min, median, max]= [0, 1, 2] shape= (3,)'
     assert summary['ref'] == 'Z zuzu'
 
 
