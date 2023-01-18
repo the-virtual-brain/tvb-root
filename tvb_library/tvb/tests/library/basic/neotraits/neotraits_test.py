@@ -40,6 +40,8 @@ from tvb.basic.neotraits.api import (
 )
 from tvb.basic.neotraits.ex import TraitTypeError, TraitValueError, TraitAttributeError, TraitError
 
+from tvb.basic.neotraits.info import narray_summary_info
+
 
 def test_simple_declaration():
     class A(HasTraits):
@@ -780,6 +782,60 @@ def test_summary_info():
     assert summary['a'] == "'ana'"
     assert summary['b'] == '[min, median, max]= [0, 1, 2] shape= (3,)'
     assert summary['ref'] == 'Z zuzu'
+
+
+
+def test_narray_summary_info():
+    arr = np.array([1, 4, 9])
+    summary = narray_summary_info(arr, ar_name='attribute_name')
+
+    assert summary['attribute_name shape'] == '(3,)'
+    assert summary['attribute_name dtype'] == 'int32'
+    assert summary['attribute_name [min, median, max]'] == '[1, 4, 9]'
+
+def test_narray_summary_info_none():
+    arr = None
+    summary = narray_summary_info(arr, ar_name='attribute_name')
+
+    assert summary['attribute_name is None'] == 'True'
+
+def test_narray_summary_info_empty():
+    arr = np.array([])
+    summary = narray_summary_info(arr, ar_name='attribute_name')
+
+    assert summary['attribute_name is empty'] == 'True'
+
+def test_narray_summary_info_without_arname():
+    arr = np.array([1, 2, 3])
+    summary = narray_summary_info(arr)
+
+    assert summary['[min, median, max]'] == '[1, 2, 3]'
+
+def test_narray_summary_info_omit_shape():
+    arr = np.array([1, 4, 9])
+    summary = narray_summary_info(arr, ar_name='attribute_name', omit_shape=True)
+
+    assert 'attribute_name shape' not in summary
+    assert 'attribute_name dtype' not in summary
+    assert summary['attribute_name [min, median, max]'] == '[1, 4, 9]'
+
+def test_narray_summary_info_condensed_form():
+    arr = np.arange(3)
+    summary = narray_summary_info(arr, ar_name='attribute_name', condensed_form=True)
+
+    assert summary['attribute_name'] == '[min, median, max]= [0, 1, 2] shape= (3,)'
+
+def test_narray_summary_info_omit_shape_condensed_form():
+    arr = np.arange(3)
+    summary = narray_summary_info(arr, ar_name='attribute_name', omit_shape=True ,condensed_form=True)
+
+    assert summary['attribute_name'] == '[min, median, max]= [0, 1, 2]'
+
+def test_narray_summary_info_omit_shape_condensed_form_single_item():
+    arr = np.array([4])
+    summary = narray_summary_info(arr, ar_name='attribute_name', omit_shape=True ,condensed_form=True)
+
+    assert summary['attribute_name'] == '4'
 
 
 def test_hastraits_str_does_not_crash():
