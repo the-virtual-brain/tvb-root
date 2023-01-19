@@ -109,7 +109,9 @@ class Epileptor(ModelNumbaDfun):
     .. [Jirsaetal_2014] Jirsa, V. K.; Stacey, W. C.; Quilichini, P. P.;
         Ivanov, A. I.; Bernard, C. *On the nature of seizure dynamics.* Brain,
         2014.
+
     Variables of interest to be used by monitors: -y[0] + y[3]
+
         .. math::
             \dot{x_{1}} &=& y_{1} - f_{1}(x_{1}, x_{2}) - z + I_{ext1} \\
             \dot{y_{1}} &=& c - d x_{1}^{2} - y{1} \\
