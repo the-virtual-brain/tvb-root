@@ -31,9 +31,16 @@ The basic Attribute Property and their automatic discovery by the Metaclass.
 import abc
 import inspect
 import typing
+
 from tvb.basic.neotraits.ex import TraitTypeError, TraitAttributeError
-from tvb.basic.neotraits.info import auto_docstring
+from tvb.basic.neotraits.info import auto_docstring, prepare_html
 from tvb.basic.logger.builder import get_logger
+
+try:
+    from IPython.display import display_html
+except ImportError:
+    def display_html(doc, raw):
+        return doc
 
 # a logger for the whole traits system
 log = get_logger('tvb.traits')
@@ -267,3 +274,6 @@ class MetaType(abc.ABCMeta):
         if isinstance(getattr(self, item, None), _Attr):
             log.warning('Dynamically removing Attributes is not supported')
         super(MetaType, self).__delattr__(item)
+
+    def _ipython_display_(self):
+        display_html(prepare_html(self.__doc_old__), raw=True)
