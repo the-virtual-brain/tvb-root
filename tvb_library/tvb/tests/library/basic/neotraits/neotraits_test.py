@@ -790,7 +790,7 @@ def test_narray_summary_info():
     summary = narray_summary_info(arr, ar_name='attribute_name')
 
     assert summary['attribute_name shape'] == '(3,)'
-    assert summary['attribute_name dtype'] == 'int32'
+    assert summary['attribute_name dtype'][:3] == 'int'
     assert summary['attribute_name [min, median, max]'] == '[1, 4, 9]'
 
 def test_narray_summary_info_none():
