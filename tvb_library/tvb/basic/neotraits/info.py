@@ -92,49 +92,43 @@ def auto_docstring(cls):
     return doc
 
 
-def narray_summary_info(ar, ar_name='', omit_shape=False, condensed_form=False):
+def narray_summary_info(ar, ar_name='', condensed=False):
     # type: (numpy.ndarray, str, bool) -> typing.Dict[str, str]
     """
     A 2 column table represented as a dict of str->str
     """
 
-    is_none = 'is None'
-    is_empty = 'is empty'
-    min_med_max = '[min, median, max]'
-    has_nan = 'has NaN'
-    shape = 'shape'
-    dtype = 'dtype'
+    key_none = 'is None'
+    key_empty = 'is empty'
+    key_min_max = '[min, median, max]'
+    key_nan = 'has NaN'
+    key_shape = 'shape'
+    key_type = 'dtype'
 
     if ar is None:
-        return {f'{ar_name} {is_none}': 'True'} if ar_name else {is_none: 'True'}
+        return {f'{ar_name} {key_none}': 'True'} if ar_name else {key_none: 'True'}
 
     if ar.size == 0:
-        return {f'{ar_name} {is_empty}': 'True'} if ar_name else {is_empty: 'True'}
+        return {f'{ar_name} {key_empty}': 'True'} if ar_name else {key_empty: 'True'}
 
-    ret = {}
-
-    if not omit_shape:
-        ret.update({shape: str(ar.shape), dtype: str(ar.dtype)})
+    ret = {key_shape: str(ar.shape),
+           key_type: str(ar.dtype)}
 
     if ar.dtype.kind in 'iufc':
-        has_nan = numpy.isnan(ar).any()
-        if has_nan:
-            ret[has_nan] = 'True'
-        ret[min_med_max] = '[{:g}, {:g}, {:g}]'.format(ar.min(), numpy.median(ar), ar.max())
+        key_nan = numpy.isnan(ar).any()
+        if key_nan:
+            ret[key_nan] = 'True'
+        ret[key_min_max] = '[{:g}, {:g}, {:g}]'.format(ar.min(), numpy.median(ar), ar.max())
 
-    if condensed_form:
+    if condensed:
         condensed_desc = ""
         if ar.shape == (1,):
             condensed_desc += str(ar.item())
         else:
-            if min_med_max in ret:
-                condensed_desc += f'{min_med_max}= {ret[min_med_max]}'
-            if shape in ret:
-                condensed_desc += f' {shape}= {str(ar.shape)}'
-            if is_empty in ret:
-                condensed_desc += f' {is_empty}= {ret[is_empty]}'
-            if has_nan in ret:
-                condensed_desc += f' {has_nan}= {ret[has_nan]}'
+            for key in [key_min_max, key_type, key_shape, key_empty, key_nan]:
+                if key in ret:
+                    condensed_desc += f' {key} = {ret[key]}'
+
         return {ar_name: condensed_desc} if ar_name else {'': condensed_desc}
 
     if ar_name:

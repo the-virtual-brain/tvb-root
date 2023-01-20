@@ -279,7 +279,6 @@ class HasTraits(object):
         """
         self.validate()
 
-
     def summary_info(self):
         # type: () -> typing.Dict[str, str]
         """
@@ -299,7 +298,7 @@ class HasTraits(object):
             try:
                 attr_field = getattr(self, aname)
                 if isinstance(attr_field, numpy.ndarray):
-                    ret.update(narray_summary_info(attr_field, ar_name=aname, condensed_form=True))
+                    ret.update(narray_summary_info(attr_field, ar_name=aname, condensed=True))
                 elif isinstance(attr_field, HasTraits):
                     ret[aname] = attr_field.title
                 elif isinstance(attr_field, tuple):
