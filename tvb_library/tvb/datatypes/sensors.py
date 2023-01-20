@@ -33,6 +33,7 @@ The Sensors dataType.
 
 """
 
+import bz2
 import re
 import numpy
 from io import StringIO
@@ -84,9 +85,14 @@ class Sensors(HasTraits):
         return result
 
     @classmethod
-    def from_bytes_stream(cls, bytes_stream):
+    def from_bytes_stream(cls, bytes_stream, content_type='.txt'):
         """Construct Sensors from source_file."""
         result = Sensors()
+
+        if content_type == '.txt.bz2':
+            decompressor = bz2.BZ2Decompressor()
+            bytes_stream = decompressor.decompress(bytes_stream)
+
         content_str = StringIO(bytes_stream.decode())
         result.labels = numpy.loadtxt(content_str, dtype=numpy.str, skiprows=0, usecols=(0,))
         content_str.seek(0)

@@ -168,7 +168,7 @@ class Surface(HasTraits):
         return cls._read(reader)
 
     @classmethod
-    def from_bytes_stream(cls, bytes_stream):
+    def from_bytes_stream(cls, bytes_stream, content_type='.zip'):
         """Construct a Surface from a stream of bytes."""
 
         reader = ZipReader(BytesIO(bytes_stream))

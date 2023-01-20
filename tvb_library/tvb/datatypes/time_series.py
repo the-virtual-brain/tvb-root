@@ -31,8 +31,10 @@ The TimeSeries datatypes.
 
 """
 
+from io import BytesIO
 from tvb.datatypes import sensors, surfaces, volumes, region_mapping, connectivity
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float, narray_summary_info
+from tvb.basic.readers import H5Reader
 import numpy
 from copy import deepcopy
 
@@ -208,6 +210,21 @@ class TimeSeries(HasTraits):
                 self.logger.error("Some of the given indices are out of space range: [0, %s]",
                                   self.data.shape[1])
                 raise IndexError
+
+    @classmethod
+    def from_bytes_stream(cls, bytes_stream, content_type=".npz"):
+        result = TimeSeries()
+
+        if content_type == '.npz':
+            ts_data = numpy.load(BytesIO(bytes_stream))
+            result.data = ts_data['data']
+            result.time = ts_data['time']
+            return result
+
+        reader = H5Reader(BytesIO(bytes_stream))
+        result.data = reader.read_field("data")
+        result.time = reader.read_optional_field("time")
+        return result
 
 
 class SensorsTSBase(TimeSeries):
