@@ -173,10 +173,10 @@ def trait_object_repr_html(self):
 
     result = [
         '<table>',
-        '<h3>{}</h3>'.format(cls.__name__),
-        '<p>{}</p>'.format(prepare_html(subtitle)) if subtitle is not None else "",
-        '<thead><tr><th></th><th style="text-align:left;width:80%">value</th></tr></thead>',
+        '<thead><h3>{}</h3></thead>'.format(cls.__name__),
         '<tbody>',
+        '<tr><td colspan="2"><p>{}</p></td></tr>'.format(prepare_html(subtitle)) if subtitle is not None else "",
+        '<tr><th></th><th style="text-align:left;width:80%">value</th></tr>',
     ]
 
     summary = self.summary_info()
