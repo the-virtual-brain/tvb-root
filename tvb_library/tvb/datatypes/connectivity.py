@@ -739,7 +739,7 @@ class Connectivity(HasTraits):
         return result
 
     @classmethod
-    def from_bytes_stream(cls, bytes_stream):
+    def from_bytes_stream(cls, bytes_stream, content_type='.zip'):
         """Construct a Connectivity from a stream of bytes."""
         reader = ZipReader(BytesIO(bytes_stream))
         return cls._read(reader)
