@@ -36,7 +36,7 @@ import os
 import shutil
 import setuptools
 
-VERSION = "2.7.3"
+VERSION = "2.7.3.1"
 
 TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Prodan, Paula Sansz Leon, Marmaduke Woodman"
 
@@ -52,7 +52,10 @@ with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
 
 setuptools.setup(name="tvb-framework",
                  version=VERSION,
-                 packages=setuptools.find_packages(),
+                 packages=setuptools.find_packages(
+                     exclude=[
+                         'tvb.interfaces.rest.bids_monitor', 'tvb.interfaces.rest.bids_monitor.*',
+                         'tvb.interfaces.rest.client', 'tvb.interfaces.rest.client.*']),
                  include_package_data=True,
                  install_requires=TVB_INSTALL_REQUIREMENTS,
                  extras_require={'postgres': ["psycopg2"],
