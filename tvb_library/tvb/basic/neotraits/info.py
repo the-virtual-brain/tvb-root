@@ -182,7 +182,7 @@ def trait_object_repr_html(self):
     summary = self.summary_info()
 
     for k in sorted(summary):
-        row_fmt = '<tr><td>{}</td><td style="text-align:left;"><pre>{}</pre></td>'
+        row_fmt = '<tr><td>{}</td><td style="text-align:left;"><pre>{}</pre></td></tr>'
         result.append(row_fmt.format(k, summary[k]))
 
     result += ['</tbody></table>']
