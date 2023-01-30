@@ -32,6 +32,7 @@ TVB global configurations are predefined/read from here, for working with Framew
 
 import os
 import sys
+import tvb.config.init
 from tvb.basic.config import stored
 from tvb.basic.config.profile_settings import BaseSettingsProfile
 from tvb.basic.config.settings import DBSettings
@@ -64,7 +65,8 @@ class WebSettingsProfile(BaseSettingsProfile):
         """
         super(WebSettingsProfile, self).initialize_for_deployment()
 
-        inside_static_folder = os.path.join(self.EXTERNALS_FOLDER_PARENT, 'tvb')
+        inside_static_folder = os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.abspath(tvb.config.init.__file__))))
         self.web.CHERRYPY_CONFIGURATION['/statichelp']['tools.staticdir.root'] = inside_static_folder
 
         # We want to disable warnings we get from sqlalchemy for traited attributes when we are in deployment mode.

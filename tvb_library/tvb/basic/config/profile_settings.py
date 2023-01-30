@@ -75,10 +75,6 @@ class BaseSettingsProfile(object):
         self.version = VersionSettings(self.manager, self.BIN_FOLDER)
         self.file_storage = self.manager.get_attribute(stored.KEY_FILE_STORAGE, 'h5', str)
 
-        self.EXTERNALS_FOLDER_PARENT = os.path.dirname(self.BIN_FOLDER)
-        if not self.env.is_distribution():
-            self.EXTERNALS_FOLDER_PARENT = os.path.dirname(self.EXTERNALS_FOLDER_PARENT)
-
         # Maximum number of vertices acceptable o be part of a surface at import time.
         self.MAX_SURFACE_VERTICES_NUMBER = self.manager.get_attribute(stored.KEY_MAX_NR_SURFACE_VERTEX, 300000, int)
         # Max number of ops that can be scheduled from UI in a PSE. To be correlated with the oarsub limitations

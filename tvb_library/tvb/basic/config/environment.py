@@ -34,7 +34,6 @@ Environment related checks or operations are to be defined here.
 import os
 import sys
 from subprocess import Popen, PIPE
-from tvb.basic.config.settings import VersionSettings
 
 
 class Environment(object):
@@ -72,12 +71,16 @@ class Environment(object):
         except Exception:
             pass
 
-        externals_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(tvb_bin.__file__)))),
-            "externals")
-        if os.path.exists(externals_path):
-            # usage from GitHub clone without got cmd or inside a Docker container (as a mounted volume)
-            return False
+        try:
+            import tvb
+            externals_path = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(tvb.__file__)))),
+                "dev_resources")
+            if os.path.exists(externals_path):
+                # usage from GitHub clone without got cmd or inside a Docker container (as a mounted volume)
+                return False
+        except Exception:
+            pass
 
         # We default as usage from TVB_Distribution
         return True
