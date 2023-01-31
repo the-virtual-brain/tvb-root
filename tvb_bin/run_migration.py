@@ -48,7 +48,8 @@ if __name__ == '__main__':
     h5_migrating_thread.join()
 
     # copy files in tvb_root folder so Jenkins can find them
-    shutil.copytree(TvbProfile.current.TVB_LOG_FOLDER, os.path.join(TvbProfile.current.EXTERNALS_FOLDER_PARENT, 'logs'))
+    EXTERNALS_FOLDER_PARENT = os.path.dirname(TvbProfile.current.BIN_FOLDER)
+    shutil.copytree(TvbProfile.current.TVB_LOG_FOLDER, os.path.join(EXTERNALS_FOLDER_PARENT, 'logs'))
 
     # test if there are any files which were not migrated
     number_of_unmigrated_files = len(FilesUpdateManager.get_all_h5_paths())
