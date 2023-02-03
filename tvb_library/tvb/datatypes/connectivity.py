@@ -38,6 +38,7 @@ from copy import copy
 from io import BytesIO
 from tvb.basic.exceptions import ValidationException
 from tvb.basic.neotraits.api import Attr, NArray, List, HasTraits, Int, narray_summary_info
+from tvb.basic.neotraits.ex import TraitAttributeError
 from tvb.basic.readers import ZipReader, H5Reader, try_get_absolute_path
 
 
@@ -284,24 +285,24 @@ class Connectivity(HasTraits):
             "Number of connections": self.number_of_connections,
             "Undirected": self.undirected,
         }
-        summary.update(narray_summary_info(self.areas, ar_name='areas'))
-        summary.update(narray_summary_info(self.weights, ar_name='weights'))
-        summary.update(narray_summary_info(
-            self.weights[self.weights.nonzero()],
-            ar_name='weights-non-zero',
-            omit_shape=True))
-        summary.update(narray_summary_info(
-            self.tract_lengths,
-            ar_name='tract_lengths',
-            omit_shape=True))
-        summary.update(narray_summary_info(
-            self.tract_lengths[self.tract_lengths.nonzero()],
-            ar_name='tract_lengths-non-zero',
-            omit_shape=True))
-        summary.update(narray_summary_info(
-            self.tract_lengths[self.weights.nonzero()],
-            ar_name='tract_lengths (connections)',
-            omit_shape=True))
+        summary.update(narray_summary_info(self.areas, ar_name='areas', condensed=True))
+
+        try:
+            summary.update(narray_summary_info(self.weights, ar_name='weights', condensed=True))
+            summary.update(narray_summary_info(self.weights[self.weights.nonzero()],
+                                               ar_name='weights-non-zero', condensed=True))
+        except TraitAttributeError:
+            summary['weights'] = "undefined"
+
+        try:
+            summary.update(narray_summary_info(self.tract_lengths, ar_name='tract_lengths', condensed=True))
+            summary.update(narray_summary_info(self.tract_lengths[self.tract_lengths.nonzero()],
+                                               ar_name='tract_lengths-non-zero', condensed=True))
+            summary.update(narray_summary_info(self.tract_lengths[self.weights.nonzero()],
+                                               ar_name='tract_lengths (connections)', condensed=True))
+        except TraitAttributeError:
+            summary['tract_lengths'] = "undefined"
+
         return summary
 
     def set_idelays(self, dt):

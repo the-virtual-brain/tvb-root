@@ -40,6 +40,8 @@ from tvb.basic.neotraits.api import (
 )
 from tvb.basic.neotraits.ex import TraitTypeError, TraitValueError, TraitAttributeError, TraitError
 
+from tvb.basic.neotraits.info import narray_summary_info
+
 
 def test_simple_declaration():
     class A(HasTraits):
@@ -778,10 +780,51 @@ def test_summary_info():
     assert summary['Type'] == 'A'
     assert summary['title'] == 'the red rose'
     assert summary['a'] == "'ana'"
-    assert summary['b dtype'].startswith('int')
-    assert summary['b shape'].startswith('(3')
-    assert summary['b [min, median, max]'] == '[0, 1, 2]'
+    assert summary['b'] == ' [min, median, max] = [0, 1, 2] dtype = int64 shape = (3,)'
     assert summary['ref'] == 'Z zuzu'
+
+
+def test_narray_summary_info():
+    arr = np.array([1, 4, 9])
+    summary = narray_summary_info(arr, ar_name='attribute_name')
+
+    assert summary['attribute_name shape'] == '(3,)'
+    assert summary['attribute_name dtype'][:3] == 'int'
+    assert summary['attribute_name [min, median, max]'] == '[1, 4, 9]'
+
+
+def test_narray_summary_info_none():
+    summary = narray_summary_info(None, ar_name='attribute_name')
+    assert summary['attribute_name is None'] == 'True'
+    assert 1 == len(summary.keys())
+
+
+def test_narray_summary_info_empty():
+    summary = narray_summary_info(np.array([]), ar_name='attribute_name')
+    assert summary['attribute_name is empty'] == 'True'
+    assert 1 == len(summary.keys())
+
+
+def test_narray_summary_info_without_arname():
+    arr = np.array([1, 2, 3])
+    summary = narray_summary_info(arr)
+
+    assert summary['[min, median, max]'] == '[1, 2, 3]'
+    assert summary['shape'] == "(3,)"
+
+
+def test_narray_summary_info_condensed_form():
+    arr = np.arange(3)
+    summary = narray_summary_info(arr, ar_name='attribute_name', condensed=True)
+
+    assert summary['attribute_name'] == ' [min, median, max] = [0, 1, 2] dtype = int64 shape = (3,)'
+
+
+def test_narray_summary_info_condensed_form_single_item():
+    arr = np.array([4])
+    summary = narray_summary_info(arr, ar_name='attribute_name', condensed=True)
+
+    assert summary['attribute_name'] == '4'
 
 
 def test_hastraits_str_does_not_crash():
@@ -914,14 +957,14 @@ def test_function_attribute():
 def test_deepcopy():
     con = connectivity.Connectivity.from_file("connectivity_192.zip")
     original = simulator.Simulator(
-            connectivity=con,
-            coupling=coupling.Linear(a=numpy.array([2e-4])),
-            integrator=integrators.EulerStochastic(dt=10.0),
-            model=models.Linear(gamma=numpy.array([-1e-2])),
-            monitors=(monitors.Raw(),),
-            simulation_length=60e3
+        connectivity=con,
+        coupling=coupling.Linear(a=numpy.array([2e-4])),
+        integrator=integrators.EulerStochastic(dt=10.0),
+        model=models.Linear(gamma=numpy.array([-1e-2])),
+        monitors=(monitors.Raw(),),
+        simulation_length=60e3
     )
-    clone = original.duplicate()    # deepcopy() called inside duplicate()
+    clone = original.duplicate()  # deepcopy() called inside duplicate()
 
     # random attrs
     o_random_stream = original.integrator.noise.random_stream

@@ -236,6 +236,7 @@ class MetaType(abc.ABCMeta):
             v._post_bind_validate()
 
         # update docstring. Note that this is only possible if cls was created by a metatype in python
+        setattr(cls, '__doc_old__', cls.__doc__)
         setattr(cls, '__doc__', auto_docstring(cls))
 
         # update the HasTraits class registry
