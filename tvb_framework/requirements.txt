@@ -39,7 +39,7 @@ pandas
 requests
 simplejson
 six
-siibra
+siibra==0.3a27
 bctpy
 kubernetes
 watchdog
