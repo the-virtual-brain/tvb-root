@@ -25,7 +25,7 @@ formencode
 flask
 flask-restx
 jinja2
-nibabel
+nibabel>=4.0
 sqlalchemy<2.0
 alembic
 allensdk
