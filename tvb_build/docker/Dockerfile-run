@@ -84,5 +84,7 @@ WORKDIR $USER_HOME/tvb-root
 # MOUNT -v [local- ~/TVB ]:$TVB_STORAGE
 #CMD ["bash","-c","source activate tvb-run && python -m tvb.interfaces.web.run_landing_page"]
 
+ENV NUMBA_CACHE_DIR /home/TVB_STORAGE/numba_cache
+
 USER 1001
 CMD ["bash","-c","source activate tvb-run && cd tvb_bin && python -m tvb.interfaces.web.run WEB_PROFILE"]
