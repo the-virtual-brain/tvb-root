@@ -43,4 +43,3 @@ siibra==0.3a27
 bctpy
 kubernetes
 watchdog
-elasticsearch
