@@ -25,7 +25,6 @@
 #
 
 import abc
-import copy
 import types
 import uuid
 import numpy
@@ -35,12 +34,10 @@ from tvb.datatypes import connectivity
 from tvb.simulator import (simulator, models, coupling, integrators, monitors, noise)
 from tvb.basic.neotraits._core import TraitProperty
 from tvb.basic.neotraits.api import (
-    HasTraits, Attr, NArray, Final, List, trait_property,
+    HasTraits, Attr, NArray, Final, List, trait_property, narray_summary_info, narray_describe,
     Int, Float, Range, cached_trait_property, LinspaceRange, Dim
 )
 from tvb.basic.neotraits.ex import TraitTypeError, TraitValueError, TraitAttributeError, TraitError
-
-from tvb.basic.neotraits.info import narray_summary_info
 
 
 def test_simple_declaration():
@@ -825,6 +822,17 @@ def test_narray_summary_info_condensed_form_single_item():
     summary = narray_summary_info(arr, ar_name='attribute_name', condensed=True)
 
     assert summary['attribute_name'] == '4'
+
+
+def test_narray_summary_info_with_nan():
+    arr = np.array([1, 2, np.inf, np.nan])
+    summary = narray_summary_info(arr)
+
+    assert summary['has NaN'] == 'True'
+    assert summary['shape'] == "(4,)"
+
+    desc = narray_describe(arr)
+    assert desc is not None
 
 
 def test_hastraits_str_does_not_crash():
