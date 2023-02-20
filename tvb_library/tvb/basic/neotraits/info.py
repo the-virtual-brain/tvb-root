@@ -115,8 +115,8 @@ def narray_summary_info(ar, ar_name='', condensed=False):
            key_type: str(ar.dtype)}
 
     if ar.dtype.kind in 'iufc':
-        key_nan = numpy.isnan(ar).any()
-        if key_nan:
+        has__nan = numpy.isnan(ar).any()
+        if has__nan:
             ret[key_nan] = 'True'
         ret[key_min_max] = '[{:g}, {:g}, {:g}]'.format(ar.min(), numpy.median(ar), ar.max())
 
