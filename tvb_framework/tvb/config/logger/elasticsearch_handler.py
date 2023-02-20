@@ -56,11 +56,11 @@ else:
             """
             super().__init__()
             self._client = Elasticsearch(
-                "https://elk-cscs.tc.humanbrainproject.eu:9200",
-                api_key='MzdnQVg0WUJFazFQZTBNTlBuZ3I6dFJuRmNLeThUQm12YmNOc0RLVFdsUQ==',
-                request_timeout=30
+                TvbProfile.current.ELASTICSEARCH_URL,
+                api_key=TvbProfile.current.ELASTICSEARCH_API_KEY,
+                request_timeout=TvbProfile.current.ELASTICSEARCH_REQUEST_TIMEOUT
             )
-            self.threshold = 5
+            self.threshold = TvbProfile.current.ELASTICSEARCH_BUFFER_THRESHOLD
             self.buffer = []
 
         def emit(self, record: LogRecord):
@@ -73,7 +73,7 @@ else:
             self.buffer += _convert_to_bulk_format(record)
 
             if len(self.buffer) // 2 >= self.threshold:
-                self._client.bulk(index="app_tvb_logging", operations=self.buffer)
+                self._client.bulk(index=TvbProfile.current.ELASTICSEARCH_LOGGING_INDEX, operations=self.buffer)
                 self.buffer.clear()
 
         def close(self) -> None:
