@@ -373,7 +373,7 @@ objects:
             deploymentconfig: tvb-postgres
         spec:
           containers:
-            - image: centos/postgresql-95-centos7
+            - image: centos/postgresql-13-centos7
               imagePullPolicy: Always
               name: tvb-postgres
               env:
