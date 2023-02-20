@@ -44,7 +44,7 @@ from tvb.basic.readers import ZipReader, try_get_absolute_path
 
 try:
     import gdist
-except ImportError:
+except Exception:
     class ExceptionRaisingGdistModule(object):
         msg = "Geodesic distance module is unavailable, cannot compute gdist matrix."
 
