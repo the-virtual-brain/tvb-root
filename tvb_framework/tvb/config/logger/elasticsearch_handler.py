@@ -42,11 +42,34 @@ if not TvbProfile.current.TRACE_USER_ACTIONS:
 else:
 
     from elasticsearch import Elasticsearch
+    import re
+
+    user_id = None
+
+    def _retrieve_user_gid(msg):
+        """
+        Retrieves the user id from the log message
+        """
+        global user_id
+        if user_id is None:
+            user_id_list = re.findall("USER: [a-zA-Z1-9\-]+", msg)
+            if len(user_id_list) != 0:
+                user_id = user_id_list[0][6:]
+            else:
+                user_id = ""
+
+        return user_id
 
 
     def _convert_to_bulk_format(record):
+
         return [{"index": {}},
-                {"@timestamp": record.asctime, "message": record.message, "user": {"id": "user-id"}}]
+                {"@timestamp": record.asctime,
+                 "message": record.message,
+                 "user": {
+                     "id": _retrieve_user_gid(record.message)
+                    }
+                 }]
 
 
     class ElasticSendHandler(Handler):
