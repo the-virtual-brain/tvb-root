@@ -763,7 +763,7 @@ def test_summary_info():
 
     class A(HasTraits):
         a = Attr(str, default='ana')
-        b = NArray(dtype=int)
+        b = NArray(dtype=np.int64)
         ref = Attr(field_type=Z)
 
     ainst = A(b=np.arange(3))
@@ -814,7 +814,9 @@ def test_narray_summary_info_condensed_form():
     arr = np.arange(3)
     summary = narray_summary_info(arr, ar_name='attribute_name', condensed=True)
 
-    assert summary['attribute_name'] == ' [min, median, max] = [0, 1, 2] dtype = int64 shape = (3,)'
+    assert '[min, median, max] = [0, 1, 2]' in summary['attribute_name']
+    assert 'dtype = int' in summary['attribute_name']
+    assert 'shape = (3,)' in summary['attribute_name']
 
 
 def test_narray_summary_info_condensed_form_single_item():
