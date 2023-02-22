@@ -98,6 +98,8 @@ def narray_summary_info(ar, ar_name='', condensed=False):
     A 2 column table represented as a dict of str->str
     """
 
+
+
     key_none = 'is None'
     key_empty = 'is empty'
     key_min_max = '[min, median, max]'
@@ -141,8 +143,19 @@ def narray_describe(ar):
     # type: (numpy.ndarray) -> str
     summary = narray_summary_info(ar)
     ret = []
+
+    is_string = True
+    for i in summary.keys():
+        is_string = is_string and isinstance(i, str)
+
+    assert is_string, str(summary)
+
+
     for k in sorted(summary):
         ret.append('{:<12}{}'.format(k, summary[k]))
+        
+    ret = {}
+
     return '\n'.join(ret)
 
 

@@ -1,5 +1,7 @@
 name: Test lib
-on: [push]
+on:
+  push:
+    branches: [ master ]
 jobs:
   lib-tests:
     

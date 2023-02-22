@@ -1,5 +1,7 @@
 name: Test Win
-on: [push]
+on:
+  push:
+    branches: [ master ]
 
 jobs:
   build:
