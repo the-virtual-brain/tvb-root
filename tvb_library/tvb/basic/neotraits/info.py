@@ -144,17 +144,11 @@ def narray_describe(ar):
     summary = narray_summary_info(ar)
     ret = []
 
-    is_string = True
-    for i in summary.keys():
-        is_string = is_string and isinstance(i, str)
-
-    assert is_string, str(summary)
-
-
-    for k in sorted(summary):
-        ret.append('{:<12}{}'.format(k, summary[k]))
-        
-    ret = {}
+    try:
+        for k in sorted(summary):
+            ret.append('{:<12}{}'.format(k, summary[k]))
+    except:
+        assert False, str(summary)
 
     return '\n'.join(ret)
 
