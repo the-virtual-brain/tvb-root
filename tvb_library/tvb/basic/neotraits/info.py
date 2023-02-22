@@ -144,7 +144,7 @@ def narray_describe(ar):
     summary = narray_summary_info(ar)
     ret = []
 
-    assert False, str(summary)
+    assert False, "macaroane    " + str(summary)
 
     for k in sorted(summary):
         ret.append('{:<12}{}'.format(k, summary[k]))
