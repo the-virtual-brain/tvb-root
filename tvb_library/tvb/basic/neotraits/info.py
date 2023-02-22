@@ -144,11 +144,11 @@ def narray_describe(ar):
     summary = narray_summary_info(ar)
     ret = []
 
-    try:
-        for k in sorted(summary):
-            ret.append('{:<12}{}'.format(k, summary[k]))
-    except:
-        assert False, str(summary)
+    assert False, str(summary)
+
+    for k in sorted(summary):
+        ret.append('{:<12}{}'.format(k, summary[k]))
+
 
     return '\n'.join(ret)
 
