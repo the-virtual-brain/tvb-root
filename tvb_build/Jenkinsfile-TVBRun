@@ -29,15 +29,16 @@ pipeline {
                 unstash 'step1'
                 unzip zipFile: 'tvb_build/build/TVB_build_step1.zip', dir: 'tvb_build/docker/step1'
                 script {
-                    LAST_SHA = sh (script: "curl -s 'https://api.github.com/repos/the-virtual-brain/tvb-root/commits?sha=elasticsearch' | grep sha | head -1 | cut -d ':' -f2 | tr -d '\",'", returnStdout: true).trim()
+                    VERSION_TAG = sh(script: "curl -s 'https://raw.githubusercontent.com/the-virtual-brain/tvb-root/master/tvb_framework/setup.py' | grep VERSION | head -1 | tr -d 'VERSION = \"'", returnStdout: true). trim()
                     withCredentials([usernamePassword(credentialsId: 'tvb-revision', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
-                        LAST_SHA = sh (script: "curl -s -H 'Authorization: Bearer $GIT_PASSWORD' 'https://api.github.com/repos/the-virtual-brain/tvb-root/commits?sha=elasticsearch' | grep sha | head -1 | cut -d ':' -f2 | tr -d '\",'", returnStdout: true).trim()
+                        LAST_SHA = sh (script: "curl -s -H 'Authorization: Bearer $GIT_PASSWORD' 'https://api.github.com/repos/the-virtual-brain/tvb-root/commits' | grep sha | head -1 | cut -d ':' -f2 | tr -d '\",'", returnStdout: true).trim()
                     }
                     withDockerRegistry(credentialsId: 'tvb_on_docker_hub') {
                         def dockerContext = "tvb_build/docker"
                         def dockerFile = "${dockerContext}/Dockerfile-run"
-                        def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}:'elastic-'${LAST_SHA}", "--build-arg LAST_SHA='${LAST_SHA}' -f ${dockerFile} ${dockerContext}")
+                        def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}:'${VERSION_TAG}'", "--build-arg LAST_SHA='${LAST_SHA}' -f ${dockerFile} ${dockerContext}")
                         dockerImage.push()
+                        dockerImage.push('latest')
                     }
                 }
             }
@@ -45,7 +46,7 @@ pipeline {
     }
     post {
         changed {
-            mail to: 'rares.horge@codemart.ro',
+            mail to: 'paula.popa@codemart.ro lia.domide@codemart.ro',
             subject: "Jenkins Pipeline ${currentBuild.fullDisplayName} changed status",
             body: """
                 Result: ${currentBuild.result}

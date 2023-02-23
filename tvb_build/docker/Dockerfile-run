@@ -41,7 +41,7 @@ COPY requirements_group requirements.txt
 RUN $PIP install -r requirements.txt
 
 # make sure a copy of tvb-root exists inside, for users without Github clone
-RUN git clone --branch elasticsearch --depth 1 https://github.com/the-virtual-brain/tvb-root.git
+RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git
 ARG LAST_SHA=LATEST
 
 RUN cd tvb-root; \
