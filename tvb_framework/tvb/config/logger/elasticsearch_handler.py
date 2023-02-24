@@ -76,14 +76,17 @@ else:
             """
             Initializes the custom http handler
             """
-            super().__init__()
-            self._client = Elasticsearch(
-                TvbProfile.current.ELASTICSEARCH_URL,
-                api_key=TvbProfile.current.ELASTICSEARCH_API_KEY,
-                request_timeout=TvbProfile.current.ELASTICSEARCH_REQUEST_TIMEOUT
-            )
-            self.threshold = TvbProfile.current.ELASTICSEARCH_BUFFER_THRESHOLD
-            self.buffer = []
+            try:
+                super().__init__()
+                self._client = Elasticsearch(
+                    TvbProfile.current.ELASTICSEARCH_URL,
+                    api_key=TvbProfile.current.ELASTICSEARCH_API_KEY,
+                    request_timeout=TvbProfile.current.ELASTICSEARCH_REQUEST_TIMEOUT
+                )
+                self.threshold = TvbProfile.current.ELASTICSEARCH_BUFFER_THRESHOLD
+                self.buffer = []
+            except:
+                pass
 
         def emit(self, record: LogRecord):
             """
@@ -92,11 +95,13 @@ else:
             Parameters:
                 record: a log record
             """
-            self.buffer += _convert_to_bulk_format(record)
+            if hasattr(self, "_client"):
 
-            if len(self.buffer) // 2 >= self.threshold:
-                self._client.bulk(index=TvbProfile.current.ELASTICSEARCH_LOGGING_INDEX, operations=self.buffer)
-                self.buffer.clear()
+                self.buffer += _convert_to_bulk_format(record)
+                if len(self.buffer) // 2 >= self.threshold:
+                    self._client.bulk(index=TvbProfile.current.ELASTICSEARCH_LOGGING_INDEX, operations=self.buffer)
+                    self.buffer.clear()
+
 
         def close(self) -> None:
             self._client.close()
