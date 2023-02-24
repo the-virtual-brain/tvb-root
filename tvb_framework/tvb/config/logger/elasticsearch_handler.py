@@ -27,8 +27,7 @@
 """
 .. moduleauthor:: Horge Rares <rares.horge@codemart.ro>
 """
-
-from logging import Handler, LogRecord
+from logging import Handler, LogRecord, getLogger, ERROR
 from logging.handlers import QueueListener, QueueHandler
 from queue import Queue
 from tvb.basic.profile import TvbProfile
@@ -48,6 +47,7 @@ def _retrieve_user_gid(msg):
 
     return user_id
 
+
 if not TvbProfile.current.TRACE_USER_ACTIONS:
 
     class ElasticQueueHandler(Handler):
@@ -58,7 +58,7 @@ else:
 
     from elasticsearch import Elasticsearch
 
-
+    logger = getLogger("elastic_transport")
 
     def _convert_to_bulk_format(record):
 
@@ -85,8 +85,8 @@ else:
                 )
                 self.threshold = TvbProfile.current.ELASTICSEARCH_BUFFER_THRESHOLD
                 self.buffer = []
-            except:
-                pass
+            except Exception as e:
+                logger.log(ERROR, "could not create Elasticsearch connection object",  exc_info=e)
 
         def emit(self, record: LogRecord):
             """
@@ -99,13 +99,18 @@ else:
 
                 self.buffer += _convert_to_bulk_format(record)
                 if len(self.buffer) // 2 >= self.threshold:
-                    self._client.bulk(index=TvbProfile.current.ELASTICSEARCH_LOGGING_INDEX, operations=self.buffer)
+                    try:
+                        response = self._client.bulk(index=TvbProfile.current.ELASTICSEARCH_LOGGING_INDEX, operations=self.buffer)
+                        if not response['errors']:
+                            logger.log(ERROR, "could not send bulk request to elasticsearch server", stack_info=True)
+                    except Exception as e:
+                        logger.log(ERROR, f"could not send bulk request to elasticsearch server", exc_info=e)
                     self.buffer.clear()
 
-
         def close(self) -> None:
-            self._client.close()
-            self.buffer = []
+            if hasattr(self, "_client"):
+                self._client.close()
+                self.buffer = []
             return super().close()
 
 
