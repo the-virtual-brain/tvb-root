@@ -85,6 +85,16 @@ class BaseSettingsProfile(object):
         # The maximum disk space that can be used by one single user, in KB.
         self.MAX_DISK_SPACE = self.manager.get_attribute(stored.KEY_MAX_DISK_SPACE_USR, 5 * 1024 * 1024, int)
 
+        # The url of the elasticsearch server
+        self.ELASTICSEARCH_URL = self.manager.get_attribute(stored.KEY_ELASTICSEARCH_URL, "", str)
+        # The security key that is used to connect to the server
+        self.ELASTICSEARCH_API_KEY = self.manager.get_attribute(stored.KEY_ELASTICSEARCH_API_KEY, "", str)
+        # The request timeout for the elasticsearch rest calls
+        self.ELASTICSEARCH_LOGGING_INDEX = self.manager.get_attribute(stored.KEY_ELASTICSEARCH_LOGGING_INDEX, "", str)
+        self.ELASTICSEARCH_REQUEST_TIMEOUT = self.manager.get_attribute(stored.KEY_ELASTICSEARCH_REQUEST_TIMEOUT, 30, int)
+        # The number of logs in a message batch that are sent to the server
+        self.ELASTICSEARCH_BUFFER_THRESHOLD = self.manager.get_attribute(stored.KEY_ELASTICSEARCH_BUFFER_THRESHOLD, 10, int)
+
     @property
     def BIN_FOLDER(self):
         """
