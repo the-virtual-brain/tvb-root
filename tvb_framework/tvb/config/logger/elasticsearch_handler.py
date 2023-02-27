@@ -27,12 +27,12 @@
 """
 .. moduleauthor:: Horge Rares <rares.horge@codemart.ro>
 """
+
+import re
 from logging import Handler, LogRecord, getLogger, ERROR
 from logging.handlers import QueueListener, QueueHandler
 from queue import Queue
 from tvb.basic.profile import TvbProfile
-
-import re
 
 
 def _retrieve_user_gid(msg):
@@ -60,6 +60,7 @@ else:
 
     logger = getLogger("elastic_transport")
 
+
     def _convert_to_bulk_format(record):
 
         return [{"index": {}},
@@ -67,7 +68,7 @@ else:
                  "message": record.message,
                  "user": {
                      "id": _retrieve_user_gid(record.message)
-                    }
+                 }
                  }]
 
 
@@ -86,7 +87,7 @@ else:
                 self.threshold = TvbProfile.current.ELASTICSEARCH_BUFFER_THRESHOLD
                 self.buffer = []
             except Exception as e:
-                logger.log(ERROR, "could not create Elasticsearch connection object",  exc_info=e)
+                logger.log(ERROR, "could not create Elasticsearch connection object", exc_info=e)
 
         def emit(self, record: LogRecord):
             """
@@ -100,7 +101,8 @@ else:
                 self.buffer += _convert_to_bulk_format(record)
                 if len(self.buffer) // 2 >= self.threshold:
                     try:
-                        response = self._client.bulk(index=TvbProfile.current.ELASTICSEARCH_LOGGING_INDEX, operations=self.buffer)
+                        response = self._client.bulk(index=TvbProfile.current.ELASTICSEARCH_LOGGING_INDEX,
+                                                     operations=self.buffer)
                         if not response['errors']:
                             logger.log(ERROR, "could not send bulk request to elasticsearch server", stack_info=True)
                     except Exception as e:
