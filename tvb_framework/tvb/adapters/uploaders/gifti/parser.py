@@ -123,7 +123,7 @@ class GIFTIParser(object):
         # set hemisphere mask if cortex
         if isinstance(surface, CorticalSurface):
             # if there was a 2nd file then len(vertices) != vertices_in_lh
-            surface.hemisphere_mask = numpy.zeros(len(vertices), dtype=numpy.bool)
+            surface.hemisphere_mask = numpy.zeros(len(vertices), dtype=numpy.bool_)
             surface.hemisphere_mask[vertices_in_lh:] = 1
 
         surface.vertices = vertices
