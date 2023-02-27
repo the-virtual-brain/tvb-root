@@ -104,7 +104,7 @@ class SettingsManager(object):
             entries = [line for line in data.split('\n') if not line.startswith('#') and len(line.strip()) > 0]
             for one_entry in entries:
                 name, value = one_entry.split('=', 1)
-                config_dict[name] = value
+                config_dict[name] = value.strip() if value else ""
         return config_dict
 
     def _store_config_file(self, config_dict):
