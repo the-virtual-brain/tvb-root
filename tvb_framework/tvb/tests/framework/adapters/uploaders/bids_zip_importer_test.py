@@ -38,7 +38,9 @@ from tvb.tests.framework.core.factory import TestFactory
 try:
     import tvb_data.bids
 
-    BIDS_DATA_FOUND = True
+    BIDS_DATA = os.path.join(os.path.dirname(tvb_data.bids.__file__), 'bids_derivatives_dataset.zip')
+    BIDS_DATA_FOUND = os.path.exists(BIDS_DATA)
+
 except ImportError:
     BIDS_DATA_FOUND = False
 
@@ -55,7 +57,7 @@ class TestBIDSImporter(BaseTestCase):
         """
         self.test_user = TestFactory.create_user('Zip_BIDS_User')
         self.test_project = TestFactory.create_project(self.test_user, 'Zip_BIDS_Project')
-        self.zip_file_path = os.path.join(os.path.dirname(tvb_data.bids.__file__), 'bids_derivatives_dataset.zip')
+        self.zip_file_path = BIDS_DATA
 
     def teardown_method(self):
         """

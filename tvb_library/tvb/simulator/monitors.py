@@ -838,8 +838,7 @@ class Bold(Monitor):
 
     **Attributes**
 
-        hrf_kernel: the haemodynamic response function (HRF) used to compute
-                    the BOLD (Blood Oxygenation Level Dependent) signal.
+        hrf_kernel: the haemodynamic response function (HRF) used to compute the BOLD (Blood Oxygenation Level Dependent) signal.
 
         length    : duration of the hrf in seconds.
 

@@ -3,7 +3,7 @@
 <!-- ============================= -->
 <script>
 	function setBaseUrl() {
-		baseUrl = window.location.origin
+		let baseUrl = window.location.origin
 		doAjaxCall({
 			type: 'GET',
 			url: '/user/base_url',

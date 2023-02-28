@@ -81,5 +81,5 @@ class NIFTIParser(object):
         # In NIFTI format time is the 4th dimension, while our TimeSeries has
         # it as first dimension, so we have to adapt imported data
 
-        nifti_data = self.nifti_image.get_data()
+        nifti_data = self.nifti_image.dataobj
         return numpy.array(nifti_data, dtype=numpy.int32)

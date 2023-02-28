@@ -23,36 +23,23 @@
 # https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
-
-import shutil
-import os
-import sys
-
-from tvb.basic.profile import TvbProfile
-from tvb.config.init.initializer import initialize
-from tvb.core.entities.file.files_update_manager import FilesUpdateManager
+import pytest
+from tvb.config.logger.elasticsearch_handler import _retrieve_user_gid
 
 
-if __name__ == '__main__':
-    """
-    Script written for testing the migration from version 1.5.8 to 2.1.0.
-    """
+@pytest.mark.benchmark
+def test_retrieve_user_gid(benchmark):
+    text = "2023-02-17 23:34:46,563 - TRACE - tvb_user_actions - USER: 7dd030bb-6f70-40ca-9539-396943278560 | METHOD: <bound method ProjectController.fill_default_attributes of <tvb.interfaces.web.controllers.project.project_controller.ProjectController object at 0x7fb0619ef220>> | PARAMS: ({'selectedProject': <Project('Default_Project', '2')>},) *{"
+    result = benchmark(_retrieve_user_gid, text)
 
-    # set web profile
-    TvbProfile.set_profile(TvbProfile.WEB_PROFILE)
+    assert result == "7dd030bb-6f70-40ca-9539-396943278560"
 
-    # migrate the database and h5 files
-    h5_migrating_thread = initialize()
+@pytest.mark.benchmark
+def test_retrieve_no_user_gid(benchmark):
+    text = "2023-02-17 23:34:46,563 - TRACE - tvb_user_actions - | METHOD: <bound method ProjectController.fill_default_attributes of <tvb.interfaces.web.controllers.project.project_controller.ProjectController object at 0x7fb0619ef220>> | PARAMS: ({'selectedProject': <Project('Default_Project', '2')>},) *{"
+    result = benchmark(_retrieve_user_gid, text)
 
-    # wait for thread to finish before processing
-    h5_migrating_thread.join()
+    assert result == ""
 
-    # copy files in tvb_root folder so Jenkins can find them
-    EXTERNALS_FOLDER_PARENT = os.path.dirname(TvbProfile.current.BIN_FOLDER)
-    shutil.copytree(TvbProfile.current.TVB_LOG_FOLDER, os.path.join(EXTERNALS_FOLDER_PARENT, 'logs'))
 
-    # test if there are any files which were not migrated
-    number_of_unmigrated_files = len(FilesUpdateManager.get_all_h5_paths())
-    if number_of_unmigrated_files != 0:
-        sys.exit(-1)
-    sys.exit(0)
+
