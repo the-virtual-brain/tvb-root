@@ -55,7 +55,7 @@ class DatatypeDAO(RootDAO):
         Returns all DataTypeGroup entities from a project.
         """
         query = self.session.query(DataTypeGroup
-                                   ).join((OperationGroup, OperationGroup.id == DataTypeGroup.fk_operation_group)
+                                   ).join(OperationGroup, OperationGroup.id == DataTypeGroup.fk_operation_group
                                           ).filter(OperationGroup.fk_launched_in == project_id).order_by(DataTypeGroup.id)
         return query.all()
 
@@ -270,7 +270,7 @@ class DatatypeDAO(RootDAO):
         Get all the DataTypes for a given project with no other filter apart from the projectId
         """
         query = self.session.query(DataType
-                    ).join((Operation, Operation.id == DataType.fk_from_operation)
+                    ).join(Operation, Operation.id == DataType.fk_from_operation
                     ).filter(Operation.fk_launched_in == project_id).order_by(DataType.id)
 
         if only_visible:
@@ -291,10 +291,10 @@ class DatatypeDAO(RootDAO):
             # First Query DT, DT_gr, Lk_DT and Lk_DT_gr
             alias = aliased(DataType, flat=True)
             query = self.session.query(alias
-                        ).join((Operation, Operation.id == alias.fk_from_operation)
+                        ).join(Operation, Operation.id == alias.fk_from_operation
                         ).join(Algorithm).join(AlgorithmCategory
-                        ).outerjoin((Links, and_(Links.fk_from_datatype == alias.id,
-                                                       Links.fk_to_project == project_id))
+                        ).outerjoin(Links, and_(Links.fk_from_datatype == alias.id,
+                                                       Links.fk_to_project == project_id)
                         ).outerjoin(BurstConfiguration,
                                     alias.fk_parent_burst == BurstConfiguration.gid
                                     ).filter(alias.fk_datatype_group == None
@@ -314,10 +314,10 @@ class DatatypeDAO(RootDAO):
             # Links of DT which are part of a group, but the entire group is not linked
             links = aliased(Links)
             query2 = self.session.query(alias
-                        ).join((Operation, Operation.id == alias.fk_from_operation)
+                        ).join(Operation, Operation.id == alias.fk_from_operation
                         ).join(Algorithm).join(AlgorithmCategory
-                        ).join((Links, and_(Links.fk_from_datatype == alias.id,
-                                                  Links.fk_to_project == project_id))
+                        ).join(Links, and_(Links.fk_from_datatype == alias.id,
+                                                  Links.fk_to_project == project_id)
                         ).outerjoin(links, and_(links.fk_from_datatype == alias.fk_datatype_group,
                                                 links.fk_to_project == project_id)
                         ).outerjoin(BurstConfiguration,
@@ -470,7 +470,7 @@ class DatatypeDAO(RootDAO):
     def count_datatypes(self, project_id, datatype_class):
 
         query = self.session.query(datatype_class
-                    ).join((Operation, datatype_class.fk_from_operation == Operation.id)
+                    ).join(Operation, datatype_class.fk_from_operation == Operation.id
                     ).outerjoin(Links
                     ).filter(or_(Operation.fk_launched_in == project_id,
                                  Links.fk_to_project == project_id))
@@ -480,7 +480,7 @@ class DatatypeDAO(RootDAO):
     def try_load_last_entity_of_type(self, project_id, datatype_class):
 
         query = self.session.query(datatype_class
-                    ).join((Operation, datatype_class.fk_from_operation == Operation.id)
+                    ).join(Operation, datatype_class.fk_from_operation == Operation.id
                     ).outerjoin(Links
                     ).filter(or_(Operation.fk_launched_in == project_id,
                                  Links.fk_to_project == project_id))
@@ -505,6 +505,7 @@ class DatatypeDAO(RootDAO):
 
         try:
             # Prepare generic query:
+            op_group_alias = aliased(OperationGroup, flat=True)
             burst_alias = aliased(BurstConfiguration, flat=True)
             query = self.session.query(datatype_class.id,
                                        func.max(datatype_class.type),
@@ -514,12 +515,11 @@ class DatatypeDAO(RootDAO):
                                        func.max(Operation.user_group),
                                        func.max(text('"OPERATION_GROUPS_1".name')),
                                        func.max(DataType.user_tag_1)
-                        ).join((Operation, datatype_class.fk_from_operation == Operation.id)
-                        ).outerjoin((burst_alias, datatype_class.fk_parent_burst ==
-                                     burst_alias.gid)
+                        ).join(Operation, datatype_class.fk_from_operation == Operation.id
+                        ).outerjoin(burst_alias, datatype_class.fk_parent_burst == burst_alias.gid
                         ).outerjoin(Links
-                        ).outerjoin((OperationGroup, Operation.fk_operation_group ==
-                                     OperationGroup.id), aliased=True
+                        ).outerjoin(op_group_alias, Operation.fk_operation_group ==
+                                     op_group_alias.id
                         ).filter(DataType.invalid == False
                         ).filter(or_(Operation.fk_launched_in == project_id,
                                      Links.fk_to_project == project_id))
