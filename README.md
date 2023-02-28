@@ -69,7 +69,8 @@ interact with TVB Web Graphical Interface.
     
 ### Testing
 
-For testing our packages, PyTest framework can be used. 
+For testing our packages, PyTest framework can be used. We also need a few more dependencies for tests specific, 
+which are listed in setup.py files.
 
 Pytest will run all files in the current directory and its subdirectories
 of the form test_*.py or *_test.py.
@@ -94,7 +95,7 @@ The command for running our tests has two forms:
             python -m pytest --pyargs tvb.tests.library
     
 - For all the tests to run correctly, the dependencies specified as LIBRARY_REQUIRED_EXTRA in [setup.py](https://github.com/the-virtual-brain/tvb-root/blob/master/tvb_library/setup.py) should be installed
-- Make sure that tvb-data package is installed from [Zenodo](https://zenodo.org/record/4263723)
+- Make sure that tvb-data package is installed from [Zenodo](https://zenodo.org/record/7574266)
 
 ### Coverage
 

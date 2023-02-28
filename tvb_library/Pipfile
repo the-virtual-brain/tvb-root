@@ -14,6 +14,7 @@ tvb-gdist = "*"
 pylems = "*"
 h5py = "*"
 tqdm = "*"
+docutils = "*"
 
 [dev-packages]
 pytest = "*"

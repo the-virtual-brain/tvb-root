@@ -151,8 +151,8 @@ class Hopfield(Model):
         respectively:
 
             .. math::
-                \dot{x_{i}} &= 1 / \tau_{x} (-x_{i} + c_0)
 
+                \dot{x_{i}} &= 1 / \tau_{x} (-x_{i} + c_0) \\
         """
         x = state_variables[0, :]
         dx = (- x + coupling[0]) / self.taux

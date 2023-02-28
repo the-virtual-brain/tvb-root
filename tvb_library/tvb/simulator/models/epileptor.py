@@ -109,7 +109,9 @@ class Epileptor(ModelNumbaDfun):
     .. [Jirsaetal_2014] Jirsa, V. K.; Stacey, W. C.; Quilichini, P. P.;
         Ivanov, A. I.; Bernard, C. *On the nature of seizure dynamics.* Brain,
         2014.
+
     Variables of interest to be used by monitors: -y[0] + y[3]
+
         .. math::
             \dot{x_{1}} &=& y_{1} - f_{1}(x_{1}, x_{2}) - z + I_{ext1} \\
             \dot{y_{1}} &=& c - d x_{1}^{2} - y{1} \\
@@ -373,6 +375,7 @@ class Epileptor2D(ModelNumbaDfun):
             \dot{z_{i}} &=& r(h - z_{i})
 
         with
+        .. math::
             h =
             \begin{cases}
             x_{0} + 3 / (exp((x_{1} + 0.5)/0.1)) & \text{if } modification\\
@@ -508,10 +511,14 @@ class Epileptor2D(ModelNumbaDfun):
         Computes the derivatives of the state-variables of the Epileptor 2D
         with respect to time.
         Equations and default parameters are taken from [Proixetal_2014]:
+
         .. math::
             \dot{x_{1,i}} &=& - x_{1,i}^{3} - 2x_{1,i}^{2}  + 1 - z_{i} + I_{ext1,i} \\
             \dot{z_{i}} &=& r(h - z_{i})
+
         with
+
+        .. math::
             h =
             \begin{cases}
             x_{0} + 3 / (exp((x_{1} + 0.5)/0.1)) & \text{if } modification\\

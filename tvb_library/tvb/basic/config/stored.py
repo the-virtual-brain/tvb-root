@@ -78,6 +78,11 @@ KEY_PROCESSING_OPERATIONS_APPLICATION = "PROCESSING_OPERATIONS_APPLICATION"
 KEY_DATA_ENCRYPTION_HANDLER_APPLICATION = "DATA_ENCRYPTION_HANDLER_APPLICATION"
 KEY_DEPLOY_CONTEXT = "DEPLOY_CONTEXT"
 KEY_REST_DEPLOY_CONTEXT = "REST_DEPLOY_CONTEXT"
+KEY_ELASTICSEARCH_API_KEY = "ELASTICSEARCH_API_KEY"
+KEY_ELASTICSEARCH_URL = "ELASTICSEARCH_URL"
+KEY_ELASTICSEARCH_LOGGING_INDEX = "ELASTICSEARCH_LOGGING_INDEX"
+KEY_ELASTICSEARCH_REQUEST_TIMEOUT = "ELASTICSEARCH_REQUEST_TIMEOUT"
+KEY_ELASTICSEARCH_BUFFER_THRESHOLD = "ELASTICSEARCH_BUFFER_THRESHOLD"
 
 
 class SettingsManager(object):
@@ -99,7 +104,7 @@ class SettingsManager(object):
             entries = [line for line in data.split('\n') if not line.startswith('#') and len(line.strip()) > 0]
             for one_entry in entries:
                 name, value = one_entry.split('=', 1)
-                config_dict[name] = value
+                config_dict[name] = value.strip() if value else ""
         return config_dict
 
     def _store_config_file(self, config_dict):

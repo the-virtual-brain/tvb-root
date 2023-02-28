@@ -8,11 +8,11 @@ cd tvb_framework
 pip install -e . --no-deps --user
 cd ..
 
-cd tvb_library
+cd tvb_storage
 pip install -e . --user
 cd ..
 
-cd tvb_storage
+cd tvb_library
 pip install -e . --user
 cd ..
 
