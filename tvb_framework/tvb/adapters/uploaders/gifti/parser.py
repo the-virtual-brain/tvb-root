@@ -63,9 +63,9 @@ class GIFTIParser(object):
     @staticmethod
     def _get_meta_dict(data_array):
         data_array_meta = data_array.meta
-        if data_array_meta is None or data_array_meta.data is None:
+        if data_array_meta is None:
             return {}
-        return dict((meta_pair.name, meta_pair.value) for meta_pair in data_array_meta.data)
+        return data_array_meta
 
     @staticmethod
     def _is_surface_gifti(data_arrays):

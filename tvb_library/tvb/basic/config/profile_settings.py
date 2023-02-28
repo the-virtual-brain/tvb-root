@@ -29,9 +29,9 @@ Prepare TVB settings to be grouped under various profile classes.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
+
 import os
 import sys
-
 from tvb.basic.config import stored
 from tvb.basic.config.environment import Environment
 from tvb.basic.config.settings import ClusterSettings, DBSettings, VersionSettings, WebSettings, HPCSettings
