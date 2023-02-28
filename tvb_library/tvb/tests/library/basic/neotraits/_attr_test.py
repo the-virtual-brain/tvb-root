@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -37,22 +33,20 @@ class TestRange(BaseTestCase):
     def assert_with_epsilon_error(self, list_one, list_two):
         epsilon = 0.000001
         value_for_return = True
-        print("Value: ", len(list_one))
-        if(len(list_one) != len(list_two)):
+        if len(list_one) != len(list_two):
             return False
         for i in range(0, len(list_one)):
-            if((list_one[i] + epsilon) <= list_two[i] <= (list_one[i] + epsilon)):
+            if (list_one[i] + epsilon) <= list_two[i] <= (list_one[i] + epsilon):
                 continue
-            elif ((list_one[i] - epsilon) <= list_two[i] <= (list_one[i] - epsilon)):
+            elif (list_one[i] - epsilon) <= list_two[i] <= (list_one[i] - epsilon):
                 continue
-            elif ((list_one[i] - epsilon) <= list_two[i] <= (list_one[i] + epsilon)):
+            elif (list_one[i] - epsilon) <= list_two[i] <= (list_one[i] + epsilon):
                 continue
-            elif ((list_one[i] + epsilon) <= list_two[i] <= (list_one[i] - epsilon)):
+            elif (list_one[i] + epsilon) <= list_two[i] <= (list_one[i] - epsilon):
                 continue
             else:
                 value_for_return = False
         return value_for_return
-
 
     def test_generates_range_with_start_and_stop_provided(self):
         floats = list(Range(lo=0.0, hi=3.0, step=1.0).to_array())
@@ -68,7 +62,8 @@ class TestRange(BaseTestCase):
 
     def test_generates_range_with_start_stop_and_periodic_repeating_step(self):
         floats = list(Range(lo=0.0, hi=1.1, step=1. / 3).to_array())
-        assert TestRange.assert_with_epsilon_error(self, floats, list([0.0, 0.333333333333, 0.666666666666, 0.999999999999]))
+        assert TestRange.assert_with_epsilon_error(self, floats,
+                                                   list([0.0, 0.333333333333, 0.666666666666, 0.999999999999]))
 
     def test_generates_range_with_negative_end(self):
         floats = list(Range(lo=1.0, hi=-3.0, step=-1.0).to_array())

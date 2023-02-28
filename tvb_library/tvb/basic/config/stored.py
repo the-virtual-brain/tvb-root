@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -82,6 +78,11 @@ KEY_PROCESSING_OPERATIONS_APPLICATION = "PROCESSING_OPERATIONS_APPLICATION"
 KEY_DATA_ENCRYPTION_HANDLER_APPLICATION = "DATA_ENCRYPTION_HANDLER_APPLICATION"
 KEY_DEPLOY_CONTEXT = "DEPLOY_CONTEXT"
 KEY_REST_DEPLOY_CONTEXT = "REST_DEPLOY_CONTEXT"
+KEY_ELASTICSEARCH_API_KEY = "ELASTICSEARCH_API_KEY"
+KEY_ELASTICSEARCH_URL = "ELASTICSEARCH_URL"
+KEY_ELASTICSEARCH_LOGGING_INDEX = "ELASTICSEARCH_LOGGING_INDEX"
+KEY_ELASTICSEARCH_REQUEST_TIMEOUT = "ELASTICSEARCH_REQUEST_TIMEOUT"
+KEY_ELASTICSEARCH_BUFFER_THRESHOLD = "ELASTICSEARCH_BUFFER_THRESHOLD"
 
 
 class SettingsManager(object):
@@ -103,7 +104,7 @@ class SettingsManager(object):
             entries = [line for line in data.split('\n') if not line.startswith('#') and len(line.strip()) > 0]
             for one_entry in entries:
                 name, value = one_entry.split('=', 1)
-                config_dict[name] = value
+                config_dict[name] = value.strip() if value else ""
         return config_dict
 
     def _store_config_file(self, config_dict):

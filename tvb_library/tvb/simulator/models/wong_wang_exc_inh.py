@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,10 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+#
 
 """
 Models based on Wong-Wang's work.
@@ -278,7 +276,7 @@ class ReducedWongWangExcInh(ModelNumbaDfun):
 
                  x_{ik}       &=   J_N \, S_{ek} - S_{ik} + W_iI_o + {\lambda}GJ_N \mathbf\Gamma(S_{ik}, S_{ej}, u_{kj}) \\
                  H(x_{ik})    &=  \dfrac{a_ix_{ik} - b_i}{1 - \exp(-d_i(a_ix_{ik} -b_i))} \\
-                 \dot{S}_{ik} &= -\dfrac{S_{ik}}{\tau_i} + \gamma_iH(x_{ik}) \
+                 \dot{S}_{ik} &= -\dfrac{S_{ik}}{\tau_i} + \gamma_iH(x_{ik}) \\
 
         """
         x_ = x.reshape(x.shape[:-1]).T
@@ -386,6 +384,11 @@ class DecoBalancedExcInh(ReducedWongWangExcInh):
         return derivative
 
     def dfun(self, x, c, local_coupling=0.0, **kwargs):
+        r"""
+        Numpy dfun for transcriptional model presented in [Deco_2020],
+        Dynamical consequences of regional heterogeneity in the brain’s
+        transcriptional landscape
+        """
         x_ = x.reshape(x.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T + local_coupling * x[0]
         deriv = _numba_dfun_bei(x_, c_,

@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,10 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+#
 
 """
    A family of mean field models of infinite populations of all-to-all coupled
@@ -171,6 +169,20 @@ class MontbrioPazoRoxin(Model):
     stvar = numpy.array([1], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
+        r"""
+            2D model describing the Ott-Antonsen reduction of infinite all-to-all
+            coupled QIF neurons (Theta-neurons) as in [Montbrio_Pazo_Roxin_2015]_.
+
+            The two state variables :math:`r` and :math:`V` represent the average
+            firing rate and the average membrane potential of our QIF neurons.
+
+            The equations of the infinite QIF 2D population model read
+
+            .. math::
+                    \dot{r} &= 1/\tau (\Delta/(\pi \tau) + 2 V r)\\
+                    \dot{V} &= 1/\tau (V^2 - \tau^2 \pi^2 r^2 + \eta + J \tau r + I)
+        """
+
         r, V = state_variables
 
         # [State_variables, nodes]
@@ -291,6 +303,18 @@ class CoombesByrne(Model):
     cvar = numpy.array([0, 1, 2, 3], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
+        r"""
+            4D model describing the Ott-Antonsen reduction of infinite all-to-all
+            coupled QIF neurons (Theta-neurons) as in [Coombes_Byrne_2019]_.
+
+            The equations of the model read
+
+            .. math::
+                    \dot{r} &= \Delta/\pi + 2 V r - g r^2 \\
+                    \dot{V} &= V^2 - \pi^2 r^2 + \eta + (v_{syn} - V) g \\
+                    \dot{g} &= \alpha q  \\
+                    \dot{q} &= \alpha (\kappa \pi r - g - 2 q)
+        """
         r, V, g, q = state_variables
 
         # [State_variables, nodes]
@@ -391,6 +415,21 @@ class CoombesByrne2D(Model):
     cvar = numpy.array([0, 1], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
+        r"""
+           2D model describing the Ott-Antonsen reduction of infinite all-to-all coupled
+           QIF neurons (Theta-neurons) as in [Coombes_Byrne_2019]_.
+
+           The two state variables :math:`r` and :math:`V` represent the average firing
+           rate and the average membrane potential of our QIF neurons. The conductance
+           :math:`g` is not dynamical and proportional to :math:`r`.
+
+           The equations of the model read
+
+           .. math::
+                   \dot{r} &= \Delta/\pi + 2 V r - g r^2\\
+                   \dot{V} &= V^2 - \pi^2 r^2 + \eta + (v_{syn} - V) g \\
+                   g &= \kappa \pi r
+        """
         r, V = state_variables
 
         # [State_variables, nodes]
@@ -526,6 +565,23 @@ class GastSchmidtKnosche_SD(Model):
     cvar = numpy.array([0, 1, 2, 3], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
+        r"""
+            4D model describing the Ott-Antonsen reduction of infinite all-to-all
+            coupled QIF neurons (Theta-neurons) with Synaptic Depression adaptation
+            mechanisms [Gastetal_2020]_.
+
+            The two state variables :math:`r` and :math:`V` represent the average firing rate and
+            the average membrane potential of our QIF neurons.
+            :math:`A` and :math:`B` are respectively the adaptation variable and its derivative.
+
+            The equations of the infinite QIF 2D population model read
+
+            .. math::
+                    \dot{r} &= 1/\tau (\Delta/(\pi \tau) + 2 V r)\\
+                    \dot{V} &= 1/\tau (V^2 - \tau^2 \pi^2 r^2 + \eta + J \tau r (1 - A) + I)\\
+                    \dot{A} &= 1/\tau_A (B)\\
+                    \dot{B} &= 1/\tau_A (-2 B - A + \alpha  r) \\
+        """
         r, V, A, B = state_variables
 
         # [State_variables, nodes]
@@ -668,6 +724,21 @@ class GastSchmidtKnosche_SF(Model):
     cvar = numpy.array([0, 1, 2, 3], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
+        r"""
+            4D model describing the Ott-Antonsen reduction of infinite all-to-all coupled QIF neurons (Theta-neurons) with Spike-Frequency adaptation mechanisms [Gastetal_2020]_.
+
+            The two state variables :math:`r` and :math:`V` represent the average firing rate and
+            the average membrane potential of our QIF neurons.
+            :math:`A` and :math:`B` are respectively the adaptation variable and its derivative.
+
+            The equations of the infinite QIF 2D population model read
+
+            .. math::
+                    \dot{r} &= 1/\tau (\Delta/(\pi \tau) + 2 V r)\\
+                    \dot{V} &= 1/\tau (V^2 - \tau^2 \pi^2 r^2 + \eta + J \tau r - A + I)\\
+                    \dot{A} &= 1/\tau_A (B)\\
+                    \dot{B} &= 1/\tau_A (-2 B - A + \alpha r) \\
+        """
         r, V, A, B = state_variables
 
         # [State_variables, nodes]
@@ -851,6 +922,23 @@ class DumontGutkin(Model):
     cvar = numpy.array([0, 1, 4, 5], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
+        r"""
+            8D model describing the Ott-Antonsen reduction of infinite all-to-all
+            coupled QIF Excitatory E and Inhibitory I Theta-neurons with local synaptic
+            dynamics [DumontGutkin2019]_.
+
+            State variables :math:`r` and :math:`V` represent the average firing rate and
+            the average membrane potential of our QIF neurons.
+            The neural masses are coupled through the firing rate of :math:`E_i` population from node i-th into :math:`E_j` and :math:`I_j` subpopulations in node j-th.
+
+            The equations of the excitatory infinite QIF 4D population model read (similar for inhibitory):
+
+            .. math::
+                    \dot{r} &= 1/\tau (\Delta/(\pi \tau) + 2 V r)\\
+                    \dot{V} &= 1/\tau (V^2 + \eta + \gamma I - \tau^2 \pi^2 r^2 + \tau g - \tau s)\\
+                    \dot{g} &= 1/\tau_s (-g + J_ r)\\
+                    \dot{s} &= 1/\tau_s (-s) \\
+        """
         r_e, V_e, s_ee, s_ei, r_i, V_i, s_ie, s_ii = state_variables
 
         # [State_variables, nodes]

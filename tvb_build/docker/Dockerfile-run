@@ -31,7 +31,7 @@ RUN /bin/bash -c "source activate tvb-run"; \
     $ENV_BIN/jupyter notebook --generate-config; \
     echo "c.NotebookApp.password='sha1:12bff019c253:9daecd92c2e9bdb10b3b8a06767a74a0fe078d7c'">>$JUPYTER_CONFIG/jupyter_notebook_config.py
 
-RUN wget https://zenodo.org/record/4263723/files/tvb_data.zip?download=1 -O tvb_data.zip; \
+RUN wget https://zenodo.org/record/7574266/files/tvb_data.zip?download=1 -O tvb_data.zip; \
     mkdir tvb_data; unzip tvb_data.zip -d tvb_data; rm tvb_data.zip; \
     cd tvb_data; \
     $ENV_BIN/python setup.py develop
@@ -50,9 +50,11 @@ RUN cd tvb-root; \
     $PIP install -r docker/requirements_group; \
     cd ../tvb_framework; \
     $PIP install -e . --no-deps; \
+    cd ../tvb_storage; \
+    $PIP install -e . --no-deps; \
     cd ../tvb_library; \
     $PIP install -e .; \
-    cd ../tvb_storage; \
+    cd ../tvb_bin; \
     $PIP install -e .
 
 WORKDIR $USER_HOME
@@ -81,6 +83,8 @@ WORKDIR $USER_HOME/tvb-root
 # bind port 8080
 # MOUNT -v [local- ~/TVB ]:$TVB_STORAGE
 #CMD ["bash","-c","source activate tvb-run && python -m tvb.interfaces.web.run_landing_page"]
+
+ENV NUMBA_CACHE_DIR /home/TVB_STORAGE/numba_cache
 
 USER 1001
 CMD ["bash","-c","source activate tvb-run && cd tvb_bin && python -m tvb.interfaces.web.run WEB_PROFILE"]

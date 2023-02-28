@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -42,7 +38,9 @@ from tvb.tests.framework.core.factory import TestFactory
 try:
     import tvb_data.bids
 
-    BIDS_DATA_FOUND = True
+    BIDS_DATA = os.path.join(os.path.dirname(tvb_data.bids.__file__), 'bids_derivatives_dataset.zip')
+    BIDS_DATA_FOUND = os.path.exists(BIDS_DATA)
+
 except ImportError:
     BIDS_DATA_FOUND = False
 
@@ -59,7 +57,7 @@ class TestBIDSImporter(BaseTestCase):
         """
         self.test_user = TestFactory.create_user('Zip_BIDS_User')
         self.test_project = TestFactory.create_project(self.test_user, 'Zip_BIDS_Project')
-        self.zip_file_path = os.path.join(os.path.dirname(tvb_data.bids.__file__), 'bids_derivatives_dataset.zip')
+        self.zip_file_path = BIDS_DATA
 
     def teardown_method(self):
         """

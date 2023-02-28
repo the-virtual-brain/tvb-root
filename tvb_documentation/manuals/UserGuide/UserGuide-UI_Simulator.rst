@@ -261,19 +261,24 @@ will be loaded.
 
       Preview for surface model configuration.
 
-.. tip::
+Parameter Space Exploration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  **Parameter Space Exploration**
+It is possible to launch parallel simulations to systematically explore the
+parameter space of the local dynamics model. In the current TVB version, up to
+2 parameters can be inspected at the same time.
 
-  It is possible to launch parallel simulations to systematically explore the 
-  parameter space of the local dynamics model. In the current TVB version, up to  
-  2 parameters can be inspected at the same time.
+    .. figure:: screenshots/simulator_pse_button.jpg
+      :width: 90%
+      :align: center
 
-    .. figure:: screenshots/simulator_pse_configuration.jpg
+      Launch a PSE at the end of configuring a simulation.
+
+    .. figure:: screenshots/simulator_pse_result.jpg
       :width: 60%
       :align: center
                
-      The results will be presented in a discrete two dimensional graph. Each 
+      A PSE results will be presented in a discrete two dimensional graph. Each
       point represents the results of a simulation for an unique combination of
       parameters. The disk size corresponds to Global Variance and the color
       scale corresponds to Variance of the Variance of nodes.  
