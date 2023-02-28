@@ -130,7 +130,7 @@ class ZerlautAdaptationFirstOrder(Model):
     .. math::
         T\dot{E}_k &= F_e-E_k \\
         T\dot{I}_k &= F_i-I_k \\
-        dot{W}_k &= W_k/tau_w-b*E_k \\
+        \dot{W}_k &= W_k/tau_w-b*E_k \\
         F_\lambda = Erfc(V^{eff}_{thre}-\mu_V/\sqrt(2)\sigma_V)
 
     """
@@ -357,7 +357,7 @@ class ZerlautAdaptationFirstOrder(Model):
         r"""
         .. math::
             T \dot{\nu_\mu} &= -F_\mu(\nu_e,\nu_i) + \nu_\mu ,{\forall}\mu\in\{e,i\}\\
-            dot{W}_k &= W_k/tau_w-b*E_k  \\
+            \dot{W}_k &= W_k/tau_w-b*E_k  \\
 
         """
         E = state_variables[0, :]

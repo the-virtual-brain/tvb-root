@@ -44,7 +44,7 @@ from tvb.basic.readers import ZipReader, try_get_absolute_path
 
 try:
     import gdist
-except ImportError:
+except Exception:
     class ExceptionRaisingGdistModule(object):
         msg = "Geodesic distance module is unavailable, cannot compute gdist matrix."
 
@@ -168,7 +168,7 @@ class Surface(HasTraits):
         return cls._read(reader)
 
     @classmethod
-    def from_bytes_stream(cls, bytes_stream):
+    def from_bytes_stream(cls, bytes_stream, content_type='.zip'):
         """Construct a Surface from a stream of bytes."""
 
         reader = ZipReader(BytesIO(bytes_stream))
@@ -517,7 +517,10 @@ class Surface(HasTraits):
         The number of edges making up the mesh surface.
         """
         if self._number_of_edges is None:
-            self._number_of_edges = len(self.edges)
+            try:
+                self._number_of_edges = len(self.edges)
+            except Exception:
+                return 0
         return self._number_of_edges
 
     @property
