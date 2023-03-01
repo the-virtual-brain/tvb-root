@@ -27,12 +27,13 @@
 """
 .. moduleauthor:: Horge Rares <rares.horge@codemart.ro>
 """
-
-import re
+import json
 from logging import Handler, LogRecord, getLogger, ERROR
 from logging.handlers import QueueListener, QueueHandler
 from queue import Queue
 from tvb.basic.profile import TvbProfile
+
+import re
 
 
 def _retrieve_user_gid(msg):
@@ -60,7 +61,6 @@ else:
 
     logger = getLogger("elastic_transport")
 
-
     def _convert_to_bulk_format(record):
 
         return [{"index": {}},
@@ -68,9 +68,13 @@ else:
                  "message": record.message,
                  "user": {
                      "id": _retrieve_user_gid(record.message)
-                 }
+                    }
                  }]
 
+    def _compute_json_size_in_bytes(json_obj):
+        json_string = json.dumps(json_obj)
+        byte_ = bytes(json_string, "utf-8")
+        return len(byte_)
 
     class ElasticSendHandler(Handler):
         def __init__(self):
@@ -86,6 +90,8 @@ else:
                 )
                 self.threshold = TvbProfile.current.ELASTICSEARCH_BUFFER_THRESHOLD
                 self.buffer = []
+                self.buffer_size = 0
+                self.operation_size = _compute_json_size_in_bytes({"index": {}})
             except Exception as e:
                 logger.log(ERROR, "could not create Elasticsearch connection object", exc_info=e)
 
@@ -98,16 +104,30 @@ else:
             """
             if hasattr(self, "_client"):
 
-                self.buffer += _convert_to_bulk_format(record)
-                if len(self.buffer) // 2 >= self.threshold:
+                operation, data = _convert_to_bulk_format(record)
+                data_size = self.operation_size + _compute_json_size_in_bytes(data)
+
+                if data_size > self.threshold:
+                    removed_characters_nr = min(data_size - self.threshold, len(data['message']))
+                    # truncate the log message to respect the threshold
+                    data['message'] = data['message'][:-removed_characters_nr]
+
+                if self.buffer_size + data_size > self.threshold:
                     try:
-                        response = self._client.bulk(index=TvbProfile.current.ELASTICSEARCH_LOGGING_INDEX,
-                                                     operations=self.buffer)
-                        if not response['errors']:
+                        response = self._client.bulk(
+                            index=TvbProfile.current.ELASTICSEARCH_LOGGING_INDEX,
+                            operations=self.buffer
+                        )
+                        if response['errors']:
                             logger.log(ERROR, "could not send bulk request to elasticsearch server", stack_info=True)
                     except Exception as e:
                         logger.log(ERROR, f"could not send bulk request to elasticsearch server", exc_info=e)
-                    self.buffer.clear()
+
+                    self.buffer = []
+                    self.buffer_size = 0
+
+                self.buffer += [operation, data]
+                self.buffer_size += data_size
 
         def close(self) -> None:
             if hasattr(self, "_client"):
