@@ -93,7 +93,7 @@ class BaseSettingsProfile(object):
         self.ELASTICSEARCH_LOGGING_INDEX = self.manager.get_attribute(stored.KEY_ELASTICSEARCH_LOGGING_INDEX, "", str)
         self.ELASTICSEARCH_REQUEST_TIMEOUT = self.manager.get_attribute(stored.KEY_ELASTICSEARCH_REQUEST_TIMEOUT, 30, int)
         # The number of logs in a message batch that are sent to the server
-        self.ELASTICSEARCH_BUFFER_THRESHOLD = self.manager.get_attribute(stored.KEY_ELASTICSEARCH_BUFFER_THRESHOLD, 10, int)
+        self.ELASTICSEARCH_BUFFER_THRESHOLD = self.manager.get_attribute(stored.KEY_ELASTICSEARCH_BUFFER_THRESHOLD, 1000000, int)
 
     @property
     def BIN_FOLDER(self):
