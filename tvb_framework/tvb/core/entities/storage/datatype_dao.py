@@ -289,20 +289,20 @@ class DatatypeDAO(RootDAO):
         resulted_data = []
         try:
             # First Query DT, DT_gr, Lk_DT and Lk_DT_gr
-            alias = aliased(DataType, flat=True)
-            query = self.session.query(alias
-                        ).join(Operation, Operation.id == alias.fk_from_operation
+            datatype_alias = aliased(DataType, flat=True)
+            query = self.session.query(datatype_alias
+                        ).join(Operation, Operation.id == datatype_alias.fk_from_operation
                         ).join(Algorithm).join(AlgorithmCategory
-                        ).outerjoin(Links, and_(Links.fk_from_datatype == alias.id,
+                        ).outerjoin(Links, and_(Links.fk_from_datatype == datatype_alias.id,
                                                        Links.fk_to_project == project_id)
                         ).outerjoin(BurstConfiguration,
-                                    alias.fk_parent_burst == BurstConfiguration.gid
-                                    ).filter(alias.fk_datatype_group == None
+                                    datatype_alias.fk_parent_burst == BurstConfiguration.gid
+                                    ).filter(datatype_alias.fk_datatype_group == None
                         ).filter(or_(Operation.fk_launched_in == project_id,
                                      Links.fk_to_project == project_id))
 
             if visibility_filter:
-                filter_str = visibility_filter.get_sql_filter_equivalent()
+                filter_str = visibility_filter.get_sql_filter_equivalent('datatype_alias')
                 if filter_str is not None:
                     query = query.filter(eval(filter_str))
             if filter_value is not None:
@@ -313,20 +313,20 @@ class DatatypeDAO(RootDAO):
             # Now query what it was not covered before:
             # Links of DT which are part of a group, but the entire group is not linked
             links = aliased(Links)
-            query2 = self.session.query(alias
-                        ).join(Operation, Operation.id == alias.fk_from_operation
+            query2 = self.session.query(datatype_alias
+                        ).join(Operation, Operation.id == datatype_alias.fk_from_operation
                         ).join(Algorithm).join(AlgorithmCategory
-                        ).join(Links, and_(Links.fk_from_datatype == alias.id,
+                        ).join(Links, and_(Links.fk_from_datatype == datatype_alias.id,
                                                   Links.fk_to_project == project_id)
-                        ).outerjoin(links, and_(links.fk_from_datatype == alias.fk_datatype_group,
+                        ).outerjoin(links, and_(links.fk_from_datatype == datatype_alias.fk_datatype_group,
                                                 links.fk_to_project == project_id)
                         ).outerjoin(BurstConfiguration,
-                                    alias.fk_parent_burst == BurstConfiguration.gid
-                                    ).filter(alias.fk_datatype_group != None
+                                    datatype_alias.fk_parent_burst == BurstConfiguration.gid
+                                    ).filter(datatype_alias.fk_datatype_group != None
                         ).filter(links.id == None)
 
             if visibility_filter:
-                filter_str = visibility_filter.get_sql_filter_equivalent()
+                filter_str = visibility_filter.get_sql_filter_equivalent('datatype_alias')
                 if filter_str is not None:
                     query2 = query2.filter(eval(filter_str))
             if filter_value is not None:
@@ -513,12 +513,12 @@ class DatatypeDAO(RootDAO):
                                        func.max(Operation.completion_date),
                                        func.max(Operation.user_group),
                                        func.max(OperationGroup.name),
-                                       func.max(DataType.user_tag_1)
+                                       func.max(datatype_alias.user_tag_1)
                         ).join(Operation, datatype_alias.fk_from_operation == Operation.id
                         ).outerjoin(BurstConfiguration, datatype_alias.fk_parent_burst == BurstConfiguration.gid
                         ).outerjoin(Links
                         ).outerjoin(OperationGroup, Operation.fk_operation_group == OperationGroup.id
-                        ).filter(DataType.invalid == False
+                        ).filter(datatype_alias.invalid == False
                         ).filter(or_(Operation.fk_launched_in == project_id,
                                      Links.fk_to_project == project_id))
 
