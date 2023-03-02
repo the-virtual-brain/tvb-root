@@ -505,32 +505,30 @@ class DatatypeDAO(RootDAO):
 
         try:
             # Prepare generic query:
-            op_group_alias = aliased(OperationGroup, flat=True)
-            burst_alias = aliased(BurstConfiguration, flat=True)
-            query = self.session.query(datatype_class.id,
-                                       func.max(datatype_class.type),
-                                       func.max(datatype_class.gid),
-                                       func.max(datatype_class.subject),
+            datatype_alias = aliased(datatype_class, flat=True)
+            query = self.session.query(datatype_alias.id,
+                                       func.max(datatype_alias.type),
+                                       func.max(datatype_alias.gid),
+                                       func.max(datatype_alias.subject),
                                        func.max(Operation.completion_date),
                                        func.max(Operation.user_group),
-                                       func.max(text('"OPERATION_GROUPS_1".name')),
+                                       func.max(OperationGroup.name),
                                        func.max(DataType.user_tag_1)
-                        ).join(Operation, datatype_class.fk_from_operation == Operation.id
-                        ).outerjoin(burst_alias, datatype_class.fk_parent_burst == burst_alias.gid
+                        ).join(Operation, datatype_alias.fk_from_operation == Operation.id
+                        ).outerjoin(BurstConfiguration, datatype_alias.fk_parent_burst == BurstConfiguration.gid
                         ).outerjoin(Links
-                        ).outerjoin(op_group_alias, Operation.fk_operation_group ==
-                                     op_group_alias.id
+                        ).outerjoin(OperationGroup, Operation.fk_operation_group == OperationGroup.id
                         ).filter(DataType.invalid == False
                         ).filter(or_(Operation.fk_launched_in == project_id,
                                      Links.fk_to_project == project_id))
 
             if filters:
-                filter_str = filters.get_sql_filter_equivalent(datatype_to_check='datatype_class')
+                filter_str = filters.get_sql_filter_equivalent(datatype_to_check='datatype_alias')
                 if filter_str is not None:
                     query = query.filter(eval(filter_str))
 
             # Retrieve the results
-            query = query.group_by(datatype_class.id).order_by(desc(datatype_class.id))
+            query = query.group_by(datatype_alias.id).order_by(desc(datatype_alias.id))
 
             result = query.limit(max(page_size, 0)).all()
             count = query.count()
