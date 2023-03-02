@@ -44,6 +44,15 @@ def configure_matjax_doc():
     """
     models_docs = []
 
+    kwargs = {
+        'writer_name': 'html',
+        'settings_overrides': {
+            '_disable_config': True,
+            'report_level': 5,
+            'math_output': "MathJax /dummy.js",
+        },
+    }
+
     for member in list(ModelsEnum):
         clz_name = str(member)
         clz = member.value
@@ -53,7 +62,7 @@ def configure_matjax_doc():
             # 'description': _format_doc(clz.__doc__).replace('\n', '<br/>')
             # I let this here since the html parse has a small flaw regarding some overlapping text
             # and we might consider switching back to plain text
-            'description': publish_parts(clz.__doc__, writer_name='html')['html_body']
+            'description': publish_parts(clz.__doc__, **kwargs)['html_body']
         })
 
     return models_docs
