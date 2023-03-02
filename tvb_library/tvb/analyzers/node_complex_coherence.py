@@ -164,7 +164,7 @@ def calculate_complex_cross_coherence(time_series, epoch_length, segment_length,
                                                                      time_series.sample_period, zeropad,
                                                                      average_segments)
     cs = numpy.zeros(resulted_shape, dtype=numpy.complex128)
-    av = numpy.matrix(numpy.zeros(av_result_shape, dtype=numpy.complex128))
+    av = numpy.zeros(av_result_shape, dtype=numpy.complex128)
     coh = numpy.zeros(resulted_shape, dtype=numpy.complex128)
 
     # Apply windowing function
@@ -242,13 +242,13 @@ def calculate_complex_cross_coherence(time_series, epoch_length, segment_length,
     ndim = len(cs.shape)
     if ndim == 3:
         for i in numpy.arange(cs.shape[2]):
-            temp = numpy.matrix(cs[:, :, i])
+            temp = numpy.array(cs[:, :, i])
             coh[:, :, i] = cs[:, :, i] / numpy.sqrt(temp.diagonal().conj().T * temp.diagonal())
 
     elif ndim == 4:
         for i in numpy.arange(cs.shape[2]):
             for j in numpy.arange(cs.shape[3]):
-                temp = numpy.matrix(numpy.squeeze(cs[:, :, i, j]))
+                temp = numpy.array(numpy.squeeze(cs[:, :, i, j]))
                 coh[:, :, i, j] = temp / numpy.sqrt(temp.diagonal().conj().T * temp.diagonal().T)
 
     log.debug("result")

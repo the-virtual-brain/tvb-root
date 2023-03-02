@@ -48,13 +48,13 @@ class CoSimulator(Simulator):
         label="Cosimulation model state variables' indices",
         doc=("Indices of model's variables of interest (VOI) that"
              "should be updated (i.e., overwriten) during cosimulation."),
-        default=numpy.asarray([], dtype=numpy.int),
+        default=numpy.asarray([], dtype=numpy.int_),
         required=True)
 
     proxy_inds = NArray(
-        dtype=numpy.int,
+        dtype=numpy.int_,
         label="Indices of TVB proxy nodes",
-        default=numpy.asarray([], dtype=numpy.int),
+        default=numpy.asarray([], dtype=numpy.int_),
         required=True)
 
     cosim_monitors = List(
@@ -249,7 +249,7 @@ class CoSimulator(Simulator):
                 n_steps = cosim_updates[0].shape[0]
                 # Now update cosimulation history with the cosimulation inputs:
                 self._update_cosim_history(numpy.array(numpy.around(cosim_updates[0] / self.integrator.dt),
-                                                       dtype=numpy.int),
+                                                       dtype=numpy.int_),
                                            cosim_updates[1])
 
             self.simulation_length = n_steps * self.integrator.dt
