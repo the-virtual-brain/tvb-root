@@ -33,21 +33,6 @@ from logging.handlers import QueueListener, QueueHandler
 from queue import Queue
 from tvb.basic.profile import TvbProfile
 
-import re
-
-
-def _retrieve_user_gid(msg):
-    """
-    Retrieves the user id from the log message
-    """
-    user_id_list = re.findall("USER: [a-zA-Z0-9\-]+", msg)
-    if len(user_id_list) != 0:
-        user_id = user_id_list[0][6:]
-    else:
-        user_id = ""
-
-    return user_id
-
 
 if not TvbProfile.current.TRACE_USER_ACTIONS:
 
@@ -66,8 +51,9 @@ else:
         return [{"index": {}},
                 {"@timestamp": record.asctime,
                  "message": record.message,
+                 "controller_method": record.controller_method,
                  "user": {
-                     "id": _retrieve_user_gid(record.message)
+                     "user_id": record.user_id
                     }
                  }]
 
