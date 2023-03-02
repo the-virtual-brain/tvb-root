@@ -97,7 +97,7 @@ parameters:
   - name: ELASTICSEARCH_BUFFER_THRESHOLD
     displayName: elasticsearch_buffer_threshold
     description: the logs are stored in a buffer before they are sent to the elasticsearch server, when the buffer size passes this threshold value it sends the logs
-    value: 30
+    value: 1000000
     required: true
 
 
