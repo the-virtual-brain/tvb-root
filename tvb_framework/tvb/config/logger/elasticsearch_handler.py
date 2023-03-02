@@ -111,6 +111,7 @@ else:
                     removed_characters_nr = min(data_size - self.threshold, len(data['message']))
                     # truncate the log message to respect the threshold
                     data['message'] = data['message'][:-removed_characters_nr]
+                    data_size -= removed_characters_nr
 
                 if self.buffer_size + data_size > self.threshold:
                     try:
