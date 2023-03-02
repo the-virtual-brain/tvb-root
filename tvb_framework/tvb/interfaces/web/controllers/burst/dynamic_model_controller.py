@@ -110,7 +110,7 @@ class _InputTreeFragment(ABCAdapterForm):
                                          doc="""The name of this parameter configuration"""), name='dynamic_name')
 
 
-@traced
+@traced('fill_default_attributes', exclude=True)
 class DynamicModelController(BurstBaseController):
     KEY_CACHED_DYNAMIC_MODEL = 'cache.DynamicModelController'
     LOGGER = get_logger(__name__)
