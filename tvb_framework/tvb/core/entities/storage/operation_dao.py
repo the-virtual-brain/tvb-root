@@ -273,7 +273,7 @@ class OperationDAO(RootDAO):
             return 0 if is_count else None
 
 
-    def get_results_for_operation(self, operation_id, filters=None):
+    def get_results_for_operation(self, operation_id):
         """
         Retrieve DataTypes entities, resulted after executing an operation.
         """
@@ -282,10 +282,6 @@ class OperationDAO(RootDAO):
                                        ).filter_by(fk_from_operation=operation_id
                                        ).filter(and_(DataType.type != self.EXCEPTION_DATATYPE_GROUP,
                                                      DataType.type != self.EXCEPTION_DATATYPE_SIMULATION))
-            if filters:
-                filter_str = filters.get_sql_filter_equivalent()
-                if filter_str is not None:
-                    query = query.filter(eval(filter_str))
             query = query.order_by(DataType.id)
             result = query.all()
             for dt in result:

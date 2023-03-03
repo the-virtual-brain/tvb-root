@@ -283,6 +283,7 @@ class DatatypeDAO(RootDAO):
         """
         Get all the DataTypes for a given project, including Linked Entities and DataType Groups.
 
+        :param project_id: ID for the current project to filter for
         :param visibility_filter: when not None, will filter by DataTye fields
         :param filter_value: when not None, will filter with ilike multiple DataType string attributes
         """
@@ -294,9 +295,8 @@ class DatatypeDAO(RootDAO):
                         ).join(Operation, Operation.id == datatype_alias.fk_from_operation
                         ).join(Algorithm).join(AlgorithmCategory
                         ).outerjoin(Links, and_(Links.fk_from_datatype == datatype_alias.id,
-                                                       Links.fk_to_project == project_id)
-                        ).outerjoin(BurstConfiguration,
-                                    datatype_alias.fk_parent_burst == BurstConfiguration.gid
+                                                Links.fk_to_project == project_id)
+                        ).outerjoin(BurstConfiguration, datatype_alias.fk_parent_burst == BurstConfiguration.gid
                                     ).filter(datatype_alias.fk_datatype_group == None
                         ).filter(or_(Operation.fk_launched_in == project_id,
                                      Links.fk_to_project == project_id))
@@ -317,11 +317,10 @@ class DatatypeDAO(RootDAO):
                         ).join(Operation, Operation.id == datatype_alias.fk_from_operation
                         ).join(Algorithm).join(AlgorithmCategory
                         ).join(Links, and_(Links.fk_from_datatype == datatype_alias.id,
-                                                  Links.fk_to_project == project_id)
+                                           Links.fk_to_project == project_id)
                         ).outerjoin(links, and_(links.fk_from_datatype == datatype_alias.fk_datatype_group,
                                                 links.fk_to_project == project_id)
-                        ).outerjoin(BurstConfiguration,
-                                    datatype_alias.fk_parent_burst == BurstConfiguration.gid
+                        ).outerjoin(BurstConfiguration, datatype_alias.fk_parent_burst == BurstConfiguration.gid
                                     ).filter(datatype_alias.fk_datatype_group != None
                         ).filter(links.id == None)
 
