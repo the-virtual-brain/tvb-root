@@ -42,6 +42,7 @@ import logging
 import logging.config
 from tvb.basic.profile import TvbProfile
 from tvb.basic.config.profile_settings import MATLABLibraryProfile
+from logging import StreamHandler
 
 
 class LoggerBuilder(object):
@@ -77,6 +78,9 @@ class LoggerBuilder(object):
     def set_loggers_level(self, level):
         for logger in self._loggers.values():
             logger.setLevel(level)
+            for handler in logger.handlers:
+                if isinstance(handler, StreamHandler) and handler.stream.name == 'stdout':
+                    handler.setLevel(min(level, handler.level))
 
 
 # We make sure a single instance of logger-builder is created.
@@ -95,3 +99,12 @@ def get_logger(parent_module=''):
     :param parent_module: module name for which to create logger.
     """
     return GLOBAL_LOGGER_BUILDER.build_logger(parent_module)
+
+
+def set_loggers_level(level):
+    """
+    Function to set the logging level for the loggers and their console handlers
+
+    :param level: the level to be set
+    """
+    GLOBAL_LOGGER_BUILDER.set_loggers_level(level)
