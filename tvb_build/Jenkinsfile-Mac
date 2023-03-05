@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'TVB_Mac_Node' }
+    agent { label 'mac' }
 
     stages {
         stage('Copy Step 1') {
@@ -33,7 +33,7 @@ pipeline {
 
                     /Applications/anaconda3/envs/mac-distribution/bin/pip install -r docker/requirements_group
 
-                    cd /Users/codemart/WORK/DATA
+                    cd /Users/tvb/WORK/DATA
                     /Applications/anaconda3/envs/mac-distribution/bin/python setup.py develop
                 '''
             }
