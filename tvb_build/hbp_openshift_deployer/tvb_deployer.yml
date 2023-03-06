@@ -292,6 +292,9 @@ objects:
                   cpu: '3'
                 requests:
                   cpu: '1'
+              env:
+                - name: APP_ENCRYPTION_HANDLER
+                  value: 'true'
               ports:
                 - containerPort: 8080
                   protocol: TCP
