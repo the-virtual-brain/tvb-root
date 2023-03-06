@@ -117,6 +117,38 @@ class HHIonExchange(Model):
         doc="""x-coordinate meeting point of parabolas""",
     )
 
+    #'Cm': 1, # membrane capacitance
+    Cm = NArray(
+        label=r":math:`Cm`",
+        default=numpy.array([1]),
+        domain=Range(lo=0.5, hi=1.5, step=0.1),
+        doc="""membrane capacitance""",
+    )
+
+    # 'tau_n': 4, #ms # time constant of gating variable
+    tau_n = NArray(
+        label=r":math:`tau_n`",
+        default=numpy.array([4]),
+        domain=Range(lo=2, hi=6, step=0.5),
+        doc="""time constant of gating variable""",
+    )
+
+    # 'gamma': 0.04,  # mol / C  # conversion factor
+    gamma = NArray(
+        label=r":math:`gamma`",
+        default=numpy.array([0.04]),
+        domain=Range(lo=0.02, hi=0.06, step=0.005),
+        doc="""conversion factor""",
+    )
+
+    #'epsilon': 0.001, # mHz  # diffusion rate
+    epsilon = NArray(
+        label=r":math:`epsilon`",
+        default=numpy.array([0.001]),
+        domain=Range(lo=0.0005, hi=0.0015, step=0.0001),
+        doc="""diffusion rate""",
+    )
+
     state_variable_boundaries = Final(
         label="State Variable boundaries [lo, hi]",
         default={
@@ -203,6 +235,11 @@ class HHIonExchange(Model):
         c_plus = self.c_plus
         R_plus = self.R_plus
         Vstar = self.Vstar
+
+        Cm      = self.Cm
+        tau_n   = self.tau_n
+        gamma   = self.gamma
+        epsilon = self.epsilon
      
         Coupling_Term = coupling[0, :] #This zero refers to the first element of cvar (trivial in this case)
 
@@ -232,12 +269,6 @@ class HHIonExchange(Model):
                'K_o0': 4.80,   # mMol/m**3 # initial concentration of extracellular K
                'Cl_i0': 5.0,   # mMol/m**3 # initial concentration of intracellular Cl
                'Cl_o0': 112.0, # mMol/m**3 # initial concentration of extracellular Cl
-
-               ## Time costants
-               'Cm': 1, # membrane capacitance
-               'tau_n': 4, #ms # time constant of gating variable
-               'gamma': 0.04,  # mol / C  # conversion factor
-               'epsilon': 0.001, # mHz  # diffusion rate
               }
 
         # helper functions
@@ -264,7 +295,7 @@ class HHIonExchange(Model):
             return Par['rho']*(1.0/(1.0+numpy.exp((Par['Cnap'] - Na_i) / Par['DCnap']))*(1.0/(1.0+numpy.exp((Par['Ckp'] - K_o)/Par['DCkp'])))) 
 
         def V_dot_form(I_Na,I_K,I_Cl,I_pump):
-            return (-1.0/Par['Cm'])*(I_Na+I_K+I_Cl+I_pump) 
+            return (-1.0/Cm)*(I_Na+I_K+I_Cl+I_pump) 
 
         beta= Par['w_i'] / Par['w_o'] 
         DNa_i = -DKi 
@@ -282,7 +313,7 @@ class HHIonExchange(Model):
         I_pump = I_pump_form(Na_i,K_o)
     
         r = R_minus*x/numpy.pi
-        Vdot = (-1.0/Par['Cm'])*(I_Na+I_K+I_Cl+I_pump) 
+        Vdot = (-1.0/Cm)*(I_Na+I_K+I_Cl+I_pump) 
 
         derivative = numpy.empty_like(state_variables)
 
@@ -294,8 +325,8 @@ class HHIonExchange(Model):
         derivative[0,~ind] = Delta+2*R_plus*(V[~ind]-c_plus)*x[~ind]-J*r[~ind]*x[~ind] 
         derivative[1,~ind] = Vdot[~ind] - R_plus*x[~ind]**2 + eta + (R_minus/numpy.pi)*Coupling_Term[~ind]*(E-V[~ind])
 
-        derivative[2] = (ninf - n) / Par['tau_n']
-        derivative[3] = -(Par['gamma'] / Par['w_i']) * (I_K - 2.0 * I_pump)
-        derivative[4] = Par['epsilon'] * (K_bath - K_o)
+        derivative[2] = (ninf - n) / tau_n
+        derivative[3] = -(gamma / Par['w_i']) * (I_K - 2.0 * I_pump)
+        derivative[4] = epsilon * (K_bath - K_o)
         
         return derivative
