@@ -51,9 +51,9 @@ else:
         return [{"index": {}},
                 {"@timestamp": record.asctime,
                  "message": record.message,
-                 "controller_method": record.controller_method,
+                 "controller_method": record.controller_method if hasattr(record, 'controller_method') else "",
                  "user": {
-                     "user_id": record.user_id
+                     "user_id": record.user_id if hasattr(record, 'user_id') else ""
                     }
                  }]
 
