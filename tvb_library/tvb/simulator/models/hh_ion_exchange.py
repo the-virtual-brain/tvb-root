@@ -37,40 +37,11 @@ from tvb.basic.neotraits.api import NArray, List, Range, Final
 
 import numpy
 
-
-class InfiniteHH(Model):
+class HHIonExchange(Model):
     r"""
     5D model describing the Ott-Antonsen reduction of infinite all-to-all
-    coupled Hodgkin-Huxley-type neurons (as in Depannemaker et al 2021).
-    The six state variables :math:`x` represents a phenomenological variable connected to the firing rate, :math:`V` represent the average
-    membrane potential.......
-    The equations of the infinite HH 5D population model read
-    .. math::
-        r = R_minus*x/numpy.pi 
-        Vdot = (-1.0/Par['Cm'])*(I_Na+I_K+I_Cl+I_pump)     
-    #%%%%%% Equations
-
-    if V <= Vstar:
-        dx = Delta+2*R_minus*(V-c_minus)*x-J*r*x 
-        dV = Vdot- R_minus*x**2 + eta + (R_minus/numpy.pi)*Coupling_Term
-
-    else:
-        dx = Delta+2*R_plus*(V-c_plus)*x-J*r*x 
-        dV = Vdot- R_plus*x**2 + eta + (R_minus/numpy.pi)*Coupling_Term
-
-    dn = (n_inf(V) - n) / Par['tau_n']
-    dDKi = -(Par['gamma'] / Par['w_i']) * (I_K - 2.0 * I_pump)
-    dKg = Par['epsilon'] * (K_bath - K_o)
-
-    The equations of the infinite HH 5D population model read (on either side of a threshold Vstar)
-    .. math::
-            \dot{x} &= Delta+2*R_minus*(V-c_minus)*x-nu*s*x,
-            \dot{V} &= V_dot_form(I_Na,I_K,I_Cl,I_pump,R_minus,V,x,s,eta,nu), 
-            \dot{n} &= Delta/pi + 2 V r - k r^2,
-            \dot{s} &= (V^2 - pi^2 r^2 + eta + (k s + J) r - k V r + gamma I ),
-            \dot{DKi} &= Delta/pi + 2 V r - k r^2,
-            \dot{Kg} &= (V^2 - pi^2 r^2 + eta + (k s + J) r - k V r + gamma I ),\\
-
+    coupled Hodgkin-Huxley-type neurons (as in Depannemaker et al 2022).
+    The six state variables :math:`x` represents a phenomenological variable connected to the firing rate, :math:`V` represent the average membrane potential.......
     """
     #_ui_name = "Infinite HH"
     #ui_configurable_parameters = ['E', 'K_bath', 'J', 'eta', 'Delta','c_minus','R_minus','c_plus','R_plus','Vstar']
@@ -81,12 +52,14 @@ class InfiniteHH(Model):
         domain=Range(lo=-80, hi=0, step=0.5),
         doc="""Reversal Potential""",
     )
+
     K_bath = NArray(
         label=r":math:`K_bath`",
         default=numpy.array([5.5]),
         domain=Range(lo=3, hi=40.0, step=0.25),
         doc="""Potassium concentration in bath""",
     )
+
     J = NArray(
         label=r":math:`J`",
         default=numpy.array([0.1]),
@@ -155,27 +128,6 @@ class InfiniteHH(Model):
         },
     )
 
-    # state_variable_range = Final(
-    #     label="State Variable boundaries [lo, hi]",
-    #     default={
-    #         "x": numpy.array([-numpy.inf, numpy.inf]),
-    #         "V": numpy.array([-numpy.inf, numpy.inf]),
-    #         "n": numpy.array([-numpy.inf, numpy.inf]),
-    #         "DKi": numpy.array([-numpy.inf, numpy.inf]),
-    #         "Kg": numpy.array([-numpy.inf, numpy.inf])
-    #     },
-    # )
-
-    # state_variable_boundaries = Final(
-    #     label="State Variable boundaries [lo, hi]",
-    #     default={
-    #         "x": numpy.array([-numpy.inf, numpy.inf]),
-    #         "V": numpy.array([-numpy.inf, numpy.inf]),
-    #         "n": numpy.array([-numpy.inf, numpy.inf]),
-    #         "DKi": numpy.array([-numpy.inf, numpy.inf]),
-    #         "Kg": numpy.array([-numpy.inf, numpy.inf])
-    #     },
-    # )
 
     # TODO should match cvars below..
     coupling_terms = Final(
@@ -200,6 +152,38 @@ class InfiniteHH(Model):
     stvar = numpy.array([1], dtype=numpy.int32)
     
     def dfun(self, state_variables, coupling, local_coupling=0.0):
+        r"""
+        The equations of the infinite HH 5D population model read
+
+        .. math::
+            r &= R_{minus}*x/\pi \\
+            Vdot &= (-1.0/Cm)*(I_{Na}+I_K+I_{Cl}+I_{pump})\\
+            dx &= 
+            \begin{cases}
+            \Delta+2*R_minus*(V-c_minus)*x-J*r*x & \text{if } V <= Vstar \\
+            \Delta+2*R_plus*(V-c_plus)*x-J*r*x& \text{else} 
+            \end{cases} \\
+            dV &= 
+            \begin{cases}
+            Vdot- R_minus*x**2 + eta + (R_minus/numpy.pi)*Coupling_Term & \text{if } V <= Vstar \\
+            Vdot- R_plus*x**2 + eta + (R_minus/numpy.pi)*Coupling_Term & \text{else}
+            \end{cases} \\
+            dn &= (n_inf(V) - n) / Par['tau_n']\\
+            dDKi &= -(Par['gamma'] / Par['w_i']) * (I_K - 2.0 * I_pump)\\
+            dKg &= Par['epsilon'] * (K_bath - K_o)\\
+
+
+        The equations of the infinite HH 5D population model read (on either side of a threshold Vstar)
+
+        .. math::
+                \dot{x} &= Delta+2*R_minus*(V-c_minus)*x-nu*s*x,\\
+                \dot{V} &= V_dot_form(I_Na,I_K,I_Cl,I_pump,R_minus,V,x,s,eta,nu), \\
+                \dot{n} &= Delta/pi + 2 V r - k r^2,\\
+                \dot{s} &= (V^2 - pi^2 r^2 + eta + (k s + J) r - k V r + gamma I ),\\
+                \dot{DKi} &= Delta/pi + 2 V r - k r^2,\\
+                \dot{Kg} &= (V^2 - pi^2 r^2 + eta + (k s + J) r - k V r + gamma I ),\\
+
+        """
         x = state_variables[0, :]
         V = state_variables[1, :]
         n = state_variables[2, :]
@@ -222,7 +206,7 @@ class InfiniteHH(Model):
      
         Coupling_Term = coupling[0, :] #This zero refers to the first element of cvar (trivial in this case)
 
-        # FUNCTIONS
+        # Constants
 
         Par = {'Cnap': 21.0,  # mol.m**-3 
                'DCnap': 2.0,  # mol.m**-3 
@@ -234,27 +218,29 @@ class InfiniteHH(Model):
                'DChn': -8.0,  # dimensionless 
                'Cnk': -19.0,  # mV 
                'DCnk': 18.0,  # mV #Ok in the paper
-               'g_Cl': 7.5,  # nS #Ok in the paper
-               'g_Na': 40.0,  # nS 
-               'g_K': 22.0,  # nS 
-               'g_Nal': 0.02,  # nS 
-               'g_Kl': 0.12,  # nS 
-               'rho': 250.,  # 250.,#pamp 
-               'w_i': 2160.0,  # umeter 
-               'w_o': 720.0,  # umeter 
-               'Na_i0': 16.0,  # mol.m**-3 
-               'Na_o0': 138.0,  # mol.m**-3 
-               'K_i0': 130.0,  # mol.m**-3 
-               'K_o0': 4.80,  # mol.m**-3 
-               'Cl_o0': 112.0,  # mol.m**-3 
-               'Cl_i0': 5.0,  # mol.m**-3 'E': -80., #check
+               'g_Cl': 7.5,  # nS #Ok in the paper   # chloride conductance
+               'g_Na': 40.0,  # nS   # maximal sodiumconductance
+               'g_K': 22.0,  # nS  # maximal potassium conductance
+               'g_Nal': 0.02,  # nS  # sodium leak conductance
+               'g_Kl': 0.12,  # nS  # potassium leak conductance
+               'rho': 250.,  # 250.,#pA # maximal Na/K pump current
+               'w_i': 2160.0,  # umeter**3  # intracellular volume 
+               'w_o': 720.0,  # umeter**3 # extracellular volume 
+               'Na_i0': 16.0,  # mMol/m**3 # initial concentration of intracellular Na
+               'Na_o0': 138.0, # mMol/m**3 # initial concentration of extracellular Na
+               'K_i0': 130.0,  # mMol/m**3 # initial concentration of intracellular K
+               'K_o0': 4.80,   # mMol/m**3 # initial concentration of extracellular K
+               'Cl_i0': 5.0,   # mMol/m**3 # initial concentration of intracellular Cl
+               'Cl_o0': 112.0, # mMol/m**3 # initial concentration of extracellular Cl
+
                ## Time costants
-               'Cm': 1,
-               'tau_n': 4,
-               'gamma': 0.04,  
-               'epsilon': 0.001,
-               'tau_I': 1
+               'Cm': 1, # membrane capacitance
+               'tau_n': 4, #ms # time constant of gating variable
+               'gamma': 0.04,  # mol / C  # conversion factor
+               'epsilon': 0.001, # mHz  # diffusion rate
               }
+
+        # helper functions
 
         def m_inf(V):
             return 1.0/(1.0+numpy.exp((Par['Cmna']-V)/Par['DCmna']))
