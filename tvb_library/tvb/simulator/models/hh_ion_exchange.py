@@ -316,13 +316,13 @@ class HHIonExchange(Model):
 
         derivative = numpy.empty_like(state_variables)
 
-        ind = V <= Vstar
+        if_xdot = Delta+2*R_minus*(V-c_minus)*x-J*r*x 
+        else_xdot = Delta+2*R_plus*(V-c_plus)*x-J*r*x
+        derivative[0] = numpy.where(V <= Vstar, if_xdot, else_xdot)
 
-        derivative[0,ind] = Delta+2*R_minus*(V[ind]-c_minus)*x[ind]-J*r[ind]*x[ind] 
-        derivative[1,ind] = Vdot[ind] - R_minus*x[ind]**2 + eta + (R_minus/numpy.pi)*Coupling_Term[ind]*(E-V[ind])
-
-        derivative[0,~ind] = Delta+2*R_plus*(V[~ind]-c_plus)*x[~ind]-J*r[~ind]*x[~ind] 
-        derivative[1,~ind] = Vdot[~ind] - R_plus*x[~ind]**2 + eta + (R_minus/numpy.pi)*Coupling_Term[~ind]*(E-V[~ind])
+        if_Vdot = Vdot - R_minus*x**2 + eta + (R_minus/numpy.pi)*Coupling_Term*(E-V)
+        else_Vdot = Vdot - R_plus*x**2 + eta + (R_minus/numpy.pi)*Coupling_Term*(E-V)
+        derivative[1] = numpy.where(V <= Vstar, if_Vdot, else_Vdot)
 
         derivative[2] = (ninf - n) / tau_n
         derivative[3] = -(gamma / w_i) * (I_K - 2.0 * I_pump)
