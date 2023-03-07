@@ -244,67 +244,66 @@ class HHIonExchange(Model):
         Coupling_Term = coupling[0, :] #This zero refers to the first element of cvar (trivial in this case)
 
         # Constants
-
-        Par = {'Cnap': 21.0,  # mol.m**-3 
-               'DCnap': 2.0,  # mol.m**-3 
-               'Ckp': 5.5,  # mol.m**-3 
-               'DCkp': 1.0,  # mol.m**-3 
-               'Cmna': -24.0,  # mV 
-               'DCmna': 12.0,  # mV 
-               'Chn': 0.4,  # dimensionless 
-               'DChn': -8.0,  # dimensionless 
-               'Cnk': -19.0,  # mV 
-               'DCnk': 18.0,  # mV #Ok in the paper
-               'g_Cl': 7.5,  # nS #Ok in the paper   # chloride conductance
-               'g_Na': 40.0,  # nS   # maximal sodiumconductance
-               'g_K': 22.0,  # nS  # maximal potassium conductance
-               'g_Nal': 0.02,  # nS  # sodium leak conductance
-               'g_Kl': 0.12,  # nS  # potassium leak conductance
-               'rho': 250.,  # 250.,#pA # maximal Na/K pump current
-               'w_i': 2160.0,  # umeter**3  # intracellular volume 
-               'w_o': 720.0,  # umeter**3 # extracellular volume 
-               'Na_i0': 16.0,  # mMol/m**3 # initial concentration of intracellular Na
-               'Na_o0': 138.0, # mMol/m**3 # initial concentration of extracellular Na
-               'K_i0': 130.0,  # mMol/m**3 # initial concentration of intracellular K
-               'K_o0': 4.80,   # mMol/m**3 # initial concentration of extracellular K
-               'Cl_i0': 5.0,   # mMol/m**3 # initial concentration of intracellular Cl
-               'Cl_o0': 112.0, # mMol/m**3 # initial concentration of extracellular Cl
-              }
+        Cnap = 21.0  # mol.m**-3 
+        DCnap = 2.0  # mol.m**-3 
+        Ckp = 5.5  # mol.m**-3 
+        DCkp = 1.0  # mol.m**-3 
+        Cmna = -24.0  # mV 
+        DCmna = 12.0  # mV 
+        Chn = 0.4  # dimensionless 
+        DChn = -8.0  # dimensionless 
+        Cnk = -19.0  # mV 
+        DCnk = 18.0  # mV #Ok in the paper
+        g_Cl = 7.5  # nS #Ok in the paper   # chloride conductance
+        g_Na = 40.0  # nS   # maximal sodiumconductance
+        g_K = 22.0  # nS  # maximal potassium conductance
+        g_Nal = 0.02  # nS  # sodium leak conductance
+        g_Kl = 0.12  # nS  # potassium leak conductance
+        rho = 250.  # 250.,#pA # maximal Na/K pump current
+        w_i = 2160.0  # umeter**3  # intracellular volume 
+        w_o = 720.0  # umeter**3 # extracellular volume 
+        Na_i0 = 16.0  # mMol/m**3 # initial concentration of intracellular Na
+        Na_o0 = 138.0 # mMol/m**3 # initial concentration of extracellular Na
+        K_i0 = 130.0  # mMol/m**3 # initial concentration of intracellular K
+        K_o0 = 4.80   # mMol/m**3 # initial concentration of extracellular K
+        Cl_i0 = 5.0   # mMol/m**3 # initial concentration of intracellular Cl
+        Cl_o0 = 112.0 # mMol/m**3 # initial concentration of extracellular Cl
+        
 
         # helper functions
 
         def m_inf(V):
-            return 1.0/(1.0+numpy.exp((Par['Cmna']-V)/Par['DCmna']))
+            return 1.0/(1.0+numpy.exp((Cmna-V)/DCmna))
 
         def n_inf(V):
-            return 1.0/(1.0+numpy.exp((Par['Cnk']-V)/Par['DCnk']))
+            return 1.0/(1.0+numpy.exp((Cnk-V)/DCnk))
 
         def h(n):
             return 1.1 - 1.0 / (1.0 + numpy.exp(-8.0 * (n - 0.4)))
 
         def I_K_form(V,n,K_o,K_i):
-            return (Par['g_Kl']+Par['g_K']*n)*(V- 26.64*numpy.log(K_o/K_i)) 
+            return (g_Kl+g_K*n)*(V- 26.64*numpy.log(K_o/K_i)) 
 
         def I_Na_form(V,Na_o,Na_i,n):
-            return (Par['g_Nal']+Par['g_Na']*m_inf(V)*h(n))*(V- 26.64*numpy.log(Na_o/Na_i))
+            return (g_Nal+g_Na*m_inf(V)*h(n))*(V- 26.64*numpy.log(Na_o/Na_i))
 
         def I_Cl_form(V):
-            return Par['g_Cl']*(V+ 26.64*numpy.log(Par['Cl_o0']/Par['Cl_i0'])) 
+            return g_Cl*(V+ 26.64*numpy.log(Cl_o0/Cl_i0)) 
 
         def I_pump_form(Na_i,K_o):
-            return Par['rho']*(1.0/(1.0+numpy.exp((Par['Cnap'] - Na_i) / Par['DCnap']))*(1.0/(1.0+numpy.exp((Par['Ckp'] - K_o)/Par['DCkp'])))) 
+            return rho*(1.0/(1.0+numpy.exp((Cnap - Na_i) / DCnap))*(1.0/(1.0+numpy.exp((Ckp - K_o)/DCkp)))) 
 
         def V_dot_form(I_Na,I_K,I_Cl,I_pump):
             return (-1.0/Cm)*(I_Na+I_K+I_Cl+I_pump) 
 
-        beta= Par['w_i'] / Par['w_o'] 
+        beta= w_i / w_o 
         DNa_i = -DKi 
         DNa_o = -beta * DNa_i
         DK_o = -beta * DKi
-        K_i = Par['K_i0'] + DKi 
-        Na_i = Par['Na_i0'] + DNa_i 
-        Na_o = Par['Na_o0'] + DNa_o 
-        K_o = Par['K_o0'] + DK_o + Kg 
+        K_i = K_i0 + DKi 
+        Na_i = Na_i0 + DNa_i 
+        Na_o = Na_o0 + DNa_o 
+        K_o = K_o0 + DK_o + Kg 
 
         ninf=n_inf(V)
         I_K = I_K_form(V,n,K_o,K_i)
@@ -326,7 +325,7 @@ class HHIonExchange(Model):
         derivative[1,~ind] = Vdot[~ind] - R_plus*x[~ind]**2 + eta + (R_minus/numpy.pi)*Coupling_Term[~ind]*(E-V[~ind])
 
         derivative[2] = (ninf - n) / tau_n
-        derivative[3] = -(gamma / Par['w_i']) * (I_K - 2.0 * I_pump)
+        derivative[3] = -(gamma / w_i) * (I_K - 2.0 * I_pump)
         derivative[4] = epsilon * (K_bath - K_o)
         
         return derivative
