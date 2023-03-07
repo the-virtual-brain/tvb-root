@@ -250,10 +250,10 @@ class CaseDAO(RootDAO):
         Return all projects a given user can access (administrator or not).
         """
         # First load projects that current user is administrator for.
-        query = self.session.query(Project).join((User, Project.fk_admin == User.id)
-                                                 ).outerjoin((User_to_Project,
+        query = self.session.query(Project).join(User, Project.fk_admin == User.id
+                                                 ).outerjoin(User_to_Project,
                                                               and_(Project.id == User_to_Project.fk_project,
-                                                                   User_to_Project.fk_user == user_id))
+                                                                   User_to_Project.fk_user == user_id)
                                                              ).filter(
             or_(User.id == user_id, User_to_Project.fk_user == user_id)
         ).order_by(desc(Project.id))

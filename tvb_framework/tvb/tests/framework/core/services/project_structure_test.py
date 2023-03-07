@@ -31,15 +31,13 @@
 
 import pytest
 
-from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.core.entities.filters.factory import StaticFiltersFactory
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import get_filtered_datatypes
 from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_operation import *
 from tvb.core.entities.storage import dao
-from tvb.core.neocom import h5
 from tvb.core.services.project_service import ProjectService
-from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.core.services.algorithm_service_test import TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS
@@ -281,6 +279,22 @@ class TestProjectStructure(TransactionalTestCase):
         self._check_if_datatype_was_removed(datatype_groups[0])
         self._check_if_datatype_was_removed(datatype_groups[1])
         self._check_datatype_group_removed(group.id, datatype_groups[0].fk_operation_group)
+
+    def test_get_data_in_project(self, project_factory, user_factory, connectivity_index_factory):
+        user = user_factory()
+        project = project_factory(user)
+        connectivity_index_factory()
+
+        conn_not_visible = connectivity_index_factory()
+        conn_not_visible.visible = False
+        dao.store_entity(conn_not_visible)
+
+        datatypes = dao.get_data_in_project(project.id)
+        assert len(datatypes) == 2
+
+        visibility_filter = FilterChain(fields=[FilterChain.datatype + '.visible'], operations=['=='], values=[True])
+        datatypes = dao.get_data_in_project(project.id, visibility_filter=visibility_filter)
+        assert len(datatypes) == 1
 
     @pytest.fixture()
     def array_factory(self, operation_factory, connectivity_index_factory, connectivity_measure_index_factory):
