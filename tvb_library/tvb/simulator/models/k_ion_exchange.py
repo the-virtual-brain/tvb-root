@@ -172,6 +172,19 @@ class KIonEx(Model):
         },
     )
 
+    state_variable_range = Final(
+        label="State Variable ranges [lo, hi]",
+        default={
+            "x": numpy.array([0., 1]),
+            "V": numpy.array([-90., 10.]),
+            "n": numpy.array([0., 1]),
+            "DKi": numpy.array([-10, 0]),
+            "Kg": numpy.array([-20, -5])
+        },
+        doc="""Expected ranges of the state variables for initial condition generation and phase plane setup.""",
+    )
+
+
 
     # TODO should match cvars below..
     coupling_terms = Final(
