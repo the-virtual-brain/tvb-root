@@ -27,9 +27,14 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 
 """
-   A family of mean field models of infinite populations of all-to-all coupled
-   quadratic integrate and fire neurons (theta-neurons).
-.. moduleauthor:: Giovanni Rabuffo <giovanni.rabuffo@univ-amu.fr>
+.. moduleauthors:: 
+   Giovanni Rabuffo <giovanni.rabuffo@univ-amu.fr>, 
+   Carmela Calabrese <carmela.calabrese@iit.it>,
+   Jan Fousek <jan.fousek@univ-amu.fr>, 
+
+   Under the "NextGen" Research Infrastructure Voucher SC3 associated to the HBP Flagship as a Partnering Project (PP)
+   Project leader: Simona Olmi <simone.olmi@gmail.com>
+   EBRAINS Partner: Viktor Jirsa <viktor.jirsa@univ-amu.fr>
 """
 
 from tvb.simulator.models.base import Model
@@ -37,13 +42,20 @@ from tvb.basic.neotraits.api import NArray, List, Range, Final
 
 import numpy
 
-class HHIonExchange(Model):
+class KIonEx(Model):
     r"""
-    5D model describing the Ott-Antonsen reduction of infinite all-to-all
-    coupled Hodgkin-Huxley-type neurons (as in Depannemaker et al 2022).
-    The six state variables :math:`x` represents a phenomenological variable connected to the firing rate, :math:`V` represent the average membrane potential.......
+    KIonEx (Potassium K+ Ion exchange) mean-field model was developed in (Bandyopadhyay & Rabuffo et al. 2023). 
+    It describes the mean-field activity of a population of Hodgkin-Huxley-type neurons (Depannemaker et al 2022) 
+    linking the slow fluctuations of intra- and extra-cellular potassium ion concentrations to the mean membrane potential, 
+    and the synaptic input to the population firing rate. 
+    The model is derived as the mathematical limit of an infinite number of all-to-all coupled neurons, resulting in 5 state variables:
+    :math:`x` represents a phenomenological variable connected to the firing rate, 
+    :math:`V` represent the average membrane potential,
+    :math:`n` represents the gating variable for potassium K, 
+    :math:`\Delta K_{int}` represent the intracellular potassium concentration,
+    :math:`K_g` represents the extracellular potassium buffering by the external bath
     """
-    #_ui_name = "Infinite HH"
+    #_ui_name = "KIonEx"
     #ui_configurable_parameters = ['E', 'K_bath', 'J', 'eta', 'Delta','c_minus','R_minus','c_plus','R_plus','Vstar']
 
     E = NArray(
@@ -117,7 +129,7 @@ class HHIonExchange(Model):
         doc="""x-coordinate meeting point of parabolas""",
     )
 
-    #'Cm': 1, # membrane capacitance
+    #'Cm': 1, #nF, # membrane capacitance
     Cm = NArray(
         label=r":math:`Cm`",
         default=numpy.array([1]),
@@ -125,7 +137,7 @@ class HHIonExchange(Model):
         doc="""membrane capacitance""",
     )
 
-    # 'tau_n': 4, #ms # time constant of gating variable
+    # 'tau_n': 4, # ms # time constant of gating variable
     tau_n = NArray(
         label=r":math:`tau_n`",
         default=numpy.array([4]),
@@ -185,37 +197,26 @@ class HHIonExchange(Model):
     
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
-        The equations of the infinite HH 5D population model read
+        The mean-field approximation for a population of Hodgkin-Huxley-type neurons driven by slow potassium dynamics consists of a 5D system:
 
         .. math::
-            r &= R_{minus}*x/\pi \\
-            Vdot &= (-1.0/Cm)*(I_{Na}+I_K+I_{Cl}+I_{pump})\\
-            dx &= 
-            \begin{cases}
-            \Delta+2*R_minus*(V-c_minus)*x-J*r*x & \text{if } V <= Vstar \\
-            \Delta+2*R_plus*(V-c_plus)*x-J*r*x& \text{else} 
-            \end{cases} \\
-            dV &= 
-            \begin{cases}
-            Vdot- R_minus*x**2 + eta + (R_minus/numpy.pi)*Coupling_Term & \text{if } V <= Vstar \\
-            Vdot- R_plus*x**2 + eta + (R_minus/numpy.pi)*Coupling_Term & \text{else}
-            \end{cases} \\
-            dn &= (n_inf(V) - n) / Par['tau_n']\\
-            dDKi &= -(Par['gamma'] / Par['w_i']) * (I_K - 2.0 * I_pump)\\
-            dKg &= Par['epsilon'] * (K_bath - K_o)\\
+            \frac{dx}{dt}&=
+            \begin{cases} 
+            \Delta+2R_{-}(V-c_{-})x - J r x; \  V\leq V^{\star}\\
+            \Delta+2R_{+}(V-c_{+})x - J r x; \  V> V^{\star},
+            \end{cases}\\
+            \frac{dV}{dt}&=
+            \begin{cases} 
+            -\frac{1}{C_m}(I_{Cl}+I_{Na}+I_{K}+I_{pump})-R_{-}x^2+J r(E_{syn}-V)+\overline{\eta}; \  V\leq V^{\star}\\
+            -\frac{1}{C_m}(I_{Cl}+I_{Na}+I_{K}+I_{pump})-R_{+}x^2+J r(E_{syn}-V)+\overline{\eta}; \  V>V^{\star}, 
+            \end{cases}\\
+            \frac{dn}{dt} &= \frac{n_{\infty}(V)-n}{\tau_n}, \\
+            \frac{d \Delta [K^{+}]_{int}}{dt} &= - \frac{\gamma}{\omega_i}(I_K - 2 I_{pump}),\\
+            \frac{d[K^+]_g}{dt} &= \epsilon ([K^+]_{bath} - [K^+]_{ext}\}).\\
 
-
-        The equations of the infinite HH 5D population model read (on either side of a threshold Vstar)
-
-        .. math::
-                \dot{x} &= Delta+2*R_minus*(V-c_minus)*x-nu*s*x,\\
-                \dot{V} &= V_dot_form(I_Na,I_K,I_Cl,I_pump,R_minus,V,x,s,eta,nu), \\
-                \dot{n} &= Delta/pi + 2 V r - k r^2,\\
-                \dot{s} &= (V^2 - pi^2 r^2 + eta + (k s + J) r - k V r + gamma I ),\\
-                \dot{DKi} &= Delta/pi + 2 V r - k r^2,\\
-                \dot{Kg} &= (V^2 - pi^2 r^2 + eta + (k s + J) r - k V r + gamma I ),\\
-
+        For details refer to (Bandyopadhyay & Rabuffo et al. 2023)
         """
+        
         x = state_variables[0, :]
         V = state_variables[1, :]
         n = state_variables[2, :]
