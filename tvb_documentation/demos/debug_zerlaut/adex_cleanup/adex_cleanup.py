@@ -41,12 +41,22 @@ def make_alpha_stim(conn, stim_params=None):
 
     return stim
 
-
-def configure_sim(path, noise=False):
+def configure_sim(path, stim=False, stim_params=None, with_noise=False):
     conn = connectivity.Connectivity.from_file()
     conn.speed = np.r_[np.inf]
 
-    if noise:
+    if stim:
+        if stim_params is None:
+            stim_params = AlphaFunction.parameters.default()
+
+        stim = patterns.StimuliRegion(
+            temporal=AlphaFunction(parameters=stim_params),
+            connectivity=conn,
+            weight=np.ones(len(conn.weights)))
+    else:
+        stim=None
+
+    if with_noise:
         integrator = integrators.HeunStochastic(
                 noise=noise.Additive(
                     nsig=np.r_[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0] ),
@@ -64,6 +74,7 @@ def configure_sim(path, noise=False):
         coupling=coupling.Linear(a=np.r_[0.0]),
         integrator=integrator,
         monitors=[monitors.TemporalAverage(period=1.0)],
+        stimulus=stim,
     ).configure()
 
     return sim
