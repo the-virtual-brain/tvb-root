@@ -38,7 +38,7 @@ Usage::
 
 """
 
-#TODO: In syntax it is corrected to match the neo-traits. It still requires to be checked
+# TODO: In syntax it is corrected to match the neo-traits. It still requires to be checked
 
 import numpy
 
@@ -65,7 +65,7 @@ class TestModel(HasTraits):
         
     """
     model = models.Model
-    phase_plane = NArray(dtype=numpy.int, label="state variables for the phase plane", required=False, default=None)
+    phase_plane = NArray(dtype=numpy.int_, label="state variables for the phase plane", required=False, default=None)
 
     xlo = NArray(label="left edge the phase plane", required=False, default=None)  # -60.0
     xhi = NArray(label="right edge of the phase plane", required=False, default=None)  # 50.0
@@ -204,7 +204,7 @@ class TestModel(HasTraits):
         for n in range(self.model.nvar):
             a = a + (self.model.nvar - n - 1) * (n,)
             b = b + list(range(n + 1, self.model.nvar))
-        return numpy.array((a, b), dtype=numpy.int)
+        return numpy.array((a, b), dtype=numpy.int_)
 
 
 def test_factory(model_class, **kwargs):

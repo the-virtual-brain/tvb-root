@@ -910,11 +910,11 @@ class ProjectService:
             return [], changed_parameters
 
     @staticmethod
-    def get_results_for_operation(operation_id, selected_filter=None):
+    def get_results_for_operation(operation_id):
         """
         Retrieve the DataTypes entities resulted after the execution of the given operation.
         """
-        return dao.get_results_for_operation(operation_id, selected_filter)
+        return dao.get_results_for_operation(operation_id)
 
     @staticmethod
     def get_datatype_by_id(datatype_id):
@@ -932,8 +932,8 @@ class ProjectService:
         return dao.get_datatypegroup_by_op_group_id(operation_group_id)
 
     @staticmethod
-    def get_datatypes_in_project(project_id, only_visible=False):
-        return dao.get_data_in_project(project_id, only_visible)
+    def get_datatypes_in_project(project_id):
+        return dao.get_data_in_project(project_id)
 
     @staticmethod
     def set_datatype_visibility(datatype_gid, is_visible):

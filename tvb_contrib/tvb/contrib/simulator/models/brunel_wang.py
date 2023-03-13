@@ -239,14 +239,14 @@ class BrunelWang(models.Model):
         doc="""Inhibitory absolute refractory period (ms)""")
 
     Cext = NArray(
-        dtype=numpy.int,
+        dtype=numpy.int_,
         label=":math:`C_{ext}`",
         default=numpy.array([800, ]),
         domain=Range(lo=500, hi=1200, step=100),
         doc="""Number of external (excitatory) connections""")
 
     C = NArray(
-        dtype=numpy.int,
+        dtype=numpy.int_,
         label=":math:`C`",
         default=numpy.array([200, ]),
         domain=Range(lo=100, hi=500, step=100),
@@ -271,7 +271,7 @@ class BrunelWang(models.Model):
         doc="""Synaptic coupling strength [w-] (dimensionless)""")
 
     NMAX = NArray(
-        dtype=numpy.int,
+        dtype=numpy.int_,
         label=":math:`N_{MAX}`",
         default=numpy.array([8, ], dtype=numpy.int32),
         domain=Range(lo=2, hi=8, step=1),

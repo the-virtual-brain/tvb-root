@@ -34,9 +34,8 @@ Adapter that uses the traits module to generate interfaces for ... Analyzer.
 """
 
 import uuid
-
 import numpy
-from scipy.signal.signaltools import correlate
+from scipy.signal import correlate
 from tvb.adapters.datatypes.db.graph import CorrelationCoefficientsIndex
 from tvb.adapters.datatypes.db.temporal_correlations import CrossCorrelationIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesEEGIndex, TimeSeriesMEGIndex, \
