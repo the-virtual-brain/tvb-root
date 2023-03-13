@@ -190,6 +190,22 @@ def trait_object_repr_html(self):
     return '\n'.join(result)
 
 
+def convert_rst_to_html(doc):
+    """
+    Convert from rst to html that can be rendered by Mathjax
+    """
+    kwargs = {
+        'writer_name': 'html',
+        'settings_overrides': {
+            '_disable_config': True,
+            'report_level': 5,
+            'math_output': "MathJax /dummy.js",
+        },
+    }
+
+    return publish_parts(doc, **kwargs)['html_body']
+
+
 def prepare_html(doc):
     # type: (str) -> str
     """
@@ -198,16 +214,7 @@ def prepare_html(doc):
     try:
         html_id = uuid.uuid1()
 
-        kwargs = {
-            'writer_name': 'html',
-            'settings_overrides': {
-                '_disable_config': True,
-                'report_level': 5,
-                'math_output': "MathJax /dummy.js",
-            },
-        }
-
-        html = publish_parts(doc, **kwargs)['html_body']
+        html = convert_rst_to_html(doc)
 
         html = html.replace('div class="document"', f'div class="document" id="{html_id}"', 1)
         html += fr'<script>MathJax.Hub.Queue(["Typeset", MathJax.Hub, "{html_id}"]);</script>'

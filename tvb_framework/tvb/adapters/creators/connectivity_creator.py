@@ -62,7 +62,7 @@ class ConnectivityCreatorModel(ViewModel):
         doc="""""")
 
     interest_area_indexes = NArray(
-        dtype=numpy.int,
+        dtype=numpy.int_,
         default=None,
         label="Indices of selected nodes as json array",
         required=True,

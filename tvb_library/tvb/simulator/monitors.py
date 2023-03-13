@@ -270,7 +270,7 @@ class SpatialAverage(Monitor):
         spatial_mask = numpy.array([int(val) for val in mask])
         unique_mask = numpy.unique(spatial_mask)
         if len(unique_mask) == 1 and unique_mask[0] == 1:
-            return numpy.zeros(len(spatial_mask), dtype=numpy.int)
+            return numpy.zeros(len(spatial_mask), dtype=numpy.int_)
         return spatial_mask
 
     def config_for_sim(self, simulator):
@@ -486,7 +486,7 @@ class Projection(Monitor):
             "projection matrices. Please select an appropriate projection "
             "matrix."
         )
-    
+
     _gain_configuration_done = False
 
     def config_for_sim(self, simulator):
@@ -552,11 +552,11 @@ class Projection(Monitor):
         # this fails when rmap doesn't have non_cortical, need to ensure "full" first
         # OR fix non_cortical_rmap_idx to be empty in that case:
         cortical_rmap = self.rmap.copy()
-        if (self.rmap.max()+1) == conn.cortical.sum():
+        if (self.rmap.max() + 1) == conn.cortical.sum():
             # there are no non_cortical indices in rmap, so cortical_rmap is already fine
             pass
         else:
-            non_cortical_rmap_idx = numpy.hstack([numpy.argwhere(self.rmap==i)[:,0] for i in non_cortical_indices])
+            non_cortical_rmap_idx = numpy.hstack([numpy.argwhere(self.rmap == i)[:, 0] for i in non_cortical_indices])
             cortical_rmap = numpy.delete(cortical_rmap, non_cortical_rmap_idx)
         if not using_cortical_surface and self.gain.shape[1] == cortical_rmap.size:
             gain = numpy.zeros((self.gain.shape[0], conn.number_of_regions))

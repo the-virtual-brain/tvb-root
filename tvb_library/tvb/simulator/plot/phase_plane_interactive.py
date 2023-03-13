@@ -60,6 +60,7 @@ Example specifying a Model and stochastic sample trajectories::
 import numpy
 import matplotlib.pyplot as plt
 import colorsys
+import numbers
 import matplotlib.widgets as widgets
 from deprecated import deprecated
 from tvb.simulator.common import get_logger
@@ -374,7 +375,7 @@ class PhasePlaneInteractive(HasTraits):
             if self.exclude_sliders is not None and param_name in self.exclude_sliders:
                 continue
             param_def = getattr(type(self.model), param_name)
-            if not isinstance(param_def, NArray) or not param_def.dtype == numpy.float:
+            if not isinstance(param_def, NArray) or not issubclass(param_def.dtype.type, numbers.Real):
                 continue
             param_range = param_def.domain
             if param_range is None:

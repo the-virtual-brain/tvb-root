@@ -28,7 +28,7 @@ import uuid
 import numpy
 from datetime import datetime
 from sqlalchemy import Column, Integer, Text, DateTime, String, Boolean
-from sqlalchemy.ext.declarative import declarative_base, declared_attr
+from sqlalchemy.orm import declarative_base, declared_attr
 
 SCALAR_MAPPING = {
     bool: Boolean,
