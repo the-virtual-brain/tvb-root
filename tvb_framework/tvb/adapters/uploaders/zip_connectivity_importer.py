@@ -126,7 +126,7 @@ class ZIPConnectivityImporter(ABCUploader):
                 weights_matrix = self.read_list_data(file_name)
             elif self.CENTRES_TOKEN in file_name_low or self.CENTRES_TOKEN2 in file_name_low:
                 centres = self.read_list_data(file_name, usecols=[1, 2, 3])
-                labels_vector = self.read_list_data(file_name, dtype=numpy.str, usecols=[0])
+                labels_vector = self.read_list_data(file_name, dtype=numpy.str_, usecols=[0])
             elif self.TRACT_TOKEN in file_name_low:
                 tract_matrix = self.read_list_data(file_name)
             elif self.ORIENTATION_TOKEN in file_name_low:
@@ -134,9 +134,9 @@ class ZIPConnectivityImporter(ABCUploader):
             elif self.AREA_TOKEN in file_name_low:
                 areas = self.read_list_data(file_name)
             elif self.CORTICAL_INFO in file_name_low:
-                cortical_vector = self.read_list_data(file_name, dtype=numpy.bool)
+                cortical_vector = self.read_list_data(file_name, dtype=numpy.bool_)
             elif self.HEMISPHERE_INFO in file_name_low:
-                hemisphere_vector = self.read_list_data(file_name, dtype=numpy.bool)
+                hemisphere_vector = self.read_list_data(file_name, dtype=numpy.bool_)
 
         # Clean remaining text-files.
         self.storage_interface.remove_files(files, True)

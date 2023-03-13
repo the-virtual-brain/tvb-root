@@ -175,7 +175,7 @@ class BIDSImporter(ABCUploader):
                     centres_path = os.path.join(dir_path, centres_path).replace(self.JSON_EXTENSION, self.TSV_EXTENSION)
 
                     centres = self.read_list_data(centres_path)
-                    labels_vector = self.read_list_data(labels_path, dtype=numpy.str, usecols=[0])
+                    labels_vector = self.read_list_data(labels_path, dtype=numpy.str_, usecols=[0])
 
         connectivity = Connectivity()
 

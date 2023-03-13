@@ -84,6 +84,8 @@ KEY_ELASTICSEARCH_LOGGING_INDEX = "ELASTICSEARCH_LOGGING_INDEX"
 KEY_ELASTICSEARCH_REQUEST_TIMEOUT = "ELASTICSEARCH_REQUEST_TIMEOUT"
 KEY_ELASTICSEARCH_BUFFER_THRESHOLD = "ELASTICSEARCH_BUFFER_THRESHOLD"
 
+UTF8 = "utf-8"
+
 
 class SettingsManager(object):
     def __init__(self, config_file_location):
@@ -99,7 +101,7 @@ class SettingsManager(object):
             return {}
 
         config_dict = {}
-        with open(self.config_file_location, 'r') as cfg_file:
+        with open(self.config_file_location, 'r', encoding= UTF8) as cfg_file:
             data = cfg_file.read()
             entries = [line for line in data.split('\n') if not line.startswith('#') and len(line.strip()) > 0]
             for one_entry in entries:
@@ -109,7 +111,7 @@ class SettingsManager(object):
 
     def _store_config_file(self, config_dict):
 
-        with open(self.config_file_location, 'w') as file_writer:
+        with open(self.config_file_location, 'w',  encoding= UTF8) as file_writer:
             for key in config_dict:
                 file_writer.write(key + '=' + str(config_dict[key]) + '\n')
 
@@ -148,7 +150,7 @@ class SettingsManager(object):
         """
         Overwrite anything already existent in the config file
         """
-        with open(self.config_file_location, 'w') as file_writer:
+        with open(self.config_file_location, 'w',  encoding= UTF8) as file_writer:
             for key in config_dict:
                 file_writer.write(key + '=' + str(config_dict[key]) + '\n')
 

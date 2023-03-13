@@ -20,7 +20,7 @@
                                 <div id="data_model_{{ model.name }}" style="display:none">
                                     <div>
                                         {{ ght.generate_help_tooltip(model.name, model.description) }}
-                                        {{model.inline_description}}
+                                        {{model.inline_description|safe}}
                                     </div>
                                 </div>
                             {% endfor %}

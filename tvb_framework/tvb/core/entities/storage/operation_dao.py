@@ -250,7 +250,7 @@ class OperationDAO(RootDAO):
                                                    func.max(Operation.completion_date),
                                                    func.min(Operation.status),
                                                    func.max(Operation.additional_info),
-                                                   func.min(case_([(Operation.visible, 1)], else_=0)),
+                                                   func.min(case_((Operation.visible, 1), else_=0)),
                                                    func.min(Operation.user_group),
                                                    func.min(Operation.gid))
 
@@ -260,8 +260,8 @@ class OperationDAO(RootDAO):
             if filter_chain is not None:
                 filter_string = filter_chain.get_sql_filter_equivalent()
                 query = query.filter(eval(filter_string))
-            query = query.group_by(case_([(Operation.fk_operation_group > 0,
-                                           - Operation.fk_operation_group)], else_=Operation.id))
+            query = query.group_by(case_((Operation.fk_operation_group > 0,
+                                           - Operation.fk_operation_group), else_=Operation.id))
 
             if is_count:
                 return query.count()
@@ -273,7 +273,7 @@ class OperationDAO(RootDAO):
             return 0 if is_count else None
 
 
-    def get_results_for_operation(self, operation_id, filters=None):
+    def get_results_for_operation(self, operation_id):
         """
         Retrieve DataTypes entities, resulted after executing an operation.
         """
@@ -282,10 +282,6 @@ class OperationDAO(RootDAO):
                                        ).filter_by(fk_from_operation=operation_id
                                        ).filter(and_(DataType.type != self.EXCEPTION_DATATYPE_GROUP,
                                                      DataType.type != self.EXCEPTION_DATATYPE_SIMULATION))
-            if filters:
-                filter_str = filters.get_sql_filter_equivalent()
-                if filter_str is not None:
-                    query = query.filter(eval(filter_str))
             query = query.order_by(DataType.id)
             result = query.all()
             for dt in result:

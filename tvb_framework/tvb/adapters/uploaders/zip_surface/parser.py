@@ -83,12 +83,12 @@ class ZipSurfaceParser(object):
             self._read_files(vertices_rh, normals_rh, triangles_rh, path)
             self._stack_arrays()
 
-            self.hemisphere_mask = numpy.ones(len(self.vertices), dtype=numpy.bool)
+            self.hemisphere_mask = numpy.ones(len(self.vertices), dtype=numpy.bool_)
             self.hemisphere_mask[0:vertices_in_lh] = 0
         else:
             self._read_files(vertices, normals, triangles, path)
             self._stack_arrays()
-            self.hemisphere_mask = numpy.zeros(len(self.vertices), dtype=numpy.bool)
+            self.hemisphere_mask = numpy.zeros(len(self.vertices), dtype=numpy.bool_)
 
     def _stack_arrays(self):
         self.vertices = numpy.vstack(self.vertices)

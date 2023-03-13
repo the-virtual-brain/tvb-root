@@ -198,7 +198,7 @@ class NIFTIImporter(ABCUploader):
 
         if view_model.mappings_file:
             try:
-                mapping_data = numpy.loadtxt(view_model.mappings_file, dtype=numpy.str, usecols=(0, 2))
+                mapping_data = numpy.loadtxt(view_model.mappings_file, dtype=numpy.str_, usecols=(0, 2))
                 mapping_data = {int(row[0]): int(row[1]) for row in mapping_data}
             except Exception:
                 raise ValidationException("Invalid Mapping File. Expected 3 columns (int, string, int)")
