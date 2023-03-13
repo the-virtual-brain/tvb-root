@@ -936,7 +936,7 @@ def _migrate_stimuli_surface(**kwargs):
     root_metadata['surface'] = _parse_gid(root_metadata['surface'])
     operation_xml_parameters = kwargs['operation_xml_parameters']
     operation_xml_parameters['focal_points_triangles'] = numpy.asarray(
-        json.loads(root_metadata['focal_points_triangles']), dtype=numpy.int)
+        json.loads(root_metadata['focal_points_triangles']), dtype=numpy.int_)
     _migrate_stimuli(['focal_points_surface', 'focal_points_triangles'], root_metadata, kwargs['storage_manager'],
                      kwargs['input_file'])
     additional_params = [_migrate_stimuli_equation_params(operation_xml_parameters, 'temporal'),

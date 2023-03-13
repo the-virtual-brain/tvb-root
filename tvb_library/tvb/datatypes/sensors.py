@@ -94,7 +94,7 @@ class Sensors(HasTraits):
             bytes_stream = decompressor.decompress(bytes_stream)
 
         content_str = StringIO(bytes_stream.decode())
-        result.labels = numpy.loadtxt(content_str, dtype=numpy.str, skiprows=0, usecols=(0,))
+        result.labels = numpy.loadtxt(content_str, dtype=numpy.str_, skiprows=0, usecols=(0,))
         content_str.seek(0)
         result.locations = numpy.loadtxt(content_str, dtype=numpy.float64, skiprows=0, usecols=(1, 2, 3))
 

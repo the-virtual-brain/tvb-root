@@ -100,12 +100,12 @@ class SensorsMEG(Sensors, TVBSensorsMEG):
 class SensorsInternal(Sensors, TVBSensorsInternal):
     logger = get_logger(__name__)
     elec_labels = NArray(
-        dtype=np.str,
+        dtype=np.str_,
         label="Electrodes' labels", default=None, required=False,
         doc="""Labels of electrodes.""")
 
     elec_inds = NArray(
-        dtype=np.int,
+        dtype=np.int64,
         label="Electrodes' indices", default=None, required=False,
         doc="""Indices of electrodes.""")
 

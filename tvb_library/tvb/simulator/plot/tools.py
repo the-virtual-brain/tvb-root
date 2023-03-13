@@ -607,8 +607,8 @@ def plot_fast_kde(x, y, kern_nx=None, kern_ny=None, gridsize=(500, 500),
     inv_cov = numpy.linalg.inv(cov * scotts_factor ** 2)
 
     # x & y (pixel) coords of the kernel grid, with <x,y> = <0,0> in center
-    xx = numpy.arange(kern_nx, dtype=numpy.float) - kern_nx / 2.0
-    yy = numpy.arange(kern_ny, dtype=numpy.float) - kern_ny / 2.0
+    xx = numpy.arange(kern_nx, dtype=numpy.float64) - kern_nx / 2.0
+    yy = numpy.arange(kern_ny, dtype=numpy.float64) - kern_ny / 2.0
     xx, yy = numpy.meshgrid(xx, yy)
 
     # Then evaluate the gaussian function on the kernel grid

@@ -138,7 +138,7 @@ def calculate_cross_coherence(time_series, nfft):
     spec = spectral.CoherenceSpectrum(
         source=time_series,
         nfft=nfft,
-        array_data=coh.astype(numpy.float),
+        array_data=coh.astype(numpy.float64),
         frequency=freq)
     return spec
 
