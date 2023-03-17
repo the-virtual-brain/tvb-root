@@ -57,8 +57,13 @@ def init_siibra_options():
     # has data and corresponds with the current API of siibra
     parcellations = [siibra_base.DEFAULT_PARCELLATION]
 
+    # get available cohorts
+    cohorts = siibra_base.get_cohorts_for_sc(parcellations[0])
+    print(cohorts)
+
     atlas_dict = {}
     parcellation_dict = {}
+    cohort_dict = {}
 
     for a_name in atlases:
         atlas_dict[a_name] = a_name
@@ -66,14 +71,18 @@ def init_siibra_options():
     for p_name in parcellations:
         parcellation_dict[p_name] = p_name
 
+    for c_name in cohorts:
+        cohort_dict[c_name.upper()] = c_name.upper()
+
     atlas_options = TVBEnum('AtlasOptions', atlas_dict)
     parcellation_options = TVBEnum('ParcellationOptions', parcellation_dict)
+    cohort_options = TVBEnum('CohortOptions', cohort_dict)
 
-    return atlas_options, parcellation_options
+    return atlas_options, parcellation_options, cohort_options
 
 
 if 'SIIBRA_INIT_DONE' not in globals():
-    ATLAS_OPTS, PARCELLATION_OPTS = init_siibra_options()
+    ATLAS_OPTS, PARCELLATION_OPTS, COHORT_OPTS = init_siibra_options()
     SIIBRA_INIT_DONE = True
 
 
@@ -100,6 +109,15 @@ class SiibraModel(ViewModel):
         doc='Parcellation to be used (only TVB compatible ones listed here)'
     )
 
+    cohort = EnumAttr(
+        field_type=COHORT_OPTS,
+        default=COHORT_OPTS[siibra_base.DEFAULT_COHORT],
+        label='Cohort',
+        required=True,
+        doc='Cohort to be used'
+    )
+
+    # TODO: adapt help message to exemplify subject ids for 1000Brains cohort
     subject_ids = Str(
         label='Subjects',
         required=True,
@@ -128,6 +146,7 @@ class SiibraCreatorForm(ABCAdapterForm):
         self.ebrains_token = UserSessionStrField(SiibraModel.ebrains_token, name="ebrains_token", key=KEY_AUTH_TOKEN)
         self.atlas = SelectField(SiibraModel.atlas, name='atlas')
         self.parcellation = SelectField(SiibraModel.parcellation, name='parcellation')
+        self.cohort = SelectField(SiibraModel.cohort, name='cohort')
         self.subject_ids = StrField(SiibraModel.subject_ids, name='subject_ids')
         self.fc = BoolField(SiibraModel.fc, name='fc')
 
@@ -164,6 +183,7 @@ class SiibraCreator(ABCAdapter):
         ebrains_token = view_model.ebrains_token
         atlas = view_model.atlas.value
         parcellation = view_model.parcellation.value
+        cohort = view_model.cohort.value
         subject_ids = view_model.subject_ids
         compute_fc = view_model.fc
 
@@ -173,8 +193,8 @@ class SiibraCreator(ABCAdapter):
         results = []
 
         try:
-            conn_dict, conn_measures_dict = siibra_base.get_connectivities_from_kg(atlas, parcellation, subject_ids,
-                                                                                    compute_fc)
+            conn_dict, conn_measures_dict = siibra_base.get_connectivities_from_kg(atlas, parcellation, cohort,
+                                                                                   subject_ids, compute_fc)
         except SiibraHttpRequestError as e:
             if e.response.status_code in [401, 403]:
                 raise ConnectionError('Invalid EBRAINS authentication token. Please provide a new one.')
