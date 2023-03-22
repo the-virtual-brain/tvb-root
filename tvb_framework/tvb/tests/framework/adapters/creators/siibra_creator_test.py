@@ -51,6 +51,7 @@ class TestSiibraCreator(TransactionalTestCase):
             # an EBRAINS Token based on CLIENT_SECRET and CLIENT_ID, but this way we keep the SiibraCreator
             # both tested and compatible with OpenShift deployments, where a token is provided directly
             req = EbrainsRequest("", {})
+            req.init_oidc()
             view_model.ebrains_token = req.kg_token
         view_model.subject_ids = '010'
 
