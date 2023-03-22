@@ -11,9 +11,12 @@ import sys
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
 
+from multiprocessing.pool import ThreadPool
+from multiprocessing import cpu_count
+
 
 def execute_notebook(in_path, out_path, notebook):
-    with open(os.path.join(in_path, notebook)) as f:
+    with open(os.path.join(in_path, notebook), encoding='utf-8') as f:
         nb = nbformat.read(f, as_version=4)
         ep = ExecutePreprocessor(timeout=1000)
 
@@ -23,14 +26,6 @@ def execute_notebook(in_path, out_path, notebook):
         nbformat.write(nb, f)
     print(notebook + " - successful execution")
 
-
-def swap_notebooks_execution_order(notebooks, notebook1, notebook2):
-    """
-    Swap 2 notebooks order of execution
-    """
-    index_1 = notebooks.index(notebook1)
-    index_2 = notebooks.index(notebook2)
-    notebooks[index_1], notebooks[index_2] = notebooks[index_2], notebooks[index_1]
 
 if __name__ == '__main__':
 
@@ -47,23 +42,31 @@ if __name__ == '__main__':
     if not os.path.exists(out_path):
         os.mkdir(out_path)
 
-    skipped_notebooks = ['encrypt_data.ipynb', # path to public key is missing
-                         'export_encrypt_decrypt_data.ipynb', # path to public key is missing
-                         'interacting_with_Allen.ipynb', # infinite loop, user input
-                         'interacting_with_rest_api_fire_simulation.ipynb',
-                         'interacting_with_rest_api_launch_operations.ipynb',
-                         'interacting_with_the_framework.ipynb',
-                         'launching_bids_adapter.ipynb' # a gui is needed
+    skipped_notebooks = ['encrypt_data.ipynb', # path to public key is missing // de fixat
+                         'export_encrypt_decrypt_data.ipynb', # path to public key is missing // de fixat
+                         'interacting_with_Allen.ipynb', # infinite loop, user input // merge
+                         'interacting_with_rest_api_fire_simulation.ipynb', # exclus
+                         'interacting_with_rest_api_launch_operations.ipynb', # exclus
+                         'interacting_with_the_framework.ipynb', # // de fixat
+                         'launching_bids_adapter.ipynb', # exclus
+                         'model_generation_using_dsl.ipynb',# exclus
+                         'RateML_CUDA_on_HPC.ipynb', # exclus
+                         'RateML_Python_TVB.ipynb', # exclus
+                         'simulate_for_mouse.ipynb',
+                         'simulate_surface_seeg_eeg_meg.ipynb',#lia
+                         'simulate_zerlaut.ipynb', # no file is given, no such file connectivity_76
+                         'Zerlaut_parametersweep_HPC.ipynb', # clb_oauth
+                         'exploring_time_series_interactive.ipynb', #run separately because of other notebook dependency
+                         'exploring_power_spectra_interactive.ipynb' #run separately because of other notebook dependency
                          ]
 
-    notebooks = [file for file in os.listdir(in_path) if file[-6:] == ".ipynb" and file not in skipped_notebooks]
+    notebooks = [file for file in os.listdir(in_path) if file[-6:] == ".ipynb" and file not in skipped_notebooks ]
 
-    swap_notebooks_execution_order(notebooks,
-                                   'exploring_power_spectra_interactive.ipynb',
-                                   'exploring_time_series_interactive.ipynb')
-
-    notebooks = notebooks[19:]
     print(notebooks)
-    for notebook in notebooks:
-        execute_notebook(in_path, out_path, notebook)
 
+    execute_notebook(in_path, out_path, 'exploring_time_series_interactive.ipynb')
+    execute_notebook(in_path, out_path, 'exploring_power_spectra_interactive.ipynb')
+
+    # start as many threads as logical cpus
+    pool = ThreadPool(cpu_count())
+    pool.map(lambda notebook: execute_notebook(in_path, out_path, notebook), notebooks)
