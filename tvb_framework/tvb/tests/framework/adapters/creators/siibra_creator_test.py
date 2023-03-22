@@ -25,7 +25,7 @@
 #
 import os
 import pytest
-from siibra import EbrainsRequest
+from siibra.retrieval.requests import EbrainsRequest
 from tvb.adapters.creators.siibra_creator import SiibraCreator, SiibraModel, CLB_AUTH_TOKEN_KEY
 from tvb.tests.framework.adapters.creators import siibra_base_test
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
