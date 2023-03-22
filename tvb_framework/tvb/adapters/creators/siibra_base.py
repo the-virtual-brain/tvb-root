@@ -32,7 +32,6 @@ Utility functions for using siibra to extract Structural and Functional connecti
 import numpy as np
 import siibra
 from enum import Enum
-from nibabel import Nifti1Image
 from tvb.basic.logger.builder import get_logger
 from tvb.datatypes import connectivity
 from tvb.datatypes.graph import ConnectivityMeasure
@@ -42,6 +41,7 @@ LOGGER = get_logger(__name__)
 DEFAULT_ATLAS = 'Multilevel Human Atlas'
 DEFAULT_PARCELLATION = 'Julich-Brain Cytoarchitectonic Maps 2.9'
 DEFAULT_COHORT = 'HCP'
+THOUSAND_BRAINS_COHORT = '1000BRAINS'
 
 
 class Component2Modality(Enum):
@@ -70,7 +70,9 @@ def check_atlas_parcellation_compatible(atlas, parcellation):
 
 def get_atlases_for_parcellation(parcelation):
     """ Given a parcelation, return all the atlases that contain it """
-    return list(parcelation.atlases)
+    atlases = siibra.atlases
+    atlases = [a for a in atlases if parcelation in list(a.parcellations)]
+    return atlases
 
 
 def get_parcellations_for_atlas(atlas):
@@ -78,27 +80,34 @@ def get_parcellations_for_atlas(atlas):
     return list(atlas.parcellations)
 
 
-def parse_subject_ids(subject_ids):
+def parse_subject_ids(subject_ids, cohort):
     """
     Given a string representing subject ids or a range of subject ids; return the list containing all the included ids
     """
-    parsed_ids = []
+    parsed_ids_as_str = []
     individual_splits = subject_ids.split(';')
-    for s in individual_splits:
-        # if a range was written
-        if '-' in s:
-            start, end = s.split('-')
-            start_int = int(start)
-            end_int = int(end) + 1  # so that the last element in range is also included
-            ids_list_from_range = list(range(start_int, end_int))
-            parsed_ids.extend(ids_list_from_range)
-        else:
-            s_int = int(s)
-            parsed_ids.append(s_int)
 
-    # convert the subject ids list back to strings into the required format
-    parsed_ids_strings = [str(id).zfill(3) for id in parsed_ids]
-    return parsed_ids_strings
+    if cohort == THOUSAND_BRAINS_COHORT:
+        for s in individual_splits:
+            parsed_ids_as_str.append(s)
+    elif cohort == DEFAULT_COHORT:
+        parsed_ids = []
+        for s in individual_splits:
+            # if a range was written
+            if '-' in s:
+                start, end = s.split('-')
+                start_int = int(start)
+                end_int = int(end) + 1  # so that the last element in range is also included
+                ids_list_from_range = list(range(start_int, end_int))
+                parsed_ids.extend(ids_list_from_range)
+            else:
+                s_int = int(s)
+                parsed_ids.append(s_int)
+
+        # convert the subject ids list back to strings into the required format
+        parsed_ids_as_str = [str(id).zfill(3) for id in parsed_ids]
+
+    return parsed_ids_as_str
 
 
 def init_siibra_params(atlas_name, parcellation_name, cohort_name, subject_ids):
@@ -145,147 +154,23 @@ def init_siibra_params(atlas_name, parcellation_name, cohort_name, subject_ids):
 
     # check the compatibility of cohort and parcellation
     cohort_options = get_cohorts_for_sc(parcellation.name)
-    if cohort_name not in cohort_options:
+    if cohort_name is None:
+        cohort_name = DEFAULT_COHORT
+    elif cohort_name not in cohort_options:
         raise ValueError(f'The cohort \"{cohort_name}\" is not available for parcellation \"{parcellation.name}\"!')
 
+    # check subject ids
     if not subject_ids:
         LOGGER.info(
-            f'No list of subject ids was provided, so the connectivities will be computed for all available subjects!')
-        subject_ids = 'all'
-    elif subject_ids != 'all':
-        subject_ids = parse_subject_ids(subject_ids)
+            f'The mean across all connectivities from cohort {cohort_name} will be computed.')
+        subject_ids = [None]
+    else:
+        subject_ids = parse_subject_ids(subject_ids, cohort_name)
 
     return atlas, parcellation, cohort_name, subject_ids
 
 
-# ################################################# SIIBRA METHODS #####################################################
-def compute_centroids(region, space):
-    """
-    Compute the centroids of a region in a specified space.
-    It is the uncached and slightly modified version of siibra.core.region.spatial_props.
-    """
-    from skimage import measure
-
-    if not region.mapped_in_space(space):
-        raise RuntimeError(
-            f"Spatial properties of {region.name} cannot be computed in {space.name}. "
-            "This region is only mapped in these spaces: "
-            ", ".join(s.name for s in region.supported_spaces)
-        )
-
-    # build binary mask of the image
-    pimg = fetch_regional_map(region=region, space=space)
-
-    # compute properties of labelled volume
-    A = np.asarray(pimg.get_fdata(), dtype=np.int32).squeeze()
-    C = measure.label(A)
-
-    # compute centroid only for the first connected component of the region
-    nonzero = np.c_[np.nonzero(C == 1)]
-    centroid = siibra.Point(np.dot(pimg.affine, np.r_[nonzero.mean(0), 1])[:3], space=space)
-    # tuple() gives the coordinate of the centroid
-    centroid_coord = tuple(centroid)
-
-    return centroid_coord
-
-
-def fetch_regional_map(region, space, maptype: siibra.MapType = siibra.MapType.LABELLED,
-                             threshold=None, via_space=None):
-    """
-    Returns a mask for the specified region in the specified space.
-    It is the uncached version of siibra.core.region.fetch_regional_map
-    """
-
-    if isinstance(maptype, str):
-        maptype = siibra.MapType[maptype.upper()]
-    result = None
-
-    fetch_space = space if via_space is None else via_space
-    if isinstance(fetch_space, str):
-        fetch_space = siibra.space.Space.get_instance(fetch_space)
-
-    for m in siibra.volumes.parcellationmap.Map.registry():
-        if all(
-                [
-                    m.space.matches(fetch_space),
-                    m.parcellation == region.parcellation,
-                    m.provides_image,
-                    m.maptype == maptype,
-                    region.name in m.regions
-                ]
-        ):
-            result = m.fetch(region=region, format='image')
-            if (maptype == siibra.commons.MapType.STATISTICAL) and (threshold is not None):
-                LOGGER.info(f"Thresholding statistical map at {threshold}")
-                result = Nifti1Image(
-                    (result.get_fdata() > threshold).astype('uint8'),
-                    result.affine
-                )
-            break
-    else:
-        # all children are mapped instead
-        dataobj = None
-        affine = None
-        if all(c.mapped_in_space(fetch_space) for c in region.children):
-            for c in region.children:
-                mask = c.fetch_regional_map(fetch_space, maptype, threshold)
-                if dataobj is None:
-                    dataobj = np.asanyarray(mask.dataobj)
-                    affine = mask.affine
-                else:
-                    if np.linalg.norm(mask.affine - affine) > 1e-12:
-                        raise NotImplementedError(
-                            f"Child regions of {region.name} have different voxel spaces "
-                            "and the aggregated subtree mask is not supported. "
-                            f"Try fetching masks of the children: {region.children}"
-                        )
-                    updates = mask.get_fdata() > dataobj
-                    dataobj[updates] = mask.get_fdata()[updates]
-        if dataobj is not None:
-            result = Nifti1Image(dataobj, affine)
-
-    if result is None:
-        raise RuntimeError(f"Cannot build mask for {region.name} from {maptype} maps in {fetch_space}")
-
-    if via_space is not None:
-        # fetch used an intermediate reference space provided by 'via_space'.
-        # We will now transform the affine to match the desired target space.
-        bbox = siibra.boundingbox.BoundingBox.from_image(result, fetch_space)
-        transform = bbox.estimate_affine(space)
-        result = Nifti1Image(result.dataobj, np.dot(transform, result.affine))
-        LOGGER.info(
-            f"Regional map was fetched from {fetch_space.name}, "
-            f"then linearly corrected to match {space.name}."
-        )
-
-    return result
-
-
-# ######################################## COMMON CONNECTIVITY METHODS #################################################
-def get_connectivity_matrix(parcellation, cohort, subjects, component):
-    # type: (str, Component2Modality) -> []
-    """
-        :return: a dict of connectivity matrices for the specified subjects, where key is the subject id and value is
-        the connectivity matrix for that subject
-    """
-    modality = component.value
-    features = siibra.features.get(parcellation, modality)
-    conn_for_cohort = None  # conn. obj. (StreamlineCounts/StreamlineLengths/FunctionalConn.) for specified cohort
-    conn_matrices = {}      # dict containing connectivity matrices for the specified users
-    # select the connectivities for the specific cohort
-    for f in features:
-        if f.cohort == cohort:
-            conn_for_cohort = f
-
-    # get the conn. matrices for each specified subject
-    for s in subjects:
-        matrix = conn_for_cohort.get_matrix(s)
-        conn_matrices[s] = matrix
-        LOGGER.info(f'{component.name} for subject {s} retrieved successfully.')
-
-    return conn_matrices
-
-
+# ############################################# CONNECTIVITY METHODS ###################################################
 def get_hemispheres_for_regions(region_names):
     """ Given a list of region names, compute the hemispheres to which they belon to """
     LOGGER.info(f'Computing hemispheres for regions')
@@ -301,19 +186,60 @@ def get_hemispheres_for_regions(region_names):
 
 
 def get_regions_positions(regions):
-    """ Given a list of regions, compute the positions of their centroids """
+    """
+    Given a list of siibra regions, compute the positions of their centroids.
+    :param: regions - list of siibra region objects
+    :return: positions - list of tuples; each tuple represents the position of a region in `regions` and contains
+    3 floating point coordinates
+    """
     LOGGER.info(f'Computing positions for regions')
     positions = []
     space = siibra.spaces.MNI_152_ICBM_2009C_NONLINEAR_ASYMMETRIC  # commonly used space in the documentation
 
     for r in regions:
-        centroid = compute_centroids(r, space)
+        centroid = r.spatial_props(space)['components'][0]['centroid'].coordinate
         positions.append(centroid)
 
     return positions
 
 
 # ###################################### STRUCTURAL CONNECTIVITY METHODS ###############################################
+def get_connectivity_matrix(parcellation, cohort, subjects, component):
+    # type: (siibra.core.parcellation.Parcellation, str, list, Component2Modality) -> {}
+    """
+    Retrieve the structural connectivity components (weights/tracts) for all the subjects provided, for the specified
+    parcellation and cohort. The matrices are returned inside a dictionary, where the keys are the subject ids and the
+    values represent the connectivity matrix.
+    :param: parcellation - siibra Parcellation object for which we compute the connectivity matrices
+    :param: cohort - name of cohort for which we compute the connectivity matrices
+    :param: subjects - list containing the subject ids as strings
+    :param: component - enum value specifying the connectivity component we want, weights or tracts
+    return: conn_matrices - dict containing the conn. matrices (values) for the specified subject ids (keys)
+    """
+    modality = component.value
+    features = siibra.features.get(parcellation, modality)
+    conn_for_cohort = None  # conn. obj. (StreamlineCounts/StreamlineLengths) for specified cohort
+    conn_matrices = {}  # dict containing connectivity matrices for the specified users
+    # select the connectivities for the specific cohort
+    for f in features:
+        if f.cohort == cohort:
+            conn_for_cohort = f
+
+    # for 1000BRAINS cohort, if the user did not specify a suffix (_1, _2), get all the possible ids for that subject
+    if cohort == THOUSAND_BRAINS_COHORT and subjects is not None:
+        subjects = [s for s in sorted(conn_for_cohort.subjects) if any(x in s for x in subjects)]
+
+    # get the conn. matrices for each specified subject
+    for s in subjects:
+        if s is None:
+            s = 'mean'
+        matrix = conn_for_cohort.get_matrix(s)
+        conn_matrices[s] = matrix
+        LOGGER.info(f'{component.name} for subject {s} retrieved successfully.')
+
+    return conn_matrices
+
+
 def create_tvb_structural_connectivity(weights_matrix, tracts_matrix, region_names, hemispheres, positions):
     """ Compute a TVB Connectivity based on its components obtained from siibra """
 
@@ -360,19 +286,23 @@ def get_structural_connectivities_from_kg(atlas=None, parcellation=None, cohort=
 
 
 # #################################### FUNCTIONAL CONNECTIVITY METHODS #################################################
-
-def filter_functional_connectivity_by_id(fcs, subj_ids):
+def get_functional_connectivity_matrix(parcellation, cohort, subject):
     """
     Given a list of functional connectivities and a list of subject ids, keep only the functional connectivities
     for those subjects
     """
-    filtered_fcs = []
+    modality = Component2Modality.FUNCTIONAL_CONNECTIVITY.value
+    features = siibra.features.get(parcellation, modality)
+    fcs_list = []  # the FC matrices
+    fcs_names_list = []  # the name of the files containing the FC matrices in fcs_list
 
-    for subj in subj_ids:
-        fc = [f for f in fcs if f.subject == subj]
-        filtered_fcs += fc
+    for f in features:
+        if f.cohort == cohort:
+            fc_matrix = f.get_matrix(subject)
+            fcs_names_list.append(f._files[subject])
+            fcs_list.append(fc_matrix)
 
-    return filtered_fcs
+    return fcs_list, fcs_names_list
 
 
 def get_fc_name_from_file_path(path_to_file):
@@ -386,15 +316,14 @@ def get_fc_name_from_file_path(path_to_file):
     return filename
 
 
-def create_tvb_connectivity_measure(siibra_fc, structural_connectivity):
+def create_tvb_connectivity_measure(siibra_fc, structural_connectivity, siibra_fc_filename):
     """
     Given a FunctionalConnectivity from  siibra for a subject and its corresponding TVB Structural Connectivity
     (for the same subject), return a TVB ConnectivityMeasure having as data the siibra FC
     """
-    fc_matrix = siibra_fc.matrix.to_numpy()
+    fc_matrix = siibra_fc.to_numpy()
     conn_measure = ConnectivityMeasure(array_data=fc_matrix, connectivity=structural_connectivity)
-    fc_name = get_fc_name_from_file_path(siibra_fc.filename)
-    conn_measure.title = fc_name
+    conn_measure.title = get_fc_name_from_file_path(siibra_fc_filename)
 
     return conn_measure
 
@@ -404,28 +333,33 @@ def get_connectivity_measures_from_kg(atlas=None, parcellation=None, cohort=None
     atlas, parcellation, cohort, subject_ids = init_siibra_params(atlas, parcellation, cohort, subject_ids)
     conn_measures = {}
 
-    conn_measures = get_connectivity_matrix(parcellation, cohort, subject_ids, Component2Modality.FUNCTIONAL_CONNECTIVITY)
+    # for 1000BRAINS cohort, if the user did not specify a suffix (_1, _2), get all the possible ids for that subject
+    if cohort == THOUSAND_BRAINS_COHORT and any('_' not in s for s in subject_ids):
+        f = [f for f in siibra.features.get(parcellation, siibra.features.connectivity.FunctionalConnectivity)
+             if f.cohort == THOUSAND_BRAINS_COHORT]
+        f = f[0]  # get the first feature from the feature list, we just want to know the subject names
+        subjects_for_cohort = f.subjects
+        subject_ids = [s for s in sorted(subjects_for_cohort) if any(x in s for x in subject_ids)]
 
-    # TODO: deal with FCs divided into 5 different siibra FuncionalConnectivity objects for cohort HCP
-    # for fc in conn_measures:
-    #     subject = fc.subject
-    #
-    #     # the conn measures are kept in a list, as there are multiple conn measures for the same subject
-    #     if subject not in conn_measures.keys():
-    #         conn_measures[subject] = []
-    #     sc = structural_connectivities[subject]
-    #     conn_measure = create_tvb_connectivity_measure(fc, sc)
-    #
-    #     # conn. measures kept as dict to be able to set the subject on GenericAttributes in SiibraCreator
-    #     conn_measures[subject].append(conn_measure)
+    for s in subject_ids:
+        if s is None:
+            s = 'mean'
+        conn_measures[s] = []
+        sc = structural_connectivities[s]
+
+        fcs, fcs_names = get_functional_connectivity_matrix(parcellation, cohort, s)
+
+        # create a tvb conn measure from a siibra fc and append it in the final dict for the specified subject
+        for i in range(len(fcs)):
+            conn_measure = create_tvb_connectivity_measure(fcs[i], sc, fcs_names[i])
+            conn_measures[s].append(conn_measure)
 
     return conn_measures
 
 
 # ################################################# FINAL API ##########################################################
-
-
-def get_connectivities_from_kg(atlas=None, parcellation=None, cohort=None, subject_ids=None, compute_fc=False):
+def get_connectivities_from_kg(atlas=None, parcellation=None, cohort=DEFAULT_COHORT,
+                               subject_ids=None, compute_fc=False):
     """
     Compute the TVB Structural Connectivities and optionally Functional Connectivities for the selected subjects
     """
@@ -433,6 +367,6 @@ def get_connectivities_from_kg(atlas=None, parcellation=None, cohort=None, subje
     sc_dict = get_structural_connectivities_from_kg(atlas, parcellation, cohort, subject_ids)
 
     if compute_fc:
-        conn_measures_dict = get_connectivity_measures_from_kg(atlas, parcellation, subject_ids, sc_dict)
+        conn_measures_dict = get_connectivity_measures_from_kg(atlas, parcellation, cohort, subject_ids, sc_dict)
 
     return sc_dict, conn_measures_dict

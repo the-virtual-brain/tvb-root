@@ -117,19 +117,27 @@ class SiibraModel(ViewModel):
         doc='Cohort to be used'
     )
 
-    # TODO: adapt help message to exemplify subject ids for 1000Brains cohort
     subject_ids = Str(
         label='Subjects',
         required=True,
         default='000',
-        doc="""The list of all subject IDs for which the structural and optionally functional connectivities
-        The IDs can be specified in 3 ways: <br/>
-        1. individually, delimited by a semicolon symbol: 000;001;002<br/>
+        doc="""The list of all subject IDs for which the structural and optionally functional connectivities are 
+        computed. Depending on the selected cohort, you can specify the IDs in the following ways: <br/>
+        a) For the "HCP" cohort, the subject IDs are: 000,001,002, etc. Each subject has exactly one 
+        subject ID associated to them. Thus, there are 3 ways to specify the IDs:<br/>
+        1. individually, delimited by a semicolon symbol: 000;001;002. <br/>
         2. As a range, specifying the first and last IDs: 000-050 will retrieve all the subjects starting with 
-        subject 000 until subject 050 (51 subjects)<br/>
+        subject 000 until subject 050 (51 subjects). <br/>
         A combination of the 2 methods is also supported: 000-005;010 will retrieve all the subjects starting with 
-        subject 000 until subject 005 (6 subjects) AND subject 010 (so 7 subjects in total)<br/>
-        3. Using the keyword 'all' (without apostrophes) to get the connectivities for all the available subjects """)
+        subject 000 until subject 005 (6 subjects) AND subject 010 (so 7 subjects in total)<br/> <br/>
+        b) For "1000BRAINS" cohort, the subject IDs are: 0001_1, 0001_2, 0002_1, 0002_2, etc. Each subject can have 
+        multiple subjects IDs associated to them, indicated by the "_1", "_2" suffix, but most of subjects have 
+        just one ID, ending in "_1". Thus, there are 2 ways to specify the IDs: <br/>
+        1. individually and specifying the exact ID, so including "_1" or "_2". Multiple IDs can be mentioned 
+        by using a semicolon symbol to delimitate them: 0001_1;0017_1;0017_2. <br/>
+        2. individually, and specifying just the prefix for a subject. Multiple IDs can be mentioned by using a 
+        semicolon symbol to delimitate them: 0001;0017 will be converted to 4 IDs: 0001_1, 0001_2, 0017_1, 0017_2.
+        """)
 
     fc = Attr(
         field_type=bool,
@@ -202,8 +210,7 @@ class SiibraCreator(ABCAdapter):
                 raise ConnectionError('We could not complete the operation. '
                                       'Please check the logs and contact the development team from TVB, siibra or EBRAINS KG.')
 
-
-        # list of indexes after store_complete() is called on each struct. conn. and conn. measures
+        # list of indexes for stored the Struct. Conn. and Conn. Measures
         conn_indices = []
         conn_measures_indices = []
 
