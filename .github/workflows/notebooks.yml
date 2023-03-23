@@ -43,7 +43,7 @@ jobs:
           pip3 install --user --no-build-isolation tvb-gdist
           python3 -m pip install elasticsearch
           python3 -m pip install nbformat nbconvert
-          pip3 install ipympl
+          pip3 install ipympl seaborn
           pip3 install --upgrade pip ipython ipykernel
           ipython kernel install --name "python3" --user
 
