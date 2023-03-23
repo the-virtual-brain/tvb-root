@@ -71,4 +71,4 @@ jobs:
 
       - name: run notebooks
         run: |
-          xvfb-run python ./tvb_build/notebook_runner.py ./tvb_documentation/demos executed_notebooks
+          xvfb-run python ./tvb_build/notebook_runner.py ./tvb_documentation/demos
