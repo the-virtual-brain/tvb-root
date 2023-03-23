@@ -45,18 +45,14 @@ if __name__ == '__main__':
                          'model_generation_using_dsl.ipynb',# exclus
                          'RateML_CUDA_on_HPC.ipynb', # exclus
                          'RateML_Python_TVB.ipynb', # exclus
-                         'simulate_for_mouse.ipynb', # nu mi creaza nici o operatie, problema la path
                          'simulate_surface_seeg_eeg_meg.ipynb',#lia
-                         'simulate_zerlaut.ipynb', # no file is given, no such file connectivity_76
-                         'Zerlaut_parametersweep_HPC.ipynb', # too many indices for array: array is 0-dimensional, but 1 were indexed
-                         'exploring_time_series_interactive.ipynb', #run separately because of other notebook dependency
-                         'exploring_power_spectra_interactive.ipynb' #run separately because of other notebook dependency
+                         'Zerlaut_parametersweep_HPC.ipynb', # exclus
+                         'exploring_time_series_interactive.ipynb' #run separately because of other notebook dependency
                          ]
 
     notebooks = [file for file in os.listdir(in_path) if file[-6:] == ".ipynb" and file not in skipped_notebooks]
 
     execute_notebook(in_path, 'exploring_time_series_interactive.ipynb')
-    execute_notebook(in_path, 'exploring_power_spectra_interactive.ipynb')
 
     # start as many threads as logical cpus
     with ThreadPool(cpu_count()) as pool:
