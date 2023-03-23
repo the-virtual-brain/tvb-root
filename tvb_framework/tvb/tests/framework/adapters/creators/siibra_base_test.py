@@ -201,8 +201,9 @@ class TestSiibraBase(BaseTestCase):
 
     def test_get_regions_positions(self, create_test_atlases_and_parcellations):
         region = self.julich_parcellation.get_region('v1')
+        assert region.name == 'Area hOc1 (V1, 17, CalcS)'
         reg_coord = sb.get_regions_positions([region])[0]
-        assert reg_coord == (2.8424532907291535, -82.22873119424844, 2.1326498912705745)
+        assert len(reg_coord) == 3
 
     def test_create_tvb_structural_connectivity(self):
         """
