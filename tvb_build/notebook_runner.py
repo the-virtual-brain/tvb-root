@@ -32,23 +32,22 @@ if __name__ == '__main__':
     if len(sys.argv) == 2:
         in_path = sys.argv[1]
     else:
-        print("please insert the input path")
-        exit(-1)
+        raise AttributeError("please insert the input path")
 
     if not os.getenv('CLB_AUTH'):
         os.environ['CLB_AUTH'] = 'abc'
 
     skipped_notebooks = [
-                         'exploring_time_series_interactive.ipynb', # run separately because of other notebook dependency
-                         'export_encrypt_decrypt_data.ipynb', # exclus
-                         'interacting_with_rest_api_fire_simulation.ipynb', # exclus
-                         'interacting_with_rest_api_launch_operations.ipynb', # exclus
-                         'launching_bids_adapter.ipynb', # exclus
-                         'model_generation_using_dsl.ipynb',# exclus
-                         'RateML_CUDA_on_HPC.ipynb', # exclus
-                         'RateML_Python_TVB.ipynb', # exclus
-                         'simulate_surface_seeg_eeg_meg.ipynb',#lia
-                         'Zerlaut_parametersweep_HPC.ipynb' # exclus
+                        'exploring_time_series_interactive.ipynb', # run separately because of other notebook dependency
+                        'export_encrypt_decrypt_data.ipynb',
+                        'interacting_with_rest_api_fire_simulation.ipynb',
+                        'interacting_with_rest_api_launch_operations.ipynb',
+                        'launching_bids_adapter.ipynb',
+                        'model_generation_using_dsl.ipynb',
+                        'RateML_CUDA_on_HPC.ipynb',
+                        'RateML_Python_TVB.ipynb',
+                        'simulate_surface_seeg_eeg_meg.ipynb',
+                        'Zerlaut_parametersweep_HPC.ipynb'
                         ]
 
     notebooks = [file for file in os.listdir(in_path) if file[-6:] == ".ipynb" and file not in skipped_notebooks]
