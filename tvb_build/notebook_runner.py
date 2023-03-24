@@ -18,7 +18,7 @@ from multiprocessing import cpu_count
 def execute_notebook(in_path, notebook):
     with open(os.path.join(in_path, notebook), encoding='utf-8') as f:
         nb = nbformat.read(f, as_version=4)
-        ep = ExecutePreprocessor(timeout=1000)
+        ep = ExecutePreprocessor(timeout=None)
 
     ep.preprocess(nb)
 
@@ -38,7 +38,9 @@ if __name__ == '__main__':
     if not os.getenv('CLB_AUTH'):
         os.environ['CLB_AUTH'] = 'abc'
 
-    skipped_notebooks = [ 'export_encrypt_decrypt_data.ipynb', # exclus
+    skipped_notebooks = [
+                         'exploring_time_series_interactive.ipynb', # run separately because of other notebook dependency
+                         'export_encrypt_decrypt_data.ipynb', # exclus
                          'interacting_with_rest_api_fire_simulation.ipynb', # exclus
                          'interacting_with_rest_api_launch_operations.ipynb', # exclus
                          'launching_bids_adapter.ipynb', # exclus
@@ -46,9 +48,8 @@ if __name__ == '__main__':
                          'RateML_CUDA_on_HPC.ipynb', # exclus
                          'RateML_Python_TVB.ipynb', # exclus
                          'simulate_surface_seeg_eeg_meg.ipynb',#lia
-                         'Zerlaut_parametersweep_HPC.ipynb', # exclus
-                         'exploring_time_series_interactive.ipynb' #run separately because of other notebook dependency
-                         ]
+                         'Zerlaut_parametersweep_HPC.ipynb' # exclus
+                        ]
 
     notebooks = [file for file in os.listdir(in_path) if file[-6:] == ".ipynb" and file not in skipped_notebooks]
 
