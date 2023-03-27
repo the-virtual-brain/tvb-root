@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Template
 metadata:
-  name: thevirtualbrain
+  name: tvb-postgres-backup
   annotations:
     description: "Template to create a cronjob that copies the database data into a backup volume"
     tags: "tvb, thevirtualbrain, hbp"
