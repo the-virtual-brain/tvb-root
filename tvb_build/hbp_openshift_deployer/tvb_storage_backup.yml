@@ -24,7 +24,7 @@ objects:
   - kind: CronJob
     apiVersion: batch/v1beta1
     metadata:
-      name: tvb-postgres-backup
+      name: tvb-storage-backup
     spec:
       # ┌───────────── minute (0 - 59)
       # │ ┌───────────── hour (0 - 23)
@@ -45,8 +45,8 @@ objects:
           template:
             spec:
               containers:
-                - name: tvb-postgres-backup
-                  image: ogivuk/rsync:latest
+                - name: tvb-storage-backup
+                  image: thevirtualbrain/okd_rsync_backups:latest
                   volumeMounts:
                     - name: source-volume
                       mountPath: /data/src/
