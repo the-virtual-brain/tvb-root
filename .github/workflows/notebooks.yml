@@ -24,15 +24,7 @@ jobs:
       - name: put ~/.local/bin on $PATH
         run: echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
 
-#      - name: cache ~/.local for pip deps
-#        id: cache-local
-#        uses: actions/cache@v3
-#        with:
-#          path: ~/.local
-#          key: pip--${{ steps.setPy.outputs.version }}-${{ hashFiles('tvb_framework/requirements.txt') }}
-
       - name: install tools and dependencies
-#        if: steps.cache-local.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update
           sudo apt install libbz2-dev libhdf5-serial-dev liblzo2-dev

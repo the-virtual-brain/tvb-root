@@ -53,9 +53,6 @@ if __name__ == '__main__':
     else:
         raise AttributeError("please insert the input path")
 
-    if not os.getenv('CLB_AUTH'):
-        os.environ['CLB_AUTH'] = 'abc'
-
     skipped_notebooks = [
                         'exploring_time_series_interactive.ipynb', # run separately because of other notebook dependency
                         'export_encrypt_decrypt_data.ipynb',
