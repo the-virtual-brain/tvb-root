@@ -37,7 +37,7 @@ objects:
         - "ReadWriteOnce"
       resources:
         requests:
-          storage: "100Gi"
+          storage: "2Ti"
 
   - kind: CronJob
     apiVersion: batch/v1beta1
@@ -67,7 +67,7 @@ objects:
                   image: thevirtualbrain/okd_postgresql_backups:1.2
                   env:
                     - name: DATABASE_HOST
-                      value: tvb-postgres
+                      value: tvb-postgres #this should match the OKD postgresql service name
                     - name: DATABASE_NAME
                       value: ${POSTGRESQL_DATABASE}
                     - name: DATABASE_USER
