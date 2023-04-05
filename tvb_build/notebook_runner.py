@@ -66,7 +66,8 @@ if __name__ == '__main__':
 
     notebooks = [file for file in os.listdir(in_path) if file[-6:] == ".ipynb" and file not in skipped_notebooks]
 
-    execute_notebook(in_path, 'exploring_time_series_interactive.ipynb')
+    if os.path.exists(os.path.join(in_path, 'exploring_time_series_interactive.ipynb')):
+        execute_notebook(in_path, 'exploring_time_series_interactive.ipynb')
 
     # start as many threads as logical cpus
     with ThreadPool(cpu_count()) as pool:
