@@ -67,12 +67,16 @@ if __name__ == '__main__':
         'Zerlaut_parametersweep_HPC.ipynb'
     ]
 
-    notebooks = [os.path.join(in_path, file) for file in os.listdir(in_path) if file[-6:] == ".ipynb" and file not in skipped_notebooks]
+    notebooks = [os.path.join(in_path, file) for file in os.listdir(in_path) if
+                 file[-6:] == ".ipynb" and file not in skipped_notebooks]
     for folder in sub_folders:
-        notebooks += [os.path.join(folder, file) for file in os.listdir(folder) if file[-6:] == ".ipynb" and file not in skipped_notebooks]
+        notebooks += [os.path.join(folder, file) for file in os.listdir(folder) if
+                      file[-6:] == ".ipynb" and file not in skipped_notebooks]
 
-    execute_notebook(os.path.join(in_path, 'exploring_time_series_interactive.ipynb'))
+    first_notebook = os.path.join(in_path, 'exploring_time_series_interactive.ipynb')
+    if os.path.exists(first_notebook):
+        execute_notebook(first_notebook)
 
-    # start as many threads as logical cpus
+    # start as many threads as logical CPUs
     with ThreadPool(cpu_count()) as pool:
         pool.map(lambda notebook: execute_notebook(notebook), notebooks)
