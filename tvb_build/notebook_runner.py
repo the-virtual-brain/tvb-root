@@ -26,10 +26,8 @@
 
 import os
 import sys
-
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
-
 from multiprocessing.pool import ThreadPool
 from multiprocessing import cpu_count
 
@@ -54,17 +52,17 @@ if __name__ == '__main__':
         raise AttributeError("please insert the input path")
 
     skipped_notebooks = [
-                        'exploring_time_series_interactive.ipynb', # run separately because of other notebook dependency
-                        'export_encrypt_decrypt_data.ipynb',
-                        'interacting_with_rest_api_fire_simulation.ipynb',
-                        'interacting_with_rest_api_launch_operations.ipynb',
-                        'launching_bids_adapter.ipynb',
-                        'model_generation_using_dsl.ipynb',
-                        'RateML_CUDA_on_HPC.ipynb',
-                        'RateML_Python_TVB.ipynb',
-                        'simulate_surface_seeg_eeg_meg.ipynb',
-                        'Zerlaut_parametersweep_HPC.ipynb'
-                        ]
+        'exploring_time_series_interactive.ipynb',  # run separately because of other notebook dependency
+        'export_encrypt_decrypt_data.ipynb',
+        'interacting_with_rest_api_fire_simulation.ipynb',
+        'interacting_with_rest_api_launch_operations.ipynb',
+        'launching_bids_adapter.ipynb',
+        'model_generation_using_dsl.ipynb',
+        'RateML_CUDA_on_HPC.ipynb',
+        'RateML_Python_TVB.ipynb',
+        'simulate_surface_seeg_eeg_meg.ipynb',
+        'Zerlaut_parametersweep_HPC.ipynb'
+    ]
 
     notebooks = [file for file in os.listdir(in_path) if file[-6:] == ".ipynb" and file not in skipped_notebooks]
 
