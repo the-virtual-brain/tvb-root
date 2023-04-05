@@ -59,20 +59,10 @@ def init_siibra_options():
 
     # get available cohorts
     cohorts = siibra_base.get_cohorts_for_sc(parcellations[0])
-    print(cohorts)
 
-    atlas_dict = {}
-    parcellation_dict = {}
-    cohort_dict = {}
-
-    for a_name in atlases:
-        atlas_dict[a_name] = a_name
-
-    for p_name in parcellations:
-        parcellation_dict[p_name] = p_name
-
-    for c_name in cohorts:
-        cohort_dict[c_name.upper()] = c_name.upper()
+    atlas_dict = {a_name: a_name for a_name in atlases}
+    parcellation_dict = {p_name: p_name for p_name in parcellations}
+    cohort_dict = {(y := c_name.upper()): y for c_name in cohorts}
 
     atlas_options = TVBEnum('AtlasOptions', atlas_dict)
     parcellation_options = TVBEnum('ParcellationOptions', parcellation_dict)
