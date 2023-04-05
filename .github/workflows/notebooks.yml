@@ -1,0 +1,69 @@
+name: Test Notebooks
+on: [push]
+
+jobs:
+  build:
+    name: Test and Inspect
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ "3.8" ]
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        id: setPy
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: put ~/.local/bin on $PATH
+        run: echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
+
+      - name: install tools and dependencies
+        run: |
+          sudo apt-get update
+          sudo apt install libbz2-dev libhdf5-serial-dev liblzo2-dev
+          python3 -m pip install --upgrade setuptools==59.8.0 pip wheel
+          pip3 install --user --upgrade numpy
+          python3 -m pip install scikit-build
+          pip3 install --user -r tvb_framework/requirements.txt
+          pip3 install --user --no-build-isolation tvb-gdist
+          python3 -m pip install elasticsearch
+          python3 -m pip install nbformat nbconvert
+          pip3 install ipympl seaborn
+          pip3 install --upgrade pip ipython ipykernel
+          ipython kernel install --name "python3" --user
+
+      - name: setup tvb
+        run: |
+          cd tvb_build
+          bash install_full_tvb.sh
+
+      - name: cache data
+        id: cache-data
+        uses: actions/cache@v3
+        with:
+          path: tvb_data
+          key: tvb-data
+
+      - name: download data
+        if: steps.cache-data.outputs.cache-hit != 'true'
+        run: |
+          wget -q https://zenodo.org/record/7574266/files/tvb_data.zip?download=1 -O tvb_data.zip
+          mkdir tvb_data
+          unzip tvb_data.zip -d tvb_data
+          rm tvb_data.zip
+
+      - name: setup data
+        run: |
+          cd tvb_data
+          python3 setup.py develop
+
+      - name: run notebooks
+        run: |
+          xvfb-run python ./tvb_build/notebook_runner.py ./tvb_documentation/demos
