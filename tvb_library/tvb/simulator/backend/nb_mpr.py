@@ -39,10 +39,11 @@ import autopep8
 
 from .templates import MakoUtilMix
 from tvb.simulator.lab import *
+from numba import cuda, float32, int32
 
 
 class NbMPRBackend(MakoUtilMix):
-
+    @cuda.jit(device=True)
     def build_py_func(self, template_source, content, name='kernel', print_source=False,
             modname=None):
         "Build and retrieve one or more Python functions from template."
@@ -54,7 +55,7 @@ class NbMPRBackend(MakoUtilMix):
             return self.eval_module(source, name, modname)
         else:
             return self.eval_source(source, name)
-
+    @cuda.jit(device=True)
     def eval_source(self, source, name):
         globals_ = {}
         try:
@@ -65,7 +66,7 @@ class NbMPRBackend(MakoUtilMix):
             raise exc
         fns = [globals_[n] for n in name.split(',')]
         return fns[0] if len(fns)==1 else fns
-
+    @cuda.jit(device=True)
     def eval_module(self, source, name, modname):
         here = os.path.abspath(os.path.dirname(__file__))
         genp = os.path.join(here, 'templates', 'generated')
@@ -75,7 +76,7 @@ class NbMPRBackend(MakoUtilMix):
         mod = importlib.import_module(fullmodname)
         fns = [getattr(mod,n) for n in name.split(',')]
         return fns[0] if len(fns)==1 else fns
-
+    @cuda.jit(device=True)
     def check_compatibility(self, sim): 
         def check_choices(val, choices):
             if not isinstance(val, choices):
@@ -95,7 +96,7 @@ class NbMPRBackend(MakoUtilMix):
             raise NotImplementedError("Surface simulation not supported.")
         # stimulus evaluated outside the backend, no restrictions
 
-
+    @cuda.jit(device=True)
     def run_sim(self, sim, nstep=None, simulation_length=None, chunksize=100000, compatibility_mode=False, print_source=False):
         assert nstep is not None or simulation_length is not None or sim.simulation_length is not None
 
@@ -119,7 +120,7 @@ class NbMPRBackend(MakoUtilMix):
                 axis=1
         )
         return (time, data),   
-
+    @cuda.jit(device=True)
     def _run_sim_plain(self, sim, nstep=None, compatibility_mode=False, print_source=True):
         template = '<%include file="nb-montbrio.py.mako"/>'
         content = dict(
@@ -161,11 +162,11 @@ class NbMPRBackend(MakoUtilMix):
             parmat = sim.model.spatial_parameter_matrix.T,
             stimulus = stimulus
         )
-
+    @cuda.jit(device=True)
     def _time_average(self, ts, istep):
         N, T = ts.shape
         return np.mean(ts.reshape(N,T//istep,istep),-1) # length of ts better be multiple of istep 
-
+     @cuda.jit(device=True)
     def _run_sim_tavg_chunked(self, sim, nstep, chunksize, compatibility_mode=False, print_source=False):
         template = '<%include file="nb-montbrio.py.mako"/>'
         content = dict(sim=sim, compatibility_mode=compatibility_mode) 

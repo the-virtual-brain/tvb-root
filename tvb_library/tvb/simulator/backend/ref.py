@@ -31,6 +31,7 @@ This module provides a reference backend implemented with NumPy.
 import numpy
 import numpy as np
 from .base import BaseBackend
+from numba import cuda, float32, int32
 
 
 class RefBase:
@@ -58,6 +59,7 @@ class RefBase:
         pass
 
     # from tvb.sim.common
+    @cuda.jit(device=True)
     def _add_at(dest, map, src):
         "workaround lack of ufunc at method for older NumPy versions"
         for i in numpy.unique(map):
