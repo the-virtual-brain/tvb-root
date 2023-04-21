@@ -615,7 +615,7 @@ class ZerlautAdaptationSecondOrder(ZerlautAdaptationFirstOrder):
         - 2  c_{\lambda \eta}
         \end{split}
         \right.
-        dot{W}_k &= W_k/tau_w-b*E_k  \\
+        \dot{W}_k &= W_k/tau_w-b*E_k  \\
 
         with:
         A_{\lambda \eta} =
@@ -669,26 +669,28 @@ class ZerlautAdaptationSecondOrder(ZerlautAdaptationFirstOrder):
     def dfun(self, state_variables, coupling, local_coupling=0.00):
         r"""
         .. math::
+            \begin{aligned}
             \forall \mu,\lambda,\eta \in \{e,i\}^3\,
-            \left\{
-            \begin{split}
-            T \, \frac{\partial \nu_\mu}{\partial t} = & (\mathcal{F}_\mu - \nu_\mu )
-            + \frac{1}{2} \, c_{\lambda \eta} \,
+            &\left\{
+            \begin{aligned}
+            T \frac{\partial \nu_\mu}{\partial t} &= (\mathcal{F}_\mu - \nu_\mu )
+            + \frac{1}{2} c_{\lambda \eta} 
             \frac{\partial^2 \mathcal{F}_\mu}{\partial \nu_\lambda \partial \nu_\eta} \\
-            T \, \frac{\partial c_{\lambda \eta} }{\partial t}  =  & A_{\lambda \eta} +
-            (\mathcal{F}_\lambda - \nu_\lambda ) \, (\mathcal{F}_\eta - \nu_\eta ) + \\
-            & c_{\lambda \mu} \frac{\partial \mathcal{F}_\mu}{\partial \nu_\lambda} +
+            T \frac{\partial c_{\lambda \eta} }{\partial t}  &= A_{\lambda \eta} +
+            (\mathcal{F}_\lambda - \nu_\lambda ) (\mathcal{F}_\eta - \nu_\eta )  \\
+            &+ c_{\lambda \mu} \frac{\partial \mathcal{F}_\mu}{\partial \nu_\lambda} +
             c_{\mu \eta} \frac{\partial \mathcal{F}_\mu}{\partial \nu_\eta}
             - 2  c_{\lambda \eta}
-            \end{split}
-            \right.
-            dot{W}_k &= W_k/tau_w-b*E_k  \\
+            \end{aligned}\\
+            \right. \\
+            &\dot{W}_k = W_k/\tau_w-b*E_k  \\
+            \end{aligned}
 
             with:
             A_{\lambda \eta} =
             \left\{
             \begin{split}
-            \frac{\mathcal{F}_\lambda \, (1/T - \mathcal{F}_\lambda)}{N_\lambda}
+            \frac{\mathcal{F}_\lambda (1/T - \mathcal{F}_\lambda)}{N_\lambda}
             \qquad & \textrm{if  } \lambda=\eta \\
             0 \qquad & \textrm{otherwise}
             \end{split}
