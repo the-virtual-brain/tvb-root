@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -64,8 +60,9 @@ Example specifying a Model and stochastic sample trajectories::
 import numpy
 import matplotlib.pyplot as plt
 import colorsys
+import numbers
 import matplotlib.widgets as widgets
-
+from deprecated import deprecated
 from tvb.simulator.common import get_logger
 import tvb.simulator.models as models_module
 import tvb.simulator.integrators as integrators_module
@@ -92,6 +89,7 @@ def get_color(num_colours):
         yield "#{0:02x}{1:02x}{2:02x}".format(*col)
 
 
+@deprecated(reason="Use tvb-widgets instead")
 class PhasePlaneInteractive(HasTraits):
     """
     The GUI for the interactive phase-plane viewer provides sliders for setting:
@@ -248,14 +246,14 @@ class PhasePlaneInteractive(HasTraits):
             figure_window_title = "Interactive phase-plane: " + model_name
             figure_window_title += "   --   %s" % integrator_name
             self.ipp_fig = plt.figure(num=figure_window_title,
-                                        figsize=figsize,
-                                        facecolor=BACKGROUNDCOLOUR,
-                                        edgecolor=EDGECOLOUR)
+                                      figsize=figsize,
+                                      facecolor=BACKGROUNDCOLOUR,
+                                      edgecolor=EDGECOLOUR)
         except ValueError:
             LOG.info("My life would be easier if you'd update your PyLab...")
             self.ipp_fig = plt.figure(num=42, figsize=figsize,
-                                        facecolor=BACKGROUNDCOLOUR,
-                                        edgecolor=EDGECOLOUR)
+                                      facecolor=BACKGROUNDCOLOUR,
+                                      edgecolor=EDGECOLOUR)
 
         self.pp_ax = self.ipp_fig.add_axes([0.265, 0.2, 0.5, 0.75])
 
@@ -377,7 +375,7 @@ class PhasePlaneInteractive(HasTraits):
             if self.exclude_sliders is not None and param_name in self.exclude_sliders:
                 continue
             param_def = getattr(type(self.model), param_name)
-            if not isinstance(param_def, NArray) or not param_def.dtype == numpy.float:
+            if not isinstance(param_def, NArray) or not issubclass(param_def.dtype.type, numbers.Real):
                 continue
             param_range = param_def.domain
             if param_range is None:
@@ -402,7 +400,7 @@ class PhasePlaneInteractive(HasTraits):
         sax = self.ipp_fig.add_axes(pos_shp, facecolor=AXCOLOUR)
 
         self.noise_slider = widgets.Slider(sax, "Log Noise", -9.0, 1.0,
-                                           valinit=self.integrator.noise.nsig)
+                                           valinit=self.integrator.noise.nsig[0])
         self.noise_slider.on_changed(self.update_noise)
 
     def add_reset_param_button(self):

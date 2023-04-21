@@ -1,0 +1,79 @@
+name: Test PG
+on: [push]
+
+jobs:
+  build:
+    name: Frw-Tests (3.10 PG-SQL)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:11
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tvb-test
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: set up Python
+        uses: actions/setup-python@v4
+        id: cp310
+        with:
+          python-version: "3.10"
+
+      - name: put ~/.local/bin on $PATH
+        run: echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
+
+#      - name: cache ~/.local for pip deps
+#        id: cache-local
+#        uses: actions/cache@v3
+#        with:
+#          path: ~/.local
+#          key: pip--${{ steps.cp310.outputs.version }}-${{ hashFiles('tvb_framework/requirements.txt') }}
+
+      - name: install tools and dependencies
+#        if: steps.cache-local.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt install libbz2-dev libhdf5-serial-dev liblzo2-dev
+          python3 -m pip install --upgrade setuptools==59.8.0 pip wheel
+          pip3 install --user --upgrade numpy psycopg2
+          python3 -m pip install scikit-build
+          pip3 install --user -r tvb_framework/requirements.txt
+          pip3 install --user --no-build-isolation tvb-gdist
+
+      - name: setup tvb
+        run: cd tvb_build && bash install_full_tvb.sh
+
+      - name: cache data
+        id: cache-data
+        uses: actions/cache@v3
+        with:
+          path: tvb_data
+          key: tvb-data
+
+      - name: download data
+        if: steps.cache-data.outputs.cache-hit != 'true'
+        run: |
+          wget -q https://zenodo.org/record/7574266/files/tvb_data.zip?download=1 -O tvb_data.zip
+          mkdir tvb_data
+          unzip tvb_data.zip -d tvb_data
+          rm tvb_data.zip
+
+      - name: setup data
+        run: cd tvb_data && python3 setup.py develop
+
+      - name: run framework tests
+        run: |
+          cd tvb_framework
+          pytest tvb/tests/framework --profile=TEST_POSTGRES_PROFILE
+
+
+

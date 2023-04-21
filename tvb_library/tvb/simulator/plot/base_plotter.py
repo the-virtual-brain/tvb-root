@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -52,7 +48,6 @@ class BasePlotter(object):
         self.config = config
         self.logger = get_logger(self.__class__.__name__)
         self.print_regions_indices = True
-        matplotlib.use(self.config.MATPLOTLIB_BACKEND)
         pyplot.rcParams["font.size"] = self.config.FONTSIZE
 
     def _check_show(self):
@@ -66,13 +61,17 @@ class BasePlotter(object):
             pyplot.close()
 
     @staticmethod
-    def _figure_filename(fig=pyplot.gcf(), figure_name=None):
+    def _figure_filename(fig=None, figure_name=None):
+        if fig is None:
+            fig = pyplot.gcf()
         if figure_name is None:
             figure_name = fig.get_label()
         figure_name = figure_name.replace(": ", "_").replace(" ", "_").replace("\t", "_").replace(",", "")
         return figure_name
 
-    def _save_figure(self, fig=pyplot.gcf(), figure_name=None):
+    def _save_figure(self, fig=None, figure_name=None):
+        if fig is None:
+            fig = pyplot.gcf()
         if self.config.SAVE_FLAG:
             figure_name = self._figure_filename(fig, figure_name)
             figure_name = figure_name[:numpy.min([100, len(figure_name)])] + '.' + self.config.FIG_FORMAT

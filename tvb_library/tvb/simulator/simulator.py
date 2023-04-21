@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -74,13 +70,12 @@ class Simulator(HasTraits):
         label="Conduction Speed",
         default=3.0,
         required=False,
-        # range=basic.Range(lo=0.01, hi=100.0, step=1.0),
         doc="""Conduction speed for ``Long-range connectivity`` (mm/ms)""")
 
     coupling = Attr(
         field_type=coupling.Coupling,
         label="Long-range coupling function",
-        default=coupling.Linear(),
+        default=coupling.Linear,
         required=True,
         doc="""The coupling function is applied to the activity propagated
         between regions by the ``Long-range connectivity`` before it enters the local
@@ -115,7 +110,7 @@ class Simulator(HasTraits):
     model: Model = Attr(
         field_type=models.Model,
         label="Local dynamic model",
-        default=models.Generic2dOscillator(),
+        default=models.Generic2dOscillator,
         required=True,
         doc="""A tvb.simulator.Model object which describe the local dynamic
         equations, their parameters, and, to some extent, where connectivity
@@ -126,7 +121,7 @@ class Simulator(HasTraits):
     integrator = Attr(
         field_type=integrators.Integrator,
         label="Integration scheme",
-        default=integrators.HeunDeterministic(),
+        default=integrators.HeunDeterministic,
         required=True,
         doc="""A tvb.simulator.Integrator object which is
             an integration scheme with supporting attributes such as
@@ -154,7 +149,7 @@ class Simulator(HasTraits):
         main types exist: 1) simple, spatial and temporal, reductions (subsets
         or averages); 2) physiological measurements, such as EEG, MEG and fMRI.
         By default the Model's specified variables_of_interest are returned,
-        temporally downsampled from the raw integration rate to a sample rate of
+        temporally down-sampled from the raw integration rate to a sample rate of
         1024Hz.""")
 
     simulation_length = Float(

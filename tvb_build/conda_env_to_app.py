@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -37,14 +33,13 @@ import glob
 import json
 import logging
 import os
+import plistlib
 import re
 import shutil
 import stat
 import subprocess
 import sys
 import time
-
-import biplist
 import dmgbuild
 import magic
 import six
@@ -68,7 +63,7 @@ AUTHOR = "TVB Team"
 # Full path to the anaconda environment folder to package
 # Make sure it is the full path (and not a relative one, also to the homedir with ~) so this can be
 # correctly replaced later. Conda usßes hardcoded paths, which we convert to `/Applications/<APP_NAME>`
-CONDA_ENV_PATH = "/WORK/anaconda3/anaconda3/envs/mac-distribution"
+CONDA_ENV_PATH = "/Applications/anaconda3/envs/mac-distribution"
 # Folders to include from Anaconda environment, if ommitted everything will be copied
 # CONDA_FOLDERS = ["lib", "bin", "share", "qsci", "ssl", "translations"]
 # Paths of files and folders to remove from the copied anaconda environment,
@@ -169,31 +164,31 @@ def find_and_replace(path, search, replace, exclusions=None):
     if not type(exclusions) in ['list', 'tuple']:
         exclusions = []
 
-    exclusionValid = False
+    exclusion_valid = False
     for root, _, files in os.walk(path):
         for entry in exclusions:
             if entry in root:
-                exclusionValid = True
+                exclusion_valid = True
                 break
-        if exclusionValid:
+        if exclusion_valid:
             continue
         # Do not traverse into python site-packages folders
         logger.debug('Scanning {}'.format(root))
         candidates = []
         for f in files:
-            fullPath = os.path.join(root, f)
+            full_path = os.path.join(root, f)
 
             try:
-                filetype = magic.from_file(fullPath)
+                filetype = magic.from_file(full_path)
             except UnicodeDecodeError:
-                logger.warning(f'Unable to infer type of {fullPath}')
+                logger.warning(f'Unable to infer type of {full_path}')
                 continue
 
             if filetype == 'empty':
                 continue
 
             if re.search(r'\stext(?:\s+executable)?', filetype):
-                candidates.append(fullPath)
+                candidates.append(full_path)
 
         if len(candidates) == 0:
             continue
@@ -295,7 +290,7 @@ def copy_anaconda_env():
         logger.error("Error copying Anaconda environment: {}".format(e))
         sys.exit(1)
 
-    # Delete unncecessary files (such as all Qt apps included with conda)
+    # Delete unnecessary files (such as all Qt apps included with conda)
     if "CONDA_EXCLUDE_FILES" in globals():
         for excl_entry in CONDA_EXCLUDE_FILES:
             full_path = os.path.join(RESOURCE_DIR, excl_entry)
@@ -367,8 +362,8 @@ def create_plist():
             info_plist_data['UTExportedTypeDeclarations'] = \
                 APP_SUPPORTED_FILES['UTExportedTypeDeclarations']
 
-    biplist.writePlist(info_plist_data, os.path.join(APP_FILE, 'Contents',
-                                                     'Info.plist'), binary=False)
+    with open(os.path.join(APP_FILE, 'Contents', 'Info.plist'), 'wb') as fp:
+        plistlib.dump(info_plist_data, fp)
 
 
 def create_dmg():
@@ -379,32 +374,32 @@ def create_dmg():
         logger.error("Could not find app file at {}".format(APP_FILE))
         sys.exit(1)
 
-    DMG_FILE = os.path.join(OUTPUT_FOLDER, APP_NAME + u'.dmg')
+    dmg_file = os.path.join(OUTPUT_FOLDER, APP_NAME + u'.dmg')
 
-    if os.path.exists(DMG_FILE):
-        os.remove(DMG_FILE)
+    if os.path.exists(dmg_file):
+        os.remove(dmg_file)
 
     print("\n+++++++++++++++++++++ Creating DMG from app +++++++++++++++++++++++")
 
     # Get file size of APP
-    APP_SIZE = subprocess.check_output(
+    app_size = subprocess.check_output(
         ['du', '-sh', APP_FILE]).split()[0].decode('utf-8')
     # returns tuple with format ('3.0', 'G')
-    (size, unit) = re.findall('(\d+\.?\d?)(\w)', APP_SIZE)[0]
+    (size, unit) = re.findall('(\d+\.?\d?)(\w)', app_size)[0]
 
     # Add a bit of extra to the disk image size
-    APP_SIZE = str(float(size) * 1.25) + unit
+    app_size = str(float(size) * 1.25) + unit
 
-    print("Creating disk image of {}".format(APP_SIZE))
+    print("Creating disk image of {}".format(app_size))
 
     # Create a dmgbuild config file in same folder as
     dmgbuild_config_file = os.path.join(os.getcwd(),
                                         'dmgbuild_settings.py')
 
     dmg_config = {
-        'filename': DMG_FILE,
+        'filename': dmg_file,
         'volume_name': APP_NAME,
-        'size': APP_SIZE,
+        'size': app_size,
         'files': [APP_FILE],
         'symlinks': {'Applications': '/Applications'},
     }
@@ -418,7 +413,7 @@ def create_dmg():
 
     write_vars_to_file(dmgbuild_config_file, dmg_config)
     print("Copying files to DMG and compressing it. Please wait.")
-    dmgbuild.build_dmg(DMG_FILE, APP_NAME, settings_file=dmgbuild_config_file)
+    dmgbuild.build_dmg(dmg_file, APP_NAME, settings_file=dmgbuild_config_file)
 
     # Clean up!
     os.remove(dmgbuild_config_file)

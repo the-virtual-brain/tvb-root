@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -38,7 +34,7 @@ It requires the user to first
 import matplotlib.pyplot as pyplot
 
 
-def plot(subplot, title, ymax, data1, label1, data2, label2, data3, label3):
+def plot(subplot, title, ymax, data1, label1, data2, label2, data3, label3, ylabel="seconds", xlabel="TVB version"):
     pyplot.subplot(subplot)
     pyplot.plot(x, data1, 'b', label=label1, marker='o')
     pyplot.plot(x, data2, 'g', label=label2, marker='o')
@@ -47,8 +43,8 @@ def plot(subplot, title, ymax, data1, label1, data2, label2, data3, label3):
                   mode="expand", borderaxespad=0., fontsize=10)
     pyplot.xticks(x, x_labels)
     pyplot.ylim(ymin=0, ymax=ymax)
-    pyplot.ylabel("seconds")
-    pyplot.xlabel("TVB version")
+    pyplot.ylabel(ylabel)
+    pyplot.xlabel(xlabel)
     pyplot.grid(True)
     pyplot.title(title)
 
@@ -100,3 +96,16 @@ plot(133, "LarterBreakspear 10000sec", 200,
 
 pyplot.show()
 figure.savefig("../../_static/benchmarks-evolution-mac.png")
+
+x = [1, 2]
+x_labels = ["ReferenceBackend", "NbMPRBackend"]
+figure = pyplot.figure(figsize=(6, 11))
+
+plot(111, "MontbrioPazoRoxin", 30,
+     [1.3, 0.1], "nodes=100, sim_length=1000ms",
+     [26.25, 1.9], "nodes=100, sim_length=20000ms",
+     [0.6, 0.08], "nodes=76, sim_length=1000ms",
+     "minutes", "TVB backend")
+
+pyplot.show()
+figure.savefig("../../_static/benchmarks-NbMPRBackend.png")

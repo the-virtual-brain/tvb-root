@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and 
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -34,6 +30,7 @@
 """
 
 import json
+from tvb.adapters.forms.model_forms import get_model_to_form_dict
 from tvb.adapters.visualizers.surface_view import SurfaceURLGenerator
 from tvb.basic.logger.builder import get_logger
 from tvb.core.neocom import h5
@@ -154,3 +151,11 @@ class SpatioTemporalController(BaseController):
         rendering_dict.update({'showOnlineHelp': show_online_help})
         rendering_dict.update({'isCallout': False})
         return rendering_dict
+
+    def _prepare_model_params_list(self, model):
+        model_form = get_model_to_form_dict().get(type(model))
+        model_params = model_form().get_params_configurable_in_phase_plane()
+        if len(model_params) == 0:
+            self.logger.warning("The list with configurable parameters for the current model is empty!")
+
+        return model_params

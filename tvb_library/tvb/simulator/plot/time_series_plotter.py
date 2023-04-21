@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -34,6 +30,7 @@
 """
 import matplotlib
 import numpy
+from deprecated import deprecated
 from matplotlib import pyplot, gridspec
 from matplotlib.colors import Normalize
 from six import string_types
@@ -75,6 +72,7 @@ def assert_time(time, n_times, time_unit="ms", logger=None):
     return time
 
 
+@deprecated(reason="Use tvb-widgets instead")
 class TimeSeriesPlotter(BasePlotter):
     linestyle = "-"
     linewidth = 1
@@ -371,6 +369,7 @@ class TimeSeriesPlotter(BasePlotter):
                 self.HighlightingDataCursor(line, formatter='{label}'.format, bbox=dict(fc='white'),
                                             arrowprops=dict(arrowstyle='simple', fc='white', alpha=0.5))
 
+        pyplot.gcf().tight_layout()
         self._save_figure(pyplot.gcf(), figure_name)
         self._check_show()
         return pyplot.gcf(), axes, lines

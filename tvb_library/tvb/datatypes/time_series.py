@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -35,8 +31,10 @@ The TimeSeries datatypes.
 
 """
 
+from io import BytesIO
 from tvb.datatypes import sensors, surfaces, volumes, region_mapping, connectivity
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float, narray_summary_info
+from tvb.basic.readers import H5Reader
 import numpy
 from copy import deepcopy
 
@@ -94,6 +92,18 @@ class TimeSeries(HasTraits):
         else:
             raise ValueError(f"{self.sample_period_unit} is not a recognized time unit")
 
+    @property
+    def sample_period_ms(self):
+        """:returns sample_period is ms """
+        if self.sample_period_unit in ("s", "sec"):
+            return 1000 * self.sample_period
+        elif self.sample_period_unit in ("ms", "msec"):
+            return self.sample_period
+        elif self.sample_period_unit in ("us", "usec"):
+            return self.sample_period / 1000.0
+        else:
+            raise ValueError(f"{self.sample_period_unit} is not a recognized time unit")
+
     def summary_info(self):
         """
         Gather scientifically interesting summary information from an instance of this datatype.
@@ -111,7 +121,7 @@ class TimeSeries(HasTraits):
         return summary
 
     def duplicate(self, **kwargs):
-        duplicate = deepcopy(self)
+        duplicate = super(TimeSeries, self).duplicate()
         for attr, value in kwargs.items():
             setattr(duplicate, attr, value)
         duplicate.configure()
@@ -200,6 +210,21 @@ class TimeSeries(HasTraits):
                 self.logger.error("Some of the given indices are out of space range: [0, %s]",
                                   self.data.shape[1])
                 raise IndexError
+
+    @classmethod
+    def from_bytes_stream(cls, bytes_stream, content_type=".npz"):
+        result = TimeSeries()
+
+        if content_type == '.npz':
+            ts_data = numpy.load(BytesIO(bytes_stream))
+            result.data = ts_data['data']
+            result.time = ts_data['time']
+            return result
+
+        reader = H5Reader(BytesIO(bytes_stream))
+        result.data = reader.read_field("data")
+        result.time = reader.read_optional_field("time")
+        return result
 
 
 class SensorsTSBase(TimeSeries):

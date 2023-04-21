@@ -4,7 +4,7 @@
 #  TheVirtualBrain-Contributors Package. This package holds simulator extensions.
 #  See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -17,12 +17,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -50,18 +46,24 @@ from tvb.contrib.scripts.utils.data_structures_utils import ensure_list, is_inte
 
 from tvb.basic.neotraits.api import HasTraits, Attr, Float, List, narray_summary_info
 from tvb.datatypes import sensors, surfaces, volumes, region_mapping, connectivity
+from tvb.simulator.plot.base_plotter import pyplot
 
 
 logger = get_logger(__name__)
 
 
-def coords_to_dict(coords):
+MAX_LBLS_IN_LEGEND = 10
+
+
+def assert_coords_dict(coords):
     if isinstance(coords, dict):
-        return coords
+        val_fun = lambda val: val
+    else:
+        val_fun = lambda val: val.values
     d = {}
     for key, val in zip(list(coords.keys()),
-                        list([value.values for value in coords.values()])):
-        d[key] = val
+                        list([val_fun(value) for value in coords.values()])):
+        d[key] = list(val)
     return d
 
 
@@ -205,7 +207,7 @@ class TimeSeries(HasTraits):
 
     @property
     def labels_dimensions(self):
-        return coords_to_dict(self._data.coords)
+        return assert_coords_dict(self._data.coords)
 
     @property
     def space_labels(self):
@@ -231,7 +233,7 @@ class TimeSeries(HasTraits):
         # including a xr.DataArray or None
         data = kwargs.pop("data", xarr.values)
         dims = kwargs.pop("dims", kwargs.pop("labels_ordering", xarr.dims))
-        coords = kwargs.pop("coords", kwargs.pop("labels_dimensions", coords_to_dict(xarr.coords)))
+        coords = kwargs.pop("coords", kwargs.pop("labels_dimensions", assert_coords_dict(xarr.coords)))
         attrs = kwargs.pop("attrs", None)
         time = kwargs.pop("time", coords.pop(dims[0], None))
         if time is not None and len(time) > 0:
@@ -317,8 +319,8 @@ class TimeSeries(HasTraits):
         labels_dimensions = kwargs.pop("coords", kwargs.pop("labels_dimensions",
                                                             getattr(self, "labels_dimensions", None)))
         if labels_dimensions is not None:
-            labels_dimensions = coords_to_dict(labels_dimensions)
-        if isinstance(labels_dimensions, dict):
+            labels_dimensions = assert_coords_dict(labels_dimensions)
+        if isinstance(labels_dimensions, dict) and len(labels_dimensions):
             assert [key in labels_ordering for key in labels_dimensions.keys()]
         return labels_ordering, labels_dimensions, kwargs
 
@@ -333,8 +335,6 @@ class TimeSeries(HasTraits):
             labels_dimensions[labels_ordering[0]] = time
         self.sample_period_unit = kwargs.pop('sample_period_unit', self.__class__.sample_period_unit.default)
         self.title = kwargs.pop('title', kwargs.pop("name", self.__class__.title.default))
-        for key, val in labels_dimensions.items():
-            labels_dimensions[key] = list(val)
         self._data = xr.DataArray(data, dims=list(labels_ordering), coords=labels_dimensions,
                                   name=str(self.title), attrs=kwargs.pop("attrs", None))
         super(TimeSeries, self).__init__(**kwargs)
@@ -397,8 +397,6 @@ class TimeSeries(HasTraits):
                                           coords=kwargs.pop("coords", kwargs.pop("labels_dimensions", None)),
                                           attrs=kwargs.pop("attrs", None))
             super(TimeSeries, self).__init__(**kwargs)
-        if data is not None:
-            self.configure()
 
     def summary_info(self):
         """
@@ -424,7 +422,7 @@ class TimeSeries(HasTraits):
         if isinstance(_data, xr.DataArray):
             # If we have a DataArray input, we should set defaults through it
             _labels_ordering = list(_data.dims)
-            _labels_dimensions = dict(coords_to_dict(_data.coords))
+            _labels_dimensions = dict(assert_coords_dict(_data.coords))
             if _data.name is not None and len(_data.name) > 0:
                 _title = _data.name
             else:
@@ -432,20 +430,20 @@ class TimeSeries(HasTraits):
         else:
             # Otherwise, we should set defaults through self
             _labels_ordering = list(self._data.dims)
-            _labels_dimensions = dict(coords_to_dict(self._data.coords))
+            _labels_dimensions = dict(assert_coords_dict(self._data.coords))
             _title = self.title
             # Also, in this case we have to generate a new output DataArray...
             data = kwargs.pop("data", None)
             if data is None:
                 # ...either from self._data
-                _data = xr.DataArray(self._data)
+                _data = self._data.copy()
             else:
                 # ...or from a potential numpy/list/tuple input
                 _data = xr.DataArray(np.array(data))
         # Now set the rest of the properties...
         kwargs["labels_ordering"] = kwargs.pop("dims", kwargs.pop("labels_ordering", _labels_ordering))
         kwargs["labels_dimensions"] = kwargs.pop("labels_dimensions",
-                                                 coords_to_dict(kwargs.pop("coords", _labels_dimensions)))
+                                                 assert_coords_dict(kwargs.pop("coords", _labels_dimensions)))
         # ...with special care for time related ones:
         time = kwargs["labels_dimensions"].get(kwargs["labels_ordering"][0], None)
         time = kwargs.pop("time", time)
@@ -465,7 +463,7 @@ class TimeSeries(HasTraits):
     def duplicate(self, **kwargs):
         _data, kwargs = self._duplicate(**kwargs)
         duplicate = self.__class__()
-        duplicate.from_xarray_DataArray(_data, **kwargs)
+        duplicate.from_xarray_DataArray(_data.copy(deep=True), **kwargs.copy())
         return duplicate
 
     def to_tvb_instance(self, datatype=TimeSeriesTVB, **kwargs):
@@ -498,9 +496,9 @@ class TimeSeries(HasTraits):
         try:
             return self.labels_dimensions[dimension_label_or_index]
         except KeyError:
-            logger.error("There are no %s labels defined for this instance: %s",
-                              (dimension_label_or_index, str(self._data.coords)))
-            raise
+            logger.warning("There are no %s labels defined for this instance: %s",
+                           (dimension_label_or_index, str(self._data.coords)))
+            return []
 
     def update_dimension_names(self, dim_names, dim_indices=None):
         dim_names = ensure_list(dim_names)
@@ -795,7 +793,7 @@ class TimeSeries(HasTraits):
         else:
             # TODO: find out if this part works, given that it is not really necessary
             # Now try to behave as if this was a getitem call:
-            for i_dim in range(1, 4):
+            for i_dim in range(1, self.nr_dimensions):
                 if self.get_dimension_name(i_dim) in self.labels_dimensions.keys() and \
                         attr_name in self.get_dimension_labels(i_dim):
                     return self.slice_data_across_dimension_by_label(attr_name, i_dim)
@@ -821,7 +819,7 @@ class TimeSeries(HasTraits):
             else:
                 # Now try to behave as if this was a setitem call:
                 slice_list = [slice(None)]  # for first dimension index, i.e., time
-                for i_dim in range(1, 4):
+                for i_dim in range(1, self.nr_dimensions):
                     if self.get_dimension_name(i_dim) in self.labels_dimensions.keys() and \
                             attr_name in self.get_dimension_labels(i_dim):
                         slice_list.append(attr_name)
@@ -843,18 +841,26 @@ class TimeSeries(HasTraits):
     def plot(self, time=None, data=None, y=None, hue=None, col=None, row=None,
              figname=None, plotter_config=None, **kwargs):
         if data is None:
-            data = self._data
+            data = self._data.copy()
         if time is None or len(time) == 0:
             time = data.dims[0]
         if figname is None:
             figname = kwargs.pop("figname", "%s" % data.name)
+        data.name = ""
         for dim_name, dim in zip(["y", "hue", "col", "row"],
                                  [y, hue, col, row]):
             if dim is not None:
                 id = data.dims.index(dim)
                 if data.shape[id] > 1:
                     kwargs[dim_name] = dim
+        # If we have a hue argument, and the size of the corresponding dimension > MAX_LBLS_IN_LEGEND, remove the legend.
+        if kwargs.get("hue", None) and kwargs.get("add_legend", None) is None and \
+                data.shape[data.dims.index(kwargs["hue"])] > MAX_LBLS_IN_LEGEND:
+            kwargs["add_legend"] = False
         output = data.plot(x=time, **kwargs)
+        pyplot.gcf().suptitle(figname)
+        pyplot.gcf().canvas.manager.set_window_title(figname)
+        pyplot.gcf().tight_layout()
         # TODO: Something better than this temporary hack for base_plotter functionality
         if plotter_config is not None:
             save_show_figure(plotter_config, figname)
@@ -867,48 +873,66 @@ class TimeSeries(HasTraits):
         return time, labels_ordering, plotter_config, kwargs
 
     def plot_map(self, **kwargs):
+        """In this plotting method, we have by definition y axis defined but no hue"""
         if kwargs.pop("per_variable", False):
             for var in self.labels_dimensions[self.labels_ordering[1]]:
                 var_ts = self[:, var]
                 var_ts.name = ": ".join([var_ts.name, var])
                 var_ts.plot_map(**kwargs)
             return
+        if np.all([s < 2 for s in self.shape[1:]]):
+            return self.plot_timeseries(**kwargs)
         time, labels_ordering, plotter_config, kwargs = \
             self._prepare_plot_args(**kwargs)
-        # Usually variables
-        col = kwargs.pop("col", labels_ordering[1])
-        if self._data.shape[2] > 1:
-            y = kwargs.pop("y", labels_ordering[2])
-            row = kwargs.pop("row", labels_ordering[3])
-        else:
-            y = kwargs.pop("y", labels_ordering[3])
-            row = kwargs.pop("row", None)
+        y = kwargs.pop("y", None)      # The maximum dimension
+        row = kwargs.pop("row", None)  # The next maximum dimension of size > 1
+        col = kwargs.pop("col", None)  # The next maximum dimension of size > 1
+        kwargs.pop("hue", None)  # Ignore hue if set by mistake
+        labels_ordered_by_size = labels_ordering(np.argort(self.shape[1:])[::-1]+ 1)
+        if y is None:
+            # Loop across the dimensions in decreasing size order:
+            for dim_label in labels_ordered_by_size:
+                # If y_label is not used as a col or row...
+                if dim_label not in [col, row]:
+                    # ...set it as y
+                    y = dim_label
+                    break
+        if row is None:
+            # Loop across the dimensions in decreasing size order:
+            for dim_label in labels_ordered_by_size:
+                dim = labels_ordering.index(dim_label)
+                # ...and if size > 1...
+                if self.shape[dim] > 1:
+                    # ...and the dimension is not already used...
+                    if dim_label not in [y, row]:
+                        # ...set is as col
+                        row = dim_label
+                        break
+        if col is None:
+            # Loop across the dimensions in decreasing size order:
+            for dim_label in labels_ordered_by_size:
+                dim = labels_ordering.index(dim_label)
+                # ...and if size > 1...
+                if self.shape[dim] > 1:
+                    # ...and the dimension is not already used...
+                    if dim_label not in [y, row]:
+                        # ...set is as col
+                        col = dim_label
+                        break
         kwargs["robust"] = kwargs.pop("robust", False)
         kwargs["cmap"] = kwargs.pop("cmap", "jet")
-        if self.shape[1] == 1:  # only one variable
+        if self.shape[1] < 2:  # only one variable
             kwargs["figname"] = kwargs.pop("figname", "%s" % (self.title + "Map")) + ": " \
-                      + self.labels_dimensions[self.labels_ordering[1]][0]
+                      + self.labels_dimensions[labels_ordering[1]][0]
+            kwargs["figsize"] = kwargs.pop("figsize", plotter_config.LARGE_SIZE)
         else:
             kwargs["figname"] = kwargs.pop("figname", "%s" % self.title)
+            kwargs["figsize"] = kwargs.pop("figsize", plotter_config.VERY_LARGE_SIZE)
         return self.plot(data=None, y=y, hue=None, col=col, row=row,
                          plotter_config=plotter_config, **kwargs)
 
-    def plot_line(self, **kwargs):
-        time, labels_ordering, plotter_config, kwargs = \
-            self._prepare_plot_args(**kwargs)
-        # Usually variables
-        col = kwargs.pop("col", labels_ordering[1])
-        if self._data.shape[3] > 1:
-            hue = kwargs.pop("hue", labels_ordering[3])
-            row = kwargs.pop("row", labels_ordering[2])
-        else:
-            hue = kwargs.pop("hue", labels_ordering[2])
-            row = kwargs.pop("row", None)
-        figname = kwargs.pop("figname", "%s" % self.title)
-        return self.plot(data=None, y=None, hue=hue, col=col, row=row,
-                         figname=figname, plotter_config=plotter_config, **kwargs)
-
     def plot_timeseries(self, **kwargs):
+        """In this plotting method, we can have hue defined but no y axis."""
         if kwargs.pop("per_variable", False):
             outputs = []
             for var in self.labels_dimensions[self.labels_ordering[1]]:
@@ -916,55 +940,109 @@ class TimeSeries(HasTraits):
                 var_ts.name = ": ".join([var_ts.name, var])
                 outputs.append(var_ts.plot_timeseries(**kwargs))
             return outputs
-        if np.any([s < 2 for s in self.shape[1:]]):
-            if self.shape[1] == 1:  # only one variable
-                figname = kwargs.pop("figname", "%s" % (self.title + "Time Series")) + ": " \
-                          + self.labels_dimensions[self.labels_ordering[1]][0]
-                kwargs["figname"] = figname
-            return self.plot_line(**kwargs)
-        else:
+        if np.all([s > 1 for s in self.shape[1:]]):
             return self.plot_raster(**kwargs)
-
-    def plot_raster(self, **kwargs):
-        figname = kwargs.pop("figname", "%s" % (self.title + "Time Series raster"))
-        if kwargs.pop("per_variable", False):
-            outputs = []
-            for var in self.labels_dimensions[self.labels_ordering[1]]:
-                var_ts = self[:, var]
-                var_ts.name = ": ".join([var_ts.name, var])
-                outputs.append(var_ts.plot_raster(**kwargs))
-            return outputs
         time, labels_ordering, plotter_config, kwargs = \
             self._prepare_plot_args(**kwargs)
-        col = labels_ordering[1]  # Variable
+        row = kwargs.pop("row", None)  # Regions, or Variables, or Modes/Populations/Neurons <= 10
+        col = kwargs.pop("col", None)  # Variables, or Modes/Populations/Neurons <= 4
+        hue = kwargs.pop("hue", None)  # Modes/Populations/Neurons, or Variables, or Regions
+        kwargs.pop("y", None)  # Ignore y if set by mistake
+        if row is None:
+            if self.shape[2] > 1 and labels_ordering[2] not in [col, hue]:
+                row = labels_ordering[2]
+            elif self.shape[1] > 1 and labels_ordering[1] not in [col, hue]:
+                row = labels_ordering[1]
+            elif self.shape[3] > 1 and self.shape[3] <= 10 and labels_ordering[3] not in [col, hue]:
+                row = labels_ordering[3]
+        if row is not None and hue is None:
+            if self.shape[3] > 1 and labels_ordering[3] not in [col, row]:
+                hue = labels_ordering[3]
+            elif self.shape[1] > 1 and labels_ordering[1] not in [col, row]:
+                hue = labels_ordering[1]
+            elif self.shape[2] > 1 and labels_ordering[2] not in [col, row]:
+                hue = labels_ordering[2]
+        if row is not None and col is None:
+            if self.shape[1] > 1 and labels_ordering[1] not in [row, hue]:
+                col = labels_ordering[1]
+            elif self.shape[3] > 1 and self.shape[3] <= 4 and labels_ordering[3] not in [row, hue]:
+                col = labels_ordering[3]
+        if self.shape[1] < 2:
+            figname = kwargs.pop("figname", "%s" % (self.title)) + ": " \
+                      + self.labels_dimensions[labels_ordering[1]][0]
+            kwargs["figname"] = figname
+            kwargs["figsize"] = kwargs.pop("figsize", plotter_config.LARGE_SIZE)
+        else:
+            kwargs["figsize"] = kwargs.pop("figsize", plotter_config.VERY_LARGE_SIZE)
+        self.plot(data=None, y=None, hue=hue, col=col, row=row,
+                  plotter_config=plotter_config, subplot_kws={'ylabel': ''}, **kwargs)
+
+    def plot_raster(self, **kwargs):
+        figname = kwargs.pop("figname", "%s" % (self.title + " raster"))
+        """In this plotting method, we can have hue defined but no y axis.
+           We arrange a dimension along the y axis instead.
+        """
+        if kwargs.pop("per_variable", False):
+            outputs = []
+            figsize = kwargs.pop("figsize", None)
+            for var in self.labels_dimensions[self.labels_ordering[1]]:
+                var_ts = self[:, var]
+                outputs.append(var_ts.plot_raster(figsize=figsize, **kwargs))
+            return outputs
+        if np.all([s < 2 for s in self.shape[1:]]):
+            return self.plot_timeseries(**kwargs)
+        time, labels_ordering, plotter_config, kwargs = \
+            self._prepare_plot_args(**kwargs)
         labels_dimensions = self.labels_dimensions
+        # hue: Regions or Modes/Samples/Populations
+        kwargs["hue"] = None
+        yind = 2  # Regions
+        if np.all([s > 1 for s in self.shape[2:]]):
+            kwargs["hue"] = labels_ordering[3]  # Modes/Samples/Populations
+            # If we have a hue argument, and the size of the corresponding dimension > MAX_LBLS_IN_LEGEND,
+            # remove the legend.
+            if kwargs.get("add_legend", None) is None and \
+                    self.shape[self.dims.index(kwargs["hue"])] > MAX_LBLS_IN_LEGEND:
+                kwargs["add_legend"] = False
+        elif self.shape[2] == 1 and self.shape[3] > 1:
+            yind = 3  # Modes/Samples/Populations
+        yticklabels = labels_dimensions[labels_ordering[yind]]
+        data = self._data.copy()
+        slice_tuple = (slice(None), 0, slice(None), slice(None))
+        figname = kwargs.pop("figname", "%s" % (self.title + " raster"))
         if self.shape[1] < 2:
             try:
-                figname = figname + ": %s" % labels_dimensions[col][0]
+                figname += ": %s" % labels_dimensions[labels_ordering[1]][0]  # Variable
             except:
                 pass
-        data = xr.DataArray(self._data)
+            figsize = kwargs.pop("figsize", plotter_config.LARGE_SIZE)
+        else:
+            figsize = kwargs.pop("figsize", plotter_config.VERY_LARGE_SIZE)
+        fig, axes = pyplot.subplots(ncols=self.shape[1], num=figname, figsize=figsize)
+        pyplot.suptitle(figname)
+        axes = np.array(ensure_list(axes))
         for i_var, var in enumerate(labels_dimensions[labels_ordering[1]]):
             # Remove mean
             data[:, i_var] -= data[:, i_var].mean()
             # Compute approximate range for this variable
             amplitude = 0.9 * (data[:, i_var].max() - data[:, i_var].min())
+            if amplitude == 0.0:
+                amplitude = 1.0
             # Add the step on y axis for this variable and for each Region's data
-            for i_region in range(self.shape[2]):
-                data[:, i_var, i_region] += amplitude * i_region
-        # hue: Regions and/or Modes/Samples/Populations etc
-        if np.all([s > 1 for s in self.shape[2:]]):
-            hue = "%s - %s" % (labels_ordering[2], labels_ordering[3])
-            data = data.stack({hue: (labels_ordering[2], labels_ordering[3])})
-        elif self.shape[3] > 1:
-            hue = labels_ordering[3]
-        elif self.shape[2] > 1:
-            hue = labels_ordering[2]
-        else:
-            hue = None
-        kwargs["col_wrap"] = kwargs.pop("col_wrap", self.shape[1])  # All variables in columns
-        return self.plot(data=data, y=None, hue=hue, col=col, row=None,
-                         figname=figname, plotter_config=plotter_config, **kwargs)
+            slice_tuple = [slice(None), i_var, slice(None), slice(None)]
+            yticks = []
+            for i_y in range(self.shape[yind]):
+                slice_tuple[yind] = i_y
+                yticks.append(-amplitude * i_y)
+                data[tuple(slice_tuple)] += yticks[-1]
+                data[tuple(slice_tuple)].plot(x=time, ax=axes[i_var], **kwargs)
+            axes[i_var].set_yticks(yticks)
+            axes[i_var].set_yticklabels(yticklabels)
+            axes[i_var].set_title(var)
+        pyplot.gcf().canvas.manager.set_window_title(figname)
+        if plotter_config is not None:
+            save_show_figure(plotter_config, figname, fig)
+        return fig, axes
 
 
 # TODO: Slicing should also slice Connectivity, Surface, Volume, Sensors etc accordingly...
@@ -1011,11 +1089,22 @@ class TimeSeriesRegion(TimeSeries):
 
     def configure(self):
         super(TimeSeriesRegion, self).configure()
-        if self.connectivity.number_of_regions != self.number_of_labels:
+        labels = self.get_dimension_labels(2)
+        number_of_labels = len(labels)
+        if number_of_labels == 0:
+            if self.number_of_labels == self.connectivity.region_labels.shape[0]:
+                self._data.assign_coords({self.labels_ordering[2]: self.connectivity.region_labels})
+            else:
+                logger.warning("RegionTimeSeries labels is empty!\n"
+                               "Labels can not be set from Connectivity, because RegionTimeSeries shape[2]=%d "
+                               "is not equal to the Connectivity size %d!\n"
+                               % (self.number_of_labels, self.connectivity.region_labels.shape[0]))
+                return
+        if self.connectivity.number_of_regions > number_of_labels:
             try:
-                labels = self.get_dimension_labels(2)
                 self.connectivity = HeadService().slice_connectivity(self.connectivity, labels)
-            except:
+            except Exception as e:
+                logger.warning(str(e))
                 logger.warning("Connectivity and RegionTimeSeries labels agreement failed!")
 
     def to_tvb_instance(self, **kwargs):
@@ -1116,12 +1205,23 @@ class TimeSeriesSensors(TimeSeries):
 
     def configure(self):
         super(TimeSeriesSensors, self).configure()
-        if self.sensors.number_of_sensors != self.number_of_labels:
+        labels = self.get_dimension_labels(2)
+        number_of_labels = len(labels)
+        if number_of_labels == 0:
+            if self.number_of_labels == self.sensors.number_of_sensors:
+                self._data.assign_coords({self.labels_ordering[2]: self.sensors.labels})
+            else:
+                logger.warning("SensorsTimeSeries labels is empty!\n"
+                               "Labels can not be set from Sensors, because SensorsTimeSeries shape[2]=%d "
+                               "is not equal to the Sensors size %d!\n"
+                               % (self.number_of_labels, self.sensors.number_of_sensors))
+                return
+        if self.sensors.number_of_sensors > number_of_labels:
             try:
-                labels = self.get_dimension_labels(2)
                 self.sensors = HeadService().slice_sensors(self.sensors, labels)
-            except:
-                logger.warning("Connectivity and RegionTimeSeries labels agreement failed!")
+            except Exception as e:
+                logger.warning(str(e))
+                logger.warning("Sensors and SensorsTimeSeries labels agreement failed!")
 
     def to_tvb_instance(self, datatype=TimeSeriesSensorsTVB, **kwargs):
         return datatype().from_xarray_DataArray(self._data, **kwargs)

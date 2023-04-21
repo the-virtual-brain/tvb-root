@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -53,40 +49,29 @@ from .backendtestbase import (BaseTestSim, BaseTestCoupling, BaseTestDfun,
 class TestNpSim(BaseTestSim):
 
     def _test_mpr(self, integrator, delays=False):
-        sim, state, t, y = self._create_sim(
+        sim = self._create_sim(
             integrator,
             inhom_mmpr=True,
-            delays=delays
+            delays=delays,
+            run_sim=False
         )
-        template = '<%include file="np-sim.py.mako"/>'
-        content = dict(sim=sim, np=np)
-        kernel = NpBackend().build_py_func(template, content, print_source=True)
-        dX = state.copy()
-        n_svar, _, n_node = state.shape
-        if not delays:
-            self.assertEqual(sim.connectivity.horizon, 1)  # for now
-        state = state.reshape((n_svar, sim.connectivity.horizon, n_node))
-        weights = sim.connectivity.weights.copy()
-        yh = np.empty((len(t),)+state[:,0].shape)
-        parmat = sim.model.spatial_parameter_matrix
-        self.assertEqual(parmat.shape[0], 1)
-        self.assertEqual(parmat.shape[1], weights.shape[1])
-        np.random.seed(42)
-        args = state, weights, yh, parmat
-        if isinstance(integrator, IntegratorStochastic):
-            args = args + (integrator.noise.nsig,)
-        if delays:
-            args = args + (sim.connectivity.delay_indices,)
-        kernel(*args)
+
+        (th, yh), = NpBackend().run_sim(sim, print_source=True)
+        (t, y), = sim.run()
+
         self._check_match(y, yh)
+        np.testing.assert_allclose(t, th)
 
     def _test_mvar(self, integrator):
         pass # TODO
 
-    def _test_integrator(self, Integrator, delays=False):
+    def _test_integrator(self, Integrator, delays=False, nsig=False):
         dt = 0.01
         if issubclass(Integrator, IntegratorStochastic):
-            integrator = Integrator(dt=dt, noise=Additive(nsig=np.r_[dt]))
+            if nsig:
+                integrator = Integrator(dt=dt, noise=Additive(nsig=np.r_[dt,dt*2]))
+            else:
+                integrator = Integrator(dt=dt, noise=Additive(nsig=np.r_[dt]))
             integrator.noise.dt = integrator.dt
         else:
             integrator = Integrator(dt=dt)
@@ -95,10 +80,11 @@ class TestNpSim(BaseTestSim):
         else:
             self._test_mpr(integrator, delays=delays)
 
-    # TODO move to BaseTestSim to avoid duplicating all the methods
 
+    # TODO move to BaseTestSim to avoid duplicating all the methods
     def test_euler(self): self._test_integrator(EulerDeterministic)
     def test_eulers(self): self._test_integrator(EulerStochastic)
+    def test_eulersn(self): self._test_integrator(EulerStochastic, nsig=True)
     def test_heun(self): self._test_integrator(HeunDeterministic)
     def test_heuns(self): self._test_integrator(HeunStochastic)
     def test_rk4(self): self._test_integrator(RungeKutta4thOrderDeterministic)

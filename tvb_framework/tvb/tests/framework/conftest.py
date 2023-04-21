@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -67,6 +63,7 @@ from tvb.core.neocom import h5
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
 from tvb.datatypes.connectivity import Connectivity
+from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.sensors import Sensors, SensorsEEG
@@ -160,7 +157,7 @@ def project_factory():
 
         if users is None:
             users = []
-        data = dict(name=name, description=description, users=users)
+        data = dict(name=name, description=description, users=users, max_operation_size=None, disable_imports=False)
         return ProjectService().store_project(admin, True, None, **data)
 
     return build
@@ -350,6 +347,20 @@ def region_mapping_index_factory(region_mapping_factory, operation_factory):
         rm_db = h5.store_complete(region_mapping, op.id, op.project.name)
         rm_db.fk_from_operation = op.id
         return dao.store_entity(rm_db)
+
+    return build
+
+
+@pytest.fixture()
+def connectivity_measure_index_factory():
+    def build(conn, op, project):
+        conn_measure = ConnectivityMeasure()
+        conn_measure.connectivity = h5.load_from_index(conn)
+        conn_measure.array_data = numpy.ones(conn.number_of_regions)
+
+        conn_measure_db = h5.store_complete(conn_measure, op.id, project.name)
+        conn_measure_db.fk_from_operation = op.id
+        return dao.store_entity(conn_measure_db)
 
     return build
 
@@ -588,7 +599,8 @@ def datatype_group_factory(connectivity_factory, time_series_index_factory, time
 
             operation3 = operation_factory(test_project=project)
             region_mapping = region_mapping_factory(surface=surface, connectivity=connectivity)
-            region_mapping_index_factory(op=operation3, conn_gid=connectivity.gid.hex, surface_gid=surface.gid.hex, region_mapping=region_mapping)
+            region_mapping_index_factory(op=operation3, conn_gid=connectivity.gid.hex, surface_gid=surface.gid.hex,
+                                         region_mapping=region_mapping)
 
         algorithm = dao.get_algorithm_by_module(SIMULATOR_MODULE, SIMULATOR_CLASS)
         adapter = ABCAdapter.build_adapter(algorithm)
@@ -653,9 +665,9 @@ def datatype_group_factory(connectivity_factory, time_series_index_factory, time
                     op_path = StorageInterface().get_project_folder(project.name, str(op.id))
                     h5.store_view_model(view_model, op_path)
 
-                    view_model_ms = copy.deepcopy(view_model_ms)
                     view_model_ms.gid = view_model_ms_gid
                     view_model_ms.time_series = ts_index.gid
+                    view_model_ms = copy.deepcopy(view_model_ms)    # deepcopy only after a TS is set
                     op_ms_path = StorageInterface().get_project_folder(project.name, str(op_ms.id))
                     h5.store_view_model(view_model_ms, op_ms_path)
 

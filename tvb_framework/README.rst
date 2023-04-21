@@ -48,6 +48,9 @@ Framework structure
                 |
             tvb.interfaces
 
+**tvb-data** should be installed from **Zenodo**: https://zenodo.org/record/7574266/files/tvb_data.zip?download=1.
+After download, unzip and execute `python setup.py develop` in the correct env.
+
 Usage
 -----
 
@@ -61,17 +64,16 @@ Your port **8080** should be free, as a CherryPy service will try to run there.
 Your default browser should automatically open http://localhost:8080/ which is the way to
 interact with TVB Web Interface.
 
-When using from sources (pypi or Github, not TVB_Distribution), if you want BCT adapters enabled, you should
-manually download BCT https://sites.google.com/site/bctnet/
-and set env variable **BCT_PATH** towards the directory where you unzip BCT, plus also have Octave or
-Matlab installed with command line API enabled.
-
-
 Testing
 =======
 
 For testing the package, the `Pytest  <https://docs.pytest.org/>`_
 framework is used. Pytest can be installed using pip.
+
+In addition to tvb-framework needed just for
+launching the web, tests require few extra dependencies just for test (e.g. pytest-benchmark), which
+need to be installed manually. The entire list of these dependencies for testing is found in `tvb_framework/setup.py`
+under **extras_require**.
 
 Pytest will run all files in the current directory and its subdirectories
 of the form test_*.py or \*_test.py.
@@ -111,3 +113,10 @@ Further Resources
    and followed using: tvb-users@googlegroups.com
 -  Raw demo IPython Notebooks can be found under:
    https://github.com/the-virtual-brain/tvb-root/tree/master/tvb_documentation/demos
+
+
+Acknowledgments
+===============
+This project has received funding from the European Union’s Horizon 2020 Framework Programme for Research and
+Innovation under the Specific Grant Agreement Nos. 785907 (Human Brain Project SGA2), 945539 (Human Brain Project SGA3)
+and VirtualBrainCloud 826421.

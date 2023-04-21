@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -87,6 +83,15 @@ class OperationService:
     ##########################################################################################
     ######## Methods related to launching operations start here ##############################
     ##########################################################################################
+
+    def fits_max_operation_size(self, adapter_instance, view_model, project_id, range_length=1):
+        project = dao.get_project_by_id(project_id)
+        if project.max_operation_size is None:
+            return True
+
+        adapter_instance.configure(view_model)
+        adapter_required_memory = adapter_instance.get_required_disk_size(view_model)
+        return adapter_required_memory * range_length < project.max_operation_size
 
     def initiate_operation(self, current_user, project, adapter_instance, visible=True, model_view=None):
         """

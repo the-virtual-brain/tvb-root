@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and 
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -38,12 +34,11 @@ import json
 import os
 from pathlib import Path
 from time import sleep
-
 import cherrypy
 import pytest
 from tvb.basic.config import stored
 from tvb.basic.profile import TvbProfile
-from tvb.core.utils import get_matlab_executable, hash_password
+from tvb.core.utils import hash_password
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.settings_controller import SettingsController
 from tvb.storage.storage_interface import StorageInterface
@@ -68,7 +63,6 @@ class TestSettingsController(BaseTransactionalControllerTest):
                       'MAXIMUM_NR_OF_THREADS': 6,
                       'MAXIMUM_NR_OF_VERTICES_ON_SURFACE': 142,
                       'MAXIMUM_NR_OF_OPS_IN_RANGE': 16,
-                      'MATLAB_EXECUTABLE': '',
 
                       'DEPLOY_CLUSTER': 'True',
                       'CLUSTER_SCHEDULER': TvbProfile.current.cluster.SCHEDULER_OAR,
@@ -159,7 +153,7 @@ class TestSettingsController(BaseTransactionalControllerTest):
         # wait until 'restart' is done
         sleep(1)
         assert self.was_reset
-        assert len(TvbProfile.current.manager.stored_settings) == 21
+        assert len(TvbProfile.current.manager.stored_settings) == 20
 
         assert submit_data['TVB_STORAGE'] == TvbProfile.current.TVB_STORAGE
         assert submit_data['USR_DISK_SPACE'] * 2 ** 10 == TvbProfile.current.MAX_DISK_SPACE
@@ -197,17 +191,4 @@ class TestSettingsController(BaseTransactionalControllerTest):
 
         submit_data[stored.KEY_DB_URL] = "this URL should be invalid"
         result = json.loads(self.settings_c.check_db_url(**submit_data))
-        assert result['status'] == 'not ok'
-
-    @pytest.mark.skipif(get_matlab_executable() is None, reason="Matlab or Octave not installed!")
-    def test_check_matlab_path(self):
-        """
-        Test that for a various Matlab paths, the correct check response is returned.
-        """
-        submit_data = {stored.KEY_MATLAB_EXECUTABLE: get_matlab_executable()}
-        result = json.loads(self.settings_c.validate_matlab_path(**submit_data))
-        assert result['status'] == 'ok'
-
-        submit_data[stored.KEY_MATLAB_EXECUTABLE] = "/this/path/should/be/invalid"
-        result = json.loads(self.settings_c.validate_matlab_path(**submit_data))
         assert result['status'] == 'not ok'

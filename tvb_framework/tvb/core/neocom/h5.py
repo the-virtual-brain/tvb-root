@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -36,7 +32,7 @@ from tvb.basic.neotraits.api import HasTraits
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_datatype import DataType
-from tvb.core.neocom._h5loader import Loader, DirLoader, TVBLoader, ViewModelLoader
+from tvb.core.neocom._h5loader import Loader, DirLoader, TVBLoader, ViewModelLoader, DtLoader
 from tvb.core.neocom._registry import Registry
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.neotraits.view_model import ViewModel
@@ -207,14 +203,14 @@ def load_with_references_from_dir(base_dir, gid):
 
 
 def store_to_dir(datatype, base_dir, recursive=False):
-    # type: (HasTraits, str, bool) -> None
+    # type: (HasTraits, str, bool) -> str
     """
     Stores the given datatype in the given directory.
     The name and location of the stored file(s) is chosen for you by this function.
     If recursive is true than datatypes referenced by this one are stored as well.
     """
     loader = DirLoader(base_dir, REGISTRY, recursive)
-    loader.store(datatype)
+    return loader.store(datatype)
 
 
 def determine_filepath(gid, base_dir):
@@ -224,6 +220,24 @@ def determine_filepath(gid, base_dir):
     dir_loader = DirLoader(base_dir, REGISTRY, False)
     fname = dir_loader.find_file_by_gid(gid)
     return fname
+
+
+def store_ht(ht, base_dir):
+    # type: (HasTraits, str)-> str
+    """
+    Completely store any HasTraits object to the directory specified by base_dir
+    """
+    loader = DtLoader(base_dir, REGISTRY)
+    return loader.store(ht)
+
+
+def load_ht(gid, base_dir):
+    # type: (typing.Union[uuid.UUID, str], str)-> str
+    """
+    Completely load any HasTraits object with the gid specified from the base_dir directory
+    """
+    loader = DtLoader(base_dir, REGISTRY)
+    return loader.load(gid)
 
 
 def store_view_model(view_model, base_dir):

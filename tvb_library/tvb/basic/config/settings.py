@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -36,8 +32,6 @@ Do not instantiate these classes directly, but rather use them through TvpProfil
 """
 
 import os
-
-import requests
 from tvb.basic.config import stored
 
 
@@ -49,10 +43,10 @@ class VersionSettings(object):
     SVN_GIT_MIGRATION_REVISION = 10000
 
     # Current release number
-    BASE_VERSION = "2.6"
+    BASE_VERSION = "2.8"
 
     # Current DB version. Create a new migration script from command line and copy its gid here
-    DB_STRUCTURE_VERSION = '32d4bf9f8cab'
+    DB_STRUCTURE_VERSION = '32d4bf9f8def'
 
     # This is the version of the data stored in H5 and XML files
     # and should be used by next versions to know how to import
@@ -99,15 +93,6 @@ class VersionSettings(object):
 
         number = ''.join([ch for ch in version_string if ch.isdigit()])
         return int(number)
-
-    @staticmethod
-    def fetch_current_revision(branch):
-        url = f'https://api.github.com/repos/the-virtual-brain/tvb-root/commits'
-        params = {'per_page': 1, 'sha': branch}
-        resp = requests.get(url, params)
-        last_link = resp.links.get('last')
-        branch_revision = int(last_link['url'].split('&page=')[1])
-        return VersionSettings.SVN_GIT_MIGRATION_REVISION + branch_revision
 
 
 class ClusterSettings(object):
@@ -367,6 +352,6 @@ class DBSettings(object):
         # Overwrite number of connections to the DB.
         # Otherwise might reach PostgreSQL limit when launching multiple concurrent operations.
         # MAX_CONNECTION default value will be used for WEB
-        # When launched on cluster, the MAX_ASYNC_CONNECTIONS overwrites MAX_ONNECTIONS value
+        # When launched on cluster, the MAX_ASYNC_CONNECTIONS overwrites MAX_CONNECTIONS value
         self.MAX_CONNECTIONS = manager.get_attribute(stored.KEY_MAX_CONNECTIONS, 20, int)
         self.MAX_ASYNC_CONNECTIONS = manager.get_attribute(stored.KEY_MAX_ASYNC_CONNECTIONS, 2, int)

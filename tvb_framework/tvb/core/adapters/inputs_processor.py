@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -35,7 +31,7 @@
 import os
 import numpy
 from tvb.core.entities.load import load_entity_by_gid
-from tvb.core.neotraits.forms import TraitDataTypeSelectField, TraitUploadField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, TraitUploadField, UserSessionStrField
 
 
 def _review_operation_inputs_for_adapter_model(form_fields, form_model, view_model):
@@ -49,6 +45,10 @@ def _review_operation_inputs_for_adapter_model(form_fields, form_model, view_mod
         attr_vm = getattr(view_model, field.name)
         if attr_vm and type(field) == TraitUploadField:
             attr_vm = os.path.basename(attr_vm)
+        if attr_vm and type(field) == UserSessionStrField:
+            # Don't show UserSession actual value, as these might contain a secret, instead show the env Variable
+            changed_attr[field.label] = "SECRET ${%s}" % field.name
+            continue
 
         if isinstance(field, TraitDataTypeSelectField):
             data_type = None

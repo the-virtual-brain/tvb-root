@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -34,6 +30,7 @@
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+
 import json
 import os
 import shutil
@@ -43,13 +40,13 @@ from datetime import datetime
 from cherrypy._cpreqbody import Part
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.attributes import manager_of_class
-
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.ex import TraitTypeError, TraitAttributeError
 from tvb.basic.profile import TvbProfile
 from tvb.config import VIEW_MODEL2ADAPTER, TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
 from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig, DEFAULTDATASTATE_INTERMEDIATE
 from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.adapters.exceptions import IntrospectionException
 from tvb.core.entities import load
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
@@ -249,7 +246,7 @@ class ImportService(object):
                     'Imported file depends on datatypes that do not exist. Please upload '
                     'those first!')
 
-    def _store_or_link_burst_config(self, burst_config, bc_path, project_id):
+    def _store_or_link_burst_config(self, burst_config, bc_path):
         bc_already_in_tvb = dao.get_generic_entity(BurstConfiguration, burst_config.gid, 'gid')
         if len(bc_already_in_tvb) == 0:
             self.store_datatype(burst_config, bc_path)
@@ -289,16 +286,19 @@ class ImportService(object):
                 if self.storage_interface.ends_with_tvb_file_extension(metadata_file):
                     self._import_image(root, metadata_file, project.id, target_images_path)
 
-    @staticmethod
-    def _populate_view_model2adapter():
+    def _populate_view_model2adapter(self):
         if len(VIEW_MODEL2ADAPTER) > 0:
             return VIEW_MODEL2ADAPTER
         view_model2adapter = {}
         algos = dao.get_all_algorithms()
         for algo in algos:
-            adapter = ABCAdapter.build_adapter(algo)
-            view_model_class = adapter.get_view_model_class()
-            view_model2adapter[view_model_class] = algo
+            try:
+                adapter = ABCAdapter.build_adapter(algo)
+                view_model_class = adapter.get_view_model_class()
+                view_model2adapter[view_model_class] = algo
+            except IntrospectionException:
+                self.logger.exception("Could not load %s" % algo)
+
         return view_model2adapter
 
     def _retrieve_operations_in_order(self, project, import_path, importer_operation_id=None):
@@ -467,7 +467,7 @@ class ImportService(object):
                     if isinstance(dt, BurstConfiguration):
                         if op_group:
                             dt.fk_operation_group = op_group.id
-                        all_stored_dts_count += self._store_or_link_burst_config(dt, dt_path, project.id)
+                        all_stored_dts_count += self._store_or_link_burst_config(dt, dt_path)
                     else:
                         dts[dt_path] = dt
                         if op_group:

@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and 
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,17 +19,13 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
 """
-Create TVB distribution package for Mac OS.
+Create TVB distribution package for Mac-OS.
 
 Execute in root:
 
@@ -44,8 +40,7 @@ import importlib
 import tvb_bin
 from glob import glob
 from zipfile import ZipFile, ZIP_DEFLATED
-
-from conda_env_to_app import create_app, create_dmg, APP_NAME, APP_FILE
+from conda_env_to_app import create_app, create_dmg, APP_NAME
 from tvb.basic.profile import TvbProfile
 from tvb.basic.config.environment import Environment
 from tvb_build.third_party_licenses.build_licenses import generate_artefact
@@ -187,11 +182,6 @@ def _generate_distribution(final_name, library_path, version, extra_licensing_ch
 
     _copy_tvb_sources(library_abs_path)
 
-    bct_src = os.path.join("externals", "BCT")
-    bct_dst = os.path.join(DIST_FOLDER, library_path, "externals", "BCT")
-    print("- Copying " + bct_src + " to " + bct_dst)
-    shutil.copytree(bct_src, bct_dst)
-
     for extra in EXTRA_MODULES:
         _copy_module(extra, library_abs_path)
 
@@ -284,7 +274,6 @@ def prepare_mac_dist():
     jupyter_command = '/Applications/{}/Contents/Resources/bin/jupyter notebook '.format(APP)
     _create_command_file(os.path.join(DIST_FOLDER, "bin", 'jupyter_notebook'),
                          jupyter_command + '../demo_scripts', 'Launching IPython Notebook from TVB Distribution')
-
 
     destination_sources = os.path.join(APP, "Contents", "Resources", "lib", Environment.PYTHON_FOLDER)
     _generate_distribution("TVB_MacOS", destination_sources, VERSION)

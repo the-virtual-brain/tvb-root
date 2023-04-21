@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -118,12 +114,19 @@ class BIDSImporter(ABCUploader):
             raise LaunchException("Please select ZIP file which contains data to import")
 
         files = self.storage_interface.unpack_zip(view_model.uploaded, self.get_storage_path())
-        subject_folders = []
+        subject_folders = set()
 
         # First we find subject parent folders
         for file_name in files:
-            if os.path.basename(file_name).startswith(self.SUBJECT_PREFIX) and os.path.isdir(file_name):
-                subject_folders.append(file_name)
+            if self.__is_subject_folder(file_name):
+                subject_folders.add(file_name)
+
+        if len(subject_folders) == 0:
+            # Try to determine subject folders in a different manner
+            for file_name in files:
+                possible_subject_folder = os.path.dirname(os.path.dirname(file_name))
+                if self.__is_subject_folder(possible_subject_folder):
+                    subject_folders.add(possible_subject_folder)
 
         connectivity = None
         ts_dict = None
@@ -144,6 +147,9 @@ class BIDSImporter(ABCUploader):
             spatial_folder = os.path.join(subject_folder, self.SPATIAL_TOKEN)
             if os.path.exists(spatial_folder):
                 self.__build_functional_connectivity(spatial_folder, ts_dict)
+
+    def __is_subject_folder(self, file_name):
+        return os.path.basename(file_name).startswith(self.SUBJECT_PREFIX) and os.path.isdir(file_name)
 
     def __build_connectivity(self, net_folder):
         weights_matrix = None
@@ -169,7 +175,7 @@ class BIDSImporter(ABCUploader):
                     centres_path = os.path.join(dir_path, centres_path).replace(self.JSON_EXTENSION, self.TSV_EXTENSION)
 
                     centres = self.read_list_data(centres_path)
-                    labels_vector = self.read_list_data(labels_path, dtype=numpy.str, usecols=[0])
+                    labels_vector = self.read_list_data(labels_path, dtype=numpy.str_, usecols=[0])
 
         connectivity = Connectivity()
 

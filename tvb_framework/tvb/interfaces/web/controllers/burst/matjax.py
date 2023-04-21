@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -32,11 +28,13 @@
 Functions responsible for collecting and rendering the descriptions and the documentations
 of the dynamic models in Simulator/Phase Plane.
 
+.. moduleauthor:: David Bacter <david.bacter@codemart.ro>
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
 
 from tvb.adapters.forms.model_forms import ModelsEnum
+from docutils.core import publish_parts
 
 
 def configure_matjax_doc():
@@ -46,13 +44,25 @@ def configure_matjax_doc():
     """
     models_docs = []
 
+    kwargs = {
+        'writer_name': 'html',
+        'settings_overrides': {
+            '_disable_config': True,
+            'report_level': 5,
+            'math_output': "MathJax /dummy.js",
+        },
+    }
+
     for member in list(ModelsEnum):
         clz_name = str(member)
         clz = member.value
         models_docs.append({
             'name': clz_name.replace(' ', '_'),
             'inline_description': _dfun_math_directives_to_matjax(clz),
-            'description': _format_doc(clz.__doc__)
+            # 'description': _format_doc(clz.__doc__).replace('\n', '<br/>')
+            # I let this here since the html parse has a small flaw regarding some overlapping text
+            # and we might consider switching back to plain text
+            'description': publish_parts(clz.__doc__, **kwargs)['html_body']
         })
 
     return models_docs
@@ -64,8 +74,6 @@ def _dfun_math_directives_to_matjax(model):
     It converts them in html text that will be interpreted by mathjax
     The parsing is simplistic, not a full rst parser.
     """
-
-
     try:
         doc = model.dfun.__doc__
     except AttributeError:
@@ -85,8 +93,10 @@ def _dfun_math_directives_to_matjax(model):
 
     return 'Documentation is missing. '
 
+
 def _format_doc(doc):
     return _multiline_math_directives_to_matjax(doc).replace('&', '&amp;').replace('.. math::', '')
+
 
 def _multiline_math_directives_to_matjax(doc):
     """

@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and 
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 """
@@ -36,7 +32,6 @@ import os
 import shutil
 from threading import Lock
 from zipfile import ZipFile, ZIP_DEFLATED, BadZipfile
-
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.storage.h5.decorators import synchronized
@@ -53,12 +48,11 @@ class FilesHelper(object):
     """
     PROJECTS_FOLDER = "PROJECTS"
     ALLEN_MOUSE_CONNECTIVITY_CACHE_FOLDER = "ALLEN_MOUSE_CONNECTIVITY_CACHE"
-    TUMOR_DATASET_FOLDER = "TUMOR_DATASET"
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
 
-    ############# PROJECT RELATED methods ##################################
+    # PROJECT RELATED methods ##################################
 
     @synchronized(LOCK_CREATE_FOLDER)
     def check_created(self, path):
@@ -79,7 +73,8 @@ class FilesHelper(object):
     @staticmethod
     def get_projects_folder():
         base_path = TvbProfile.current.TVB_STORAGE
-        if TvbProfile.current.web.ENCRYPT_STORAGE and TvbProfile.current.web.CAN_ENCRYPT_STORAGE and TvbProfile.current.web.DECRYPT_PATH:
+        if TvbProfile.current.web.ENCRYPT_STORAGE and TvbProfile.current.web.CAN_ENCRYPT_STORAGE \
+                and TvbProfile.current.web.DECRYPT_PATH:
             base_path = TvbProfile.current.web.DECRYPT_PATH
 
         return os.path.join(base_path, FilesHelper.PROJECTS_FOLDER)
@@ -147,7 +142,7 @@ class FilesHelper(object):
         proj_path = self.get_project_folder(meta_dictionary['name'])
         self.write_project_metadata_from_dict(proj_path, meta_dictionary, project_file)
 
-    ############# OPERATION related METHODS Start Here #########################
+    # OPERATION related METHODS Start Here #########################
 
     def remove_operation_data(self, project_name, operation_id):
         """
@@ -161,7 +156,7 @@ class FilesHelper(object):
             self.logger.exception("Could not remove files")
             raise FileStructureException("Could not remove files for OP" + str(operation_id))
 
-    ####################### DATA-TYPES METHODS Start Here #####################
+    # DATA-TYPES METHODS Start Here #####################
     def move_datatype(self, new_project_name, new_op_id, full_path):
         """
         Move H5 storage into a new location
@@ -174,7 +169,7 @@ class FilesHelper(object):
             self.logger.exception("Could not move file")
             raise FileStructureException("Could not move " + full_path)
 
-    ######################## IMAGES METHODS Start Here #######################    
+    # IMAGES METHODS Start Here #######################
     def get_images_folder(self, project_name, images_folder):
         """
         Computes the name/path of the folder where to store images.
@@ -214,13 +209,7 @@ class FilesHelper(object):
         self.check_created(folder)
         return folder
 
-    def get_tumor_dataset_folder(self):
-        project_folder = self.get_projects_folder()
-        folder = os.path.join(os.path.dirname(project_folder), self.TUMOR_DATASET_FOLDER)
-        self.check_created(folder)
-        return folder
-
-        ######################## GENERIC METHODS Start Here #######################
+    # GENERIC METHODS Start Here #######################
 
     @staticmethod
     def copy_file(source, dest, dest_postfix, buffer_size):
@@ -275,6 +264,7 @@ class FilesHelper(object):
     def remove_folder(folder_path, ignore_errors):
         """
         Given a folder path, try to remove that folder from disk.
+        :param folder_path: Folder to be removed
         :param ignore_errors: When False throw FileStructureException if folder_path is invalid.
         """
         if os.path.isdir(folder_path):
@@ -328,10 +318,9 @@ class TvbZip(ZipFile):
     def write_zip_folder(self, folder, exclude, need_parent_folder=False):
         """
         write folder contents in archive
-        :param archive_path_prefix: root folder in archive. Defaults to "" the archive root
+        :param folder: root folder in archive. Defaults to "" the archive root
         :param exclude: a list of file or folder names that will be recursively excluded
         :param need_parent_folder: if it is True, the parent_folder will be added as well to the zip file name
-        :
         """
         parent_folder = folder
         if need_parent_folder:
@@ -354,7 +343,6 @@ class TvbZip(ZipFile):
         """
         This method creates a ZIP file with all folders provided as parameters
         :param folders: array with the FULL names/path of the folders to add into ZIP
-        :param folder_prefix: root folder in archive. Defaults to "" the archive root
         :param exclude: a list of file or folder names that will be recursively excluded
         """
         for folder in set(folders):

@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'TVB_Mac_Node' }
+    agent { label 'mac' }
 
     stages {
         stage('Copy Step 1') {
@@ -21,63 +21,67 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                     cd tvb_build
-                    bash mac_conda_env.sh
+                    conda update -n base -c defaults conda
+                    conda env remove --name mac-distribution
+                    conda create -y --name mac-distribution python=3.10 nomkl numba scipy numpy cython psycopg2
+                    conda install -y --name mac-distribution -c conda-forge jupyterlab tvb-gdist
+
+                    /Applications/anaconda3/envs/mac-distribution/bin/pip install --upgrade pip
+                    /Applications/anaconda3/envs/mac-distribution/bin/pip install lockfile scikit-build
+                    /Applications/anaconda3/envs/mac-distribution/bin/pip install syncrypto
+                    /Applications/anaconda3/envs/mac-distribution/bin/pip install pyobjc python-magic-bin six dmgbuild
+
+                    /Applications/anaconda3/envs/mac-distribution/bin/pip install -r docker/requirements_group
+
+                    cd /Users/tvb/WORK/DATA
+                    /Applications/anaconda3/envs/mac-distribution/bin/python setup.py develop
                 '''
             }
         }
         stage ('Install TVB') {
-                steps {
-                    unstash 'step1'
-                    sh '''#!/bin/bash
-                        source /WORK/anaconda3/anaconda3/etc/profile.d/conda.sh
-                        conda activate mac-distribution
-
-                        echo "Install TVB framework"
-                        cd tvb_framework
-                        python setup.py install
-
-                        echo "Install TVB library"
-                        cd ../tvb_library
-                        python setup.py install
-
-                        echo "Install TVB library contrib"
-                        cd ../tvb_contrib
-                        python setup.py install
-
-                        echo "Install TVB-STORAGE"
-                        cd ../tvb_storage
-                        python setup.py install
-
-                        echo "Install TVB library bin"
-                        cd ../tvb_bin
-                        python setup.py install
-
-                        echo "Install TVB build"
-                        cd ../tvb_build
-                        python setup.py install
-                    '''
-                }
+            steps {
+                unstash 'step1'
+                sh '''#!/bin/bash
+                    source /Applications/anaconda3/etc/profile.d/conda.sh
+                    conda activate mac-distribution
+                    cd tvb_build
+                    /bin/bash install_full_tvb.sh
+                '''
             }
+        }
         stage ('Build TVB Distribution') {
-                steps {
-                    sh '''#!/bin/bash
-                        source /WORK/anaconda3/anaconda3/etc/profile.d/conda.sh
-                        conda activate mac-distribution
-                        echo "Start setup_mac"
-                        python tvb_build/setup_mac.py
-                    '''
-                    archiveArtifacts artifacts: 'TVB_Mac*.zip'
-                }
+            steps {
+                sh '''#!/bin/bash
+                    source /Applications/anaconda3/etc/profile.d/conda.sh
+                    conda activate mac-distribution
+                    echo "Start setup_mac"
+                    python tvb_build/setup_mac.py
+                '''
+                archiveArtifacts artifacts: 'TVB_Mac*.zip'
             }
+        }
+        stage ('Tests on SqLite') {
+            steps {
+                sh '''#!/bin/bash
+                    source /Applications/anaconda3/etc/profile.d/conda.sh
+                    conda activate mac-distribution
+                    cd tvb_bin
+                    /bin/bash run_tests.sh
+                    exit 0
+                '''
+                junit 'tvb_bin/TEST_OUTPUT/results_*.xml'
+            }
+        }
     }
     post {
         changed {
-            mail to: 'lia.domide@codemart.ro paula.popa@codemart.ro bogdan.valean@codemart.ro',
+            mail to: 'lia.domide@codemart.ro paula.popa@codemart.ro',
             subject: "Jenkins Pipeline ${currentBuild.fullDisplayName} changed status",
             body: """
                 Result: ${currentBuild.result}
                 Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'
-                Check console output at ${env.BUILD_URL}"""
+                Check console output at ${env.BUILD_URL}
+                """
         }
     }
 }

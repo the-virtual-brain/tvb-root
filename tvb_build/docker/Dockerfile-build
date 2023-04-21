@@ -3,7 +3,6 @@ FROM continuumio/miniconda3
 ARG TVB_USER=tvb_user
 ARG USER_HOME=/home/$TVB_USER
 ARG TVB_STORAGE=$USER_HOME/TVB_STORAGE
-ARG NUMBA_CACHE=$USER_HOME/numba_cache
 ARG KEYCLOAK_CONFIG=$USER_HOME/keycloak_config
 ARG JUPYTER_CONFIG=$USER_HOME/.jupyter
 
@@ -12,38 +11,25 @@ WORKDIR $USER_HOME
 
 RUN apt-get -y update && apt-get -y install build-essential gcc
 RUN apt-get -y update && apt-get -y install texlive-base texlive-formats-extra
-RUN apt-get -y update && apt-get -y install octave postgresql
-
-# Used by syncrypto
-RUN apt-get -y update && apt-get -y install libssl-dev libffi-dev python-dev
+RUN apt-get -y update && apt-get -y install postgresql
 
 USER postgres
 RUN service postgresql start && createdb -O postgres tvb-test && psql --command "ALTER USER postgres WITH PASSWORD 'postgres';"
 
 USER root
-RUN conda update -n base -c defaults conda
-
-RUN conda create -y --name tvb-docs python=3.7 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil
-RUN conda install -y --name tvb-docs pytest pytest-mock matplotlib-base
-RUN conda install -y --name tvb-docs psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy werkzeug
-RUN conda install -y --name tvb-docs -c conda-forge jupyterlab gevent
-RUN /opt/conda/envs/tvb-docs/bin/pip install --upgrade pip
-RUN /opt/conda/envs/tvb-docs/bin/pip install h5py==2.10 formencode cfflib flask==1.1.4 jinja2==2.11.3 nibabel sqlalchemy alembic allensdk # h5py and jinja2 versions are constarined by allensdk
-RUN /opt/conda/envs/tvb-docs/bin/pip install --no-build-isolation tvb-gdist
-RUN /opt/conda/envs/tvb-docs/bin/pip install BeautifulSoup4 subprocess32 flask-restx python-keycloak mako pyAesCrypt pyunicore==0.6.0
-RUN /opt/conda/envs/tvb-docs/bin/pip install sphinx==1.2.3 docutils==0.12
-
-RUN conda update -n base -c defaults conda
-RUN conda create -y --name tvb-run python=3 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil
-RUN conda install -y --name tvb-run pytest pytest-cov pytest-benchmark pytest-mock pytest-xdist matplotlib-base
-RUN conda install -y --name tvb-run psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy werkzeug docutils
+RUN conda update -n base -c defaults conda; conda init bash
+RUN conda create -y --name tvb-run python=3.10 nomkl numba scipy numpy cython psycopg2
+RUN conda install -y --name tvb-run -c conda-forge jupyterlab tvb-gdist
 RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
-RUN /opt/conda/envs/tvb-run/bin/pip install h5py>=2.10 formencode cfflib flask==1.1.4 jinja2==2.11.3 nibabel sqlalchemy alembic allensdk # h5py and jinja2 versions are constrained by allensdk
-RUN conda install -y --name tvb-run -c conda-forge jupyterlab gevent
-RUN /opt/conda/envs/tvb-run/bin/pip install --no-build-isolation tvb-gdist
-RUN /opt/conda/envs/tvb-run/bin/pip install BeautifulSoup4 subprocess32 flask-restx python-keycloak mako pyAesCrypt pyunicore==0.6.0
-RUN /opt/conda/envs/tvb-run/bin/pip install lockfile pylems
-RUN /opt/conda/envs/tvb-run/bin/pip install syncrypto autopep8
+RUN /opt/conda/envs/tvb-run/bin/pip install lockfile scikit-build
+RUN /opt/conda/envs/tvb-run/bin/pip install syncrypto
+
+RUN conda create -y --name tvb-docs python=3.10 nomkl numba scipy numpy cython psycopg2
+RUN conda install -y --name tvb-docs -c conda-forge jupyterlab tvb-gdist
+RUN /opt/conda/envs/tvb-docs/bin/pip install --upgrade pip
+RUN /opt/conda/envs/tvb-docs/bin/pip install lockfile scikit-build
+RUN /opt/conda/envs/tvb-docs/bin/pip install syncrypto
+RUN /opt/conda/envs/tvb-docs/bin/pip install sphinx docutils
 
 # Jupyther notebook configurations: set password
 # tvb42
@@ -52,42 +38,40 @@ RUN /bin/bash -c "source activate tvb-run"; \
     /opt/conda/envs/tvb-run/bin/jupyter notebook --generate-config; \
     echo "c.NotebookApp.password='sha1:12bff019c253:9daecd92c2e9bdb10b3b8a06767a74a0fe078d7c'">>$JUPYTER_CONFIG/jupyter_notebook_config.py
 
-RUN wget https://zenodo.org/record/4263723/files/tvb_data.zip?download=1 -O tvb_data.zip; \
+RUN wget https://zenodo.org/record/7574266/files/tvb_data.zip?download=1 -O tvb_data.zip; \
     mkdir tvb_data; unzip tvb_data.zip -d tvb_data; rm tvb_data.zip; \
     cd tvb_data; \
     /opt/conda/envs/tvb-run/bin/python setup.py develop;\
     /opt/conda/envs/tvb-docs/bin/python setup.py develop
 
-# make sure a copy of tvb-root exists inside, for users without Github clone
-USER $TVB_USER
-RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git
+WORKDIR $USER_HOME
+COPY requirements_group requirements.txt
+RUN /opt/conda/envs/tvb-run/bin/pip install -r requirements.txt
+RUN /opt/conda/envs/tvb-docs/bin/pip install -r requirements.txt
+RUN chown $TVB_USER:$TVB_USER $USER_HOME
 
-USER root
+USER $TVB_USER
+# make sure a copy of tvb-root exists inside, for users without Github clone
+RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git
 ARG LAST_SHA=LATEST
 RUN cd tvb-root; \
     git pull; \
     cd tvb_build; \
-    /bin/bash -c "source activate tvb-run && /bin/bash install_full_tvb.sh"; \
+    /opt/conda/envs/tvb-run/bin/pip install -r docker/requirements_group;\
+    /opt/conda/envs/tvb-docs/bin/pip install -r docker/requirements_group;\
+    /bin/bash -c "source activate tvb-run && /bin/bash install_full_tvb.sh";\
     /bin/bash -c "source activate tvb-docs && /bin/bash install_full_tvb.sh"
 
 COPY --chown=$TVB_USER:$TVB_USER .tvb.configuration $USER_HOME/.tvb.configuration
-RUN chown $TVB_USER:$TVB_USER $USER_HOME
-
-RUN rm /opt/conda/envs/tvb-run/share/jupyter/kernels/python3/kernel.json
-RUN echo '{"argv": ["python", "-m", "ipykernel_launcher", "-f", "{connection_file}"], "display_name": "Python 3", "language": "python"}' >> /opt/conda/envs/tvb-run/share/jupyter/kernels/python3/kernel.json
-
-USER $TVB_USER
-
-RUN mkdir $USER_HOME/.tvb-temp; mkdir $USER_HOME/.tvb-temp/logs; mkdir -m777 $TVB_STORAGE $NUMBA_CACHE $KEYCLOAK_CONFIG
-
+RUN mkdir $USER_HOME/.tvb-temp; mkdir $USER_HOME/.tvb-temp/logs; mkdir -m777 $TVB_STORAGE $KEYCLOAK_CONFIG
 ENV TVB_USER_HOME $USER_HOME
-ENV NUMBA_CACHE_DIR $NUMBA_CACHE
-
 WORKDIR $USER_HOME/tvb-root
+
 # MOUNT -v [local- tvb-root - clone]:$USER_HOME/tvb-root
+# MOUNT -v [local- ~/TVB ]:$TVB_STORAGE
 
 # For building static help for web
-#CMD ["bash","-c","source activate tvb-docs && cd tvb_build && python build_step1.py"]
+CMD ["bash","-c","source activate tvb-docs && cd tvb_build && python build_step1.py"]
 
 # For building the Pypi packages
 #CMD ["bash","-c","source activate tvb-run && cd tvb_build && bash package_for_pip.sh"]
@@ -100,8 +84,4 @@ WORKDIR $USER_HOME/tvb-root
 # bind port 8888:8888
 #CMD ["bash","-c","source activate tvb-run && cd tvb_documentation && jupyter notebook --ip 0.0.0.0 --no-browser --allow-root"]
 
-# For running TVB Web GUI
-# bind port 8080
-# MOUNT -v [local- ~/TVB ]:$TVB_STORAGE
-
-CMD ["bash","-c","source activate tvb-run && /bin/bash"]
+#CMD ["bash","-c","source activate tvb-run && /bin/bash"]

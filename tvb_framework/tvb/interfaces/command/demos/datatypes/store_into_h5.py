@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -46,14 +42,14 @@ if __name__ == '__main__':
     conn_ht.configure()
 
     # Store in a given folder the HasTraits entity
-    PATH = "."
+    PATH = ".."
     h5.store_complete_to_dir(conn_ht, PATH)
 
     # Reproduce the just written file name containing GUID
     file_name = h5.path_by_dir(PATH, ConnectivityH5, conn_ht.gid)
 
     # Load back from a file name a HasTraits instance
-    conn_back = h5.load(file_name)
+    conn_back = h5.load(file_name, with_references=True)
 
     # Check that the loaded and written entities are correct
     assert conn_ht.number_of_regions == 76

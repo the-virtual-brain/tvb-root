@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -36,49 +32,39 @@ from tvb.adapters.forms.equation_forms import get_form_for_equation
 from tvb.adapters.forms.monitor_forms import AdditiveNoiseViewModel, get_ui_name_to_monitor_dict, \
     get_form_for_monitor, BoldViewModel, get_monitor_to_ui_name_dict
 from tvb.adapters.forms.simulator_fragments import SimulatorMonitorFragment, SimulatorFinalFragment
+from tvb.basic.logger.builder import get_logger
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.interfaces.web.controllers.simulator.simulator_wizzard_urls import SimulatorWizzardURLs
 
 
-class MonitorsWizardHandler:
+class MonitorsWizardHandler(object):
+
     def __init__(self):
-        self.next_monitors_dict = None
+        self.logger = get_logger(self.__class__.__module__)
         self.all_monitors_dict = get_ui_name_to_monitor_dict(True)
 
-        for ui_name, monitor_vm in self.all_monitors_dict.items():
-            self.all_monitors_dict[ui_name] = monitor_vm()
-
     def set_monitors_list_on_simulator(self, session_stored_simulator, monitor_names):
-        self.build_list_of_monitors_from_names(monitor_names, session_stored_simulator.is_surface_simulation)
-        session_stored_simulator.monitors = list(self.all_monitors_dict[monitor] for monitor in monitor_names)
+        list_vms = []
+        for monitor in monitor_names:
+            if monitor not in self.all_monitors_dict:
+                self.logger.error("Trying to configure not matched monitor " + str(monitor))
+            else:
+                list_vms.append(self.all_monitors_dict[monitor]())
+        session_stored_simulator.monitors = list_vms
 
-    def clear_next_monitors_dict(self):
-        if self.next_monitors_dict:
-            self.next_monitors_dict.clear()
+    @staticmethod
+    def get_current_and_next_monitor_form(current_monitor_vm_name, simulator):
 
-    def build_list_of_monitors_from_view_models(self, simulator):
-        monitor_names = []
-        monitor_dict = get_monitor_to_ui_name_dict(simulator.is_surface_simulation)
-        for monitor in simulator.monitors:
-            monitor_names.append(monitor_dict[type(monitor)])
+        current_monitor_index = 0
+        for idx, m in enumerate(simulator.monitors):
+            if type(m).__name__ == current_monitor_vm_name:
+                current_monitor_index = idx
+                break
 
-        self.build_list_of_monitors_from_names(monitor_names, simulator.is_surface_simulation)
-
-    def build_list_of_monitors_from_names(self, monitor_names, is_surface):
-        self.next_monitors_dict = dict()
-        monitors_dict = get_ui_name_to_monitor_dict(is_surface)
-        count = 0
-        for monitor_name in monitor_names:
-            monitor_vm = monitors_dict[monitor_name].__name__
-            self.next_monitors_dict[monitor_vm] = count
-            count = count + 1
-
-    def get_current_and_next_monitor_form(self, current_monitor_name, simulator):
-        current_monitor_index = self.next_monitors_dict[current_monitor_name]
         current_monitor = simulator.monitors[current_monitor_index]
         next_monitor_index = current_monitor_index + 1
 
-        if next_monitor_index < len(self.next_monitors_dict):
+        if next_monitor_index < len(simulator.monitors):
             return current_monitor, simulator.monitors[next_monitor_index]
         return current_monitor, None
 
@@ -153,6 +139,8 @@ class MonitorsWizardHandler:
     def prepare_monitor_legend(is_surface_simulation, monitor):
         return get_monitor_to_ui_name_dict(is_surface_simulation)[type(monitor)] + ' monitor'
 
-    def update_monitor(self, monitor, is_surface):
-        monitor_name = get_monitor_to_ui_name_dict(is_surface)[type(monitor)]
-        self.all_monitors_dict[monitor_name] = monitor
+    @staticmethod
+    def update_monitor(monitor_vm_instance, simulator):
+        for idx, m in enumerate(simulator.monitors):
+            if type(m) == type(monitor_vm_instance):
+                simulator.monitors[idx] = monitor_vm_instance

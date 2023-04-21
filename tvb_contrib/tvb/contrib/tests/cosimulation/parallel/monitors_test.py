@@ -4,7 +4,7 @@
 #  TheVirtualBrain-Contributors Package. This package holds simulator extensions.
 #  See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -17,12 +17,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 
 """
 .. moduleauthor:: Lionel Kusch <lkusch@thevirtualbrain.org>
@@ -33,6 +29,7 @@ import numpy as np
 
 import tvb.simulator.lab as lab
 from tvb.tests.library.base_testcase import BaseTestCase
+from tvb.contrib.tests.cosimulation.synchronization_time_set import SYNCHRONIZATION_TIME, adjust_connectivity_delays
 from tvb.contrib.tests.cosimulation.parallel.ReducedWongWang import ReducedWongWangProxy
 from tvb.contrib.cosimulation.cosim_monitors import RawCosim, RawVoiCosim, RawDelayed, \
     RawVoiDelayed, CosimCoupling
@@ -55,6 +52,7 @@ class TestMonitors(BaseTestCase):
         model = lab.models.ReducedWongWang(tau_s=np.random.rand(76))
         connectivity = lab.connectivity.Connectivity().from_file()
         connectivity.speed = np.array([4.0])
+        connectivity = adjust_connectivity_delays(connectivity)
         coupling = lab.coupling.Linear(a=np.array(0.0154))
         integrator = lab.integrators.HeunDeterministic(dt=0.1, bounded_state_variable_indices=np.array([0]),
                                                        state_variable_boundaries=np.array([[0.0, 1.0]]))
@@ -82,7 +80,7 @@ class TestMonitors(BaseTestCase):
         np.random.seed(42)
         model_1 = ReducedWongWangProxy(tau_s=np.random.rand(76))
         # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
-        synchronization_time = 1.0
+        synchronization_time = SYNCHRONIZATION_TIME
         sim_1 = CoSimulator(
             voi=np.array([0]),
             synchronization_time=synchronization_time,

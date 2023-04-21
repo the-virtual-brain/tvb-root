@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and 
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 """
@@ -287,15 +283,9 @@ class TestProjectStructure(TransactionalTestCase):
         self._check_datatype_group_removed(group.id, datatype_groups[0].fk_operation_group)
 
     @pytest.fixture()
-    def array_factory(self, operation_factory, connectivity_index_factory):
+    def array_factory(self, operation_factory, connectivity_index_factory, connectivity_measure_index_factory):
         def _create_measure(conn, op, project):
-            conn_measure = ConnectivityMeasure()
-            conn_measure.connectivity = h5.load_from_index(conn)
-            conn_measure.array_data = numpy.array(conn.number_of_regions)
-
-            conn_measure_db = h5.store_complete(conn_measure, op.id, project.name)
-            conn_measure_db.fk_from_operation = op.id
-            dao.store_entity(conn_measure_db)
+            connectivity_measure_index_factory(conn, op, project)
 
             count = dao.count_datatypes(project.id, DataTypeMatrix)
             return count

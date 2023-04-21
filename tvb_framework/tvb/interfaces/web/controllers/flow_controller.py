@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and 
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -287,9 +283,9 @@ class FlowController(BaseController):
         """ Execute HTTP POST on a generic step."""
         errors = None
         adapter_instance = ABCAdapter.build_adapter(algorithm)
-
+        user = common.get_logged_user()
         try:
-            form = self.algorithm_service.fill_adapter_form(adapter_instance, data, project_id)
+            form = self.algorithm_service.fill_adapter_form(adapter_instance, data, project_id, user)
             if form.validate():
                 try:
                     view_model = form.get_view_model()()
@@ -305,9 +301,13 @@ class FlowController(BaseController):
 
             adapter_instance.submit_form(form)
 
+            if not self.operation_services.fits_max_operation_size(adapter_instance, view_model, project_id):
+                common.set_error_message(self.MAX_SIZE_ERROR_MSG)
+                return {}
+
             if issubclass(type(adapter_instance), ABCDisplayer):
                 adapter_instance.current_project_id = project_id
-                adapter_instance.user_id = common.get_logged_user().id
+                adapter_instance.user_id = user.id
                 result = adapter_instance.launch(view_model)
                 if isinstance(result, dict):
                     return result
@@ -315,8 +315,7 @@ class FlowController(BaseController):
                     common.set_error_message("Invalid result returned from Displayer! Dictionary is expected!")
                 return {}
 
-            self.operation_services.fire_operation(adapter_instance, common.get_logged_user(), project_id,
-                                                   view_model=view_model)
+            self.operation_services.fire_operation(adapter_instance, user, project_id, view_model=view_model)
             common.set_important_message("Launched an operation.")
 
         except formencode.Invalid as excep:
@@ -347,9 +346,9 @@ class FlowController(BaseController):
                 title = title + " - " + group.displayname
 
             adapter_instance = self.algorithm_service.prepare_adapter(stored_adapter)
-
+            user = common.get_logged_user()
             adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance=adapter_instance,
-                                                                       project_id=project_id)
+                                                                       project_id=project_id, user=user)
             vm = self.context.get_view_model_from_session()
             if vm and type(vm) == adapter_form.get_view_model():
                 adapter_form.fill_from_trait(vm)

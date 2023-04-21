@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and 
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -42,6 +38,7 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.core.utils import TVBJSONEncoder
 from tvb.datatypes.graph import ConnectivityMeasure
 
 
@@ -105,6 +102,14 @@ class HistogramViewer(ABCDisplayer):
         input_data = self.load_entity_by_gid(view_model.input_data)
         return numpy.prod(input_data.shape) * 2
 
+    @staticmethod
+    def gather_params_dict(labels_list, values_list, title):
+        params = dict(title=title, labels=json.dumps(labels_list, cls=TVBJSONEncoder), isSingleMode=True,
+                      data=json.dumps(values_list), colors=json.dumps(values_list),
+                      xposition='center' if min(values_list) < 0 else 'bottom',
+                      minColor=min(values_list), maxColor=max(values_list))
+        return params
+
     def prepare_parameters(self, connectivity_measure_gid):
         """
         Prepare all required parameters for a launch.
@@ -114,10 +119,6 @@ class HistogramViewer(ABCDisplayer):
         labels_list = conn_measure.connectivity.region_labels.tolist()
         values_list = conn_measure.array_data.tolist()
         # A gradient of colors will be used for each node
-        colors_list = values_list
 
-        params = dict(title="Connectivity Measure - " + conn_measure.title, labels=json.dumps(labels_list),
-                      data=json.dumps(values_list), colors=json.dumps(colors_list),
-                      xposition='center' if min(values_list) < 0 else 'bottom',
-                      minColor=min(colors_list), maxColor=max(colors_list))
+        params = self.gather_params_dict(labels_list, values_list, "Connectivity Measure - " + conn_measure.title)
         return params

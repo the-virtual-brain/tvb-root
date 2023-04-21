@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and 
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -34,6 +30,7 @@ Launches the web server and configure the controllers for UI.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 import time
+
 
 STARTUP_TIC = time.time()
 
@@ -72,12 +69,16 @@ from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import
 from tvb.interfaces.web.controllers.spatial.region_stimulus_controller import RegionStimulusController
 from tvb.interfaces.web.controllers.spatial.surface_model_parameters_controller import SurfaceModelParametersController
 from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import SurfaceStimulusController
+from tvb.interfaces.web.controllers.burst.transfer_vector_controller import TransferVectorController
 from tvb.interfaces.web.controllers.users_controller import UserController
 from tvb.interfaces.web.request_handler import RequestHandler
 from tvb.storage.storage_interface import StorageInterface
 
 if __name__ == '__main__':
-    TvbProfile.set_profile(sys.argv[1])
+    if len(sys.argv) < 2:
+        TvbProfile.set_profile(TvbProfile.WEB_PROFILE)
+    else:
+        TvbProfile.set_profile(sys.argv[1])
 
 LOGGER = get_logger('tvb.interfaces.web.run')
 CONFIG_EXISTS = not TvbProfile.is_first_run()
@@ -159,6 +160,7 @@ def init_cherrypy(arguments=None):
     cherrypy.tree.mount(LocalConnectivityController(), BaseController.build_path("/spatial/localconnectivity/"),
                         config=CONFIGUER)
     cherrypy.tree.mount(NoiseConfigurationController(), BaseController.build_path("/burst/noise/"), config=CONFIGUER)
+    cherrypy.tree.mount(TransferVectorController(), TransferVectorController.build_path("/burst/transfer/"), config=CONFIGUER)
     cherrypy.tree.mount(HPCController(), BaseController.build_path("/hpc/"), config=CONFIGUER)
     cherrypy.tree.mount(KubeController(), BaseController.build_path("/kube/"), config=CONFIGUER)
 

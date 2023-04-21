@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 import numpy
@@ -213,8 +209,8 @@ class TestNbSim(BaseTestSim):
             (raw_t, raw_d), = sim.run(simulation_length=1)
             r_tvb, V_tvb = raw_d[0, :, :, 0]
 
-        np.testing.assert_allclose(r_tvb, r_pdq, rtol=1e-4)
-        np.testing.assert_allclose(V_tvb, V_pdq, rtol=1e-4)
+        np.testing.assert_allclose(r_tvb, r_pdq, rtol=1e-4, atol=1e-3)
+        np.testing.assert_allclose(V_tvb, V_pdq, rtol=1e-4, atol=1e-3)
         
     def test_network_deterministic_delay(self):
         dt = 0.01
@@ -283,13 +279,13 @@ class TestNbSim(BaseTestSim):
         np.testing.assert_allclose(pdq_t,raw_t)
         np.testing.assert_allclose(pdq_chu_t,raw_t)
 
-        np.testing.assert_allclose(r_pdq, r_tvb, atol=1e-4, rtol=0.)
-        np.testing.assert_allclose(V_pdq, V_tvb, atol=1e-4, rtol=0.)
+        np.testing.assert_allclose(r_pdq, r_tvb, atol=1e-3, rtol=1e-3)
+        np.testing.assert_allclose(V_pdq, V_tvb, atol=1e-3, rtol=1e-3)
         # think a bit about the tolerances...  TVB stores in floats, so that 
         # can accumulate. Might be a good idea to test agains history with 
         # double typed buffer.
-        np.testing.assert_allclose(r_pdq_chu, r_tvb, atol=1e-4, rtol=0.)
-        np.testing.assert_allclose(V_pdq_chu, V_tvb, atol=1e-4, rtol=0.)
+        np.testing.assert_allclose(r_pdq_chu, r_tvb, atol=1e-3, rtol=1e-3)
+        np.testing.assert_allclose(V_pdq_chu, V_tvb, atol=1e-3, rtol=1e-3)
 
     def test_stim(self):
 

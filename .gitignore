@@ -9,6 +9,7 @@ dist/
 # ide's
 .idea/
 .ipynb_checkpoints/
+**/.DS_Store
 
 # testing
 .benchmarks/
@@ -19,13 +20,14 @@ TEST_OUTPUT/
 # coverage
 .coverage
 .htmlcov
+coverage.xml
 
 # other tools
 .mypy_cache/
 /tvb_framework/tvb/interfaces/web/static/help/
 /tvb_build/docker/step1/
+/tvb_build/build
 
-/tvb_build/docker/keycloak_rest.json
-/tvb_build/docker/keycloak_web.json
+/tvb_build/docker/*keycloak*
 /tvb_build/docker/private_upload_key.pem
 /tvb_build/docker/public_key.pem

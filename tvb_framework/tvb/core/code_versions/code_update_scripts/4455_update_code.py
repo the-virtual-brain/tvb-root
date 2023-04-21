@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and 
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,27 +19,20 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+
 import os
 import tvb_data.obj
-
 from tvb.adapters.uploaders.obj_importer import ObjSurfaceImporter
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.config import stored
-from tvb.basic.profile import TvbProfile
 from tvb.core.services.operation_service import OperationService
-from tvb.core.utils import get_matlab_executable
 from tvb.core.entities.storage import dao
 from tvb.datatypes.surfaces import SurfaceTypesEnum
 
@@ -74,4 +67,4 @@ def update():
             except Exception as excep:
                 LOGGER.exception(excep)
 
-    TvbProfile.current.manager.add_entries_to_config_file({stored.KEY_MATLAB_EXECUTABLE: get_matlab_executable()})
+    # TvbProfile.current.manager.add_entries_to_config_file({stored.KEY_MATLAB_EXECUTABLE: get_matlab_executable()})

@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -33,9 +29,9 @@ Prepare TVB settings to be grouped under various profile classes.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
+
 import os
 import sys
-
 from tvb.basic.config import stored
 from tvb.basic.config.environment import Environment
 from tvb.basic.config.settings import ClusterSettings, DBSettings, VersionSettings, WebSettings, HPCSettings
@@ -79,16 +75,6 @@ class BaseSettingsProfile(object):
         self.version = VersionSettings(self.manager, self.BIN_FOLDER)
         self.file_storage = self.manager.get_attribute(stored.KEY_FILE_STORAGE, 'h5', str)
 
-        self.EXTERNALS_FOLDER_PARENT = os.path.dirname(self.BIN_FOLDER)
-        if not self.env.is_distribution():
-            self.EXTERNALS_FOLDER_PARENT = os.path.dirname(self.EXTERNALS_FOLDER_PARENT)
-
-        # The path to the matlab executable (if existent). Otherwise just return an empty string.
-        value = self.manager.get_attribute(stored.KEY_MATLAB_EXECUTABLE, '', str) or ''
-        if value == 'None':
-            value = ''
-        self.MATLAB_EXECUTABLE = value
-
         # Maximum number of vertices acceptable o be part of a surface at import time.
         self.MAX_SURFACE_VERTICES_NUMBER = self.manager.get_attribute(stored.KEY_MAX_NR_SURFACE_VERTEX, 300000, int)
         # Max number of ops that can be scheduled from UI in a PSE. To be correlated with the oarsub limitations
@@ -99,6 +85,16 @@ class BaseSettingsProfile(object):
         # The maximum disk space that can be used by one single user, in KB.
         self.MAX_DISK_SPACE = self.manager.get_attribute(stored.KEY_MAX_DISK_SPACE_USR, 5 * 1024 * 1024, int)
 
+        # The url of the elasticsearch server
+        self.ELASTICSEARCH_URL = self.manager.get_attribute(stored.KEY_ELASTICSEARCH_URL, "", str)
+        # The security key that is used to connect to the server
+        self.ELASTICSEARCH_API_KEY = self.manager.get_attribute(stored.KEY_ELASTICSEARCH_API_KEY, "", str)
+        # The request timeout for the elasticsearch rest calls
+        self.ELASTICSEARCH_LOGGING_INDEX = self.manager.get_attribute(stored.KEY_ELASTICSEARCH_LOGGING_INDEX, "", str)
+        self.ELASTICSEARCH_REQUEST_TIMEOUT = self.manager.get_attribute(stored.KEY_ELASTICSEARCH_REQUEST_TIMEOUT, 30, int)
+        # The number of logs in a message batch that are sent to the server
+        self.ELASTICSEARCH_BUFFER_THRESHOLD = self.manager.get_attribute(stored.KEY_ELASTICSEARCH_BUFFER_THRESHOLD, 1000000, int)
+
     @property
     def BIN_FOLDER(self):
         """
@@ -107,7 +103,7 @@ class BaseSettingsProfile(object):
         try:
             import tvb_bin
             return os.path.dirname(os.path.abspath(tvb_bin.__file__))
-        except ImportError:
+        except (ImportError, TypeError):
             return "."
 
     @property
@@ -158,7 +154,9 @@ class BaseSettingsProfile(object):
             tcl_root = os.path.dirname(os.path.dirname(os.path.dirname(library_folder)))
             self.env.setup_tk_tcl_environ(tcl_root)
 
-            self.env.setup_python_path(library_folder, os.path.join(library_folder, 'site-packages.zip'),
+            self.env.setup_python_path(library_folder,
+                                       os.path.join(library_folder, 'site-packages'),
+                                       os.path.join(library_folder, 'site-packages.zip'),
                                        os.path.join(library_folder, 'lib-dynload'))
 
         if self.env.is_linux_deployment():

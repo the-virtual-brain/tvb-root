@@ -33,6 +33,7 @@ Performance evolution from a TVB version to another.
 .. toctree::
    :maxdepth: 2
 
+   tvb_2.6.1_mac
    tvb_2.0_mac
    tvb_1.5.9_mac
    tvb_1.5.4_mac
@@ -62,4 +63,9 @@ Performance evolution from a TVB version to another.
 .. figure:: /_static/benchmarks-evolution.png
 
     Older Versions - Linux station
+
+
+.. figure:: /_static/benchmarks-evolution.png
+
+    Recent Version - Mac station
 

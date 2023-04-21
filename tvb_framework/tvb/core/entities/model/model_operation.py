@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and 
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -38,7 +34,7 @@ Here we define entities for Operations and Algorithms.
 
 import json
 from datetime import datetime
-from sqlalchemy import Boolean, Integer, String, DateTime, Column, ForeignKey
+from sqlalchemy import Boolean, Integer, String, DateTime, Column, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship, backref
 from tvb.basic.logger.builder import get_logger
 from tvb.config import TVB_IMPORTER_CLASS, TVB_IMPORTER_MODULE
@@ -129,10 +125,12 @@ class Algorithm(Base):
 
     algorithm_category = relationship(AlgorithmCategory,
                                       backref=backref('ALGORITHMS', order_by=id, cascade="delete, all"))
+    # explicit/composite unique constraint.  'name' is optional.
+    UniqueConstraint("module", "classname", name="uq_class")
 
     def __init__(self, module, classname, category_key, group_name=None, group_description=None,
                  display_name='', description="", subsection_name=None, last_introspection_check=None):
-
+        # type: (str, str, int, str, str, str, str, str, DateTime) -> None
         self.module = module
         self.classname = classname
         self.fk_category = category_key

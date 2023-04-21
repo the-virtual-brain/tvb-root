@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -34,9 +30,11 @@ import uuid
 import numpy
 import numpy as np
 import pytest
+from tvb.datatypes import connectivity
+from tvb.simulator import (simulator, models, coupling, integrators, monitors, noise)
 from tvb.basic.neotraits._core import TraitProperty
 from tvb.basic.neotraits.api import (
-    HasTraits, Attr, NArray, Final, List, trait_property,
+    HasTraits, Attr, NArray, Final, List, trait_property, narray_summary_info, narray_describe,
     Int, Float, Range, cached_trait_property, LinspaceRange, Dim
 )
 from tvb.basic.neotraits.ex import TraitTypeError, TraitValueError, TraitAttributeError, TraitError
@@ -765,7 +763,7 @@ def test_summary_info():
 
     class A(HasTraits):
         a = Attr(str, default='ana')
-        b = NArray(dtype=int)
+        b = NArray(dtype=np.int64)
         ref = Attr(field_type=Z)
 
     ainst = A(b=np.arange(3))
@@ -779,10 +777,64 @@ def test_summary_info():
     assert summary['Type'] == 'A'
     assert summary['title'] == 'the red rose'
     assert summary['a'] == "'ana'"
-    assert summary['b dtype'].startswith('int')
-    assert summary['b shape'].startswith('(3')
-    assert summary['b [min, median, max]'] == '[0, 1, 2]'
+    assert summary['b'] == ' [min, median, max] = [0, 1, 2] dtype = int64 shape = (3,)'
     assert summary['ref'] == 'Z zuzu'
+
+
+def test_narray_summary_info():
+    arr = np.array([1, 4, 9])
+    summary = narray_summary_info(arr, ar_name='attribute_name')
+
+    assert summary['attribute_name shape'] == '(3,)'
+    assert summary['attribute_name dtype'][:3] == 'int'
+    assert summary['attribute_name [min, median, max]'] == '[1, 4, 9]'
+
+
+def test_narray_summary_info_none():
+    summary = narray_summary_info(None, ar_name='attribute_name')
+    assert summary['attribute_name is None'] == 'True'
+    assert 1 == len(summary.keys())
+
+
+def test_narray_summary_info_empty():
+    summary = narray_summary_info(np.array([]), ar_name='attribute_name')
+    assert summary['attribute_name is empty'] == 'True'
+    assert 1 == len(summary.keys())
+
+
+def test_narray_summary_info_without_arname():
+    arr = np.array([1, 2, 3])
+    summary = narray_summary_info(arr)
+
+    assert summary['[min, median, max]'] == '[1, 2, 3]'
+    assert summary['shape'] == "(3,)"
+
+
+def test_narray_summary_info_condensed_form():
+    arr = np.arange(3)
+    summary = narray_summary_info(arr, ar_name='attribute_name', condensed=True)
+
+    assert '[min, median, max] = [0, 1, 2]' in summary['attribute_name']
+    assert 'dtype = int' in summary['attribute_name']
+    assert 'shape = (3,)' in summary['attribute_name']
+
+
+def test_narray_summary_info_condensed_form_single_item():
+    arr = np.array([4])
+    summary = narray_summary_info(arr, ar_name='attribute_name', condensed=True)
+
+    assert summary['attribute_name'] == '4'
+
+
+def test_narray_summary_info_with_nan():
+    arr = np.array([1, 2, np.inf, np.nan])
+    summary = narray_summary_info(arr)
+
+    assert summary['has NaN'] == 'True'
+    assert summary['shape'] == "(4,)"
+
+    desc = narray_describe(arr)
+    assert desc is not None
 
 
 def test_hastraits_str_does_not_crash():
@@ -910,3 +962,60 @@ def test_function_attribute():
     with pytest.raises(TypeError):
         # out of bounds
         ainst.c = "Not a function"
+
+
+def test_deepcopy():
+    con = connectivity.Connectivity.from_file("connectivity_192.zip")
+    original = simulator.Simulator(
+        connectivity=con,
+        coupling=coupling.Linear(a=numpy.array([2e-4])),
+        integrator=integrators.EulerStochastic(dt=10.0),
+        model=models.Linear(gamma=numpy.array([-1e-2])),
+        monitors=(monitors.Raw(),),
+        simulation_length=60e3
+    )
+    clone = original.duplicate()  # deepcopy() called inside duplicate()
+
+    # random attrs
+    o_random_stream = original.integrator.noise.random_stream
+    c_random_stream = clone.integrator.noise.random_stream
+
+    # check that attr are not the same
+    assert original.integrator.noise != clone.integrator.noise
+    assert original.integrator.noise != integrators.IntegratorStochastic.noise.default
+    assert original.model != clone.model
+    assert original.coupling != clone.coupling
+    assert original.connectivity != clone.connectivity
+    # even in the case of random generators
+    assert o_random_stream is not c_random_stream
+
+    # but values of attr are the same
+    assert original.integrator.noise.ntau == clone.integrator.noise.ntau == 0
+    assert original.integrator.noise.dt is clone.integrator.noise.dt is None
+    assert original.model.gamma[0] == clone.model.gamma[0]
+    assert original.coupling.a[0] == clone.coupling.a[0]
+    assert original.connectivity.number_of_regions == clone.connectivity.number_of_regions == 0
+    # random generators
+    assert np.array_equal(o_random_stream.get_state()[1], c_random_stream.get_state()[1])
+    assert o_random_stream.beta(1.0, 2.0) == c_random_stream.beta(1.0, 2.0)
+
+    # configure simulation and modify original
+    original.model.gamma[0] = 0.5
+    original.integrator.noise.ntau = 2.0
+    original.configure()
+
+    # check that values of attr are now different and values from clone are did not change
+    assert original.integrator.noise.ntau != clone.integrator.noise.ntau
+    assert clone.integrator.noise.ntau == 0
+
+    assert original.integrator.noise.dt != clone.integrator.noise.dt
+    assert clone.integrator.noise.dt is None
+
+    assert original.model.gamma[0] != clone.model.gamma[0]
+
+    assert original.connectivity.number_of_regions != clone.connectivity.number_of_regions
+    assert clone.connectivity.number_of_regions == 0
+
+    # random generators
+    assert not np.array_equal(o_random_stream.get_state()[1], c_random_stream.get_state()[1])
+    assert o_random_stream.beta(1.0, 2.0) != c_random_stream.beta(1.0, 2.0)

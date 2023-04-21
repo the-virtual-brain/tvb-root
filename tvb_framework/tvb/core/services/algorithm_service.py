@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and 
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -37,7 +33,6 @@ Code related to launching/duplicating operations is placed here.
 """
 import os
 from inspect import getmro
-
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcadapter import ABCAdapterForm
@@ -45,8 +40,9 @@ from tvb.core.adapters.abcuploader import ABCUploaderForm
 from tvb.core.entities.filters.chain import FilterChain, InvalidFilterChainInput
 from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
+from tvb.core.entities.model.model_project import User
 from tvb.core.entities.storage import dao
-from tvb.core.neotraits.forms import TraitDataTypeSelectField, TraitUploadField, TEMPORARY_PREFIX
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, TraitUploadField, TEMPORARY_PREFIX, UserSessionStrField
 from tvb.core.services.exceptions import OperationException
 from tvb.core.utils import date2string
 from tvb.storage.storage_interface import StorageInterface
@@ -123,14 +119,20 @@ class AlgorithmService(object):
             datatype_options.append((datatype, display_name))
         field.datatype_options = datatype_options
 
-    def _fill_form_with_datatypes(self, form, project_id, extra_conditions=None):
+    def _fill_form_with_datatypes(self, form, project_id, user, extra_conditions=None):
         for form_field in form.trait_fields:
             if isinstance(form_field, TraitDataTypeSelectField):
                 self.fill_selectfield_with_datatypes(form_field, project_id, extra_conditions)
+            elif isinstance(form_field, UserSessionStrField):
+                # set the value of input field on load from user session, if exists
+                # e.g. EBRAINS token
+                pref = user.get_preference(form_field.key)
+                form_field.unvalidated_data = pref
         return form
 
-    def prepare_adapter_form(self, adapter_instance=None, form_instance=None, project_id=None, extra_conditions=None):
-        # type: (ABCAdapter, ABCAdapterForm, int, []) -> ABCAdapterForm
+    def prepare_adapter_form(self, adapter_instance=None, form_instance=None,
+                             project_id=None, user=None, extra_conditions=None):
+        # type: (ABCAdapter, ABCAdapterForm, int, User, []) -> ABCAdapterForm
         form = None
         if form_instance is not None:
             form = form_instance
@@ -140,7 +142,7 @@ class AlgorithmService(object):
         if form is None:
             raise OperationException("Cannot prepare None form")
 
-        form = self._fill_form_with_datatypes(form, project_id, extra_conditions)
+        form = self._fill_form_with_datatypes(form, project_id, user, extra_conditions)
         return form
 
     def _prepare_upload_post_data(self, form, post_data, project_id):
@@ -165,9 +167,9 @@ class AlgorithmService(object):
                         raise excep
                 post_data[form_field.name] = file_name
 
-    def fill_adapter_form(self, adapter_instance, post_data, project_id):
-        # type: (ABCAdapter, dict, int) -> ABCAdapterForm
-        form = self.prepare_adapter_form(adapter_instance=adapter_instance, project_id=project_id)
+    def fill_adapter_form(self, adapter_instance, post_data, project_id, user):
+        # type: (ABCAdapter, dict, int, User) -> ABCAdapterForm
+        form = self.prepare_adapter_form(adapter_instance=adapter_instance, project_id=project_id, user=user)
         if isinstance(form, ABCUploaderForm):
             self._prepare_upload_post_data(form, post_data, project_id)
 
@@ -175,6 +177,11 @@ class AlgorithmService(object):
             form.fill_from_post_plus_defaults(post_data)
         else:
             form.fill_from_post(post_data)
+
+        for field in form.fields:
+            if isinstance(field, UserSessionStrField) and field.name in post_data and post_data[field.name]:
+                # These attributes will end in session on the current user
+                setattr(user, field.key, post_data[field.name])
 
         return form
 

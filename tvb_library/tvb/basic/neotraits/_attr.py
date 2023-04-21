@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -32,17 +28,16 @@
 This private module implements concrete declarative attributes
 """
 import collections.abc
+import inspect
 import numpy
 import types
 import typing
-from enum import Enum
-
 from ._declarative_base import _Attr, MetaType
 from .ex import TraitValueError, TraitTypeError, TraitAttributeError, TraitFinalAttributeError
 from tvb.basic.logger.builder import get_logger
 
 if typing.TYPE_CHECKING:
-    from ._core import HasTraits, TupleEnum
+    from ._core import HasTraits
 
 # a logger for the whole traits system
 log = get_logger('tvb.traits')
@@ -86,7 +81,8 @@ class Attr(_Attr):
 
     def __validate(self, value):
         """ check field_type and choices """
-        if not isinstance(value, self.field_type):
+        if not isinstance(value, self.field_type) and not (
+                inspect.isclass(self.default) and issubclass(value, self.field_type)):
             raise TraitTypeError("Attribute can't be set to an instance of {}".format(type(value)), attr=self)
         if self.choices is not None:
             if value not in self.choices and not (value is None and not self.required):
@@ -152,7 +148,8 @@ class Attr(_Attr):
         # (this attr instance is a class field, so the default is for the class)
         # This is consistent with how class fields work before they are assigned and become instance bound
         if self.field_name not in instance.__dict__:
-            if self.field_type != types.FunctionType and isinstance(self.default, types.FunctionType):
+            if (self.field_type != types.FunctionType and isinstance(self.default, types.FunctionType)
+                    or inspect.isclass(self.default) and issubclass(self.default, self.field_type)):
                 default = self.default()
             else:
                 default = self.default
@@ -617,7 +614,7 @@ class Range(object):
     def __init__(self, lo, hi, step=1.0):
         self.lo = lo
         self.hi = hi
-        self.step = step
+        self.step = step if abs(hi - lo) > abs(step) else abs(hi - lo)
 
     def __contains__(self, item):
         """ true if item between lo and high. ignores the step"""

@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and 
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -95,6 +91,7 @@ class UserController(BaseController):
                     kc_user_info = AuthorizationManager(
                         TvbProfile.current.KEYCLOAK_WEB_CONFIG).get_keycloak_instance().userinfo(auth_token)
                     user = self.user_service.get_external_db_user(kc_user_info)
+                    setattr(user, KEY_AUTH_TOKEN, auth_token)
                 else:
                     username = data[KEY_USERNAME]
                     password = data[KEY_PASSWORD]
@@ -159,10 +156,6 @@ class UserController(BaseController):
                 user = common.get_logged_user()
                 common.add2session(common.KEY_USER, self.user_service.get_user_by_id(user.id))
                 common.set_error_message("Could not save changes. Probably wrong old password!!")
-        else:
-            # Update session user since disk size might have changed from last time to profile.
-            user = self.user_service.get_user_by_id(user.id)
-            common.add2session(common.KEY_USER, user)
 
         template_specification['user_used_disk_human'] = format_bytes_human(
             self.user_service.compute_user_generated_disk_size(user.id))

@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -109,7 +105,8 @@ class ProjectService:
         if started_operations > 0:
             raise ProjectServiceException("A project can not be renamed while operations are still running!")
         if is_create:
-            current_proj = Project(new_name, current_user.id, data["description"])
+            current_proj = Project(new_name, current_user.id, data["max_operation_size"], data["description"],
+                                   data["disable_imports"])
             self.storage_interface.get_project_folder(current_proj.name)
         else:
             try:
@@ -121,6 +118,8 @@ class ProjectService:
                 self.storage_interface.rename_project(current_proj.name, new_name)
             current_proj.name = new_name
             current_proj.description = data["description"]
+            current_proj.disable_imports = data["disable_imports"]
+            current_proj.max_operation_size = data['max_operation_size']
         # Commit to make sure we have a valid ID
         current_proj.refresh_update_date()
         _, metadata_proj = current_proj.to_dict()
@@ -147,6 +146,16 @@ class ProjectService:
         # Finish operation
         self.logger.debug("Edit/Save OK for project:" + str(current_proj.id) + ' by user:' + current_user.username)
         return current_proj
+
+    def remove_member_from_project(self, proj_id, user_id):
+        """
+        remove a user from the list of members of that project
+        """
+        try:
+            dao.delete_members_for_project(proj_id, [user_id])
+        except Exception as error:
+            self.logger.exception(f'An error has occurred while trying to leave project {proj_id}')
+            raise ProjectServiceException(str(error))
 
     def find_project(self, project_id):
         """

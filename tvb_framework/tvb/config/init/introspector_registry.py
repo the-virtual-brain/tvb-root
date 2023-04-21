@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,18 +19,13 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
 import inspect
 from importlib import import_module
-
 import tvb.adapters.uploaders
 import tvb.adapters.visualizers
 import tvb.adapters.datatypes.db
@@ -45,7 +40,6 @@ from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter
-from tvb.adapters.creators.allen_creator import AllenConnectomeBuilder
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.adapters.visualizers.pse_discrete import DiscretePSEAdapter
@@ -74,7 +68,7 @@ def import_adapters(adapters_top_module, all_adapter_files):
                     else:
                         LOGGER.warning("Skipped Adapter(probably because MATLAB not found):" + str(ad_class))
 
-        except ImportError:
+        except Exception:
             LOGGER.exception("Could not introspect Adapters file:" + adapters_file)
     return result
 
@@ -105,7 +99,7 @@ class IntrospectionRegistry(object):
     This registry gathers classes that have a role in generating DB tables and rows.
     It is used at introspection time, for the following operations:
         - fill-in all rows in the ALGORITHM_CATEGORIES table
-        - fill-in all rows in the ALGORITHMS table. Will add BCT algorithms only if Matlab/Octave path is set
+        - fill-in all rows in the ALGORITHMS table
         - generate DB tables for all datatype indexes
         - keep an evidence of the datatype index removers
     All classes that subclass AlgorithmCategoryConfig, ABCAdapter, ABCRemover, HasTraitsIndex should be imported here
@@ -128,8 +122,11 @@ class IntrospectionRegistry(object):
     CONNECTIVITY_MODULE = ConnectivityViewer.__module__
     CONNECTIVITY_CLASS = ConnectivityViewer.__name__
 
-    ALLEN_CREATOR_MODULE = AllenConnectomeBuilder.__module__
-    ALLEN_CREATOR_CLASS = AllenConnectomeBuilder.__name__
+    ALLEN_CREATOR_MODULE = "tvb.adapters.creators.allen_creator"
+    ALLEN_CREATOR_CLASS = "AllenConnectomeBuilder"
+
+    SIIBRA_CREATOR_MODULE = "tvb.adapters.creators.siibra_creator"
+    SIIBRA_CREATOR_CLASS = "SiibraCreator"
 
     MEASURE_METRICS_MODULE = TimeseriesMetricsAdapter.__module__
     MEASURE_METRICS_CLASS = TimeseriesMetricsAdapter.__name__

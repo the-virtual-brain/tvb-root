@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -18,13 +18,9 @@
 # program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-# CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -114,7 +110,7 @@ class _InputTreeFragment(ABCAdapterForm):
                                          doc="""The name of this parameter configuration"""), name='dynamic_name')
 
 
-@traced
+@traced('fill_default_attributes', exclude=True)
 class DynamicModelController(BurstBaseController):
     KEY_CACHED_DYNAMIC_MODEL = 'cache.DynamicModelController'
     LOGGER = get_logger(__name__)
@@ -182,11 +178,9 @@ class DynamicModelController(BurstBaseController):
         }
 
     def _update_integrator(self, dynamic, integrator):
-        dynamic.integrator = integrator
-        dynamic.model.integrator = integrator
-        dynamic.model.configure()
         self._configure_integrator_noise(integrator, dynamic.model)
-        dynamic.phase_plane = phase_space_d3(dynamic.model, dynamic.integrator)
+        dynamic.integrator = integrator
+        dynamic.phase_plane.integrator = integrator
 
     def _change_integrator(self, dynamic, field_value):
         integrator = TVBEnum.string_to_enum(list(IntegratorViewModelsEnum), field_value).instance

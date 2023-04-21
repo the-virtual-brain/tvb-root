@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and 
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 """
@@ -32,50 +28,74 @@ Service layer used for kubernetes calls.
 
 .. moduleauthor:: Bogdan Valean <bogdan.valean@codemart.ro>
 """
-from concurrent.futures.thread import ThreadPoolExecutor
-from subprocess import Popen, PIPE
 
 import requests
+from kubernetes import config, client
+from kubernetes.config import incluster_config
+from concurrent.futures.thread import ThreadPoolExecutor
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 
 LOGGER = get_logger(__name__)
 
 
-class KubeNotifier:
+class KubeNotifier(object):
+
     @staticmethod
     def get_pods(application):
-        sa_token = Popen(['cat', '/var/run/secrets/kubernetes.io/serviceaccount/token'], stdout=PIPE,
-                         stderr=PIPE).stdout.read().decode()
-
-        auth_header = {"Authorization": "Bearer {}".format(sa_token)}
         openshift_pods = None
+
         try:
-            response = KubeNotifier.fetch_endpoints(auth_header, application)
-            openshift_pods = response.json()['subsets'][0]['addresses']
+            response = KubeNotifier.fetch_endpoints(application)
+            openshift_pods = response[0].subsets[0].addresses
+
         except Exception as e:
             LOGGER.error("Failed to retrieve openshift pods for application {}".format(application), e)
-        return openshift_pods, auth_header
+
+        return openshift_pods
 
     @staticmethod
     def notify_pods(url, target_application=TvbProfile.current.web.OPENSHIFT_APPLICATION):
+
         if not TvbProfile.current.web.OPENSHIFT_DEPLOY:
             return
 
         LOGGER.info("Notify all pods with url {}".format(url))
-        openshift_pods, auth_header = KubeNotifier.get_pods(target_application)
+        openshift_pods = KubeNotifier.get_pods(target_application)
         url_pattern = "http://{}:" + str(TvbProfile.current.web.SERVER_PORT) + url
+        auth_header = KubeNotifier.get_authorization_header()
+
         with ThreadPoolExecutor(max_workers=len(openshift_pods)) as executor:
             for pod in openshift_pods:
-                pod_ip = pod['ip']
+                pod_ip = pod.ip
                 LOGGER.info("Notify pod: {}".format(pod_ip))
                 executor.submit(requests.get, url=url_pattern.format(pod_ip), headers=auth_header)
 
     @staticmethod
-    def fetch_endpoints(auth_header, target_application=TvbProfile.current.web.OPENSHIFT_APPLICATION):
-        response = requests.get(
-            url='https://kubernetes.default.svc/api/v1/namespaces/{}/endpoints/{}'.format(
-                TvbProfile.current.web.OPENSHIFT_NAMESPACE, target_application),
-            verify=False, headers=auth_header)
-        response.raise_for_status()
+    def fetch_endpoints(target_application=TvbProfile.current.web.OPENSHIFT_APPLICATION):
+        config.load_incluster_config()
+
+        v1 = client.CoreV1Api()
+        response = v1.read_namespaced_endpoints_with_http_info(target_application,
+                                                               TvbProfile.current.web.OPENSHIFT_NAMESPACE)
+        LOGGER.info(f"This is the response from KubeClient: {response}")
         return response
+
+    @staticmethod
+    def get_authorization_token():
+        kube_config = incluster_config.InClusterConfigLoader(
+            token_filename=incluster_config.SERVICE_TOKEN_FILENAME,
+            cert_filename=incluster_config.SERVICE_CERT_FILENAME,
+            try_refresh_token=True)
+        kube_config.load_and_set(None)
+        return kube_config.token
+
+    @staticmethod
+    def get_authorization_header():
+        token = KubeNotifier.get_authorization_token()
+        return {"Authorization": "{}".format(token)}
+
+    @staticmethod
+    def check_token(authorization_token):
+        expected_token = KubeNotifier.get_authorization_token()
+        assert authorization_token == expected_token

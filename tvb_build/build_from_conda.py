@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,15 +19,12 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 import glob
+import json
 import shutil
 import zipfile
 import os.path
@@ -63,7 +60,6 @@ class Config:
             join("..", "tvb_library", "tvb"): join(self.target_site_packages, "tvb"),
             join("..", "tvb_storage", "tvb"): join(self.target_site_packages, "tvb"),
             join("..", "tvb_bin", "tvb_bin"): join(self.target_site_packages, "tvb_bin"),
-            join("..", "externals", "BCT"): join(self.target_site_packages, "externals", "BCT"),
         }
 
         self.commands_map = commands_map
@@ -73,7 +69,6 @@ class Config:
         _artifact_glob = "TVB_" + platform_name + "_*.zip"
         self.artifact_glob = join(self.build_folder, _artifact_glob)  # this is used to match old artifacts
         self.artifact_pth = join(self.build_folder, self.artifact_name)
-
 
     @staticmethod
     def win64():
@@ -95,7 +90,6 @@ class Config:
 
         return Config("Windows", "C:\\miniconda\\envs\\tvb-run",
                       join("Lib", "site-packages"), commands_map, _create_windows_script)
-
 
     @staticmethod
     def linux64():
@@ -212,7 +206,7 @@ def _modify_pth(pth_name):
     Replace tvb links with paths
     """
     tvb_markers = ["tvb_root", "tvb-root", "tvb_framework", "tvb_library", "third_party_licenses", "tvb_data",
-                   "Hudson", "hudson"]
+                   "Jenkins", "jenkins"]
     tvb_replacement = "./tvb\n./tvb_bin\n./tvb_data\n"
     new_content = ""
     first_tvb_replace = True
@@ -235,6 +229,17 @@ def _modify_pth(pth_name):
     _log(2, "PTH result: \n" + new_content)
     with open(pth_name, 'w') as fw:
         fw.write(new_content)
+
+
+def _fix_jupyter_kernel(tvb_data_folder, is_windows):
+    kernel_json = os.path.join(tvb_data_folder, "share", "jupyter", "kernels", "python3", "kernel.json")
+    if os.path.exists(kernel_json):
+        _log(2, "Fixing kernel.json")
+        with open(kernel_json, 'r') as fp:
+            kernelCfg = json.load(fp)
+            kernelCfg['argv'][0] = 'python' + ('.exe' if is_windows else "")
+        with open(kernel_json, 'w+') as fp:
+            json.dump(kernelCfg, fp)
 
 
 def prepare_anaconda_dist(config):
@@ -273,6 +278,7 @@ def prepare_anaconda_dist(config):
 
     _log(1, "Modifying PTH " + config.easy_install_pth)
     _modify_pth(config.easy_install_pth)
+    _fix_jupyter_kernel(config.target_library_root, config.platform_name == "Windows")
 
     _log(1, "Creating command files:")
     for target_file, content in config.commands_map.items():

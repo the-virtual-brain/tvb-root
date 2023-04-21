@@ -66,14 +66,11 @@ Your port **8080** should be free, as a CherryPy service will try to run there.
 Your default browser should automatically open <http://localhost:8080/> which is the way to
 interact with TVB Web Graphical Interface.
 
-When using from sources (Pypi or Github, not TVB_Distribution), if you want BCT adapters 
-enabled, you should manually download BCT <https://sites.google.com/site/bctnet/>
-and set env variable **BCT_PATH** towards the directory where you unzip BCT, plus also 
-have Octave or Matlab installed with command line API enabled.
     
 ### Testing
 
-For testing our packages, PyTest framework can be used. 
+For testing our packages, PyTest framework can be used. We also need a few more dependencies for tests specific, 
+which are listed in setup.py files.
 
 Pytest will run all files in the current directory and its subdirectories
 of the form test_*.py or *_test.py.
@@ -98,7 +95,7 @@ The command for running our tests has two forms:
             python -m pytest --pyargs tvb.tests.library
     
 - For all the tests to run correctly, the dependencies specified as LIBRARY_REQUIRED_EXTRA in [setup.py](https://github.com/the-virtual-brain/tvb-root/blob/master/tvb_library/setup.py) should be installed
-- Make sure that tvb-data package is installed from [Zenodo](https://zenodo.org/record/4263723)
+- Make sure that tvb-data package is installed from [Zenodo](https://zenodo.org/record/7574266)
 
 ### Coverage
 

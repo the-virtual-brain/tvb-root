@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -36,14 +32,16 @@ Manager for the file storage version updates.
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
+
 from datetime import datetime
 import os
+from sqlalchemy import text
 
 import tvb.core.entities.file.file_update_scripts as file_update_scripts
+from tvb.core.entities.storage import SA_SESSIONMAKER
 from tvb.basic.config import stored
 from tvb.basic.profile import TvbProfile
 from tvb.core.code_versions.base_classes import UpdateManager
-from tvb.core.entities.model.db_update_scripts.helper import delete_old_burst_table_after_migration
 from tvb.core.entities.storage import dao
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.utils import string2date
@@ -172,7 +170,7 @@ class FilesUpdateManager(UpdateManager):
 
             self.log.info("Updated H5 files in total: %d [fine:%d, failed:%d in: %s min]" % (
                 total_count, no_ok, no_error, int((datetime.now() - start_time).seconds / 60)))
-            delete_old_burst_table_after_migration()
+            self._delete_old_burst_table_after_migration()
 
             # Now update the configuration file since update was done
             config_file_update_dict = {stored.KEY_LAST_CHECKED_FILE_VERSION: TvbProfile.current.version.DATA_VERSION}
@@ -244,3 +242,20 @@ class FilesUpdateManager(UpdateManager):
         create_date_str = str(H5File.get_metadata_param(h5_file, 'Create_date'), 'utf-8')
         create_date = string2date(create_date_str, date_format='datetime:%Y-%m-%d %H:%M:%S.%f')
         return create_date
+
+    def _delete_old_burst_table_after_migration(self):
+        session = SA_SESSIONMAKER()
+        try:
+            session.execute(text("""DROP TABLE "BURST_CONFIGURATION"; """))
+            session.commit()
+        except Exception as excep:
+            session.close()
+            session = SA_SESSIONMAKER()
+            self.log.exception(excep)
+            try:
+                session.execute(text("""DROP TABLE if exists "BURST_CONFIGURATION" cascade; """))
+                session.commit()
+            except Exception as excep:
+                self.log.exception(excep)
+        finally:
+            session.close()

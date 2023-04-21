@@ -1,5 +1,7 @@
 pipeline {
-    agent { label 'WindowsDocker' }
+    agent {
+        label 'WindowsDocker'
+    }
 
     environment {
         FULL_DOCKER_IMAGE_NAME = 'docker-repository.codemart.ro/tvb-build-windows:docker'
@@ -9,22 +11,25 @@ pipeline {
         stage('Build docker image'){
             steps {
                 script{
-                    def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}", "-f tvb_build/docker/Dockerfile-Windows-build tvb_build/docker")
+                    def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}", "-f tvb_build/docker/Dockerfile-win tvb_build/docker")
                     dockerImage.push()
                 }
             }
         }
         stage('Copy Step 1') {
              steps {
-                 sh '''#!/bin/bash
-                       rm -R -f tvb_build/build
+                 bat '''
+                       cd tvb_build
+                       if exist build del build
+                       cd ..
                  '''
                  step ([$class: 'CopyArtifact',
                      projectName: 'TVB - Step1',
                      selector: lastSuccessful(),
                      filter: 'tvb_build/build/TVB_build_step1.zip']);
-                 sh '''#!/bin/bash
-                       ls -all tvb_build/build
+                 bat '''
+                       cd tvb_build
+                       dir build
                  '''
                  stash includes: 'tvb_build/build/TVB_build_step1.zip', name: 'step1'
              }
@@ -50,7 +55,7 @@ pipeline {
     }
     post {
         changed {
-            mail to: 'bogdan.valean@codemart.ro paula.prodan@codemart.ro lia.domide@codemart.ro',
+            mail to: 'paula.prodan@codemart.ro lia.domide@codemart.ro',
             subject: "Jenkins Pipeline ${currentBuild.fullDisplayName} changed status",
             body: """
                 Result: ${currentBuild.result}

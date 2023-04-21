@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -73,8 +69,7 @@ class Integrator(HasTraits):
 
     dt = Float(
         label="Integration-step size (ms)",
-        default=0.01220703125, #0.015625,
-        #range = basic.Range(lo= 0.0048828125, hi=0.244140625, step= 0.1, base=2.)  mh: was commented
+        default=0.01220703125,
         required=True,
         doc="""The step size used by the integration routine in ms. This
         should be chosen to be small enough for the integration to be
@@ -272,11 +267,11 @@ class IntegratorStochastic(Integrator):
 
     noise = Attr(
         field_type=noise.Noise,
-        label = "Integration Noise",
-        default=noise.Additive(),
-        required = True,
-        doc = """The stochastic integrator's noise source. It incorporates its
-        own instance of Numpy's RandomState.""")  # type: noise.Noise
+        label="Integration Noise",
+        default=noise.Additive,
+        required=True,
+        doc="""The stochastic integrator's noise source. It incorporates its
+        own instance of Numpy's RandomState.""")
 
     def set_random_state(self, random_state):
         if random_state is not None:

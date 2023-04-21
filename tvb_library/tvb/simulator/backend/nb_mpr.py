@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -100,7 +96,7 @@ class NbMPRBackend(MakoUtilMix):
         # stimulus evaluated outside the backend, no restrictions
 
 
-    def run_sim(self, sim, nstep=None, simulation_length=None, chunksize=100000, compatibility_mode=False):
+    def run_sim(self, sim, nstep=None, simulation_length=None, chunksize=100000, compatibility_mode=False, print_source=False):
         assert nstep is not None or simulation_length is not None or sim.simulation_length is not None
 
         self.check_compatibility(sim)
@@ -110,10 +106,10 @@ class NbMPRBackend(MakoUtilMix):
             nstep = int(np.ceil(simulation_length/sim.integrator.dt))
 
         if isinstance(sim.monitors[0], monitors.Raw):
-            svar_bufs = self._run_sim_plain(sim, nstep, compatibility_mode=compatibility_mode)
+            svar_bufs = self._run_sim_plain(sim, nstep, compatibility_mode=compatibility_mode, print_source=print_source)
             time = np.arange(svar_bufs[0].shape[1]) * sim.integrator.dt
         elif isinstance(sim.monitors[0], monitors.TemporalAverage):
-            svar_bufs = self._run_sim_tavg_chunked(sim, nstep, chunksize=chunksize, compatibility_mode=compatibility_mode)
+            svar_bufs = self._run_sim_tavg_chunked(sim, nstep, chunksize=chunksize, compatibility_mode=compatibility_mode, print_source=print_source)
             T = sim.monitors[0].period
             time = np.arange(svar_bufs[0].shape[1]) * T + 0.5 * T
         else:
@@ -124,13 +120,13 @@ class NbMPRBackend(MakoUtilMix):
         )
         return (time, data),   
 
-    def _run_sim_plain(self, sim, nstep=None, compatibility_mode=False):
+    def _run_sim_plain(self, sim, nstep=None, compatibility_mode=False, print_source=True):
         template = '<%include file="nb-montbrio.py.mako"/>'
         content = dict(
                 compatibility_mode=compatibility_mode, 
                 sim=sim
         ) 
-        integrate = self.build_py_func(template, content, name='integrate', print_source=True)
+        integrate = self.build_py_func(template, content, name='integrate', print_source=print_source)
 
         horizon = sim.connectivity.horizon
         buf_len = horizon + nstep
@@ -148,27 +144,32 @@ class NbMPRBackend(MakoUtilMix):
             sim.stimulus.configure_time(np.arange(nstep)*sim.integrator.dt)
             stimulus = sim.stimulus()
 
-        svar_bufs = integrate(
+        svar_bufs = self._run_integrate( integrate, sim, N, nstep, svar_bufs, stimulus)
+
+        return [svar_buf[:,horizon:] for svar_buf in svar_bufs]
+
+
+    def _run_integrate(self, integrate, sim, N, nstep, svar_bufs, stimulus):
+        return integrate(
             N = N,
             dt = sim.integrator.dt,
             nstep = nstep,
-            i0 = horizon,
+            i0 = sim.connectivity.horizon,
             **dict(zip(sim.model.state_variables,svar_bufs)),
             weights = sim.connectivity.weights, 
             idelays = sim.connectivity.idelays,
             parmat = sim.model.spatial_parameter_matrix.T,
             stimulus = stimulus
         )
-        return [svar_buf[:,horizon:] for svar_buf in svar_bufs]
 
     def _time_average(self, ts, istep):
         N, T = ts.shape
         return np.mean(ts.reshape(N,T//istep,istep),-1) # length of ts better be multiple of istep 
 
-    def _run_sim_tavg_chunked(self, sim, nstep, chunksize, compatibility_mode=False):
+    def _run_sim_tavg_chunked(self, sim, nstep, chunksize, compatibility_mode=False, print_source=False):
         template = '<%include file="nb-montbrio.py.mako"/>'
         content = dict(sim=sim, compatibility_mode=compatibility_mode) 
-        integrate = self.build_py_func(template, content, name='integrate', print_source=False)
+        integrate = self.build_py_func(template, content, name='integrate', print_source=print_source)
         # chunksize in number of steps 
         horizon = sim.connectivity.horizon
         N = sim.connectivity.number_of_regions
@@ -197,17 +198,7 @@ class NbMPRBackend(MakoUtilMix):
                         np.arange(chunk*chunksize, (chunk+1)*chunksize)*sim.integrator.dt
                 )
                 stimulus = sim.stimulus()
-            svar_bufs = integrate(
-                N = N,
-                dt = sim.integrator.dt,
-                nstep = chunksize,
-                i0 = horizon,
-                **dict(zip(sim.model.state_variables,svar_bufs)),
-                weights = sim.connectivity.weights, 
-                idelays = sim.connectivity.idelays,
-                parmat = sim.model.spatial_parameter_matrix,
-                stimulus = stimulus
-            )
+            svar_bufs = self._run_integrate( integrate, sim, N, chunksize, svar_bufs, stimulus)
 
             tavg_chunk = chunk * tavg_chunksize
             svar_chunks = [self._time_average(svar[:, horizon:], tavg_steps) for svar in svar_bufs]

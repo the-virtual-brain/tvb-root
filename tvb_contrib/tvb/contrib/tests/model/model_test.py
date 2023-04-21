@@ -4,7 +4,7 @@
 #  TheVirtualBrain-Contributors Package. This package holds simulator extensions.
 #  See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -17,18 +17,14 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 
 """
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
 import numpy
-
+import pytest
 from tvb.basic.logger.builder import get_logger
 from tvb.contrib.simulator.models.brunel_wang import BrunelWang
 from tvb.contrib.simulator.models.epileptor import HMJEpileptor
@@ -41,12 +37,13 @@ from tvb.contrib.simulator.models.liley_steynross import LileySteynRoss
 from tvb.contrib.simulator.models.morris_lecar import MorrisLecar
 from tvb.contrib.simulator.models.wong_wang import WongWang
 from tvb.simulator.integrators import HeunDeterministic
-from tvb.tests.framework.core.base_testcase import BaseTestCase
+from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator.plot.phase_plane_interactive import PhasePlaneInteractive
 
 LOG = get_logger(__name__)
 
 
+@pytest.mark.skip(reason="Because it opens a window for manual inspection")
 class TestContribModels(BaseTestCase):
 
     @staticmethod
@@ -97,7 +94,7 @@ class TestContribModels(BaseTestCase):
         self._show_model_figure("Liley Steynross", LileySteynRoss, 0.9)
 
     def test_morric_lecar(self):
-        self._show_model_figure("Morris Lecar", MorrisLecar, 2**-5)
+        self._show_model_figure("Morris Lecar", MorrisLecar, 2 ** -5)
 
     def test_wong_wang_model(self):
-        self._show_model_figure("Wong Wang", WongWang, 2**-5)
+        self._show_model_figure("Wong Wang", WongWang, 2 ** -5)

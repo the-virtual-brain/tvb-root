@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and 
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -56,7 +52,6 @@ class RootDAO(object, metaclass=SESSION_META_CLASS):
     EXCEPTION_DATATYPE_GROUP = "DataTypeGroup"
     EXCEPTION_DATATYPE_SIMULATION = SIMULATION_DATATYPE_CLASS
 
-
     def store_entity(self, entity, merge=False):
         """
         Store in DB one generic entity.
@@ -74,7 +69,6 @@ class RootDAO(object, metaclass=SESSION_META_CLASS):
         saved_entity = self.session.query(entity.__class__).filter_by(id=entity.id).one()
         return saved_entity
 
-
     def store_entities(self, entities_list):
         """
         Store in DB a list of generic entities.
@@ -86,7 +80,6 @@ class RootDAO(object, metaclass=SESSION_META_CLASS):
         for entity in entities_list:
             stored_entities.append(self.session.query(entity.__class__).filter_by(id=entity.id).one())
         return stored_entities
-
 
     def get_generic_entity(self, entity_type, filter_value, select_field="id"):
         """
@@ -106,7 +99,6 @@ class RootDAO(object, metaclass=SESSION_META_CLASS):
         self.session.expunge_all()
         return result
 
-
     def remove_entity(self, entity_class, entity_id):
         """ 
         Find entity by Id and Type, end then remove it.
@@ -124,10 +116,7 @@ class RootDAO(object, metaclass=SESSION_META_CLASS):
             self.logger.exception(excep)
             return False
 
-
-    #
     # DATA_TYPE BUT GENERIC METHODS
-    #
 
     def remove_datatype(self, gid):
         """
@@ -138,7 +127,6 @@ class RootDAO(object, metaclass=SESSION_META_CLASS):
             extended_ent = self.get_generic_entity(entity.module + "." + entity.type, entity.id)
             self.session.delete(extended_ent[0])
         self.session.commit()
-
 
     def get_datatype_by_id(self, data_id):
         """

@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -42,6 +38,7 @@ from copy import copy
 from io import BytesIO
 from tvb.basic.exceptions import ValidationException
 from tvb.basic.neotraits.api import Attr, NArray, List, HasTraits, Int, narray_summary_info
+from tvb.basic.neotraits.ex import TraitAttributeError
 from tvb.basic.readers import ZipReader, H5Reader, try_get_absolute_path
 
 
@@ -288,24 +285,24 @@ class Connectivity(HasTraits):
             "Number of connections": self.number_of_connections,
             "Undirected": self.undirected,
         }
-        summary.update(narray_summary_info(self.areas, ar_name='areas'))
-        summary.update(narray_summary_info(self.weights, ar_name='weights'))
-        summary.update(narray_summary_info(
-            self.weights[self.weights.nonzero()],
-            ar_name='weights-non-zero',
-            omit_shape=True))
-        summary.update(narray_summary_info(
-            self.tract_lengths,
-            ar_name='tract_lengths',
-            omit_shape=True))
-        summary.update(narray_summary_info(
-            self.tract_lengths[self.tract_lengths.nonzero()],
-            ar_name='tract_lengths-non-zero',
-            omit_shape=True))
-        summary.update(narray_summary_info(
-            self.tract_lengths[self.weights.nonzero()],
-            ar_name='tract_lengths (connections)',
-            omit_shape=True))
+        summary.update(narray_summary_info(self.areas, ar_name='areas', condensed=True))
+
+        try:
+            summary.update(narray_summary_info(self.weights, ar_name='weights', condensed=True))
+            summary.update(narray_summary_info(self.weights[self.weights.nonzero()],
+                                               ar_name='weights-non-zero', condensed=True))
+        except TraitAttributeError:
+            summary['weights'] = "undefined"
+
+        try:
+            summary.update(narray_summary_info(self.tract_lengths, ar_name='tract_lengths', condensed=True))
+            summary.update(narray_summary_info(self.tract_lengths[self.tract_lengths.nonzero()],
+                                               ar_name='tract_lengths-non-zero', condensed=True))
+            summary.update(narray_summary_info(self.tract_lengths[self.weights.nonzero()],
+                                               ar_name='tract_lengths (connections)', condensed=True))
+        except TraitAttributeError:
+            summary['tract_lengths'] = "undefined"
+
         return summary
 
     def set_idelays(self, dt):
@@ -743,7 +740,7 @@ class Connectivity(HasTraits):
         return result
 
     @classmethod
-    def from_bytes_stream(cls, bytes_stream):
+    def from_bytes_stream(cls, bytes_stream, content_type='.zip'):
         """Construct a Connectivity from a stream of bytes."""
         reader = ZipReader(BytesIO(bytes_stream))
         return cls._read(reader)

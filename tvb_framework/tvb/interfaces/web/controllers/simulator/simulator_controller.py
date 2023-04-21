@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 import os
@@ -40,7 +36,7 @@ from tvb.adapters.forms.model_forms import get_form_for_model
 from tvb.adapters.forms.monitor_forms import get_form_for_monitor
 from tvb.adapters.forms.noise_forms import get_form_for_noise
 from tvb.adapters.simulator.range_parameters import RangeParametersCollector
-from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterForm
+from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterForm, SimulatorAdapter
 from tvb.adapters.forms.simulator_fragments import *
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.file.simulator.view_model import AdditiveNoiseViewModel, BoldViewModel
@@ -509,7 +505,7 @@ class SimulatorController(BurstBaseController):
             previous_form_action_url=previous_form_action_url)
 
         form_action_url, if_bold_url = self.get_urls_for_next_monitor_fragment(next_monitor, current_monitor)
-        self.monitors_handler.update_monitor(current_monitor, session_stored_simulator.is_surface_simulation)
+        self.monitors_handler.update_monitor(current_monitor, session_stored_simulator)
         return self.monitors_handler.handle_next_fragment_for_monitors(self.context, rendering_rules, current_monitor,
                                                                        next_monitor, False, form_action_url,
                                                                        if_bold_url)
@@ -607,8 +603,15 @@ class SimulatorController(BurstBaseController):
         burst_config = self.context.burst_config
         burst_config.start_time = datetime.now()
         burst_config.range1 = range_param1.to_json()
+        len_range = len(range_param1.get_range_values())
         if range_param2:
             burst_config.range2 = range_param2.to_json()
+            len_range *= len(range_param2.get_range_values())
+
+        if not self.simulator_service.operation_service.fits_max_operation_size(SimulatorAdapter(), session_stored_simulator,
+                                                                                self.context.project.id, len_range):
+            return {'error': self.MAX_SIZE_ERROR_MSG}
+
         burst_config = self.burst_service.prepare_burst_for_pse(burst_config)
         session_stored_simulator.operation_group_gid = uuid.UUID(burst_config.operation_group.gid)
         session_stored_simulator.ranges = json.dumps(burst_config.ranges)
@@ -653,6 +656,10 @@ class SimulatorController(BurstBaseController):
                                                                                        SimulationHistoryIndex)
             session_stored_simulator.history_gid = simulation_state_index[0].gid
 
+        if not self.simulator_service.operation_service.fits_max_operation_size(SimulatorAdapter(), session_stored_simulator,
+                                                                                self.context.project.id):
+            return {'error': self.MAX_SIZE_ERROR_MSG}
+
         burst_config.start_time = datetime.now()
         session_burst_config = self.burst_service.store_burst(burst_config)
 
@@ -695,13 +702,12 @@ class SimulatorController(BurstBaseController):
         try:
             burst_config = self.burst_service.load_burst_configuration(burst_config_id)
             storage_path = StorageInterface().get_project_folder(self.context.project.name,
-                                                                str(burst_config.fk_simulation))
+                                                                 str(burst_config.fk_simulation))
             simulator = h5.load_view_model(burst_config.simulator_gid, storage_path)
             last_loaded_form_url = self.get_url_for_final_fragment(burst_config)
             self.context.init_session_at_burst_loading(burst_config, simulator, last_loaded_form_url)
 
             form = self.prepare_first_fragment()
-            self.monitors_handler.build_list_of_monitors_from_view_models(self.context.simulator)
             rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
                                                               is_simulation_readonly_load=True, is_first_fragment=True)
             return rendering_rules.to_dict()
@@ -715,7 +721,6 @@ class SimulatorController(BurstBaseController):
     def _prepare_first_fragment_for_burst_copy(self, burst_config_id, burst_name_format):
         simulator, burst_config_copy = self.burst_service.prepare_data_for_burst_copy(
             burst_config_id, burst_name_format, self.context.project)
-        self.monitors_handler.build_list_of_monitors_from_view_models(simulator)
 
         last_loaded_form_url = self.get_url_for_final_fragment(burst_config_copy)
         self.context.init_session_at_copy_preparation(burst_config_copy, simulator, last_loaded_form_url)
@@ -744,7 +749,6 @@ class SimulatorController(BurstBaseController):
     def reset_simulator_configuration(self):
         burst_config = BurstConfiguration(self.context.project.id)
         self.context.init_session_at_sim_reset(burst_config, SimulatorWizzardURLs.SET_CONNECTIVITY_URL)
-        self.monitors_handler.clear_next_monitors_dict()
 
         form = self.prepare_first_fragment()
         rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
@@ -807,7 +811,6 @@ class SimulatorController(BurstBaseController):
                 dts_folder = os.path.join(sim_folder, StorageInterface.EXPORTED_SIMULATION_DTS_DIR)
                 ImportService().import_list_of_operations(self.context.project, dts_folder, False, None)
 
-                self.monitors_handler.build_list_of_monitors_from_view_models(simulator)
                 if burst_config.is_pse_burst():
                     last_loaded_form_url = SimulatorWizzardURLs.LAUNCH_PSE_URL
                 self.context.init_session_at_sim_config_from_zip(burst_config, simulator, last_loaded_form_url)

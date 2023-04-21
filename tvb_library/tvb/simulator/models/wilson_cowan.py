@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,16 +19,13 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+#
 
 """
 Wilson-Cowan equations based model definition.
-
 """
 import numpy
 from .base import ModelNumbaDfun
@@ -84,7 +81,7 @@ class WilsonCowan(ModelNumbaDfun):
     +--------------+------------+
     | r_e, r_i     |    0.00    |
     +--------------+------------+
-    | tau_e, tau_i |    9.0    |
+    | tau_e, tau_i |    9.0     |
     +--------------+------------+
     | c_ee         |    11.0    |
     +--------------+------------+
@@ -102,17 +99,17 @@ class WilsonCowan(ModelNumbaDfun):
     +--------------+------------+
     | b_i          |    3.0     |
     +--------------+------------+
-    | theta_e      |    -1.0     |
+    | theta_e      |    -1.0    |
     +--------------+------------+
-    | theta_i      |    -1.0     |
+    | theta_i      |    -1.0    |
     +--------------+------------+
     | alpha_e      |    1.0     |
     +--------------+------------+
     | alpha_i      |    1.0     |
     +--------------+------------+
-    | P            |    -1.0     |
+    | P            |    -1.0    |
     +--------------+------------+
-    | Q            |    -1.0     |
+    | Q            |    -1.0    |
     +--------------+------------+
     | c_e, c_i     |    0.0     |
     +--------------+------------+
