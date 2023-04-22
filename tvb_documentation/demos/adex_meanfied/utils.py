@@ -1,10 +1,10 @@
 import numpy as np
 import tomli
+import scipy.stats as stats
 from tvb.simulator.lab import *
 
 from tvb.basic.neotraits.api import Final, Attr
 from tvb.datatypes.equations import TemporalApplicableEquation
-import numpy as np
 
 def load_tvb_model_toml(model, path):
     with open(path, mode="rb") as fp:
@@ -32,6 +32,9 @@ def load_tvb_model_toml(model, path):
             raise NotImplementedError(f'unsupported attribute: {k}')
     return model
 
+def plot_normal(mu, sigma, ax, **kwds):
+    x = np.linspace(mu - 3*sigma, mu + 3*sigma, 100)
+    ax.plot( x, stats.norm.pdf(x, mu, sigma), **kwds )
 
 class AlphaFunction(TemporalApplicableEquation):
     equation = Final(
