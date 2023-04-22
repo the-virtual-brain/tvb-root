@@ -602,30 +602,44 @@ class ZerlautAdaptationSecondOrder(ZerlautAdaptationFirstOrder):
     dynamical unit at a node $k$ in a BNM with $l$ nodes reads:
 
     .. math::
+        \begin{aligned}
         \forall \mu,\lambda,\eta \in \{e,i\}^3\,
-        \left\{
-        \begin{split}
-        T \, \frac{\partial \nu_\mu}{\partial t} = & (\mathcal{F}_\mu - \nu_\mu )
-        + \frac{1}{2} \, c_{\lambda \eta} \,
+        &\left\{
+        \begin{aligned}
+        T \frac{\partial \nu_\mu}{\partial t} &= (\mathcal{F}_\mu - \nu_\mu )
+        + \frac{1}{2} c_{\lambda \eta} 
         \frac{\partial^2 \mathcal{F}_\mu}{\partial \nu_\lambda \partial \nu_\eta} \\
-        T \, \frac{\partial c_{\lambda \eta} }{\partial t}  =  & A_{\lambda \eta} +
-        (\mathcal{F}_\lambda - \nu_\lambda ) \, (\mathcal{F}_\eta - \nu_\eta ) + \\
-        & c_{\lambda \mu} \frac{\partial \mathcal{F}_\mu}{\partial \nu_\lambda} +
+        T \frac{\partial c_{\lambda \eta} }{\partial t}  &= A_{\lambda \eta} +
+        (\mathcal{F}_\lambda - \nu_\lambda ) (\mathcal{F}_\eta - \nu_\eta )  \\
+        &+ c_{\lambda \mu} \frac{\partial \mathcal{F}_\mu}{\partial \nu_\lambda} +
         c_{\mu \eta} \frac{\partial \mathcal{F}_\mu}{\partial \nu_\eta}
         - 2  c_{\lambda \eta}
-        \end{split}
-        \right.
-        \dot{W}_k &= W_k/tau_w-b*E_k  \\
+        \end{aligned}\\
+        \right. \\
+        &\frac{\partial W_\mu}{\partial t} = \frac{W_\mu}{\tau_{w\mu}}-b_\mu*\nu_\mu +
+        \frac{a_\mu(\mu_V-E_{L_\mu})}{\tau_{w\mu}}\\
+        \end{aligned}
 
         with:
         A_{\lambda \eta} =
         \left\{
         \begin{split}
-        \frac{\mathcal{F}_\lambda \, (1/T - \mathcal{F}_\lambda)}{N_\lambda}
+        \frac{\mathcal{F}_\lambda (1/T - \mathcal{F}_\lambda)}{N_\lambda}
         \qquad & \textrm{if  } \lambda=\eta \\
         0 \qquad & \textrm{otherwise}
         \end{split}
         \right.
+
+        where:
+        \begin{split}
+        F_\lambda &= F_\lambda(\nu_e, \nu_i, \nu^{input\lambda}_e, \nu^{input\lambda}_i, W_\lambda)\\
+        \nu^{input,e}_e &= \nu_{connectome} + \nu_{surface} + \nu^{ext}_ee + w_{noise}OU\\
+        \nu^{input,e}_i &= S_i\nu_{connectome} + \nu_{surface} + \nu^{ext}_ei + w_{noise}OU\\
+        \nu^{input,i}_e &= \nu_{surface} + \nu^{ext}_ie\\
+        \nu^{input,i}_i &= \nu_{surface} + \nu^{ext}_ii\\
+        \end{split}
+
+        \textrm{given OU is the Ornstein-Uhlenbeck process}.
     """
 
     #  Used for phase-plane axis ranges and to bound random initial() conditions.
@@ -683,7 +697,8 @@ class ZerlautAdaptationSecondOrder(ZerlautAdaptationFirstOrder):
             - 2  c_{\lambda \eta}
             \end{aligned}\\
             \right. \\
-            &\dot{W}_k = W_k/\tau_w-b*E_k  \\
+            &\frac{\partial W_\mu}{\partial t} = \frac{W_\mu}{\tau_{w\mu}}-b_\mu*\nu_\mu +
+            \frac{a_\mu(\mu_V-E_{L_\mu})}{\tau_{w\mu}}\\
             \end{aligned}
 
             with:
@@ -696,6 +711,16 @@ class ZerlautAdaptationSecondOrder(ZerlautAdaptationFirstOrder):
             \end{split}
             \right.
 
+            where:
+            \begin{split}
+            F_\lambda &= F_\lambda(\nu_e, \nu_i, \nu^{input\lambda}_e, \nu^{input\lambda}_i, W_\lambda)\\
+            \nu^{input,e}_e &= \nu_{connectome} + \nu_{surface} + \nu^{ext}_ee + w_{noise}OU\\
+            \nu^{input,e}_i &= S_i\nu_{connectome} + \nu_{surface} + \nu^{ext}_ei + w_{noise}OU\\
+            \nu^{input,i}_e &= \nu_{surface} + \nu^{ext}_ie\\
+            \nu^{input,i}_i &= \nu_{surface} + \nu^{ext}_ii\\
+            \end{split}
+
+            \textrm{given OU is the Ornstein-Uhlenbeck process}.
         """
         # number of neurons
         N_e = self.N_tot * (1 - self.g)
