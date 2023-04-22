@@ -50,7 +50,7 @@ parameters:
   - name: LAST_CHECKED_CODE_VERSION
     displayName: Last checked code version
     description: TVB checks this number to decide if data migration is necessary at re-deploy
-    value: 17440
+    value: 17874
     required: true
 
   - name: TVB_STORAGE_PATH
@@ -292,6 +292,9 @@ objects:
                   cpu: '3'
                 requests:
                   cpu: '1'
+              env:
+                - name: APP_ENCRYPTION_HANDLER
+                  value: 'true'
               ports:
                 - containerPort: 8080
                   protocol: TCP
