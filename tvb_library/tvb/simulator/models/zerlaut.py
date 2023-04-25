@@ -186,13 +186,13 @@ class ZerlautAdaptationFirstOrder(Model):
         doc="""Inhibitory adaptation conductance [nS]""")
 
     tau_w_e = NArray(
-        label=":math:`tau_{we}`",
+        label=r":math:`\tau_{we}`",
         default=numpy.array([500.0]),
         domain=Range(lo=1.0, hi=1000.0, step=1.0),
         doc="""Adaptation time constant of excitatory neurons [ms]""")
 
     tau_w_i = NArray(
-        label=":math:`tau_{wi}`",
+        label=r":math:`\tau_{wi}`",
         default=numpy.array([1.0]),
         domain=Range(lo=1.0, hi=1000.0, step=1.0),
         doc="""Adaptation time constant of inhibitory neurons [ms]""")
@@ -320,24 +320,23 @@ class ZerlautAdaptationFirstOrder(Model):
         doc="""external drive""")
 
     tau_OU = NArray(
-        label=":math:`\ntau noise`",
+        label=r":math:`\tau` noise",
         default=numpy.array([5.0]),
         domain=Range(lo=0.10, hi=10.0, step=0.01),
         doc="""time constant noise""")
 
-    weight_noise =  NArray(
-        label=":math:`\nweight noise`",
+    weight_noise = NArray(
+        label="Weight noise",
         default=numpy.array([10.5]),
         domain=Range(lo=0., hi=50.0, step=1.0),
         doc="""weight noise""")
 
     S_i = NArray(
-        label="",
+        label="Scaling Inh",
         default=numpy.array([1.]),
         domain=Range(lo=0., hi=2., step=0.01),
         doc="""Scaling of the remote input for the inhibitory population with
         respect to the excitatory population.""")
-
 
     # Used for phase-plane axis ranges and to bound random initial() conditions.
     state_variable_range = Final(
