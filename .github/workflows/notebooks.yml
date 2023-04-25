@@ -4,30 +4,25 @@ on: [push]
 jobs:
   build:
     name: Test and Inspect
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     strategy:
       fail-fast: false
-      matrix:
-        python-version: [ "3.8" ]
-
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
-      - name: set up Python ${{ matrix.python-version }}
+      - name: set up Python 3.8
         uses: actions/setup-python@v4
         id: setPy
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.8"
 
       - name: put ~/.local/bin on $PATH
         run: echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
 
       - name: install tools and dependencies
         run: |
-          sudo apt-get update
-          sudo apt install libbz2-dev libhdf5-serial-dev liblzo2-dev
           python3 -m pip install --upgrade setuptools==59.8.0 pip wheel
           pip3 install --user --upgrade numpy
           python3 -m pip install scikit-build
@@ -40,32 +35,30 @@ jobs:
           ipython kernel install --name "python3" --user
 
       - name: setup tvb
+        shell: pwsh
         run: |
           cd tvb_build
-          bash install_full_tvb.sh
+          cmd /k "install_full_tvb.bat"
 
       - name: cache data
         id: cache-data
         uses: actions/cache@v3
         with:
           path: tvb_data
-          key: tvb-data
+          key: tvbdata
 
       - name: download data
         if: steps.cache-data.outputs.cache-hit != 'true'
+        shell: pwsh
         run: |
-          wget -q https://zenodo.org/record/7574266/files/tvb_data.zip?download=1 -O tvb_data.zip
-          mkdir tvb_data
-          unzip tvb_data.zip -d tvb_data
-          rm tvb_data.zip
-
-      - name: setup data
-        run: |
-          cd tvb_data
-          python3 setup.py develop
+          Invoke-WebRequest -OutFile C:\\TEMP\\tvb_data.zip -Uri "https://zenodo.org/record/7574266/files/tvb_data.zip?download=1"
+          Expand-Archive 'C:\\TEMP\\tvb_data.zip' C:\\tvb_data
+          del C:\\TEMP\\tvb_data.zip
+          cd C:\\tvb_data
+          python setup.py develop
 
       - name: run notebooks
         env:
           HBP_AUTH_TOKEN: ${{ secrets.HBP_AUTH_TOKEN }}   # token or (secret+id) are needed for siibra tests
         run: |
-          xvfb-run python ./tvb_build/notebook_runner.py ./tvb_documentation/demos siibra
+          python ./tvb_build/notebook_runner.py ./tvb_documentation/demos siibra
