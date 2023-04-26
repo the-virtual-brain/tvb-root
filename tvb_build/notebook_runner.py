@@ -36,8 +36,7 @@ def execute_notebook(notebook):
     with open(notebook, encoding='utf-8') as f:
         nb = nbformat.read(f, as_version=4)
         ep = ExecutePreprocessor(timeout=None)
-
-    ep.preprocess(nb)
+        ep.preprocess(nb)
 
     # with open(notebook, 'w+', encoding='utf-8') as f: # for debug only
     #     nbformat.write(nb, f)
