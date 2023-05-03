@@ -73,6 +73,7 @@ class CoSimulator(Simulator):
     good_cosim_update_values_shape = (0, 0, 0, 0)
     cosim_history = None  # type: CosimHistory
     _cosimulation_flag = False
+    _current_stimulus = None
     _compute_requirements = True
     number_of_cosim_monitors = 0
     _cosim_monitors_noncoupling_indices = []
@@ -171,6 +172,7 @@ class CoSimulator(Simulator):
         else:
             self._cosimulation_flag = False
             self.synchronization_n_step = 0
+        self._current_stimulus = self._prepare_stimulus()
 
     def _loop_update_cosim_history(self, step, state):
         """
@@ -274,15 +276,16 @@ class CoSimulator(Simulator):
         self.integrator.set_random_state(random_state)
 
         local_coupling = self._prepare_local_coupling()
-        stimulus = self._prepare_stimulus()
         state = self.current_state
+        if self._current_stimulus is None:
+            self._current_stimulus = self._prepare_stimulus()
         start_step = self.current_step + 1
         node_coupling = self._loop_compute_node_coupling(start_step)
 
         # integration loop
         for step in range(start_step, start_step + n_steps):
-            self._loop_update_stimulus(step, stimulus)
-            state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, stimulus)
+            self._loop_update_stimulus(step, self._current_stimulus)
+            state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, self._current_stimulus)
             state_output = self._loop_update_cosim_history(step, state)
             node_coupling = self._loop_compute_node_coupling(step + 1)
             output = self._loop_monitor_output(step-self.synchronization_n_step, state_output, node_coupling)
