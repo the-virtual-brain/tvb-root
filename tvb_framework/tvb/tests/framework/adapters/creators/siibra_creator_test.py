@@ -25,7 +25,7 @@
 #
 import os
 import pytest
-from siibra import EbrainsRequest
+from siibra.retrieval.requests import EbrainsRequest
 from tvb.adapters.creators.siibra_creator import SiibraCreator, SiibraModel, CLB_AUTH_TOKEN_KEY
 from tvb.tests.framework.adapters.creators import siibra_base_test
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -51,6 +51,7 @@ class TestSiibraCreator(TransactionalTestCase):
             # an EBRAINS Token based on CLIENT_SECRET and CLIENT_ID, but this way we keep the SiibraCreator
             # both tested and compatible with OpenShift deployments, where a token is provided directly
             req = EbrainsRequest("", {})
+            req.init_oidc()
             view_model.ebrains_token = req.kg_token
         view_model.subject_ids = '010'
 
