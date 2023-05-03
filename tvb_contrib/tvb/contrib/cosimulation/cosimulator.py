@@ -212,6 +212,12 @@ class CoSimulator(Simulator):
                 raise NumericalInstability("There are missing values for continue the simulation")
             super(CoSimulator,self)._loop_update_history(step, state)
 
+    def _loop_update_stimulus(self, step, stimulus):
+        """Update stimulus values for current time step."""
+        # TODO: Think about how to have the same behavior as for the Simulator for continuous simulation!
+        if self.stimulus is not None:
+            stimulus[self.model.stvar, :, :] = self.stimulus(step-1).reshape((1, -1, 1))
+
     def __call__(self, simulation_length=None, random_state=None, n_steps=None,
                  cosim_updates=None, recompute_requirements=False):
         """
