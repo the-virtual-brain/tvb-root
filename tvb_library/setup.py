@@ -37,7 +37,7 @@ import setuptools
 
 LIBRARY_VERSION = "2.8"
 
-LIBRARY_TEAM = "Marmaduke Woodman, Stuart Knock, Paula Sanz Leon, Viktor Jirsa"
+LIBRARY_TEAM = "Marmaduke Woodman,  Jan Fousek, Stuart Knock, Paula Sanz Leon, Viktor Jirsa"
 
 LIBRARY_REQUIRED_PACKAGES = ["autopep8", "Deprecated", "docutils", "ipywidgets", "lxml", "mako>=1.1.4", "matplotlib",
                              "networkx", "numba", "numexpr", "numpy", "pylems", "scipy", "six"]

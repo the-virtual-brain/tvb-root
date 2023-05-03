@@ -75,16 +75,25 @@ def datatype_details(dt_id):
     print(ProjectService().get_datatype_details(dt.gid))
 
 
-def load_dt(dt_id):
-    dt = dao.get_datatype_by_id(dt_id)
-    dt_idx = dao.get_generic_entity(dt.module + '.' + dt.type, dt_id)[0]
+def load_dt(dt_id=None, dt_gid=None):
+    if dt_id:
+        dt = dao.get_datatype_by_id(dt_id)
+        dt_idx = dao.get_generic_entity(dt.module + '.' + dt.type, dt_id)[0]
+    elif dt_gid:
+        dt = dao.get_datatype_by_gid(dt_gid)
+        dt_idx = dao.get_generic_entity(dt.module + '.' + dt.type, dt_gid, select_field='gid')[0]
+    else:
+        return None
+
     dt_ht = h5.load_from_index(dt_idx)
     return dt_ht
 
 
+
+
 def new_project(name):
     usr = UserService.get_administrators()[0]
-    proj = ProjectService().store_project(usr, True, None, name=name, description=name, users=[usr])
+    proj = ProjectService().store_project(usr, True, None, name=name, description=name, users=[usr], max_operation_size=1024, disable_imports=False)
     return proj
 
 
@@ -170,3 +179,7 @@ def list_operation_results(operation_id):
     print(fmt % ('id', 'type', 'gid', 'date'))
     for dt in dao.get_results_for_operation(operation_id):
         print(fmt % (dt.id, dt.type, dt.gid, dt.create_date))
+
+
+def get_operation_results(operation_id):
+    return dao.get_results_for_operation(operation_id)

@@ -31,9 +31,11 @@ work easier by importing all the simulator pieces at once.
 .. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
-
+import logging
 import os
 import sys
+
+from tvb.basic.logger.builder import set_loggers_level
 
 # avoid segfaulting in absence of X11 DISPLAY
 if sys.platform in ('linux2', ) and 'DISPLAY' not in os.environ:
@@ -48,7 +50,7 @@ TvbProfile.set_profile(TvbProfile.LIBRARY_PROFILE)
 
 from tvb.simulator.common import get_logger, log_debug
 
-log_debug(False)
+set_loggers_level(logging.INFO)
 
 from tvb.simulator import (simulator, models, coupling, integrators, monitors, noise)
 from tvb.datatypes import (connectivity, surfaces, equations, patterns, region_mapping, sensors, cortex,
