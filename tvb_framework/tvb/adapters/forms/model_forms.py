@@ -500,7 +500,8 @@ class ZerlautAdaptationFirstOrderModelForm(ModelForm):
         self.tau_e = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.value.tau_e)
         self.tau_i = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.value.tau_i)
         self.N_tot = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.value.N_tot)
-        self.p_connect = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.value.p_connect)
+        self.p_connect_e = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.value.p_connect_e)
+        self.p_connect_i = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.value.p_connect_i)
         self.g = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.value.g)
         self.K_ext_e = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.value.K_ext_e)
         self.K_ext_i = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.value.K_ext_i)
@@ -511,13 +512,17 @@ class ZerlautAdaptationFirstOrderModelForm(ModelForm):
         self.external_input_ex_in = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.value.external_input_ex_in)
         self.external_input_in_ex = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.value.external_input_in_ex)
         self.external_input_in_in = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.value.external_input_in_in)
+        self.tau_OU = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.value.tau_OU)
+        self.weight_noise = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.value.weight_noise)
+        self.S_i = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.value.S_i)
         self.variables_of_interest = MultiSelectField(ModelsEnum.ZERLAUT_FIRST_ORDER.value.variables_of_interest)
 
     def get_params_configurable_in_phase_plane(self):
         return [self.g_L, self.E_L_e, self.E_L_i, self.C_m, self.b_e, self.b_i, self.a_e, self.a_i, self.tau_w_e,
                 self.tau_w_i, self.E_e, self.E_i, self.Q_e, self.Q_i, self.tau_e, self.tau_i, self.N_tot,
-                self.p_connect, self.g, self.K_ext_e, self.K_ext_i, self.T, self.external_input_ex_ex,
-                self.external_input_ex_in, self.external_input_in_ex, self.external_input_in_in]
+                self.p_connect_e, self.p_connect_i, self.g, self.K_ext_e, self.K_ext_i, self.T,
+                self.external_input_ex_ex, self.external_input_ex_in, self.external_input_in_ex,
+                self.external_input_in_in, self.tau_OU, self.weight_noise, self.S_i]
 
 
 class ZerlautAdaptationSecondOrderModelForm(ZerlautAdaptationFirstOrderModelForm):

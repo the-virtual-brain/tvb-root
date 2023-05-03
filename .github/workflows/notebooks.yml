@@ -1,0 +1,64 @@
+name: Test Notebooks
+on: [push]
+
+jobs:
+  build:
+    name: Test and Inspect
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: set up Python 3.8
+        uses: actions/setup-python@v4
+        id: setPy
+        with:
+          python-version: "3.8"
+
+      - name: put ~/.local/bin on $PATH
+        run: echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
+
+      - name: install tools and dependencies
+        run: |
+          python3 -m pip install --upgrade setuptools==59.8.0 pip wheel
+          pip3 install --user --upgrade numpy
+          python3 -m pip install scikit-build
+          pip3 install --user -r tvb_framework/requirements.txt
+          pip3 install --user --no-build-isolation tvb-gdist
+          python3 -m pip install elasticsearch
+          python3 -m pip install nbformat nbconvert
+          pip3 install ipympl seaborn
+          pip3 install --upgrade pip ipython ipykernel
+          ipython kernel install --name "python3" --user
+
+      - name: setup tvb
+        shell: pwsh
+        run: |
+          cd tvb_build
+          cmd /k "install_full_tvb.bat"
+
+      - name: cache data
+        id: cache-data
+        uses: actions/cache@v3
+        with:
+          path: tvb_data
+          key: tvbdata
+
+      - name: download data
+        if: steps.cache-data.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -OutFile C:\\TEMP\\tvb_data.zip -Uri "https://zenodo.org/record/7574266/files/tvb_data.zip?download=1"
+          Expand-Archive 'C:\\TEMP\\tvb_data.zip' C:\\tvb_data
+          del C:\\TEMP\\tvb_data.zip
+          cd C:\\tvb_data
+          python setup.py develop
+
+      - name: run notebooks
+        env:
+          HBP_AUTH_TOKEN: ${{ secrets.HBP_AUTH_TOKEN }}   # token or (secret+id) are needed for siibra tests
+        run: |
+          python ./tvb_build/notebook_runner.py ./tvb_documentation/demos siibra

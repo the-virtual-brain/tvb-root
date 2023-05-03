@@ -1823,7 +1823,7 @@
     <dependency env="[win,mac,linux]" name="siibra">
         <full-name value="siibra"/>
         <project-home value="https://github.com/FZJ-INM1-BDA/siibra-python"/>
-        <version value="0.3a27"/>
+        <version value="0.4a35"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_siibra.txt"/>
         <license-type value="Apache_ 2"/>
