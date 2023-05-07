@@ -56,3 +56,4 @@ kubernetes
 watchdog
 requests-toolbelt>=0.10
 elasticsearch
+urllib3<2.0
