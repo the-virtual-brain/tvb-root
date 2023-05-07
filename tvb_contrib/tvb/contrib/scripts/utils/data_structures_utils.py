@@ -27,16 +27,13 @@
 """
 
 import re
-from collections import OrderedDict
-try:
-    from collections import Hashable
-except ImportError:
-    from collections.abc import Hashable
 import itertools
-from copy import deepcopy
 import numpy as np
-from tvb.contrib.scripts.utils.log_error_utils import warning, raise_value_error, raise_import_error
+from copy import deepcopy
+from collections.abc import Hashable
 from six import string_types
+from collections import OrderedDict
+from tvb.contrib.scripts.utils.log_error_utils import warning, raise_value_error, raise_import_error
 from tvb.basic.logger.builder import get_logger
 
 logger = get_logger(__name__)
@@ -56,18 +53,18 @@ class CalculusConfig(object):
 
 
 def is_numeric(value):
-    return isinstance(value, (float, np.float, np.float64, np.float32, np.float16, np.float128,
-                              int, np.int, np.int0, np.int8, np.int16, np.int32, np.int64,
+    return isinstance(value, (float, np.float_, np.float64, np.float32, np.float16, np.float128,
+                              int, np.int_, np.int0, np.int8, np.int16, np.int32, np.int64,
                               complex, np.complex, np.complex64, np.complex128, np.complex256,
                               np.long, np.number))
 
 
 def is_integer(value):
-    return isinstance(value, (int, np.int, np.int0, np.int8, np.int16, np.int32, np.int64))
+    return isinstance(value, (int, np.int_, np.intp, np.int8, np.int16, np.int32, np.int64))
 
 
 def is_float(value):
-    return isinstance(value, (float, np.float, np.float64, np.float32, np.float16, np.float128))
+    return isinstance(value, (float, np.float_, np.float64, np.float32, np.float16, np.float128))
 
 
 def vector2scalar(x):
@@ -622,7 +619,7 @@ def assert_equal_objects(obj1, obj2, attributes_dict=None, logger=None):
 def shape_to_size(shape):
     shape = np.array(shape)
     shape = shape[shape > 0]
-    return np.int(np.max([shape.prod(), 1]))
+    return np.int_(np.max([shape.prod(), 1]))
 
 
 def shape_to_ndim(shape, squeeze=False):
@@ -655,10 +652,10 @@ def squeeze_array_to_scalar(arr):
 
 
 def assert_arrays(params, shape=None, transpose=False):
-    # type: (object, object) -> object
+    # type: (object, object, bool) -> object
     if shape is None or \
             not (isinstance(shape, tuple)
-                 and len(shape) in range(3) and np.all([isinstance(s, (int, np.int)) for s in shape])):
+                 and len(shape) in range(3) and np.all([isinstance(s, (int, np.int_)) for s in shape])):
         shape = None
         shapes = []  # list of all unique shapes
         n_shapes = []  # list of all unique shapes' frequencies
@@ -715,8 +712,8 @@ def assert_arrays(params, shape=None, transpose=False):
         shape = tuple(shapes[ind])
 
     if transpose and len(shape) > 1:
-        if (transpose is "horizontal" or "row" and shape[0] > shape[1]) or \
-                (transpose is "vertical" or "column" and shape[0] < shape[1]):
+        if (transpose == "horizontal" or transpose == "row" and shape[0] > shape[1]) or \
+                (transpose == "vertical" or transpose == "column" and shape[0] < shape[1]):
             shape = list(shape)
             temp = shape[1]
             shape[1] = shape[0]
@@ -748,14 +745,14 @@ def make_float(x, precision="64"):
         elif isequal_string(precision, "32"):
             return x.astype(np.float32)
         else:
-            return x.astype(np.float)
+            return x.astype(np.float_)
     else:
         if isequal_string(precision, "64"):
             return np.float64(x)
         elif isequal_string(precision, "32"):
             np.float32(x)
         else:
-            return np.float(x)
+            return np.float_(x)
 
 
 def make_int(x, precision="64"):
@@ -765,14 +762,14 @@ def make_int(x, precision="64"):
         elif isequal_string(precision, "32"):
             return x.astype(np.int32)
         else:
-            return x.astype(np.int)
+            return x.astype(np.int_)
     else:
         if isequal_string(precision, "64"):
             return np.int64(x)
         elif isequal_string(precision, "32"):
             np.int32(x)
         else:
-            return np.int(x)
+            return np.int_(x)
 
 
 def copy_object_attributes(obj1, obj2, attr1, attr2=None, deep_copy=False, check_none=False):
@@ -827,7 +824,7 @@ def sort_events_by_x_and_y(events, x="senders", y="times",
         for key, xlbl in zip(keys, xlabels):
             sorted_events[key] = np.sort(ys[np.where((xs == xlbl).all(axis=-1))])
     else:
-        sorted_events = OrderedDict(zip(keys, [np.array([])]*len(keys)))
+        sorted_events = OrderedDict(zip(keys, [np.array([])] * len(keys)))
     return sorted_events
 
 

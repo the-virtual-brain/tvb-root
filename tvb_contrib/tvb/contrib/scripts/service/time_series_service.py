@@ -64,7 +64,7 @@ class TimeSeriesService(object):
             return time_series.duplicate(**kwargs)
 
     def convolve(self, time_series, win_len=None, kernel=None, **kwargs):
-        n_kernel_points = np.int(np.round(win_len))
+        n_kernel_points = np.int_(np.round(win_len))
         if kernel is None:
             kernel = np.ones((n_kernel_points, 1, 1, 1)) / n_kernel_points
         else:
