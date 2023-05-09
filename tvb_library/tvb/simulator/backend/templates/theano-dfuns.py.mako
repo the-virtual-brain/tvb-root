@@ -28,14 +28,23 @@
 ##
 ##
 
-def dfuns(dX, state, cX, parmat, **mparams):
+def dfuns(dX, state, cX, parmat
+% for par in sim.model.parameter_names:
+    % if par in mparams:
+        , ${par}
+    % endif
+% endfor
+):
+
 % for par in sim.model.global_parameter_names:
+    % if not par in mparams:
     ${par} = ${getattr(sim.model, par)[0]}
+    % endif
 % endfor
 
-% for par in sim.model.spatial_parameter_names:
-    ${par} = parmat[${loop.index}]
-% endfor
+##% for par in sim.model.spatial_parameter_names:
+##    ${par} = parmat[${loop.index}]
+##% endfor
 
     pi = np.pi
 

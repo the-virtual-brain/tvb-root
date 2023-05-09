@@ -38,7 +38,11 @@ def coupling(cX, weights, state
 % if sim.connectivity.idelays.any():
     , delay_indices
 % endif
-, **cparams
+% for par in sim.coupling.parameter_names:
+    % if par in cparams:
+        , ${par}
+    % endif
+% endfor
 ):
 
     ##n_svar = state.eval().shape[0]
@@ -48,8 +52,11 @@ def coupling(cX, weights, state
     ##assert cX.eval().shape[1] == weights.eval().shape[0] == weights.eval().shape[1] == state.eval().shape[2]
 
 % for par in sim.coupling.parameter_names:
+    % if not par in cparams:
     ${par} = ${getattr(sim.coupling, par)[0]}
+    % endif
 % endfor
+
 ## generate code per cvar
 % for cvar, cterm in zip(sim.model.cvar, sim.model.coupling_terms):
 
