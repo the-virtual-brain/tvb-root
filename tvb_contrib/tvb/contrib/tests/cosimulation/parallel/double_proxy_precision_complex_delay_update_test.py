@@ -26,7 +26,6 @@
 """
 
 import numpy as np
-
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.contrib.tests.cosimulation.parallel.function_tvb import TvbSim
 
@@ -35,10 +34,11 @@ class TestDoubleProxyPrecisionComplexDelayUpdate(BaseTestCase):
     """
     test the transmission of information between two models with proxy in most complex case and different delay
     """
+
     def test_double_precision_complex_delay_update(self):
-        weight = np.array([[5, 2, 4, 0], [8, 5, 4, 1], [6, 1, 7, 9], [10, 0, 5, 6]],dtype=np.float)
-        delay = np.array([[7, 8, 5, 1], [9, 3, 7, 9], [4, 3, 2, 8], [9, 10, 11, 5]],dtype=np.float)
-        max = np.int(np.max(delay)*10+1)
+        weight = np.array([[5, 2, 4, 0], [8, 5, 4, 1], [6, 1, 7, 9], [10, 0, 5, 6]], dtype=np.float_)
+        delay = np.array([[7, 8, 5, 1], [9, 3, 7, 9], [4, 3, 2, 8], [9, 10, 11, 5]], dtype=np.float_)
+        max = np.int_(np.max(delay) * 10 + 1)
         resolution_simulation = 0.1
         time_synchronize = np.min(delay)
         proxy_id_1 = [1]
@@ -81,7 +81,7 @@ class TestDoubleProxyPrecisionComplexDelayUpdate(BaseTestCase):
 
             # COMPARE PROXY 1
             np.testing.assert_array_equal(np.squeeze(result_ref[:, proxy_id_2, :], axis=2)[0],
-                              np.squeeze(result_1[0][:, proxy_id_2, :], axis=2)[0])
+                                          np.squeeze(result_1[0][:, proxy_id_2, :], axis=2)[0])
             # COMPARE PROXY 2
-            np.testing.assert_array_equal(np.squeeze(result_ref[:, proxy_id_1,:], axis=2)[0],
-                              np.squeeze(result_2[0][:, proxy_id_1,:], axis=2)[0])
+            np.testing.assert_array_equal(np.squeeze(result_ref[:, proxy_id_1, :], axis=2)[0],
+                                          np.squeeze(result_2[0][:, proxy_id_1, :], axis=2)[0])

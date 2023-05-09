@@ -39,13 +39,13 @@ class TestPrecisionDelay(BaseTestCase):
     def test_precision_delay(self):
         weight = np.array([[2, 8, 0], [0, 0, 0], [3, 0, 1]])
         delay = np.array([[0.6, 0.5, 1.0], [0.7, 0.8, 3.0], [1.0, 0.5, 0.7]])
-        max = np.int(np.max(delay)*10+1)
-        init_value = np.array([[[0.1,0.0], [0.1,0.0], [0.2,0.0]]] * max)
+        max = np.int_(np.max(delay) * 10 + 1)
+        init_value = np.array([[[0.1, 0.0], [0.1, 0.0], [0.2, 0.0]]] * max)
         initial_condition = init_value.reshape((max, 2, weight.shape[0], 1))
         resolution_simulation = 0.1
         synchronization_time = 0.1 * 4
         proxy_id = [0]
-        no_proxy = [1,2]
+        no_proxy = [1, 2]
 
         # simulation with one proxy
         np.random.seed(42)
@@ -61,7 +61,7 @@ class TestPrecisionDelay(BaseTestCase):
 
         # compare with TVB Raw monitor delayed by synchronization_time
         np.testing.assert_array_equal(np.squeeze(result_ref[:, no_proxy, :], axis=2)[0],
-                        np.squeeze(result[0][:, no_proxy, :], axis=2)[0])
+                                      np.squeeze(result[0][:, no_proxy, :], axis=2)[0])
 
         for i in range(0, 1000):
             time, result = sim(synchronization_time, [time, result_ref[:, proxy_id][:, :, 0]])

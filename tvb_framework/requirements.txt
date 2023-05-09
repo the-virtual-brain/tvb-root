@@ -43,3 +43,4 @@ siibra==0.4a35
 bctpy
 kubernetes
 watchdog
+urllib3<2.0

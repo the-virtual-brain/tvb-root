@@ -220,8 +220,7 @@ class BalloonModel(HasTraits):
         state[0, 3, :] = 1.  # q
 
         # BOLD model coefficients
-        k = self.compute_derived_parameters()
-        k1, k2, k3 = k[0], k[1], k[2]
+        k1, k2, k3 = self.compute_derived_parameters()
 
         # prepare integrator
         self.integrator.dt = 1. / self.time_series.sample_rate # s
@@ -307,7 +306,7 @@ class BalloonModel(HasTraits):
             k2 = self.epsilon * self.r_0 * self.E0 * self.TE
             k3 = 1 - self.epsilon
 
-        return numpy.array([k1, k2, k3])
+        return k1, k2, k3
 
     def input_transformation(self, time_series, mode):
         """
