@@ -2,6 +2,9 @@
 *.py[cod]
 __pycache__
 
+#vim binaries
+*.swp
+
 # packaging
 *.egg-info/
 dist/
