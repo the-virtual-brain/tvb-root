@@ -1,0 +1,46 @@
+[parameters]
+# all these shall become numpy arrays when loaded
+C_m = 200.0
+E_L_e = -63.0
+E_L_i = -65.0
+E_e = 0.0
+E_i = -80.0
+K_ext_e = 400
+K_ext_i = 0
+N_tot = 10000
+P_e = [ -0.0498, 0.00506, -0.025, 0.0014, -0.00041, 0.0105, -0.036, 0.0074, 0.0012, -0.0407, ]
+P_i = [ -0.0514, 0.004, -0.0083, 0.0002, -0.0005, 0.0014, -0.0146, 0.0045, 0.0028, -0.0153, ]
+Q_e = 1.5
+Q_i = 5.0
+T = 40.0
+a_e = 0.0
+a_i = 0.0
+b_e = 0.0
+b_i = 0.0
+external_input_ex_ex = 0.315e-3
+external_input_ex_in = 0.000
+external_input_in_ex = 0.315e-3
+external_input_in_in = 0.000
+g = 0.2
+g_L = 10.0
+p_connect_e = 0.05
+p_connect_i = 0.05
+tau_OU = 5.0
+tau_e = 5.0
+tau_i = 5.0
+tau_w_e = 500.0
+tau_w_i = 1.0
+weight_noise = 1e-4
+
+[attributes]
+# these are approached on a case-by-case basis
+stvar = [7] 
+variables_of_interest=['E', 'I', 'C_ee', 'C_ei', 'C_ii', 'W_e', 'W_i', 'ou_drift']
+state_variable_range.E = [0.000, 0.000]
+state_variable_range.I = [0.00, 0.00]
+state_variable_range.C_ee = [0.0, 0.0]
+state_variable_range.C_ei = [0.0, 0.0]
+state_variable_range.C_ii = [0.0, 0.0]
+state_variable_range.W_e = [100.0, 100.0] 
+state_variable_range.W_i = [0.0, 0.0]
+state_variable_range.ou_drift = [0.0, 0.0]

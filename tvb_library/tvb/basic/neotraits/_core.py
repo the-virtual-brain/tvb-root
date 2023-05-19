@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -40,7 +36,6 @@ import typing
 from six import add_metaclass
 from numpy.random import RandomState
 from scipy.sparse import csc_matrix, spmatrix
-
 from ._attr import Attr
 from ._declarative_base import _Property, MetaType
 from .info import trait_object_str, trait_object_repr_html, narray_summary_info
@@ -197,7 +192,7 @@ class HasTraits(object):
 
     gid = Attr(field_type=uuid.UUID)
 
-    TYPES_TO_DEEPCOPY = (RandomState, csc_matrix, spmatrix)
+    TYPES_TO_DEEPCOPY = (RandomState, csc_matrix, spmatrix, list, tuple)
 
     def __init__(self, **kwargs):
         """
@@ -283,7 +278,6 @@ class HasTraits(object):
         """
         self.validate()
 
-
     def summary_info(self):
         # type: () -> typing.Dict[str, str]
         """
@@ -303,9 +297,11 @@ class HasTraits(object):
             try:
                 attr_field = getattr(self, aname)
                 if isinstance(attr_field, numpy.ndarray):
-                    ret.update(narray_summary_info(attr_field, ar_name=aname))
+                    ret.update(narray_summary_info(attr_field, ar_name=aname, condensed=True))
                 elif isinstance(attr_field, HasTraits):
                     ret[aname] = attr_field.title
+                elif isinstance(attr_field, tuple):
+                    ret[aname] = repr(tuple(i if isinstance(i, str) else i.__class__.__name__ for i in attr_field))
                 else:
                     ret[aname] = repr(attr_field)
             except TraitError:

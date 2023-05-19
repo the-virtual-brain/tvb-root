@@ -25,11 +25,11 @@ formencode
 flask
 flask-restx
 jinja2
-nibabel
+nibabel>=4.0
 sqlalchemy
 alembic
 allensdk
-werkzeug==2.1.2
+werkzeug
 gevent
 cherrypy
 MarkupSafe
@@ -49,9 +49,11 @@ lxml
 pylems
 docutils
 Pillow
-siibra
+siibra==0.4a35
 bctpy
 Deprecated
 kubernetes
 watchdog
 requests-toolbelt>=0.10
+elasticsearch
+urllib3<2.0

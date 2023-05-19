@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,17 +19,14 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
 from sqlalchemy import desc, func, or_
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import aliased
 from sqlalchemy.orm.exc import NoResultFound
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataType
@@ -104,8 +101,9 @@ class BurstDAO(RootDAO):
         try:
             burst = self.get_burst_for_direct_operation_id(operation_id, is_group)
             if not burst:
-                burst = self.session.query(BurstConfiguration
-                                           ).join(DataType, DataType.fk_parent_burst == BurstConfiguration.gid
+                burst_alias = aliased(BurstConfiguration, flat=True)
+                burst = self.session.query(burst_alias
+                                           ).join(DataType, DataType.fk_parent_burst == burst_alias.gid
                                                   ).filter(DataType.fk_from_operation == operation_id).first()
         except NoResultFound:
             self.logger.debug("No burst found for operation id = %s" % (operation_id,))

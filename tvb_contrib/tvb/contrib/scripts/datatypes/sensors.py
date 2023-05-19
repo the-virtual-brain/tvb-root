@@ -4,7 +4,7 @@
 #  TheVirtualBrain-Contributors Package. This package holds simulator extensions.
 #  See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -17,12 +17,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -104,12 +100,12 @@ class SensorsMEG(Sensors, TVBSensorsMEG):
 class SensorsInternal(Sensors, TVBSensorsInternal):
     logger = get_logger(__name__)
     elec_labels = NArray(
-        dtype=np.str,
+        dtype=np.str_,
         label="Electrodes' labels", default=None, required=False,
         doc="""Labels of electrodes.""")
 
     elec_inds = NArray(
-        dtype=np.int,
+        dtype=np.int64,
         label="Electrodes' indices", default=None, required=False,
         doc="""Indices of electrodes.""")
 

@@ -4,7 +4,7 @@
 #  TheVirtualBrain-Contributors Package. This package holds simulator extensions.
 #  See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -17,12 +17,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 
 """
 .. moduleauthor:: Lionel Kusch <lkusch@thevirtualbrain.org>
@@ -60,7 +56,7 @@ class TestModifyWongWang(BaseTestCase):
         coupling = lab.coupling.Linear(a=np.array(0.0154))
         integrator = lab.integrators.HeunDeterministic(dt=0.1, bounded_state_variable_indices=np.array([0]),
                                                        state_variable_boundaries=np.array([[0.0, 1.0]]))
-        monitors = lab.monitors.Raw(period=0.1, variables_of_interest=np.array(0, dtype=np.int))
+        monitors = lab.monitors.Raw(period=0.1, variables_of_interest=np.array(0, dtype=np.int_))
         # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
         sim = simulator(model=model,
                         connectivity=connectivity,
@@ -101,7 +97,7 @@ class TestModifyWongWang(BaseTestCase):
                             voi=np.array([0]),
                             synchronization_time=synchronization_time,
                             cosim_monitors=(RawCosim(),),
-                            proxy_inds=np.asarray([0], dtype=np.int),
+                            proxy_inds=np.asarray([0], dtype=np.int_),
                             model=model_1,
                             connectivity=connectivity,
                             coupling=coupling,

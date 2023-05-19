@@ -1201,7 +1201,14 @@ class _FunctionTracingProxy(object):
 
         gid = logged_user.gid if logged_user is not None else ""
         self.logger.setLevel(TRACE)
-        self.logger.log(TRACE, "USER: {} | METHOD: {} | PARAMS: *{} **{}".format(gid, repr(function), args, keywords))
+
+        self.logger.log(TRACE,
+                        "USER: {} | METHOD: {} | PARAMS: *{} **{}".format(gid, repr(function), args, keywords),
+                        extra={
+                            "user_id": gid,
+                            "controller_method": function.__qualname__
+                        })
+
         value = function(*args, **keywords)
 
         return (_GeneratorIteratorTracingProxy(function, value, self._logger)

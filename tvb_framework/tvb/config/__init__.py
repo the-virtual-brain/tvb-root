@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and 
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -37,18 +33,9 @@ E.g. A list with all the modules where adapters are implemented.
 # There are kept here for being used inside tvb.core
 # We can not move all these in IntrospectovRegistry, due to circular dependencies
 
-from collections import OrderedDict
-# Import metrics here, so that Traits will find them and return them as known subclasses
-from tvb.analyzers.metric_kuramoto_index import compute_kuramoto_index_metric
-from tvb.analyzers.metric_proxy_metastability import compute_proxy_metastability_metric
-from tvb.analyzers.metric_variance_global import compute_variance_global_metric
-from tvb.analyzers.metric_variance_of_node_variance import compute_variance_of_node_variance_metric
+from tvb.analyzers import METRICS
 
-ALGORITHMS = {'GlobalVariance': compute_variance_global_metric,
-              'KuramotoIndex': compute_kuramoto_index_metric,
-              'ProxyMetastabilitySynchrony': compute_proxy_metastability_metric,
-              'VarianceNodeVariance': compute_variance_of_node_variance_metric}
-
+ALGORITHMS = METRICS
 
 SIMULATION_DATATYPE_CLASS = "SimulationState"
 

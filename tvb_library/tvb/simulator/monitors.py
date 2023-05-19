@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#   The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 """
@@ -274,7 +270,7 @@ class SpatialAverage(Monitor):
         spatial_mask = numpy.array([int(val) for val in mask])
         unique_mask = numpy.unique(spatial_mask)
         if len(unique_mask) == 1 and unique_mask[0] == 1:
-            return numpy.zeros(len(spatial_mask), dtype=numpy.int)
+            return numpy.zeros(len(spatial_mask), dtype=numpy.int_)
         return spatial_mask
 
     def config_for_sim(self, simulator):
@@ -490,7 +486,7 @@ class Projection(Monitor):
             "projection matrices. Please select an appropriate projection "
             "matrix."
         )
-    
+
     _gain_configuration_done = False
 
     def config_for_sim(self, simulator):
@@ -556,11 +552,11 @@ class Projection(Monitor):
         # this fails when rmap doesn't have non_cortical, need to ensure "full" first
         # OR fix non_cortical_rmap_idx to be empty in that case:
         cortical_rmap = self.rmap.copy()
-        if (self.rmap.max()+1) == conn.cortical.sum():
+        if (self.rmap.max() + 1) == conn.cortical.sum():
             # there are no non_cortical indices in rmap, so cortical_rmap is already fine
             pass
         else:
-            non_cortical_rmap_idx = numpy.hstack([numpy.argwhere(self.rmap==i)[:,0] for i in non_cortical_indices])
+            non_cortical_rmap_idx = numpy.hstack([numpy.argwhere(self.rmap == i)[:, 0] for i in non_cortical_indices])
             cortical_rmap = numpy.delete(cortical_rmap, non_cortical_rmap_idx)
         if not using_cortical_surface and self.gain.shape[1] == cortical_rmap.size:
             gain = numpy.zeros((self.gain.shape[0], conn.number_of_regions))
@@ -842,8 +838,7 @@ class Bold(Monitor):
 
     **Attributes**
 
-        hrf_kernel: the haemodynamic response function (HRF) used to compute
-                    the BOLD (Blood Oxygenation Level Dependent) signal.
+        hrf_kernel: the haemodynamic response function (HRF) used to compute the BOLD (Blood Oxygenation Level Dependent) signal.
 
         length    : duration of the hrf in seconds.
 

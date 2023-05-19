@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -914,11 +910,11 @@ class ProjectService:
             return [], changed_parameters
 
     @staticmethod
-    def get_results_for_operation(operation_id, selected_filter=None):
+    def get_results_for_operation(operation_id):
         """
         Retrieve the DataTypes entities resulted after the execution of the given operation.
         """
-        return dao.get_results_for_operation(operation_id, selected_filter)
+        return dao.get_results_for_operation(operation_id)
 
     @staticmethod
     def get_datatype_by_id(datatype_id):
@@ -936,8 +932,8 @@ class ProjectService:
         return dao.get_datatypegroup_by_op_group_id(operation_group_id)
 
     @staticmethod
-    def get_datatypes_in_project(project_id, only_visible=False):
-        return dao.get_data_in_project(project_id, only_visible)
+    def get_datatypes_in_project(project_id):
+        return dao.get_data_in_project(project_id)
 
     @staticmethod
     def set_datatype_visibility(datatype_gid, is_visible):

@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#   The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -224,8 +220,7 @@ class BalloonModel(HasTraits):
         state[0, 3, :] = 1.  # q
 
         # BOLD model coefficients
-        k = self.compute_derived_parameters()
-        k1, k2, k3 = k[0], k[1], k[2]
+        k1, k2, k3 = self.compute_derived_parameters()
 
         # prepare integrator
         self.integrator.dt = 1. / self.time_series.sample_rate # s
@@ -311,7 +306,7 @@ class BalloonModel(HasTraits):
             k2 = self.epsilon * self.r_0 * self.E0 * self.TE
             k3 = 1 - self.epsilon
 
-        return numpy.array([k1, k2, k3])
+        return k1, k2, k3
 
     def input_transformation(self, time_series, mode):
         """

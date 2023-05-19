@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -46,6 +42,7 @@ import logging
 import logging.config
 from tvb.basic.profile import TvbProfile
 from tvb.basic.config.profile_settings import MATLABLibraryProfile
+from logging import StreamHandler
 
 
 class LoggerBuilder(object):
@@ -81,6 +78,9 @@ class LoggerBuilder(object):
     def set_loggers_level(self, level):
         for logger in self._loggers.values():
             logger.setLevel(level)
+            for handler in logger.handlers:
+                if isinstance(handler, StreamHandler) and handler.stream.name == 'stdout':
+                    handler.setLevel(min(level, handler.level))
 
 
 # We make sure a single instance of logger-builder is created.
@@ -99,3 +99,12 @@ def get_logger(parent_module=''):
     :param parent_module: module name for which to create logger.
     """
     return GLOBAL_LOGGER_BUILDER.build_logger(parent_module)
+
+
+def set_loggers_level(level):
+    """
+    Function to set the logging level for the loggers and their console handlers
+
+    :param level: the level to be set
+    """
+    GLOBAL_LOGGER_BUILDER.set_loggers_level(level)

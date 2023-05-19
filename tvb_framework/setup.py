@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and 
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -40,15 +36,15 @@ import os
 import shutil
 import setuptools
 
-VERSION = "2.7.1"
+VERSION = "2.8"
 
 TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Prodan, Paula Sansz Leon, Marmaduke Woodman"
 
-TVB_INSTALL_REQUIREMENTS = ["alembic", "allensdk", "bctpy", "cherrypy", "docutils", "flask", "flask-restx",
+TVB_INSTALL_REQUIREMENTS = ["alembic", "bctpy", "cherrypy", "docutils", "flask", "flask-restx",
                             "formencode", "gevent", "h5py", "Jinja2", "matplotlib==3.5.3", "nibabel", "numpy", "pandas",
                             "Pillow", "psutil", "python-keycloak", "requests", "requests-toolbelt>=0.10",
-                            "scikit-learn", "scipy", "siibra", "simplejson", "six", "sqlalchemy", "tables==3.7.0",
-                            "tvb-data", "tvb-gdist", "tvb-library", "tvb-storage", "werkzeug"]
+                            "scikit-learn", "scipy", "siibra==0.4a35", "simplejson", "six", "sqlalchemy",
+                            "tables==3.7.0", "tvb-data", "tvb-gdist", "tvb-library", "tvb-storage", "werkzeug"]
 
 # Packaging tvb-framework with REST server inside
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
@@ -63,7 +59,8 @@ setuptools.setup(name="tvb-framework",
                  include_package_data=True,
                  install_requires=TVB_INSTALL_REQUIREMENTS,
                  extras_require={'postgres': ["psycopg2"],
-                                 'hpc': ["pyunicore"],
+                                 'hpc': ["pyunicore", "elasticsearch"],
+                                 'extra': ["allensdk"],
                                  'test': ["pytest", "pytest-benchmark", "pytest-mock", "BeautifulSoup4"]},
                  description='A package for performing whole brain simulations',
                  long_description=DESCRIPTION,

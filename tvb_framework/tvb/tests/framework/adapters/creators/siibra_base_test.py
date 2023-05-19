@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,18 +19,15 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
 import os
 import numpy as np
 import pandas as pd
+import pandas.core.frame
 import pytest
 import siibra
 from tvb.adapters.creators import siibra_base as sb
@@ -52,6 +49,8 @@ HUMAN_ATLAS = 'Multilevel Human Atlas'
 MONKEY_ATLAS = 'Monkey Atlas (pre-release)'
 JULICH_PARCELLATION = 'Julich-Brain Cytoarchitectonic Maps 2.9'
 MONKEY_PARCELLATION = 'Non-human primate'
+DEFAULT_HCP_SUBJECT = ['000']
+DEFAULT_1000BRAINS_SUBJECT = ['0001_1']
 
 
 @pytest.mark.skipif(no_ebrains_auth_token(), reason="No EBRAINS AUTH token for accesing the KG was provided!")
@@ -79,8 +78,10 @@ class TestSiibraBase(BaseTestCase):
         """
         Return all the functional connectivities available in siibra for default atlas and parcellation
         """
-        fcs = siibra.get_features(self.julich_parcellation, siibra.modalities.FunctionalConnectivity)
-        self.fcs = fcs
+        features = siibra.features.get(self.julich_parcellation, siibra.features.connectivity.FunctionalConnectivity)
+        f = features[0]
+        fc = f.get_matrix()
+        self.fc = fc
 
     def test_check_atlas_parcellation_compatible(self, create_test_atlases_and_parcellations):
         assert sb.check_atlas_parcellation_compatible(self.human_atlas, self.julich_parcellation)
@@ -99,74 +100,99 @@ class TestSiibraBase(BaseTestCase):
         assert self.monkey_parcellation not in parcellation_list
 
     def test_parse_subject_ids(self):
+        # for HCP cohort
         single_id = '000'
-        assert sb.parse_subject_ids(single_id) == ['000']
+        assert sb.parse_subject_ids(single_id, sb.DEFAULT_COHORT) == ['000']
 
         multiple_ids = '000;010'
-        assert sb.parse_subject_ids(multiple_ids) == ['000', '010']
+        assert sb.parse_subject_ids(multiple_ids, sb.DEFAULT_COHORT) == ['000', '010']
 
         range_ids = '000-002'
-        assert sb.parse_subject_ids(range_ids) == ['000', '001', '002']
+        assert sb.parse_subject_ids(range_ids, sb.DEFAULT_COHORT) == ['000', '001', '002']
 
         range_and_multiple_ids = '000-002;010'
-        assert sb.parse_subject_ids(range_and_multiple_ids) == ['000', '001', '002', '010']
+        assert sb.parse_subject_ids(range_and_multiple_ids, sb.DEFAULT_COHORT) == ['000', '001', '002', '010']
 
         range_and_multiple_ids2 = '100;000-002;010'
-        assert sb.parse_subject_ids(range_and_multiple_ids2) == ['100', '000', '001', '002', '010']
+        assert sb.parse_subject_ids(range_and_multiple_ids2, sb.DEFAULT_COHORT) == ['100', '000', '001', '002', '010']
+
+        # for 1000BRAINS cohort
+        single_full_id = '0001_1'
+        assert sb.parse_subject_ids(single_full_id, sb.THOUSAND_BRAINS_COHORT) == ['0001_1']
+
+        single_partial_id = '0017'
+        assert sb.parse_subject_ids(single_partial_id, sb.THOUSAND_BRAINS_COHORT) == ['0017']
+
+        multiple_full_ids = '0010_1;0017_2'
+        assert sb.parse_subject_ids(multiple_full_ids, sb.THOUSAND_BRAINS_COHORT) == ['0010_1', '0017_2']
+
+        multiple_partial_ids = '0010;0017'
+        assert sb.parse_subject_ids(multiple_partial_ids, sb.THOUSAND_BRAINS_COHORT) == ['0010', '0017']
 
     def test_init_siibra_params_no_selections(self, create_test_atlases_and_parcellations):
         """"
         Test initialization of siibra paramas when no sellection was made for atlas, parcellation or subject ids
         """
-        empty_params_config = sb.init_siibra_params(None, None, None)
-        atlas, parcellation, subject_ids = empty_params_config
+        empty_params_config = sb.init_siibra_params(None, None, None, None)
+        atlas, parcellation, cohort, subject_ids = empty_params_config
         assert atlas == self.human_atlas
         assert parcellation == self.julich_parcellation
-        assert subject_ids == 'all'
+        assert cohort == sb.DEFAULT_COHORT
+        assert subject_ids == [None]
 
     def test_init_siibra_params_atlas_selected(self, create_test_atlases_and_parcellations):
         """"
         Test initialization of siibra paramas when only the atlas was selected
         """
-        empty_params_config = sb.init_siibra_params(self.human_atlas, None, None)
-        _, parcellation, subject_ids = empty_params_config
-        assert parcellation == self.julich_parcellation
-        assert subject_ids == 'all'
+        _, parcellation, cohort, subject_ids = sb.init_siibra_params(self.human_atlas, None, None, None)
+        assert parcellation is not None
+        assert parcellation in list(self.human_atlas.parcellations)
+        assert cohort == sb.DEFAULT_COHORT
+        assert subject_ids == [None]
 
     def test_init_siibra_params_parcellation_selected(self, create_test_atlases_and_parcellations):
         """"
         Test initialization of siibra paramas when only the parcellation was selected
         """
-        empty_params_config = sb.init_siibra_params(None, self.julich_parcellation, None)
-        atlas, _, subject_ids = empty_params_config
+        atlas, _, cohort, subject_ids = sb.init_siibra_params(None, self.julich_parcellation, None, None)
         assert atlas == self.human_atlas
-        assert subject_ids == 'all'
+        assert cohort == sb.DEFAULT_COHORT
+        assert subject_ids == [None]
 
     def test_init_siibra_params_subjects_selected(self, create_test_atlases_and_parcellations):
         """"
         Test initialization of siibra paramas when only the subjects were selected
         """
-        empty_params_config = sb.init_siibra_params(None, None, '000;001')
-        atlas, parcellation, subject_ids = empty_params_config
+        atlas, parcellation, cohort, subject_ids = sb.init_siibra_params(None, None, None, '000;001')
         assert atlas == self.human_atlas
-        assert parcellation == self.julich_parcellation
+        assert parcellation is not None
+        assert parcellation in list(atlas.parcellations)
+        assert cohort == sb.DEFAULT_COHORT
         assert subject_ids == ['000', '001']
 
-    def test_get_connectivity_component(self, create_test_atlases_and_parcellations):
+    def test_get_connectivity_matrix(self, create_test_atlases_and_parcellations):
         """
         Test the retrieval of structural connectivities (weights and tracts) and functional connectivities
         """
-        weights = sb.get_connectivity_component(self.julich_parcellation, sb.Component2Modality.WEIGHTS)
+        weights = sb.get_connectivity_matrix(self.julich_parcellation, sb.DEFAULT_COHORT, DEFAULT_HCP_SUBJECT,
+                                             sb.Component2Modality.WEIGHTS)
         assert len(weights) > 0
-        assert type(weights[0]) == siibra.features.connectivity.StreamlineCounts
+        assert DEFAULT_HCP_SUBJECT[0] in weights
+        assert type(weights[DEFAULT_HCP_SUBJECT[0]]) == pandas.core.frame.DataFrame
 
-        tracts = sb.get_connectivity_component(self.julich_parcellation, sb.Component2Modality.TRACTS)
+        tracts = sb.get_connectivity_matrix(self.julich_parcellation, sb.DEFAULT_COHORT, DEFAULT_HCP_SUBJECT,
+                                            sb.Component2Modality.TRACTS)
         assert len(tracts) > 0
-        assert type(tracts[0]) == siibra.features.connectivity.StreamlineLengths
+        assert DEFAULT_HCP_SUBJECT[0] in tracts
+        assert type(tracts[DEFAULT_HCP_SUBJECT[0]]) == pandas.core.frame.DataFrame
 
-        fcs = sb.get_connectivity_component(self.julich_parcellation, sb.Component2Modality.FC)
+    def test_get_functional_connectivity_matrix(self, create_test_atlases_and_parcellations):
+        fcs, fcs_names = sb.get_functional_connectivity_matrix(self.julich_parcellation, sb.DEFAULT_COHORT,
+                                                               DEFAULT_HCP_SUBJECT[0])
         assert len(fcs) > 0
-        assert type(fcs[0]) == siibra.features.connectivity.FunctionalConnectivity
+        assert len(fcs_names) > 0
+        assert len(fcs) == len(fcs_names)
+        assert type(fcs[0]) == pandas.core.frame.DataFrame
 
     def test_get_hemispheres_for_regions(self):
         reg_names = ['reg1_right', 'reg1_left', 'reg_2']
@@ -174,30 +200,15 @@ class TestSiibraBase(BaseTestCase):
         assert hemi == [1, 0, 0]
 
     def test_get_regions_positions(self, create_test_atlases_and_parcellations):
-        region = self.human_atlas.get_region('v1', parcellation=self.julich_parcellation)
+        region = self.julich_parcellation.get_region('v1')
+        assert region.name == 'Area hOc1 (V1, 17, CalcS)'
         reg_coord = sb.get_regions_positions([region])[0]
-        assert reg_coord == (2.8424532907291535, -82.22873119424844, 2.1326498912705745)
-
-    def test_filter_structural_connectivity_by_id(self, create_weights_and_tracts):
-        subject = '000'
-        filtered_weights, filtered_tracts = sb.filter_structural_connectivity_by_id(self.weights, self.tracts,
-                                                                                    [subject])
-
-        assert len(filtered_weights) == 1
-        assert len(filtered_tracts) == 1
-
-        assert filtered_weights[0].subject == subject
-        assert filtered_tracts[0].subject == subject
-
-    def test_filter_functional_connectivity_by_id(self, create_siibra_functional_connectivities):
-        subject = '000'
-        filtered_fcs = sb.filter_functional_connectivity_by_id(self.fcs, [subject])
-
-        assert len(filtered_fcs) == 5
-        for fc in filtered_fcs:
-            assert fc.subject == subject
+        assert len(reg_coord) == 3
 
     def test_create_tvb_structural_connectivity(self):
+        """
+        Test the creation of TVB Structural Connectivity using dummy data
+        """
         weights_data = np.random.randint(0, 5, size=(2, 2))
         tracts_data = np.random.randint(0, 5, size=(2, 2))
         regions = ['reg1', 'reg2']
@@ -215,12 +226,24 @@ class TestSiibraBase(BaseTestCase):
         assert (tvb_conn.centres == positions).all()
         assert (tvb_conn.hemispheres == hemi).all()
 
-    def test_get_tvb_connectivities_from_kg(self, create_test_atlases_and_parcellations):
-        tvb_conns = sb.get_tvb_connectivities_from_kg(self.human_atlas, self.julich_parcellation, '001')
+    def test_get_structural_connectivities_from_kg(self, create_test_atlases_and_parcellations):
+        tvb_conns = sb.get_structural_connectivities_from_kg(self.human_atlas, self.julich_parcellation,
+                                                             sb.DEFAULT_COHORT, '001')
 
         assert len(tvb_conns) == 1
-        assert (list(tvb_conns.keys()) == ['001'])
+        assert list(tvb_conns.keys()) == ['001']
         assert type(tvb_conns['001']) == connectivity.Connectivity
+
+    def test_get_connectivity_measures_from_kg(self, create_test_atlases_and_parcellations):
+        struct_conn = sb.get_structural_connectivities_from_kg(self.human_atlas, self.julich_parcellation,
+                                                             sb.THOUSAND_BRAINS_COHORT, '0017')
+
+        tvb_conn_measures = sb.get_connectivity_measures_from_kg(self.human_atlas, self.julich_parcellation,
+                                                                 sb.THOUSAND_BRAINS_COHORT, '0017', struct_conn)
+
+        assert len(tvb_conn_measures) == 2
+        assert list(tvb_conn_measures.keys()) == ['0017_1', '0017_2']
+        assert type(tvb_conn_measures['0017_1'][0]) == graph.ConnectivityMeasure
 
     def test_get_fc_name_from_file_path(self):
         path = 'c/users/user1/FunctionalConnectivity.Name.csv'
@@ -230,32 +253,45 @@ class TestSiibraBase(BaseTestCase):
 
     def test_create_tvb_connectivity_measure(self, create_siibra_functional_connectivities):
         conn = connectivity.Connectivity.from_file("connectivity_192.zip")
-        fc = self.fcs[0]
+        fc = self.fc
 
         # the FC and SC are not compatible, but are used together only for testing purposes
-        tvb_conn_measure = sb.create_tvb_connectivity_measure(fc, conn)
-        assert (tvb_conn_measure.array_data == fc.matrix.to_numpy()).all()
+        tvb_conn_measure = sb.create_tvb_connectivity_measure(fc, conn, 'c/users/user1/FunctionalConnectivity.Name.csv')
+        assert (tvb_conn_measure.array_data == fc.to_numpy()).all()
         assert tvb_conn_measure.connectivity is conn
-        assert tvb_conn_measure.title == 'EmpCorrFC_concatenated'
+        assert tvb_conn_measure.title == 'FunctionalConnectivity.Name'
 
     def test_get_connectivity_measures_from_kg(self, create_test_atlases_and_parcellations):
         sc1 = connectivity.Connectivity.from_file("connectivity_76.zip")
         scs = {'001': sc1}
 
-        tvb_conn_measures = sb.get_connectivity_measures_from_kg(self.human_atlas, self.julich_parcellation, '001', scs)
+        tvb_conn_measures = sb.get_connectivity_measures_from_kg(self.human_atlas, self.julich_parcellation,
+                                                                 sb.DEFAULT_COHORT, '001', scs)
 
         assert len(tvb_conn_measures) == 1
         assert len(tvb_conn_measures['001']) == 5
         assert (list(tvb_conn_measures.keys()) == ['001'])
         assert type(tvb_conn_measures['001'][0]) == graph.ConnectivityMeasure
-
         assert tvb_conn_measures['001'][0].connectivity is sc1
+
+        sc2 = connectivity.Connectivity.from_file("connectivity_66.zip")
+        sc3 = connectivity.Connectivity.from_file("connectivity_68.zip")
+        scs2 = {'0017_1': sc2, '0017_2': sc3}
+        tvb_conn_measures2 = sb.get_connectivity_measures_from_kg(self.human_atlas, self.julich_parcellation,
+                                                                  sb.THOUSAND_BRAINS_COHORT, '0017', scs2)
+
+        assert len(tvb_conn_measures2) == 2
+        assert (list(tvb_conn_measures2.keys()) == ['0017_1', '0017_2'])
+        assert len(tvb_conn_measures2['0017_1']) == 1
+        assert type(tvb_conn_measures2['0017_1'][0]) == graph.ConnectivityMeasure
+        assert tvb_conn_measures2['0017_1'][0].connectivity is sc2
+        assert tvb_conn_measures2['0017_2'][0].connectivity is sc3
 
     def test_get_connectivities_from_kg_no_fc(self, create_test_atlases_and_parcellations):
         """
         Test retrieval of just structural connectivities
         """
-        scs, fcs = sb.get_connectivities_from_kg(self.human_atlas, self.julich_parcellation, '001')
+        scs, fcs = sb.get_connectivities_from_kg(self.human_atlas, self.julich_parcellation, sb.DEFAULT_COHORT, '001')
 
         assert len(scs) == 1
         assert not fcs
@@ -267,7 +303,8 @@ class TestSiibraBase(BaseTestCase):
         """
         Test retrieval of both structural and functional connectivities
         """
-        scs, fcs = sb.get_connectivities_from_kg(self.human_atlas, self.julich_parcellation, '001', True)
+        scs, fcs = sb.get_connectivities_from_kg(self.human_atlas, self.julich_parcellation, sb.DEFAULT_COHORT,
+                                                 '001', True)
 
         assert len(scs) == 1
         assert len(fcs) == 1
@@ -278,4 +315,3 @@ class TestSiibraBase(BaseTestCase):
 
         assert (list(fcs.keys()) == ['001'])
         assert type(fcs['001'][4]) == graph.ConnectivityMeasure
-

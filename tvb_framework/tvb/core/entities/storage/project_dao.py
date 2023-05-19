@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and 
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -254,10 +250,10 @@ class CaseDAO(RootDAO):
         Return all projects a given user can access (administrator or not).
         """
         # First load projects that current user is administrator for.
-        query = self.session.query(Project).join((User, Project.fk_admin == User.id)
-                                                 ).outerjoin((User_to_Project,
+        query = self.session.query(Project).join(User, Project.fk_admin == User.id
+                                                 ).outerjoin(User_to_Project,
                                                               and_(Project.id == User_to_Project.fk_project,
-                                                                   User_to_Project.fk_user == user_id))
+                                                                   User_to_Project.fk_user == user_id)
                                                              ).filter(
             or_(User.id == user_id, User_to_Project.fk_user == user_id)
         ).order_by(desc(Project.id))

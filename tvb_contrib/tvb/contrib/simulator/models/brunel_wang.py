@@ -4,7 +4,7 @@
 #  TheVirtualBrain-Contributors Package. This package holds simulator extensions.
 #  See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -17,12 +17,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -243,14 +239,14 @@ class BrunelWang(models.Model):
         doc="""Inhibitory absolute refractory period (ms)""")
 
     Cext = NArray(
-        dtype=numpy.int,
+        dtype=numpy.int_,
         label=":math:`C_{ext}`",
         default=numpy.array([800, ]),
         domain=Range(lo=500, hi=1200, step=100),
         doc="""Number of external (excitatory) connections""")
 
     C = NArray(
-        dtype=numpy.int,
+        dtype=numpy.int_,
         label=":math:`C`",
         default=numpy.array([200, ]),
         domain=Range(lo=100, hi=500, step=100),
@@ -275,7 +271,7 @@ class BrunelWang(models.Model):
         doc="""Synaptic coupling strength [w-] (dimensionless)""")
 
     NMAX = NArray(
-        dtype=numpy.int,
+        dtype=numpy.int_,
         label=":math:`N_{MAX}`",
         default=numpy.array([8, ], dtype=numpy.int32),
         domain=Range(lo=2, hi=8, step=1),
