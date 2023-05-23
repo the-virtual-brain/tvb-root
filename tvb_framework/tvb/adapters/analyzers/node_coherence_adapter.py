@@ -166,6 +166,10 @@ class NodeCoherenceAdapter(ABCAdapter):
 
         time_series_h5.close()
 
+        if partial_coh is None:
+            self.log.warn(f"Empty TS {input_shape[1]} ?")
+            return None
+
         partial_coh.source.gid = view_model.time_series
         partial_coh.gid = uuid.UUID(coherence_spectrum_index.gid)
 
