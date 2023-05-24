@@ -36,25 +36,23 @@ Tests for the theano backend.
 """
 
 import numpy as np
-# import theano
-# import theano.tensor as tt
-import aesara as theano
-import aesara.tensor as tt
+import pytensor
+from pytensor import tensor as pyt
 
 from tvb.simulator.backend.theano import TheanoBackend
 from tvb.simulator.coupling import Sigmoidal, Linear, Difference
 from tvb.simulator.integrators import (
     EulerDeterministic, EulerStochastic,
     HeunDeterministic, HeunStochastic,
-    IntegratorStochastic,RungeKutta4thOrderDeterministic,
+    IntegratorStochastic, RungeKutta4thOrderDeterministic,
     Identity, IdentityStochastic,
     VODEStochastic)
 from tvb.simulator.noise import Additive, Multiplicative
 from tvb.datatypes.connectivity import Connectivity
 from tvb.simulator.models.oscillator import Generic2dOscillator
 
-#from .backendtestbase import BaseTestDfun, BaseTestCoupling, BaseTestIntegrate, BaseTestSim
-from tvb.tests.library.simulator.backend.backendtestbase import BaseTestDfun, BaseTestCoupling, BaseTestIntegrate, BaseTestSim
+from .backendtestbase import BaseTestDfun, BaseTestCoupling, BaseTestIntegrate, BaseTestSim
+
 
 class TestTheanoSim(BaseTestSim):
 
@@ -65,10 +63,10 @@ class TestTheanoSim(BaseTestSim):
             delays=delays
         )
         template = '<%include file="theano-sim.py.mako"/>'
-        content = dict(sim=sim, np=np, theano=theano, tt=tt, mparams={}, cparams={})
+        content = dict(sim=sim, mparams={}, cparams={})
         kernel = TheanoBackend().build_py_func(template, content, print_source=True)
 
-        state = tt.as_tensor_variable(state_numpy, name="state")
+        state = pyt.as_tensor_variable(state_numpy, name="state")
         dX = state.copy()
         n_svar, _, n_node = state.eval().shape
 
@@ -78,10 +76,10 @@ class TestTheanoSim(BaseTestSim):
         state = state.reshape((n_svar, sim.connectivity.horizon, n_node))
 
         weights_numpy = sim.connectivity.weights.copy()
-        weights = tt.as_tensor_variable(weights_numpy, name="weights")
+        weights = pyt.as_tensor_variable(weights_numpy, name="weights")
 
-        yh_numpy = np.zeros((len(t),)+state.eval()[:,0].shape)
-        yh = tt.as_tensor_variable(yh_numpy, name="yh")
+        yh_numpy = np.zeros((len(t),) + state.eval()[:, 0].shape)
+        yh = pyt.as_tensor_variable(yh_numpy, name="yh")
 
         parmat = sim.model.spatial_parameter_matrix
         self.assertEqual(parmat.shape[0], 1)
@@ -98,7 +96,7 @@ class TestTheanoSim(BaseTestSim):
         self._check_match(y, yh.eval())
 
     def _test_mvar(self, integrator):
-        pass # TODO
+        pass  # TODO
 
     def _test_osc(self, integrator, delays=False):
         sim, state_numpy, t, y = self._create_osc_sim(
@@ -106,10 +104,10 @@ class TestTheanoSim(BaseTestSim):
             delays=delays
         )
         template = '<%include file="theano-sim.py.mako"/>'
-        content = dict(sim=sim, np=np, theano=theano, tt=tt)
+        content = dict(sim=sim, np=np, theano=pytensor, tt=pyt)
         kernel = TheanoBackend().build_py_func(template, content, print_source=True)
 
-        state = tt.as_tensor_variable(state_numpy, name="state")
+        state = pyt.as_tensor_variable(state_numpy, name="state")
         dX = state.copy()
         n_svar, _, n_node = state.eval().shape
 
@@ -119,10 +117,10 @@ class TestTheanoSim(BaseTestSim):
         state = state.reshape((n_svar, sim.connectivity.horizon, n_node))
 
         weights_numpy = sim.connectivity.weights.copy()
-        weights = tt.as_tensor_variable(weights_numpy, name="weights")
+        weights = pyt.as_tensor_variable(weights_numpy, name="weights")
 
-        yh_numpy = np.zeros((len(t),)+state.eval()[:,0].shape)
-        yh = tt.as_tensor_variable(yh_numpy, name="yh")
+        yh_numpy = np.zeros((len(t),) + state.eval()[:, 0].shape)
+        yh = pyt.as_tensor_variable(yh_numpy, name="yh")
 
         parmat = sim.model.spatial_parameter_matrix
         self.assertEqual(parmat.shape[0], 0)
@@ -152,16 +150,35 @@ class TestTheanoSim(BaseTestSim):
 
     # TODO move to BaseTestSim to avoid duplicating all the methods
 
-    def test_euler(self): self._test_integrator(EulerDeterministic)
-    def test_eulers(self): self._test_integrator(EulerStochastic)
-    def test_heun(self): self._test_integrator(HeunDeterministic)
-    def test_heuns(self): self._test_integrator(HeunStochastic)
-    def test_rk4(self): self._test_integrator(RungeKutta4thOrderDeterministic)
-    def test_deuler(self): self._test_integrator(EulerDeterministic, delays=True)
-    def test_deulers(self): self._test_integrator(EulerStochastic, delays=True)
-    def test_dheun(self): self._test_integrator(HeunDeterministic, delays=True)
-    def test_dheuns(self): self._test_integrator(HeunStochastic, delays=True)
-    def test_drk4(self): self._test_integrator(RungeKutta4thOrderDeterministic, delays=True)
+    def test_euler(self):
+        self._test_integrator(EulerDeterministic)
+
+    def test_eulers(self):
+        self._test_integrator(EulerStochastic)
+
+    def test_heun(self):
+        self._test_integrator(HeunDeterministic)
+
+    def test_heuns(self):
+        self._test_integrator(HeunStochastic)
+
+    def test_rk4(self):
+        self._test_integrator(RungeKutta4thOrderDeterministic)
+
+    def test_deuler(self):
+        self._test_integrator(EulerDeterministic, delays=True)
+
+    def test_deulers(self):
+        self._test_integrator(EulerStochastic, delays=True)
+
+    def test_dheun(self):
+        self._test_integrator(HeunDeterministic, delays=True)
+
+    def test_dheuns(self):
+        self._test_integrator(HeunStochastic, delays=True)
+
+    def test_drk4(self):
+        self._test_integrator(RungeKutta4thOrderDeterministic, delays=True)
 
 
 class TestTheanoCoupling(BaseTestCoupling):
@@ -174,36 +191,33 @@ class TestTheanoCoupling(BaseTestCoupling):
         # prep & invoke kernel
         template = f'''
         import numpy as np
-        # import theano
-        # import theano.tensor as tt
-        import aesara as theano
-        import aesara.tensor as tt
+        import pytensor
+        from pytensor import tensor as pyt
         <%include file="theano-coupling.py.mako"/>
         '''
-        kernel = TheanoBackend().build_py_func(template, dict(sim=sim, theano=theano),
-                                               name='coupling', print_source=True)
+        kernel = TheanoBackend().build_py_func(template, dict(sim=sim, cparams=cparams), name='coupling', print_source=True)
 
         fill = np.r_[:sim.history.buffer.size]
         fill = np.reshape(fill, sim.history.buffer.shape[:-1])
         sim.history.buffer[..., 0] = fill
-        sim.current_state[:] = fill[0,:,:,None]
-        buf = sim.history.buffer[...,0]
+        sim.current_state[:] = fill[0, :, :, None]
+        buf = sim.history.buffer[..., 0]
         # kernel has history in reverse order except 1st element 🤕
         rbuf = np.concatenate((buf[0:1], buf[1:][::-1]), axis=0)
 
         state_numpy = np.transpose(rbuf, (1, 0, 2)).astype('f')
-        state = tt.as_tensor_variable(state_numpy, name="state")
+        state = pyt.as_tensor_variable(state_numpy, name="state")
 
         weights_numpy = sim.connectivity.weights.astype('f')
-        weights = tt.as_tensor_variable(weights_numpy, name="weights")
+        weights = pyt.as_tensor_variable(weights_numpy, name="weights")
 
-        cX_numpy = np.zeros_like(state_numpy[:,0])
-        cX = tt.as_tensor_variable(cX_numpy, name="cX")
+        cX_numpy = np.zeros_like(state_numpy[:, 0])
+        cX = pyt.as_tensor_variable(cX_numpy, name="cX")
 
         cX = kernel(cX, weights, state, sim.connectivity.delay_indices)
         # do comparison
         (t, y), = sim.run()
-        np.testing.assert_allclose(cX.eval(), y[0,:,:,0], 1e-5, 1e-6)
+        np.testing.assert_allclose(cX.eval(), y[0, :, :, 0], 1e-5, 1e-6)
 
     def test_linear(self):
         self._test_cfun(Linear())
@@ -222,22 +236,19 @@ class TestTheanoDfun(BaseTestDfun):
 
         template = '''
         import numpy as np
-        # import theano
-        # import theano.tensor as tt
-        import aesara as theano
-        import aesara.tensor as tt
+        import pytensor
+        from pytensor import tensor as pyt
         <%include file="theano-dfuns.py.mako"/>
         '''
-        kernel = TheanoBackend().build_py_func(template, dict(sim=sim, theano=theano),
-                                               name='dfuns', print_source=True)
+        kernel = TheanoBackend().build_py_func(template, dict(sim=sim, mparams=mparams), name="dfuns", print_source=True)
 
         cX_numpy = np.random.rand(2, 128, 1)
-        cX = tt.as_tensor_variable(cX_numpy, name="cX")
+        cX = pyt.as_tensor_variable(cX_numpy, name="cX")
 
-        dX = tt.zeros(shape=(2, 128, 1))
+        dX = pyt.zeros(shape=(2, 128, 1))
 
         state_numpy = np.random.rand(2, 128, 1)
-        state = tt.as_tensor_variable(state_numpy, name="state")
+        state = pyt.as_tensor_variable(state_numpy, name="state")
 
         parmat = sim.model.spatial_parameter_matrix
         dX = kernel(dX, state, cX, parmat)
@@ -250,44 +261,44 @@ class TestTheanoDfun(BaseTestDfun):
         self._test_dfun(oscillator_model)
 
     def test_py_mpr_symmetric(self):
-        "Test symmetric MPR model"
+        """Test symmetric MPR model"""
         self._test_dfun(self._prep_model())
 
 
 class TestTheanoIntegrate(BaseTestIntegrate):
 
     def _test_dfun(self, state, cX, lc):
-        return -state*cX**2/state.shape[1]
+        return -state * cX ** 2 / state.shape[1]
 
     def _eval_cg(self, integrator_, state, weights_):
         class sim:
             integrator = integrator_
             connectivity = Connectivity.from_file()
+
             class model:
-                state_variables = 'foo', 'bar'
+                state_variables = "foo", "bar"
+
         sim.connectivity.speed = np.r_[np.inf]
         sim.connectivity.configure()
         sim.integrator.configure()
         sim.connectivity.set_idelays(sim.integrator.dt)
         template = '''
-import numpy as np
-# import theano
-# import theano.tensor as tt
-import aesara as theano
-import aesara.tensor as tt
-def coupling(cX, weights, state): 
-    cX = tt.set_subtensor(cX[:], weights.dot(state[:,0].T).T)
-    return cX
-def dfuns(dX, state, cX, parmat):
-    dX = tt.set_subtensor(dX[:], -state*cX**2/state.shape[1])
-    return dX
-<%include file="theano-integrate.py.mako" />
-'''
-        integrate = TheanoBackend().build_py_func(template, dict(sim=sim, np=np, theano=theano, tt=tt),
-                                                  name='integrate', print_source=True)
-        parmat = tt.zeros(0)
-        dX = tt.zeros(shape=(integrator_.n_dx,)+state[:,0].eval().shape)
-        cX = tt.zeros_like(state[:,0])
+        import numpy as np
+        import pytensor
+        from pytensor import tensor as pyt
+        def coupling(cX, weights, state): 
+            cX = pyt.set_subtensor(cX[:], weights.dot(state[:,0].T).T)
+            return cX
+        def dfuns(dX, state, cX, parmat):
+            dX = pyt.set_subtensor(dX[:], -state*cX**2/state.shape[1])
+            return dX
+        <%include file="theano-integrate.py.mako" />
+        '''
+        integrate = TheanoBackend().build_py_func(template, dict(sim=sim), name='integrate', print_source=True)
+
+        parmat = pyt.zeros(0)
+        dX = pyt.zeros(shape=(integrator_.n_dx,) + state[:, 0].eval().shape)
+        cX = pyt.zeros_like(state[:, 0])
         np.random.seed(42)
         args = state, weights_, parmat, dX, cX
 
@@ -303,7 +314,7 @@ def dfuns(dX, state, cX, parmat):
             # else:
             #     raise NotImplementedError
             # args = args + (dyn_noise, )
-            args = args + (sim.integrator.noise.nsig, )
+            args = args + (sim.integrator.noise.nsig,)
         state = integrate(*args)
         return state
 
@@ -315,25 +326,38 @@ def dfuns(dX, state, cX, parmat):
             integrator = Integrator(dt=0.1)
         nn = 76
         state_numpy = np.random.randn(2, 1, nn)
-        state = tt.as_tensor_variable(state_numpy, name="state")
+        state = pyt.as_tensor_variable(state_numpy, name="state")
 
         weights_numpy = np.random.randn(nn, nn)
-        weights = tt.as_tensor_variable(weights_numpy, name="weights")
+        weights = pyt.as_tensor_variable(weights_numpy, name="weights")
 
-        cx_numpy = weights_numpy.dot(state_numpy[:,0].T).T
-        cx = weights.dot(state[:,0].T).T
+        cx_numpy = weights_numpy.dot(state_numpy[:, 0].T).T
+        cx = weights.dot(state[:, 0].T).T
 
         assert cx_numpy.shape == (2, nn)
-        expected = integrator.scheme(state_numpy[:,0], self._test_dfun, cx_numpy, 0, 0)
+        expected = integrator.scheme(state_numpy[:, 0], self._test_dfun, cx_numpy, 0, 0)
         # actual = state
         np.random.seed(42)
         actual = self._eval_cg(integrator, state, weights)
-        np.testing.assert_allclose(actual[:,0].eval(), expected)
+        np.testing.assert_allclose(actual[:, 0].eval(), expected)
 
-    def test_euler(self): self._test_integrator(EulerDeterministic)
-    def test_eulers(self): self._test_integrator(EulerStochastic)
-    def test_heun(self): self._test_integrator(HeunDeterministic)
-    def test_heuns(self): self._test_integrator(HeunStochastic)
-    def test_rk4(self): self._test_integrator(RungeKutta4thOrderDeterministic)
-    def test_id(self): self._test_integrator(Identity)
-    def test_ids(self): self._test_integrator(IdentityStochastic)
+    def test_euler(self):
+        self._test_integrator(EulerDeterministic)
+
+    def test_eulers(self):
+        self._test_integrator(EulerStochastic)
+
+    def test_heun(self):
+        self._test_integrator(HeunDeterministic)
+
+    def test_heuns(self):
+        self._test_integrator(HeunStochastic)
+
+    def test_rk4(self):
+        self._test_integrator(RungeKutta4thOrderDeterministic)
+
+    def test_id(self):
+        self._test_integrator(Identity)
+
+    def test_ids(self):
+        self._test_integrator(IdentityStochastic)

@@ -29,10 +29,8 @@
 ##
 
 import numpy as np
-# import theano
-# import theano.tensor as tt
-import aesara as theano
-import aesara.tensor as tt
+import pytensor
+from pytensor import tensor as pyt
 
 def coupling(cX, weights, state
 % if sim.connectivity.idelays.any():
@@ -45,11 +43,8 @@ def coupling(cX, weights, state
 % endfor
 ):
 
-    ##n_svar = state.eval().shape[0]
-    ##n_cvar = cX.eval().shape[0]
-    ##n_node = cX.eval().shape[1]
     n_node = ${sim.connectivity.number_of_regions}
-    ##assert cX.eval().shape[1] == weights.eval().shape[0] == weights.eval().shape[1] == state.eval().shape[2]
+    assert cX.eval().shape[1] == weights.eval().shape[0] == weights.eval().shape[1] == state.eval().shape[2]
 
 % for par in sim.coupling.parameter_names:
     % if not par in cparams:
@@ -62,17 +57,17 @@ def coupling(cX, weights, state
 
 ## don't generate x_i if not required
 % if 'x_i' in sim.coupling.pre_expr:
-    x_i = tt.transpose(tt.reshape(tt.tile(state[${cvar}, 0], (1, n_node)), (n_node, n_node))) # Reshaping and transposing to match the order of indexing between x_i and x_j
+    x_i = pyt.transpose(pyt.reshape(pyt.tile(state[${cvar}, 0], (1, n_node)), (n_node, n_node))) # Reshaping and transposing to match the order of indexing between x_i and x_j
 % endif
 ## if no non-zero idelays, use current state
 % if sim.connectivity.idelays.any():
-    x_j = tt.flatten(state[${cvar}])[delay_indices]
+    x_j = pyt.flatten(state[${cvar}])[delay_indices]
 % else:
-    x_j = tt.tile(state[${cvar}, 0], (n_node, 1))
+    x_j = pyt.tile(state[${cvar}, 0], (n_node, 1))
 % endif
 ## apply weights, do summation and store
-    gx = tt.sum(weights * (${sim.coupling.pre_expr}), axis=-1)
-    cX = tt.set_subtensor(cX[${loop.index}], ${sim.coupling.post_expr})
+    gx = pyt.sum(weights * (${sim.coupling.pre_expr}), axis=-1)
+    cX = pyt.set_subtensor(cX[${loop.index}], ${sim.coupling.post_expr})
 % endfor
 
 

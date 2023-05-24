@@ -29,10 +29,8 @@
 ##
 
 import numpy as np
-# import theano
-# import theano.tensor as tt
-import aesara as theano
-import aesara.tensor as tt
+import pytensor
+from pytensor import tensor as pyt
 
 <%include file="theano-coupling.py.mako" />
 <%include file="theano-dfuns.py.mako" />
@@ -56,14 +54,14 @@ def kernel(state, weights, trace, parmat
     nt = ${int(sim.simulation_length/sim.integrator.dt)}
 
     # work space arrays
-    dX = tt.zeros((${sim.integrator.n_dx}, n_svar, n_node))
-    cX = tt.zeros((n_cvar, n_node))
+    dX = pyt.zeros((${sim.integrator.n_dx}, n_svar, n_node))
+    cX = pyt.zeros((n_cvar, n_node))
 
     for t in range(nt):
         state = integrate(state, weights, parmat, dX, cX
            ${', nsig' if stochastic else ''}
            ${', idelays' if any_delays else ''}
            )
-        trace = tt.set_subtensor(trace[t], state[:,0])
+        trace = pyt.set_subtensor(trace[t], state[:, 0])
 
     return trace

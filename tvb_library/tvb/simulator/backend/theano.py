@@ -29,7 +29,7 @@
 #
 
 """
-A plain theano backend which uses templating to generate simulation
+A plain pytensor backend which uses templating to generate simulation
 code.
 
 .. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
@@ -39,7 +39,6 @@ code.
 import os
 import sys
 import importlib
-import aesara as theano
 import autopep8
 import tempfile
 

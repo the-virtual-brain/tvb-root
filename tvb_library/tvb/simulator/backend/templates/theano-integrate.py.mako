@@ -28,6 +28,10 @@
 ##
 ##
 
+import numpy as np
+import pytensor
+from pytensor import tensor as pyt
+
 <%
     from tvb.simulator.integrators import (IntegratorStochastic,
         EulerDeterministic, EulerStochastic,
@@ -51,8 +55,8 @@ def noise(nsig):
     n_svar = ${len(sim.model.state_variables)}
     sqrt_dt = ${np.sqrt(sim.integrator.dt)}
     dWt = np.random.randn(n_svar, n_node)
-    dWt = tt.as_tensor_variable(dWt)
-    D = tt.sqrt(2 * nsig)
+    dWt = pyt.as_tensor_variable(dWt)
+    D = pyt.sqrt(2 * nsig)
     return sqrt_dt * D * dWt
     ## return nsig
 % else:
@@ -74,20 +78,20 @@ def integrate(state, weights, parmat, dX, cX
     , delay_indices
 % endif
 )
-    dX = tt.set_subtensor(dX[0], dfuns(dX[0], state[:,0], cX, parmat))
+    dX = pyt.set_subtensor(dX[0], dfuns(dX[0], state[:, 0], cX, parmat))
 % if isinstance(sim.integrator, EulerDeterministic):
-    next_state = state[:,0] + dt * dX[0]
+    next_state = state[:, 0] + dt * dX[0]
 % endif
 % if isinstance(sim.integrator, EulerStochastic):
-    next_state = state[:,0] + dt * dX[0] + noise(nsig)
+    next_state = state[:, 0] + dt * dX[0] + noise(nsig)
 % endif
 % if isinstance(sim.integrator, HeunDeterministic):
-    dX = tt.set_subtensor(dX[1], dfuns(dX[1], state[:,0] + dt * dX[0], cX, parmat))
-    next_state = state[:,0] + dt / 2 * (dX[0] + dX[1])
+    dX = pyt.set_subtensor(dX[1], dfuns(dX[1], state[:, 0] + dt * dX[0], cX, parmat))
+    next_state = state[:, 0] + dt / 2 * (dX[0] + dX[1])
 % endif
 % if isinstance(sim.integrator, HeunStochastic):
     z = noise(nsig)
-    dX = tt.set_subtensor(dX[1], dfuns(dX[1], state[:,0] + dt * dX[0] + z, cX, parmat))
+    dX = pyt.set_subtensor(dX[1], dfuns(dX[1], state[:, 0] + dt * dX[0] + z, cX, parmat))
     next_state = state[:,0] + dt / 2 * (dX[0] + dX[1]) + z
 % endif
 % if isinstance(sim.integrator, Identity):
@@ -97,12 +101,12 @@ def integrate(state, weights, parmat, dX, cX
     next_state = dX[0] + noise(nsig)
 % endif
 % if isinstance(sim.integrator, RungeKutta4thOrderDeterministic):
-    dX = tt.set_subtensor(dX[1], dfuns(dX[1], state[:,0] + dt / 2 * dX[0], cX, parmat))
-    dX = tt.set_subtensor(dX[2], dfuns(dX[2], state[:,0] + dt / 2 * dX[1], cX, parmat))
-    dX = tt.set_subtensor(dX[3], dfuns(dX[3], state[:,0] + dt * dX[2], cX, parmat))
-    next_state = state[:,0] + dt / 6 * (dX[0] + 2*(dX[1] + dX[2]) + dX[3])
+    dX = pyt.set_subtensor(dX[1], dfuns(dX[1], state[:, 0] + dt / 2 * dX[0], cX, parmat))
+    dX = pyt.set_subtensor(dX[2], dfuns(dX[2], state[:, 0] + dt / 2 * dX[1], cX, parmat))
+    dX = pyt.set_subtensor(dX[3], dfuns(dX[3], state[:, 0] + dt * dX[2], cX, parmat))
+    next_state = state[:, 0] + dt / 6 * (dX[0] + 2*(dX[1] + dX[2]) + dX[3])
 % endif
-    state = tt.set_subtensor(state[:], tt.roll(state, 1, axis=1))
-    state = tt.set_subtensor(state[:, 0], next_state)
+    state = pyt.set_subtensor(state[:], pyt.roll(state, 1, axis=1))
+    state = pyt.set_subtensor(state[:, 0], next_state)
 
     return state

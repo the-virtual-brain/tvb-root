@@ -28,6 +28,10 @@
 ##
 ##
 
+import numpy as np
+import pytensor
+from pytensor import tensor as pyt
+
 def dfuns(dX, state, cX, parmat
 % for par in sim.model.parameter_names:
     % if par in mparams:
@@ -42,9 +46,11 @@ def dfuns(dX, state, cX, parmat
     % endif
 % endfor
 
-##% for par in sim.model.spatial_parameter_names:
-##    ${par} = parmat[${loop.index}]
-##% endfor
+% for par in sim.model.spatial_parameter_names:
+    % if not par in mparams:
+    ${par} = parmat[${loop.index}]
+    % endif
+% endfor
 
     pi = np.pi
 
@@ -58,7 +64,7 @@ def dfuns(dX, state, cX, parmat
 
     # compute dfuns
 % for svar in sim.model.state_variables:
-    dX = tt.set_subtensor(dX[${loop.index}], ${sim.model.state_variable_dfuns[svar]});
+    dX = pyt.set_subtensor(dX[${loop.index}], ${sim.model.state_variable_dfuns[svar]});
 % endfor
 
     return dX
