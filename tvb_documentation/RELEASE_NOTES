@@ -10,6 +10,9 @@
     * Fix dfun eq for some models in MatJax - PhasePlane web page
     * Fix Deepcopy of a simulator obj for the monitors list
     * Adapt tvb-framework to the latest siibra release 0.4*
+    * The AdEx (ZerlautSecondOrder) model was consolidated with other external implementations,
+    has changed number of variables (adding an external input) and has now examples replicating some of the figures from papers
+    * K ION Exchange model was added
 
 ======================================================================================================================================
  The Virtual Brain (TVB)
