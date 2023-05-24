@@ -32,9 +32,9 @@ import numpy as np
 import pytensor
 from pytensor import tensor as pyt
 
-<%include file="theano-coupling.py.mako" />
-<%include file="theano-dfuns.py.mako" />
-<%include file="theano-integrate.py.mako" />
+<%include file="pytensor-coupling.py.mako" />
+<%include file="pytensor-dfuns.py.mako" />
+<%include file="pytensor-integrate.py.mako" />
 
 <%
     from tvb.simulator.integrators import IntegratorStochastic

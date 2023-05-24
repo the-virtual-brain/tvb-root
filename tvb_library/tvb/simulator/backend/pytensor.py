@@ -45,7 +45,7 @@ import tempfile
 from .templates import MakoUtilMix
 
 
-class TheanoBackend(MakoUtilMix):
+class PytensorBackend(MakoUtilMix):
 
     def __init__(self):
         self.cgdir = tempfile.TemporaryDirectory()

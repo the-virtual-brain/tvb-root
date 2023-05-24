@@ -39,7 +39,7 @@ import numpy as np
 import pytensor
 from pytensor import tensor as pyt
 
-from tvb.simulator.backend.theano import TheanoBackend
+from tvb.simulator.backend.pytensor import PytensorBackend
 from tvb.simulator.coupling import Sigmoidal, Linear, Difference
 from tvb.simulator.integrators import (
     EulerDeterministic, EulerStochastic,
@@ -62,7 +62,7 @@ class TestPytensorSim(BaseTestSim):
             inhom_mmpr=True,
             delays=delays
         )
-        template = '<%include file="theano-sim.py.mako"/>'
+        template = '<%include file="pytensor-sim.py.mako"/>'
         content = dict(sim=sim, mparams={}, cparams={})
         kernel = TheanoBackend().build_py_func(template, content, print_source=True)
 
@@ -103,7 +103,7 @@ class TestPytensorSim(BaseTestSim):
             integrator,
             delays=delays
         )
-        template = '<%include file="theano-sim.py.mako"/>'
+        template = '<%include file="pytensor-sim.py.mako"/>'
         content = dict(sim=sim, np=np, theano=pytensor, tt=pyt)
         kernel = TheanoBackend().build_py_func(template, content, print_source=True)
 
@@ -193,7 +193,7 @@ class TestPytensorCoupling(BaseTestCoupling):
         import numpy as np
         import pytensor
         from pytensor import tensor as pyt
-        <%include file="theano-coupling.py.mako"/>
+        <%include file="pytensor-coupling.py.mako"/>
         '''
         kernel = TheanoBackend().build_py_func(template, dict(sim=sim, cparams=cparams), name='coupling', print_source=True)
 
@@ -238,7 +238,7 @@ class TestPytensorDfun(BaseTestDfun):
         import numpy as np
         import pytensor
         from pytensor import tensor as pyt
-        <%include file="theano-dfuns.py.mako"/>
+        <%include file="pytensor-dfuns.py.mako"/>
         '''
         kernel = TheanoBackend().build_py_func(template, dict(sim=sim, mparams=mparams), name="dfuns", print_source=True)
 
@@ -292,9 +292,9 @@ def coupling(cX, weights, state):
 def dfuns(dX, state, cX, parmat):
     dX = pyt.set_subtensor(dX[:], -state*cX**2/state.shape[1])
     return dX
-<%include file="theano-integrate.py.mako" />
+<%include file="pytensor-integrate.py.mako" />
 '''
-        integrate = TheanoBackend().build_py_func(template, dict(sim=sim), name='integrate', print_source=True)
+        integrate = TheanoBackend().build_py_func(template, dict(sim=sim, np=np, pyt=pyt), name='integrate', print_source=True)
 
         parmat = pyt.zeros(0)
         dX = pyt.zeros(shape=(integrator_.n_dx,) + state[:, 0].eval().shape)
