@@ -64,7 +64,7 @@ class TestPytensorSim(BaseTestSim):
         )
         template = '<%include file="pytensor-sim.py.mako"/>'
         content = dict(sim=sim, mparams={}, cparams={})
-        kernel = TheanoBackend().build_py_func(template, content, print_source=True)
+        kernel = PytensorBackend().build_py_func(template, content, print_source=True)
 
         state = pyt.as_tensor_variable(state_numpy, name="state")
         dX = state.copy()
@@ -105,7 +105,7 @@ class TestPytensorSim(BaseTestSim):
         )
         template = '<%include file="pytensor-sim.py.mako"/>'
         content = dict(sim=sim, np=np, theano=pytensor, tt=pyt)
-        kernel = TheanoBackend().build_py_func(template, content, print_source=True)
+        kernel = PytensorBackend().build_py_func(template, content, print_source=True)
 
         state = pyt.as_tensor_variable(state_numpy, name="state")
         dX = state.copy()
@@ -195,7 +195,7 @@ class TestPytensorCoupling(BaseTestCoupling):
         from pytensor import tensor as pyt
         <%include file="pytensor-coupling.py.mako"/>
         '''
-        kernel = TheanoBackend().build_py_func(template, dict(sim=sim, cparams=cparams), name='coupling', print_source=True)
+        kernel = PytensorBackend().build_py_func(template, dict(sim=sim, cparams=cparams), name='coupling', print_source=True)
 
         fill = np.r_[:sim.history.buffer.size]
         fill = np.reshape(fill, sim.history.buffer.shape[:-1])
@@ -240,7 +240,7 @@ class TestPytensorDfun(BaseTestDfun):
         from pytensor import tensor as pyt
         <%include file="pytensor-dfuns.py.mako"/>
         '''
-        kernel = TheanoBackend().build_py_func(template, dict(sim=sim, mparams=mparams), name="dfuns", print_source=True)
+        kernel = PytensorBackend().build_py_func(template, dict(sim=sim, mparams=mparams), name="dfuns", print_source=True)
 
         cX_numpy = np.random.rand(2, 128, 1)
         cX = pyt.as_tensor_variable(cX_numpy, name="cX")
@@ -294,7 +294,7 @@ def dfuns(dX, state, cX, parmat):
     return dX
 <%include file="pytensor-integrate.py.mako" />
 '''
-        integrate = TheanoBackend().build_py_func(template, dict(sim=sim, np=np, pyt=pyt), name='integrate', print_source=True)
+        integrate = PytensorBackend().build_py_func(template, dict(sim=sim, np=np, pyt=pyt), name='integrate', print_source=True)
 
         parmat = pyt.zeros(0)
         dX = pyt.zeros(shape=(integrator_.n_dx,) + state[:, 0].eval().shape)
