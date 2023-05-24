@@ -29,7 +29,7 @@
 #
 
 """
-Tests for the theano backend.
+Tests for the pytensor backend.
 
 .. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
@@ -54,7 +54,7 @@ from tvb.simulator.models.oscillator import Generic2dOscillator
 from .backendtestbase import BaseTestDfun, BaseTestCoupling, BaseTestIntegrate, BaseTestSim
 
 
-class TestTheanoSim(BaseTestSim):
+class TestPytensorSim(BaseTestSim):
 
     def _test_mpr(self, integrator, delays=False):
         sim, state_numpy, t, y = self._create_sim(
@@ -181,7 +181,7 @@ class TestTheanoSim(BaseTestSim):
         self._test_integrator(RungeKutta4thOrderDeterministic, delays=True)
 
 
-class TestTheanoCoupling(BaseTestCoupling):
+class TestPytensorCoupling(BaseTestCoupling):
 
     def _test_cfun(self, cfun, **cparams):
         """Test a Python cfun template."""
@@ -226,7 +226,7 @@ class TestTheanoCoupling(BaseTestCoupling):
         self._test_cfun(Difference())
 
 
-class TestTheanoDfun(BaseTestDfun):
+class TestPytensorDfun(BaseTestDfun):
 
     def _test_dfun(self, model_, **mparams):
         """Test a Python dfun template."""
@@ -265,7 +265,7 @@ class TestTheanoDfun(BaseTestDfun):
         self._test_dfun(self._prep_model())
 
 
-class TestTheanoIntegrate(BaseTestIntegrate):
+class TestPytensorIntegrate(BaseTestIntegrate):
 
     def _test_dfun(self, state, cX, lc):
         return -state * cX ** 2 / state.shape[1]
@@ -283,17 +283,17 @@ class TestTheanoIntegrate(BaseTestIntegrate):
         sim.integrator.configure()
         sim.connectivity.set_idelays(sim.integrator.dt)
         template = '''
-        import numpy as np
-        import pytensor
-        from pytensor import tensor as pyt
-        def coupling(cX, weights, state): 
-            cX = pyt.set_subtensor(cX[:], weights.dot(state[:,0].T).T)
-            return cX
-        def dfuns(dX, state, cX, parmat):
-            dX = pyt.set_subtensor(dX[:], -state*cX**2/state.shape[1])
-            return dX
-        <%include file="theano-integrate.py.mako" />
-        '''
+import numpy as np
+import pytensor
+from pytensor import tensor as pyt
+def coupling(cX, weights, state): 
+    cX = pyt.set_subtensor(cX[:], weights.dot(state[:,0].T).T)
+    return cX
+def dfuns(dX, state, cX, parmat):
+    dX = pyt.set_subtensor(dX[:], -state*cX**2/state.shape[1])
+    return dX
+<%include file="theano-integrate.py.mako" />
+'''
         integrate = TheanoBackend().build_py_func(template, dict(sim=sim), name='integrate', print_source=True)
 
         parmat = pyt.zeros(0)
