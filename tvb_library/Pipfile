@@ -10,10 +10,12 @@ matplotlib = "*"
 scipy = "*"
 mako = "*"
 autopep8 = "*"
-tvb-gdist = "*"
+gdist = "*"
 pylems = "*"
 h5py = "*"
 tqdm = "*"
+tvb-data = "*"
+aesara = "*"
 docutils = "*"
 
 [dev-packages]
