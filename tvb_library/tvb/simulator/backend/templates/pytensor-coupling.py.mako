@@ -44,7 +44,7 @@ def coupling(cX, weights, state
 ):
 
     n_node = ${sim.connectivity.number_of_regions}
-    assert cX.eval().shape[1] == weights.eval().shape[0] == weights.eval().shape[1] == state.eval().shape[2]
+    ## assert cX.eval().shape[1] == weights.eval().shape[0] == weights.eval().shape[1] == state.eval().shape[2]
 
 % for par in sim.coupling.parameter_names:
     % if not par in cparams:

@@ -104,7 +104,7 @@ class TestPytensorSim(BaseTestSim):
             delays=delays
         )
         template = '<%include file="pytensor-sim.py.mako"/>'
-        content = dict(sim=sim, np=np, theano=pytensor, tt=pyt)
+        content = dict(sim=sim, np=np, pytensor=pytensor, pyt=pyt)
         kernel = PytensorBackend().build_py_func(template, content, print_source=True)
 
         state = pyt.as_tensor_variable(state_numpy, name="state")
