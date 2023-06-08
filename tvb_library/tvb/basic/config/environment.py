@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -38,7 +34,6 @@ Environment related checks or operations are to be defined here.
 import os
 import sys
 from subprocess import Popen, PIPE
-from tvb.basic.config.settings import VersionSettings
 
 
 class Environment(object):
@@ -76,12 +71,16 @@ class Environment(object):
         except Exception:
             pass
 
-        externals_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(tvb_bin.__file__)))),
-            "externals")
-        if os.path.exists(externals_path):
-            # usage from GitHub clone without got cmd or inside a Docker container (as a mounted volume)
-            return False
+        try:
+            import tvb
+            externals_path = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(tvb.__file__)))),
+                "dev_resources")
+            if os.path.exists(externals_path):
+                # usage from GitHub clone without got cmd or inside a Docker container (as a mounted volume)
+                return False
+        except Exception:
+            pass
 
         # We default as usage from TVB_Distribution
         return True

@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -61,23 +57,22 @@ def init_siibra_options():
     # has data and corresponds with the current API of siibra
     parcellations = [siibra_base.DEFAULT_PARCELLATION]
 
-    atlas_dict = {}
-    parcellation_dict = {}
+    # get available cohorts
+    cohorts = siibra_base.get_cohorts_for_sc(parcellations[0])
 
-    for a_name in atlases:
-        atlas_dict[a_name] = a_name
-
-    for p_name in parcellations:
-        parcellation_dict[p_name] = p_name
+    atlas_dict = {a_name: a_name for a_name in atlases}
+    parcellation_dict = {p_name: p_name for p_name in parcellations}
+    cohort_dict = {(y := c_name.upper()): y for c_name in cohorts}
 
     atlas_options = TVBEnum('AtlasOptions', atlas_dict)
     parcellation_options = TVBEnum('ParcellationOptions', parcellation_dict)
+    cohort_options = TVBEnum('CohortOptions', cohort_dict)
 
-    return atlas_options, parcellation_options
+    return atlas_options, parcellation_options, cohort_options
 
 
 if 'SIIBRA_INIT_DONE' not in globals():
-    ATLAS_OPTS, PARCELLATION_OPTS = init_siibra_options()
+    ATLAS_OPTS, PARCELLATION_OPTS, COHORT_OPTS = init_siibra_options()
     SIIBRA_INIT_DONE = True
 
 
@@ -104,18 +99,35 @@ class SiibraModel(ViewModel):
         doc='Parcellation to be used (only TVB compatible ones listed here)'
     )
 
+    cohort = EnumAttr(
+        field_type=COHORT_OPTS,
+        default=COHORT_OPTS[siibra_base.DEFAULT_COHORT],
+        label='Cohort',
+        required=True,
+        doc='Cohort to be used'
+    )
+
     subject_ids = Str(
         label='Subjects',
         required=True,
         default='000',
-        doc="""The list of all subject IDs for which the structural and optionally functional connectivities
-        The IDs can be specified in 3 ways: <br/>
-        1. individually, delimited by a semicolon symbol: 000;001;002<br/>
+        doc="""The list of all subject IDs for which the structural and optionally functional connectivities are 
+        computed. Depending on the selected cohort, you can specify the IDs in the following ways: <br/>
+        a) For the "HCP" cohort, the subject IDs are: 000,001,002, etc. Each subject has exactly one 
+        subject ID associated to them. Thus, there are 3 ways to specify the IDs:<br/>
+        1. individually, delimited by a semicolon symbol: 000;001;002. <br/>
         2. As a range, specifying the first and last IDs: 000-050 will retrieve all the subjects starting with 
-        subject 000 until subject 050 (51 subjects)<br/>
+        subject 000 until subject 050 (51 subjects). <br/>
         A combination of the 2 methods is also supported: 000-005;010 will retrieve all the subjects starting with 
-        subject 000 until subject 005 (6 subjects) AND subject 010 (so 7 subjects in total)<br/>
-        3. Using the keyword 'all' (without apostrophes) to get the connectivities for all the available subjects """)
+        subject 000 until subject 005 (6 subjects) AND subject 010 (so 7 subjects in total)<br/> <br/>
+        b) For "1000BRAINS" cohort, the subject IDs are: 0001_1, 0001_2, 0002_1, 0002_2, etc. Each subject can have 
+        multiple subjects IDs associated to them, indicated by the "_1", "_2" suffix, but most of subjects have 
+        just one ID, ending in "_1". Thus, there are 2 ways to specify the IDs: <br/>
+        1. individually and specifying the exact ID, so including "_1" or "_2". Multiple IDs can be mentioned 
+        by using a semicolon symbol to delimitate them: 0001_1;0017_1;0017_2. <br/>
+        2. individually, and specifying just the prefix for a subject. Multiple IDs can be mentioned by using a 
+        semicolon symbol to delimitate them: 0001;0017 will be converted to 4 IDs: 0001_1, 0001_2, 0017_1, 0017_2.
+        """)
 
     fc = Attr(
         field_type=bool,
@@ -132,6 +144,7 @@ class SiibraCreatorForm(ABCAdapterForm):
         self.ebrains_token = UserSessionStrField(SiibraModel.ebrains_token, name="ebrains_token", key=KEY_AUTH_TOKEN)
         self.atlas = SelectField(SiibraModel.atlas, name='atlas')
         self.parcellation = SelectField(SiibraModel.parcellation, name='parcellation')
+        self.cohort = SelectField(SiibraModel.cohort, name='cohort')
         self.subject_ids = StrField(SiibraModel.subject_ids, name='subject_ids')
         self.fc = BoolField(SiibraModel.fc, name='fc')
 
@@ -168,6 +181,7 @@ class SiibraCreator(ABCAdapter):
         ebrains_token = view_model.ebrains_token
         atlas = view_model.atlas.value
         parcellation = view_model.parcellation.value
+        cohort = view_model.cohort.value
         subject_ids = view_model.subject_ids
         compute_fc = view_model.fc
 
@@ -177,8 +191,8 @@ class SiibraCreator(ABCAdapter):
         results = []
 
         try:
-            conn_dict, conn_measures_dict = siibra_base.get_connectivities_from_kg(atlas, parcellation, subject_ids,
-                                                                                    compute_fc)
+            conn_dict, conn_measures_dict = siibra_base.get_connectivities_from_kg(atlas, parcellation, cohort,
+                                                                                   subject_ids, compute_fc)
         except SiibraHttpRequestError as e:
             if e.response.status_code in [401, 403]:
                 raise ConnectionError('Invalid EBRAINS authentication token. Please provide a new one.')
@@ -186,8 +200,7 @@ class SiibraCreator(ABCAdapter):
                 raise ConnectionError('We could not complete the operation. '
                                       'Please check the logs and contact the development team from TVB, siibra or EBRAINS KG.')
 
-
-        # list of indexes after store_complete() is called on each struct. conn. and conn. measures
+        # list of indexes for stored the Struct. Conn. and Conn. Measures
         conn_indices = []
         conn_measures_indices = []
 

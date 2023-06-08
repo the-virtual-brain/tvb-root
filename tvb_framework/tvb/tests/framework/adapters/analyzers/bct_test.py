@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and 
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -47,6 +43,9 @@ class TestBCT(TransactionalTestCase):
     Test that all BCT analyzers are executed without error.
     We do not verify that the algorithms are correct, because that is outside the purpose of TVB framework.
     """
+    #  TODO temp skip these from tests due to incompatibility with latest numpy
+    # see BCT reported issue https://github.com/aestrivex/bctpy/issues/119
+    SKIPPED_ALGOS = ["ModularityOpCSMU", "ModularityOCSM", "ParticipationCoefficient", "ParticipationCoefficientSign"]
 
     def transactional_setup_method(self):
         """
@@ -66,6 +65,8 @@ class TestBCT(TransactionalTestCase):
 
         self.bct_adapters = []
         for algo in algorithms:
+            if algo.classname in self.SKIPPED_ALGOS:
+                continue
             self.bct_adapters.append(ABCAdapter.build_adapter(algo))
 
     def transactional_teardown_method(self):

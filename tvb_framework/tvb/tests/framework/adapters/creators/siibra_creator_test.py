@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,17 +19,13 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 import os
 import pytest
-from siibra import EbrainsRequest
+from siibra.retrieval.requests import EbrainsRequest
 from tvb.adapters.creators.siibra_creator import SiibraCreator, SiibraModel, CLB_AUTH_TOKEN_KEY
 from tvb.tests.framework.adapters.creators import siibra_base_test
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -55,6 +51,7 @@ class TestSiibraCreator(TransactionalTestCase):
             # an EBRAINS Token based on CLIENT_SECRET and CLIENT_ID, but this way we keep the SiibraCreator
             # both tested and compatible with OpenShift deployments, where a token is provided directly
             req = EbrainsRequest("", {})
+            req.init_oidc()
             view_model.ebrains_token = req.kg_token
         view_model.subject_ids = '010'
 

@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and 
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -18,13 +18,9 @@
 # program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-# CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -79,16 +75,25 @@ def datatype_details(dt_id):
     print(ProjectService().get_datatype_details(dt.gid))
 
 
-def load_dt(dt_id):
-    dt = dao.get_datatype_by_id(dt_id)
-    dt_idx = dao.get_generic_entity(dt.module + '.' + dt.type, dt_id)[0]
+def load_dt(dt_id=None, dt_gid=None):
+    if dt_id:
+        dt = dao.get_datatype_by_id(dt_id)
+        dt_idx = dao.get_generic_entity(dt.module + '.' + dt.type, dt_id)[0]
+    elif dt_gid:
+        dt = dao.get_datatype_by_gid(dt_gid)
+        dt_idx = dao.get_generic_entity(dt.module + '.' + dt.type, dt_gid, select_field='gid')[0]
+    else:
+        return None
+
     dt_ht = h5.load_from_index(dt_idx)
     return dt_ht
 
 
+
+
 def new_project(name):
     usr = UserService.get_administrators()[0]
-    proj = ProjectService().store_project(usr, True, None, name=name, description=name, users=[usr])
+    proj = ProjectService().store_project(usr, True, None, name=name, description=name, users=[usr], max_operation_size=1024, disable_imports=False)
     return proj
 
 
@@ -174,3 +179,7 @@ def list_operation_results(operation_id):
     print(fmt % ('id', 'type', 'gid', 'date'))
     for dt in dao.get_results_for_operation(operation_id):
         print(fmt % (dt.id, dt.type, dt.gid, dt.create_date))
+
+
+def get_operation_results(operation_id):
+    return dao.get_results_for_operation(operation_id)

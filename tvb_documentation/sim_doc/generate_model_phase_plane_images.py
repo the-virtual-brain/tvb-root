@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -42,7 +38,7 @@ Usage::
 
 """
 
-#TODO: In syntax it is corrected to match the neo-traits. It still requires to be checked
+# TODO: In syntax it is corrected to match the neo-traits. It still requires to be checked
 
 import numpy
 
@@ -69,7 +65,7 @@ class TestModel(HasTraits):
         
     """
     model = models.Model
-    phase_plane = NArray(dtype=numpy.int, label="state variables for the phase plane", required=False, default=None)
+    phase_plane = NArray(dtype=numpy.int_, label="state variables for the phase plane", required=False, default=None)
 
     xlo = NArray(label="left edge the phase plane", required=False, default=None)  # -60.0
     xhi = NArray(label="right edge of the phase plane", required=False, default=None)  # 50.0
@@ -208,7 +204,7 @@ class TestModel(HasTraits):
         for n in range(self.model.nvar):
             a = a + (self.model.nvar - n - 1) * (n,)
             b = b + list(range(n + 1, self.model.nvar))
-        return numpy.array((a, b), dtype=numpy.int)
+        return numpy.array((a, b), dtype=numpy.int_)
 
 
 def test_factory(model_class, **kwargs):

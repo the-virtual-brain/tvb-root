@@ -16,6 +16,7 @@ h5py = "*"
 tqdm = "*"
 tvb-data = "*"
 aesara = "*"
+docutils = "*"
 
 [dev-packages]
 pytest = "*"

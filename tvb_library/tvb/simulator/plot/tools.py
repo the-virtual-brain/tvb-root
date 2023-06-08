@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -32,7 +28,7 @@
 A collection of plotting functions used by simulator/demos
 
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
-.. moduleauthor:: Paula Sanz Leon <paula.sanz-leon@univ-amu.fr>
+.. moduleauthor:: Paula Sanz Leon <paula@tvb.invalid>
 """
 
 import numpy
@@ -611,8 +607,8 @@ def plot_fast_kde(x, y, kern_nx=None, kern_ny=None, gridsize=(500, 500),
     inv_cov = numpy.linalg.inv(cov * scotts_factor ** 2)
 
     # x & y (pixel) coords of the kernel grid, with <x,y> = <0,0> in center
-    xx = numpy.arange(kern_nx, dtype=numpy.float) - kern_nx / 2.0
-    yy = numpy.arange(kern_ny, dtype=numpy.float) - kern_ny / 2.0
+    xx = numpy.arange(kern_nx, dtype=numpy.float64) - kern_nx / 2.0
+    yy = numpy.arange(kern_ny, dtype=numpy.float64) - kern_ny / 2.0
     xx, yy = numpy.meshgrid(xx, yy)
 
     # Then evaluate the gaussian function on the kernel grid

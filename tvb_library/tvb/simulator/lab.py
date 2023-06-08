@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -35,9 +31,11 @@ work easier by importing all the simulator pieces at once.
 .. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
-
+import logging
 import os
 import sys
+
+from tvb.basic.logger.builder import set_loggers_level
 
 # avoid segfaulting in absence of X11 DISPLAY
 if sys.platform in ('linux2', ) and 'DISPLAY' not in os.environ:
@@ -52,7 +50,7 @@ TvbProfile.set_profile(TvbProfile.LIBRARY_PROFILE)
 
 from tvb.simulator.common import get_logger, log_debug
 
-log_debug(False)
+set_loggers_level(logging.INFO)
 
 from tvb.simulator import (simulator, models, coupling, integrators, monitors, noise)
 from tvb.datatypes import (connectivity, surfaces, equations, patterns, region_mapping, sensors, cortex,

@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,10 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+#
 
 """
 A collection of neuronal dynamics models.
@@ -79,6 +77,7 @@ class ModelsEnum(Enum):
     GAST_SCHMIDT_KNOSCHE_SF = "GastSchmidtKnosche_SF"
     DUMONT_GUTKIN = "DumontGutkin"
     DECO_BALANCED_EXC_INH = "DecoBalancedExcInh"
+    K_ION_EXCHANGE = "KIonEx"
 
     def get_class(self):
         return _get_imported_model(self.value)
@@ -114,6 +113,7 @@ _module_models = {
     'wong_wang_exc_inh': [ModelsEnum.REDUCED_WONG_WANG_EXC_INH, ModelsEnum.DECO_BALANCED_EXC_INH],
     'zerlaut': [ModelsEnum.ZERLAUT_FIRST_ORDER, ModelsEnum.ZERLAUT_SECOND_ORDER],
     'infinite_theta': [ModelsEnum.MONTBRIO_PAZO_ROXIN, ModelsEnum.COOMBES_BYRNE, ModelsEnum.COOMBES_BYRNE_2D, ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF, ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD, ModelsEnum.DUMONT_GUTKIN],
+    'k_ion_exchange': [ModelsEnum.K_ION_EXCHANGE],
 }
 
 

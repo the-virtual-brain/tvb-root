@@ -23,7 +23,7 @@ pipeline {
                     cd tvb_build
                     conda update -n base -c defaults conda
                     conda env remove --name mac-distribution
-                    conda create -y --name mac-distribution python=3.10 nomkl numba scipy numpy cython psycopg2
+                    conda create -y --name mac-distribution python=3.10 nomkl numba scipy numpy cython psycopg2 pip
                     conda install -y --name mac-distribution -c conda-forge jupyterlab tvb-gdist
 
                     /Applications/anaconda3/envs/mac-distribution/bin/pip install --upgrade pip
@@ -33,7 +33,7 @@ pipeline {
 
                     /Applications/anaconda3/envs/mac-distribution/bin/pip install -r docker/requirements_group
 
-                    cd /Users/codemart/WORK/DATA
+                    cd /Users/tvb/WORK/DATA
                     /Applications/anaconda3/envs/mac-distribution/bin/python setup.py develop
                 '''
             }
@@ -75,7 +75,7 @@ pipeline {
     }
     post {
         changed {
-            mail to: 'lia.domide@codemart.ro paula.popa@codemart.ro',
+            mail to: 'lia.domide@codemart.ro',
             subject: "Jenkins Pipeline ${currentBuild.fullDisplayName} changed status",
             body: """
                 Result: ${currentBuild.result}

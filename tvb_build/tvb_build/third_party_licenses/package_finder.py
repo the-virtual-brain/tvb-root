@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and 
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -59,8 +55,8 @@ EXCLUDES = [
     'queue', 'stdsuites', 'wxpython',
     # We exclude bellow shorter names for packages already introspected (mainly Mac)
     "foundation", "exceptionhandling", "pytest_cov", "pypiwin32", "pyyaml", "msgpack-python", "tlz",
-    "objc", "appkit", "pyobjctools", "cocoa",
-    "ipykernel", "ipython_genutils", "nbformat", "nbconvert",
+    "objc", "appkit", "pyobjctools", "cocoa", '_argon2_cffi_bindings',
+    "ipykernel", "ipython_genutils", "nbformat", "nbconvert", 'test', 'venv', 'ensurepip', 'urllib',
     'finder', 'unittest', 'email', 'encodings', 'multiprocessing', 'json', 'curses', 'importlib', 'xml', 'logging'
 ]
 
@@ -68,14 +64,18 @@ EXCLUDES_DLL = []
 
 # Windows *.pyds that are part of python standard libs
 EXCLUDES_PYD = [
-    '_psutil_windows.pyd', 'gdist.pyd', "_cffi_backend.pyd", "_scandir.pyd", "_yaml.pyd"
+    '_psutil_windows.pyd', 'gdist.pyd', "_cffi_backend.pyd", "_scandir.pyd", "_yaml.pyd",
+    "_cffi_backend.cp310-win_amd64.pyd", "gdist.cp310-win_amd64.pyd"
 ]
 
 # libpq dependencies on dynamic psycopg linux 32
 EXCLUDES_SO = [
     '_psutil_linux.so', '_psutil_posix.so', 'gdist.so', '_scandir.so',
+    'pvectorc.cpython-310-x86_64-linux-gnu.so', # part of pyrsistent
+    'gdist.cpython-310-darwin.so', 'gdist.cpython-310-x86_64-linux-gnu.so',
+    '_watchdog_fsevents.cpython-310-darwin.so',
     '_posixsubprocess.so', # already reported as subprocess32
-    '_cffi_backend.cpython-310-x86_64-linux-gnu.so'
+    '_cffi_backend.cpython-310-x86_64-linux-gnu.so', '_cffi_backend.cpython-310-darwin.so'
 ]
 
 EXCLUDES_DYLIB = [

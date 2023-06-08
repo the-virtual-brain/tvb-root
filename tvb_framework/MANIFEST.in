@@ -3,4 +3,5 @@ include tvb/config/logger/*.conf
 recursive-include tvb *
 recursive-exclude tvb *.pyc
 prune tvb/interfaces/rest/client
+prune tvb/interfaces/rest/bids_monitor
 prune *_rest_client.*

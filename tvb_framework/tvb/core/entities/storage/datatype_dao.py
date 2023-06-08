@@ -2,11 +2,11 @@
 #
 #
 # TheVirtualBrain-Framework Package. This package holds all Data Management, and 
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
 
@@ -59,7 +55,7 @@ class DatatypeDAO(RootDAO):
         Returns all DataTypeGroup entities from a project.
         """
         query = self.session.query(DataTypeGroup
-                                   ).join((OperationGroup, OperationGroup.id == DataTypeGroup.fk_operation_group)
+                                   ).join(OperationGroup, OperationGroup.id == DataTypeGroup.fk_operation_group
                                           ).filter(OperationGroup.fk_launched_in == project_id).order_by(DataTypeGroup.id)
         return query.all()
 
@@ -274,7 +270,7 @@ class DatatypeDAO(RootDAO):
         Get all the DataTypes for a given project with no other filter apart from the projectId
         """
         query = self.session.query(DataType
-                    ).join((Operation, Operation.id == DataType.fk_from_operation)
+                    ).join(Operation, Operation.id == DataType.fk_from_operation
                     ).filter(Operation.fk_launched_in == project_id).order_by(DataType.id)
 
         if only_visible:
@@ -287,25 +283,26 @@ class DatatypeDAO(RootDAO):
         """
         Get all the DataTypes for a given project, including Linked Entities and DataType Groups.
 
+        :param project_id: ID for the current project to filter for
         :param visibility_filter: when not None, will filter by DataTye fields
         :param filter_value: when not None, will filter with ilike multiple DataType string attributes
         """
         resulted_data = []
         try:
             # First Query DT, DT_gr, Lk_DT and Lk_DT_gr
-            query = self.session.query(DataType
-                        ).join((Operation, Operation.id == DataType.fk_from_operation)
+            datatype_alias = aliased(DataType, flat=True)
+            query = self.session.query(datatype_alias
+                        ).join(Operation, Operation.id == datatype_alias.fk_from_operation
                         ).join(Algorithm).join(AlgorithmCategory
-                        ).outerjoin((Links, and_(Links.fk_from_datatype == DataType.id,
-                                                       Links.fk_to_project == project_id))
-                        ).outerjoin(BurstConfiguration,
-                                    DataType.fk_parent_burst == BurstConfiguration.gid
-                                    ).filter(DataType.fk_datatype_group == None
+                        ).outerjoin(Links, and_(Links.fk_from_datatype == datatype_alias.id,
+                                                Links.fk_to_project == project_id)
+                        ).outerjoin(BurstConfiguration, datatype_alias.fk_parent_burst == BurstConfiguration.gid
+                                    ).filter(datatype_alias.fk_datatype_group == None
                         ).filter(or_(Operation.fk_launched_in == project_id,
                                      Links.fk_to_project == project_id))
 
             if visibility_filter:
-                filter_str = visibility_filter.get_sql_filter_equivalent()
+                filter_str = visibility_filter.get_sql_filter_equivalent('datatype_alias')
                 if filter_str is not None:
                     query = query.filter(eval(filter_str))
             if filter_value is not None:
@@ -316,20 +313,19 @@ class DatatypeDAO(RootDAO):
             # Now query what it was not covered before:
             # Links of DT which are part of a group, but the entire group is not linked
             links = aliased(Links)
-            query2 = self.session.query(DataType
-                        ).join((Operation, Operation.id == DataType.fk_from_operation)
+            query2 = self.session.query(datatype_alias
+                        ).join(Operation, Operation.id == datatype_alias.fk_from_operation
                         ).join(Algorithm).join(AlgorithmCategory
-                        ).join((Links, and_(Links.fk_from_datatype == DataType.id,
-                                                  Links.fk_to_project == project_id))
-                        ).outerjoin(links, and_(links.fk_from_datatype == DataType.fk_datatype_group,
+                        ).join(Links, and_(Links.fk_from_datatype == datatype_alias.id,
+                                           Links.fk_to_project == project_id)
+                        ).outerjoin(links, and_(links.fk_from_datatype == datatype_alias.fk_datatype_group,
                                                 links.fk_to_project == project_id)
-                        ).outerjoin(BurstConfiguration,
-                                    DataType.fk_parent_burst == BurstConfiguration.gid
-                                    ).filter(DataType.fk_datatype_group != None
+                        ).outerjoin(BurstConfiguration, datatype_alias.fk_parent_burst == BurstConfiguration.gid
+                                    ).filter(datatype_alias.fk_datatype_group != None
                         ).filter(links.id == None)
 
             if visibility_filter:
-                filter_str = visibility_filter.get_sql_filter_equivalent()
+                filter_str = visibility_filter.get_sql_filter_equivalent('datatype_alias')
                 if filter_str is not None:
                     query2 = query2.filter(eval(filter_str))
             if filter_value is not None:
@@ -473,7 +469,7 @@ class DatatypeDAO(RootDAO):
     def count_datatypes(self, project_id, datatype_class):
 
         query = self.session.query(datatype_class
-                    ).join((Operation, datatype_class.fk_from_operation == Operation.id)
+                    ).join(Operation, datatype_class.fk_from_operation == Operation.id
                     ).outerjoin(Links
                     ).filter(or_(Operation.fk_launched_in == project_id,
                                  Links.fk_to_project == project_id))
@@ -483,7 +479,7 @@ class DatatypeDAO(RootDAO):
     def try_load_last_entity_of_type(self, project_id, datatype_class):
 
         query = self.session.query(datatype_class
-                    ).join((Operation, datatype_class.fk_from_operation == Operation.id)
+                    ).join(Operation, datatype_class.fk_from_operation == Operation.id
                     ).outerjoin(Links
                     ).filter(or_(Operation.fk_launched_in == project_id,
                                  Links.fk_to_project == project_id))
@@ -508,31 +504,30 @@ class DatatypeDAO(RootDAO):
 
         try:
             # Prepare generic query:
-            query = self.session.query(datatype_class.id,
-                                       func.max(datatype_class.type),
-                                       func.max(datatype_class.gid),
-                                       func.max(datatype_class.subject),
+            datatype_alias = aliased(datatype_class, flat=True)
+            query = self.session.query(datatype_alias.id,
+                                       func.max(datatype_alias.type),
+                                       func.max(datatype_alias.gid),
+                                       func.max(datatype_alias.subject),
                                        func.max(Operation.completion_date),
                                        func.max(Operation.user_group),
-                                       func.max(text('"OPERATION_GROUPS_1".name')),
-                                       func.max(DataType.user_tag_1)
-                        ).join((Operation, datatype_class.fk_from_operation == Operation.id)
-                        ).outerjoin((BurstConfiguration, datatype_class.fk_parent_burst ==
-                                     BurstConfiguration.gid)
+                                       func.max(OperationGroup.name),
+                                       func.max(datatype_alias.user_tag_1)
+                        ).join(Operation, datatype_alias.fk_from_operation == Operation.id
+                        ).outerjoin(BurstConfiguration, datatype_alias.fk_parent_burst == BurstConfiguration.gid
                         ).outerjoin(Links
-                        ).outerjoin((OperationGroup, Operation.fk_operation_group ==
-                                     OperationGroup.id), aliased=True
-                        ).filter(DataType.invalid == False
+                        ).outerjoin(OperationGroup, Operation.fk_operation_group == OperationGroup.id
+                        ).filter(datatype_alias.invalid == False
                         ).filter(or_(Operation.fk_launched_in == project_id,
                                      Links.fk_to_project == project_id))
 
             if filters:
-                filter_str = filters.get_sql_filter_equivalent(datatype_to_check='datatype_class')
+                filter_str = filters.get_sql_filter_equivalent(datatype_to_check='datatype_alias')
                 if filter_str is not None:
                     query = query.filter(eval(filter_str))
 
             # Retrieve the results
-            query = query.group_by(datatype_class.id).order_by(desc(datatype_class.id))
+            query = query.group_by(datatype_alias.id).order_by(desc(datatype_alias.id))
 
             result = query.limit(max(page_size, 0)).all()
             count = query.count()

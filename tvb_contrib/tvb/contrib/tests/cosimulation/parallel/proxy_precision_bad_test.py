@@ -4,7 +4,7 @@
 #  TheVirtualBrain-Contributors Package. This package holds simulator extensions.
 #  See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -17,12 +17,8 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 
 """
 .. moduleauthor:: Lionel Kusch <lkusch@thevirtualbrain.org>
@@ -46,7 +42,7 @@ class TestPrecisionBad(BaseTestCase):
         weight = np.array([[2, 8], [3, 5]])
         delay = 100.0
         delays = np.array([[delay, delay], [delay, delay]])
-        max = np.int(np.max(delay)*10+1)
+        max = np.int_(np.max(delay)*10+1)
         init_value = np.array([[0.9,0.0], [0.9,0.0]]*max)
         resolution_simulation = 0.1
         synchronization_time = 0.1 * 10.0

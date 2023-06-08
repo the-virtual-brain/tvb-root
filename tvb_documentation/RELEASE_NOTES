@@ -1,13 +1,52 @@
 ======================================================================================================================================
  The Virtual Brain (TVB)
- Version: 2.8 - build ?????
- Release Date:
- Description:
+ Version: 2.8.1 - build 18011
+ Release Date: 23 May 2023
+ Description: Maintenance release. Small improvements.
+======================================================================================================================================
+
+    * EpileptorT and KuramotoT generated models were removed
+    * some special locale characters were blocking at times TVB_Distribution to launch
+    * Fix dfun eq for some models in MatJax - PhasePlane web page
+    * Fix Deepcopy of a simulator obj for the monitors list
+    * Adapt tvb-framework to the latest siibra release 0.4*
+    * The AdEx (ZerlautSecondOrder) model was consolidated with other external implementations,
+    has changed number of variables (adding an external input) and has now examples replicating some of the figures from papers
+    * K ION Exchange model was added
+
+======================================================================================================================================
+ The Virtual Brain (TVB)
+ Version: 2.8 - build 17874
+ Release Date: 20 Feb 2023
+ Description: HTML repr for HasTraits instances
+======================================================================================================================================
+
+    * Release for tvb-library on Pypi only.
+    * It included enhanced HTML representation for HasTraits objects from tvb. This means in particular usages in JupyterLab.
+    * It also included few bug-fixes (TVB-3067 and TVB-3071 )
+
+======================================================================================================================================
+ The Virtual Brain (TVB)
+ Version: 2.7.3 - build 17826
+ Release Date: 27 January 2023
+ Description: Fix packaging. Adjust API for tvb-ext-xircuits
+======================================================================================================================================
+
+    * Fix package tvb-framework (2.7.3 and 2.7.3.3) not to include bids_monitor package
+    * Change signature Connectivity.from_bytes_stream(cls, bytes_stream, content_type='.zip') by adding the second param
+    * same for Surface, Sensors and TimeSeries
+
+======================================================================================================================================
+ The Virtual Brain (TVB)
+ Version: 2.7.2 - build 17800
+ Release Date: 9 January 2023
+ Description: Fix Tumor import and update copyright text
 ======================================================================================================================================
 
     * Change default param values in SigmoidalJansenRit coupling for r (the steepness of the sigmoidal transformation)
       and a (scaling of the coupling term) to better match the TVB mathematics paper Sanz Leon et al, 2015
       https://www.sciencedirect.com/science/article/pii/S1053811915000051?via%3Dihub#bb0575
+    * Convert TumorDatasetCreator into TumorDatasetImporter
 
 ======================================================================================================================================
  The Virtual Brain (TVB)
@@ -17,7 +56,7 @@
 ======================================================================================================================================
     * Bug fixes (e.g. Wavelet adapter, allenSDK compatibility, mutable neotraits, neocom.DirLoader)
     * BCT analyzers - switch to bctpy library
-    * Siibra integration - temporarily disabled in r2.7 due to a bug in Siibra-KG, enable in 2.7.1
+    * Siibra integration - temporarily disabled in r2.7 due to a bug in Siibra-KG, enabled in 2.7.1
     * BIDS monitoring module
     * add deepcopy implementation on HasTraits
     * Projects can be marked as read-only (useful for shared projects like DefaultProject on OKD EBRAINS)
@@ -441,6 +480,6 @@ Some of the capabilities that are currently in work are disabled from this versi
 
 
 ======================================================================================================================================
-Our Technical Team is currently composed of: Lia Domide, Jochen Mersmann, Bogdan Neacsa, Paula Sanz Leon and Marmaduke Woodman.
+Our Technical Team is currently composed of: Lia Domide, Jan Fousek, Jochen Mersmann, Paula Prodan and Marmaduke Woodman.
 For contact, please use tvb.admin@thevirtualbrain.org
 

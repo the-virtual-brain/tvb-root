@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -19,12 +19,10 @@
 #
 #
 #   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+#
 
 """
 Hindmarsh-Rose-Jirsa Epileptor model.
@@ -111,7 +109,9 @@ class Epileptor(ModelNumbaDfun):
     .. [Jirsaetal_2014] Jirsa, V. K.; Stacey, W. C.; Quilichini, P. P.;
         Ivanov, A. I.; Bernard, C. *On the nature of seizure dynamics.* Brain,
         2014.
+
     Variables of interest to be used by monitors: -y[0] + y[3]
+
         .. math::
             \dot{x_{1}} &=& y_{1} - f_{1}(x_{1}, x_{2}) - z + I_{ext1} \\
             \dot{y_{1}} &=& c - d x_{1}^{2} - y{1} \\
@@ -375,6 +375,7 @@ class Epileptor2D(ModelNumbaDfun):
             \dot{z_{i}} &=& r(h - z_{i})
 
         with
+        .. math::
             h =
             \begin{cases}
             x_{0} + 3 / (exp((x_{1} + 0.5)/0.1)) & \text{if } modification\\
@@ -510,10 +511,14 @@ class Epileptor2D(ModelNumbaDfun):
         Computes the derivatives of the state-variables of the Epileptor 2D
         with respect to time.
         Equations and default parameters are taken from [Proixetal_2014]:
+
         .. math::
             \dot{x_{1,i}} &=& - x_{1,i}^{3} - 2x_{1,i}^{2}  + 1 - z_{i} + I_{ext1,i} \\
             \dot{z_{i}} &=& r(h - z_{i})
+
         with
+
+        .. math::
             h =
             \begin{cases}
             x_{0} + 3 / (exp((x_{1} + 0.5)/0.1)) & \text{if } modification\\
