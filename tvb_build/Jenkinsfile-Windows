@@ -4,7 +4,7 @@ pipeline {
     }
 
     environment {
-        FULL_DOCKER_IMAGE_NAME = 'docker-repository.codemart.ro/tvb-build-windows:docker'
+        FULL_DOCKER_IMAGE_NAME = 'docker-repository.codemart.ro/tvb-build-windows:latest'
     }
 
     stages {
@@ -36,7 +36,7 @@ pipeline {
         }
         stage ('Build TVB Distribution') {
             steps {
-                withDockerContainer(image: "${FULL_DOCKER_IMAGE_NAME}", args: "--memory 2G") {
+                withDockerContainer(image: "${FULL_DOCKER_IMAGE_NAME}") {
                     powershell 'cd tvb_build; cmd /c if exist build rd /s /q build; cd ..'
                     unstash 'step1'
                     powershell 'cd tvb_build; cmd /k "activate tvb-run & install_full_tvb.bat & python build_from_conda.py"'
@@ -46,7 +46,7 @@ pipeline {
         }
         stage ('Tests on SqLite') {
             steps {
-                withDockerContainer(image: "${FULL_DOCKER_IMAGE_NAME}", args: "--memory 3G") {
+                withDockerContainer(image: "${FULL_DOCKER_IMAGE_NAME}") {
                     powershell 'cd tvb_build; cmd /k "activate tvb-run & install_full_tvb.bat & cd ../tvb_bin & run_tests.bat"; exit 0'
                 }
                 junit 'tvb_bin/TEST_OUTPUT/results_*.xml'
