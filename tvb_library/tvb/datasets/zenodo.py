@@ -11,37 +11,45 @@ BASE_URL = "https://zenodo.org/api/"
 
 
 class Record:
-    def __init__(self, data, zenodo, base_url: str = BASE_URL) -> None:
+    def __init__(self, data, base_url: str = BASE_URL) -> None:
         self.base_url = base_url
         self.data = data
-        self._zenodo = zenodo
-
+        self.file_loc = {}
 
     def describe(self):
         return self.data['metadata']['description']
 
 
     def __str__(self):
-        return json.dumps(self.data) # TODO: pretty print? Format the json to more readable version.
+        return json.dumps(self.data, indent=2) 
 
     def download(self):
+
         if 'files' not in self.data:
-            raise AttributeError("No files to download! Please check if the id entered is correct!")
+            raise AttributeError("No files to download! Please check if the record id entered is correct! or the data is publically accessible")
+
+        
 
         for file in self.data["files"]:
             url = file['links']['self']
             known_hash = file['checksum']
             file_name = file['key']
-
+            
             file_path = pooch.retrieve(url= url, known_hash= known_hash, progressbar=True)
+            
+            self.file_loc['file_name'] = file_path
+
 
             print(f"file {file_name} is downloaded at {file_path}")
+        
 
     def get_latest_version(self):
         
         return Zenodo().get_record(self.data['links']['latest'].split("/")[-1])
 
 
+    def __eq__(self, record_b):
+        return (self.data == record_b.data)
 
 
 
@@ -63,13 +71,38 @@ class Zenodo:
         """
         url = self.base_url + "records/" + recid
         
-        return Record(requests.get(url).json(), self)
+        return Record(requests.get(url).json())
 
 
     def _get_records(self, params: dict[str, str]) -> list[Record]:
         url = self.base_url + "records?" + urlencode(params)
 
-        return [Record(hit, self) for hit in requests.get(url).json()["hits"]["hits"]]
+        return [Record(hit) for hit in requests.get(url).json()["hits"]["hits"]]
+
+
+
+
+    def get_versions_info(self, recid):
+
+        recid = self.get_record(recid).data['metadata']['relations']['version'][0]['parent']['pid_value']
+
+        print(recid)
+
+        versions = {}
+
+        url = f"{self.base_url}records?q=conceptrecid:{recid}&all_versions=true" 
+
+
+        for hit in requests.get(url).json()['hits']['hits']:
+
+            version = hit['metadata']['version']
+            recid = hit['doi'].split(".")[-1]
+
+            versions[version] = recid
+        
+
+        return versions
+
 
 
 
