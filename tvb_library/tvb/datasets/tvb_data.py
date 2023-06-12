@@ -3,12 +3,12 @@ from .zenodo import Zenodo, Record
 
 class TVB_Data:
 
-    conceptid = ""
+    conceptid = "3417206"
     
     def __init__(self, version= "2.7", ):
 
-            recid = Zenodo().get_version_info(self.conceptid)[version]
-            self.rec = Zenodo.get_record(recid)
+            recid = Zenodo().get_versions_info(self.conceptid)[version]
+            self.rec = Zenodo().get_record(recid)
 
 
     def download(self):

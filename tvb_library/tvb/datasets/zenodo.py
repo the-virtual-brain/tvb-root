@@ -83,10 +83,10 @@ class Zenodo:
 
 
     def get_versions_info(self, recid):
-
+        """
+        recid: unique id of the data repository
+        """
         recid = self.get_record(recid).data['metadata']['relations']['version'][0]['parent']['pid_value']
-
-        print(recid)
 
         versions = {}
 
