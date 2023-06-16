@@ -49,7 +49,7 @@ class TVBZenodoDataset(BaseDataset):
         -----------
 
         version: str
-              - Version number of the dataset, Default value is 2.
+              - Version number of the dataset, Default value is 2.7
 
         """
         super().__init__(version)
