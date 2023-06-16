@@ -36,8 +36,8 @@ class Record:
             file_name = file['key']
             
             file_path = pooch.retrieve(url= url, known_hash= known_hash, progressbar=True)
-            
-            self.file_loc['file_name'] = file_path
+
+            self.file_loc[f'{file_name}'] = file_path
 
 
             print(f"file {file_name} is downloaded at {file_path}")
@@ -62,7 +62,6 @@ class Zenodo:
         """
         self.base_url = base_url
         self._api_key = api_key
-        self.re_github_repo = re.compile(r".*github.com/(.*?/.*?)[/$]")
     
 
     def get_record(self, recid: str) -> Record:
@@ -85,7 +84,11 @@ class Zenodo:
     def get_versions_info(self, recid):
         """
         recid: unique id of the data repository
+
         """
+        # needs ineternet
+
+
         recid = self.get_record(recid).data['metadata']['relations']['version'][0]['parent']['pid_value']
 
         versions = {}
