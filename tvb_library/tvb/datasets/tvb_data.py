@@ -57,27 +57,44 @@ class TVB_Data(ZenodoDataset):
             path of the file which was extracted
         """
 
-        #TODO: errrors when absolute path given. 
+        
+
         try:
             file_path = self.rec.file_loc['tvb_data.zip']
         except:
             self.download()
             file_path = self.rec.file_loc['tvb_data.zip']
 
- 
+        if (extract_dir!=None):
+            extract_dir = Path(extract_dir).expanduser()
+
         if file_name == None:
             ZipFile(file_path).extractall(path=extract_dir)
             if extract_dir==None:
                 return Path.cwd()
-            return Path.cwd()/ Path(extract_dir)
+            if extract_dir.is_absolute():
+                return extract_dir
+
+            return Path.cwd()/ extract_dir
 
         with ZipFile(file_path) as zf:
             file_names_in_zip = zf.namelist()
         zf.close()
 
         file_names_in_zip = {str(Path(i).name): i for i in file_names_in_zip}
-        ZipFile(file_path).extract(file_names_in_zip[file_name])
-        return Path.cwd() / file_names_in_zip[file_name]
+        if extract_dir==None:
+            ZipFile(file_path).extract(file_names_in_zip[file_name])
+
+        ZipFile(file_path).extract(file_names_in_zip[file_name], path = extract_dir)
+
+
+        if extract_dir == None:
+            return Path.cwd() / file_names_in_zip[file_name]
+        if extract_dir.is_absolute():
+            return extract_dir / file_names_in_zip[file_name]
+
+
+        return Path.cwd()/ extract_dir / file_names_in_zip[file_name]
 
 
     def update_cached_response(self):
