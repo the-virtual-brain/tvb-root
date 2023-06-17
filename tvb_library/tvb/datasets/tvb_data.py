@@ -66,10 +66,9 @@ class TVBZenodoDataset(BaseDataset):
         except:
             self.log.warning(f"Failed to get the desired version {version} of TVB_Data, please check if version {version} is available as a public record on zenodo.org or Please check your internet connection")
 
-        # add logging errors method by catching the exact exceptions. 
+        #TODO add logging errors method by catching the exact exceptions. 
         self.rec = Record(self.read_cached_response()[self.version])
 
-        print(type(self))
     def download(self):
         """
         Downloads the dataset to the cached location, skips download is file already present at the path.
