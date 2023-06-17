@@ -27,18 +27,17 @@
 """
 .. moduleauthor:: Abhijit Deo <f20190041@goa.bits-pilani.ac.in>
 """
-
+import os
 import requests
 import json
 import pooch
 from pathlib import Path
-import logging
 from zipfile import ZipFile
 
-from .base import ZenodoDataset
+from .base import BaseDataset
 from .zenodo import Zenodo, Record, BASE_URL
 
-class TVB_Data(ZenodoDataset):
+class TVBZenodoDataset(BaseDataset):
 
     CONCEPTID = "3417206"
     
@@ -54,17 +53,23 @@ class TVB_Data(ZenodoDataset):
 
         """
         super().__init__(version)
+        self.cached_file = pooch.os_cache("pooch")/ "tvb_cached_responses.txt"
+ 
         try:
             self.recid = self.read_cached_response()[version]['conceptrecid']
-        except:
-            logging.warning("Data not found in cached response, updating the cached responses")
+            
+        except KeyError:
+            self.log.warning(f"Failed to read data from cached response.")
             self.recid = Zenodo().get_versions_info(self.CONCEPTID)[version]            
-            self.update_cached_response() 
+            self.update_cached_response()
         
+        except:
+            self.log.warning(f"Failed to get the desired version {version} of TVB_Data, please check if version {version} is available as a public record on zenodo.org or Please check your internet connection")
+
+        # add logging errors method by catching the exact exceptions. 
         self.rec = Record(self.read_cached_response()[self.version])
-        
-        logging.info(f"instantiated TVB_Data class with version {version}")
-    
+
+        print(type(self))
     def download(self):
         """
         Downloads the dataset to the cached location, skips download is file already present at the path.
@@ -95,13 +100,14 @@ class TVB_Data(ZenodoDataset):
             self.download()
             file_path = self.rec.file_loc['tvb_data.zip']
 
-        if (extract_dir!=None):
-            extract_dir = Path(extract_dir).expanduser()
+        if (extract_dir==None):
+            extract_dir = TvbProfile.current.DATASETS_FOLDER
+
+        extract_dir = Path(extract_dir).expanduser()
 
         if file_name == None:
             ZipFile(file_path).extractall(path=extract_dir)
-            if extract_dir==None:
-                return Path.cwd()
+
             if extract_dir.is_absolute():
                 return extract_dir
 
@@ -118,8 +124,6 @@ class TVB_Data(ZenodoDataset):
         ZipFile(file_path).extract(file_names_in_zip[file_name], path = extract_dir)
 
 
-        if extract_dir == None:
-            return Path.cwd() / file_names_in_zip[file_name]
         if extract_dir.is_absolute():
             return extract_dir / file_names_in_zip[file_name]
 
@@ -132,7 +136,7 @@ class TVB_Data(ZenodoDataset):
         gets responses from zenodo server and saves them to cache file. 
         """
         
-        file_dir = pooch.os_cache("pooch")/ "tvb_cached_responses.txt"
+        file_dir = self.cached_file
         
         responses = {}
 
@@ -147,7 +151,7 @@ class TVB_Data(ZenodoDataset):
         with open(file_dir, "w") as fp:
             json.dump(responses, fp)
         fp.close()
-
+        self.log.warning("Updated the cache response file")
         return 
 
     def read_cached_response(self):
@@ -156,7 +160,7 @@ class TVB_Data(ZenodoDataset):
 
         """
         
-        file_dir = pooch.os_cache("pooch") / "tvb_cached_responses.txt"
+        file_dir = self.cached_file
 
 
         with open(file_dir) as fp:
@@ -167,3 +171,19 @@ class TVB_Data(ZenodoDataset):
 
         responses = dict(responses)
         return responses
+
+    
+    def describe(self):
+        return self.rec.describe()
+
+    def get_record(self):
+        return self.recid
+
+    def __str__(self):
+        return f"TVB Data version : {self.version}"
+
+    def __eq__(self, other):
+        if isinstace(other, TVBZenodoDataset):
+            return self.rec == tvb_data.rec
+        return False
+

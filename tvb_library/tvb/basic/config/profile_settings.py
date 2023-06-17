@@ -96,7 +96,7 @@ class BaseSettingsProfile(object):
         self.ELASTICSEARCH_BUFFER_THRESHOLD = self.manager.get_attribute(stored.KEY_ELASTICSEARCH_BUFFER_THRESHOLD, 1000000, int)
 
         # Directory where all the datasets will be extracted/unzipped.
-        self.DATASETS_FOLDER = os.path(self.TVB_STORAGE, "DATASETS")
+        self.DATASETS_FOLDER = os.path.join(self.TVB_STORAGE, "DATASETS")
         
 
     @property
