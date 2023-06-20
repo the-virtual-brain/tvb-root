@@ -75,7 +75,7 @@ class TVBZenodoDataset(BaseDataset):
         """
         self.rec.download()
 
-    def fetch_data(self, file_name=None, extract_dir=None):        
+    def fetch_data(self, file_name=None):        
         """
         Fetches the data 
 
@@ -99,10 +99,8 @@ class TVBZenodoDataset(BaseDataset):
             self.download()
             file_path = self.rec.file_loc['tvb_data.zip']
 
-        if (extract_dir==None):
-            extract_dir = TvbProfile.current.DATASETS_FOLDER
+        extract_dir = self.extract_dir
 
-        extract_dir = Path(extract_dir).expanduser()
 
         if file_name == None:
             ZipFile(file_path).extractall(path=extract_dir)
