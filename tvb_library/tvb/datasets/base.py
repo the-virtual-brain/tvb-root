@@ -41,6 +41,12 @@ class BaseDataset:
         self.cached_files = None
         self.version = version
 
+        if (extract_dir==None):
+            extract_dir = TvbProfile.current.DATASETS_FOLDER
+
+        self.extract_dir = Path(extract_dir).expanduser()
+ 
+
     def download(self):
         pass
 
