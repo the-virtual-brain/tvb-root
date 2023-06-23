@@ -41,7 +41,7 @@ class TVBZenodoDataset(BaseDataset):
 
     CONCEPTID = "3417206"
     
-    def __init__(self, version= "2.7"):
+    def __init__(self, version= "2.7", extract_dir = None):
         """
         Constructor for TVB_Data class 
 
@@ -52,19 +52,17 @@ class TVBZenodoDataset(BaseDataset):
               - Version number of the dataset, Default value is 2.7
 
         """
-        super().__init__(version)
-        self.cached_file = pooch.os_cache("pooch")/ "tvb_cached_responses.txt"
+        super().__init__(version, extract_dir)
+        self.cached_file = pooch.os_cache("tvb")/ "tvb_cached_responses.txt"
  
         try:
             self.recid = self.read_cached_response()[version]['conceptrecid']
             
-        except KeyError:
+        except :
             self.log.warning(f"Failed to read data from cached response.")
             self.recid = Zenodo().get_versions_info(self.CONCEPTID)[version]            
             self.update_cached_response()
         
-        except:
-            self.log.warning(f"Failed to get the desired version {version} of TVB_Data, please check if version {version} is available as a public record on zenodo.org or Please check your internet connection")
 
         #TODO add logging errors method by catching the exact exceptions. 
         self.rec = Record(self.read_cached_response()[self.version])

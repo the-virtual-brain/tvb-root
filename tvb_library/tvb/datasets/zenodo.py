@@ -65,7 +65,7 @@ class Record:
             known_hash = file['checksum']
             file_name = file['key']
             
-            file_path = pooch.retrieve(url= url, known_hash= known_hash, progressbar=True)
+            file_path = pooch.retrieve(url= url, known_hash= known_hash, path = pooch.os_cache("tvb") ,progressbar = True)
 
             self.file_loc[f'{file_name}'] = file_path
 
