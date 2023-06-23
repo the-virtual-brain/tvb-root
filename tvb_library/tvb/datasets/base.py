@@ -32,10 +32,11 @@
 
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
+from pathlib import Path
 
 class BaseDataset:
 
-    def __init__(self, version, target_download=None):
+    def __init__(self, version, extract_dir=None):
 
         self.log = get_logger(self.__class__.__module__)
         self.cached_files = None
