@@ -42,30 +42,31 @@ BASE_URL = "https://zenodo.org/api/"
 
 class Record:
     def __init__(self, data, base_url: str = BASE_URL) -> None:
+        """
+        Record represents the repsonse from the Zenodo. 
+        """
+
         self.base_url = base_url
         self.data = data
         self.file_loc = {}
 
-    def describe(self):
-        return self.data['metadata']['description']
+   
 
-
-    def __str__(self):
-        return json.dumps(self.data, indent=2) 
-
-    def download(self):
+    def download(self, path=None):
 
         if 'files' not in self.data:
             raise AttributeError("No files to download! Please check if the record id entered is correct! or the data is publically accessible")
 
         
+        if path == None:
+            path = pooch.os_cache("tvb")
 
         for file in self.data["files"]:
             url = file['links']['self']
             known_hash = file['checksum']
             file_name = file['key']
             
-            file_path = pooch.retrieve(url= url, known_hash= known_hash, path = pooch.os_cache("tvb") ,progressbar = True)
+            file_path = pooch.retrieve(url= url, known_hash= known_hash, path = path,progressbar = True)
 
             self.file_loc[f'{file_name}'] = file_path
 
@@ -73,13 +74,23 @@ class Record:
             print(f"file {file_name} is downloaded at {file_path}")
         
 
-    def get_latest_version(self):
-        
+    def get_latest_version(self):        
         return Zenodo().get_record(self.data['links']['latest'].split("/")[-1])
+    
+    def describe(self):
+        return self.data['metadata']['description']
 
+    def get_record_id(self):
+        return self.data['conceptrecid']
 
+    def is_open_access(self):
+        return self.data['metadata']['access_right'] != "closed"
+    
     def __eq__(self, record_b):
         return (self.data == record_b.data)
+
+    def __str__(self):
+        return json.dumps(self.data, indent=2) 
 
 
 
@@ -115,6 +126,9 @@ class Zenodo:
         """
         recid: unique id of the data repository
 
+
+
+
         """
         # needs ineternet
 
@@ -130,7 +144,8 @@ class Zenodo:
 
             version = hit['metadata']['version']
             recid = hit['doi'].split(".")[-1]
-
+            if hit['metadata']['access_right'] == "closed":
+                continue
             versions[version] = recid
         
 
