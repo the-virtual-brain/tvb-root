@@ -57,7 +57,7 @@ class TestZenodo(BaseTestCase):
         versions = zenodo.get_versions_info("3491055")
 
         assert type(versions) == dict
-        assert versions == {'2.0.1': '3497545', '1.5.9.b': '3474071', '2.0.0': '3491055', '2.0.3': '4263723', '2.0.2': '3688773', '1.5.9': '3417207', '2.7': '7574266'}
+        assert versions == {'1.5.9': '3457454', '2.0.3': '4263723', '2.0.1': '3497545', '2.0.2': '3688773', '2.0.0': '3491055', '1.5.9.b': '3474071', '2.7': '7574266'}
 
         del zenodo
         del versions
@@ -69,12 +69,13 @@ class TestRecord(BaseTestCase):
 
         zen = Zenodo()
 
-        rec = zen.get_record("4263723")
+        rec = zen.get_record("7929679")
 
 
         rec.download()
         print(rec.file_loc)
         for file_name, file_path in rec.file_loc.items():
             assert Path(file_path).is_file()
+            Path(file_path).unlink()
 
 

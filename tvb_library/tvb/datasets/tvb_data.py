@@ -27,12 +27,14 @@
 """
 .. moduleauthor:: Abhijit Deo <f20190041@goa.bits-pilani.ac.in>
 """
+
 import os
 import requests
 import json
 import pooch
 from pathlib import Path
 from zipfile import ZipFile
+import shutil
 
 from .base import BaseDataset
 from .zenodo import Zenodo, Record, BASE_URL
@@ -53,8 +55,12 @@ class TVBZenodoDataset(BaseDataset):
 
         """
         super().__init__(version, extract_dir)
-        self.cached_file = pooch.os_cache("tvb")/ "tvb_cached_responses.txt"
- 
+        self.cached_dir = self.extract_dir / ".cache" 
+        self.cached_file = self.cached_dir / "tvb_cached_responses.txt"
+
+        if  not self.cached_dir.is_dir():
+            self.cached_dir.mkdir(parents=True)
+
         try:
             self.recid = self.read_cached_response()[version]['conceptrecid']
             
@@ -67,50 +73,45 @@ class TVBZenodoDataset(BaseDataset):
         #TODO add logging errors method by catching the exact exceptions. 
         self.rec = Record(self.read_cached_response()[self.version])
 
-    def download(self):
+    def download(self, path=None):
         """
-        Downloads the dataset to the cached location, skips download is file already present at the path.
+        Downloads the dataset to `path`
         """
-        self.rec.download()
+        self.rec.download(path)
 
-    def fetch_data(self, file_name=None):        
+    def fetch_data(self, file_name):        
         """
         Fetches the data 
 
         parameters:
         -----------
         file_name: str
-                - Name of the file from the downloaded zip file to fetch. If `None`, extracts whole archive. Default is `None` 
+                - Name of the file from the downloaded zip file to fetch. 
         extract_dir: str
-                - Path where you want to extract the archive, if `None` extracts the archive to current working directory. Default is `None` 
+                - Path where you want to extract the archive. If Path is None, dataset is extracted according to the tvb profile configuration 
 
 
         returns: Pathlib.Path
             path of the file which was extracted
         """
+        # TODO: extract dir needs better description.
 
-        
+
+        extract_dir = self.extract_dir 
+        download_dir = self.cached_dir / "TVB_Data"
 
         try:
             file_path = self.rec.file_loc['tvb_data.zip']
         except:
-            self.download()
+            self.download(path = download_dir)
             file_path = self.rec.file_loc['tvb_data.zip']
-
-        extract_dir = self.extract_dir
-
-
-        if file_name == None:
-            ZipFile(file_path).extractall(path=extract_dir)
-
-            if extract_dir.is_absolute():
-                return extract_dir
-
-            return Path.cwd()/ extract_dir
 
         with ZipFile(file_path) as zf:
             file_names_in_zip = zf.namelist()
         zf.close()
+
+        file_name = file_name.strip()
+
 
         file_names_in_zip = {str(Path(i).name): i for i in file_names_in_zip}
         if extract_dir==None:
@@ -124,6 +125,10 @@ class TVBZenodoDataset(BaseDataset):
 
 
         return Path.cwd()/ extract_dir / file_names_in_zip[file_name]
+
+    def delete_data(self):
+        _dir = self.extract_dir / "tvb_data"
+        shutil.rmtree(_dir)
 
 
     def update_cached_response(self):
@@ -141,7 +146,9 @@ class TVBZenodoDataset(BaseDataset):
             version = hit['metadata']['version']
             response = hit 
 
-            responses[version] = response
+            responses[version] = response 
+
+        Path(file_dir).touch(exist_ok=True)
 
         with open(file_dir, "w") as fp:
             json.dump(responses, fp)
@@ -173,9 +180,6 @@ class TVBZenodoDataset(BaseDataset):
 
     def get_record(self):
         return self.recid
-
-    def __str__(self):
-        return f"TVB Data version : {self.version}"
 
     def __eq__(self, other):
         if isinstace(other, TVBZenodoDataset):
