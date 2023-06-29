@@ -95,6 +95,10 @@ class BaseSettingsProfile(object):
         # The number of logs in a message batch that are sent to the server
         self.ELASTICSEARCH_BUFFER_THRESHOLD = self.manager.get_attribute(stored.KEY_ELASTICSEARCH_BUFFER_THRESHOLD, 1000000, int)
 
+        # Directory where all the datasets will be extracted/unzipped.
+        self.DATASETS_FOLDER = os.path.join(self.TVB_STORAGE, "DATASETS")
+        
+
     @property
     def BIN_FOLDER(self):
         """
