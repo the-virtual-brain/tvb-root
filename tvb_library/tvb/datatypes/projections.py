@@ -32,7 +32,7 @@ The ProjectionMatrices DataTypes.
 from tvb.basic.readers import try_get_absolute_path, FileReader
 from tvb.datatypes import surfaces, sensors
 from tvb.basic.neotraits.api import HasTraits, TVBEnum, Attr, NArray, Final
-
+from tvb.datasets import TVBZenodoDataset
 
 class ProjectionsTypeEnum(TVBEnum):
     EEG = "projEEG"
@@ -88,7 +88,7 @@ class ProjectionMatrix(HasTraits):
 
         proj = cls()
 
-        source_full_path = try_get_absolute_path("tvb_data.projectionMatrix", source_file)
+        source_full_path = TVBZenodoDataset().fetch_data(source_file)
         reader = FileReader(source_full_path)
         if is_brainstorm:
             proj.projection_data = reader.read_gain_from_brainstorm()

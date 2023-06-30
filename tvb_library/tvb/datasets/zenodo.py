@@ -34,6 +34,7 @@
 import requests
 import re
 import pooch
+from typing import List
 from pathlib import Path
 import json
 
@@ -52,7 +53,7 @@ class Record:
 
    
 
-    def download(self, path=None):
+    def download(self, path: str = None) -> None:
 
         if 'files' not in self.data:
             raise AttributeError("No files to download! Please check if the record id entered is correct! or the data is publically accessible")
@@ -77,19 +78,19 @@ class Record:
     def get_latest_version(self):        
         return Zenodo().get_record(self.data['links']['latest'].split("/")[-1])
     
-    def describe(self):
+    def describe(self) -> str:
         return self.data['metadata']['description']
 
-    def get_record_id(self):
+    def get_record_id(self) -> str:
         return self.data['conceptrecid']
 
-    def is_open_access(self):
+    def is_open_access(self) -> str:
         return self.data['metadata']['access_right'] != "closed"
     
-    def __eq__(self, record_b):
+    def __eq__(self, record_b) -> bool:
         return (self.data == record_b.data)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return json.dumps(self.data, indent=2) 
 
 
@@ -114,7 +115,7 @@ class Zenodo:
         return Record(requests.get(url).json())
 
 
-    def _get_records(self, params: dict[str, str]) -> list[Record]:
+    def _get_records(self, params: dict[str, str]) -> List[Record]:
         url = self.base_url + "records?" + urlencode(params)
 
         return [Record(hit) for hit in requests.get(url).json()["hits"]["hits"]]
@@ -122,12 +123,9 @@ class Zenodo:
 
 
 
-    def get_versions_info(self, recid):
+    def get_versions_info(self, recid) -> dict:
         """
         recid: unique id of the data repository
-
-
-
 
         """
         # needs ineternet

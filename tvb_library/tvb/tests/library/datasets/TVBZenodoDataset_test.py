@@ -28,24 +28,12 @@
 """
 .. moduleauthor:: Abhijit Deo <f20190041@goa.bits-pilani.ac.in>
 """
-import socket
 
 from tvb.datasets import TVBZenodoDataset
 from pathlib import Path
 from tvb.tests.library.base_testcase import BaseTestCase
 
 
-
-def no_internet_decorator(func):
-    class block_network(socket.socket):
-        def __init__(self, *args, **kwargs): 
-            raise Exception("Network call blocked")
-
-    socket.socket = block_network
-
-    def iner_func():
-        return func
-    return iner_func
 
 
 
@@ -58,25 +46,25 @@ class Test_TVBZenodoDataset(BaseTestCase):
     def test_extract(self):
 
         tvb_data = TVBZenodoDataset()
-        connectivity66_dir = tvb_data.fetch_data("connectivity_66.zip")
+        connectivity66_dir = Path(tvb_data.fetch_data("connectivity_66.zip"))
         assert connectivity66_dir.is_file()
         tvb_data.delete_data()
         assert not connectivity66_dir.is_file() 
 
         tvb_data = TVBZenodoDataset(version="2.0.3", extract_dir="tvb_data")
-        connectivity66_dir = tvb_data.fetch_data("connectivity_66.zip")
+        connectivity66_dir = Path(tvb_data.fetch_data("connectivity_66.zip"))
         assert connectivity66_dir.is_file()
         tvb_data.delete_data()
         assert not connectivity66_dir.is_file() 
 
         tvb_data =  TVBZenodoDataset(version="2.0.3", extract_dir="~/tvb_data") 
-        matfile_dir = tvb_data.fetch_data("local_connectivity_80k.mat")
+        matfile_dir = Path(tvb_data.fetch_data("local_connectivity_80k.mat"))
         assert matfile_dir.is_file()
         tvb_data.delete_data()
         assert not matfile_dir.is_file()
 
 
-        all_extract = TVBZenodoDataset(version = "2.0.3", extract_dir="~/tvb_data").fetch_data(" ConnectivityTable_regions.xls")
+        all_extract = Path(TVBZenodoDataset(version = "2.0.3", extract_dir="~/tvb_data").fetch_data(" ConnectivityTable_regions.xls"))
         assert all_extract.is_file()
         tvb_data.delete_data()
         assert not all_extract.is_file()

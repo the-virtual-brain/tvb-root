@@ -121,10 +121,10 @@ class TVBZenodoDataset(BaseDataset):
 
 
         if extract_dir.is_absolute():
-            return extract_dir / file_names_in_zip[file_name]
+            return str(extract_dir / file_names_in_zip[file_name])
 
 
-        return Path.cwd()/ extract_dir / file_names_in_zip[file_name]
+        return str(Path.cwd()/ extract_dir / file_names_in_zip[file_name])
 
     def delete_data(self):
         _dir = self.extract_dir / "tvb_data"
