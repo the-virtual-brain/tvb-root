@@ -41,6 +41,7 @@ from tvb.basic import exceptions
 from tvb.basic.neotraits.api import TVBEnum
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Final, Int, Float, narray_describe
 from tvb.basic.readers import ZipReader, try_get_absolute_path
+from tvb.datasets import TVBZenodoDataset
 
 try:
     import gdist
@@ -162,7 +163,7 @@ class Surface(HasTraits):
     @classmethod
     def from_file(cls, source_file="cortex_16384.zip"):
         """Construct a Surface from source_file."""
-        source_full_path = try_get_absolute_path("tvb_data.surfaceData", source_file)
+        source_full_path = TVBZenodoDataset().fetch_data(source_file)
         reader = ZipReader(source_full_path)
 
         return cls._read(reader)
