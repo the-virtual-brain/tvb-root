@@ -34,7 +34,7 @@
 import requests
 import re
 import pooch
-from typing import List
+from typing import List, Dict
 from pathlib import Path
 import json
 
@@ -123,7 +123,7 @@ class Zenodo:
 
 
 
-    def get_versions_info(self, recid) -> dict:
+    def get_versions_info(self, recid) -> Dict:
         """
         recid: unique id of the data repository
 
