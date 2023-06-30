@@ -31,7 +31,7 @@ import scipy.sparse
 from tvb.basic.neotraits.api import HasTraits, Attr, Float, narray_summary_info
 from tvb.basic.readers import try_get_absolute_path, FileReader
 from tvb.datatypes import equations, surfaces
-
+from tvb.datasets import TVBZenodoDataset
 
 class LocalConnectivity(HasTraits):
     """
@@ -109,7 +109,7 @@ class LocalConnectivity(HasTraits):
 
         result = LocalConnectivity()
 
-        source_full_path = try_get_absolute_path("tvb_data.local_connectivity", source_file)
+        source_full_path = TVBZenodoDataset().fetch_data(source_file)
         reader = FileReader(source_full_path)
 
         result.matrix = reader.read_array(matlab_data_name="LocalCoupling")
