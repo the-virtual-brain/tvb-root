@@ -79,7 +79,7 @@ class TVBZenodoDataset(BaseDataset):
         """
         self.rec.download(path)
 
-    def fetch_data(self, file_name):        
+    def _fetch_data(self, file_name):        
         """
         Fetches the data 
 

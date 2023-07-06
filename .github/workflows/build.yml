@@ -47,25 +47,25 @@ jobs:
           cd tvb_build
           bash install_full_tvb.sh
 
-      - name: cache data
-        id: cache-data
-        uses: actions/cache@v3
-        with:
-          path: tvb_data
-          key: tvb-data
+      #- name: cache data
+      #  id: cache-data
+      #  uses: actions/cache@v3
+      #  with:
+      #    path: tvb_data
+      #    key: tvb-data
 
-      - name: download data
-        if: steps.cache-data.outputs.cache-hit != 'true'
-        run: |
-          wget -q https://zenodo.org/record/7574266/files/tvb_data.zip?download=1 -O tvb_data.zip
-          mkdir tvb_data
-          unzip tvb_data.zip -d tvb_data
-          rm tvb_data.zip
+      #- name: download data
+      #  if: steps.cache-data.outputs.cache-hit != 'true'
+      #  run: |
+      #    wget -q https://zenodo.org/record/7574266/files/tvb_data.zip?download=1 -O tvb_data.zip
+      #    mkdir tvb_data
+      #    unzip tvb_data.zip -d tvb_data
+      #    rm tvb_data.zip
 
-      - name: setup data
-        run: |
-          cd tvb_data
-          python3 setup.py develop
+      #- name: setup data
+      #  run: |
+      #    cd tvb_data
+      #    python3 setup.py develop
 
       - name: run library tests
         run: pytest -v tvb_library --cov --cov-report=xml && mv coverage.xml coverage-library.xml
