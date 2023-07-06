@@ -115,7 +115,7 @@ class Zenodo:
         return Record(requests.get(url).json())
 
 
-    def _get_records(self, params: dict[str, str]) -> List[Record]:
+    def _get_records(self, params: Dict[str, str]) -> List[Record]:
         url = self.base_url + "records?" + urlencode(params)
 
         return [Record(hit) for hit in requests.get(url).json()["hits"]["hits"]]

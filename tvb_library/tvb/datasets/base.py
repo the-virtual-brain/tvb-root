@@ -51,8 +51,14 @@ class BaseDataset:
     def download(self):
         pass
 
-    def fetch_data(self):
-        pass
+    def fetch_data(self, file_name):
+        if Path(file_name).is_absolute():
+            return file_name
+        
+        return self._fetch_data(file_name)
     
+    def _fetch_data(self, file_name):
+        pass
+
     def get_version(self):
         return self.version
