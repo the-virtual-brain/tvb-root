@@ -221,7 +221,7 @@ class TestFactory(object):
             admin_user = TestFactory.create_user()
 
         #project_path = os.path.join(os.path.dirname(tvb_data.__file__), 'Default_Project.zip')
-        project_path = TVBBZenodoDataset().fetch_data('Default_Project.zip')
+        project_path = TVBZenodoDataset().fetch_data('Default_Project.zip')
         import_service = ImportService()
         import_service.import_project_structure(project_path, admin_user.id)
         return import_service.created_projects[0]
