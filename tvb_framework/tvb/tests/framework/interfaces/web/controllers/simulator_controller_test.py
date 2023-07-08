@@ -480,8 +480,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         surface = TestFactory.import_surface_zip(self.test_user, self.test_project, surface_file,
                                                  SurfaceTypesEnum.CORTICAL_SURFACE, True)
 
-        #eeg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__),
-                                        'projection_eeg_62_surface_16k.mat')
+        #eeg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__), 'projection_eeg_62_surface_16k.mat')
         eeg_projection_file = TVBZenodoDataset().fetch_data('projection_eeg_62_surface_16k.mat')
         eeg_projection = TestFactory.import_projection_matrix(self.test_user, self.test_project, eeg_projection_file,
                                                               eeg_sensors.gid, surface.gid)
