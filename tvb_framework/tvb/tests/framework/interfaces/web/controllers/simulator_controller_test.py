@@ -528,8 +528,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         surface = TestFactory.import_surface_zip(self.test_user, self.test_project, surface_file,
                                                  SurfaceTypesEnum.CORTICAL_SURFACE, True)
 
-        #meg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__),
-                                        'projection_meg_276_surface_16k.npy')
+        #meg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__),'projection_meg_276_surface_16k.npy')
         meg_projection_file = TVBZenodoDataset().fetch_data('projection_meg_276_surface_16k.npy')
         meg_projection = TestFactory.import_projection_matrix(self.test_user, self.test_project, meg_projection_file,
                                                               meg_sensors.gid, surface.gid)
@@ -578,8 +577,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         surface = TestFactory.import_surface_zip(self.test_user, self.test_project, surface_file,
                                                  SurfaceTypesEnum.CORTICAL_SURFACE, True)
 
-        #seeg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__),
-                                         'projection_seeg_588_surface_16k.npy')
+        #seeg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__), 'projection_seeg_588_surface_16k.npy')
         seeg_projection_file = TVBZenodoDataset().fetch_data('projection_seeg_588_surface_16k.npy')
         seeg_projection = TestFactory.import_projection_matrix(self.test_user, self.test_project, seeg_projection_file,
                                                                seeg_sensors.gid, surface.gid)
