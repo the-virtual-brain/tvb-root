@@ -31,9 +31,10 @@
 
 import os
 
-import tvb_data.projectionMatrix as dataset
-import tvb_data.sensors
-import tvb_data.surfaceData
+#import tvb_data.projectionMatrix as dataset
+#import tvb_data.sensors
+#import tvb_data.surfaceData
+from tvb.datasets import TVBZenodoDataset
 from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
 from tvb.core.services.exceptions import OperationException
 from tvb.datatypes.sensors import SensorTypesEnum
@@ -54,11 +55,13 @@ class TestProjectionMatrix(BaseTestCase):
         self.test_user = TestFactory.create_user("UserPM")
         self.test_project = TestFactory.create_project(self.test_user)
 
-        zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'eeg_brainstorm_65.txt')
+        #zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'eeg_brainstorm_65.txt')
+        zip_path = TVBZenodoDataset().fetch_data('eeg_brainstorm_65.txt')
         self.sensors = TestFactory.import_sensors(self.test_user, self.test_project, zip_path,
                                                   SensorTypesEnum.TYPE_EEG)
 
-        zip_path = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        #zip_path = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        zip_path = TVBZenodoDataset().fetch_data('cortex_16384.zip')
         self.surface = TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path,
                                                       SurfaceTypesEnum.CORTICAL_SURFACE, True)
 

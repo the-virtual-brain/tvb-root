@@ -28,8 +28,9 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-import tvb_data.surfaceData
-import tvb_data.regionMapping
+#import tvb_data.surfaceData
+#import tvb_data.regionMapping
+from tvb.datasets import TVBZenodoDataset
 from os import path
 
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
@@ -112,10 +113,12 @@ class TestSimulatorAdapter(TransactionalTestCase):
         estimation1 = self.simulator_adapter.get_execution_time_approximation(model)
 
         # import surfaceData and region mapping
-        cortex_file = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        #cortex_file = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        cortex_file = TVBZenodoDataset().fetch_data('cortex_16384.zip')
         surface = TestFactory.import_surface_zip(self.test_user, self.test_project, cortex_file,
                                                  SurfaceTypesEnum.CORTICAL_SURFACE)
-        rm_file = path.join(path.dirname(tvb_data.regionMapping.__file__), 'regionMapping_16k_76.txt')
+        #rm_file = path.join(path.dirname(tvb_data.regionMapping.__file__), 'regionMapping_16k_76.txt')
+        rm_file = TVBZenodoDataset().fetch_data('regionMapping_16k_76.txt')
         region_mapping = TestFactory.import_region_mapping(self.test_user, self.test_project, rm_file, surface.gid,
                                                            model.connectivity.hex)
         local_conn = TestFactory.create_local_connectivity(self.test_user, self.test_project, surface.gid)

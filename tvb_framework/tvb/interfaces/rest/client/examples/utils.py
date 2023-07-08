@@ -28,7 +28,8 @@ import os
 import sys
 import time
 
-import tvb_data
+#import tvb_data
+from tvb.datasets import TVBZenodoDataset
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.model.model_operation import STATUS_ERROR, STATUS_CANCELED, STATUS_FINISHED
 
@@ -44,7 +45,7 @@ def compute_rest_url():
 
 
 def compute_tvb_data_path(folder, filename):
-    return os.path.join(os.path.dirname(tvb_data.__file__), folder, filename)
+    return os.path.join(TVBZenodoDataset().extract_dir, folder, filename)
 
 
 logger = get_logger(__name__)

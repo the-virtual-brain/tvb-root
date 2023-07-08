@@ -25,11 +25,13 @@
 #
 
 import numpy
-import tvb_data.connectivity
-import tvb_data.surfaceData
-import tvb_data.sensors
-import tvb_data.regionMapping
-import tvb_data.projectionMatrix
+#import tvb_data.connectivity
+#import tvb_data.surfaceData
+#import tvb_data.sensors
+#import tvb_data.regionMapping
+#import tvb_data.projectionMatrix
+from tvb.datasets import TVBZenodoDataset
+
 from os import path
 from uuid import UUID
 from unittest.mock import patch
@@ -90,7 +92,8 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert not result_dict['errors'], 'Some errors were encountered!'
 
     def test_set_connectivity(self):
-        zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_66.zip')
+        #zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_66.zip')
+        zip_path = TVBZenodoDataset().fetch_data('connectivity_66.zip')
         connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
         self.sess_mock['connectivity'] = connectivity.gid
@@ -126,7 +129,8 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert self.session_stored_simulator.coupling.b[0] == [0.0], "b value was not set correctly."
 
     def test_set_surface(self):
-        zip_path = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        #zip_path = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        zip_path = TVBZenodoDataset().fetch_data('cortex_16384.zip')
         TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path, SurfaceTypesEnum.CORTICAL_SURFACE,
                                        True)
         surface = TestFactory.get_entity(self.test_project, SurfaceIndex)
@@ -147,14 +151,17 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert self.session_stored_simulator.surface is None, "Surface should not be set."
 
     def test_set_cortex_without_local_connectivity(self):
-        zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_76.zip')
+        #zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_76.zip')
+        zip_path = TVBZenodoDataset().fetch_data('connectivity_76.zip')
         connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
-        zip_path = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        #zip_path = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        zip_path = TVBZenodoDataset().fetch_data('cortex_16384.zip')
         surface = TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path,
                                                  SurfaceTypesEnum.CORTICAL_SURFACE, True)
 
-        text_file = path.join(path.dirname(tvb_data.regionMapping.__file__), 'regionMapping_16k_76.txt')
+        #text_file = path.join(path.dirname(tvb_data.regionMapping.__file__), 'regionMapping_16k_76.txt')
+        text_file = TVBZenodoDataset().fetch_data('regionMapping_16k_76.txt')
         region_mapping = TestFactory.import_region_mapping(self.test_user, self.test_project, text_file, surface.gid,
                                                            connectivity.gid)
 
@@ -176,14 +183,17 @@ class TestSimulationController(BaseTransactionalControllerTest):
             "coupling_strength was not set correctly."
 
     def test_set_cortex_with_local_connectivity(self, local_connectivity_index_factory):
-        zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_76.zip')
+        #zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_76.zip')
+        zip_path = TVBZenodoDataset().fetch_data('connectivity_76.zip')
         connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
-        zip_path = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        #zip_path = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        zip_path = TVBZenodoDataset().fetch_data('cortex_16384.zip')
         surface = TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path,
                                                  SurfaceTypesEnum.CORTICAL_SURFACE, True)
 
-        text_file = path.join(path.dirname(tvb_data.regionMapping.__file__), 'regionMapping_16k_76.txt')
+        #text_file = path.join(path.dirname(tvb_data.regionMapping.__file__), 'regionMapping_16k_76.txt')
+        text_file = TVBZenodoDataset().fetch_data('regionMapping_16k_76.txt' )
         region_mapping = TestFactory.import_region_mapping(self.test_user, self.test_project, text_file, surface.gid,
                                                            connectivity.gid)
 
@@ -214,7 +224,8 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert self.session_stored_simulator.stimulus is None, "Stimulus should not be set."
 
     def test_set_stimulus(self):
-        zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_66.zip')
+        #zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_66.zip')
+        zip_path = TVBZenodoDataset().fetch_data('connectivity_66.zip')        
         connectivity_index = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
         weight_array = numpy.zeros(connectivity_index.number_of_regions)
 
@@ -443,29 +454,35 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert not rendering_rules['renderer'].include_next_button, 'Next button should not be displayed!'
 
     def set_region_mapping(self):
-        zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_76.zip')
+        #zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_76.zip')
+        zip_path = TVBZenodoDataset().fetch_data('connectivity_76.zip')
         connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
-        zip_path = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        #zip_path = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        zip_path = TVBZenodoDataset().fetch_data('cortex_16384.zip')
         surface = TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path,
                                                  SurfaceTypesEnum.CORTICAL_SURFACE, True)
 
-        text_file = path.join(path.dirname(tvb_data.regionMapping.__file__), 'regionMapping_16k_76.txt')
+        #text_file = path.join(path.dirname(tvb_data.regionMapping.__file__), 'regionMapping_16k_76.txt')
+        text_file = TVBZenodoDataset().fetch_data('regionMapping_16k_76.txt')
         region_mapping = TestFactory.import_region_mapping(self.test_user, self.test_project, text_file, surface.gid,
                                                            connectivity.gid)
         return region_mapping
 
     def set_eeg(self):
-        eeg_sensors_file = path.join(path.dirname(tvb_data.sensors.__file__), 'eeg_unitvector_62.txt')
+        #eeg_sensors_file = path.join(path.dirname(tvb_data.sensors.__file__), 'eeg_unitvector_62.txt')
+        eeg_sensors_file = TVBZenodoDataset().fetch_data('eeg_unitvector_62.txt')
         eeg_sensors = TestFactory.import_sensors(self.test_user, self.test_project, eeg_sensors_file,
                                                  SensorTypesEnum.TYPE_EEG)
 
-        surface_file = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        #surface_file = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        surface_file = TVBZenodoDataset().fetch_data('cortex_16384.zip')
         surface = TestFactory.import_surface_zip(self.test_user, self.test_project, surface_file,
                                                  SurfaceTypesEnum.CORTICAL_SURFACE, True)
 
-        eeg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__),
+        #eeg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__),
                                         'projection_eeg_62_surface_16k.mat')
+        eeg_projection_file = TVBZenodoDataset().fetch_data('projection_eeg_62_surface_16k.mat')
         eeg_projection = TestFactory.import_projection_matrix(self.test_user, self.test_project, eeg_projection_file,
                                                               eeg_sensors.gid, surface.gid)
         return eeg_sensors, eeg_projection
@@ -502,16 +519,19 @@ class TestSimulationController(BaseTransactionalControllerTest):
             "Projection wasn't stored correctly."
 
     def set_meg(self):
-        meg_sensors_file = path.join(path.dirname(tvb_data.sensors.__file__), 'meg_brainstorm_276.txt')
+        #meg_sensors_file = path.join(path.dirname(tvb_data.sensors.__file__), 'meg_brainstorm_276.txt')
+        meg_sensors_file = TVBZenodoDataset().fetch_data('meg_brainstorm_276.txt')
         meg_sensors = TestFactory.import_sensors(self.test_user, self.test_project, meg_sensors_file,
                                                  SensorTypesEnum.TYPE_MEG)
 
-        surface_file = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        #surface_file = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        surface_file = TVBZenodoDataset().fetch_data('cortex_16384.zip')
         surface = TestFactory.import_surface_zip(self.test_user, self.test_project, surface_file,
                                                  SurfaceTypesEnum.CORTICAL_SURFACE, True)
 
-        meg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__),
+        #meg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__),
                                         'projection_meg_276_surface_16k.npy')
+        meg_projection_file = TVBZenodoDataset().fetch_data('projection_meg_276_surface_16k.npy')
         meg_projection = TestFactory.import_projection_matrix(self.test_user, self.test_project, meg_projection_file,
                                                               meg_sensors.gid, surface.gid)
         return meg_sensors, meg_projection
@@ -549,16 +569,19 @@ class TestSimulationController(BaseTransactionalControllerTest):
             "Projection wasn't stored correctly."
 
     def set_seeg(self):
-        seeg_sensors_file = path.join(path.dirname(tvb_data.sensors.__file__), 'seeg_588.txt')
+        #seeg_sensors_file = path.join(path.dirname(tvb_data.sensors.__file__), 'seeg_588.txt')
+        seeg_sensors_file = TVBZenodoDataset().fetch_data('seeg_588.txt')
         seeg_sensors = TestFactory.import_sensors(self.test_user, self.test_project, seeg_sensors_file,
                                                   SensorTypesEnum.TYPE_INTERNAL)
 
-        surface_file = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        #surface_file = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        surface_file = TVBZenodoDataset().fetch_data('cortex_16384.zip')
         surface = TestFactory.import_surface_zip(self.test_user, self.test_project, surface_file,
                                                  SurfaceTypesEnum.CORTICAL_SURFACE, True)
 
-        seeg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__),
+        #seeg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__),
                                          'projection_seeg_588_surface_16k.npy')
+        seeg_projection_file = TVBZenodoDataset().fetch_data('projection_seeg_588_surface_16k.npy')
         seeg_projection = TestFactory.import_projection_matrix(self.test_user, self.test_project, seeg_projection_file,
                                                                seeg_sensors.gid, surface.gid)
         return seeg_sensors, seeg_projection
@@ -697,7 +720,8 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert len(burst_parameters['burst_list']) == 3, "The burst configurations where not stored."
 
     def test_reset_simulator_configuration(self):
-        zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_66.zip')
+        #zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_66.zip')
+        zip_path = TVBZenodoDataset().fetch_data('connectivity_66.zip')
         connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
         self.sess_mock['connectivity'] = connectivity.gid
@@ -753,7 +777,8 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert dao.get_bursts_for_project(self.test_project.id)[0].name == new_name, "Name wasn't actually changed."
 
     def test_copy_simulator_configuration(self):
-        zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_66.zip')
+        #zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_66.zip')
+        zip_path = TVBZenodoDataset().fetch_data('connectivity_66.zip')
         connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
         op = TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project)
@@ -787,7 +812,8 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert rendering_rules['renderer'].disable_fields, 'Fragments should be read-only!'
 
     def test_load_burst(self):
-        zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_66.zip')
+        #zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_66.zip')
+        zip_path = TVBZenodoDataset().fetch_data('connectivity_66.zip')
         connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
         op = TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project)
@@ -837,7 +863,8 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert burst_config.status == 'running', 'Simulation launching has failed!'
 
     def test_launch_branch_simulation(self):
-        zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_66.zip')
+        #zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_66.zip')
+        zip_path = TVBZenodoDataset().fetch_data('connectivity_66.zip')
         connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
         self.sess_mock['input_simulation_name_id'] = 'HappySimulation'

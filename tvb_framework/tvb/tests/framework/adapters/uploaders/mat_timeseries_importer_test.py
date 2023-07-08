@@ -32,7 +32,8 @@ Unit-test for mat_timeseries_importer and mat_parser.
 
 import os
 
-import tvb_data
+#import tvb_data
+from tvb.datasets import TVBZenodoDataset
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.adapters.uploaders.mat_timeseries_importer import RegionMatTimeSeriesImporterModel, RegionTimeSeriesImporter
 from tvb.tests.framework.core.base_testcase import BaseTestCase
@@ -40,9 +41,12 @@ from tvb.tests.framework.core.factory import TestFactory
 
 
 class TestMatTimeSeriesImporter(BaseTestCase):
-    base_pth = os.path.join(os.path.dirname(tvb_data.__file__), 'berlinSubjects', 'QL_20120814')
-    bold_path = os.path.join(base_pth, 'QL_BOLD_regiontimecourse.mat')
-    connectivity_path = os.path.join(base_pth, 'QL_20120814_Connectivity.zip')
+    #base_pth = os.path.join(os.path.dirname(tvb_data.__file__), 'berlinSubjects', 'QL_20120814')
+    tvb_data = TVBZenodoDataset()
+    bold_path = tvb_data.fetch_data('QL_BOLD_regiontimecourse.mat')
+    #bold_path = os.path.join(base_pth, 'QL_BOLD_regiontimecourse.mat')
+    connectivity_path = tvb_data.fetch_data('QL_20120814_Connectivity.zip')
+    #connectivity_path = os.path.join(base_pth, 'QL_20120814_Connectivity.zip')
 
     def setup_method(self):
         self.test_user = TestFactory.create_user('Mat_Timeseries_User')

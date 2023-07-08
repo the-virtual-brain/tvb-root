@@ -33,10 +33,11 @@ import os
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.storage import dao
 from tvb.core.services.import_service import ImportService
-import tvb_data
+#import tvb_data
+from tvb.datasets import TVBZenodoDataset
 
-DATA_FILE = os.path.join(os.path.dirname(tvb_data.__file__), "Default_Project.zip")
-
+#DATA_FILE = os.path.join(os.path.dirname(tvb_data.__file__), "Default_Project.zip")
+DATA_FILE = TVBZenodoDataset().fetch_data('Default_Project.zip')
 LOGGER = get_logger(__name__)
 
 

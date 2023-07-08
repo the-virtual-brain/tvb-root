@@ -31,7 +31,8 @@
 
 import os
 import pytest
-import tvb_data
+#import tvb_data
+from tvb.datasets import TVBZenodoDataset
 from PIL import Image
 from time import sleep
 from tvb.adapters.datatypes.db.mapped_value import ValueWrapperIndex
@@ -88,7 +89,8 @@ class TestImportService(BaseTestCase):
         """
         test_user = user_factory()
         test_project = project_factory(test_user, "TestImportExport", "test_desc")
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
+        #zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
+        zip_path = TVBZenodoDataset().fetch_data('connectivity_66.zip')
         TestFactory.import_zip_connectivity(test_user, test_project, zip_path)
         value_wrapper = value_wrapper_factory(test_user, test_project)
         ProjectService.set_datatype_visibility(value_wrapper.gid, False)
@@ -138,7 +140,8 @@ class TestImportService(BaseTestCase):
         """
         test_user = user_factory()
         test_project = project_factory(test_user, "TestImportExport2")
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
+        #zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
+        zip_path = TVBZenodoDataset().fetch_data('connectivity_66.zip')
         TestFactory.import_zip_connectivity(test_user, test_project, zip_path)
 
         count_operations = dao.get_filtered_operations(test_project.id, None, is_count=True)
@@ -182,7 +185,8 @@ class TestImportService(BaseTestCase):
         # Prepare data
         user = user_factory()
         project = project_factory(user, "TestImportExportFigures")
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'paupau.zip')
+        #zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'paupau.zip')
+        zip_path = TVBZenodoDataset().fetch_data('paupau.zip')
         TestFactory.import_zip_connectivity(user, project, zip_path)
 
         figure_service = FigureService()
