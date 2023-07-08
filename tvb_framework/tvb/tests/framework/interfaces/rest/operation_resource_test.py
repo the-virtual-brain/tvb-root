@@ -29,8 +29,8 @@ from io import BytesIO
 from uuid import UUID
 import flask
 import pytest
-import tvb_data
-
+#import tvb_data
+from tvb.datasets import TVBZenodoDataset
 from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel
 from tvb.basic.exceptions import TVBException
 from tvb.core.neocom import h5
@@ -65,7 +65,8 @@ class TestOperationResource(RestResourceTest):
 
     def test_server_get_operation_status(self, mocker):
         self._mock_user(mocker)
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
+        #zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
+        zip_path = TVBZenodoDataset().fetch_data('connectivity_96.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
         request_mock = mocker.patch.object(flask, 'request', spec={})
@@ -84,7 +85,8 @@ class TestOperationResource(RestResourceTest):
 
     def test_server_get_operation_results(self, mocker):
         self._mock_user(mocker)
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
+        #zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
+        zip_path = TVBZenodoDataset().fetch_data('connectivity_96.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
         request_mock = mocker.patch.object(flask, 'request', spec={})
@@ -98,7 +100,8 @@ class TestOperationResource(RestResourceTest):
 
     def test_server_get_operation_results_failed_operation(self, mocker):
         self._mock_user(mocker)
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_90.zip')
+        #zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_90.zip')
+        zip_path = TVBZenodoDataset().fetch_data('connectivity_90.zip')
         with pytest.raises(TVBException):
             TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
