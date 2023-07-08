@@ -75,8 +75,8 @@ class TestProjectionMatrix(BaseTestCase):
         """
         Verifies that importing a different shape throws exception
         """
-        file_path = os.path.join(os.path.abspath(os.path.dirname(dataset.__file__)),
-                                 'projection_eeg_62_surface_16k.mat')
+        #file_path = os.path.join(os.path.abspath(os.path.dirname(dataset.__file__)), 'projection_eeg_62_surface_16k.mat')
+        file_path = TVBZenodoDataset().fetch_data('projection_eeg_62_surface_16k.mat')
 
         try:
             TestFactory.import_projection_matrix(self.test_user, self.test_project, file_path, self.sensors.gid,
