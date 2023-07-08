@@ -211,7 +211,8 @@ class TestImportExportProjectWithLinksTest(_BaseLinksTest):
             Project dest will have the derived VW and links
             """
             # add a connectivity to src project and link it to dest project
-            zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
+            #zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
+            zip_path = TVBZenodoDataset().fetch_data('connectivity_96.zip')
             conn = TestFactory.import_zip_connectivity(self.dst_user, self.src_project, zip_path, "John")
             self.algorithm_service.create_link(conn.id, self.dest_project.id)
 

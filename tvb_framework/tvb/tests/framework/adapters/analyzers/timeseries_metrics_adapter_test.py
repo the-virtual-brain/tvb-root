@@ -52,7 +52,8 @@ class TestTimeSeriesMetricsAdapter(TransactionalTestCase):
         """
         self.test_user = TestFactory.create_user()
         self.test_project = TestFactory.create_project(self.test_user)
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
+        #zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
+        zip_path = TVBZenodoDataset().fetch_data('connectivity_66.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
     def test_adapter_launch(self, connectivity_factory, region_mapping_factory,

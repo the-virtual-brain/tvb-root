@@ -55,7 +55,7 @@ class TestBrainViewer(TransactionalTestCase):
     #region_mapping_path = os.path.join(os.path.dirname(tvb_data.regionMapping.__file__), 'regionMapping_16k_76.txt')
     tvb_data = TVBZenodoDataset()
     cortex = tvb_data.fetch_data('cortex_16384.zip')
-    region_mapping = tvb_data.fetch_data('regionMapping_16k_76.txt')
+    region_mapping_path = tvb_data.fetch_data('regionMapping_16k_76.txt')
 
     def transactional_setup_method(self):
         """
