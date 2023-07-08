@@ -45,7 +45,7 @@ When creating a new TVB set of release packages you should:
         Create new entity TVB-Release with references towards the ZIP documents uploaded at the previous step.
     - TVB Documentation Site needs to be updated separately, by copying from Hudson the latest ZIP
         https://jenkins.codemart.ro/view/TVB/job/TVB%20-%20Build%20-%20Linux/
-        Unzip and copy 	tvb-documentation-site.zip	at location /opt/tvb-documentation-site
+        Unzip and copy 	tvb-documentation-site.zip	at location /opt2/tvb-documentation-site
         Check at http://docs.thevirtualbrain.com/
 
     - create release tag on GitHub also.

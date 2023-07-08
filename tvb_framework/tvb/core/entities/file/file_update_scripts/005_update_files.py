@@ -653,7 +653,7 @@ def _migrate_time_series_volume(**kwargs):
     root_metadata['nr_dimensions'] = int(root_metadata['nr_dimensions'])
     root_metadata['sample_rate'] = float(root_metadata['sample_rate'])
     root_metadata['volume'] = _parse_gid(root_metadata['volume'])
-    root_metadata['volume'] = root_metadata['volume']
+    # root_metadata['volume'] = root_metadata['volume']
     root_metadata.pop('nr_dimensions')
     root_metadata.pop('sample_rate')
     return {'operation_xml_parameters': operation_xml_parameters, 'additional_params': additional_params}

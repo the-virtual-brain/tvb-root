@@ -28,10 +28,10 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
-from os import path
-
 import pytest
 from tvb.datasets import TVBZenodoDataset
+from os import path
+
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityImporter
 from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityParser, CSVConnectivityImporterModel
@@ -76,6 +76,7 @@ class TestCSVConnectivityImporter(BaseTestCase):
         self.clean_database()
 
     def _import_csv_test_connectivity(self, reference_connectivity_gid, subject):
+
         ### First prepare input data:
         #data_dir = path.abspath(path.dirname(tvb_data.__file__))
 
@@ -84,6 +85,7 @@ class TestCSVConnectivityImporter(BaseTestCase):
         tracts =  TVBZenodoDataset().fetch_data('output_ConnectionDistanceMatrix.csv')
         weights_tmp = weights + '.tmp'
         tracts_tmp = tracts + '.tmp'
+
         self.storage_interface.copy_file(weights, weights_tmp)
         self.storage_interface.copy_file(tracts, tracts_tmp)
 

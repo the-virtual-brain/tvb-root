@@ -36,7 +36,6 @@ import typing
 from six import add_metaclass
 from numpy.random import RandomState
 from scipy.sparse import csc_matrix, spmatrix
-
 from ._attr import Attr
 from ._declarative_base import _Property, MetaType
 from .info import trait_object_str, trait_object_repr_html, narray_summary_info
@@ -193,7 +192,7 @@ class HasTraits(object):
 
     gid = Attr(field_type=uuid.UUID)
 
-    TYPES_TO_DEEPCOPY = (RandomState, csc_matrix, spmatrix)
+    TYPES_TO_DEEPCOPY = (RandomState, csc_matrix, spmatrix, list, tuple)
 
     def __init__(self, **kwargs):
         """
