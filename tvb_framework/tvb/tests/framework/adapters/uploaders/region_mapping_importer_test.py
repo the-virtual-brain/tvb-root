@@ -30,8 +30,9 @@
 
 import os
 import tvb.tests.framework.adapters.uploaders.test_data as test_data
-import tvb_data.regionMapping as demo_data
-import tvb_data.surfaceData
+#import tvb_data.regionMapping as demo_data
+#import tvb_data.surfaceData
+from tvb.datasets import TVBZenodoDataset
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.basic.neotraits.ex import TraitValueError
 from tvb.core.adapters.exceptions import LaunchException
@@ -48,10 +49,15 @@ class TestRegionMappingImporter(BaseTestCase):
     """
     Unit-tests for RegionMapping importer.
     """
+    tvb_data = TVBZenodoDataset()
 
-    TXT_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'regionMapping_16k_76.txt')
-    ZIP_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'regionMapping_16k_76.zip')
-    BZ2_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'regionMapping_16k_76.bz2')
+    #TXT_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'regionMapping_16k_76.txt')
+    #ZIP_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'regionMapping_16k_76.zip')
+    #BZ2_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'regionMapping_16k_76.bz2')
+
+    TXT_FILE = tvb_data.fetch_data('regionMapping_16k_76.txt')
+    ZIP_FILE = tvb_data.fetch_data('regionMapping_16k_76.zip')
+    BZ2_FILE = tvb_data.fetch_data('regionMapping_16k_76.bz2')
 
     # Wrong data
     WRONG_FILE_1 = os.path.join(os.path.dirname(test_data.__file__), 'region_mapping_wrong_1.txt')

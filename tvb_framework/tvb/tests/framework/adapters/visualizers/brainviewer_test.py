@@ -29,8 +29,9 @@
 """
 
 import os
-import tvb_data.surfaceData
-import tvb_data.regionMapping
+#import tvb_data.surfaceData
+#import tvb_data.regionMapping
+from tvb.datasets import TVBZenodoDataset
 
 from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -50,8 +51,11 @@ class TestBrainViewer(TransactionalTestCase):
     EXPECTED_EXTRA_KEYS = ['urlMeasurePointsLabels', 'urlMeasurePoints', 'pageSize', 'shellObject',
                            'extended_view', 'legendLabels', 'labelsStateVar', 'labelsModes', 'title']
 
-    cortex = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
-    region_mapping_path = os.path.join(os.path.dirname(tvb_data.regionMapping.__file__), 'regionMapping_16k_76.txt')
+    #cortex = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+    #region_mapping_path = os.path.join(os.path.dirname(tvb_data.regionMapping.__file__), 'regionMapping_16k_76.txt')
+    tvb_data = TVBZenodoDataset()
+    cortex = tvb_data.fetch_data('cortex_16384.zip')
+    region_mapping = tvb_data.fetch_data('regionMapping_16k_76.txt')
 
     def transactional_setup_method(self):
         """
@@ -62,7 +66,8 @@ class TestBrainViewer(TransactionalTestCase):
         self.test_user = TestFactory.create_user('Brain_Viewer_User')
         self.test_project = TestFactory.create_project(self.test_user, 'Brain_Viewer_Project')
 
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
+        #zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
+        zip_path = self.tvb_data.fetch_data('connectivity_96.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
         connectivity_idx = TestFactory.get_entity(self.test_project, ConnectivityIndex)
         assert connectivity_idx is not None

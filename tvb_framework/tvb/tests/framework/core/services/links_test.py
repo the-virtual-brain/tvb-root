@@ -32,7 +32,8 @@ Testing linking datatypes between projects.
 """
 import pytest
 import os
-import tvb_data
+#import tvb_data
+from tvb.datasets import TVBZenodoDataset
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.adapters.exporters.export_manager import ExportManager
@@ -66,9 +67,12 @@ class _BaseLinksTest(TransactionalTestCase):
         src_user = user_factory(username="Links Test")
         self.src_usr_id = src_user.id
         self.src_project = project_factory(src_user, "Src_Project")
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'paupau.zip')
+        #zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'paupau.zip')
+        tvb_data = TVBZenodoDataset()
+        zip_path = tvb_data.fetch_data("paupau.zip")
         self.red_datatype = TestFactory.import_zip_connectivity(src_user, self.src_project, zip_path, "John")
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'sensors', 'eeg_unitvector_62.txt.bz2')
+        #zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'sensors', 'eeg_unitvector_62.txt.bz2')
+        zip_path = tvb_data.fetch_data('eeg_unitvector_62.txt.bz2')
         self.blue_datatype = TestFactory.import_sensors(src_user, self.src_project, zip_path,
                                                         SensorTypesEnum.TYPE_EEG)
         assert 1 == self.red_datatypes_in(self.src_project.id)

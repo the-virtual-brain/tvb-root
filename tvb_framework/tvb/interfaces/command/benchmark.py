@@ -31,7 +31,8 @@ Some standardized simulations are run and a report is generated in the console o
 
 from os import path
 
-import tvb_data
+#import tvb_data
+from tvb.datasets import TVBZenodoDataset
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.entities.file.simulator.view_model import HeunDeterministicViewModel
 from tvb.interfaces.command.lab import *
@@ -56,12 +57,16 @@ def _fire_simulation(project_id, simulator_vm):
 
 def _create_bench_project():
     prj = new_project("benchmark_project_ %s" % datetime.now())
-    data_dir = path.abspath(path.dirname(tvb_data.__file__))
-    zip_path = path.join(data_dir, 'connectivity', 'connectivity_68.zip')
+    #data_dir = path.abspath(path.dirname(tvb_data.__file__))
+    #zip_path = path.join(data_dir, 'connectivity', 'connectivity_68.zip')
+    tvb_data = TVBZenodoDataset()
+    zip_path = tvb_data.fetch_data('connectivity_68.zip')
     import_conn_zip(prj.id, zip_path)
-    zip_path = path.join(data_dir, 'connectivity', 'connectivity_96.zip')
+    #zip_path = path.join(data_dir, 'connectivity', 'connectivity_96.zip')
+    zip_path = tvb_data.fetch_data('connectivity_96.zip')
     import_conn_zip(prj.id, zip_path)
-    zip_path = path.join(data_dir, 'connectivity', 'connectivity_192.zip')
+    #zip_path = path.join(data_dir, 'connectivity', 'connectivity_192.zip')
+    zip_path = tvb_data.fetch_data('connectivity_192.zip')
     import_conn_zip(prj.id, zip_path)
 
     conn68 = dao.get_generic_entity(ConnectivityIndex, 68, "number_of_regions")[0]

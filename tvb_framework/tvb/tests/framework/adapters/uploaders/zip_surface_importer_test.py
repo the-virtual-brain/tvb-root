@@ -30,7 +30,8 @@
 
 import os
 
-import tvb_data.surfaceData
+#import tvb_data.surfaceData
+from tvb.datasets import TVBZenodoDataset
 from tvb.datatypes.surfaces import SurfaceTypesEnum
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
@@ -41,7 +42,8 @@ class TestZIPSurfaceImporter(BaseTestCase):
     Unit-tests for Zip Surface importer.
     """
 
-    surf_skull = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'outer_skull_4096.zip')
+    #surf_skull = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'outer_skull_4096.zip')
+    surf_skull = TVBZenodoDataset().fetch_data('outer_skull_4096.zip')
 
     def setup_method(self):
         self.test_user = TestFactory.create_user('Zip_Surface_User')

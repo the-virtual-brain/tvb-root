@@ -37,8 +37,8 @@ Project, User, Operation, basic imports (e.g. CFF).
 import os
 import random
 import uuid
-import tvb_data
-
+#import tvb_data
+from tvb.datasets import TVBZenodoDataset
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
 from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
@@ -220,7 +220,8 @@ class TestFactory(object):
         if not admin_user:
             admin_user = TestFactory.create_user()
 
-        project_path = os.path.join(os.path.dirname(tvb_data.__file__), 'Default_Project.zip')
+        #project_path = os.path.join(os.path.dirname(tvb_data.__file__), 'Default_Project.zip')
+        project_path = TVBBZenodoDataset().fetch_data('Default_Project.zip')
         import_service = ImportService()
         import_service.import_project_structure(project_path, admin_user.id)
         return import_service.created_projects[0]
@@ -312,7 +313,8 @@ class TestFactory(object):
                                 same_process=True):
 
         if zip_path is None:
-            zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
+            zip_path = TVBZenodoDataset().fetch_data('connectivity_76.zip')
+            #zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
         count = dao.count_datatypes(project.id, ConnectivityIndex)
 
         view_model = ZIPConnectivityImporterModel()

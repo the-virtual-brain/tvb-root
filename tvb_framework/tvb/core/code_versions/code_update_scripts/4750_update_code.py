@@ -28,13 +28,15 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 import os
-import tvb_data.sensors
+#import tvb_data.sensors
+from tvb.datasets import TVBZenodoDataset
 from tvb.adapters.uploaders.sensors_importer import SensorsImporter
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.storage import dao
 from tvb.core.services.operation_service import OperationService
 
-DATA_FILE = os.path.join(os.path.dirname(tvb_data.sensors.__file__), "seeg_39.txt.bz2")
+#DATA_FILE = os.path.join(os.path.dirname(tvb_data.sensors.__file__), "seeg_39.txt.bz2")
+DATA_FILE = TVBZenodoDataset().fetch_data('seeg_39.txt.bz2') 
 
 LOGGER = get_logger(__name__)
 PAGE_SIZE = 20

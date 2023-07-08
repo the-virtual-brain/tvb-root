@@ -66,8 +66,12 @@ def import_tumor_connectivities(project_id, folder_path):
 
 def import_surface_rm(project_id, conn_gid):
     # Import surface and region mapping from tvb_data berlin subjects (68 regions)
-    rm_file = try_get_absolute_path("tvb_data", "berlinSubjects/DH_20120806/DH_20120806_RegionMapping.txt")
-    surface_zip_file = try_get_absolute_path("tvb_data", "berlinSubjects/DH_20120806/DH_20120806_Surface_Cortex.zip")
+    #rm_file = try_get_absolute_path("tvb_data", "berlinSubjects/DH_20120806/DH_20120806_RegionMapping.txt")
+    #surface_zip_file = try_get_absolute_path("tvb_data", "berlinSubjects/DH_20120806/DH_20120806_Surface_Cortex.zip")
+    from tvb.datasets import TVBZenodoDataset
+    tvb_data = TVBZenodoDataset()
+    rm_file = tvb_data.fetch_data('DH_20120806_RegionMapping.txt')
+    surface_zip_file = tvb_data.fetch_data('DH_20120806_Surface_Cortex.zip')
 
     surface_importer = ABCAdapter.build_adapter_from_class(ZIPSurfaceImporter)
     surface_imp_model = ZIPSurfaceImporterModel()
