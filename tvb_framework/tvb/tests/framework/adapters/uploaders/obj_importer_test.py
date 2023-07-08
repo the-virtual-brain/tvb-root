@@ -29,8 +29,8 @@
 """
 
 import os
-import tvb_data.obj
-
+#import tvb_data.obj
+from tvb.datasets import TVBZenodoDataset
 from tvb.core.neocom import h5
 from tvb.datatypes.surfaces import SurfaceTypesEnum
 from tvb.tests.framework.core.base_testcase import BaseTestCase
@@ -41,9 +41,13 @@ class TestObjSurfaceImporter(BaseTestCase):
     """
     Unit-tests for Obj Surface importer.
     """
+    
+    #torus = os.path.join(os.path.dirname(tvb_data.obj.__file__), 'test_torus.obj')
+    #face = os.path.join(os.path.dirname(tvb_data.obj.__file__), 'face_surface.obj')
+    tvb_data = TVBZenodoDataset()
+    torus = tvb_data.fetch_data('test_torus.obj')
+    face = tvb_data.fetch_data('face_surface.obj')
 
-    torus = os.path.join(os.path.dirname(tvb_data.obj.__file__), 'test_torus.obj')
-    face = os.path.join(os.path.dirname(tvb_data.obj.__file__), 'face_surface.obj')
 
     def setup_method(self):
         self.test_user = TestFactory.create_user('Obj_Importer_User')

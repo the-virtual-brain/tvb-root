@@ -30,7 +30,8 @@
 """
 from os import path
 
-import tvb_data
+#import tvb_data
+from tvb.datasets import TVBZenodoDataset
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
@@ -58,7 +59,8 @@ class TestConnectivityZipImporter(BaseTestCase):
         """
         Test that importing a CFF generates at least one DataType in DB.
         """
-        zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
+        #zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
+        zip_path = TVBZenodoDataset().fetch_data('connectivity_96.zip')
         dt_count_before = TestFactory.get_entity_count(self.test_project, ConnectivityIndex)
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John", False)
         dt_count_after = TestFactory.get_entity_count(self.test_project, ConnectivityIndex)

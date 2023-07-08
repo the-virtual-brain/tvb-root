@@ -29,7 +29,8 @@
 """
 
 import os
-import tvb_data
+#import tvb_data
+from tvb.datasets import TVBZenodoDataset
 import json
 
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex

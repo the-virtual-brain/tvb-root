@@ -27,8 +27,9 @@
 import json
 import os
 import numpy
-import tvb_data
-import tvb_data.surfaceData
+#import tvb_data
+#import tvb_data.surfaceData
+from tvb.datasets import TVBZenodoDataset
 
 from tvb.adapters.creators.stimulus_creator import RegionStimulusCreator, SurfaceStimulusCreator
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
@@ -52,11 +53,16 @@ class TestStimulusCreator(TransactionalTestCase):
         self.test_project = TestFactory.create_project(self.test_user, "Stim_Project")
         self.storage_interface = StorageInterface()
 
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
+        tvb_data = TVBZenodoDataset()
+
+        #zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
+        zip_path = tvb_data.fetch_data('connectivity_66.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
         self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
 
-        cortex = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        #cortex = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        cortex = tvb_data.fetch_data('cortex_16384.zip')
+        
         self.surface = TestFactory.import_surface_zip(self.test_user, self.test_project, cortex,
                                                       SurfaceTypesEnum.CORTICAL_SURFACE)
 
