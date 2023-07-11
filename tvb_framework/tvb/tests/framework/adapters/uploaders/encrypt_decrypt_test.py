@@ -57,7 +57,7 @@ class TestEncryptionDecryption(TransactionalTestCase):
                                                      ( 'projection_meg_276_surface_16k.npy'),
                                                      ( 'TimeSeriesRegion.h5')])
     def test_encrypt_decrypt(self,  file_name):
-        import_export_encryption_handler = StorageInterface.get_import_export_encryption_handler()
+        handler = StorageInterface.get_import_export_encryption_handler()
 
 
         # Generate a private key and public key
