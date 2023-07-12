@@ -30,7 +30,6 @@ Change Project structure for TVB version 1.1.5.
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import os
-#import tvb_data.obj
 from tvb.datasets import TVBZenodoDataset
 from tvb.adapters.uploaders.obj_importer import ObjSurfaceImporter
 from tvb.basic.logger.builder import get_logger
@@ -38,7 +37,6 @@ from tvb.core.entities.storage import dao
 from tvb.core.services.operation_service import OperationService
 from tvb.datatypes.surfaces import SurfaceTypesEnum
 
-#DATA_FILE_FACE = os.path.join(os.path.dirname(tvb_data.obj.__file__), "face_surface.obj")
 DATA_FILE_FACE = TVBZenodoDataset().fetch_data('face_surface.obj')
 
 LOGGER = get_logger(__name__)

@@ -44,7 +44,6 @@ import sys
 import requests
 
 import tvb_bin
-#import tvb_data
 from tvb.datasets import TVBZenodoDataset
 from subprocess import Popen, PIPE
 
@@ -54,7 +53,6 @@ TVB_ROOT = os.path.dirname(os.path.dirname(BIN_FOLDER))
 FW_FOLDER = os.path.join(TVB_ROOT, 'tvb_framework')
 LICENSE_PATH = os.path.join(FW_FOLDER, 'LICENSE')
 RELEASE_NOTES_PATH = os.path.join(TVB_ROOT, 'tvb_documentation', 'RELEASE_NOTES')
-#DATA_SRC_FOLDER = os.path.dirname(tvb_data.__file__)
 DATA_SRC_FOLDER = TVBZenodoDataset().extract_dir
 DEMOS_MATLAB_FOLDER = os.path.join(TVB_ROOT, 'tvb_documentation', 'matlab')
 

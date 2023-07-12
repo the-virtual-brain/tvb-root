@@ -40,7 +40,7 @@ LIBRARY_VERSION = "2.8.1"
 LIBRARY_TEAM = "Marmaduke Woodman,  Jan Fousek, Stuart Knock, Paula Sanz Leon, Viktor Jirsa"
 
 LIBRARY_REQUIRED_PACKAGES = ["autopep8", "Deprecated", "docutils", "ipywidgets", "lxml", "mako>=1.1.4", "matplotlib",
-                             "networkx", "numba", "numexpr", "numpy", "pooch","pylems", "scipy", "six"]
+                             "networkx", "numba", "numexpr", "numpy", "pooch", "pylems", "scipy", "six"]
 
 LIBRARY_REQUIRED_EXTRA = ["h5py",  "pytest", "pytest-benchmark", "pytest-xdist", "tvb-gdist", "tvb-data"]
 

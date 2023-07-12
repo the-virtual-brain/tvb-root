@@ -27,7 +27,6 @@ import os
 import uuid
 import numpy
 import pytest
-#import tvb_data
 from tvb.datasets import TVBZenodoDataset
 
 from tvb.basic.neotraits.api import Attr, Float, Int, NArray, List
