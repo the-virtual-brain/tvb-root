@@ -145,7 +145,7 @@ class TestNIFTIImporter(BaseTestCase):
         """
         This method tests import of a NIFTI file compressed in GZ format.
         """
-        zip_path = TVBZenodoDataset().fetch_data('connectivity_76.zip')
+        zip_path = self.dataset.fetch_data('connectivity_76.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
         to_link_conn = TestFactory.get_entity(self.test_project, ConnectivityIndex)
 
