@@ -33,7 +33,6 @@ Service layer for USER entities.
 import os
 import random
 import six
-#import tvb_data
 from tvb.datasets import TVBZenodoDataset
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
@@ -121,7 +120,6 @@ class UserService:
             user = dao.store_entity(user)
 
             if role == ROLE_ADMINISTRATOR and not skip_import:
-                #to_upload = os.path.join(os.path.dirname(tvb_data.__file__), "Default_Project.zip")
                 to_upload = TVBZenodoDataset().fetch_data('Default_Project.zip')
                 if not os.path.exists(to_upload):
                     self.logger.warning("Could not find DEFAULT PROJECT at path %s. You might want to import it "

@@ -76,7 +76,6 @@ class LookUpTable(HasTraits):
     @staticmethod
     def populate_table(result, source_file):
         source_full_path = TVBZenodoDataset().fetch_data(source_file)
-        #source_full_path = try_get_absolute_path("tvb_data.tables", source_file)
         zip_data = numpy.load(source_full_path)
 
         result.df = zip_data['df']

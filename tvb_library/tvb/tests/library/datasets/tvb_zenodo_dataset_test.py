@@ -33,13 +33,6 @@ from tvb.datasets import TVBZenodoDataset
 from pathlib import Path
 from tvb.tests.library.base_testcase import BaseTestCase
 
-
-
-
-
-    
-
-
 class Test_TVBZenodoDataset(BaseTestCase):
      
     

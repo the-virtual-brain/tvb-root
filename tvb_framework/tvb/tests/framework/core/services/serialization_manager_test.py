@@ -29,7 +29,6 @@
 """
 
 from os import path
-#import tvb_data
 from tvb.datasets import TVBZenodoDataset
 
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
@@ -46,7 +45,6 @@ class TestSerializationManager(TransactionalTestCase):
     def transactional_setup_method(self):
         self.test_user = TestFactory.create_user(username="test_user")
         self.test_project = TestFactory.create_project(self.test_user, "Test")
-        #zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
         zip_path = TVBZenodoDataset().fetch_data('connectivity_66.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
         self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)

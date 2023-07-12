@@ -29,7 +29,6 @@
 """
 
 import os
-#import tvb_data.gifti as demo_data
 from tvb.datasets import  TVBZenodoDataset
 from tvb.adapters.uploaders.gifti.parser import GIFTIParser
 from tvb.core.services.exceptions import OperationException
@@ -43,13 +42,11 @@ class TestGIFTISurfaceImporter(BaseTestCase):
     Unit-tests for GIFTI Surface importer.
     """
 
-    #GIFTI_SURFACE_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'sample.cortex.gii')
-    #GIFTI_TIME_SERIES_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'sample.time_series.gii')
     WRONG_GII_FILE = os.path.abspath(__file__)
     
-    tvb_data = TVBZenodoDataset()
-    GIFTI_SURFACE_FILE = tvb_data.fetch_data('sample.cortex.gii')
-    GIFTI_TIME_SERIES_FILE = tvb_data.fetch_data( 'sample.time_series.gii')
+    dataset = TVBZenodoDataset()
+    GIFTI_SURFACE_FILE = dataset.fetch_data('sample.cortex.gii')
+    GIFTI_TIME_SERIES_FILE = dataset.fetch_data( 'sample.time_series.gii')
 
     def setup_method(self):
         self.test_user = TestFactory.create_user('Gifti_User')
