@@ -33,7 +33,6 @@ import os
 import pytest
 import sqlalchemy
 
-#import tvb_data
 from tvb.datasets import TVBZenodoDataset
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.model import model_datatype, model_project, model_operation
@@ -332,14 +331,12 @@ class TestProjectService(TransactionalTestCase):
 
     def test_project_disk_size(self):
         project1 = TestFactory.create_project(self.test_user, 'test_proj1')
-        #zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
-        tvb_data = TVBZenodoDataset()
-        zip_path = tvb_data.fetch_data('connectivity_66.zip') 
+        dataset = TVBZenodoDataset()
+        zip_path = dataset.fetch_data('connectivity_66.zip') 
         TestFactory.import_zip_connectivity(self.test_user, project1, zip_path, 'testSubject')
 
         project2 = TestFactory.create_project(self.test_user, 'test_proj2')
-        #zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
-        zip_path = tvb_data.fetch_data('connectivity_76.zip')
+        zip_path = dataset.fetch_data('connectivity_76.zip')
         TestFactory.import_zip_connectivity(self.test_user, project2, zip_path, 'testSubject')
 
         projects = self.project_service.retrieve_projects_for_user(self.test_user.id)[0]

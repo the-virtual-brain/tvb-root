@@ -28,7 +28,6 @@
 """
 
 import os
-#import tvb_data
 from tvb.datasets import TVBZenodoDataset
 
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
@@ -52,7 +51,6 @@ class TestConnectivityViewer(TransactionalTestCase):
         self.test_user = TestFactory.create_user("UserCVV")
         self.test_project = TestFactory.create_project(self.test_user)
 
-        #zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
         zip_path = TVBZenodoDataset().fetch_data('connectivity_66.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
         self.connectivity_index = TestFactory.get_entity(self.test_project, ConnectivityIndex)

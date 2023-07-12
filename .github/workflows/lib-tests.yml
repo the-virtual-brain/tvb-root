@@ -27,16 +27,7 @@ jobs:
           pip3 install pipenv
           cd tvb_library && pipenv install -d --python $(which python3)
 
-      #- name: download data
-      #  run: |
-      #    wget -q https://zenodo.org/record/7574266/files/tvb_data.zip?download=1 -O tvb_data.zip
-      #    mkdir tvb_data
-      #    unzip tvb_data.zip -d tvb_data
-      #    rm tvb_data.zip
 
-      #- name: setup data
-      #  run: |
-      #    cd tvb_library && pipenv run bash -c 'cd ../tvb_data && python3 setup.py develop'
 
       - name: importlib_metadata?
         run: cd tvb_library && pipenv install importlib_metadata

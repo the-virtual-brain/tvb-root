@@ -29,8 +29,6 @@
 """
 
 import os
-#import tvb_data.obj
-#import tvb_data.sensors
 from tvb.datasets import TVBZenodoDataset
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
@@ -47,6 +45,7 @@ class TestSensorViewers(TransactionalTestCase):
     """
     Unit-tests for Sensors viewers.
     """
+    dataset = TVBZenodoDataset()
 
     EXPECTED_KEYS_INTERNAL = {'urlMeasurePoints': None, 'urlMeasurePointsLabels': None, 'noOfMeasurePoints': 103,
                               'minMeasure': 0, 'maxMeasure': 103, 'urlMeasure': None, 'shellObject': None}
@@ -72,8 +71,7 @@ class TestSensorViewers(TransactionalTestCase):
         Check that all required keys are present in output from EegSensorViewer launch.
         """
         # Import Sensors
-        #zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'eeg_unitvector_62.txt.bz2')
-        zip_path = TVBZenodoDataset().fetch_data('eeg_unitvector_62.txt.bz2')
+        zip_path = self.dataset.fetch_data('eeg_unitvector_62.txt.bz2')
         TestFactory.import_sensors(self.test_user, self.test_project, zip_path,
                                    SensorTypesEnum.TYPE_EEG)
         field = FilterChain.datatype + '.sensors_type'
@@ -81,8 +79,7 @@ class TestSensorViewers(TransactionalTestCase):
         sensors_index = TestFactory.get_entity(self.test_project, SensorsIndex, filters)
 
         # Import EEGCap
-        #cap_path = os.path.join(os.path.dirname(tvb_data.obj.__file__), 'eeg_cap.obj')
-        cap_path = TVBZenodoDataset().fetch_data('eeg_cap.obj')
+        cap_path = self.dataset.fetch_data('eeg_cap.obj')
         TestFactory.import_surface_obj(self.test_user, self.test_project, cap_path, SurfaceTypesEnum.EEG_CAP_SURFACE)
         field = FilterChain.datatype + '.surface_type'
         filters = FilterChain('', [field], [SurfaceTypesEnum.EEG_CAP_SURFACE.value], ['=='])
@@ -109,8 +106,7 @@ class TestSensorViewers(TransactionalTestCase):
         Check that all required keys are present in output from MEGSensorViewer launch.
         """
 
-        #zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'meg_151.txt.bz2')
-        zip_path = TVBZenodoDataset().fetch_data('meg_151.txt.bz2')
+        zip_path = self.dataset.fetch_data('meg_151.txt.bz2')
         TestFactory.import_sensors(self.test_user, self.test_project, zip_path,
                                    SensorTypesEnum.TYPE_MEG)
 
@@ -130,8 +126,7 @@ class TestSensorViewers(TransactionalTestCase):
         """
         Check that all required keys are present in output from InternalSensorViewer launch.
         """
-        #zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'seeg_39.txt.bz2')
-        zip_path = TVBZenodoDataset().fetch_data('seeg_39.txt.bz2')
+        zip_path = self.dataset.fetch_data('seeg_39.txt.bz2')
         sensors_index = TestFactory.import_sensors(self.test_user, self.test_project, zip_path,
                                                    SensorTypesEnum.TYPE_INTERNAL)
         viewer = SensorsViewer()

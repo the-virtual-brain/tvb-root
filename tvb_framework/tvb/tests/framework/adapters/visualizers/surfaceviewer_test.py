@@ -29,8 +29,6 @@
 """
 
 import os
-#import tvb_data.surfaceData
-#import tvb_data.regionMapping as demo_data
 from tvb.datasets import TVBZenodoDataset
 from uuid import UUID
 
@@ -57,23 +55,21 @@ class TestSurfaceViewers(TransactionalTestCase):
         creates a test user, a test project, a connectivity and a surface;
         imports a CFF data-set
         """
+        dataset = TVBZenodoDataset()
         test_user = TestFactory.create_user('Surface_Viewer_User')
         self.test_project = TestFactory.create_project(test_user, 'Surface_Viewer_Project')
 
-        #surf_skull = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
-        surf_skull = TVBZenodoDataset().fetch_data('cortex_16384.zip')
+        surf_skull = dataset.fetch_data('cortex_16384.zip')
         self.surface = TestFactory.import_surface_zip(test_user, self.test_project, surf_skull,
                                                       SurfaceTypesEnum.CORTICAL_SURFACE)
         assert self.surface is not None
 
-        #zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
-        zip_path = TVBZenodoDataset().fetch_data('connectivity_76.zip')
+        zip_path = dataset.fetch_data('connectivity_76.zip')
         TestFactory.import_zip_connectivity(test_user, self.test_project, zip_path, "John")
         connectivity_index = TestFactory.get_entity(self.test_project, ConnectivityIndex)
         assert connectivity_index is not None
 
-        #TXT_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'regionMapping_16k_76.txt')
-        TXT_FILE = TVBZenodoDataset().fetch_data('regionMapping_16k_76.txt')
+        TXT_FILE = dataset.fetch_data('regionMapping_16k_76.txt')
         self.region_mapping = TestFactory.import_region_mapping(test_user, self.test_project, TXT_FILE,
                                                                 self.surface.gid, connectivity_index.gid)
         assert self.region_mapping is not None

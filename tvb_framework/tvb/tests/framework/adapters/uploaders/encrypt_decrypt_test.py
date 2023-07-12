@@ -32,7 +32,6 @@ import os
 import pyAesCrypt
 import pytest
 
-#import tvb_data
 from tvb.datasets import TVBZenodoDataset
 
 import tempfile
@@ -49,7 +48,7 @@ from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 class TestEncryptionDecryption(TransactionalTestCase):
 
-    tvb_data = TVBZenodoDataset()
+    dataset = TVBZenodoDataset()
     # noinspection PyTypeChecker
 
     @pytest.mark.parametrize(" file_name", [('connectivity_76.zip'),
@@ -80,8 +79,7 @@ class TestEncryptionDecryption(TransactionalTestCase):
         with open(private_key_path, 'wb') as f:
             f.write(pem)
 
-        #path_to_file = os.path.join(os.path.dirname(tvb_data.__file__), dir_name, file_name)
-        path_to_file = self.tvb_data.fetch_data(file_name)
+        path_to_file = self.dataset.fetch_data(file_name)
 
 
         # Create model for ABCUploader

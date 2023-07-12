@@ -28,7 +28,6 @@ import os
 import sys
 import time
 
-#import tvb_data
 from tvb.datasets import TVBZenodoDataset
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.model.model_operation import STATUS_ERROR, STATUS_CANCELED, STATUS_FINISHED

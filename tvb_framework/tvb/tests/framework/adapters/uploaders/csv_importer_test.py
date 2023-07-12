@@ -47,7 +47,6 @@ TEST_SUBJECT_B = "TEST_SUBJECT_B"
 
 
 class TestCSVConnectivityParser(BaseTestCase):
-    #BASE_PTH = path.join(path.dirname(tvb_data.__file__), 'dti_pipeline_toronto')
     
     def test_parse_happy(self):
         cap_pth = TVBZenodoDataset().fetch_data('output_ConnectionDistanceMatrix.csv')
@@ -63,6 +62,7 @@ class TestCSVConnectivityImporter(BaseTestCase):
     """
     Unit-tests for csv connectivity importer.
     """
+    dataset = TVBZenodoDataset()
 
     def setup_method(self):
         self.test_user = TestFactory.create_user()
@@ -78,11 +78,8 @@ class TestCSVConnectivityImporter(BaseTestCase):
     def _import_csv_test_connectivity(self, reference_connectivity_gid, subject):
 
         ### First prepare input data:
-        #data_dir = path.abspath(path.dirname(tvb_data.__file__))
-
-        #toronto_dir = path.join(data_dir, 'dti_pipeline_toronto')
-        weights = TVBZenodoDataset().fetch_data('output_ConnectionCapacityMatrix.csv')
-        tracts =  TVBZenodoDataset().fetch_data('output_ConnectionDistanceMatrix.csv')
+        weights = self.dataset.fetch_data('output_ConnectionCapacityMatrix.csv')
+        tracts =  self.dataset.fetch_data('output_ConnectionDistanceMatrix.csv')
         weights_tmp = weights + '.tmp'
         tracts_tmp = tracts + '.tmp'
 
@@ -101,8 +98,7 @@ class TestCSVConnectivityImporter(BaseTestCase):
         Test that importing a CFF generates at least one DataType in DB.
         """
 
-        #zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
-        zip_path = TVBZenodoDataset().fetch_data('connectivity_96.zip')
+        zip_path = self.dataset.fetch_data('connectivity_96.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, subject=TEST_SUBJECT_A)
 
         field = FilterChain.datatype + '.subject'
@@ -134,8 +130,7 @@ class TestCSVConnectivityImporter(BaseTestCase):
         assert (reference_connectivity.region_labels == imported_connectivity.region_labels).all()
 
     def test_bad_reference(self):
-        #zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
-        zip_path = TVBZenodoDataset().fetch_data('connectivity_66.zip')
+        zip_path = self.dataset.fetch_data('connectivity_66.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
         field = FilterChain.datatype + '.subject'
         filters = FilterChain('', [field], [TEST_SUBJECT_A], ['!='])

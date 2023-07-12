@@ -29,7 +29,6 @@
 """
 
 import os
-#import tvb_data
 from tvb.datasets import TVBZenodoDataset
 from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
 from tvb.core.entities.model.model_operation import Algorithm
@@ -57,7 +56,6 @@ class TestBCT(TransactionalTestCase):
         self.test_user = TestFactory.create_user("BCT_User")
         self.test_project = TestFactory.create_project(self.test_user, "BCT-Project")
         # Make sure Connectivity is in DB
-        #zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
         zip_path = TVBZenodoDataset().fetch_data('connectivity_76.zip')
         self.connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
