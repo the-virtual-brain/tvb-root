@@ -102,10 +102,9 @@ class TestOperationResource(RestResourceTest):
         with pytest.raises(KeyError):
             zip_path = self.dataset.fetch_data('connectivity_90.zip')
         zip_path = self.dataset.fetch_data('connectivity_96.zip')
-        zip_path.replace("connectivity_96", "connectivity_90")
-        print(zip_path)
-        
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
+        zip_path = zip_path.replace("connectivity_96", "connectivity_90")
+        with pytest.raises(TVBException):
+            TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
         request_mock = mocker.patch.object(flask, 'request', spec={})
         request_mock.args = {Strings.PAGE_NUMBER: '1'}
