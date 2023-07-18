@@ -59,6 +59,8 @@ VERSION = TvbProfile.current.version.BASE_VERSION
 APP_NAME = "tvb-{}".format(VERSION)
 # should match an Apple Developer defined identifier
 IDENTIFIER = "ro.codemart.tvb"
+# KEY for the ENV variable where we expect the signing identity to be defined
+KEY_SIGN_IDENTITY = "SIGN_APP_IDENTITY"
 # The author of this package
 AUTHOR = "TVB Team"
 # Full path to the anaconda environment folder to package
@@ -381,11 +383,14 @@ def _create_plist():
         plistlib.dump(info_plist_data, fp)
 
 
-def _sign_app(app_path=APP_FILE, dev_identity="45B62762F61B4B4544A125C0EC9CE9D562B25942"):
+def _sign_app(app_path=APP_FILE):
     """
     Sign a .APP file, with an Apple Developer Identity previously installed on the current machine.
     The identity needs to show when executing command "security find-identity"
     """
+    if KEY_SIGN_IDENTITY not in os.environ:
+        print(f"!! We can not sign the resulting .app because the {KEY_SIGN_IDENTITY} variable is not in ENV defined!!")
+    dev_identity = os.environ.get(KEY_SIGN_IDENTITY)
     print(f"Preparing to sign: {app_path} with {dev_identity}")
     # Create app.entitlements file with the application allowed security allowed points
     ent_file = "app.entitlements"
@@ -407,10 +412,10 @@ def _sign_app(app_path=APP_FILE, dev_identity="45B62762F61B4B4544A125C0EC9CE9D56
     </plist>
     """)
 
-    # Uncomment the following 2 commands if needed for debug purposes
+    # Uncomment the following command if needed for debug purposes
     # subprocess.Popen(["security", "find-identity"], shell=False).communicate()
     subprocess.Popen(["codesign", "-s", dev_identity, "-f", "--timestamp", "-o", "runtime", "--entitlements", "app.entitlements", app_path], shell=False).communicate()
-    # subprocess.Popen(["spctl", "-a", "-t", "exec", "-vv", app_path], shell=False).communicate()
+    subprocess.Popen(["spctl", "-a", "-t", "exec", "-vv", app_path], shell=False).communicate()
 
     if os.path.exists(ent_file):
         os.remove(ent_file)
