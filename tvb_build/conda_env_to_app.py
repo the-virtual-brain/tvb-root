@@ -25,6 +25,7 @@
 #
 
 """
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Bogdan Valean <bogdan.valean@codemart.ro>
 """
 
@@ -56,8 +57,8 @@ TVB_ROOT = os.path.dirname(os.path.dirname(__file__))
 VERSION = TvbProfile.current.version.BASE_VERSION
 # Name of the app
 APP_NAME = "tvb-{}".format(VERSION)
-# The website in reversered order (domain first, etc.)
-IDENTIFIER = "org.thevirtualbrain"
+# should match an Apple Developer defined identifier
+IDENTIFIER = "ro.codemart.tvb"
 # The author of this package
 AUTHOR = "TVB Team"
 # Full path to the anaconda environment folder to package
@@ -90,6 +91,8 @@ CONDA_EXCLUDE_FILES += map(lambda x: f'translations/{x}', [
 
 # Path to the icon of the app
 ICON_PATH = os.path.join(TVB_ROOT, "tvb_build", "icon.icns")
+# Absolute path towards TVB license file, to be included in the .app
+LICENSE_PATH = os.path.join(TVB_ROOT, "LICENSE")
 # The entry script of the application in the environment's bin folder
 ENTRY_SCRIPT = "-m tvb_bin.app"
 # Folder to place created APP and DMG in.
@@ -157,7 +160,7 @@ DMG_ICON_SIZE = 80
 
 
 def extra():
-    fix_paths()
+    _fix_paths()
 
 
 def _find_and_replace(path, search, replace, exclusions=None):
@@ -207,7 +210,7 @@ def _find_and_replace(path, search, replace, exclusions=None):
                     stream.nextfile()
 
 
-def replace_conda_abs_paths():
+def _replace_conda_abs_paths():
     app_path = os.path.join(os.path.sep, 'Applications', APP_NAME + '.app', 'Contents', 'Resources')
     print('Replacing occurences of {} with {}'.format(CONDA_ENV_PATH, app_path))
     _find_and_replace(
@@ -219,8 +222,8 @@ def replace_conda_abs_paths():
 
 
 def create_app():
-    print("Output Dir {}".format(OUTPUT_FOLDER))
     """ Create an app bundle """
+    print("Output Dir {}".format(OUTPUT_FOLDER))
 
     if os.path.exists(APP_FILE):
         shutil.rmtree(APP_FILE)
@@ -228,11 +231,11 @@ def create_app():
     print("\n++++++++++++++++++++++++ Creating APP +++++++++++++++++++++++++++")
     start_t = time.time()
 
-    create_app_structure()
-    copy_anaconda_env()
+    _create_app_structure()
+    _copy_anaconda_env()
     if ICON_FILE:
-        copy_icon()
-    create_plist()
+        _copy_icon_and_license()
+    _create_plist()
 
     # Do some package specific stuff, which is defined in the extra() function
     # in settings.py (and was imported at the top of this module)
@@ -240,12 +243,14 @@ def create_app():
         print("Performing application specific actions.")
         extra()
 
-    replace_conda_abs_paths()
+    _replace_conda_abs_paths()
 
     print("============ APP CREATION FINISHED in {} seconds ====================".format(int(time.time() - start_t)))
 
+    _sign_app()
 
-def create_app_structure():
+
+def _create_app_structure():
     """ Create folder structure comprising a Mac app """
     print("Creating app structure")
     try:
@@ -272,7 +277,7 @@ def create_app_structure():
              stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
-def copy_anaconda_env():
+def _copy_anaconda_env():
     """ Copy anaconda environment """
     print("Copying Anaconda environment (this may take a while)")
     try:
@@ -310,7 +315,7 @@ def copy_anaconda_env():
                     logger.error("WARNING: could not delete {}".format(item))
 
 
-def copy_icon():
+def _copy_icon_and_license():
     """ Copy icon to Resources folder """
     global ICON_PATH
     print("Copying icon file")
@@ -319,8 +324,18 @@ def copy_icon():
     except OSError as e:
         logger("Error copying icon file from: {}".format(ICON_PATH))
 
+    global LICENSE_PATH
+    print("Copying license file")
+    try:
+        unnecessary_file = os.path.join(RESOURCE_DIR, "LICENSE.txt")
+        if os.path.exists(unnecessary_file):
+            os.remove(unnecessary_file)
+        shutil.copy(LICENSE_PATH, RESOURCE_DIR)
+    except OSError as e:
+        logger("Error copying license file from: {}".format(LICENSE_PATH))
 
-def create_plist():
+
+def _create_plist():
     print("Creating Info.plist")
 
     global ICON_FILE
@@ -341,7 +356,7 @@ def create_plist():
         'CFBundlePackageType': 'APPL',
         'CFBundleVersion': LONG_VERSION,
         'CFBundleShortVersionString': VERSION,
-        'CFBundleSignature': '????',
+        'CFBundleSignature': '????',  # ok not to be setup
         'LSMinimumSystemVersion': '10.7.0',
         'LSUIElement': False,
         'NSAppTransportSecurity': {'NSAllowsArbitraryLoads': True},
@@ -364,6 +379,41 @@ def create_plist():
 
     with open(os.path.join(APP_FILE, 'Contents', 'Info.plist'), 'wb') as fp:
         plistlib.dump(info_plist_data, fp)
+
+
+def _sign_app(app_path=APP_FILE, dev_identity="45B62762F61B4B4544A125C0EC9CE9D562B25942"):
+    """
+    Sign a .APP file, with an Apple Developer Identity previously installed on the current machine.
+    The identity needs to show when executing command "security find-identity"
+    """
+    print(f"Preparing to sign: {app_path} with {dev_identity}")
+    # Create app.entitlements file with the application allowed security allowed points
+    ent_file = "app.entitlements"
+    if os.path.exists(ent_file):
+        os.remove(ent_file)
+    with open(ent_file, 'w') as fp:
+        fp.write("""
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0">
+        <dict>
+            <key>com.apple.security.app-sandbox</key>
+            <true/>
+            <key>com.apple.security.network.client</key>
+            <true/>
+            <key>com.apple.security.network.server</key>
+            <true/>
+        </dict>
+    </plist>
+    """)
+
+    # Uncomment the following 2 commands if needed for debug purposes
+    # subprocess.Popen(["security", "find-identity"], shell=False).communicate()
+    subprocess.Popen(["codesign", "-s", dev_identity, "-f", "--timestamp", "-o", "runtime", "--entitlements", "app.entitlements", app_path], shell=False).communicate()
+    # subprocess.Popen(["spctl", "-a", "-t", "exec", "-vv", app_path], shell=False).communicate()
+
+    if os.path.exists(ent_file):
+        os.remove(ent_file)
 
 
 def create_dmg():
@@ -411,7 +461,7 @@ def create_dmg():
     dmg_config['icon_locations'] = DMG_ICON_LOCATIONS
     dmg_config['window_rect'] = DMG_WINDOW_RECT
 
-    write_vars_to_file(dmgbuild_config_file, dmg_config)
+    _write_vars_to_file(dmgbuild_config_file, dmg_config)
     print("Copying files to DMG and compressing it. Please wait.")
     dmgbuild.build_dmg(dmg_file, APP_NAME, settings_file=dmgbuild_config_file)
 
@@ -419,7 +469,7 @@ def create_dmg():
     os.remove(dmgbuild_config_file)
 
 
-def write_vars_to_file(file_path, var_dict):
+def _write_vars_to_file(file_path, var_dict):
     with open(file_path, 'w') as fp:
         fp.write("# -*- coding: utf-8 -*-\n")
         fp.write("from __future__ import unicode_literals\n\n")
@@ -431,7 +481,7 @@ def write_vars_to_file(file_path, var_dict):
                 fp.write('{} = {}\n'.format(var, value))
 
 
-def fix_paths():
+def _fix_paths():
     kernel_json = os.path.join(
         RESOURCE_DIR, 'share', 'jupyter', 'kernels', 'python3', 'kernel.json')
     if os.path.exists(kernel_json):
