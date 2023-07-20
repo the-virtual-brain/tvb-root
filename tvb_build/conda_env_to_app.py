@@ -418,8 +418,9 @@ def _sign_app(app_path=APP_FILE):
     # Some of the following command are just for debug purposes. Codesign is the critical one!
     command = f"security find-identity && " \
               f"security unlock-keychain -p {mac_pwd} /Users/tvb/Library/Keychains/login.keychain && " \
-              f"codesign -s '{dev_identity}' -f --timestamp -o runtime --entitlements app.entitlements {app_path} && " \
-              f"spctl -a -t exec -vv {app_path}"
+              f"codesign -s '{dev_identity}' -f --timestamp -o runtime --entitlements app.entitlements '{app_path}' && " \
+              f"spctl -a -t exec -vv '{app_path}'"
+    print(command)
     os.system(command)
     if os.path.exists(ent_file):
         os.remove(ent_file)
