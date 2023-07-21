@@ -250,8 +250,6 @@ def create_app():
 
     print("============ APP CREATION FINISHED in {} seconds ====================".format(int(time.time() - start_t)))
 
-    _sign_app()
-
 
 def _create_app_structure():
     """ Create folder structure comprising a Mac app """
@@ -384,7 +382,7 @@ def _create_plist():
         plistlib.dump(info_plist_data, fp)
 
 
-def _sign_app(app_path=APP_FILE):
+def sign_app(app_path=APP_FILE):
     """
     Sign a .APP file, with an Apple Developer Identity previously installed on the current machine.
     The identity needs to show when executing command "security find-identity"
@@ -416,11 +414,12 @@ def _sign_app(app_path=APP_FILE):
     """)
 
     # Some of the following command are just for debug purposes. Codesign is the critical one!
+    # we also need for over SSH run to unlock the keychain, otherwise we can not sign
     command = f"security find-identity && " \
               f"security unlock-keychain -p {mac_pwd} /Users/tvb/Library/Keychains/login.keychain && " \
-              f"codesign -s '{dev_identity}' -f --timestamp -o runtime --entitlements app.entitlements '{app_path}' && " \
+              f"codesign -s '{dev_identity}' -f --timestamp -o runtime --entitlements app.entitlements '{app_path}'&&" \
               f"spctl -a -t exec -vv '{app_path}'"
-    print(command)
+
     os.system(command)
     if os.path.exists(ent_file):
         os.remove(ent_file)
