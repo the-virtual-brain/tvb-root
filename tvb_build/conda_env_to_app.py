@@ -162,6 +162,13 @@ DMG_WINDOW_RECT = ((300, 200), (358, 570))
 DMG_ICON_SIZE = 80
 
 
+def _log(msg, indent=1):
+    if indent == 1:
+        print(" - ", msg)
+    else:
+        print("  " * indent, msg)
+
+
 def extra():
     _fix_paths()
 
@@ -215,7 +222,7 @@ def _find_and_replace(path, search, replace, exclusions=None):
 
 def _replace_conda_abs_paths():
     app_path = os.path.join(os.path.sep, 'Applications', APP_NAME + '.app', 'Contents', 'Resources')
-    print('Replacing occurences of {} with {}'.format(CONDA_ENV_PATH, app_path))
+    _log('Replacing occurences of {} with {}'.format(CONDA_ENV_PATH, app_path), 2)
     _find_and_replace(
         RESOURCE_DIR,
         CONDA_ENV_PATH,
@@ -226,12 +233,12 @@ def _replace_conda_abs_paths():
 
 def create_app():
     """ Create an app bundle """
-    print("Output Dir {}".format(OUTPUT_FOLDER))
+    _log("Output Dir {}".format(OUTPUT_FOLDER), 2)
 
     if os.path.exists(APP_FILE):
         shutil.rmtree(APP_FILE)
 
-    print("\n++++++++++++++++++++++++ Creating APP +++++++++++++++++++++++++++")
+    _log("Creating APP ", 1)
     start_t = time.time()
 
     _create_app_structure()
@@ -243,24 +250,24 @@ def create_app():
     # Do some package specific stuff, which is defined in the extra() function
     # in settings.py (and was imported at the top of this module)
     if "extra" in globals() and callable(extra):
-        print("Performing application specific actions.")
+        _log("Performing application specific actions.", 2)
         extra()
 
     _replace_conda_abs_paths()
 
-    print("============ APP CREATION FINISHED in {} seconds ====================".format(int(time.time() - start_t)))
+    _log("APP creation finished in {} seconds".format(int(time.time() - start_t)), 2)
 
 
 def _create_app_structure():
     """ Create folder structure comprising a Mac app """
-    print("Creating app structure")
+    _log("Creating app structure", 2)
     try:
         os.makedirs(MACOS_DIR)
     except OSError as e:
-        print('Could not create app structure: {}'.format(e))
+        _log('!!!Could not create app structure: {}'.format(e))
         sys.exit(1)
 
-    print("Creating app entry script")
+    _log("Creating app entry script", 2)
     with open(APP_SCRIPT, 'w') as fp:
         # Write the contents
         try:
@@ -268,7 +275,7 @@ def _create_app_structure():
                      "script_dir=$(dirname \"$(dirname \"$0\")\")\n"
                      "$script_dir/Resources/bin/python "
                      "{} $@".format(ENTRY_SCRIPT))
-        except IOError as e:
+        except IOError:
             logger.exception("Could not create Contents/OpenSesame script")
             sys.exit(1)
 
@@ -280,7 +287,7 @@ def _create_app_structure():
 
 def _copy_anaconda_env():
     """ Copy anaconda environment """
-    print("Copying Anaconda environment (this may take a while)")
+    _log("Copying Anaconda environment (this may take a while)", 2)
     try:
         if "CONDA_FOLDERS" in globals():
             # IF conda folders is specified, copy only those folders.
@@ -312,32 +319,32 @@ def _copy_anaconda_env():
                         os.remove(item)
                     else:
                         logger.warning("File not found: {}".format(item))
-                except (IOError, OSError) as e:
+                except (IOError, OSError):
                     logger.error("WARNING: could not delete {}".format(item))
 
 
 def _copy_icon_and_license():
     """ Copy icon to Resources folder """
     global ICON_PATH
-    print("Copying icon file")
+    _log("Copying icon file", 2)
     try:
         shutil.copy(ICON_PATH, os.path.join(RESOURCE_DIR, ICON_FILE))
-    except OSError as e:
-        logger("Error copying icon file from: {}".format(ICON_PATH))
+    except OSError:
+        logger.error("Error copying icon file from: {}".format(ICON_PATH))
 
     global LICENSE_PATH
-    print("Copying license file")
+    _log("Copying license file", 2)
     try:
         unnecessary_file = os.path.join(RESOURCE_DIR, "LICENSE.txt")
         if os.path.exists(unnecessary_file):
             os.remove(unnecessary_file)
         shutil.copy(LICENSE_PATH, RESOURCE_DIR)
-    except OSError as e:
-        logger("Error copying license file from: {}".format(LICENSE_PATH))
+    except OSError:
+        logger.error("Error copying license file from: {}".format(LICENSE_PATH))
 
 
 def _create_plist():
-    print("Creating Info.plist")
+    _log("Creating Info.plist", 2)
 
     global ICON_FILE
     global VERSION
@@ -388,11 +395,12 @@ def sign_app(app_path=APP_FILE):
     The identity needs to show when executing command "security find-identity"
     """
     if KEY_SIGN_IDENTITY not in os.environ or KEY_MAC_PWD not in os.environ:
-        print(f"!! We can not sign the resulting .app because the {KEY_SIGN_IDENTITY} and "
-              f"{KEY_MAC_PWD} variables are not in ENV!!")
+        _log(f"!! We can not sign the resulting .app because the {KEY_SIGN_IDENTITY} and "
+             f"{KEY_MAC_PWD} variables are not in ENV!!")
     dev_identity = os.environ.get(KEY_SIGN_IDENTITY)
     mac_pwd = os.environ.get(KEY_MAC_PWD)
-    print(f"Preparing to sign: {app_path} with {dev_identity}")
+    _log(f"Preparing to sign: {app_path} with {dev_identity}")
+
     # Create app.entitlements file with the application allowed security allowed points
     ent_file = "app.entitlements"
     if os.path.exists(ent_file):
@@ -415,12 +423,12 @@ def sign_app(app_path=APP_FILE):
 
     # Some of the following command are just for debug purposes. Codesign is the critical one!
     # we also need for over SSH run to unlock the keychain, otherwise we can not sign
-    command = f"security find-identity && " \
-              f"security unlock-keychain -p {mac_pwd} /Users/tvb/Library/Keychains/login.keychain && " \
-              f"codesign -s '{dev_identity}' -f --timestamp -o runtime --entitlements app.entitlements '{app_path}'&&" \
-              f"spctl -a -t exec -vv '{app_path}'"
-
+    command = f"security unlock-keychain -p {mac_pwd} /Users/tvb/Library/Keychains/login.keychain && " \
+              f"codesign -s '{dev_identity}' -f --timestamp -o runtime --entitlements app.entitlements '{app_path}'"
+    os.system(f"security find-identity")
     os.system(command)
+    os.system(f"spctl -a -t exec -vv '{app_path}'")
+    os.system(f"codesign --verify --verbose=4 '{app_path}'")
     if os.path.exists(ent_file):
         os.remove(ent_file)
 
@@ -438,7 +446,7 @@ def create_dmg():
     if os.path.exists(dmg_file):
         os.remove(dmg_file)
 
-    print("\n+++++++++++++++++++++ Creating DMG from app +++++++++++++++++++++++")
+    _log("Creating DMG from app...")
 
     # Get file size of APP
     app_size = subprocess.check_output(
@@ -449,11 +457,10 @@ def create_dmg():
     # Add a bit of extra to the disk image size
     app_size = str(float(size) * 1.25) + unit
 
-    print("Creating disk image of {}".format(app_size))
+    _log("Creating disk image of {}".format(app_size), 2)
 
     # Create a dmgbuild config file in same folder as
-    dmgbuild_config_file = os.path.join(os.getcwd(),
-                                        'dmgbuild_settings.py')
+    dmgbuild_config_file = os.path.join(os.getcwd(), 'dmgbuild_settings.py')
 
     dmg_config = {
         'filename': dmg_file,
@@ -471,10 +478,9 @@ def create_dmg():
     dmg_config['window_rect'] = DMG_WINDOW_RECT
 
     _write_vars_to_file(dmgbuild_config_file, dmg_config)
-    print("Copying files to DMG and compressing it. Please wait.")
+    _log("Copying files to DMG and compressing it. Please wait...", 2)
     dmgbuild.build_dmg(dmg_file, APP_NAME, settings_file=dmgbuild_config_file)
-
-    # Clean up!
+    _log("Clean up!", 2)
     os.remove(dmgbuild_config_file)
 
 
@@ -491,15 +497,14 @@ def _write_vars_to_file(file_path, var_dict):
 
 
 def _fix_paths():
-    kernel_json = os.path.join(
-        RESOURCE_DIR, 'share', 'jupyter', 'kernels', 'python3', 'kernel.json')
+    kernel_json = os.path.join(RESOURCE_DIR, 'share', 'jupyter', 'kernels', 'python3', 'kernel.json')
     if os.path.exists(kernel_json):
-        print('Fixing kernel.json')
+        _log('Fixing kernel.json', 2)
         with open(kernel_json, 'r') as fp:
-            kernelCfg = json.load(fp)
-            kernelCfg['argv'][0] = 'python'
+            kernel_cfg = json.load(fp)
+            kernel_cfg['argv'][0] = 'python'
         with open(kernel_json, 'w+') as fp:
-            json.dump(kernelCfg, fp)
+            json.dump(kernel_cfg, fp)
 
 
 if __name__ == "__main__":
