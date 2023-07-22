@@ -32,34 +32,131 @@
 from tvb.datasets import TVBZenodoDataset
 from pathlib import Path
 from tvb.tests.library.base_testcase import BaseTestCase
+import zipfile
+import pytest
 
 class Test_TVBZenodoDataset(BaseTestCase):
      
     
     def test_extract(self):
 
-        tvb_data = TVBZenodoDataset()
-        connectivity66_dir = Path(tvb_data.fetch_data("connectivity_66.zip"))
+        dataset = TVBZenodoDataset()
+        connectivity66_dir = Path(dataset.fetch_data("connectivity_66.zip"))
+
+        assert str(connectivity66_dir).endswith(".zip")
         assert connectivity66_dir.is_file()
-        tvb_data.delete_data()
+        dataset.delete_data()
         assert not connectivity66_dir.is_file() 
 
-        tvb_data = TVBZenodoDataset(version="2.0.3", extract_dir="tvb_data")
-        connectivity66_dir = Path(tvb_data.fetch_data("connectivity_66.zip"))
-        assert connectivity66_dir.is_file()
-        tvb_data.delete_data()
+        dataset = TVBZenodoDataset(version="2.0.3", extract_dir="dataset")
+        connectivity66_dir = Path(dataset.fetch_data("connectivity_66.zip"))
+
+        assert str(connectivity66_dir).endswith(".zip")
+        assert "dataset" in str(connectivity66_dir)
+        assert (Path.cwd()/"dataset").is_dir()
+        assert (Path.cwd()/"dataset"/"tvb_data").is_dir()
+        dataset.delete_data()
         assert not connectivity66_dir.is_file() 
 
-        tvb_data =  TVBZenodoDataset(version="2.0.3", extract_dir="~/tvb_data") 
-        matfile_dir = Path(tvb_data.fetch_data("local_connectivity_80k.mat"))
+        dataset =  TVBZenodoDataset(version="2.0.3", extract_dir="~/dataset") 
+        matfile_dir = Path(dataset.fetch_data("local_connectivity_80k.mat"))
+        
+        assert str(matfile_dir).endswith(".mat")
         assert matfile_dir.is_file()
-        tvb_data.delete_data()
+        dataset.delete_data()
         assert not matfile_dir.is_file()
 
 
-        all_extract = Path(TVBZenodoDataset(version = "2.0.3", extract_dir="~/tvb_data").fetch_data(" ConnectivityTable_regions.xls"))
-        assert all_extract.is_file()
-        tvb_data.delete_data()
-        assert not all_extract.is_file()
+        
+        excel_extract = Path(dataset.fetch_data(" ConnectivityTable_regions.xls"))
+        assert excel_extract.is_file()
+        dataset.delete_data()
+        assert not excel_extract.is_file()
+
+
+        
+        all_extract =Path(dataset.fetch_all_data())
+        assert all_extract.is_dir()
+        assert all_extract
+
+        dataset.delete_data()    
+
+    def test_check_content(self):
+
+        #check if connectivity_66 contains expected files.
+        dataset = TVBZenodoDataset()
+        connectivity66_dir = Path(dataset.fetch_data("connectivity_66.zip"))
+
+        assert "centres.txt" in zipfile.ZipFile(connectivity66_dir).namelist()
+        assert "info.txt" in zipfile.ZipFile(connectivity66_dir).namelist()
+        assert "tract_lengths.txt" in zipfile.ZipFile(connectivity66_dir).namelist()
+        assert "weights.txt" in zipfile.ZipFile(connectivity66_dir).namelist()
+
+        
+        dataset = TVBZenodoDataset(version= "2.0.3", extract_dir="~/dataset")
+        connectivity66_dir = Path(dataset.fetch_data("connectivity_66.zip"))
+        assert "centres.txt" in zipfile.ZipFile(connectivity66_dir).namelist()
+        assert "info.txt" in zipfile.ZipFile(connectivity66_dir).namelist()
+        assert "tract_lengths.txt" in zipfile.ZipFile(connectivity66_dir).namelist()
+        assert "weights.txt" in zipfile.ZipFile(connectivity66_dir).namelist()
+
+        dataset = TVBZenodoDataset(version="2.0.3", extract_dir="~/dataset")
+        extract_dir = dataset.fetch_all_data()
+        assert (extract_dir/ "tvb_data" /"mouse"/"allen_2mm"/"Connectivity.h5").is_file()
+        assert (extract_dir/ "tvb_data" /"surfaceData"/"inner_skull_4096.zip").is_file()
+        
+
+         
+
+    def test_file_name_variants(self):
+        dataset = TVBZenodoDataset(version= "2.0.3", extract_dir="~/dataset")
+        connectivity66_dir_1 = Path(dataset.fetch_data("connectivity_66.zip"))
+        connectivity66_dir_2 = Path(dataset.fetch_data('tvb_data/connectivity/connectivity_66.zip'))
+        assert connectivity66_dir_1 == connectivity66_dir_2
+
+        dataset.delete_data()
+
+        dataset = TVBZenodoDataset()
+        connectivity66_dir_1 = Path(dataset.fetch_data("connectivity_66.zip"))
+        connectivity66_dir_2 = Path(dataset.fetch_data('tvb_data/connectivity/connectivity_66.zip'))
+        assert connectivity66_dir_1 == connectivity66_dir_2
+
+        dataset.delete_data()
+
+        
+        dataset = TVBZenodoDataset(version= "2.0.3", extract_dir="dataset")
+        connectivity66_dir_1 = Path(dataset.fetch_data("connectivity_66.zip"))
+        connectivity66_dir_2 = Path(dataset.fetch_data('tvb_data/connectivity/connectivity_66.zip'))
+        assert connectivity66_dir_1 == connectivity66_dir_2
+
+        dataset.delete_data()
+
+
+        # should raise error cause there are two files with name mapping_FS_84.txt
+        with pytest.raises(NameError):
+            dataset = TVBZenodoDataset()
+            data = dataset.fetch_data("mapping_FS_84.txt")
+        
+        # no error when relative path given
+        dataset = TVBZenodoDataset()
+        data = Path(dataset.fetch_data(" tvb_data/macaque/mapping_FS_84.txt"))
+        assert data.is_file()
+        
+        data = Path(dataset.fetch_data('tvb_data/nifti/volume_mapping/mapping_FS_84.txt'))
+        assert data.is_file()
+
+        dataset.delete_data()
+
+
+            
+
+
+        
+
+    
+        
+        
+         
+
 
     #TODO add no interenet tests
