@@ -1,6 +1,6 @@
 name: Test Notebooks
-on: pull_request
-    push
+on: pull_request:
+    push:
 
 jobs:
   build:
