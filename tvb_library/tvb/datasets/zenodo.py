@@ -53,7 +53,13 @@ class Record:
 
    
 
-    def download(self, path: str = None) -> None:
+    def download(self, path: str = None, fname=None) -> None:
+        """
+        Download the files entity from the json response at `path`. If the `path` is None, the data is downloaded at os caches. 
+
+        For more info about os cache, have a look at https://www.fatiando.org/pooch/latest/api/generated/pooch.os_cache.html. 
+        In our use case, the <AppName> is `tvb`.
+        """
 
         if 'files' not in self.data:
             raise AttributeError("No files to download! Please check if the record id entered is correct! or the data is publically accessible")
@@ -61,13 +67,16 @@ class Record:
         
         if path == None:
             path = pooch.os_cache("tvb")
+        
+        #convert pathlib.Path objects to strings. 
+        path = str(path) 
 
         for file in self.data["files"]:
             url = file['links']['self']
             known_hash = file['checksum']
             file_name = file['key']
             
-            file_path = pooch.retrieve(url= url, known_hash= known_hash, path = path,progressbar = True)
+            file_path = pooch.retrieve(url= url, known_hash= known_hash, path = path, fname=fname ,progressbar = True)
 
             self.file_loc[f'{file_name}'] = file_path
 
@@ -85,7 +94,7 @@ class Record:
         return self.data['conceptrecid']
 
     def is_open_access(self) -> str:
-        return self.data['metadata']['access_right'] != "closed"
+        return self.data['metadata']['access_right'] == "open"
     
     def __eq__(self, record_b) -> bool:
         return (self.data == record_b.data)

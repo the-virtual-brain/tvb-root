@@ -33,6 +33,7 @@
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from pathlib import Path
+from zipfile import ZipFile
 
 class BaseDataset:
 
@@ -53,12 +54,29 @@ class BaseDataset:
 
     def fetch_data(self, file_name):
         if Path(file_name).is_absolute():
+            self.log.warning("Given file name is an absolute path. No operations are done. The path is returned as it is")
             return file_name
         
         return self._fetch_data(file_name)
     
     def _fetch_data(self, file_name):
         pass
+
+    def read_zipfile_structure(self, file_path):
+        """
+        Reads the zipfile structure and returns the dictionary containing file_names as keys and list of relative paths having same file name. 
+        """
+        with ZipFile(file_path) as zf:
+            file_names_in_zip = zf.namelist()
+        zf.close()      
+
+        file_names_dict = {}
+        for i in file_names_in_zip:
+            if str(Path(i).name) not in file_names_dict.keys():
+                file_names_dict[str(Path(i).name)] = [i]
+            else:
+                file_names_dict[str(Path(i).name)].append(i)
+        return file_names_dict
 
     def get_version(self):
         return self.version

@@ -53,7 +53,8 @@ TVB_ROOT = os.path.dirname(os.path.dirname(BIN_FOLDER))
 FW_FOLDER = os.path.join(TVB_ROOT, 'tvb_framework')
 LICENSE_PATH = os.path.join(FW_FOLDER, 'LICENSE')
 RELEASE_NOTES_PATH = os.path.join(TVB_ROOT, 'tvb_documentation', 'RELEASE_NOTES')
-DATA_SRC_FOLDER = TVBZenodoDataset().extract_dir
+dataset = TVBZenodoDataset()
+DATA_SRC_FOLDER = dataset.extract_dir / 'tvb_data'
 DEMOS_MATLAB_FOLDER = os.path.join(TVB_ROOT, 'tvb_documentation', 'matlab')
 
 # dest paths
@@ -114,6 +115,10 @@ INCLUDED_INSIDE_DATA = [
     "mouse/allen_2mm/RegionVolumeMapping.h5",
 ]
 
+def fetch_data_to_include(filenames_list, dataset):
+    for i in filenames_list:
+        dataset.fetch_data("tvb_data/"+i)
+    
 
 def _copy_dataset(dataset_files, dataset_destination):
     for pth in dataset_files:
@@ -230,6 +235,7 @@ def build_step1():
     shutil.copytree(DEMOS_MATLAB_FOLDER, os.path.join(DIST_FOLDER, 'matlab'),
                     ignore=shutil.ignore_patterns('.svn', '*.rst'))
 
+    fetch_data_to_include(INCLUDED_INSIDE_DATA, dataset)
     copy_distribution_dataset()
 
     _copy_demos_collapsed({os.path.join("..", "tvb_documentation", "demos"): os.path.join(DIST_FOLDER, "demo_scripts"),
