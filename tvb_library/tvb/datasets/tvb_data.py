@@ -154,8 +154,10 @@ class TVBZenodoDataset(BaseDataset):
         for  file_paths in self.files_in_zip_dict.values():
             for file_path in file_paths:
                 self.fetch_data(file_path)
-        
-        return str(self.extract_dir / 'tvb_data')
+
+        if self.extract_dir.is_absolute():
+            return str(self.extract_dir)
+        return str(Path.cwd()/self.extract_dir)
 
 
     def delete_data(self):
