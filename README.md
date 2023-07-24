@@ -1,5 +1,11 @@
 
 # The Virtual Brain
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=the-virtual-brain_tvb-root&metric=alert_status)](https://sonarcloud.io/summary/overall?id=the-virtual-brain_tvb-root)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=the-virtual-brain_tvb-root&metric=sqale_rating)](https://sonarcloud.io/summary/overall?id=the-virtual-brain_tvb-root)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=the-virtual-brain_tvb-root&metric=security_rating)](https://sonarcloud.io/summary/overall?id=the-virtual-brain_tvb-root)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=the-virtual-brain_tvb-root&metric=vulnerabilities)](https://sonarcloud.io/summary/overall?id=the-virtual-brain_tvb-root)
+[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=the-virtual-brain_tvb-root&metric=duplicated_lines_density)](https://sonarcloud.io/summary/overall?id=the-virtual-brain_tvb-root)
+[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=the-virtual-brain_tvb-root&metric=ncloc)](https://sonarcloud.io/summary/overall?id=the-virtual-brain_tvb-root)
 
 "The Virtual Brain" Project (TVB Project) has the purpose of offering 
 modern tools to the Neurosciences community, for computing, simulating
