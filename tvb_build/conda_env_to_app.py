@@ -389,7 +389,7 @@ def _create_plist():
         plistlib.dump(info_plist_data, fp)
 
 
-def sign_app(app_path=APP_FILE):
+def sign_app(app_path=APP_FILE, app_zip_path=os.path.join(OUTPUT_FOLDER, "tvb.zip"), ent_file="app.entitlements"):
     """
     Sign a .APP file, with an Apple Developer Identity previously installed on the current machine.
     The identity needs to show when executing command "security find-identity"
@@ -397,29 +397,10 @@ def sign_app(app_path=APP_FILE):
     if KEY_SIGN_IDENTITY not in os.environ or KEY_MAC_PWD not in os.environ:
         _log(f"!! We can not sign the resulting .app because the {KEY_SIGN_IDENTITY} and "
              f"{KEY_MAC_PWD} variables are not in ENV!!")
+        return
     dev_identity = os.environ.get(KEY_SIGN_IDENTITY)
     mac_pwd = os.environ.get(KEY_MAC_PWD)
     _log(f"Preparing to sign: {app_path} with {dev_identity}")
-
-    # Create app.entitlements file with the application allowed security allowed points
-    ent_file = "app.entitlements"
-    if os.path.exists(ent_file):
-        os.remove(ent_file)
-    with open(ent_file, 'w') as fp:
-        fp.write("""
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-        <dict>
-            <key>com.apple.security.app-sandbox</key>
-            <true/>
-            <key>com.apple.security.network.client</key>
-            <true/>
-            <key>com.apple.security.network.server</key>
-            <true/>
-        </dict>
-    </plist>
-    """)
 
     # Some of the following command are just for debug purposes. Codesign is the critical one!
     # we also need for over SSH run to unlock the keychain, otherwise we can not sign
@@ -429,8 +410,8 @@ def sign_app(app_path=APP_FILE):
     os.system(command)
     os.system(f"spctl -a -t exec -vv '{app_path}'")
     os.system(f"codesign --verify --verbose=4 '{app_path}'")
-    if os.path.exists(ent_file):
-        os.remove(ent_file)
+    os.system(f"/usr/bin/ditto -c -k --keepParent '{app_path}' '{app_zip_path}'")
+    # os.system(f"xcrun notarytool submit '{app_zip_path}' --keychain-profile tvb --wait --webhook 'https://example.com/notarization'")
 
 
 def create_dmg():
