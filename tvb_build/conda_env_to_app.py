@@ -459,6 +459,7 @@ def sign_app(app_path=APP_FILE, app_zip_path=os.path.join(OUTPUT_FOLDER, "tvb.zi
               f"--wait --webhook 'https://example.com/notarization'")
     os.system(f"spctl -a -t exec -vv '{app_path}'")
     # xcrun notarytool log --keychain-profile "tvb" {ID from submit command: 72c04616-8f6a-401d-94f5-c20d47e35138} errors.txt
+    os.remove(app_zip_path)
 
 
 def create_dmg():
