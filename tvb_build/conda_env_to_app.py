@@ -408,7 +408,7 @@ def _should_be_signed(current_path):
 
 
 def _codesign_inside(root_path, command_prefix, dev_identity, ent_file):
-    _log(f"Signing in folder {root_path}", 2)
+    # _log(f"Signing in folder {root_path}", 2)
     for path_sufix in os.listdir(root_path):
         current_path = os.path.join(root_path, path_sufix)
         if _should_be_signed(current_path):
