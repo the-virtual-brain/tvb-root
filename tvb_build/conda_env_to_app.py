@@ -408,17 +408,17 @@ def _should_be_signed(current_path):
 
 
 def _codesign_inside(root_path, command_prefix, dev_identity, ent_file):
+    _log(f"Signing in folder {root_path}", 2)
     for path_sufix in os.listdir(root_path):
         current_path = os.path.join(root_path, path_sufix)
         if _should_be_signed(current_path):
-            _log(f"Signing {current_path}", 2)
             os.system(f"{command_prefix} codesign -s '{dev_identity}' -o runtime -f "
                       f"--timestamp --entitlements {ent_file} '{current_path}'")
         if os.path.isdir(current_path) and not os.path.islink(current_path):
             _codesign_inside(current_path, command_prefix, dev_identity, ent_file)
 
 
-def sign_app(app_path=APP_FILE, app_zip_path=os.path.join(OUTPUT_FOLDER, "tvb.zip"), ent_file="app.entitlements"):
+def sign_app(app_path=APP_FILE, app_zip_path=os.path.join(OUTPUT_FOLDER, "tvb.zip"), ent_file="tvb_build/app.entitlements"):
     """
     Sign a .APP file, with an Apple Developer Identity previously installed on the current machine.
     The identity can be found through command "security find-identity".
