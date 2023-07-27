@@ -414,7 +414,7 @@ def _codesign_inside(root_path, command_prefix, dev_identity, ent_file):
         if _should_be_signed(current_path):
             # _log(f"Signing  {current_path}", 2)
             os.system(f"{command_prefix} codesign -s '{dev_identity}' -o runtime -f "
-                      f"--timestamp --entitlements {ent_file} '{current_path}'")
+                      f"--timestamp --entitlements '{ent_file}' '{current_path}'")
         if os.path.isdir(current_path) and not os.path.islink(current_path):
             _codesign_inside(current_path, command_prefix, dev_identity, ent_file)
 
@@ -449,7 +449,7 @@ def sign_app(app_path=APP_FILE, app_zip_path=os.path.join(OUTPUT_FOLDER, "tvb.zi
     _codesign_inside(os.path.join(app_path, "Contents", "Resources", "sbin"), prefix, dev_identity, inner_ent)
     _codesign_inside(os.path.join(app_path, "Contents", "Resources", "lib"), prefix, dev_identity, inner_ent)
     _log(f"Signing the main APP {app_path} with {ent_file}", 2)
-    os.system(f"{prefix} codesign -s '{dev_identity}' -f --timestamp -o runtime --entitlements {ent_file} '{app_path}'")
+    os.system(f"{prefix} codesign -s '{dev_identity}' -f --timestamp -o runtime --entitlements '{ent_file}' '{app_path}'")
     # Check the signing results
     os.system(f"spctl -a -t exec -vv '{app_path}'")
     os.system(f"codesign --verify --verbose=4 '{app_path}'")
