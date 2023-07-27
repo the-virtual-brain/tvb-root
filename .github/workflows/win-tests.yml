@@ -30,7 +30,7 @@ jobs:
         if: steps.cache-local.outputs.cache-hit != 'true'
         run: |
           python -m pip install --upgrade setuptools pip wheel 
-          pip install -U numpy cython scikit-build allensdk==0.16.3
+          pip install -U numpy cython scikit-build
           pip install -r tvb_framework/requirements.txt
           pip install --no-build-isolation tvb-gdist
 
