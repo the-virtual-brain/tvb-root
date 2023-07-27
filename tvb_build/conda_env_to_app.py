@@ -389,29 +389,74 @@ def _create_plist():
         plistlib.dump(info_plist_data, fp)
 
 
+excluded_parts = [".dist-info", "egg-info", "ignore", "COPYING", "Makefile", "README", "LICENSE",
+                  "draft", ".prettierrc", "zoneinfo/", "_vendored"]
+
+
+def _should_be_signed(current_path):
+    if os.path.islink(current_path) or os.path.isdir(current_path):
+        return False
+    file_ext = os.path.splitext(current_path)[1]
+    if file_ext in (".dylib", ".so"):
+        return True
+    if file_ext in ("", ".10", ".6", ".local"):
+        for excl in excluded_parts:
+            if excl in current_path:
+                return False
+        return os.system("file -b " + current_path + " | grep text > /dev/null")
+    return False
+
+
+def _codesign_inside(root_path, command_prefix, dev_identity, ent_file):
+    for path_sufix in os.listdir(root_path):
+        current_path = os.path.join(root_path, path_sufix)
+        if _should_be_signed(current_path):
+            _log(f"Signing {current_path}", 2)
+            os.system(f"{command_prefix} codesign -s '{dev_identity}' -o runtime -f "
+                      f"--timestamp --entitlements {ent_file} '{current_path}'")
+        if os.path.isdir(current_path) and not os.path.islink(current_path):
+            _codesign_inside(current_path, command_prefix, dev_identity, ent_file)
+
+
 def sign_app(app_path=APP_FILE, app_zip_path=os.path.join(OUTPUT_FOLDER, "tvb.zip"), ent_file="app.entitlements"):
     """
     Sign a .APP file, with an Apple Developer Identity previously installed on the current machine.
-    The identity needs to show when executing command "security find-identity"
+    The identity can be found through command "security find-identity".
+
+    We expect these as ENV variables of Jenskins build machine:
+        - SIGN_APP_IDENTITY - to be found with `security find-identity` command
+        - MAC_PASSWORD
     """
     if KEY_SIGN_IDENTITY not in os.environ or KEY_MAC_PWD not in os.environ:
         _log(f"!! We can not sign the resulting .app because the {KEY_SIGN_IDENTITY} and "
              f"{KEY_MAC_PWD} variables are not in ENV!!")
         return
+
     dev_identity = os.environ.get(KEY_SIGN_IDENTITY)
     mac_pwd = os.environ.get(KEY_MAC_PWD)
     _log(f"Preparing to sign: {app_path} with {dev_identity}")
 
-    # Some of the following command are just for debug purposes. Codesign is the critical one!
-    # we also need for over SSH run to unlock the keychain, otherwise we can not sign
-    command = f"security unlock-keychain -p {mac_pwd} /Users/tvb/Library/Keychains/login.keychain && " \
-              f"codesign -s '{dev_identity}' -f --timestamp -o runtime --entitlements app.entitlements '{app_path}'"
-    os.system(f"security find-identity")
-    os.system(command)
+    os.system(f"security find-identity")  # for debug purposes only, to find the current installed keys on this machine
+
+    # When executing signing over SSH (like Jenkins does), we first need to unclock the keychain
+    prefix = f"security unlock-keychain -p {mac_pwd} /Users/tvb/Library/Keychains/login.keychain &&"
+    _codesign_inside(os.path.join(app_path, "Contents", "Resources", "bin"), prefix, dev_identity, ent_file)
+    _codesign_inside(os.path.join(app_path, "Contents", "Resources", "sbin"), prefix, dev_identity, ent_file)
+    _codesign_inside(os.path.join(app_path, "Contents", "Resources", "lib"), prefix, dev_identity, ent_file)
+    _log(f"Signing the main APP {app_path} with {ent_file}", 2)
+    os.system(f"{prefix} codesign -s '{dev_identity}' -f --timestamp -o runtime --entitlements {ent_file} '{app_path}'")
+    # Check the signing process
     os.system(f"spctl -a -t exec -vv '{app_path}'")
     os.system(f"codesign --verify --verbose=4 '{app_path}'")
+    _log(f"Compressing the main APP {app_path} into {app_zip_path}", 2)
     os.system(f"/usr/bin/ditto -c -k --keepParent '{app_path}' '{app_zip_path}'")
-    # os.system(f"xcrun notarytool submit '{app_zip_path}' --keychain-profile tvb --wait --webhook 'https://example.com/notarization'")
+
+    # Storing credential has to me done once on the build machine before we can submit for notarization:
+    # xcrun notarytool store-credentials --apple-id {env.SIGN_APPLE_ID} --password {env.SIGN_APP_PASSWORD} --team-id {env.SIGN_TEAM_ID} --verbose --keychain-profile "tvb"
+    _log(f"Submitting for notarization {app_zip_path} ...")
+    os.system(f"xcrun notarytool submit '{app_zip_path}' --keychain-profile 'tvb' "
+              f"--wait --webhook 'https://example.com/notarization'")
+    # xcrun notarytool log --keychain-profile "tvb" {ID from submit command: 72c04616-8f6a-401d-94f5-c20d47e35138} errors.txt
 
 
 def create_dmg():
@@ -490,4 +535,5 @@ def _fix_paths():
 
 if __name__ == "__main__":
     create_app()
+    sign_app()
     create_dmg()
