@@ -462,8 +462,10 @@ def sign_app(app_path=APP_FILE, app_zip_path=os.path.join(OUTPUT_FOLDER, "tvb.zi
     _log(f"Submitting for notarization {app_zip_path} ...")
     os.system(f"{prefix} xcrun notarytool submit '{app_zip_path}' --keychain-profile 'tvb' "
               f"--wait --webhook 'https://example.com/notarization'")
-    os.system(f"spctl -a -t exec -vv '{app_path}'")
     # xcrun notarytool log --keychain-profile "tvb" {ID from submit command: 72c04616-8f6a-401d-94f5-c20d47e35138} errors.txt
+    # Staple the notarization ticket and inspect status after
+    os.system(f"xcrun stapler staple  '{app_path}'")
+    os.system(f"spctl -a -t exec -vv '{app_path}'")
     os.remove(app_zip_path)
 
 
