@@ -445,17 +445,19 @@ def sign_app(app_path=APP_FILE, app_zip_path=os.path.join(OUTPUT_FOLDER, "tvb.zi
     _codesign_inside(os.path.join(app_path, "Contents", "Resources", "lib"), prefix, dev_identity, ent_file)
     _log(f"Signing the main APP {app_path} with {ent_file}", 2)
     os.system(f"{prefix} codesign -s '{dev_identity}' -f --timestamp -o runtime --entitlements {ent_file} '{app_path}'")
-    # Check the signing process
+    # Check the signing results
     os.system(f"spctl -a -t exec -vv '{app_path}'")
     os.system(f"codesign --verify --verbose=4 '{app_path}'")
+
     _log(f"Compressing the main APP {app_path} into {app_zip_path}", 2)
     os.system(f"/usr/bin/ditto -c -k --keepParent '{app_path}' '{app_zip_path}'")
 
     # Storing credential has to me done once on the build machine before we can submit for notarization:
     # xcrun notarytool store-credentials --apple-id {env.SIGN_APPLE_ID} --password {env.SIGN_APP_PASSWORD} --team-id {env.SIGN_TEAM_ID} --verbose --keychain-profile "tvb"
     _log(f"Submitting for notarization {app_zip_path} ...")
-    os.system(f"xcrun notarytool submit '{app_zip_path}' --keychain-profile 'tvb' "
+    os.system(f"{prefix} xcrun notarytool submit '{app_zip_path}' --keychain-profile 'tvb' "
               f"--wait --webhook 'https://example.com/notarization'")
+    os.system(f"spctl -a -t exec -vv '{app_path}'")
     # xcrun notarytool log --keychain-profile "tvb" {ID from submit command: 72c04616-8f6a-401d-94f5-c20d47e35138} errors.txt
 
 
