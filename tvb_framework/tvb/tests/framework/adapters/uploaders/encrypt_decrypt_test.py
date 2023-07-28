@@ -32,6 +32,8 @@ import os
 import pyAesCrypt
 import pytest
 from tvb.datasets import TVBZenodoDataset
+
+import tempfile
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
