@@ -46,6 +46,7 @@ TEST_SUBJECT_B = "TEST_SUBJECT_B"
 
 class TestCSVConnectivityParser(BaseTestCase):
     
+    
     def test_parse_happy(self):
         cap_pth = TVBZenodoDataset().fetch_data('output_ConnectionDistanceMatrix.csv')
 

@@ -49,12 +49,14 @@ class TestEncryptionDecryption(TransactionalTestCase):
 
     dataset = TVBZenodoDataset()
     # noinspection PyTypeChecker
+
     @pytest.mark.parametrize(" file_name", [('connectivity_76.zip'),
                                                      ( 'cortex_2x120k.zip'),
                                                      ( 'projection_meg_276_surface_16k.npy'),
                                                      ( 'TimeSeriesRegion.h5')])
     def test_encrypt_decrypt(self,  file_name):
         handler = StorageInterface.get_import_export_encryption_handler()
+
 
         # Generate a private key and public key
         private_key = rsa.generate_private_key(
