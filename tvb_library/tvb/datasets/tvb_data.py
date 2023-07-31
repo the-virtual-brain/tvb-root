@@ -31,19 +31,20 @@
 import os
 import requests
 import json
-import pooch
+
 from pathlib import Path
 from zipfile import ZipFile
 import shutil
 
+
 from .base import BaseDataset
-from .zenodo import Zenodo, Record, BASE_URL
+from .zenodo import Record, BASE_URL, Zenodo
 
 class TVBZenodoDataset(BaseDataset):
 
     CONCEPTID = "3417206"
     
-    def __init__(self, version= "2.7", extract_dir = None):
+    def __init__(self, version : str= "2.7", extract_dir : str = None):
         """
         Constructor for TVB_Data class 
 
@@ -67,30 +68,14 @@ class TVBZenodoDataset(BaseDataset):
             self.cached_dir.mkdir(parents=True)
 
         try:
-            self.recid = self.read_cached_response()[version]['conceptrecid']
+            self.recid = self._read_cached_response()[version]['conceptrecid']
             
         except :
             self.log.warning(f"Failed to read data from cached response.")
             self.recid = Zenodo().get_versions_info(self.CONCEPTID)[version]            
-            self.update_cached_response()
+            self._update_cached_response()
          
-        self.rec = Record(self.read_cached_response()[self.version])
-
-    def download(self, path=None, fname=None):
-        """
-        Downloads the dataset to `path`
-        parameters
-        -----------
-        path: 
-            - path where you want to download the Dataset.
-            - If `path` is None, Dataset is downloaded at location according to your profile settings. 
-        fname: 
-            - The name that will be used to save the file. Should NOT include the full the path, just the file name (it will be appended to path). 
-            - If fname is None, file will be saved with a unique name that contains hash of the file and the last part of the url from where the file would be fetched. 
-        """
-        if path == None:
-            path = self.cached_dir
-        self.rec.download(path, fname)
+        self.rec = Record(self._read_cached_response()[self.version])
 
     def _fetch_data(self, file_name):        
         """
@@ -110,11 +95,11 @@ class TVBZenodoDataset(BaseDataset):
         try:
             file_path = self.rec.file_loc['tvb_data.zip']
         except:
-            self.download(path = self.cached_dir, fname=f"tvb_data_{self.version}.zip")
+            self._download(path = self.cached_dir, fname=f"tvb_data_{self.version}.zip")
             file_path = self.rec.file_loc['tvb_data.zip']
 
         if self.files_in_zip_dict == None:
-            self.files_in_zip_dict = self.read_zipfile_structure(file_path=file_path)
+            self.files_in_zip_dict = self._read_zipfile_structure(file_path=file_path)
 
         file_name = file_name.strip()
 
@@ -143,12 +128,23 @@ class TVBZenodoDataset(BaseDataset):
                            file_name should be one of the following paths: {self.files_in_zip_dict[file_name]}""")
             raise NameError(f"file name should be one of the {self.files_in_zip_dict[file_name]}, but got {file_name}")
 
+    def describe(self):
+        """
+        Returns the project description mentioned on the zenodo website. 
+        """
+        return self.rec.describe()
+
+    def get_recordid(self):
+        """
+        returns record id of the dataset  
+        """
+        return self.recid
 
     def fetch_all_data(self):
 
         if self.files_in_zip_dict == None:
-            self.download(path = self.cached_dir, fname=f"tvb_data_{self.version}.zip")
-            self.files_in_zip_dict = self.read_zipfile_structure(self.rec.file_loc['tvb_data.zip'])
+            self._download(path = self.cached_dir, fname=f"tvb_data_{self.version}.zip")
+            self.files_in_zip_dict = self._read_zipfile_structure(self.rec.file_loc['tvb_data.zip'])
  
         
         for  file_paths in self.files_in_zip_dict.values():
@@ -168,8 +164,23 @@ class TVBZenodoDataset(BaseDataset):
         shutil.rmtree(_dir)
         self.log.info(f"deleting {self.extract_dir/'tvb_data'} directory.")
 
+    def _download(self, path=None, fname=None):
+        """
+        Downloads the dataset to `path`
+        parameters
+        -----------
+        path: 
+            - path where you want to download the Dataset.
+            - If `path` is None, Dataset is downloaded at location according to your profile settings. 
+        fname: 
+            - The name that will be used to save the file. Should NOT include the full the path, just the file name (it will be appended to path). 
+            - If fname is None, file will be saved with a unique name that contains hash of the file and the last part of the url from where the file would be fetched. 
+        """
+        if path == None:
+            path = self.cached_dir
+        self.rec.download(path, fname)
 
-    def update_cached_response(self):
+    def _update_cached_response(self):
         """
         Gets responses from zenodo server and saves them to a cache file. 
         """
@@ -194,7 +205,7 @@ class TVBZenodoDataset(BaseDataset):
         self.log.warning("Updated the cache response file")
         return 
 
-    def read_cached_response(self):
+    def _read_cached_response(self):
         """
         Reads responses from the cache file.
         """
@@ -207,21 +218,3 @@ class TVBZenodoDataset(BaseDataset):
 
         responses = dict(responses)
         return responses
-
-    
-    def describe(self):
-        """
-        Returns the project description mentioned on the zenodo website. 
-        """
-        return self.rec.describe()
-
-    def get_recordid(self):
-        """
-        returns record id of the dataset  
-        """
-        return self.recid
-
-    def __eq__(self, other):
-        if isinstance(other, TVBZenodoDataset):
-            return self.rec == other.rec
-        return False

@@ -37,7 +37,7 @@ from zipfile import ZipFile
 
 class BaseDataset:
 
-    def __init__(self, version, extract_dir=None):
+    def __init__(self, version : str , extract_dir : str =None) -> None:
 
         self.log = get_logger(self.__class__.__module__)
         self.cached_files = None
@@ -49,20 +49,20 @@ class BaseDataset:
         self.extract_dir = Path(extract_dir).expanduser()
  
 
-    def download(self):
-        pass
-
-    def fetch_data(self, file_name):
+    def fetch_data(self, file_name:str) -> str:
         if Path(file_name).is_absolute():
             self.log.warning("Given file name is an absolute path. No operations are done. The path is returned as it is")
             return file_name
         
         return self._fetch_data(file_name)
-    
-    def _fetch_data(self, file_name):
-        pass
 
-    def read_zipfile_structure(self, file_path):
+    def get_version(self) -> str:
+        return self.version
+    
+    def delete_data(self):
+        raise NotImplemented
+
+    def _read_zipfile_structure(self, file_path):
         """
         Reads the zipfile structure and returns the dictionary containing file_names as keys and list of relative paths having same file name. 
         """
@@ -78,5 +78,8 @@ class BaseDataset:
                 file_names_dict[str(Path(i).name)].append(i)
         return file_names_dict
 
-    def get_version(self):
-        return self.version
+    def _fetch_data(self,file_name):
+        raise NotImplemented
+    
+    def _download(self):
+        raise NotImplemented
