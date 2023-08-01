@@ -99,7 +99,7 @@ class TvbProfile(object):
 
         else:
             msg = "Invalid profile name %r, expected one of %r"
-            msg %= (selected_profile, cls.REGISTERED_PROFILES)
+            msg %= (selected_profile, cls.REGISTERED_PROFILES.keys())
             raise Exception(msg)
 
     @classmethod
