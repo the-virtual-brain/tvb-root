@@ -95,7 +95,7 @@
     <dependency env="[win,mac,linux]" name="anyio">
         <full-name value="anyio"/>
         <project-home value="https://github.com/agronholm/anyio"/>
-        <version value="3.7.1"/>
+        <version value="[3.7.0,3.7.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_anyio.txt"/>
         <license-type value="MIT_"/>
@@ -240,7 +240,7 @@
     <dependency env="[win,linux]" name="beautifulsoup4">
         <full-name value="Beautiful Soup (BS4)"/>
         <project-home value="http://www.crummy.com/software/BeautifulSoup"/>
-        <version value="[4.11.1]"/>
+        <version value="[4.12.2]"/>
         <usage value="static linking"/>
         <license value="LICENSE_bs4.txt"/>
         <license-type value="MIT_"/>
@@ -300,7 +300,7 @@
     <dependency env="[win,mac,linux]" name="certifi">
         <full-name value="Certifi"/>
         <project-home value="http://certifi.io/en/latest/"/>
-        <version value="[2023.07.22]"/>
+        <version value="[2023.07.22,2023.5.7]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_certifi.txt"/>
         <license-type value="ISC_"/>
@@ -361,7 +361,7 @@
     <dependency env="[win]" name="click">
         <full-name value="Click"/>
         <project-home value="http://github.com/mitsuhiko/click"/>
-        <version value="8.1.6"/>
+        <version value="[8.1.3,8.1.6]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_click.txt"/>
         <license-type value="BSD_"/>
@@ -473,7 +473,7 @@
     <dependency env="[win,linux]" name="cython">
         <full-name value="Cython"/>
         <project-home value="http://cython.org/"/>
-        <version value="[3.0.0]"/>
+        <version value="[0.29.33,3.0.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_cython.txt"/>
         <license-type value="Apache_ 2"/>
@@ -620,6 +620,16 @@
                 value="This is an easy-to-use implementation of ECDSA cryptography (Elliptic Curve Digital Signature Algorithm)."/>
     </dependency>
     <dependency env="[win,mac,linux]" name="elastic_transport">
+        <full-name value="elastic_transport"/>
+        <project-home value="https://pypi.org/project/elastic-transport/"/>
+        <version value="8.4.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_elasticsearch.txt"/>
+        <license-type value="Apache_ 2"/>
+        <copyright-notice value="Copyright Seth Michael Larson"/>
+        <description value="Python transport client for Elasticsearch"/>
+    </dependency>
+    <dependency env="[win,mac,linux]" name="elastic-transport">
         <full-name value="elastic-transport"/>
         <project-home value="https://pypi.org/project/elastic-transport/"/>
         <version value="8.4.0"/>
@@ -1248,7 +1258,7 @@
     <dependency env="[win,mac,linux]" name="jupyterlab-widgets">
         <full-name value="Jupyterlab-Widgets"/>
         <project-home value="https://jupyter.org/"/>
-        <version value="3.0.5"/>
+        <version value="3.0.8"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jupyterlab.txt"/>
         <license-type value="BSD_ 3nd clause"/>
@@ -1268,7 +1278,7 @@
     <dependency env="[win,mac,linux]" name="pyjwt">
         <full-name value="JWT"/>
         <project-home value="https://github.com/davedoesdev/python-jwt"/>
-        <version value="2.6.0"/>
+        <version value="2.7.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jwt.txt"/>
         <license-type value="MIT_"/>
@@ -1288,7 +1298,7 @@
     <dependency env="[win,mac,linux]" name="python-keycloak">
         <full-name value="Python Keycloak"/>
         <project-home value="https://github.com/marcospereirampj/python-keycloak/"/>
-        <version value="2.0.0"/>
+        <version value="3.3.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_python-keycloak.txt"/>
         <license-type value="MIT_"/>
@@ -1340,7 +1350,7 @@
     <dependency env="[win,linux, mac]" name="pylems">
         <full-name value="pylems"/>
         <project-home value="https://github.com/LEMS/pylems"/>
-        <version value="0.6.0"/>
+        <version value="0.6.4"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_lems.txt"/>
         <license-type value="LGPLv3_"/>
@@ -1568,7 +1578,7 @@
     <dependency env="[win,mac,linux]" name="zc.lockfile">
         <full-name value="zc.lockfile"/>
         <project-home value="https://github.com/zopefoundation/zc.lockfile"/>
-        <version value="2.0"/>
+        <version value="[2.0,3.0.post1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_zc-lockfile.txt"/>
         <license-type value="ZPL"/>
@@ -1957,7 +1967,7 @@
     <dependency env="[linux]" name="pyopenssl">
         <full-name value="Python OpenSSL lib"/>
         <project-home value="https://pyopenssl.org/en/stable/"/>
-        <version value="[20.0.1,22.0.0]"/>
+        <version value="[23.0.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_openssl.txt"/>
         <license-type value="BSD_ syle"/>
@@ -2079,7 +2089,7 @@
     <dependency env="[win,linux]" name="pillow">
         <full-name value="Pillow Library"/>
         <project-home value="https://pillow.readthedocs.org/"/>
-        <version value="[9.4.0]"/>
+        <version value="[10.0.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PIL.txt"/>
         <license-type value="MIT_"/>
@@ -2110,7 +2120,7 @@
     <dependency env="[win,mac,linux]" name="pooch">
         <full-name value="pooch"/>
         <project-home value="https://pypi.org/project/pooch/"/>
-        <version value="[v1.4.0]"/>
+        <version value="[v1.4.0,1.4.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pooch.txt"/>
         <license-type value="BSD_ 3 clause"/>
@@ -2417,7 +2427,7 @@
     <dependency env="[win,linux]" name="pytest-cov">
         <full-name value="PyTest Coverage"/>
         <project-home value="https://pypi.python.org/pypi/pytest-cov"/>
-        <version value="[4.0.0]"/>
+        <version value="[4.1.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytest_cov.txt"/>
         <license-type value="MIT_"/>
@@ -2427,7 +2437,7 @@
     <dependency env="[win,linux]" name="pytest-xdist">
         <full-name value="xdist: pytest distributed testing plugin"/>
         <project-home value="https://pypi.org/project/pytest-xdist"/>
-        <version value="[3.1.0]"/>
+        <version value="[3.3.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytest_xdist.txt"/>
         <license-type value="MIT_"/>
@@ -2478,7 +2488,7 @@
     <dependency env="[win,mac,linux]" name="pytest-mock">
         <full-name value="pytest-mock"/>
         <project-home value="https://github.com/pytest-dev/pytest-mock"/>
-        <version value="3.10.0"/>
+        <version value="3.11.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytest-mock.txt"/>
         <license-type value="MIT_"/>
@@ -2563,7 +2573,7 @@
     <dependency env="[win,linux]" name="pyzmq">
         <full-name value="zeromq"/>
         <project-home value="http://zguide.zeromq.org"/>
-        <version value="[23.2.0]"/>
+        <version value="[25.1.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_zmq.txt"/>
         <license-type value="LGPLv3_"/>
@@ -2583,7 +2593,7 @@
     <dependency env="[win,linux]" name="requests-toolbelt">
         <full-name value="Requests Toolbelt"/>
         <project-home value="https://pypi.python.org/pypi/requests-toolbelt"/>
-        <version value="[0.10.1]"/>
+        <version value="[1.0.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_req_toolbelt.txt"/>
         <license-type value="Apache_ 2"/>
@@ -2603,7 +2613,7 @@
     <dependency env="[win,linux]" name="requests-oauthlib">
         <full-name value="Requests Oauthlib"/>
         <project-home value="https://pypi.org/project/requests-oauthlib/"/>
-        <version value="[3.2.2]"/>
+        <version value="[1.3.1,3.2.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_req_oauthlib.txt"/>
         <license-type value="ISC_"/>
@@ -2724,7 +2734,7 @@
     <dependency env="[win,linux]" name="scikit-build">
         <full-name value="Scikits Build"/>
         <project-home value="https://scikit-build.readthedocs.io/en/latest/"/>
-        <version value="0.16.4"/>
+        <version value="0.17.6"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_scikits_build.txt"/>
         <license-type value="MIT_"/>
@@ -3192,7 +3202,7 @@
     <dependency env="[win,linux]" name="websocket-client">
         <full-name value="websocket-client"/>
         <project-home value="https://pypi.org/project/websocket-client/"/>
-        <version value="1.4.2"/>
+        <version value="1.6.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_websocket.txt"/>
         <license-type value="Apache_ 2"/>
