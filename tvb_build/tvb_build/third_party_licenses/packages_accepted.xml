@@ -642,7 +642,7 @@
     <dependency env="[win,mac,linux]" name="elasticsearch">
         <full-name value="elasticsearch"/>
         <project-home value="https://pypi.org/project/elasticsearch/"/>
-        <version value="(8, 9, 0)"/>
+        <version value="[8.8.0,8.9.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_elasticsearch.txt"/>
         <license-type value="Apache_ 2"/>
@@ -690,6 +690,26 @@
         <copyright-notice
                 value="Original work Copyright (c) 2013 Twilio, Inc -- Modified work Copyright (c) 2014 Axel Haustant -- Modified work Copyright (c) 2020 python-restx Authors"/>
         <description value="Flask-RESTX is an extension for Flask that adds support for quickly building REST APIs."/>
+    </dependency>
+    <dependency env="[win,mac,linux]" name="flit_core">
+        <full-name value="Flit Core"/>
+        <project-home value="https://pypi.org/project/flit-core/"/>
+        <version value="3.9.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_flit.txt"/>
+        <license-type value="BSD_ 3 clause"/>
+        <copyright-notice value="Copyright (c) 2015, Thomas Kluyver and contributors"/>
+        <description value="Distribution-building parts of Flit"/>
+    </dependency>
+    <dependency env="[win,mac,linux]" name="flit-core">
+        <full-name value="Flit - Core"/>
+        <project-home value="https://pypi.org/project/flit-core/"/>
+        <version value="3.9.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_flit.txt"/>
+        <license-type value="BSD_ 3 clause"/>
+        <copyright-notice value="Copyright (c) 2015, Thomas Kluyver and contributors"/>
+        <description value="Distribution-building parts of Flit"/>
     </dependency>
     <dependency env="[win,mac,linux]" name="flot">
         <full-name value="Flot"/>
@@ -858,7 +878,7 @@
     <dependency env="[win.linux]" name="imageio">
         <full-name value="imageio"/>
         <project-home value="http://imageio.github.io/"/>
-        <version value="[2.18.1,2.31.1]"/>
+        <version value="[2.18.1,2.31.0,2.31.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_imageio.txt"/>
         <license-type value="BSD_ 2nd clause"/>
@@ -940,7 +960,7 @@
     <dependency env="[win,linux]" name="jaraco.collections">
         <full-name value="Jaraco Collections"/>
         <project-home value="https://www.jaraco.com/"/>
-        <version value="[4.1.0,4.3.0]"/>
+        <version value="[4.1.0,4.2.0,4.3.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jaraco.txt"/>
         <license-type value="MIT_"/>
@@ -960,7 +980,7 @@
     <dependency env="[win,linux]" name="jaraco.functools">
         <full-name value="Jaraco Functools"/>
         <project-home value="https://www.jaraco.com/"/>
-        <version value="[3.6.0,3.8.0]"/>
+        <version value="[3.6.0,3.7.0,3.8.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jaraco.txt"/>
         <license-type value="MIT_"/>
@@ -1084,9 +1104,9 @@
                 value="This package contains utilities for making Python packages with and without accompanying JavaScript packages."/>
     </dependency>
     <dependency env="[win,linux]" name="jupyter_server">
-        <full-name value="Jupyter"/>
+        <full-name value="Jupyter Server"/>
         <project-home value="http://jupyter.org/"/>
-        <version value="[2.5.0,2.7.0]"/>
+        <version value="[2.5.0,2.6.0,2.7.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jupyter.txt"/>
         <license-type value="BSD_ modified"/>
@@ -1096,9 +1116,9 @@
                 value="The Jupyter Server provides the backend (i.e. the core services, APIs, and REST endpoints) for Jupyter web applications like Jupyter notebook, JupyterLab, and Voila."/>
     </dependency>
     <dependency env="[win,linux]" name="jupyter-server">
-        <full-name value="Jupyter"/>
+        <full-name value="Jupyter - Server"/>
         <project-home value="http://jupyter.org/"/>
-        <version value="2.5.0"/>
+        <version value="[2.5.0,2.6.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jupyter.txt"/>
         <license-type value="BSD_ modified"/>
@@ -1106,6 +1126,17 @@
                 value="Copyright (c) Jupyter Development Team. Distributed under the terms of the Modified BSD License."/>
         <description
                 value="The Jupyter Server provides the backend (i.e. the core services, APIs, and REST endpoints) for Jupyter web applications like Jupyter notebook, JupyterLab, and Voila."/>
+    </dependency>
+    <dependency env="[win,linux]" name="jupyter-server-terminals">
+        <full-name value="jupyter-server-terminals"/>
+        <project-home value="https://pypi.org/project/jupyter-server-terminals/"/>
+        <version value="[0.4.4]"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_jupyter.txt"/>
+        <license-type value="BSD_ modified"/>
+        <copyright-notice
+                value="Copyright (c) Jupyter Development Team. Distributed under the terms of the Modified BSD License."/>
+        <description value="Jupyter Server Terminals"/>
     </dependency>
     <dependency env="[mac,win,linux]" name="jupyter_client">
         <full-name value="Jupyter Client"/>
@@ -1183,6 +1214,36 @@
         <copyright-notice value="Copyright (c) 2022-, Jupyter Development Team."/>
         <description value=""/>
     </dependency>
+    <dependency env="[linux]" name="jupyter-events">
+        <full-name value="Jupyter - Events"/>
+        <project-home value="https://github.com/jupyter/jupyter_events"/>
+        <version value="[0.6.3]"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_jupyter.txt"/>
+        <license-type value="BSD_ modified"/>
+        <copyright-notice value="Copyright (c) 2022-, Jupyter Development Team."/>
+        <description value=""/>
+    </dependency>
+    <dependency env="[mac]" name="jupyter_lsp">
+        <full-name value="Jupyter LSP"/>
+        <project-home value="https://pypi.org/project/jupyter-lsp/"/>
+        <version value="[2.2.0]"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_jupyter.txt"/>
+        <license-type value="BSD_ 3 clause"/>
+        <copyright-notice value="Copyright (c) 2022-, Jupyter Development Team."/>
+        <description value=""/>
+    </dependency>
+    <dependency env="[mac]" name="jupyter-lsp">
+        <full-name value="Jupyter - LSP"/>
+        <project-home value="https://pypi.org/project/jupyter-lsp/"/>
+        <version value="[2.2.0]"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_jupyter.txt"/>
+        <license-type value="BSD_ 3 clause"/>
+        <copyright-notice value="Copyright (c) 2022-, Jupyter Development Team."/>
+        <description value=""/>
+    </dependency>
     <dependency env="[mac]" name="jupyter_server_terminals">
         <full-name value="Jupyter Server terminals"/>
         <project-home value="https://github.com/jupyter-server/jupyter_server_terminals"/>
@@ -1196,7 +1257,7 @@
     <dependency env="[win,mac,linux]" name="jupyterlab">
         <full-name value="Jupyterlab"/>
         <project-home value="https://jupyter.org/"/>
-        <version value="[4.0.0,4.0.3]"/>
+        <version value="[4.0.0,4.0.1,4.0.3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jupyterlab.txt"/>
         <license-type value="BSD_ 3nd clause"/>
@@ -1288,7 +1349,7 @@
     <dependency env="[win,mac,linux]" name="keycloak">
         <full-name value="Keycloak Identity and Access Management"/>
         <project-home value="https://www.keycloak.org/"/>
-        <version value="[2.16.3,3.3.0]"/>
+        <version value="[2.16.3,3.0.0,3.3.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_keycloak.txt"/>
         <license-type value="Apache_ 2"/>
@@ -1298,7 +1359,7 @@
     <dependency env="[win,mac,linux]" name="python-keycloak">
         <full-name value="Python Keycloak"/>
         <project-home value="https://github.com/marcospereirampj/python-keycloak/"/>
-        <version value="[2.16.3,3.3.0]"/>
+        <version value="[2.16.3,3.0.0,3.3.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_python-keycloak.txt"/>
         <license-type value="MIT_"/>
@@ -1987,7 +2048,7 @@
     <dependency env="[win,mac,linux]" name="pandas">
         <full-name value="Pandas"/>
         <project-home value="http://pandas.pydata.org/"/>
-        <version value="[2.0.1,2.0.3]"/>
+        <version value="[2.0.1,2.0.2,2.0.3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pandas.txt"/>
         <license-type value="BSD_"/>
@@ -2140,7 +2201,7 @@
     <dependency env="[win,linux]" name="prometheus-client">
         <full-name value="prometheus-client"/>
         <project-home value="https://github.com/prometheus/client_python"/>
-        <version value="[0.16.0,0.17.1]"/>
+        <version value="[0.16.0,0.17.0,0.17.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_prometheus-client.txt"/>
         <license-type value="Apache_ 2"/>
@@ -2150,7 +2211,7 @@
     <dependency env="[win,mac,linux]" name="prometheus_client">
         <full-name value="prometheus_client"/>
         <project-home value="https://github.com/prometheus/client_python"/>
-        <version value="[0.16.0,0.17.1]"/>
+        <version value="[0.16.0,0.17.0,0.17.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_prometheus-client.txt"/>
         <license-type value="Apache_ 2"/>
@@ -2275,7 +2336,7 @@
     <dependency env="[win,mac,linux]" name="pydantic">
         <full-name value="pydantic"/>
         <project-home value="https://pypi.org/project/pydantic/"/>
-        <version value="[1.10.7,2.0.3,2.1.1]"/>
+        <version value="[1.10.7,1.10.8,2.0.3,2.1.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pydantic.txt"/>
         <license-type value="MIT_"/>
