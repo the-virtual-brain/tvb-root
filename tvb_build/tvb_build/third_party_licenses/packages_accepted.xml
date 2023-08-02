@@ -937,10 +937,10 @@
         <copyright-notice value="Copyright (c) Jason R. Coombs"/>
         <description value="Jaraco utility functions for classes"/>
     </dependency>
-    <dependency env="linux" name="jaraco.collections">
+    <dependency env="[win,linux]" name="jaraco.collections">
         <full-name value="Jaraco Collections"/>
         <project-home value="https://www.jaraco.com/"/>
-        <version value="4.1.0"/>
+        <version value="[4.1.0,4.3.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jaraco.txt"/>
         <license-type value="MIT_"/>
@@ -957,10 +957,10 @@
         <copyright-notice value="Copyright (c) Jason R. Coombs"/>
         <description value=""/>
     </dependency>
-    <dependency env="linux" name="jaraco.functools">
+    <dependency env="[win,linux]" name="jaraco.functools">
         <full-name value="Jaraco Functools"/>
         <project-home value="https://www.jaraco.com/"/>
-        <version value="3.6.0"/>
+        <version value="[3.6.0,3.8.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jaraco.txt"/>
         <license-type value="MIT_"/>
@@ -2130,7 +2130,7 @@
     <dependency env="[win,linux]" name="portend">
         <full-name value="Portend"/>
         <project-home value="https://pypi.python.org/pypi/portend"/>
-        <version value="[3.1.0]"/>
+        <version value="[3.1.0,3.2.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_portend.txt"/>
         <license-type value="MIT_"/>
@@ -2140,7 +2140,7 @@
     <dependency env="[win,linux]" name="prometheus-client">
         <full-name value="prometheus-client"/>
         <project-home value="https://github.com/prometheus/client_python"/>
-        <version value="0.16.0"/>
+        <version value="[0.16.0,0.17.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_prometheus-client.txt"/>
         <license-type value="Apache_ 2"/>
@@ -2275,7 +2275,7 @@
     <dependency env="[win,mac,linux]" name="pydantic">
         <full-name value="pydantic"/>
         <project-home value="https://pypi.org/project/pydantic/"/>
-        <version value="[1.10.7,2.1.1]"/>
+        <version value="[1.10.7,2.0.3,2.1.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pydantic.txt"/>
         <license-type value="MIT_"/>
@@ -2285,7 +2285,17 @@
     <dependency env="[win,mac,linux]" name="pydantic_core">
         <full-name value="pydantic_core"/>
         <project-home value="https://pypi.org/project/pydantic-core/"/>
-        <version value="2.4.0"/>
+        <version value="[2.3.0,2.4.0]"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_pydantic_core.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2022 Samuel Colvin"/>
+        <description value="This package provides the core functionality for pydantic validation and serialization."/>
+    </dependency>
+    <dependency env="[win,mac,linux]" name="pydantic-core">
+        <full-name value="pydantic-core"/>
+        <project-home value="https://pypi.org/project/pydantic-core/"/>
+        <version value="[2.3.0,2.4.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pydantic_core.txt"/>
         <license-type value="MIT_"/>
@@ -2704,7 +2714,7 @@
     <dependency env="[win,linux]" name="scikit-image">
         <full-name value="Scikit Image"/>
         <project-home value="http://scikit-image.org/"/>
-        <version value="[0.20.0]"/>
+        <version value="[0.20.0,0.21.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_scikit_image.txt"/>
         <license-type value="BSD_ modified"/>
