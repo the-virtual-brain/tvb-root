@@ -95,7 +95,7 @@
     <dependency env="[win,mac,linux]" name="anyio">
         <full-name value="anyio"/>
         <project-home value="https://github.com/agronholm/anyio"/>
-        <version value="[3.7.0,3.7.1]"/>
+        <version value="[3.6.2,3.7.0,3.7.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_anyio.txt"/>
         <license-type value="MIT_"/>
@@ -412,7 +412,7 @@
     <dependency env="[win,linux]" name="coverage">
         <full-name value="Coverage"/>
         <project-home value="https://pypi.python.org/pypi/coverage"/>
-        <version value="[7.2.7]"/>
+        <version value="[7.2.5,7.2.7]"/>
         <usage value="unit tests"/>
         <license value="LICENSE_coverage.txt"/>
         <license-type value="Apache_ 2"/>
@@ -442,7 +442,7 @@
     <dependency env="[win,mac,linux]" name="cryptography">
         <full-name value="cryptography"/>
         <project-home value="https://github.com/pyca/cryptography"/>
-        <version value="[41.0.2]"/>
+        <version value="[39.0.1,41.0.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_crypto.txt"/>
         <license-type value="BSD_"/>
@@ -548,7 +548,7 @@
     <dependency env="[win,mac,linux]" name="deprecated">
         <full-name value="Deprecated module"/>
         <project-home value="https://pypi.org/project/Deprecated/"/>
-        <version value="1.2.14"/>
+        <version value="[1.2.13,1.2.14]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_deprecated.txt"/>
         <license-type value="MIT_"/>
@@ -754,7 +754,7 @@
     <dependency env="[win,mac,linux]" name="gevent">
         <full-name value="gevent"/>
         <project-home value="http://www.gevent.org/"/>
-        <version value="23.7.0"/>
+        <version value="[22.10.2,23.7.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_gevent.txt"/>
         <license-type value="MIT_"/>
@@ -787,7 +787,7 @@
     <dependency env="[win,mac,linux]" name="h5py">
         <full-name value="H5py"/>
         <project-home value="http://www.h5py.org/"/>
-        <version value="3.9.0"/>
+        <version value="[3.8.0,3.9.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_h5py.txt"/>
         <license-type value="BSD_ 3rd clause"/>
@@ -858,7 +858,7 @@
     <dependency env="[win.linux]" name="imageio">
         <full-name value="imageio"/>
         <project-home value="http://imageio.github.io/"/>
-        <version value="[2.31.1]"/>
+        <version value="[2.18.1,2.31.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_imageio.txt"/>
         <license-type value="BSD_ 2nd clause"/>
@@ -879,7 +879,7 @@
     <dependency env="[win,mac,linux]" name="ipython">
         <full-name value="iPython"/>
         <project-home value="http://ipython.org/"/>
-        <version value="[8.14.0]"/>
+        <version value="[8.13.2,8.14.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_ipython.txt"/>
         <license-type value="BSD_ revised"/>
@@ -899,7 +899,7 @@
     <dependency env="[win,linux,mac]" name="ipywidgets">
         <full-name value="iPython Widgets"/>
         <project-home value="https://pypi.python.org/pypi/ipywidgets"/>
-        <version value="[8.0.7]"/>
+        <version value="[8.0.6,8.0.7]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_ipython.txt"/>
         <license-type value="BSD_ "/>
@@ -940,7 +940,7 @@
     <dependency env="linux" name="jaraco.collections">
         <full-name value="Jaraco Collections"/>
         <project-home value="https://www.jaraco.com/"/>
-        <version value="3.8.0"/>
+        <version value="4.1.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jaraco.txt"/>
         <license-type value="MIT_"/>
@@ -950,7 +950,7 @@
     <dependency env="linux" name="jaraco.context">
         <full-name value="Jaraco Context"/>
         <project-home value="https://www.jaraco.com/"/>
-        <version value="4.2.0"/>
+        <version value="4.3.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jaraco.txt"/>
         <license-type value="MIT_"/>
@@ -960,7 +960,7 @@
     <dependency env="linux" name="jaraco.functools">
         <full-name value="Jaraco Functools"/>
         <project-home value="https://www.jaraco.com/"/>
-        <version value="3.5.2"/>
+        <version value="3.6.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jaraco.txt"/>
         <license-type value="MIT_"/>
@@ -970,7 +970,7 @@
     <dependency env="linux" name="jaraco.text">
         <full-name value="Jaraco Text"/>
         <project-home value="https://www.jaraco.com/"/>
-        <version value="3.11.0"/>
+        <version value="3.11.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jaraco.txt"/>
         <license-type value="MIT_"/>
@@ -980,7 +980,7 @@
     <dependency env="[win,mac,linux]" name="jedi">
         <full-name value="Jedi"/>
         <project-home value="https://github.com/davidhalter/jedi"/>
-        <version value="0.19.0"/>
+        <version value="[0.18.2,0.19.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jedi.txt"/>
         <license-type value="MIT_"/>
@@ -1000,7 +1000,7 @@
     <dependency env="[win,mac,linux]" name="joblib">
         <full-name value="Joblib"/>
         <project-home value="https://joblib.readthedocs.io/"/>
-        <version value="1.3.1"/>
+        <version value="[1.2.0,1.3.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_joblib.txt"/>
         <license-type value="BSD_"/>
@@ -1086,7 +1086,7 @@
     <dependency env="[win,linux]" name="jupyter_server">
         <full-name value="Jupyter"/>
         <project-home value="http://jupyter.org/"/>
-        <version value="[2.7.0]"/>
+        <version value="[2.5.0,2.7.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jupyter.txt"/>
         <license-type value="BSD_ modified"/>
@@ -1098,7 +1098,7 @@
     <dependency env="[win,linux]" name="jupyter-server">
         <full-name value="Jupyter"/>
         <project-home value="http://jupyter.org/"/>
-        <version value="1.23.4"/>
+        <version value="2.5.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jupyter.txt"/>
         <license-type value="BSD_ modified"/>
@@ -1110,7 +1110,7 @@
     <dependency env="[mac,win,linux]" name="jupyter_client">
         <full-name value="Jupyter Client"/>
         <project-home value="http://jupyter.org/"/>
-        <version value="[8.3.0]"/>
+        <version value="[8.2.0,8.3.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jupyter.txt"/>
         <license-type value="BSD_ modified"/>
@@ -1121,7 +1121,7 @@
     <dependency env="[win,linux]" name="jupyter-client">
         <full-name value="Jupyter Client"/>
         <project-home value="http://jupyter.org/"/>
-        <version value="[7.3.4,7.4.8]"/>
+        <version value="[8.2.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jupyter.txt"/>
         <license-type value="BSD_ modified"/>
@@ -1154,7 +1154,7 @@
     <dependency env="mac" name="jupyter_core">
         <full-name value="Jupyter Core"/>
         <project-home value="http://jupyter.org/"/>
-        <version value="[5.3.1]"/>
+        <version value="[5.3.0,5.3.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jupyter.txt"/>
         <license-type value="BSD_ modified"/>
@@ -1165,7 +1165,7 @@
     <dependency env="[win,linux]" name="jupyter-core">
         <full-name value="Jupyter Core"/>
         <project-home value="http://jupyter.org/"/>
-        <version value="[5.1.1,5.1.2]"/>
+        <version value="[5.3.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jupyter.txt"/>
         <license-type value="BSD_ modified"/>
@@ -1176,7 +1176,7 @@
     <dependency env="[mac]" name="jupyter_events">
         <full-name value="Jupyter Events"/>
         <project-home value="https://github.com/jupyter/jupyter_events"/>
-        <version value="[0.7.0]"/>
+        <version value="[0.6.3,0.7.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jupyter.txt"/>
         <license-type value="BSD_ modified"/>
@@ -1196,7 +1196,7 @@
     <dependency env="[win,mac,linux]" name="jupyterlab">
         <full-name value="Jupyterlab"/>
         <project-home value="https://jupyter.org/"/>
-        <version value="[4.0.3]"/>
+        <version value="[4.0.0,4.0.3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jupyterlab.txt"/>
         <license-type value="BSD_ 3nd clause"/>
@@ -1226,7 +1226,7 @@
     <dependency env="[win,mac,linux]" name="jupyterlab_server">
         <full-name value="JupyterlabServer"/>
         <project-home value="https://jupyter.org/"/>
-        <version value="[2.24.0]"/>
+        <version value="[2.22.1,2.24.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jupyterlab.txt"/>
         <license-type value="BSD_"/>
@@ -1237,7 +1237,7 @@
     <dependency env="[win,mac,linux]" name="jupyterlab-server">
         <full-name value="Jupyterlab Server"/>
         <project-home value="https://jupyter.org/"/>
-        <version value="[2.17.0,2.18.0]"/>
+        <version value="[2.22.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jupyterlab.txt"/>
         <license-type value="BSD_"/>
@@ -1248,7 +1248,7 @@
     <dependency env="[win,mac,linux]" name="jupyterlab_widgets">
         <full-name value="Jupyterlab Widgets"/>
         <project-home value="https://jupyter.org/"/>
-        <version value="3.0.8"/>
+        <version value="[3.0.7,3.0.8]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jupyterlab.txt"/>
         <license-type value="BSD_ 3nd clause"/>
@@ -1258,7 +1258,7 @@
     <dependency env="[win,mac,linux]" name="jupyterlab-widgets">
         <full-name value="Jupyterlab-Widgets"/>
         <project-home value="https://jupyter.org/"/>
-        <version value="3.0.8"/>
+        <version value="[3.0.7,3.0.8]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jupyterlab.txt"/>
         <license-type value="BSD_ 3nd clause"/>
@@ -1268,7 +1268,7 @@
     <dependency env="[win,mac,linux]" name="jwt">
         <full-name value="JWT"/>
         <project-home value="https://github.com/davedoesdev/python-jwt"/>
-        <version value="2.8.0"/>
+        <version value="[2.7.0,2.8.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jwt.txt"/>
         <license-type value="MIT_"/>
@@ -1288,7 +1288,7 @@
     <dependency env="[win,mac,linux]" name="keycloak">
         <full-name value="Keycloak Identity and Access Management"/>
         <project-home value="https://www.keycloak.org/"/>
-        <version value="[3.3.0]"/>
+        <version value="[2.16.3,3.3.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_keycloak.txt"/>
         <license-type value="Apache_ 2"/>
@@ -1298,7 +1298,7 @@
     <dependency env="[win,mac,linux]" name="python-keycloak">
         <full-name value="Python Keycloak"/>
         <project-home value="https://github.com/marcospereirampj/python-keycloak/"/>
-        <version value="3.3.0"/>
+        <version value="[2.16.3,3.3.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_python-keycloak.txt"/>
         <license-type value="MIT_"/>
@@ -1318,7 +1318,7 @@
     <dependency env="[win,mac,linux]" name="kubernetes">
         <full-name value="Kubernetes Python client"/>
         <project-home value="https://github.com/kubernetes-client/python"/>
-        <version value="27.2.0"/>
+        <version value="[26.1.0,27.2.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_kubernetes.txt"/>
         <license-type value="Apache_ 2"/>
@@ -1339,7 +1339,7 @@
     <dependency env="[win,linux, mac]" name="lems">
         <full-name value="lems_lib"/>
         <project-home value="https://github.com/LEMS/pylems"/>
-        <version value="0.6.4"/>
+        <version value="[0.6.2,0.6.4]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_lems.txt"/>
         <license-type value="LGPLv3_"/>
@@ -1350,7 +1350,7 @@
     <dependency env="[win,linux, mac]" name="pylems">
         <full-name value="pylems"/>
         <project-home value="https://github.com/LEMS/pylems"/>
-        <version value="0.6.4"/>
+        <version value="[0.6.2,0.6.4]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_lems.txt"/>
         <license-type value="LGPLv3_"/>
@@ -1598,7 +1598,7 @@
     <dependency env="[win,mac,linux]" name="lxml">
         <full-name value="LXML"/>
         <project-home value="https://pypi.org/project/lxml/"/>
-        <version value="4.9.3"/>
+        <version value="[4.9.2,4.9.3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_lxml.txt"/>
         <license-type value="BSD_ 3 clause, with few exceptions in GPL"/>
@@ -1618,7 +1618,7 @@
     <dependency env="[win,mac,linux]" name="markupsafe">
         <full-name value="MarkupSafe"/>
         <project-home value="https://pypi.python.org/pypi/MarkupSafe"/>
-        <version value="[2.1.3]"/>
+        <version value="[2.1.2,2.1.3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_markupsafe.txt"/>
         <license-type value="BSD_ 3 clause"/>
@@ -1680,7 +1680,7 @@
     <dependency env="[win,linux,mac]" name="mistune">
         <full-name value="Mistune"/>
         <project-home value="https://github.com/lepture/mistune"/>
-        <version value="[3.0.0]"/>
+        <version value="[2.0.5,3.0.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_mistune.txt"/>
         <license-type value="BSD_"/>
@@ -1730,7 +1730,7 @@
     <dependency env="[win,linux]" name="more-itertools">
         <full-name value="more-itertools"/>
         <project-home value="https://github.com/erikrose/more-itertools"/>
-        <version value="[9.0.0]"/>
+        <version value="[9.1.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_more_itertools.txt"/>
         <license-type value="MIT_"/>
@@ -1957,7 +1957,7 @@
     <dependency env="[mac,linux]" name="openssl">
         <full-name value="Python OpenSSL"/>
         <project-home value="http://docs.python.org/license.html#openssl"/>
-        <version value="[23.2.0]"/>
+        <version value="[23.0.0,23.2.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_openssl.txt"/>
         <license-type value="BSD_ style"/>
@@ -1987,7 +1987,7 @@
     <dependency env="[win,mac,linux]" name="pandas">
         <full-name value="Pandas"/>
         <project-home value="http://pandas.pydata.org/"/>
-        <version value="2.0.3"/>
+        <version value="[2.0.1,2.0.3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pandas.txt"/>
         <license-type value="BSD_"/>
@@ -2078,7 +2078,7 @@
     <dependency env="[win,mac,linux]" name="pil">
         <full-name value="Pillow Library"/>
         <project-home value="https://pillow.readthedocs.org/"/>
-        <version value="[10.0.0]"/>
+        <version value="[9.5.0,10.0.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PIL.txt"/>
         <license-type value="MIT_"/>
@@ -2089,7 +2089,7 @@
     <dependency env="[win,linux]" name="pillow">
         <full-name value="Pillow Library"/>
         <project-home value="https://pillow.readthedocs.org/"/>
-        <version value="[10.0.0]"/>
+        <version value="[9.5.0,10.0.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PIL.txt"/>
         <license-type value="MIT_"/>
@@ -2100,7 +2100,7 @@
     <dependency env="[win,linux]" name="pip">
         <full-name value="PIP Library"/>
         <project-home value="https://pip.pypa.io/en/stable/"/>
-        <version value="23.2"/>
+        <version value="[23.1.2,23.2]"/>
         <usage value="packaging"/>
         <license value="LICENSE_pip.txt"/>
         <license-type value="MIT_"/>
@@ -2110,7 +2110,7 @@
     <dependency env="[win,mac,linux]" name="pluggy">
         <full-name value="Pluggy"/>
         <project-home value="https://github.com/pytest-dev/pluggy"/>
-        <version value="[1.2.0]"/>
+        <version value="[1.0.0,1.2.0]"/>
         <usage value="packaging"/>
         <license value="LICENSE_pluggy.txt"/>
         <license-type value="MIT_"/>
@@ -2140,7 +2140,7 @@
     <dependency env="[win,linux]" name="prometheus-client">
         <full-name value="prometheus-client"/>
         <project-home value="https://github.com/prometheus/client_python"/>
-        <version value="0.15.0"/>
+        <version value="0.16.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_prometheus-client.txt"/>
         <license-type value="Apache_ 2"/>
@@ -2150,7 +2150,7 @@
     <dependency env="[win,mac,linux]" name="prometheus_client">
         <full-name value="prometheus_client"/>
         <project-home value="https://github.com/prometheus/client_python"/>
-        <version value="0.17.1"/>
+        <version value="[0.16.0,0.17.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_prometheus-client.txt"/>
         <license-type value="Apache_ 2"/>
@@ -2160,7 +2160,7 @@
     <dependency env="[win,mac,linux]" name="prompt_toolkit">
         <full-name value="Prompt Toolkit"/>
         <project-home value="https://github.com/jonathanslenders/python-prompt-toolkit"/>
-        <version value="3.0.39"/>
+        <version value="[3.0.38,3.0.39]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_prompt_toolkit.txt"/>
         <license-type value="BSD_"/>
@@ -2170,7 +2170,7 @@
     <dependency env="[win,linux]" name="prompt-toolkit">
         <full-name value="Prompt-Toolkit"/>
         <project-home value="https://github.com/jonathanslenders/python-prompt-toolkit"/>
-        <version value="3.0.36"/>
+        <version value="3.0.38"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_prompt_toolkit.txt"/>
         <license-type value="BSD_"/>
@@ -2234,7 +2234,7 @@
     <dependency env="[win,mac,linux]" name="pyaescrypt">
         <full-name value="pyAesCrypt"/>
         <project-home value="https://github.com/marcobellaccini/pyAesCrypt"/>
-        <version value="6.1.0"/>
+        <version value="[6.0.0,6.1.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pyAesCrypt.txt"/>
         <license-type value="Apache_ 2"/>
@@ -2265,7 +2265,7 @@
     <dependency env="[win,linux]" name="pyasn1-modules">
         <full-name value="pyasn1 modules"/>
         <project-home value="https://github.com/etingof/pyasn1"/>
-        <version value="0.2.8"/>
+        <version value="0.3.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pyasn1.txt"/>
         <license-type value="BSD_ 2 clause"/>
@@ -2275,7 +2275,7 @@
     <dependency env="[win,mac,linux]" name="pydantic">
         <full-name value="pydantic"/>
         <project-home value="https://pypi.org/project/pydantic/"/>
-        <version value="2.1.1"/>
+        <version value="[1.10.7,2.1.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pydantic.txt"/>
         <license-type value="MIT_"/>
@@ -2346,7 +2346,7 @@
     <dependency env="[win,linux]" name="pyparsing">
         <full-name value="PyParsing"/>
         <project-home value="https://pypi.org/project/pyparsing/"/>
-        <version value="[3.1.1]"/>
+        <version value="[3.0.9,3.1.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pyparsing.txt"/>
         <license-type value="MIT_"/>
@@ -2417,7 +2417,7 @@
     <dependency env="[win,linux]" name="pytest">
         <full-name value="PyTest"/>
         <project-home value="http://docs.pytest.org/"/>
-        <version value="[7.4.0]"/>
+        <version value="[7.3.1,7.4.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytest.txt"/>
         <license-type value="MIT_"/>
@@ -2427,7 +2427,7 @@
     <dependency env="[win,linux]" name="pytest-cov">
         <full-name value="PyTest Coverage"/>
         <project-home value="https://pypi.python.org/pypi/pytest-cov"/>
-        <version value="[4.1.0]"/>
+        <version value="[4.0.0,4.1.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytest_cov.txt"/>
         <license-type value="MIT_"/>
@@ -2477,7 +2477,7 @@
     <dependency env="[win,mac,linux]" name="pytest_mock">
         <full-name value="pytest_mock"/>
         <project-home value="https://github.com/pytest-dev/pytest-mock/"/>
-        <version value="3.11.1"/>
+        <version value="[3.10.0,3.11.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytest-mock.txt"/>
         <license-type value="MIT_"/>
@@ -2488,7 +2488,7 @@
     <dependency env="[win,mac,linux]" name="pytest-mock">
         <full-name value="pytest-mock"/>
         <project-home value="https://github.com/pytest-dev/pytest-mock"/>
-        <version value="3.11.1"/>
+        <version value="[3.10.0,3.11.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytest-mock.txt"/>
         <license-type value="MIT_"/>
@@ -2499,7 +2499,7 @@
     <dependency env="[win,mac,linux]" name="python">
         <full-name value="Python"/>
         <project-home value="http://docs.python.org/license.html"/>
-        <version value="[3.10.12]"/>
+        <version value="[3.10.11,3.10.12]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_python.txt"/>
         <license-type value="PSF_ or ZERO-CLAUSE BSD_"/>
@@ -2573,7 +2573,7 @@
     <dependency env="[win,linux]" name="pyzmq">
         <full-name value="zeromq"/>
         <project-home value="http://zguide.zeromq.org"/>
-        <version value="[25.1.0]"/>
+        <version value="[25.0.2,25.1.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_zmq.txt"/>
         <license-type value="LGPLv3_"/>
@@ -2583,7 +2583,7 @@
     <dependency env="[win,mac,linux]" name="requests">
         <full-name value="Requests"/>
         <project-home value="https://pypi.python.org/pypi/requests"/>
-        <version value="[2.31.0]"/>
+        <version value="[2.29.0,2.31.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_req.txt"/>
         <license-type value="Apache_ 2"/>
@@ -2704,7 +2704,7 @@
     <dependency env="[win,linux]" name="scikit-image">
         <full-name value="Scikit Image"/>
         <project-home value="http://scikit-image.org/"/>
-        <version value="[0.19.3]"/>
+        <version value="[0.20.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_scikit_image.txt"/>
         <license-type value="BSD_ modified"/>
@@ -2714,7 +2714,7 @@
     <dependency env="[win,linux]" name="skimage">
         <full-name value="Scikit Image"/>
         <project-home value="http://scikit-image.org/"/>
-        <version value="[0.21.0]"/>
+        <version value="[0.20.0,0.21.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_scikit_image.txt"/>
         <license-type value="BSD_ modified"/>
@@ -2734,7 +2734,7 @@
     <dependency env="[win,linux]" name="scikit-build">
         <full-name value="Scikits Build"/>
         <project-home value="https://scikit-build.readthedocs.io/en/latest/"/>
-        <version value="0.17.6"/>
+        <version value="[0.17.5,0.17.6]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_scikits_build.txt"/>
         <license-type value="MIT_"/>
@@ -2865,7 +2865,7 @@
     <dependency env="[win,mac,linux]" name="sqlalchemy">
         <full-name value="SQL-Alchemy"/>
         <project-home value="http://www.sqlalchemy.org/"/>
-        <version value="[2.0.19]"/>
+        <version value="[2.0.15,2.0.19]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_sqlalchemy.txt"/>
         <license-type value="MIT_"/>
@@ -3019,7 +3019,7 @@
     <dependency env="[win,linux,mac]" name="tempora">
         <full-name value="Tempora"/>
         <project-home value="https://pypi.python.org/pypi/tempora"/>
-        <version value="[5.5.0]"/>
+        <version value="[5.2.2,5.5.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_tempora.txt"/>
         <license-type value="MIT_"/>
@@ -3192,7 +3192,7 @@
     <dependency env="[win,mac,linux]" name="websocket">
         <full-name value="websocket"/>
         <project-home value="https://pypi.org/project/websocket-client/"/>
-        <version value="1.6.1"/>
+        <version value="[1.5.2,1.6.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_websocket.txt"/>
         <license-type value="Apache_ 2"/>
@@ -3202,7 +3202,7 @@
     <dependency env="[win,linux]" name="websocket-client">
         <full-name value="websocket-client"/>
         <project-home value="https://pypi.org/project/websocket-client/"/>
-        <version value="1.6.1"/>
+        <version value="[1.5.2,1.6.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_websocket.txt"/>
         <license-type value="Apache_ 2"/>
@@ -3212,7 +3212,7 @@
     <dependency env="[win,mac,linux]" name="werkzeug">
         <full-name value="Werkzeug"/>
         <project-home value="https://palletsprojects.com/p/werkzeug/"/>
-        <version value="2.3.6"/>
+        <version value="[2.3.4,2.3.6]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_werkzeug.txt"/>
         <license-type value="BSD_ 3 clause"/>
@@ -3223,7 +3223,7 @@
     <dependency env="[win,mac,linux]" name="widgetsnbextension">
         <full-name value="iPython Widgets Extension"/>
         <project-home value="https://pypi.python.org/pypi/widgetsnbextension"/>
-        <version value="[4.0.8]"/>
+        <version value="[4.0.7,4.0.8]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_ipython.txt"/>
         <license-type value="BSD_ 3 clause"/>
@@ -3348,7 +3348,7 @@
     <dependency env="[win,mac,linux]" name="zipp">
         <full-name value="zipp"/>
         <project-home value="https://github.com/jaraco/zipp"/>
-        <version value="3.16.2"/>
+        <version value="[3.15.0,3.16.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_zipp.txt"/>
         <license-type value="MIT_"/>
@@ -3388,7 +3388,7 @@
     <dependency env="[win,mac,linux]" name="zope.event">
         <full-name value="zope.event"/>
         <project-home value="https://github.com/zopefoundation/zope.event"/>
-        <version value="5.0"/>
+        <version value="[4.6,5.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_zope-event.txt"/>
         <license-type value="ZPL_"/>
