@@ -160,7 +160,7 @@ def extra():
     fix_paths()
 
 
-def find_and_replace(path, search, replace, exclusions=None):
+def _find_and_replace(path, search, replace, exclusions=None):
     if not type(exclusions) in ['list', 'tuple']:
         exclusions = []
 
@@ -210,7 +210,7 @@ def find_and_replace(path, search, replace, exclusions=None):
 def replace_conda_abs_paths():
     app_path = os.path.join(os.path.sep, 'Applications', APP_NAME + '.app', 'Contents', 'Resources')
     print('Replacing occurences of {} with {}'.format(CONDA_ENV_PATH, app_path))
-    find_and_replace(
+    _find_and_replace(
         RESOURCE_DIR,
         CONDA_ENV_PATH,
         app_path,
@@ -345,7 +345,7 @@ def create_plist():
         'LSMinimumSystemVersion': '10.7.0',
         'LSUIElement': False,
         'NSAppTransportSecurity': {'NSAllowsArbitraryLoads': True},
-        'NSHumanReadableCopyright': "(c) 2012-2022, Baycrest Centre for Geriatric Care ('Baycrest') and others",
+        'NSHumanReadableCopyright': "(c) 2012-2023, Baycrest Centre for Geriatric Care ('Baycrest') and others",
         'NSMainNibFile': 'MainMenu',
         'NSPrincipalClass': 'NSApplication',
         'NSHighResolutionCapable': True,

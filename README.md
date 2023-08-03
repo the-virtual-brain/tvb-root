@@ -1,5 +1,11 @@
 
 # The Virtual Brain
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=the-virtual-brain_tvb-root&metric=alert_status)](https://sonarcloud.io/summary/overall?id=the-virtual-brain_tvb-root)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=the-virtual-brain_tvb-root&metric=sqale_rating)](https://sonarcloud.io/summary/overall?id=the-virtual-brain_tvb-root)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=the-virtual-brain_tvb-root&metric=security_rating)](https://sonarcloud.io/summary/overall?id=the-virtual-brain_tvb-root)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=the-virtual-brain_tvb-root&metric=vulnerabilities)](https://sonarcloud.io/summary/overall?id=the-virtual-brain_tvb-root)
+[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=the-virtual-brain_tvb-root&metric=duplicated_lines_density)](https://sonarcloud.io/summary/overall?id=the-virtual-brain_tvb-root)
+[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=the-virtual-brain_tvb-root&metric=ncloc)](https://sonarcloud.io/summary/overall?id=the-virtual-brain_tvb-root)
 
 "The Virtual Brain" Project (TVB Project) has the purpose of offering 
 modern tools to the Neurosciences community, for computing, simulating
@@ -89,10 +95,14 @@ The command for running our tests has two forms:
   2. The second alternative form of running TVB tests, when installing TVB from Pypi, is:
         
             pip install -U tvb-framework
-            python -m pytest --pyargs tvb.tests.framework
+            # install optional dependencies needed just for tests (search "extras_require" in tvb_framework/setup.py)
+            pip install pytest pytest-benchmark pytest-mock BeautifulSoup4
+            pytest --pyargs tvb.tests.framework
     
             pip install -U tvb-library
-            python -m pytest --pyargs tvb.tests.library
+            # install optional dependencies (from variable LIBRARY_REQUIRED_EXTRA in tvb_library/setup.py)
+            pip install h5py pytest pytest-benchmark pytest-xdist tvb-gdist tvb-data
+            pytest --pyargs tvb.tests.library
     
 - For all the tests to run correctly, the dependencies specified as LIBRARY_REQUIRED_EXTRA in [setup.py](https://github.com/the-virtual-brain/tvb-root/blob/master/tvb_library/setup.py) should be installed
 - Make sure that tvb-data package is installed from [Zenodo](https://zenodo.org/record/7574266)

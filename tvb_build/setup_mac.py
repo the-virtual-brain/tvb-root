@@ -123,7 +123,7 @@ def _copy_module(module_str, destination_folder):
 
 def _introspect_licenses(destination_folder, root_introspection, extra_licenses_check=None):
     """Generate archive with 3rd party licenses"""
-    print("- Introspecting for dependencies..." + str(root_introspection))
+    print("- Introspecting for dependencies... " + str(root_introspection))
 
     try:
         locale.getdefaultlocale()
