@@ -112,7 +112,6 @@ examples.
 
 .. _Analyze Region Corrcoef: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/analyze_region_corrcoef.ipynb
 .. _Compare Connectivity Normalization: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/compare_connectivity_normalization.ipynb
-.. _Compare Integrators: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/compare_integrators.ipynb
 .. _Display Source Sensor Geometry: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/display_source_sensor_geometry.ipynb
 .. _Display Surface Local Connectivity: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/display_surface_local_connectivity.ipynb
 .. _Encrypt Files before upload in TVB Web GUI: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/encrypt_data.ipynb
@@ -121,10 +120,12 @@ examples.
 .. _Exploring Resting State in Epilepsy: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/exploring_resting_state_in_epilepsy.ipynb
 .. _Exploring The Bold Monitor: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/exploring_the_bold_monitor.ipynb
 .. _Exploring the Epileptor 3D: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/exploring_the_epileptor_codim_3_model.ipynb
-.. _Exporing A Surface Mesh: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/exporing_a_surface_mesh.ipynb
+.. _Exploring A Surface Mesh: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/exploring_a_surface_mesh.ipynb
 .. _Generate a new model using DSL: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/model_generation_using_dsl.ipynb
 .. _Generate TimeSeries for import in Web GUI: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/generate_ts_h5_from_library.ipynb
 .. _Generate Surrogate Connectivity: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/generate_surrogate_connectivity.ipynb
+.. _Integrators Comparison: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/integrators_comparison.ipynb
+.. _Integrators Presentation: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/integrators_presentation.ipynb
 .. _Interacting With The Framework: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/interacting_with_the_framework.ipynb
 .. _Interacting With The Framework and Allen: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/interacting_with_Allen.ipynb
 .. _Simulate for Mouse: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/simulate_for_mouse.ipynb
@@ -156,14 +157,6 @@ examples.
       :target: `Compare Connectivity Normalization`_
 
       `Compare Connectivity Normalization`_
-
-
-.. figure:: figures/compare_integrators.png
-      :width: 200px
-      :figclass: demo-figure
-      :target: `Compare Integrators`_
-
-      `Compare Integrators`_
 
 
 .. figure:: figures/display_source_sensor_geometry.png
@@ -198,12 +191,12 @@ examples.
       `Exploring The Bold Monitor`_
 
 
-.. figure:: figures/exporing_a_surface_mesh.png
+.. figure:: figures/exploring_a_surface_mesh.png
       :width: 200px
       :figclass: demo-figure
-      :target: `Exporing A Surface Mesh`_
+      :target: `Exploring A Surface Mesh`_
 
-      `Exporing A Surface Mesh`_
+      `Exploring A Surface Mesh`_
 
 
 .. figure:: figures/generate_surrogate_connectivity.png
@@ -212,6 +205,21 @@ examples.
       :target: `Generate Surrogate Connectivity`_
 
       `Generate Surrogate Connectivity`_
+
+
+.. figure:: figures/integrators.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Integrators Presentation`_
+
+      `Integrators Presentation`_
+
+.. figure:: figures/integrators.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Integrators Comparison`_
+
+      `Integrators Comparison`_
 
 
 .. figure:: figures/interact_client_api_simulation.png

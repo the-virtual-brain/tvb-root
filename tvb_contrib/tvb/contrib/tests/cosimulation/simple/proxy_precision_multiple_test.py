@@ -43,19 +43,19 @@ class TestProxyPrecisionDelaiMultiple(BaseTestCase):
                            [10, 0, 5, 6]])
         delay = np.array([[0.1, 0.1, 0.1, 0.1], [0.1, 0.1, 0.1, 0.1],
                           [0.1, 0.1, 0.1, 0.1], [0.1, 0.1, 0.1, 0.1]]) * 10
-        max = np.int(np.max(delay)*10+1)
-        init_value = np.array([[[0.1,0.0], [0.1,0.0], [0.2,0.0], [0.2,0.0]]* max] )
+        max = np.int_(np.max(delay) * 10 + 1)
+        init_value = np.array([[[0.1, 0.0], [0.1, 0.0], [0.2, 0.0], [0.2, 0.0]] * max])
         initial_condition = init_value.reshape((max, 2, weight.shape[0], 1))
         resolution_simulation = 0.1
         synchronization_time = np.min(delay)
-        proxy_id = [0,2,3]
+        proxy_id = [0, 2, 3]
         no_proxy = [1]
 
         # simulation with one or more proxy
         np.random.seed(42)
         sim = TvbSim(weight, delay, proxy_id, resolution_simulation,
                      synchronization_time, initial_condition=initial_condition)
-        time, s , result= sim(synchronization_time, rate=True)
+        time, s, result = sim(synchronization_time, rate=True)
 
         # full simulation
         np.random.seed(42)
@@ -65,9 +65,9 @@ class TestProxyPrecisionDelaiMultiple(BaseTestCase):
 
         # compare with the CosimMonitor RawCosim
         np.testing.assert_array_equal(np.squeeze(result_ref[:, no_proxy, :], axis=2),
-                        np.squeeze(result[0][:, no_proxy, :], axis=2))
+                                      np.squeeze(result[0][:, no_proxy, :], axis=2))
         np.testing.assert_array_equal(np.squeeze(s_ref[:, no_proxy, :], axis=2),
-                          np.squeeze(s[0][:, no_proxy, :], axis=2))
+                                      np.squeeze(s[0][:, no_proxy, :], axis=2))
 
         for i in range(0, 1000):
             time, s, result = sim(synchronization_time,
@@ -75,7 +75,7 @@ class TestProxyPrecisionDelaiMultiple(BaseTestCase):
 
             # compare with RawDelayed monitor, delayed by synchronization_time
             np.testing.assert_array_equal(result_ref[:, no_proxy, :], result[1][:, no_proxy, :])
-            np.testing.assert_array_equal(result_ref[:, proxy_id, :]*np.NAN, result[1][:, proxy_id, :])
+            np.testing.assert_array_equal(result_ref[:, proxy_id, :] * np.NAN, result[1][:, proxy_id, :])
             np.testing.assert_array_equal(s_ref, s[1])
 
             time, s_ref, result_ref = sim_ref(synchronization_time, rate=True)

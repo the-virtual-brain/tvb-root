@@ -238,6 +238,11 @@ def get_connectivity_matrix(parcellation, cohort, subjects, component):
     for f in features:
         if f.cohort == cohort:
             conn_for_cohort = f
+            break
+
+    if conn_for_cohort is None:
+        LOGGER.info("NO conn_for_cohort was found")
+        return conn_matrices
 
     # for 1000BRAINS cohort, if the user did not specify a suffix (_1, _2), get all the possible ids for that subject
     if cohort == THOUSAND_BRAINS_COHORT and subjects is not None:

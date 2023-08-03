@@ -100,7 +100,7 @@ def tvb_init(parameters, time_synchronize, initial_condition):
                           voi=np.array([0]),
                           synchronization_time=time_synchronize,
                           cosim_monitors=(RawCosim(),),
-                          proxy_inds=np.asarray(id_proxy, dtype=np.int),
+                          proxy_inds=np.asarray(id_proxy, dtype=np.int_),
                           model=model,
                           connectivity=connectivity,
                           coupling=coupling,

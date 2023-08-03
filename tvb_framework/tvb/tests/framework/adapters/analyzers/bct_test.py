@@ -43,6 +43,9 @@ class TestBCT(TransactionalTestCase):
     Test that all BCT analyzers are executed without error.
     We do not verify that the algorithms are correct, because that is outside the purpose of TVB framework.
     """
+    #  TODO temp skip these from tests due to incompatibility with latest numpy
+    # see BCT reported issue https://github.com/aestrivex/bctpy/issues/119
+    SKIPPED_ALGOS = ["ModularityOpCSMU", "ModularityOCSM", "ParticipationCoefficient", "ParticipationCoefficientSign"]
 
     def transactional_setup_method(self):
         """
@@ -62,6 +65,8 @@ class TestBCT(TransactionalTestCase):
 
         self.bct_adapters = []
         for algo in algorithms:
+            if algo.classname in self.SKIPPED_ALGOS:
+                continue
             self.bct_adapters.append(ABCAdapter.build_adapter(algo))
 
     def transactional_teardown_method(self):
