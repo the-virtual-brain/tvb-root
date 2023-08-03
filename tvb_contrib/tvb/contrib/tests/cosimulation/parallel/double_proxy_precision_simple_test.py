@@ -39,7 +39,7 @@ class TestDoubleProxyPrecisionSimple(BaseTestCase):
     def test_double_precision_simple(self):
         weight = np.array([[1, 1], [1, 1]])
         delay = np.array([[10.0, 10.0], [10.0, 10.0]])
-        max = np.int(np.max(delay)*10+1)
+        max = np.int_(np.max(delay)*10+1)
         init_value = np.array([[[0.1,0.0], [0.1,0.0]]] * max)
         initial_condition = init_value.reshape((max, 2, weight.shape[0], 1))
         resolution_simulation = 0.1
