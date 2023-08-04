@@ -72,10 +72,9 @@ class Environment(object):
             pass
 
         try:
-            import tvb
-            externals_path = os.path.join(
-                os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(tvb.__file__)))),
-                "dev_resources")
+            externals_path = os.path.join(os.path.abspath(os.path.join(__file__, os.path.pardir, os.path.pardir,
+                                                                       os.path.pardir, os.path.pardir, os.path.pardir)),
+                                          "dev_resources")
             if os.path.exists(externals_path):
                 # usage from GitHub clone without got cmd or inside a Docker container (as a mounted volume)
                 return False
