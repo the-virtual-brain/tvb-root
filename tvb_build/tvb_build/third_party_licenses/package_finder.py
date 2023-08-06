@@ -57,7 +57,7 @@ EXCLUDES = [
     "foundation", "exceptionhandling", "pytest_cov", "pypiwin32", "pyyaml", "msgpack-python", "tlz",
     "objc", "appkit", "pyobjctools", "cocoa", '_argon2_cffi_bindings',
     "ipykernel", "ipython_genutils", "nbformat", "nbconvert", 'test', 'venv', 'ensurepip', 'urllib',
-    'libdispatch', 'dispatch',
+    'libdispatch', 'dispatch', 'zoneinfo', 'xpc',
     'finder', 'unittest', 'email', 'encodings', 'multiprocessing', 'json', 'curses', 'importlib', 'xml', 'logging'
 ]
 
