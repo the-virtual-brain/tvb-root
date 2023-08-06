@@ -57,6 +57,7 @@ EXCLUDES = [
     "foundation", "exceptionhandling", "pytest_cov", "pypiwin32", "pyyaml", "msgpack-python", "tlz",
     "objc", "appkit", "pyobjctools", "cocoa", '_argon2_cffi_bindings',
     "ipykernel", "ipython_genutils", "nbformat", "nbconvert", 'test', 'venv', 'ensurepip', 'urllib',
+    'libdispatch', 'dispatch', 'zoneinfo', 'xpc',
     'finder', 'unittest', 'email', 'encodings', 'multiprocessing', 'json', 'curses', 'importlib', 'xml', 'logging'
 ]
 
@@ -151,6 +152,7 @@ def _extract_all(zip_name, dest):
 def _get_module_version(module_name):
     """For a package name, return its version"""
     try:
+        # print("  - parsing module for its license: " + str(module_name))
         module = importlib.import_module(str(module_name))
         if hasattr(module, '__version__'):
             return str(module.__version__)
@@ -200,8 +202,8 @@ def _find_modules(root_, modules_dict):
             if regex.match(entry):
                 raise Exception("%s file has unacceptable license!!! " % (entry,))
 
-        if (os.path.isdir(full_path) and not _is_excluded(entry, EXCLUDES) and (INIT[0] in os.listdir(full_path)
-                                                                                or INIT[1] in os.listdir(full_path))):
+        if (os.path.isdir(full_path) and (not _is_excluded(entry, EXCLUDES)) and
+                (INIT[0] in os.listdir(full_path) or INIT[1] in os.listdir(full_path))):
             modules_dict[entry.lower()] = _get_module_version(entry)
         if entry in EXTRA_SEARCH_FOLDERS:
             if entry.endswith('.zip'):

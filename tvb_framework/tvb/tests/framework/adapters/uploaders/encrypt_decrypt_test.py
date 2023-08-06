@@ -31,7 +31,6 @@
 import os
 import pyAesCrypt
 import pytest
-
 from tvb.datasets import TVBZenodoDataset
 
 import tempfile

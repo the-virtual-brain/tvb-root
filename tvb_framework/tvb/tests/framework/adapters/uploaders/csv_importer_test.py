@@ -30,8 +30,6 @@
 
 import pytest
 from tvb.datasets import TVBZenodoDataset
-from os import path
-
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityImporter
 from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityParser, CSVConnectivityImporterModel
@@ -47,6 +45,7 @@ TEST_SUBJECT_B = "TEST_SUBJECT_B"
 
 
 class TestCSVConnectivityParser(BaseTestCase):
+    
     
     def test_parse_happy(self):
         cap_pth = TVBZenodoDataset().fetch_data('output_ConnectionDistanceMatrix.csv')
@@ -76,13 +75,11 @@ class TestCSVConnectivityImporter(BaseTestCase):
         self.clean_database()
 
     def _import_csv_test_connectivity(self, reference_connectivity_gid, subject):
-
         ### First prepare input data:
         weights = self.dataset.fetch_data('output_ConnectionCapacityMatrix.csv')
         tracts =  self.dataset.fetch_data('output_ConnectionDistanceMatrix.csv')
         weights_tmp = weights + '.tmp'
         tracts_tmp = tracts + '.tmp'
-
         self.storage_interface.copy_file(weights, weights_tmp)
         self.storage_interface.copy_file(tracts, tracts_tmp)
 
