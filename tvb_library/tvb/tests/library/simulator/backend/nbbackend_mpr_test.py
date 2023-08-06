@@ -78,8 +78,8 @@ class TestNbSim(BaseTestSim):
             )
         ).configure()
 
-        (pdq_t, pdq_d) , = NbMPRBackend().run_sim(sim, nstep=1)
-        (raw_t, raw_d) , = sim.run(simulation_length=1)
+        (pdq_t, pdq_d), = NbMPRBackend().run_sim(sim, nstep=1)
+        (raw_t, raw_d), = sim.run(simulation_length=1)
 
         np.testing.assert_allclose(raw_d[0,:], pdq_d[0,:], rtol=1e-5)
 
