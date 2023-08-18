@@ -984,6 +984,7 @@ def test_deepcopy():
     assert original.integrator.noise != clone.integrator.noise
     assert original.integrator.noise != integrators.IntegratorStochastic.noise.default
     assert original.model != clone.model
+    assert original.monitors[0] != clone.monitors[0]
     assert original.coupling != clone.coupling
     assert original.connectivity != clone.connectivity
     # even in the case of random generators

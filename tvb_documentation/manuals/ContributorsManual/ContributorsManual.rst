@@ -89,6 +89,8 @@ Contribution guidelines
 -----------------------
 
 * You should put explanatory comments and documentation in your code.
+* When you create a new branch, consider naming it with the main feature ID from Jira (e.g. TVB-4242) that will be solved in that branch
+* in the commit messages, include the task ID, so that Jira can immediately link those commits to a task
 * Document every public function with a docstring.
 * Use english for both comments and names.
 * Avoid cryptic short names. You may relax this if implementing a mathematical formula. But then please document it using latex docstrings.

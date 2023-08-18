@@ -27,11 +27,11 @@
 """
 This private module implements concrete declarative attributes
 """
-import collections.abc
 import inspect
 import numpy
 import types
 import typing
+from collections.abc import Sequence
 from ._declarative_base import _Attr, MetaType
 from .ex import TraitValueError, TraitTypeError, TraitAttributeError, TraitFinalAttributeError
 from tvb.basic.logger.builder import get_logger
@@ -235,7 +235,7 @@ class List(Attr):
     def __init__(self, of=object, default=(), doc='', label='', final=False, choices=None):
         # type: (type, tuple, str, str, bool, typing.Optional[tuple]) -> None
         super(List, self).__init__(
-            field_type=collections.abc.Sequence,
+            field_type=Sequence,
             default=default,
             doc=doc,
             label=label,

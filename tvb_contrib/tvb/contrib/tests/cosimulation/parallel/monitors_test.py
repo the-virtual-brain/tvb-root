@@ -56,7 +56,7 @@ class TestMonitors(BaseTestCase):
         coupling = lab.coupling.Linear(a=np.array(0.0154))
         integrator = lab.integrators.HeunDeterministic(dt=0.1, bounded_state_variable_indices=np.array([0]),
                                                        state_variable_boundaries=np.array([[0.0, 1.0]]))
-        monitors = lab.monitors.Raw(period=0.1, variables_of_interest=np.array(0, dtype=np.int))
+        monitors = lab.monitors.Raw(period=0.1, variables_of_interest=np.array(0, dtype=np.int_))
         # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
         sim = lab.simulator.Simulator(model=model,
                                       connectivity=connectivity,
@@ -88,7 +88,7 @@ class TestMonitors(BaseTestCase):
                             RawDelayed(), RawVoiDelayed(variables_of_interest=np.array([0])),
                             CosimCoupling(coupling=coupling),
                             CosimCoupling(coupling=coupling, variables_of_interest=np.array([0]))),
-            proxy_inds=np.asarray([0], dtype=np.int),
+            proxy_inds=np.asarray([0], dtype=np.int_),
             model=model_1,
             connectivity=connectivity,
             coupling=coupling,

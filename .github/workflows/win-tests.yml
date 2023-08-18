@@ -12,7 +12,7 @@ jobs:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
       - name: set up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: "3.10"
 
@@ -29,11 +29,10 @@ jobs:
       - name: install tools and dependencies
         if: steps.cache-local.outputs.cache-hit != 'true'
         run: |
-          python -m pip install --upgrade setuptools pip wheel
-          pip install --user --upgrade numpy cython
-          python -m pip install scikit-build
-          pip install --user -r tvb_framework/requirements.txt
-          pip install --user --no-build-isolation tvb-gdist
+          python -m pip install --upgrade setuptools pip wheel 
+          pip install -U numpy cython scikit-build
+          pip install -r tvb_framework/requirements.txt
+          pip install --no-build-isolation tvb-gdist
 
       - name: cache data
         id: cache-data
@@ -50,7 +49,7 @@ jobs:
           Expand-Archive 'C:\\TEMP\\tvb_data.zip' C:\\tvb_data
           del C:\\TEMP\\tvb_data.zip
           cd C:\\tvb_data
-          python setup.py develop
+          pip install -e .
 
       - name: run framework tests
         shell: pwsh

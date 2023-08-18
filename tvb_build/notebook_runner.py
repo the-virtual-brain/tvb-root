@@ -56,6 +56,7 @@ if __name__ == '__main__':
     skipped_notebooks = [
         'exploring_time_series_interactive.ipynb',  # run separately because of other notebook dependency
         'export_encrypt_decrypt_data.ipynb',
+        'integrators_presentation.ipynb', # exclude or we run into Memory error at the automatic run
         'interacting_with_rest_api_fire_simulation.ipynb',
         'interacting_with_rest_api_launch_operations.ipynb',
         'launching_bids_adapter.ipynb',
