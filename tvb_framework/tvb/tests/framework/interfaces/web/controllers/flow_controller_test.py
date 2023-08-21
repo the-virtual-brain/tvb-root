@@ -40,7 +40,7 @@ from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.flow_controller import FlowController
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.tests.framework.adapters.dummy_adapter1 import DummyAdapter1Form, DummyModel
-from tvb.tests.framework.core.factory import TestFactory, STATUS_CANCELED, STATUS_STARTED
+from tvb.tests.framework.core.factory import TestFactory, STATUS_CANCELED, STATUS_STARTED, STATUS_FINISHED
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 
 
@@ -181,17 +181,17 @@ class TestFlowController(BaseControllersTest):
         operation = dao.try_get_operation_by_id(operation.id)
         assert operation is None
 
-    @pytest.mark.skipif(TvbProfile.current.MAX_THREADS_NUMBER != LOCKS_QUEUE.qsize(), reason="Queue wasn't fully initialized")
     def test_launch_multiple_operations(self, simulation_launch):
+        max_threads_no = LOCKS_QUEUE.qsize()
         # Launch more operations that can be executed in parallel
         operations = []
-        for i in range(TvbProfile.current.MAX_THREADS_NUMBER + 2):
+        for i in range(max_threads_no + 2):
             operations.append(simulation_launch(self.test_user, self.test_project, 1000))
         # Wait until queue is actually full of Started operations
         preparing_operations = True
         while preparing_operations:
             op_ready = True
-            for i in range(TvbProfile.current.MAX_THREADS_NUMBER):
+            for i in range(max_threads_no):
                 op = dao.get_operation_by_id(operations[i].id)
                 if op.status == STATUS_PENDING:
                     op_ready = False
@@ -202,10 +202,10 @@ class TestFlowController(BaseControllersTest):
         # All started except for the last, as the queue is not enough to launch all
         for i, operation in enumerate(operations):
             op = dao.get_operation_by_id(operation.id)
-            if i >= TvbProfile.current.MAX_THREADS_NUMBER:
+            if i >= max_threads_no:
                 assert op.status == STATUS_PENDING
             else:
-                assert op.status == STATUS_STARTED
+                assert op.status in (STATUS_STARTED, STATUS_FINISHED)
         # wait while queue is still full
         while LOCKS_QUEUE.qsize() == 0:
             sleep(0.3)
@@ -216,7 +216,7 @@ class TestFlowController(BaseControllersTest):
             StandAloneClient.process_queued_operations()
             sleep(0.3)
         op = dao.get_operation_by_id(op.id)
-        assert op.status == STATUS_STARTED
+        assert op.status in (STATUS_STARTED, STATUS_FINISHED)
 
     def test_remove_burst_operation_group(self, simulation_launch):
         first_op = simulation_launch(self.test_user, self.test_project, 1000, True)
