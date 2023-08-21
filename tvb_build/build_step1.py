@@ -44,7 +44,6 @@ import sys
 import requests
 
 import tvb_bin
-from tvb.datasets import TVBZenodoDataset
 from subprocess import Popen, PIPE
 
 # source paths
@@ -53,94 +52,12 @@ TVB_ROOT = os.path.dirname(os.path.dirname(BIN_FOLDER))
 FW_FOLDER = os.path.join(TVB_ROOT, 'tvb_framework')
 LICENSE_PATH = os.path.join(FW_FOLDER, 'LICENSE')
 RELEASE_NOTES_PATH = os.path.join(TVB_ROOT, 'tvb_documentation', 'RELEASE_NOTES')
-dataset = TVBZenodoDataset()
-DATA_SRC_FOLDER = dataset.extract_dir / 'tvb_data'
+
+
 DEMOS_MATLAB_FOLDER = os.path.join(TVB_ROOT, 'tvb_documentation', 'matlab')
 
 # dest paths
 DIST_FOLDER = os.path.join(os.path.dirname(__file__), 'build', 'TVB_Distribution')
-
-DATA_INSIDE_FOLDER = os.path.join(DIST_FOLDER, '_tvb_data')
-
-INCLUDED_INSIDE_DATA = [
-    "__init__.py",
-    "Default_Project.zip",
-
-    "connectivity/connectivity_76.zip",
-    "connectivity/paupau.zip",
-    "connectivity/connectivity_66.zip",
-    "connectivity/connectivity_192.zip",
-    "connectivity/__init__.py",
-
-    "projectionMatrix/projection_eeg_62_surface_16k.mat",
-    "projectionMatrix/projection_eeg_65_surface_16k.npy",
-    "projectionMatrix/projection_meg_276_surface_16k.npy",
-    "projectionMatrix/projection_seeg_588_surface_16k.npy",
-    "projectionMatrix/__init__.py",
-
-    "regionMapping/__init__.py",
-    "regionMapping/regionMapping_16k_76.txt",
-    "regionMapping/regionMapping_80k_80.txt",
-    "regionMapping/regionMapping_16k_192.txt",
-
-    "sensors/eeg_unitvector_62.txt.bz2",
-    "sensors/eeg_brainstorm_65.txt",
-    "sensors/meg_151.txt.bz2",
-    "sensors/meg_brainstorm_276.txt",
-    "sensors/seeg_39.txt.bz2",
-    "sensors/seeg_brainstorm_960.txt",
-    "sensors/seeg_588.txt",
-    "sensors/__init__.py",
-
-    "surfaceData/__init__.py",
-    "surfaceData/cortex_80k.zip",
-    "surfaceData/cortex_16384.zip",
-    "surfaceData/outer_skin_4096.zip",
-    "surfaceData/inner_skull_4096.zip",
-    "surfaceData/outer_skull_4096.zip",
-    "surfaceData/scalp_1082.zip",
-    "surfaceData/face_8614.zip",
-
-    "local_connectivity/__init__.py",
-    "local_connectivity/local_connectivity_16384.mat",
-    "local_connectivity/local_connectivity_80k.mat",
-
-    "obj/__init__.py",
-    "obj/face_surface.obj",
-    "obj/eeg_cap.obj",
-
-    "mouse/allen_2mm/Connectivity.h5",
-    "mouse/allen_2mm/Volume.h5",
-    "mouse/allen_2mm/StructuralMRI.h5",
-    "mouse/allen_2mm/RegionVolumeMapping.h5",
-]
-
-def fetch_data_to_include(filenames_list, dataset):
-    for i in filenames_list:
-        dataset.fetch_data("tvb_data/"+i)
-    
-
-def _copy_dataset(dataset_files, dataset_destination):
-    for pth in dataset_files:
-        rel_pth = pth.split('/')
-        origin = os.path.join(DATA_SRC_FOLDER, *rel_pth)
-        destination = os.path.join(dataset_destination, *rel_pth)
-        destination_folder = os.path.dirname(destination)
-        if not os.path.exists(destination_folder):
-            os.makedirs(destination_folder)
-        print("Copying %s into %s" % (origin, destination))
-        shutil.copyfile(origin, destination)
-
-
-def copy_distribution_dataset():
-    """
-    Copy the required data file from tvb_data folder:
-    - inside TVB library package (for internal usage).
-        Will be used during TVB functioning: import default project,
-        load default for console profile, or code update events
-    - in tvb_data folder, as example for users.
-    """
-    _copy_dataset(INCLUDED_INSIDE_DATA, DATA_INSIDE_FOLDER)
 
 
 def _copy_demos_collapsed(to_copy):
@@ -235,8 +152,6 @@ def build_step1():
     shutil.copytree(DEMOS_MATLAB_FOLDER, os.path.join(DIST_FOLDER, 'matlab'),
                     ignore=shutil.ignore_patterns('.svn', '*.rst'))
 
-    fetch_data_to_include(INCLUDED_INSIDE_DATA, dataset)
-    copy_distribution_dataset()
 
     _copy_demos_collapsed({os.path.join("..", "tvb_documentation", "demos"): os.path.join(DIST_FOLDER, "demo_scripts"),
                            os.path.join("..", "tvb_documentation", "tutorials"):

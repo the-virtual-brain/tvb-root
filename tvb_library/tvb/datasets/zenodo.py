@@ -32,7 +32,6 @@
 
 
 import requests
-import re
 import pooch
 from typing import List, Dict
 from pathlib import Path
@@ -67,8 +66,7 @@ class Record:
         
         if path == None:
             path = pooch.os_cache("tvb")
-        
-        #convert pathlib.Path objects to strings. 
+         
         path = str(path) 
 
         for file in self.data["files"]:
@@ -79,7 +77,6 @@ class Record:
             file_path = pooch.retrieve(url= url, known_hash= known_hash, path = path, fname=fname ,progressbar = True)
 
             self.file_loc[f'{file_name}'] = file_path
-
 
             print(f"file {file_name} is downloaded at {file_path}")
         
@@ -139,13 +136,9 @@ class Zenodo:
         """
         # needs ineternet
 
-
         recid = self.get_record(recid).data['metadata']['relations']['version'][0]['parent']['pid_value']
-
         versions = {}
-
         url = f"{self.base_url}records?q=conceptrecid:{recid}&all_versions=true" 
-
 
         for hit in requests.get(url).json()['hits']['hits']:
 
@@ -155,9 +148,4 @@ class Zenodo:
                 continue
             versions[version] = recid
         
-
         return versions
-
-
-
-

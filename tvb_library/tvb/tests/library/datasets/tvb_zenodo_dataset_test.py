@@ -158,17 +158,3 @@ class Test_TVBZenodoDataset(BaseTestCase):
         assert data.is_file()
 
         dataset.delete_data()
-
-
-            
-
-
-        
-
-    
-        
-        
-         
-
-
-    #TODO add no interenet tests
