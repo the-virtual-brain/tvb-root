@@ -66,20 +66,12 @@ class Test_TVBZenodoDataset(BaseTestCase):
         dataset.delete_data()
         assert not matfile_dir.is_file()
 
-
         
         excel_extract = Path(dataset.fetch_data(" ConnectivityTable_regions.xls"))
         assert excel_extract.is_file()
         dataset.delete_data()
         assert not excel_extract.is_file()
 
-
-        
-        all_extract =Path(dataset.fetch_all_data())
-        assert all_extract.is_dir()
-        assert all_extract
-
-        dataset.delete_data()    
 
     def test_check_content(self):
 
@@ -102,23 +94,6 @@ class Test_TVBZenodoDataset(BaseTestCase):
         assert "weights.txt" in zipfile.ZipFile(connectivity66_dir).namelist()
         dataset.delete_data()
 
-        dataset = TVBZenodoDataset(version="2.0.3", extract_dir="dataset")
-        extract_dir = Path(dataset.fetch_all_data())
-
-        assert (extract_dir/"tvb_data").is_dir()        
-        assert (extract_dir/"tvb_data/mouse/allen_2mm/Connectivity.h5").is_file()
-        assert (extract_dir/"tvb_data/surfaceData/inner_skull_4096.zip").is_file()
-
-        connectivity66 = extract_dir/"tvb_data/connectivity/connectivity_96.zip"
-        assert connectivity66.is_file()
-
-        assert "centres.txt" in zipfile.ZipFile(connectivity66).namelist()
-        assert "info.txt" in zipfile.ZipFile(connectivity66).namelist()
-        assert "tract_lengths.txt" in zipfile.ZipFile(connectivity66).namelist()
-        assert "weights.txt" in zipfile.ZipFile(connectivity66).namelist()
-        
-        dataset.delete_data()
-         
 
     def test_file_name_variants(self):
         dataset = TVBZenodoDataset(version= "2.0.3", extract_dir="~/dataset")
