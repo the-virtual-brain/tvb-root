@@ -62,7 +62,7 @@ setuptools.setup(name="tvb-bids-monitor",
                  license="GPL-3.0-or-later",
                  author=TVB_TEAM,
                  author_email='tvb.admin@thevirtualbrain.org',
-                 url='http://www.thevirtualbrain.org',
+                 url='https://www.thevirtualbrain.org',
                  download_url='https://github.com/the-virtual-brain/tvb-root',
                  keywords='tvb rest client brain simulator neuroscience human animal neuronal dynamics models delay')
 
