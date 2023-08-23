@@ -49,36 +49,12 @@ class BaseDataset:
         self.extract_dir = Path(extract_dir).expanduser()
  
 
-    def fetch_data(self, file_name:str) -> str:
-        if Path(file_name).is_absolute():
-            self.log.warning("Given file name is an absolute path. No operations are done. The path is returned as it is")
-            return file_name
-        
-        return self._fetch_data(file_name)
-
+    def fetch_data(self) :
+        raise NotImplemented
     def get_version(self) -> str:
         return self.version
     
     def delete_data(self):
-        raise NotImplemented
-
-    def _read_zipfile_structure(self, file_path):
-        """
-        Reads the zipfile structure and returns the dictionary containing file_names as keys and list of relative paths having same file name. 
-        """
-        with ZipFile(file_path) as zf:
-            file_names_in_zip = zf.namelist()
-        zf.close()      
-
-        file_names_dict = {}
-        for i in file_names_in_zip:
-            if str(Path(i).name) not in file_names_dict.keys():
-                file_names_dict[str(Path(i).name)] = [i]
-            else:
-                file_names_dict[str(Path(i).name)].append(i)
-        return file_names_dict
-
-    def _fetch_data(self,file_name):
         raise NotImplemented
     
     def _download(self):

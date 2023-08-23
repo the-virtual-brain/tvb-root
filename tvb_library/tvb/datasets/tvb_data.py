@@ -28,7 +28,6 @@
 .. moduleauthor:: Abhijit Deo <f20190041@goa.bits-pilani.ac.in>
 """
 
-import os
 import requests
 import json
 
@@ -77,7 +76,7 @@ class TVBZenodoDataset(BaseDataset):
          
         self.rec = Record(self._read_cached_response()[self.version])
 
-    def _fetch_data(self, file_name):        
+    def fetch_data(self, file_name:str)->str:        
         """
         Function to fetch the file having `file_name` as name of the file. The function checks if the dataset is downloaded or not. If not, function downloads the dataset and then extracts/unzip the file.
 
@@ -89,7 +88,10 @@ class TVBZenodoDataset(BaseDataset):
         returns: str
             path of the extracted/Unzipped file.
         """
-
+        if Path(file_name).is_absolute():
+            self.log.warning("Given `file_name` is an absolute path. No operations are done. The `file_name` is returned as it is")
+            return file_name
+        
         extract_dir = self.extract_dir 
 
         try:
@@ -128,35 +130,20 @@ class TVBZenodoDataset(BaseDataset):
                            file_name should be one of the following paths: {self.files_in_zip_dict[file_name]}""")
             raise NameError(f"file name should be one of the {self.files_in_zip_dict[file_name]}, but got {file_name}")
 
-    def describe(self):
+    def describe(self)-> str:
         """
         Returns the project description mentioned on the zenodo website. 
         """
         return self.rec.describe()
 
-    def get_recordid(self):
+    def get_recordid(self) -> str:
         """
         returns record id of the dataset  
         """
         return self.recid
 
-    def fetch_all_data(self):
 
-        if self.files_in_zip_dict == None:
-            self._download(path = self.cached_dir, fname=f"tvb_data_{self.version}.zip")
-            self.files_in_zip_dict = self._read_zipfile_structure(self.rec.file_loc['tvb_data.zip'])
- 
-        
-        for  file_paths in self.files_in_zip_dict.values():
-            for file_path in file_paths:
-                self.fetch_data(file_path)
-
-        if self.extract_dir.is_absolute():
-            return str(self.extract_dir)
-        return str(Path.cwd()/self.extract_dir)
-
-
-    def delete_data(self):
+    def delete_data(self)->None:
         """
         Deletes the `tvb_data` folder in the `self.extract_dir` directory. 
         """
@@ -218,3 +205,20 @@ class TVBZenodoDataset(BaseDataset):
 
         responses = dict(responses)
         return responses
+    
+    def _read_zipfile_structure(self, file_path):
+        """
+        Reads the zipfile structure and returns the dictionary containing file_names as keys and list of relative paths having same file name. 
+        """
+        with ZipFile(file_path) as zf:
+            file_names_in_zip = zf.namelist()
+        zf.close()      
+
+        file_names_dict = {}
+        for i in file_names_in_zip:
+            if str(Path(i).name) not in file_names_dict.keys():
+                file_names_dict[str(Path(i).name)] = [i]
+            else:
+                file_names_dict[str(Path(i).name)].append(i)
+        return file_names_dict
+
