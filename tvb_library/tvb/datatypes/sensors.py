@@ -40,7 +40,7 @@ from io import StringIO
 
 from tvb.basic.readers import FileReader, try_get_absolute_path
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int, TVBEnum, Final
-
+from tvb.datasets import TVBZenodoDataset
 
 class SensorTypesEnum(TVBEnum):
     TYPE_EEG = "EEG"
@@ -77,7 +77,7 @@ class Sensors(HasTraits):
     def from_file(cls, source_file="eeg_brainstorm_65.txt"):
 
         result = cls()
-        source_full_path = try_get_absolute_path("tvb_data.sensors", source_file)
+        source_full_path = TVBZenodoDataset().fetch_data(source_file)
         reader = FileReader(source_full_path)
 
         result.labels = reader.read_array(dtype=numpy.str_, use_cols=(0,))
@@ -236,7 +236,7 @@ class SensorsMEG(Sensors):
     def from_file(cls, source_file="meg_151.txt.bz2"):
         result = super(SensorsMEG, cls).from_file(source_file)
 
-        source_full_path = try_get_absolute_path("tvb_data.sensors", source_file)
+        source_full_path = TVBZenodoDataset().fetch_data(source_file)
         reader = FileReader(source_full_path)
         result.orientations = reader.read_array(use_cols=(4, 5, 6))
 

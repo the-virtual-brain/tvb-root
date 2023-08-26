@@ -1,5 +1,7 @@
 name: Test Win
-on: [push]
+on: 
+  pull_request:
+  push:
 
 jobs:
   build:
@@ -34,22 +36,7 @@ jobs:
           pip install -r tvb_framework/requirements.txt
           pip install --no-build-isolation tvb-gdist
 
-      - name: cache data
-        id: cache-data
-        uses: actions/cache@v3
-        with:
-          path: tvb_data
-          key: tvbdata
 
-      - name: download data
-        if: steps.cache-data.outputs.cache-hit != 'true'
-        shell: pwsh
-        run: |
-          Invoke-WebRequest -OutFile C:\\TEMP\\tvb_data.zip -Uri "https://zenodo.org/record/7574266/files/tvb_data.zip?download=1"
-          Expand-Archive 'C:\\TEMP\\tvb_data.zip' C:\\tvb_data
-          del C:\\TEMP\\tvb_data.zip
-          cd C:\\tvb_data
-          pip install -e .
 
       - name: run framework tests
         shell: pwsh

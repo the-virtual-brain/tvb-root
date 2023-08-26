@@ -27,7 +27,7 @@
 import os
 import flask
 import pytest
-import tvb_data
+from tvb.datasets import TVBZenodoDataset
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.resources.datatype.datatype_resource import RetrieveDatatypeResource
@@ -38,6 +38,8 @@ from tvb.tests.framework.interfaces.rest.base_resource_test import RestResourceT
 
 
 class TestDatatypeResource(RestResourceTest):
+
+    dataset = TVBZenodoDataset()
 
     def transactional_setup_method(self):
         self.test_user = TestFactory.create_user('Rest_User')
@@ -53,7 +55,7 @@ class TestDatatypeResource(RestResourceTest):
 
     def test_server_retrieve_datatype(self, mocker):
         self._mock_user(mocker)
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
+        zip_path = self.dataset.fetch_data('connectivity_96.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
         datatypes_in_project = self.get_data_in_project_resource.get(project_gid=self.test_project.gid)
@@ -79,7 +81,7 @@ class TestDatatypeResource(RestResourceTest):
 
     def test_server_get_operations_for_datatype(self, mocker):
         self._mock_user(mocker)
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
+        zip_path = self.dataset.fetch_data('connectivity_96.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
         datatypes_in_project = self.get_data_in_project_resource.get(project_gid=self.test_project.gid)

@@ -31,6 +31,7 @@ Import connectivities from Brain Tumor zip archives
 .. moduleauthor:: Bogdan Valean <bogdan.valean@codemart.ro>
 """
 import sys
+from tvb.datasets import TVBZenodoDataset
 from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporter, RegionMappingImporterModel
 from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporter, ZIPSurfaceImporterModel
 from tvb.basic.logger.builder import get_logger
@@ -66,8 +67,9 @@ def import_tumor_connectivities(project_id, folder_path):
 
 def import_surface_rm(project_id, conn_gid):
     # Import surface and region mapping from tvb_data berlin subjects (68 regions)
-    rm_file = try_get_absolute_path("tvb_data", "berlinSubjects/DH_20120806/DH_20120806_RegionMapping.txt")
-    surface_zip_file = try_get_absolute_path("tvb_data", "berlinSubjects/DH_20120806/DH_20120806_Surface_Cortex.zip")
+    dataset = TVBZenodoDataset()
+    rm_file = dataset.fetch_data('DH_20120806_RegionMapping.txt')
+    surface_zip_file = dataset.fetch_data('DH_20120806_Surface_Cortex.zip')
 
     surface_importer = ABCAdapter.build_adapter_from_class(ZIPSurfaceImporter)
     surface_imp_model = ZIPSurfaceImporterModel()

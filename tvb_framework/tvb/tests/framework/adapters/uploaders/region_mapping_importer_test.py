@@ -30,8 +30,7 @@
 
 import os
 import tvb.tests.framework.adapters.uploaders.test_data as test_data
-import tvb_data.regionMapping as demo_data
-import tvb_data.surfaceData
+from tvb.datasets import TVBZenodoDataset
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.basic.neotraits.ex import TraitValueError
 from tvb.core.adapters.exceptions import LaunchException
@@ -48,10 +47,12 @@ class TestRegionMappingImporter(BaseTestCase):
     """
     Unit-tests for RegionMapping importer.
     """
+    dataset = TVBZenodoDataset()
 
-    TXT_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'regionMapping_16k_76.txt')
-    ZIP_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'regionMapping_16k_76.zip')
-    BZ2_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'regionMapping_16k_76.bz2')
+
+    TXT_FILE = dataset.fetch_data('regionMapping_16k_76.txt')
+    ZIP_FILE = dataset.fetch_data('regionMapping_16k_76.zip')
+    BZ2_FILE = dataset.fetch_data('regionMapping_16k_76.bz2')
 
     # Wrong data
     WRONG_FILE_1 = os.path.join(os.path.dirname(test_data.__file__), 'region_mapping_wrong_1.txt')
@@ -67,12 +68,12 @@ class TestRegionMappingImporter(BaseTestCase):
         self.test_user = TestFactory.create_user("UserRM")
         self.test_project = TestFactory.create_project(self.test_user)
 
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
+        zip_path = self.dataset.fetch_data("connectivity_76.zip")
         self.connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
         field = FilterChain.datatype + '.surface_type'
         filters = FilterChain('', [field], [SurfaceTypesEnum.CORTICAL_SURFACE.value], ['=='])
-        cortex = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        cortex = self.dataset.fetch_data('cortex_16384.zip')
         TestFactory.import_surface_zip(self.test_user, self.test_project, cortex, SurfaceTypesEnum.CORTICAL_SURFACE)
         self.surface = TestFactory.get_entity(self.test_project, SurfaceIndex, filters)
 

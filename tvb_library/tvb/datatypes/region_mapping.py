@@ -39,7 +39,7 @@ from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.surfaces import Surface
 from tvb.datatypes.volumes import Volume
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray
-
+from tvb.datasets import TVBZenodoDataset
 
 class RegionMapping(HasTraits):
     """
@@ -55,7 +55,7 @@ class RegionMapping(HasTraits):
 
     @staticmethod
     def from_file(source_file="regionMapping_16k_76.txt"):
-        source_full_path = try_get_absolute_path("tvb_data.regionMapping", source_file)
+        source_full_path = TVBZenodoDataset().fetch_data(source_file)
         reader = FileReader(source_full_path)
 
         result = RegionMapping()

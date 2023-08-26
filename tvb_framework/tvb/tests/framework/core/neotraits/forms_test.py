@@ -27,7 +27,7 @@ import os
 import uuid
 import numpy
 import pytest
-import tvb_data
+from tvb.datasets import TVBZenodoDataset
 
 from tvb.basic.neotraits.api import Attr, Float, Int, NArray, List
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
@@ -54,7 +54,7 @@ class TestForms(BaseTestCase):
         self.clean_database()
 
     def test_upload_field(self):
-        connectivity_file = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
+        connectivity_file = TVBZenodoDataset().fetch_data('connectivity_96.zip')
         data_file = Str('Test Upload Field')
         required_type = '.zip'
         upload_field = TraitUploadField(data_file, required_type, self.name)

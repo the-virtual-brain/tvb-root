@@ -29,15 +29,16 @@
 """
 
 import os
-import tvb_data.obj
+from tvb.datasets import TVBZenodoDataset
 from tvb.adapters.uploaders.obj_importer import ObjSurfaceImporter
 from tvb.basic.logger.builder import get_logger
 from tvb.core.services.operation_service import OperationService
 from tvb.core.entities.storage import dao
 from tvb.datatypes.surfaces import SurfaceTypesEnum
 
-DATA_FILE_EEG_CAP = os.path.join(os.path.dirname(tvb_data.obj.__file__), "eeg_cap.obj")
-DATA_FILE_FACE = os.path.join(os.path.dirname(tvb_data.obj.__file__), "face_surface.obj")
+dataset = TVBZenodoDataset()
+DATA_FILE_EEG_CAP = dataset.fetch_data("eeg_cap.obj")
+DATA_FILE_FACE = dataset.fetch_data('face_surface.obj')
 
 LOGGER = get_logger(__name__)
 PAGE_SIZE = 20

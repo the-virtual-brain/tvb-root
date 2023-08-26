@@ -29,8 +29,7 @@
 """
 
 import pytest
-import tvb_data
-from os import path
+from tvb.datasets import TVBZenodoDataset
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityImporter
 from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityParser, CSVConnectivityImporterModel
@@ -46,10 +45,10 @@ TEST_SUBJECT_B = "TEST_SUBJECT_B"
 
 
 class TestCSVConnectivityParser(BaseTestCase):
-    BASE_PTH = path.join(path.dirname(tvb_data.__file__), 'dti_pipeline_toronto')
-
+    
+    
     def test_parse_happy(self):
-        cap_pth = path.join(self.BASE_PTH, 'output_ConnectionDistanceMatrix.csv')
+        cap_pth = TVBZenodoDataset().fetch_data('output_ConnectionDistanceMatrix.csv')
 
         with open(cap_pth) as f:
             result_conn = CSVConnectivityParser(f).result_conn
@@ -62,6 +61,7 @@ class TestCSVConnectivityImporter(BaseTestCase):
     """
     Unit-tests for csv connectivity importer.
     """
+    dataset = TVBZenodoDataset()
 
     def setup_method(self):
         self.test_user = TestFactory.create_user()
@@ -75,15 +75,11 @@ class TestCSVConnectivityImporter(BaseTestCase):
         self.clean_database()
 
     def _import_csv_test_connectivity(self, reference_connectivity_gid, subject):
-        # First prepare the input data:
-        data_dir = path.abspath(path.dirname(tvb_data.__file__))
-
-        toronto_dir = path.join(data_dir, 'dti_pipeline_toronto')
-        weights = path.join(toronto_dir, 'output_ConnectionCapacityMatrix.csv')
-        tracts = path.join(toronto_dir, 'output_ConnectionDistanceMatrix.csv')
-        tmp_folder = self.storage_interface.get_temp_folder(self.test_project.name)
-        weights_tmp = path.join(tmp_folder, 'output_ConnectionCapacityMatrix.csv.tmp')
-        tracts_tmp = path.join(tmp_folder, 'output_ConnectionDistanceMatrix.csv.tmp')
+        ### First prepare input data:
+        weights = self.dataset.fetch_data('output_ConnectionCapacityMatrix.csv')
+        tracts =  self.dataset.fetch_data('output_ConnectionDistanceMatrix.csv')
+        weights_tmp = weights + '.tmp'
+        tracts_tmp = tracts + '.tmp'
         self.storage_interface.copy_file(weights, weights_tmp)
         self.storage_interface.copy_file(tracts, tracts_tmp)
 
@@ -99,7 +95,7 @@ class TestCSVConnectivityImporter(BaseTestCase):
         Test that importing a CFF generates at least one DataType in DB.
         """
 
-        zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
+        zip_path = self.dataset.fetch_data('connectivity_96.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, subject=TEST_SUBJECT_A)
 
         field = FilterChain.datatype + '.subject'
@@ -131,7 +127,7 @@ class TestCSVConnectivityImporter(BaseTestCase):
         assert (reference_connectivity.region_labels == imported_connectivity.region_labels).all()
 
     def test_bad_reference(self):
-        zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
+        zip_path = self.dataset.fetch_data('connectivity_66.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
         field = FilterChain.datatype + '.subject'
         filters = FilterChain('', [field], [TEST_SUBJECT_A], ['!='])

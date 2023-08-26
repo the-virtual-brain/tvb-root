@@ -32,7 +32,7 @@
 import os.path
 
 import pytest
-import tvb_data
+from tvb.datasets import TVBZenodoDataset
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.uploaders.connectivity_measure_importer import ConnectivityMeasureImporter
 from tvb.adapters.uploaders.connectivity_measure_importer import ConnectivityMeasureImporterModel
@@ -48,7 +48,7 @@ class TestConnectivityMeasureImporter(BaseTestCase):
     """
 
     def setup_method(self):
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
+        zip_path = TVBZenodoDataset().fetch_data('connectivity_66.zip')
         self.test_user = TestFactory.create_user('Test_User_CM')
         self.test_project = TestFactory.create_project(self.test_user, "Test_Project_CM")
         self.connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")

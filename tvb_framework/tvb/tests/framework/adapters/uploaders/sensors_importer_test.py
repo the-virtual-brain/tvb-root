@@ -30,7 +30,7 @@
 
 import os
 
-import tvb_data.sensors as demo_data
+from tvb.datasets import TVBZenodoDataset
 from tvb.adapters.uploaders.sensors_importer import SensorsImporter, SensorsImporterModel
 from tvb.core.neocom import h5
 from tvb.core.services.exceptions import OperationException
@@ -44,8 +44,9 @@ class TestSensorsImporter(BaseTestCase):
     """
     Unit-tests for Sensors importer.
     """
-    EEG_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'eeg_unitvector_62.txt.bz2')
-    MEG_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'meg_151.txt.bz2')
+    dataset = TVBZenodoDataset()
+    EEG_FILE = dataset.fetch_data('eeg_unitvector_62.txt.bz2')
+    MEG_FILE = dataset.fetch_data('meg_151.txt.bz2')
 
     def setup_method(self):
         """

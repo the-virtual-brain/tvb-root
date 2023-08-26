@@ -31,8 +31,7 @@ import json
 import os
 
 import numpy
-import tvb_data
-import tvb_data.nifti as demo_data
+from tvb.datasets import TVBZenodoDataset
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
@@ -51,11 +50,13 @@ class TestNIFTIImporter(BaseTestCase):
     Unit-tests for NIFTI importer.
     """
 
-    NII_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'minimal.nii')
-    GZ_NII_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'minimal.nii.gz')
-    TIMESERIES_NII_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'time_series_152.nii.gz')
-    WRONG_NII_FILE = os.path.abspath(__file__)
-    TXT_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'volume_mapping/mapping_FS_76.txt')
+
+    dataset = TVBZenodoDataset()
+    NII_FILE = dataset.fetch_data('minimal.nii')
+    GZ_NII_FILE = dataset.fetch_data('minimal.nii.gz')
+    TIMESERIES_NII_FILE = dataset.fetch_data('time_series_152.nii.gz')
+    WRONG_NII_FILE = os.path.abspath(__file__) #?
+    TXT_FILE = dataset.fetch_data('mapping_FS_76.txt')
 
     DEFAULT_ORIGIN = [[0.0, 0.0, 0.0]]
     UNKNOWN_STR = "unknown"
@@ -144,7 +145,7 @@ class TestNIFTIImporter(BaseTestCase):
         """
         This method tests import of a NIFTI file compressed in GZ format.
         """
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
+        zip_path = self.dataset.fetch_data('connectivity_76.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
         to_link_conn = TestFactory.get_entity(self.test_project, ConnectivityIndex)
 

@@ -27,7 +27,7 @@
 import os
 import flask
 import pytest
-import tvb_data
+from tvb.datasets import TVBZenodoDataset
 
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.commons.strings import Strings
@@ -45,7 +45,8 @@ class TestProjectResource(RestResourceTest):
         self.test_user = TestFactory.create_user('Rest_User')
         self.test_project_without_data = TestFactory.create_project(self.test_user, 'Rest_Project', users=[self.test_user.id])
         self.test_project_with_data = TestFactory.create_project(self.test_user, 'Rest_Project2', users=[self.test_user.id])
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
+        dataset = TVBZenodoDataset()
+        zip_path = dataset.fetch_data('connectivity_96.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project_with_data, zip_path)
 
     def test_server_get_data_in_project_inexistent_gid(self, mocker):

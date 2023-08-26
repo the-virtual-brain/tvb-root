@@ -32,7 +32,7 @@ Testing linking datatypes between projects.
 """
 import pytest
 import os
-import tvb_data
+from tvb.datasets import TVBZenodoDataset
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.adapters.exporters.export_manager import ExportManager
@@ -48,6 +48,8 @@ from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
 class _BaseLinksTest(TransactionalTestCase):
+
+    dataset = TVBZenodoDataset()
 
     @pytest.fixture()
     def initialize_two_projects(self, dummy_datatype_index_factory, project_factory, user_factory):
@@ -66,9 +68,9 @@ class _BaseLinksTest(TransactionalTestCase):
         src_user = user_factory(username="Links Test")
         self.src_usr_id = src_user.id
         self.src_project = project_factory(src_user, "Src_Project")
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'paupau.zip')
+        zip_path = self.dataset.fetch_data("paupau.zip")
         self.red_datatype = TestFactory.import_zip_connectivity(src_user, self.src_project, zip_path, "John")
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'sensors', 'eeg_unitvector_62.txt.bz2')
+        zip_path = self.dataset.fetch_data('eeg_unitvector_62.txt.bz2')
         self.blue_datatype = TestFactory.import_sensors(src_user, self.src_project, zip_path,
                                                         SensorTypesEnum.TYPE_EEG)
         assert 1 == self.red_datatypes_in(self.src_project.id)
@@ -207,7 +209,7 @@ class TestImportExportProjectWithLinksTest(_BaseLinksTest):
             Project dest will have the derived VW and links
             """
             # add a connectivity to src project and link it to dest project
-            zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
+            zip_path = self.dataset.fetch_data('connectivity_96.zip')
             conn = TestFactory.import_zip_connectivity(self.dst_user, self.src_project, zip_path, "John")
             self.algorithm_service.create_link(conn.id, self.dest_project.id)
 

@@ -31,9 +31,7 @@
 
 import os
 
-import tvb_data.projectionMatrix as dataset
-import tvb_data.sensors
-import tvb_data.surfaceData
+from tvb.datasets import TVBZenodoDataset
 from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
 from tvb.core.services.exceptions import OperationException
 from tvb.datatypes.sensors import SensorTypesEnum
@@ -46,6 +44,7 @@ class TestProjectionMatrix(BaseTestCase):
     """
     Unit-tests for CFF-importer.
     """
+    dataset = TVBZenodoDataset()
 
     def setup_method(self):
         """
@@ -54,11 +53,11 @@ class TestProjectionMatrix(BaseTestCase):
         self.test_user = TestFactory.create_user("UserPM")
         self.test_project = TestFactory.create_project(self.test_user)
 
-        zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'eeg_brainstorm_65.txt')
+        zip_path = self.dataset.fetch_data('eeg_brainstorm_65.txt')
         self.sensors = TestFactory.import_sensors(self.test_user, self.test_project, zip_path,
                                                   SensorTypesEnum.TYPE_EEG)
 
-        zip_path = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        zip_path = self.dataset.fetch_data('cortex_16384.zip')
         self.surface = TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path,
                                                       SurfaceTypesEnum.CORTICAL_SURFACE, True)
 
@@ -72,8 +71,7 @@ class TestProjectionMatrix(BaseTestCase):
         """
         Verifies that importing a different shape throws exception
         """
-        file_path = os.path.join(os.path.abspath(os.path.dirname(dataset.__file__)),
-                                 'projection_eeg_62_surface_16k.mat')
+        file_path = self.dataset.fetch_data('projection_eeg_62_surface_16k.mat')
 
         try:
             TestFactory.import_projection_matrix(self.test_user, self.test_project, file_path, self.sensors.gid,
@@ -87,8 +85,7 @@ class TestProjectionMatrix(BaseTestCase):
         Verifies the happy flow for importing a surface.
         """
         dt_count_before = TestFactory.get_entity_count(self.test_project, ProjectionMatrixIndex)
-        file_path = os.path.join(os.path.abspath(os.path.dirname(dataset.__file__)),
-                                 'projection_eeg_65_surface_16k.npy')
+        file_path = self.dataset.fetch_data('projection_eeg_65_surface_16k.npy')
 
         TestFactory.import_projection_matrix(self.test_user, self.test_project, file_path, self.sensors.gid,
                                              self.surface.gid, False)

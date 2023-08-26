@@ -40,7 +40,7 @@ from tvb.basic.exceptions import ValidationException
 from tvb.basic.neotraits.api import Attr, NArray, List, HasTraits, Int, narray_summary_info
 from tvb.basic.neotraits.ex import TraitAttributeError
 from tvb.basic.readers import ZipReader, H5Reader, try_get_absolute_path
-
+from tvb.datasets import TVBZenodoDataset
 
 class Connectivity(HasTraits):
     region_labels = NArray(
@@ -719,8 +719,10 @@ class Connectivity(HasTraits):
     def from_file(cls, source_file="connectivity_76.zip"):
 
         result = Connectivity()
-        source_full_path = try_get_absolute_path("tvb_data.connectivity", source_file)
+        #source_full_path = try_get_absolute_path("tvb_data.connectivity", source_file)
+        source_full_path = TVBZenodoDataset().fetch_data(source_file) 
 
+        
         if source_file.endswith(".h5"):
             reader = H5Reader(source_full_path)
 

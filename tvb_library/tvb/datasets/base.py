@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need to download
-# TheVirtualBrain-Scientific Package (for simulators). See content of the
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# analysers necessary to run brain-simulations. You can use it stand alone or
+# in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
 # (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
@@ -25,28 +25,37 @@
 #
 
 """
-Change default data setup for TVB version 1.2.2.
-
-.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
+.. moduleauthor:: Abhijit Deo <f20190041@goa.bits-pilani.ac.in>
 """
-import os
+
+
+
 from tvb.basic.logger.builder import get_logger
-from tvb.core.entities.storage import dao
-from tvb.core.services.import_service import ImportService
-from tvb.datasets import TVBZenodoDataset
+from tvb.basic.profile import TvbProfile
+from pathlib import Path
+from zipfile import ZipFile
 
-DATA_FILE = TVBZenodoDataset().fetch_data('Default_Project.zip')
-LOGGER = get_logger(__name__)
+class BaseDataset:
 
+    def __init__(self, version : str , extract_dir : str =None) -> None:
 
-def update():
-    """
-    Try to import Default_Project, so that new users created with the latest code can share this project.
-    """
+        self.log = get_logger(self.__class__.__module__)
+        self.cached_files = None
+        self.version = version
 
-    try:
-        admins = dao.get_administrators()
-        service = ImportService()
-        service.import_project_structure(DATA_FILE, admins[0].id)
-    except Exception:
-        LOGGER.exception("Could import DefaultProject!")
+        if (extract_dir==None):
+            extract_dir = TvbProfile.current.DATASETS_FOLDER
+
+        self.extract_dir = Path(extract_dir).expanduser()
+ 
+
+    def fetch_data(self) :
+        raise NotImplementedError
+    def get_version(self) -> str:
+        return self.version
+    
+    def delete_data(self):
+        raise NotImplementedError
+    
+    def _download(self):
+        raise NotImplementedError
