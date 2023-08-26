@@ -50,12 +50,12 @@ class BaseDataset:
  
 
     def fetch_data(self) :
-        return NotImplemented
+        raise NotImplementedError
     def get_version(self) -> str:
         return self.version
     
     def delete_data(self):
-        return NotImplemented
+        raise NotImplementedError
     
     def _download(self):
-        return NotImplemented
+        raise NotImplementedError
