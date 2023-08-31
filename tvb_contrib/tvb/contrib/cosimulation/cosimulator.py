@@ -331,18 +331,12 @@ class CoSimulator(Simulator):
                 # check if it's valid input
                 ValueError("Incorrect n_steps = %i; it should be <= %i".format(
                            n_steps, self.good_cosim_update_values_shape[0]))
-            start_step = self.current_step + 1
-            coupling_start_step = int(start_step)
-            if numpy.abs(relative_start_step) + n_steps > self.good_cosim_update_values_shape[0]:
-               ValueError("Incorrect relative_start_step %i; "
-                          "its absolute value should be in the interval [0, %i]".format(
+            if relative_start_step < 0 or \
+                    relative_start_step + n_steps > self.good_cosim_update_values_shape[0]:
+               ValueError("Incorrect relative_start_step %i; it should be in the interval [0, %i]".format(
                           relative_start_step, self.good_cosim_update_values_shape[0] - n_steps))
-            if relative_start_step > 0:
-                coupling_start_step = start_step + relative_start_step  # it has to be in the future
-            if relative_start_step < 0:
-                start_step += relative_start_step  # it has to be in the past
-            # Finally adjust for synchronization_n_step in the past for non-coupling monitors:
-            start_step -= self.synchronization_n_step
+            coupling_start_step = self.current_step + relative_start_step + 1  # it has to be in the future
+            start_step = coupling_start_step - self.synchronization_n_step  # it has to be in the past
             outputs = [[]] * self.number_of_cosim_monitors
             for iM in self._cosim_monitors_noncoupling_indices:
                 # Loop over all non coupling cosimulation monitors:
