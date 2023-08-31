@@ -27,7 +27,7 @@
 
 import numpy
 
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Float
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int
 from tvb.simulator.coupling import Coupling, Linear
 from tvb.simulator.monitors import Raw, RawVoi, AfferentCoupling
 
