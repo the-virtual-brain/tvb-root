@@ -78,6 +78,27 @@ class CoSimulator(Simulator):
     _cosim_monitors_noncoupling_indices = []
     _cosim_monitors_coupling_indices = []
 
+    @property
+    def existing_connections(self):
+        existing_connections = self.connectivity.weights != 0
+        if numpy.any(existing_connections):
+            return existing_connections
+        else:
+            return []
+
+    @property
+    def min_idelay(self):
+        idelays = self.connectivity.idelays[self.existing_connections]
+        if idelays.size:
+            return idelays.min()
+        self.log.warning("There are no existing connections (i.e., with nonzero weights)!\n"
+                         "Setting minimum delay to 1 integrator time step = %g!." % self.integrator.dt)
+        return 1
+
+    @property
+    def min_delay(self):
+        return self.min_idelay * self.integrator.dt
+
     def _configure_synchronization_time(self):
         """This method will set the synchronization time and number of steps,
            and certainly longer or equal to the integration time step.
@@ -90,14 +111,12 @@ class CoSimulator(Simulator):
         # Compute the number of synchronization time steps:
         self.synchronization_n_step = iround(self.synchronization_time / self.integrator.dt)
         # Check if the synchronization time is smaller than the minimum delay of the connectivity:
-        existing_connections = self.connectivity.weights != 0
-        if numpy.any(existing_connections):
-            min_idelay = self.connectivity.idelays[existing_connections].min()
-            if self.synchronization_n_step > min_idelay:
-                raise ValueError('The synchronization time %g is longer than '
-                                 'the minimum delay time %g '
-                                 'of all existing connections (i.e., of nonzero weight)!'
-                                 % (self.synchronization_time, min_idelay * self.integrator.dt))
+        min_delay = self.min_delay
+        if self.synchronization_n_step > min_idelay:
+            raise ValueError('The synchronization time %g is longer than '
+                             'the minimum delay time %g '
+                             'of all existing connections (i.e., of nonzero weight)!'
+                             % (self.synchronization_time, min_delay))
 
     def _configure_cosimulation(self):
         """This method will
