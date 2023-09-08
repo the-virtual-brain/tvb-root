@@ -423,8 +423,7 @@ class Gamma(HRFKernelEquation):
             product *= i + 1
 
         self.parameters["factorial"] = product
-        _pattern = RefBase.evaluate(self.equation,
-                                         global_dict=self.parameters)
+        _pattern = super().evaluate(var)
         _pattern /= max(_pattern)
         _pattern *= self.parameters["a"]
         return _pattern
@@ -472,7 +471,7 @@ class DoubleExponential(HRFKernelEquation):
         Generate a discrete representation of the equation for the space
         represented by ``var``.
         """
-        _pattern = RefBase.evaluate(self.equation, global_dict=self.parameters)
+        _pattern = super().evaluate(var)
         _pattern /= max(_pattern)
 
         _pattern *= self.parameters["a"]
@@ -588,4 +587,4 @@ class MixtureOfGammas(HRFKernelEquation):
         self.parameters["gamma_a_1"] = sp_gamma(self.parameters["a_1"])
         self.parameters["gamma_a_2"] = sp_gamma(self.parameters["a_2"])
 
-        return RefBase.evaluate(self.equation, global_dict=self.parameters)
+        return super().evaluate(var)

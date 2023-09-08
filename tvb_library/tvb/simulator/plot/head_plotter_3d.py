@@ -37,12 +37,11 @@ Usage
     # To visualise the sensors and surface
     hp.display_source_sensor_geometry(surface, connectivity, meg_sensors, eeg_sensors)
 
-    # To visualise the sensors and surface
-    hp.display_surface_local_connectivity(cortex, local_connectivity)
+    # To visualise a Surface in 3D
+    hp.display_surface(surface)
 
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
 from tvb.simulator.lab import *
 from deprecated import deprecated
@@ -53,7 +52,8 @@ from IPython.display import display
 @deprecated(reason="Use tvb-widgets instead")
 class HeadPlotter3D(object):
 
-    def display_source_sensor_geometry(self, surface=None, conn=None, meg_sensors=None, eeg_sensors=None):
+    @staticmethod
+    def display_source_sensor_geometry(surface=None, conn=None, meg_sensors=None, eeg_sensors=None):
         # type: (surfaces.SkinAir, connectivity.Connectivity, sensors.SensorsMEG, sensors.SensorsEEG ) -> None
         """
         :param surface: Optional surfaces.SkinAir instance. When none, we will try loading a default
@@ -120,25 +120,14 @@ class HeadPlotter3D(object):
         out = widgets.interactive_output(plot, params)
         display(control_box, out)
 
-    def display_surface_local_connectivity(self, ctx=None, loc_conn=None):
-        # type: (cortex.Cortex, local_connectivity.LocalConnectivity) -> None
+    @staticmethod
+    def display_surface(ctx):
+        # type: (surfaces.CorticalSurface) -> None
         """
-        :param cortex: Optional cortex.Cortex instance. When none, we will try loading a default
-        :param loc_conn: Optional. If None, and cortex local connectivity is None, we will try loading a default.
+        :param ctx: surface.CorticalSurfaceF
         """
-        # Start by configuring the cortical surface
-        if ctx is None:
-            ctx = cortex.Cortex.from_file()
-        if ctx.local_connectivity is None:
-            if loc_conn is None:
-                loc_conn = local_connectivity.LocalConnectivity(cutoff=20.0, surface=ctx.region_mapping_data.surface)
-            loc_conn.equation.parameters['sigma'] = 10.0
-            loc_conn.equation.parameters['amp'] = 1.0
-            ctx.local_connectivity = loc_conn
-        ctx.coupling_strength = np.array([0.0115])
         ctx.configure()
 
-        # plot 
         plt.figure()
         ax = plt.subplot(111, projection='3d')
         x, y, z = ctx.vertices.T
