@@ -159,7 +159,7 @@ class TvbSim:
         self.sim = tvb_init(model, synchronization_time, initial_condition)
         self.dt = self.sim.integrator.dt
         if initial_condition is not None:
-            self.current_state = np.expand_dims(initial_condition[-1 ,0, id_proxy, 0],[0, 2]) # only one mode, only S
+            self.current_state = np.expand_dims(initial_condition[-1, 0, id_proxy, 0], [0, 2]) # only one mode, only S
 
     def __call__(self, time, proxy_data=None, rate_data=None, rate=False):
         """
