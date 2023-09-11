@@ -111,12 +111,12 @@ class CoSimulator(Simulator):
         # Compute the number of synchronization time steps:
         self.synchronization_n_step = iround(self.synchronization_time / self.integrator.dt)
         # Check if the synchronization time is smaller than the minimum delay of the connectivity:
-        min_delay = self.min_delay
+        min_idelay = self.min_idelay
         if self.synchronization_n_step > min_idelay:
             raise ValueError('The synchronization time %g is longer than '
                              'the minimum delay time %g '
                              'of all existing connections (i.e., of nonzero weight)!'
-                             % (self.synchronization_time, min_delay))
+                             % (self.synchronization_time, min_idelay * self.integrator.dt))
 
     def _configure_cosimulation(self):
         """This method will
