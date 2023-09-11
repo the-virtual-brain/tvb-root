@@ -182,7 +182,7 @@ class TestModifyWongWangSimple(TestModifyWongWang):
             np.testing.assert_array_compare(operator.__ne__,
                                             result_all[0][1][i][0][:len(id_proxy)],
                                             result_4_all[1][i + sync_steps, 0, :len(id_proxy)])
-        # After the delays impact the simulation, there is some difference for for rate and S
+        # After the delays impact the simulation, there is some difference for rate and S
         idelays = np.copy(sim_4.connectivity.idelays)
         idelays = idelays[len(id_proxy):, :len(id_proxy)]
         min_delay = idelays[np.nonzero(idelays)].min()
