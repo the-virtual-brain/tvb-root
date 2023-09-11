@@ -73,7 +73,7 @@ class ReducedWongWangProxy(ReducedWongWang):
         return None
 
     def update_state_variables_after_integration(self, X):
-        X[1,:] = self.H_save # only work for Euler integrator
+        X[1, :] = self.H_save  # only work for Euler integrator
         return X
 
     def dfun(self, x, c, local_coupling=0.0):
