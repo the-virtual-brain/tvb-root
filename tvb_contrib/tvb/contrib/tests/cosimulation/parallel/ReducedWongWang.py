@@ -62,8 +62,8 @@ class ReducedWongWangProxy(ReducedWongWang):
     variables_of_interest = List(
         of=str,
         label="Variables watched by Monitors",
-        choices=("S","H"),
-        default=("S","H"),
+        choices=("S", "H"),
+        default=("S", "H"),
         doc="""default state variables to be monitored""")
     _coupling_variable = None
     non_integrated_variables = ["H"]
