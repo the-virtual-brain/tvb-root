@@ -67,10 +67,10 @@ class TestDoubleProxyPrecisionSimple(BaseTestCase):
 
         # COMPARE PROXY 1
         np.testing.assert_array_equal(np.squeeze(result_ref[:, proxy_id_2, :], axis=2)[0],
-                          np.squeeze(result_1[0][:, proxy_id_2, :], axis=2)[0])
+                                      np.squeeze(result_1[0][:, proxy_id_2, :], axis=2)[0])
         # COMPARE PROXY 2
         np.testing.assert_array_equal(np.squeeze(result_ref[:, proxy_id_1, :], axis=2)[0],
-                          np.squeeze(result_2[0][:, proxy_id_1, :], axis=2)[0])
+                                      np.squeeze(result_2[0][:, proxy_id_1, :], axis=2)[0])
 
         for i in range(0, 1000):
             time, result_2 = sim_2(synchronization_time, [time, result_1[0][:, proxy_id_2][:, :, 0]])

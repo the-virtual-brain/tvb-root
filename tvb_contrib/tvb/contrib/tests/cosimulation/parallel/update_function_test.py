@@ -60,7 +60,7 @@ class TestUpdateModel(BaseTestCase):
                                                  resolution_simulation),
                                        np.repeat(firing_rate.reshape(1, 2),
                                                  int(synchronization_time / resolution_simulation)*2, axis=0)])
-        # Test a fail function due to the resoulation time is not good
+        # Test a fail function due to the resolution time is not good
         with pytest.raises(ValueError):
             sim(synchronization_time,
                 [np.arange(100 * synchronization_time, 101 * synchronization_time, resolution_simulation*2),

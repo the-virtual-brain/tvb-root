@@ -65,7 +65,7 @@ def tvb_model(dt, weight, delay, id_proxy):
                                                  )
     white_matter_coupling = lab.coupling.Linear(a=np.array(0.0154))
     heunint = lab.integrators.EulerDeterministic(dt=dt, bounded_state_variable_indices=np.array([0]),
-                                                state_variable_boundaries=np.array([[0.0, 1.0]]))
+                                                 state_variable_boundaries=np.array([[0.0, 1.0]]))
     return populations, white_matter, white_matter_coupling, heunint, id_proxy
 
 
@@ -131,8 +131,8 @@ def tvb_simulation(time, sim, data_proxy):
         result_delayed = sim.run(cosim_updates=data_proxy)
         result = sim.loop_cosim_monitor_output()
         time = result[0][0]
-        s = [result[0][1][:,0], result_delayed[0][1][:,0]]
-        rate = [result[0][1][:,1], result_delayed[0][1][:,1]]
+        s = [result[0][1][:, 0], result_delayed[0][1][:, 0]]
+        rate = [result[0][1][:, 1], result_delayed[0][1][:, 1]]
     elif isinstance(sim, lab.simulator.Simulator):
         result = sim.run(simulation_length=time)
         time = result[0][0]
@@ -148,8 +148,8 @@ class TvbSim:
     def __init__(self, weight, delay, id_proxy, resolution_simulation, synchronization_time, initial_condition=None):
         """
         initialise the simulator
-        :param weight: weight on the connexion
-        :param delay: delay of the connexions
+        :param weight: weight on the connection
+        :param delay: delay of the connections
         :param id_proxy: the id of the proxy
         :param resolution_simulation: the resolution of the simulation
         :param initial_condition: initial condition for S and H
@@ -159,13 +159,13 @@ class TvbSim:
         self.sim = tvb_init(model, synchronization_time, initial_condition)
         self.dt = self.sim.integrator.dt
         if initial_condition is not None:
-            self.current_state = np.expand_dims(initial_condition[-1, 0, id_proxy, 0], [0, 2]) # only one mode, only S
+            self.current_state = np.expand_dims(initial_condition[-1, 0, id_proxy, 0], [0, 2])  # only one mode, only S
 
     def __call__(self, time, proxy_data=None, rate_data=None, rate=False):
         """
         run simulation for t biological
         :param time: the time of the simulation
-        :param proxy_data: the firing rate fo the next steps for the proxy
+        :param proxy_data: the firing rate for the next steps for the proxy
         :return:
             the result of time, the firing rate and the state of the network
         """
@@ -189,10 +189,10 @@ class TvbSim:
         S = []
         X = self.current_state
         for h in rate_data:
-            def dfun_proxy(x,c, local_coupling=0.0, stimulus=0.0):
+            def dfun_proxy(x, c, local_coupling=0.0, stimulus=0.0):
                 g = self.sim.model.gamma
                 t = self.sim.model.tau_s
-                return _numba_dfun_proxy(x,np.expand_dims(h,[0,2]),g,t)
+                return _numba_dfun_proxy(x, np.expand_dims(h, [0, 2]), g, t)
             X = self.sim.integrator.scheme(X, dfun_proxy, 0.0, 0.0, 0.0)
             S.append(X)
         self.current_state = X
