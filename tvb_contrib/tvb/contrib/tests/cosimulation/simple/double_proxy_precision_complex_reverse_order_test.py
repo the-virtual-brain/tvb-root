@@ -31,6 +31,9 @@ import operator
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.contrib.tests.cosimulation.parallel.function_tvb import TvbSim, tvb_simulation
 
+# TODO: What is needed is that CoSimulator returns delayed outputs for 2 * synchronization time!
+# Then it will be compared with the reference simulator output of 2 * synchronization time in the past
+
 
 class TvbSimReverseOrder(TvbSim):
 
