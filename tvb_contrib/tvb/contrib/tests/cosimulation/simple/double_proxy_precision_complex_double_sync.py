@@ -60,12 +60,12 @@ class TvbSimReverseOrder(TvbSim):
             return time, s_out
 
 
-class TestDoubleProxyPrecisionComplexReverseOrder(BaseTestCase):
+class TestDoubleProxyPrecisionComplexDoubleSync(BaseTestCase):
     """
     Test the transmission of information between two models with proxy in most complex cases
     """
 
-    def test_double_proxy_precision_complex_reverse_order(self):
+    def test_double_proxy_precision_complex_double_sync(self):
         weight = np.array([[5, 2, 4, 0], [8, 5, 4, 1], [6, 1, 7, 9], [10, 0, 5, 6]])
         delay = np.array([[7, 8, 5, 2], [10, 3, 7, 9], [4, 3, 2, 8], [9, 10, 11, 5]])
         max = np.int_(np.max(delay) * 10 + 1)
