@@ -127,7 +127,7 @@ class CosimMonitorFromCoupling(CosimMonitor):
         return [numpy.array(times), numpy.array(values)]
 
     def _config_time(self, simulator):
-        self.min_idelay = simulator.min_idelay
+        self.min_idelay = simulator._min_idelay
 
 
 class RawCosim(Raw, CosimMonitor):

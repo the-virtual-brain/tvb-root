@@ -40,7 +40,7 @@ class TestPrecision(BaseTestCase):
         weight = np.array([[2, 8], [3, 5]])
         delay = 100.0
         delays = np.array([[delay, delay], [delay, delay]])
-        init_value = [[0.9,0.0], [0.9,0.0]]
+        init_value = [[0.9, 0.0], [0.9, 0.0]]
         resolution_simulation = 0.1
         synchronization_time = 0.1 * 10.0
         nb_init = (int(delay / resolution_simulation)) + 1

@@ -28,7 +28,7 @@ It inherits the Simulator class.
 """
 
 import numpy
-from tvb.basic.neotraits.api import Attr, NArray, Float, List, TupleEnum, EnumAttr
+from tvb.basic.neotraits.api import Attr, NArray, Float, Int, List, TupleEnum, EnumAttr
 from tvb.simulator.common import iround
 from tvb.simulator.simulator import Simulator, math
 from tvb.contrib.cosimulation.cosim_history import CosimHistory
@@ -78,26 +78,34 @@ class CoSimulator(Simulator):
     _cosim_monitors_noncoupling_indices = []
     _cosim_monitors_coupling_indices = []
 
-    @property
-    def existing_connections(self):
+    _existing_connections = []
+    _min_delay = 0.0
+    _min_idelay = 1
+
+    relative_output_time_steps = Int(
+        label="relative_output_interfaces_time_steps",
+        default=0,
+        required=True,
+        doc="""Relative time steps for monitors to sample in the past in addition to synchronization_n_step.
+               Positive values return outputs further in the past.""")
+
+    def compute_existing_connections(self):
         existing_connections = self.connectivity.weights != 0
         if numpy.any(existing_connections):
-            return existing_connections
+            self._existing_connections = existing_connections
         else:
-            return []
+            self._existing_connections = []
+        return self._existing_connections
 
-    @property
-    def min_idelay(self):
-        idelays = self.connectivity.idelays[self.existing_connections]
+    def compute_min_delay(self):
+        idelays = self.connectivity.idelays[self.compute_existing_connections()]
+        self._min_idelay = 1
         if idelays.size:
-            return idelays.min()
+            self._min_idelay = idelays.min()
         self.log.warning("There are no existing connections (i.e., with nonzero weights)!\n"
                          "Setting minimum delay to 1 integrator time step = %g!." % self.integrator.dt)
-        return 1
-
-    @property
-    def min_delay(self):
-        return self.min_idelay * self.integrator.dt
+        self._min_delay = self._min_idelay * self.integrator.dt
+        return self._min_delay, self._min_idelay
 
     def _configure_synchronization_time(self):
         """This method will set the synchronization time and number of steps,
@@ -111,12 +119,11 @@ class CoSimulator(Simulator):
         # Compute the number of synchronization time steps:
         self.synchronization_n_step = iround(self.synchronization_time / self.integrator.dt)
         # Check if the synchronization time is smaller than the minimum delay of the connectivity:
-        min_delay = self.min_delay
-        if self.synchronization_n_step > min_idelay:
+        if self.synchronization_n_step > self._min_idelay:
             raise ValueError('The synchronization time %g is longer than '
                              'the minimum delay time %g '
                              'of all existing connections (i.e., of nonzero weight)!'
-                             % (self.synchronization_time, min_delay))
+                             % (self.synchronization_time, self._min_delay))
 
     def _configure_cosimulation(self):
         """This method will
@@ -178,6 +185,7 @@ class CoSimulator(Simulator):
 
         """
         super(CoSimulator, self).configure(full_configure=full_configure)
+        self.compute_min_delay()
         # (Re)Set his flag after every configuration, so that runtime and storage requirements are recomputed,
         # just in case the simulator has been modified (connectivity size, synchronization time, dt etc)
         self._compute_requirements = True
@@ -203,7 +211,9 @@ class CoSimulator(Simulator):
         state_copy = numpy.copy(state)
         if self._cosimulation_flag:
             state_copy[:, self.proxy_inds] = numpy.NAN
-            state_output = numpy.copy(self.cosim_history.query(step - self.synchronization_n_step))
+            state_output = numpy.copy(self.cosim_history.query(step
+                                                               - self.synchronization_n_step
+                                                               - self.relative_output_time_steps))
             # Update the cosimulation history for the delayed monitor and the next update of history
             self.cosim_history.update(step, state_copy)
         else:
@@ -225,7 +235,7 @@ class CoSimulator(Simulator):
         # TODO optimize step : update all the steps in one
         for step in current_steps:
             state = numpy.copy(self.cosim_history.query(step))
-            if numpy.any(numpy.isnan(state[self.model.cvar,:,:])):
+            if numpy.any(numpy.isnan(state[self.model.cvar, :, :])):
                 raise NumericalInstability("There are missing values for continue the simulation")
             super(CoSimulator,self)._loop_update_history(step, state)
 
@@ -305,7 +315,8 @@ class CoSimulator(Simulator):
                                              stimulus, (step-1)*self.integrator.dt)
             state_output = self._loop_update_cosim_history(step, state)
             node_coupling = self._loop_compute_node_coupling(step + 1)
-            output = self._loop_monitor_output(step-self.synchronization_n_step, state_output, node_coupling)
+            output = self._loop_monitor_output(step - self.synchronization_n_step - self.relative_output_time_steps,
+                                               state_output, node_coupling)
             if output is not None:
                 yield output
 
@@ -332,9 +343,8 @@ class CoSimulator(Simulator):
                 # check if it's valid input
                 ValueError("Incorrect n_steps = %i; it should be <= %i".format(
                            n_steps, self.good_cosim_update_values_shape[0]))
-            if relative_start_step < 0 or \
-                    relative_start_step + n_steps > self.good_cosim_update_values_shape[0]:
-               ValueError("Incorrect relative_start_step %i; it should be in the interval [0, %i]".format(
+            if relative_start_step + n_steps > self.good_cosim_update_values_shape[0]:
+               ValueError("Incorrect relative_start_step %i for n_step = %i; it should be <= %i".format(
                           relative_start_step, self.good_cosim_update_values_shape[0] - n_steps))
             coupling_start_step = self.current_step + relative_start_step + 1  # it has to be in the future
             start_step = coupling_start_step - self.synchronization_n_step  # it has to be in the past
