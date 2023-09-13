@@ -28,7 +28,7 @@ It inherits the Simulator class.
 """
 
 import numpy
-from tvb.basic.neotraits.api import Attr, NArray, Float, List, TupleEnum, EnumAttr
+from tvb.basic.neotraits.api import Attr, NArray, Float, Int, List, TupleEnum, EnumAttr
 from tvb.simulator.common import iround
 from tvb.simulator.simulator import Simulator, math
 from tvb.contrib.cosimulation.cosim_history import CosimHistory
@@ -81,6 +81,12 @@ class CoSimulator(Simulator):
     _existing_connections = []
     _min_delay = 0.0
     _min_idelay = 1
+
+    relative_output_time_steps = Int(
+        label="relative_output_interfaces_time_steps",
+        default=0,
+        required=True,
+        doc="""Relative time steps for monitors to sample in the past in addition to synchronization_n_step.""")
 
     def compute_existing_connections(self):
         existing_connections = self.connectivity.weights != 0
@@ -204,7 +210,9 @@ class CoSimulator(Simulator):
         state_copy = numpy.copy(state)
         if self._cosimulation_flag:
             state_copy[:, self.proxy_inds] = numpy.NAN
-            state_output = numpy.copy(self.cosim_history.query(step - self.synchronization_n_step))
+            state_output = numpy.copy(self.cosim_history.query(step
+                                                               - self.synchronization_n_step
+                                                               - self.relative_output_time_steps))
             # Update the cosimulation history for the delayed monitor and the next update of history
             self.cosim_history.update(step, state_copy)
         else:
@@ -305,7 +313,8 @@ class CoSimulator(Simulator):
             state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, stimulus)
             state_output = self._loop_update_cosim_history(step, state)
             node_coupling = self._loop_compute_node_coupling(step + 1)
-            output = self._loop_monitor_output(step-self.synchronization_n_step, state_output, node_coupling)
+            output = self._loop_monitor_output(step - self.synchronization_n_step - self.relative_output_time_steps,
+                                               state_output, node_coupling)
             if output is not None:
                 yield output
 
