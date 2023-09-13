@@ -40,7 +40,7 @@ class TestProxyPrecision(BaseTestCase):
         weight = np.array([[2, 8], [3, 5]])
         delay = 1.5
         delays = np.array([[delay, delay], [delay, delay]])
-        init_value = [[0.9,0.0], [0.9,0.0]]
+        init_value = [[0.9, 0.0], [0.9, 0.0]]
         resolution_simulation = 0.1
         synchronization_time = resolution_simulation * 10.0
         nb_init = (int(delay / resolution_simulation)) + 1
@@ -61,8 +61,8 @@ class TestProxyPrecision(BaseTestCase):
         time_ref, s_ref, result_ref = sim_ref(synchronization_time, rate=True)
 
         # compare with the Cosim Monitor RawCosim
-        np.testing.assert_array_equal(result_ref[:,no_proxy,:], result[0][:,no_proxy,:])
-        np.testing.assert_array_equal(s_ref[:,no_proxy,:], s[0][:,no_proxy,:])
+        np.testing.assert_array_equal(result_ref[:, no_proxy, :], result[0][:, no_proxy, :])
+        np.testing.assert_array_equal(s_ref[:, no_proxy, :], s[0][:, no_proxy, :])
 
         for i in range(0, 1000):
             time, s, result = sim(synchronization_time,

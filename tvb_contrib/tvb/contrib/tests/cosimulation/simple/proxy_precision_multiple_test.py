@@ -31,7 +31,7 @@ from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.contrib.tests.cosimulation.parallel.function_tvb import TvbSim
 
 
-class TestProxyPrecisionDelaiMultiple(BaseTestCase):
+class TestProxyPrecisionDelayMultiple(BaseTestCase):
     """
     Compare the result between simulation with 1-3 proxies and without proxy
     """
