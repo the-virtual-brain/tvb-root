@@ -86,7 +86,8 @@ class CoSimulator(Simulator):
         label="relative_output_interfaces_time_steps",
         default=0,
         required=True,
-        doc="""Relative time steps for monitors to sample in the past in addition to synchronization_n_step.""")
+        doc="""Relative time steps for monitors to sample in the past in addition to synchronization_n_step.
+               Positive values return outputs further in the past.""")
 
     def compute_existing_connections(self):
         existing_connections = self.connectivity.weights != 0
