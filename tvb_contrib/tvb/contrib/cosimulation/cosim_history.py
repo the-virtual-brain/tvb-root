@@ -77,7 +77,7 @@ class CosimHistory(BaseHistory):
 
     @classmethod
     def from_simulator(cls, sim):
-        inst = cls(sim.min_idelay,
+        inst = cls(sim._min_idelay,
                    sim.model.nvar,
                    sim.number_of_nodes,
                    sim.model.number_of_modes)
