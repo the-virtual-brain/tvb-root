@@ -25,17 +25,31 @@
 .. moduleauthor:: Dionysios Perdikis <dionperd@gmail.com>
 """
 
+from copy import deepcopy
 import numpy as np
 import operator
 
 from tvb.tests.library.base_testcase import BaseTestCase
-from tvb.contrib.tests.cosimulation.parallel.function_tvb import TvbSim, tvb_simulation
-
-# TODO: What is needed is that CoSimulator returns delayed outputs for 2 * synchronization time!
-# Then it will be compared with the reference simulator output of 2 * synchronization time in the past
+from tvb.contrib.tests.cosimulation.parallel.function_tvb import TvbSim, tvb_simulation, CoSimulator
 
 
-class TvbSimReverseOrder(TvbSim):
+class TvbSimDoubleSync(TvbSim):
+
+    def __init__(self, weight, delay, id_proxy, resolution_simulation, synchronization_time,
+                 initial_condition=None, relative_output_time_steps=0):
+        """
+        initialise the simulator
+        :param weight: weight on the connection
+        :param delay: delay of the connections
+        :param id_proxy: the id of the proxy
+        :param resolution_simulation: the resolution of the simulation
+        :param initial_condition: initial condition for S and H
+        :param relative_output_time_steps: number of time steps in the past to sample for TVB monitors
+        """
+        super(TvbSimDoubleSync, self).__init__(
+            weight, delay, id_proxy, resolution_simulation, synchronization_time, initial_condition)
+        if isinstance(self.sim, CoSimulator):
+            self.sim.relative_output_time_steps = relative_output_time_steps
 
     def __call__(self, time, proxy_data=None, rate_data=None, rate=False):
         """
@@ -73,25 +87,28 @@ class TestDoubleProxyPrecisionComplexDoubleSync(BaseTestCase):
         initial_condition = init_value.reshape((max, 2, weight.shape[0], 1))
         resolution_simulation = 0.1
         synchronization_time = np.min(delay) / 2.0  # = 1.0 = 10 integration time steps in this example
+        relative_output_time_steps = int(np.round(synchronization_time/resolution_simulation))
         proxy_id_1 = [1]
         proxy_id_2 = [0, 2]
 
         # full simulation
         np.random.seed(42)
-        sim_ref = TvbSimReverseOrder(weight, delay, [], resolution_simulation,
-                                     synchronization_time, initial_condition=initial_condition)
+        sim_ref = TvbSimDoubleSync(weight, delay, [], resolution_simulation,
+                                   synchronization_time, initial_condition=initial_condition)
         time_ref, s_ref, result_ref, _ = sim_ref(synchronization_time, rate=True)
 
         # simulation with one proxy
         np.random.seed(42)
-        sim_1 = TvbSimReverseOrder(weight, delay, proxy_id_1, resolution_simulation,
-                                   synchronization_time, initial_condition=initial_condition)
+        sim_1 = TvbSimDoubleSync(weight, delay, proxy_id_1, resolution_simulation,
+                                 synchronization_time, initial_condition=initial_condition,
+                                relative_output_time_steps=relative_output_time_steps)
         time, s_1, rate_1, proxy_data_1 = sim_1(synchronization_time, rate=True)
 
         # simulation_2 with one proxy
         np.random.seed(42)
-        sim_2 = TvbSimReverseOrder(weight, delay, proxy_id_2, resolution_simulation,
-                                   synchronization_time, initial_condition=initial_condition)
+        sim_2 = TvbSimDoubleSync(weight, delay, proxy_id_2, resolution_simulation,
+                                 synchronization_time, initial_condition=initial_condition,
+                                 relative_output_time_steps=relative_output_time_steps)
         time, s_2, rate_2, proxy_data_2 = sim_2(synchronization_time, rate=True)
 
         # COMPARE PROXY 1
@@ -121,21 +138,23 @@ class TestDoubleProxyPrecisionComplexDoubleSync(BaseTestCase):
             time, s_1, rate_1, proxy_data_1 = \
                 sim_1(synchronization_time, rate_data=input_rate1, proxy_data=input_proxy_data1, rate=True)
 
-            # compare with Raw monitor delayed by synchronization_time
-            np.testing.assert_array_equal(result_ref[:, proxy_id_2, :], rate_1[1][:, proxy_id_2, :])
-            np.testing.assert_array_equal(result_ref[:, proxy_id_1, :] * np.NAN, rate_1[1][:, proxy_id_1, :])
-            # if i > 1:
-            #     np.testing.assert_array_equal(s_ref, s_1[1])
+            # compare with Raw monitor delayed by 2*synchronization_time
+            if i>1:
+                np.testing.assert_array_equal(result_ref0[:, proxy_id_2, :], rate_1[1][:, proxy_id_2, :])
+                np.testing.assert_array_equal(result_ref0[:, proxy_id_1, :] * np.NAN, rate_1[1][:, proxy_id_1, :])
+                np.testing.assert_array_equal(s_ref0, s_1[1])
 
             time, s_2, rate_2, proxy_data_2 = \
                 sim_2(synchronization_time, rate_data=input_rate2, proxy_data=input_proxy_data2, rate=True)
 
-            # compare with Raw monitor delayed by synchronization_time
-            np.testing.assert_array_equal(result_ref[:, proxy_id_1, :], rate_2[1][:, proxy_id_1, :])
-            np.testing.assert_array_equal(result_ref[:, proxy_id_2, :] * np.NAN, rate_2[1][:, proxy_id_2, :])
-            # if i > 1:
-            #     np.testing.assert_array_equal(s_ref, s_2[1])
+            # compare with Raw monitor delayed by 2*synchronization_time
+            if i>1:
+                np.testing.assert_array_equal(result_ref0[:, proxy_id_1, :], rate_2[1][:, proxy_id_1, :])
+                np.testing.assert_array_equal(result_ref0[:, proxy_id_2, :] * np.NAN, rate_2[1][:, proxy_id_2, :])
+                np.testing.assert_array_equal(s_ref0, s_2[1])
 
+            s_ref0 = deepcopy(s_ref)
+            result_ref0 = deepcopy(result_ref)
             time_ref, s_ref, result_ref, _ = sim_ref(synchronization_time, rate=True)
 
             # COMPARE PROXY 1
