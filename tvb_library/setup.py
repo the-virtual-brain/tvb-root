@@ -35,7 +35,7 @@ import os
 import shutil
 import setuptools
 
-LIBRARY_VERSION = "2.8.1"
+LIBRARY_VERSION = "2.8.2"
 
 LIBRARY_TEAM = "Marmaduke Woodman,  Jan Fousek, Stuart Knock, Paula Sanz Leon, Viktor Jirsa"
 
