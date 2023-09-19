@@ -56,6 +56,7 @@ jobs:
       - name: run contrib tests
         run: |
           cd tvb_contrib
+          pip install -e . --user
           pytest tvb
         
 
