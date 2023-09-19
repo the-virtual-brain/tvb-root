@@ -28,7 +28,7 @@ jobs:
           sudo apt install libbz2-dev libhdf5-serial-dev liblzo2-dev
           python3 -m pip install --upgrade setuptools==59.8.0 pip wheel
           pip3 install --user --upgrade numpy
-          python3 -m pip install scikit-build
+          python3 -m pip install scikit-build pytest
           pip3 install --user --no-build-isolation tvb-gdist
           cd tvb_library
           pip install -e . --user
