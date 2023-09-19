@@ -44,7 +44,7 @@ class TestUpdateModel(BaseTestCase):
         proxy_id = [0, 1]
         firing_rate = np.array([[20.0, 10.0]]) * 10 ** -3  # units time in tvb is ms so the rate is in KHz
 
-        # Test the the update function
+        # Test the update function
         sim = TvbSim(weight, delay, proxy_id, resolution_simulation, synchronization_time)
         for i in range(0, 100):
             time, result = sim(synchronization_time,
@@ -56,13 +56,12 @@ class TestUpdateModel(BaseTestCase):
 
         # Test a fail function due to the time of simulation too long
         with pytest.raises(ValueError):
-            sim(synchronization_time,[np.arange(100 * synchronization_time, 102 * synchronization_time,
-                                          resolution_simulation),
-                                np.repeat(firing_rate.reshape(1, 2),
-                                          int(synchronization_time / resolution_simulation)*2, axis=0)] )
-        # Test a fail function due to the resoulation time is not good
+            sim(synchronization_time, [np.arange(100 * synchronization_time, 102 * synchronization_time,
+                                                 resolution_simulation),
+                                       np.repeat(firing_rate.reshape(1, 2),
+                                                 int(synchronization_time / resolution_simulation)*2, axis=0)])
+        # Test a fail function due to the resolution time is not good
         with pytest.raises(ValueError):
-            sim(synchronization_time,[np.arange(100 * synchronization_time, 101 * synchronization_time,
-                                            resolution_simulation*2),
-                                  np.repeat(firing_rate.reshape(1, 2),
-                                            int(synchronization_time / resolution_simulation)*2, axis=0)] )
+            sim(synchronization_time,
+                [np.arange(100 * synchronization_time, 101 * synchronization_time, resolution_simulation*2),
+                 np.repeat(firing_rate.reshape(1, 2),  int(synchronization_time / resolution_simulation)*2, axis=0)])

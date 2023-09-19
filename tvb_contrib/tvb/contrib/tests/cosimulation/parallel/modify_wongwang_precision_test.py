@@ -43,7 +43,8 @@ class TestModifyWongWang(BaseTestCase):
     _simulation_length = 3.0
 
     @staticmethod
-    def _reference_simulation(simulation_length, model_class=lab.models.ReducedWongWang, simulator=lab.simulator.Simulator, init=None):
+    def _reference_simulation(simulation_length, model_class=lab.models.ReducedWongWang,
+                              simulator=lab.simulator.Simulator, init=None):
         # reference simulation
         np.random.seed(42)
         if init is None:
