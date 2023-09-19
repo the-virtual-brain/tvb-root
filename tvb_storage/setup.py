@@ -34,7 +34,7 @@ import os
 import shutil
 import setuptools
 
-STORAGE_VERSION = "2.8.1"
+STORAGE_VERSION = "2.8.2"
 
 STORAGE_TEAM = "Lia Domide, Paula Prodan, Bogdan Valean, Robert Vincze"
 
@@ -53,6 +53,7 @@ setuptools.setup(name='tvb-storage',
                      'encrypt': ["syncrypto"]},
                  description='A package which handles the storage of TVB data',
                  long_description=DESCRIPTION,
+                 long_description_content_type="text/x-rst",
                  license="GPL-3.0-or-later",
                  author=STORAGE_TEAM,
                  author_email='tvb.admin@thevirtualbrain.org',

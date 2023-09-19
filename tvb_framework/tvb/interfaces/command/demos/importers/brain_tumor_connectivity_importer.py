@@ -31,6 +31,7 @@ Import connectivities from Brain Tumor zip archives
 .. moduleauthor:: Bogdan Valean <bogdan.valean@codemart.ro>
 """
 import sys
+from deprecation import deprecated
 from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporter, RegionMappingImporterModel
 from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporter, ZIPSurfaceImporterModel
 from tvb.basic.logger.builder import get_logger
@@ -64,6 +65,7 @@ def import_tumor_connectivities(project_id, folder_path):
     return conn_gids
 
 
+@deprecated("The demo dataset from tvb_data/berlinSubjects no longer exists in the latest releases")
 def import_surface_rm(project_id, conn_gid):
     # Import surface and region mapping from tvb_data berlin subjects (68 regions)
     rm_file = try_get_absolute_path("tvb_data", "berlinSubjects/DH_20120806/DH_20120806_RegionMapping.txt")
@@ -92,4 +94,4 @@ if __name__ == '__main__':
     project_id = sys.argv[2]
 
     conn_gids = import_tumor_connectivities(project_id, input_folder)
-    import_surface_rm(project_id, conn_gids[0])
+    # import_surface_rm(project_id, conn_gids[0])

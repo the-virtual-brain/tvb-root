@@ -36,7 +36,7 @@ from setuptools.command.egg_info import manifest_maker
 
 manifest_maker.template = 'MANIFEST_bids_monitor.in'
 
-VERSION = "2.8.1"
+VERSION = "2.8.2"
 
 TVB_TEAM = "Akash Upadhyay, Paula Prodan"
 
@@ -50,7 +50,7 @@ setuptools.setup(name="tvb-bids-monitor",
                  version=VERSION,
                  packages=setuptools.find_packages(
                      exclude=['tvb.interfaces.web', 'tvb.interfaces.web.*', 'tvb.interfaces.command',
-                              'tvb.interfaces.command.*', 'tvb.tests', 'tvb.tests.*', 'tvb.interfaces.rest'
+                              'tvb.interfaces.command.*', 'tvb.tests', 'tvb.tests.*', 'tvb.interfaces.rest',
                               'tvb.interfaces.rest.*', 'tvb.adapters', 'tvb.adapters.*', 'tvb.core',
                               'tvb.core.*']),
                  include_package_data=True,
@@ -58,10 +58,11 @@ setuptools.setup(name="tvb-bids-monitor",
                  extras_require={'test': ["pytest", "pytest-benchmark"]},
                  description='A helper package containing BIDS directory monitor module',
                  long_description=DESCRIPTION,
+                 long_description_content_type="text/x-rst",
                  license="GPL-3.0-or-later",
                  author=TVB_TEAM,
                  author_email='tvb.admin@thevirtualbrain.org',
-                 url='http://www.thevirtualbrain.org',
+                 url='https://www.thevirtualbrain.org',
                  download_url='https://github.com/the-virtual-brain/tvb-root',
                  keywords='tvb rest client brain simulator neuroscience human animal neuronal dynamics models delay')
 

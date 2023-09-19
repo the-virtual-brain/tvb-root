@@ -36,7 +36,7 @@ import os
 import shutil
 import setuptools
 
-VERSION = "2.8.1.1"
+VERSION = "2.8.2"
 
 TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Prodan, Paula Sansz Leon, Marmaduke Woodman"
 
@@ -64,12 +64,19 @@ setuptools.setup(name="tvb-framework",
                                  'test': ["pytest", "pytest-benchmark", "pytest-mock", "BeautifulSoup4"]},
                  description='A package for performing whole brain simulations',
                  long_description=DESCRIPTION,
+                 long_description_content_type="text/x-rst",
                  license="GPL-3.0-or-later",
                  author=TVB_TEAM,
                  author_email='tvb.admin@thevirtualbrain.org',
                  url='https://www.thevirtualbrain.org',
                  download_url='https://github.com/the-virtual-brain/tvb-root',
-                 keywords='tvb brain simulator neuroscience human animal neuronal dynamics models delay')
+                 keywords='tvb brain simulator neuroscience human animal neuronal dynamics models delay',
+                 classifiers=["Development Status :: 6 - Mature",
+                              "Intended Audience :: Science/Research",
+                              "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+                              "Programming Language :: Python :: 3"
+                              ]
+                 )
 
 # Clean after install
 shutil.rmtree('tvb_framework.egg-info', True)
