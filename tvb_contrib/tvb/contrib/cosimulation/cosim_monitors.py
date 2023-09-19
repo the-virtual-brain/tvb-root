@@ -27,7 +27,7 @@
 
 import numpy
 
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray
 from tvb.simulator.coupling import Coupling, Linear
 from tvb.simulator.monitors import Raw, RawVoi, AfferentCoupling
 
@@ -97,14 +97,11 @@ class CosimMonitorFromCoupling(CosimMonitor):
                dynamic equations of the Model. Its primary purpose is to 'rescale' the
                incoming activity to a level appropriate to Model.""")
 
-    min_idelay = Int(
-        label="Min delay steps",
-        required=False,
-        doc="""Minimum delay integration steps, based on long-range connectivity and the integrator time step.""")
+    _min_idelay = 1
 
     def _get_sample(self, current_step, start_step, n_steps, history):
         end_step = start_step + n_steps
-        last_available_step_in_the_future = current_step + self.min_idelay
+        last_available_step_in_the_future = current_step + self._min_idelay
         if end_step - 1 > last_available_step_in_the_future:
             raise ValueError("Values of coupling are missing for %d time steps "
                              "from start_step (=%d) to start_step + n_steps -1 (=%d).\n"
@@ -127,7 +124,7 @@ class CosimMonitorFromCoupling(CosimMonitor):
         return [numpy.array(times), numpy.array(values)]
 
     def _config_time(self, simulator):
-        self.min_idelay = simulator._min_idelay
+        self._min_idelay = simulator._min_idelay
 
 
 class RawCosim(Raw, CosimMonitor):
