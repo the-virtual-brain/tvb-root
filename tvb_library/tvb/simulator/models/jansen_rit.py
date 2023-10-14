@@ -115,7 +115,7 @@ class JansenRit(ModelNumbaDfun):
         default=numpy.array([0.0025]),
         domain=Range(lo=0.00125, hi=0.00375, step=0.00001),
         doc="""Determines the maximum firing rate of the neural population
-        [s^-1].""")
+        [ms^-1].""")
 
     r = NArray(
         label=":math:`r`",
