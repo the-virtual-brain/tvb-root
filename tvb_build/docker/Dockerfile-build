@@ -22,13 +22,13 @@ RUN conda create -y --name tvb-run python=3.10 nomkl numba scipy numpy cython ps
 RUN conda install -y --name tvb-run -c conda-forge jupyterlab tvb-gdist
 RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
 RUN /opt/conda/envs/tvb-run/bin/pip install lockfile scikit-build
-RUN /opt/conda/envs/tvb-run/bin/pip install syncrypto
+RUN /opt/conda/envs/tvb-run/bin/pip install cryptography syncrypto
 
 RUN conda create -y --name tvb-docs python=3.10 nomkl numba scipy numpy cython psycopg2
 RUN conda install -y --name tvb-docs -c conda-forge jupyterlab tvb-gdist
 RUN /opt/conda/envs/tvb-docs/bin/pip install --upgrade pip
 RUN /opt/conda/envs/tvb-docs/bin/pip install lockfile scikit-build
-RUN /opt/conda/envs/tvb-docs/bin/pip install syncrypto
+RUN /opt/conda/envs/tvb-docs/bin/pip install cryptography syncrypto
 RUN /opt/conda/envs/tvb-docs/bin/pip install sphinx docutils
 
 # Jupyther notebook configurations: set password
