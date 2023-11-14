@@ -38,12 +38,30 @@ from pytensor import tensor as pyt
 
 <%
     from tvb.simulator.integrators import IntegratorStochastic
+    from tvb.simulator.noise import Additive
     stochastic = isinstance(sim.integrator, IntegratorStochastic)
     any_delays = sim.connectivity.idelays.any()
 %>
 
+## TODO handle multiplicative noise
+% if isinstance(sim.integrator, IntegratorStochastic):
+def default_noise(nsig):
+    n_node = ${sim.connectivity.weights.shape[0]}
+    n_svar = ${len(sim.model.state_variables)}
+    nt = ${int(sim.simulation_length/sim.integrator.dt)}
+    sqrt_dt = ${np.sqrt(sim.integrator.dt)}
+
+    white_noise = sqrt_dt * pyt.as_tensor_variable(np.random.randn(nt, n_svar, n_node))
+    noise_gfun = pyt.sqrt(2 * nsig)
+    return pyt.transpose(pyt.transpose(white_noise, (1, 0, 2)) * noise_gfun, (1, 0, 2))
+% else:
+def default_noise():
+    # no noise function rendered for integrator ${type(sim.integrator)}
+    return None
+% endif
+
 def kernel(state, weights, trace, parmat
-           ${', nsig' if stochastic else ''}
+           ${', noise' if stochastic else ''}
            ${', idelays' if any_delays else ''}
            ):
 
@@ -57,11 +75,14 @@ def kernel(state, weights, trace, parmat
     dX = pyt.zeros((${sim.integrator.n_dx}, n_svar, n_node))
     cX = pyt.zeros((n_cvar, n_node))
 
-    for t in range(nt):
-        state = integrate(state, weights, parmat, dX, cX
-           ${', nsig' if stochastic else ''}
+    def scan_fn(${'noise,' if stochastic else ''} state, weights, parmat, dX, cX
+           ${', idelays' if any_delays else ''}
+           ):
+           return integrate(state, weights, parmat, dX, cX
+           ${', noise' if stochastic else ''}
            ${', idelays' if any_delays else ''}
            )
-        trace = pyt.set_subtensor(trace[t], state[:, 0])
+    args = [weights, parmat, dX, cX ${', idelays' if any_delays else ''}]
+    trace, updates = pytensor.scan(fn=scan_fn, outputs_info=state, non_sequences=args, n_steps=nt ${', sequences=[noise]' if stochastic else ''})
 
     return trace

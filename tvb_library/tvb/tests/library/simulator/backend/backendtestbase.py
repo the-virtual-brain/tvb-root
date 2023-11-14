@@ -56,7 +56,7 @@ class BaseTestSim(unittest.TestCase):
             mpr = MontbrioPazoRoxin(eta=mpr.eta * dispersion)
         conn.speed = np.r_[3.0 if delays else np.inf]
         if integrator is None:
-            dt = 0.01
+            dt = 0.1
             integrator = EulerDeterministic(dt=dt)
         else:
             dt = integrator.dt
@@ -104,12 +104,7 @@ class BaseTestSim(unittest.TestCase):
         buf = sim.history.buffer[..., 0]
         # kernel has history in reverse order except 1st element 🤕
         rbuf = np.concatenate((buf[0:1], buf[1:][::-1]), axis=0)
-        # state = sim.initial_conditions[1:]
-        # state = np.transpose(rbuf, (1, 0, 2)).astype('f')
         state = np.zeros((sim.model.nvar, conn.horizon, conn.number_of_regions))
-        print(state.shape)
-        # self.assertEqual(state.shape[0], 2)
-        # self.assertEqual(state.shape[2], conn.weights.shape[0])
         if isinstance(sim.integrator, IntegratorStochastic):
             sim.integrator.noise.reset_random_stream()
         if run_sim:
@@ -122,11 +117,11 @@ class BaseTestSim(unittest.TestCase):
         # check we don't have numerical errors
         self.assertTrue(np.isfinite(actual).all())
         # check tolerances
-        maxtol = np.max(np.abs(actual[0, 0] - expected[0, :, :, 0]))
+        maxtol = np.max(np.abs(actual[0, :, :, 0] - expected[0, :, :, 0]))
         print('maxtol 1st step:', maxtol)
         for t in range(1, len(actual)):
-            print(t, 'tol:', np.max(np.abs(actual[t] - expected[t, :, :, 0])))
-            np.testing.assert_allclose(actual[t, :],
+            print(t, 'tol:', np.max(np.abs(actual[t, :, :, 0] - expected[t, :, :, 0])))
+            np.testing.assert_allclose(actual[t, :, :, 0],
                                        expected[t, :, :, 0], 2e-5 * t * 2, 1e-5 * t * 2)
 
 
@@ -141,16 +136,10 @@ class BaseTestCoupling(unittest.TestCase):
 
     def _prep_sim(self, coupling) -> Simulator:
         """Prepare simulator for testing a coupling function."""
-        con = Connectivity.from_file()
-        con.weights[:] = 1.0
-        # con = Connectivity(
-        #     region_labels=np.array(['']),
-        #     weights=con.weights[:5][:,:5],
-        #     tract_lengths=con.tract_lengths[:5][:,:5],
-        #     speed=np.array([10.0]),
-        #     centres=np.array([0.0]))
+        conn = Connectivity.from_file()
+        conn.weights[:] = 1.0
         sim = Simulator(
-            connectivity=con,
+            connectivity=conn,
             model=LinearModel(gamma=np.r_[0.0]),
             coupling=coupling,
             integrator=Identity(dt=1.0),

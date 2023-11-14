@@ -63,8 +63,8 @@ class TestPytensorSim(BaseTestSim):
             delays=delays
         )
         template = '<%include file="pytensor-sim.py.mako"/>'
-        content = dict(sim=sim, mparams={}, cparams={})
-        kernel = PytensorBackend().build_py_func(template, content, print_source=True)
+        content = dict(sim=sim, mparams={}, cparams={}, np=np, pyt=pyt)
+        kernel, default_noise = PytensorBackend().build_py_func(template, content, name="kernel,default_noise", print_source=True)
 
         state = pyt.as_tensor_variable(state_numpy, name="state")
         dX = state.copy()
@@ -88,12 +88,13 @@ class TestPytensorSim(BaseTestSim):
 
         args = state, weights, yh, parmat
         if isinstance(integrator, IntegratorStochastic):
-            args = args + (integrator.noise.nsig,)
+            args = args + (default_noise(sim.integrator.noise.nsig),)
         if delays:
             args = args + (sim.connectivity.delay_indices,)
 
         yh = kernel(*args)
-        self._check_match(y, yh.eval())
+        yh = yh.eval()[:, sim.model.cvar, 0, :].reshape(y.shape)
+        self._check_match(y, yh)
 
     def _test_mvar(self, integrator):
         pass  # TODO
@@ -104,8 +105,8 @@ class TestPytensorSim(BaseTestSim):
             delays=delays
         )
         template = '<%include file="pytensor-sim.py.mako"/>'
-        content = dict(sim=sim, np=np, pytensor=pytensor, pyt=pyt)
-        kernel = PytensorBackend().build_py_func(template, content, print_source=True)
+        content = dict(sim=sim, mparams={}, cparams={}, np=np, pyt=pyt)
+        kernel, default_noise = PytensorBackend().build_py_func(template, content, name="kernel,default_noise", print_source=True)
 
         state = pyt.as_tensor_variable(state_numpy, name="state")
         dX = state.copy()
@@ -128,20 +129,20 @@ class TestPytensorSim(BaseTestSim):
 
         args = state, weights, yh, parmat
         if isinstance(integrator, IntegratorStochastic):
-            args = args + (integrator.noise.nsig,)
+            args = args + (default_noise(sim.integrator.noise.nsig),)
         if delays:
             args = args + (sim.connectivity.delay_indices,)
 
         yh = kernel(*args)
-        self._check_match(y, yh.eval()[:, sim.model.cvar, :])
+        yh = yh.eval()[:, sim.model.cvar, 0, :].reshape(y.shape)
+        self._check_match(y, yh)
 
     def _test_integrator(self, Integrator, delays=False):
-        dt = 0.01
         if issubclass(Integrator, IntegratorStochastic):
-            integrator = Integrator(dt=dt, noise=Additive(nsig=np.r_[dt]))
+            integrator = Integrator(dt=0.01, noise=Additive(nsig=np.r_[0.01, 0.02]))
             integrator.noise.dt = integrator.dt
         else:
-            integrator = Integrator(dt=dt)
+            integrator = Integrator(dt=0.01)
         if isinstance(integrator, (Identity, IdentityStochastic)):
             self._test_mvar(integrator, delays=delays)
         else:
@@ -303,18 +304,14 @@ def dfuns(dX, state, cX, parmat):
         args = state, weights_, parmat, dX, cX
 
         if isinstance(sim.integrator, IntegratorStochastic):
-            # dynamic noise
-            # if isinstance(sim.integrator.noise, Additive):
-            #     n_node = sim.connectivity.weights.shape[0]
-            #     n_svar = len(sim.model.state_variables)
-            #     D = tt.sqrt(2 * sim.integrator.noise.nsig)
-            #     dWt = np.random.randn(n_svar, n_node)
-            #     dWt = tt.as_tensor_variable(dWt)
-            #     dyn_noise = tt.sqrt(sim.integrator.dt) * D * dWt
-            # else:
-            #     raise NotImplementedError
-            # args = args + (dyn_noise, )
-            args = args + (sim.integrator.noise.nsig,)
+            ## TODO handle multiplicative noise
+            if isinstance(sim.integrator.noise, Additive):
+                sim.integrator.noise.reset_random_stream()
+                z_t = sim.integrator.noise.generate(dX.eval().shape)*sim.integrator.noise.gfun(dX.eval())
+                z_t = z_t[0, :, :]
+            else:
+                raise NotImplementedError
+            args = args + (z_t,)
         state = integrate(*args)
         return state
 
