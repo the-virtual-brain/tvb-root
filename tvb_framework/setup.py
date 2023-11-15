@@ -40,7 +40,7 @@ VERSION = "2.8.2"
 
 TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Prodan, Paula Sansz Leon, Marmaduke Woodman"
 
-TVB_INSTALL_REQUIREMENTS = ["alembic", "bctpy", "cherrypy", "docutils", "flask", "flask-restx",
+TVB_INSTALL_REQUIREMENTS = ["alembic", "bctpy", "cherrypy", "docutils", "flask==2.3.3", "flask-restx",
                             "formencode", "gevent", "h5py", "Jinja2", "matplotlib==3.5.3", "nibabel", "numpy", "pandas",
                             "Pillow", "psutil", "python-keycloak", "requests", "requests-toolbelt>=0.10",
                             "scikit-learn", "scipy", "siibra==0.4a35", "simplejson", "six", "sqlalchemy",
