@@ -41,7 +41,7 @@ pipeline {
                         dockerImage.push()
                         dockerImage.push('latest')
                     }
-                    withDockerRegistry(credentialsId: 'tvb_on_ebrains') {
+                    withDockerRegistry(credentialsId: 'tvb_on_ebrains', url: 'https://docker-registry.ebrains.eu/v2') {
                         def dockerImageE = docker.build("${FULL_DOCKER_IMAGE_NAME_EBRAINS}:'${VERSION_TAG}'", "--build-arg LAST_SHA='${LAST_SHA}' -f ${dockerFile} ${dockerContext}")
                         dockerImageE.push()
                         dockerImageE.push('latest')
