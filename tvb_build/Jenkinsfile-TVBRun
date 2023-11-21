@@ -5,6 +5,7 @@ pipeline {
 
     environment {
         FULL_DOCKER_IMAGE_NAME = 'thevirtualbrain/tvb-run'
+        FULL_DOCKER_IMAGE_NAME_EBRAINS = 'docker-registry.ebrains.eu/tvb/tvb-run'
     }
 
     stages {
@@ -39,6 +40,9 @@ pipeline {
                         def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}:'${VERSION_TAG}'", "--build-arg LAST_SHA='${LAST_SHA}' -f ${dockerFile} ${dockerContext}")
                         dockerImage.push()
                         dockerImage.push('latest')
+                        def dockerImageE = docker.build("${FULL_DOCKER_IMAGE_NAME_EBRAINS}:'${VERSION_TAG}'", "--build-arg LAST_SHA='${LAST_SHA}' -f ${dockerFile} ${dockerContext}")
+                        dockerImageE.push()
+                        dockerImageE.push('latest')
                     }
                 }
             }
