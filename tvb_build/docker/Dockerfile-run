@@ -22,6 +22,7 @@ RUN conda create -y --name tvb-run python=3.10 nomkl numba scipy numpy cython ps
 RUN conda install -y --name tvb-run -c conda-forge jupyterlab tvb-gdist
 RUN $PIP install --upgrade pip
 RUN $PIP install lockfile scikit-build
+RUN $PIP install cryptography
 RUN $PIP install syncrypto
 
 # Jupyther notebook configurations: set password
