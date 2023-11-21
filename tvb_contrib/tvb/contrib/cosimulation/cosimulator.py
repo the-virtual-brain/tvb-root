@@ -151,7 +151,7 @@ class CoSimulator(Simulator):
 
         # Reconfigure the connectivity for regions modelled by the other cosimulator exclusively:
         if self.exclusive:
-            self.connectivity.weights[np.ix_(self.proxy_inds, self.proxy_inds)] = 0.0
+            self.connectivity.weights[numpy.ix_(self.proxy_inds, self.proxy_inds)] = 0.0
             self.connectivity.configure()
 
         # Configure the cosimulator monitor
