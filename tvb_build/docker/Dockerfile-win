@@ -20,7 +20,7 @@ RUN activate tvb-run && pip install syncrypto
 # Download and install tvb data
 RUN mkdir C:\\TVB_CODE
 WORKDIR /TVB_CODE
-ADD https://zenodo.org/record/8331301/files/tvb_data.zip?download=1 tvb_data.zip
+ADD https://zenodo.org/record/10128131/files/tvb_data.zip?download=1 tvb_data.zip
 RUN tar -xf tvb_data.zip && dir && del tvb_data.zip
 RUN activate tvb-run && python setup.py develop
 
