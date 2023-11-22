@@ -55,15 +55,16 @@ def integrate(state, weights, parmat, dX, cX
 % if sim.connectivity.idelays.any():
     , delay_indices
 % endif
-, **iparams
+, mparams={}, cparams={}
 ):
     dt = ${sim.integrator.dt}
     cX = coupling(cX, weights, state
 % if sim.connectivity.idelays.any():
     , delay_indices
 % endif
+, **cparams
 )
-    dX = pyt.set_subtensor(dX[0], dfuns(dX[0], state[:, 0], cX, parmat))
+    dX = pyt.set_subtensor(dX[0], dfuns(dX[0], state[:, 0], cX, parmat, **mparams))
 % if isinstance(sim.integrator, EulerDeterministic):
     next_state = state[:, 0] + dt * dX[0]
 % endif
