@@ -57,7 +57,7 @@ jobs:
       - name: download data
         if: steps.cache-data.outputs.cache-hit != 'true'
         run: |
-          wget -q https://zenodo.org/record/8331301/files/tvb_data.zip?download=1 -O tvb_data.zip
+          wget -q https://zenodo.org/record/10128131/files/tvb_data.zip?download=1 -O tvb_data.zip
           mkdir tvb_data
           unzip tvb_data.zip -d tvb_data
           rm tvb_data.zip

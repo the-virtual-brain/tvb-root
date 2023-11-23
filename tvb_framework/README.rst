@@ -48,7 +48,7 @@ Framework structure
                 |
             tvb.interfaces
 
-**tvb-data** should be installed from **Zenodo**: https://zenodo.org/record/8331301.
+**tvb-data** should be installed from **Zenodo**: https://zenodo.org/record/10128131.
 After download, unzip and execute `python setup.py develop` in the correct env.
 
 Usage
