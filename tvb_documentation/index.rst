@@ -46,7 +46,7 @@ If you're familiar with Docker and/or Python environments, you can try early rel
 These versions of TVB are updated more frequently and contain all the latest new features and bugfixes. You can follow all the latest changes on our |our_github| page.
 
 
-On CERN's data sharing platform *Zenodo*, we offer `various demonstration datasets <https://zenodo.org/record/8331301>`_, readily packaged for usage with The Virtual Brain software.
+On CERN's data sharing platform *Zenodo*, we offer `various demonstration datasets <https://zenodo.org/record/10128131>`_, readily packaged for usage with The Virtual Brain software.
 
 If you have specific questions, also about how to use TVB for your current research activity, you can use our `public discussion forum <https://groups.google.com/g/tvb-users>`_, which doubles as a *mailing list* if you prefer this channel.
 

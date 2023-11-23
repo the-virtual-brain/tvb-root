@@ -51,7 +51,7 @@ jobs:
         if: steps.cache-data.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
-          Invoke-WebRequest -OutFile C:\\TEMP\\tvb_data.zip -Uri "https://zenodo.org/record/8331301/files/tvb_data.zip?download=1"
+          Invoke-WebRequest -OutFile C:\\TEMP\\tvb_data.zip -Uri "https://zenodo.org/record/10128131/files/tvb_data.zip?download=1"
           Expand-Archive 'C:\\TEMP\\tvb_data.zip' C:\\tvb_data
           del C:\\TEMP\\tvb_data.zip
           cd C:\\tvb_data
