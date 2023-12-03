@@ -63,6 +63,7 @@ def default_noise():
 def kernel(state, weights, trace, parmat
            ${', noise' if stochastic else ''}
            ${', idelays' if any_delays else ''}
+           , mparams={}, cparams={}
            ):
 
     # problem dimensions
@@ -77,12 +78,14 @@ def kernel(state, weights, trace, parmat
 
     def scan_fn(${'noise,' if stochastic else ''} state, weights, parmat, dX, cX
            ${', idelays' if any_delays else ''}
+           , *params
            ):
            return integrate(state, weights, parmat, dX, cX
            ${', noise' if stochastic else ''}
            ${', idelays' if any_delays else ''}
+           , mparams, cparams
            )
-    args = [weights, parmat, dX, cX ${', idelays' if any_delays else ''}]
+    args = [weights, parmat, dX, cX ${', idelays' if any_delays else ''}] + list(mparams.values()) + list(cparams.values())
     trace, updates = pytensor.scan(fn=scan_fn, outputs_info=state, non_sequences=args, n_steps=nt ${', sequences=[noise]' if stochastic else ''})
 
     return trace

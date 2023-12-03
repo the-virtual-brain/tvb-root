@@ -50,7 +50,7 @@ class BaseTestSim(unittest.TestCase):
     def _create_sim(self, integrator=None, inhom_mmpr=False, delays=False,
                     run_sim=True):
         mpr = MontbrioPazoRoxin()
-        conn = Connectivity.from_file()
+        conn = Connectivity.from_file(source_file="/home/ldap_users/emiliusrichter/tvb/connectivity_76.zip")
         if inhom_mmpr:
             dispersion = 1 + np.random.randn(conn.weights.shape[0]) * 0.1
             mpr = MontbrioPazoRoxin(eta=mpr.eta * dispersion)
@@ -83,7 +83,7 @@ class BaseTestSim(unittest.TestCase):
     def _create_osc_sim(self, integrator=None, delays=False,
                         run_sim=True):
         osc = Generic2dOscillator()
-        conn = Connectivity.from_file()
+        conn = Connectivity.from_file(source_file="/home/ldap_users/emiliusrichter/tvb/connectivity_76.zip")
         conn.speed = np.r_[3.0 if delays else np.inf]
         if integrator is None:
             dt = 0.01
@@ -136,7 +136,7 @@ class BaseTestCoupling(unittest.TestCase):
 
     def _prep_sim(self, coupling) -> Simulator:
         """Prepare simulator for testing a coupling function."""
-        conn = Connectivity.from_file()
+        conn = Connectivity.from_file(source_file="/home/ldap_users/emiliusrichter/tvb/connectivity_76.zip")
         conn.weights[:] = 1.0
         sim = Simulator(
             connectivity=conn,

@@ -274,7 +274,7 @@ class TestPytensorIntegrate(BaseTestIntegrate):
     def _eval_cg(self, integrator_, state, weights_):
         class sim:
             integrator = integrator_
-            connectivity = Connectivity.from_file()
+            connectivity = Connectivity.from_file(source_file="/home/ldap_users/emiliusrichter/tvb/connectivity_76.zip")
 
             class model:
                 state_variables = "foo", "bar"
