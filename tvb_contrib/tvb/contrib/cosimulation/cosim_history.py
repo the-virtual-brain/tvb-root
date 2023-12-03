@@ -63,7 +63,7 @@ class CosimHistory(BaseHistory):
         """Initialize CosimHistory from the TVB history which is assumed already configured.
         """
         for i_step, step in enumerate(range(current_step, current_step+self.n_time)):
-            self.buffer[i_step, voi[None, :,]] = history.query(step)[0]
+            self.buffer[i_step, voi[None, :, ]] = history.query(step)[0]
 
     def update(self, step, new_state):
         """This method will update the CosimHistory state buffer
@@ -77,7 +77,7 @@ class CosimHistory(BaseHistory):
 
     @classmethod
     def from_simulator(cls, sim):
-        inst = cls(sim.synchronization_n_step,
+        inst = cls(sim._min_idelay,
                    sim.model.nvar,
                    sim.number_of_nodes,
                    sim.model.number_of_modes)

@@ -10,7 +10,7 @@ RUN pip install numba scipy 'numpy<=1.20' aesara networkx scikit-learn cython nu
         pylems lxml pycuda
 
 RUN apt-get install -y zip
-RUN wget -q https://zenodo.org/record/7574266/files/tvb_data.zip?download=1 -O tvb_data.zip \
+RUN wget -q https://zenodo.org/record/10128131/files/tvb_data.zip?download=1 -O tvb_data.zip \
  && mkdir tvb_data \
  && unzip tvb_data.zip -d tvb_data \
  && rm tvb_data.zip

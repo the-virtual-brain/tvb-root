@@ -31,7 +31,7 @@ Unit-test for mat_timeseries_importer and mat_parser.
 """
 
 import os
-
+import pytest
 import tvb_data
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.adapters.uploaders.mat_timeseries_importer import RegionMatTimeSeriesImporterModel, RegionTimeSeriesImporter
@@ -39,6 +39,7 @@ from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
 
+@pytest.mark.skip(reason="Because demo data is not longer publicly available - see TVB-3087")
 class TestMatTimeSeriesImporter(BaseTestCase):
     base_pth = os.path.join(os.path.dirname(tvb_data.__file__), 'berlinSubjects', 'QL_20120814')
     bold_path = os.path.join(base_pth, 'QL_BOLD_regiontimecourse.mat')

@@ -43,7 +43,7 @@ class TestPrecisionBad(BaseTestCase):
         delay = 100.0
         delays = np.array([[delay, delay], [delay, delay]])
         max = np.int_(np.max(delay)*10+1)
-        init_value = np.array([[0.9,0.0], [0.9,0.0]]*max)
+        init_value = np.array([[0.9, 0.0], [0.9, 0.0]]*max)
         resolution_simulation = 0.1
         synchronization_time = 0.1 * 10.0
         nb_init = (int(delay / resolution_simulation)) + 1
@@ -83,20 +83,22 @@ class TestPrecisionBad(BaseTestCase):
             time, result = sim(synchronization_time, [time, np.zeros_like(result_ref[:, proxy_id][:, :, 0])])
 
             # compare with Raw monitor delayed by synchronization_time
-            if i == 100: # as precedent
+            if i == 100:  # as precedent
                 np.testing.assert_array_equal(result_ref[:, no_proxy, :], result[1][:, no_proxy, :])
                 np.testing.assert_array_compare(operator.__ne__, result_ref[:, proxy_id, :], result[1][:, proxy_id, :])
             elif i == 101: # the first one is the same
                 np.testing.assert_array_equal(result_ref[:1, no_proxy, :], result[1][:1, no_proxy, :])
-                np.testing.assert_array_compare(operator.__ne__, result_ref[1:, proxy_id, :], result[1][1:, proxy_id, :])
+                np.testing.assert_array_compare(operator.__ne__,
+                                                result_ref[1:, proxy_id, :], result[1][1:, proxy_id, :])
                 np.testing.assert_array_compare(operator.__ne__, result_ref[1:, :, :], result[1][1:, :, :])
             else:
-                np.testing.assert_array_compare(operator.__ne__,result_ref, result[1])
+                np.testing.assert_array_compare(operator.__ne__, result_ref, result[1])
 
             time, result_ref = sim_ref(synchronization_time)
             # compare with the CosimMonitor RawCosim
             if i == 100: # the first one is the same
                 np.testing.assert_array_equal(result_ref[:1, no_proxy, :], result[0][:1, no_proxy, :])
-                np.testing.assert_array_compare(operator.__ne__,result_ref[1:, no_proxy, :], result[0][1:, no_proxy, :])
+                np.testing.assert_array_compare(operator.__ne__,
+                                                result_ref[1:, no_proxy, :], result[0][1:, no_proxy, :])
             else:
-                np.testing.assert_array_compare(operator.__ne__,result_ref[:, no_proxy, :], result[0][:, no_proxy, :])
+                np.testing.assert_array_compare(operator.__ne__, result_ref[:, no_proxy, :], result[0][:, no_proxy, :])

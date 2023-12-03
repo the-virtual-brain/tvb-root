@@ -36,7 +36,7 @@ from setuptools.command.egg_info import manifest_maker
 
 manifest_maker.template = 'MANIFEST_rest_client.in'
 
-VERSION = "2.8.1"
+VERSION = "2.8.3"
 
 TVB_TEAM = "Lia Domide, Paula Prodan, Bogdan Valean, Robert Vincze"
 
@@ -59,6 +59,7 @@ setuptools.setup(name="tvb-rest-client",
                                  'test': ["pytest", "pytest-benchmark"]},
                  description='A helper package for preparing and sending requests towards the TVB REST API',
                  long_description=DESCRIPTION,
+                 long_description_content_type="text/x-rst",
                  license="GPL-3.0-or-later",
                  author=TVB_TEAM,
                  author_email='tvb.admin@thevirtualbrain.org',

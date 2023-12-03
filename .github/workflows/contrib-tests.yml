@@ -1,0 +1,62 @@
+name: Check tvb-contrib
+on: [push]
+
+jobs:
+  build:
+    name: Test tvb-contrib
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: set up Python 3.10
+        uses: actions/setup-python@v4
+        id: setPy
+        with:
+          python-version: "3.10"
+
+      - name: put ~/.local/bin on $PATH
+        run: echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
+
+      - name: install tools and dependencies
+        run: |
+          sudo apt-get update
+          sudo apt install libbz2-dev libhdf5-serial-dev liblzo2-dev
+          python3 -m pip install --upgrade setuptools==59.8.0 pip wheel
+          pip3 install --user --upgrade numpy
+          python3 -m pip install scikit-build pytest
+          pip3 install --user --no-build-isolation tvb-gdist
+          cd tvb_library
+          pip install -e . --user
+
+      - name: cache data
+        id: cache-data
+        uses: actions/cache@v3
+        with:
+          path: tvb_data
+          key: tvb-data
+
+      - name: download data
+        if: steps.cache-data.outputs.cache-hit != 'true'
+        run: |
+          wget -q https://zenodo.org/record/10128131/files/tvb_data.zip?download=1 -O tvb_data.zip
+          mkdir tvb_data
+          unzip tvb_data.zip -d tvb_data
+          rm tvb_data.zip
+
+      - name: setup data
+        run: |
+          cd tvb_data
+          python3 setup.py develop
+
+      - name: run contrib tests
+        run: |
+          cd tvb_contrib
+          pip install -e . --user
+          pytest tvb
+        
+

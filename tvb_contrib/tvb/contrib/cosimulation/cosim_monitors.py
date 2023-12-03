@@ -97,15 +97,16 @@ class CosimMonitorFromCoupling(CosimMonitor):
                dynamic equations of the Model. Its primary purpose is to 'rescale' the
                incoming activity to a level appropriate to Model.""")
 
-    synchronization_n_step = None
+    _min_idelay = 1
 
     def _get_sample(self, current_step, start_step, n_steps, history):
         end_step = start_step + n_steps
-        last_available_step_in_the_future = current_step + self.synchronization_n_step
+        last_available_step_in_the_future = current_step + self._min_idelay
         if end_step - 1 > last_available_step_in_the_future:
             raise ValueError("Values of coupling are missing for %d time steps "
                              "from start_step (=%d) to start_step + n_steps -1 (=%d).\n"
-                             "The coupling can be computed until step %d."
+                             "The coupling can be computed until the minimum delay time in the future, "
+                             "i.e. ,step %d, "
                              % (n_steps, start_step, end_step - 1, last_available_step_in_the_future))
         first_available_step = current_step + 1
         if start_step < first_available_step:
@@ -123,9 +124,7 @@ class CosimMonitorFromCoupling(CosimMonitor):
         return [numpy.array(times), numpy.array(values)]
 
     def _config_time(self, simulator):
-        self.synchronization_n_step = simulator.synchronization_n_step
-        # For less constraint, the previous value can be replaced by the minimum of delay.
-        # i.e. : numpy.min(simulator.connectivity.idelays[numpy.nonzero(simulator.connectivity.idelays)
+        self._min_idelay = simulator._min_idelay
 
 
 class RawCosim(Raw, CosimMonitor):

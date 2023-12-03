@@ -113,7 +113,6 @@ examples.
 .. _Analyze Region Corrcoef: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/analyze_region_corrcoef.ipynb
 .. _Compare Connectivity Normalization: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/compare_connectivity_normalization.ipynb
 .. _Display Source Sensor Geometry: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/display_source_sensor_geometry.ipynb
-.. _Display Surface Local Connectivity: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/display_surface_local_connectivity.ipynb
 .. _Encrypt Files before upload in TVB Web GUI: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/encrypt_data.ipynb
 .. _Exploring Epileptor 2D: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/exploring_epileptor_2d.ipynb
 .. _Exploring Longer Time Series: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/exploring_longer_time_series.ipynb
@@ -165,14 +164,6 @@ examples.
       :target: `Display Source Sensor Geometry`_
 
       `Display Source Sensor Geometry`_
-
-
-.. figure:: figures/display_surface_local_connectivity.png
-      :width: 200px
-      :figclass: demo-figure
-      :target: `Display Surface Local Connectivity`_
-
-      `Display Surface Local Connectivity`_
 
 
 .. figure:: figures/exploring_longer_time_series.png

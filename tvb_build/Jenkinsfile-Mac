@@ -34,7 +34,7 @@ pipeline {
                     /Applications/anaconda3/envs/mac-distribution/bin/pip install -r docker/requirements_group
 
                     cd /Users/tvb/WORK/DATA
-                    /Applications/anaconda3/envs/mac-distribution/bin/python setup.py develop
+                    /Applications/anaconda3/envs/mac-distribution/bin/pip install -e .
                 '''
             }
         }
