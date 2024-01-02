@@ -25,6 +25,7 @@
 #
 
 """
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Bogdan Valean <bogdan.valean@codemart.ro>
 """
 
@@ -56,8 +57,11 @@ TVB_ROOT = os.path.dirname(os.path.dirname(__file__))
 VERSION = TvbProfile.current.version.BASE_VERSION
 # Name of the app
 APP_NAME = "tvb-{}".format(VERSION)
-# The website in reversered order (domain first, etc.)
-IDENTIFIER = "org.thevirtualbrain"
+# should match an Apple Developer defined identifier
+IDENTIFIER = "ro.codemart.tvb"
+# KEYs for the ENV variable where we expect the signing identity to be defined
+KEY_SIGN_IDENTITY = "SIGN_APP_IDENTITY"
+KEY_MAC_PWD = "MAC_PASSWORD"
 # The author of this package
 AUTHOR = "TVB Team"
 # Full path to the anaconda environment folder to package
@@ -90,6 +94,8 @@ CONDA_EXCLUDE_FILES += map(lambda x: f'translations/{x}', [
 
 # Path to the icon of the app
 ICON_PATH = os.path.join(TVB_ROOT, "tvb_build", "icon.icns")
+# Absolute path towards TVB license file, to be included in the .app
+LICENSE_PATH = os.path.join(TVB_ROOT, "LICENSE")
 # The entry script of the application in the environment's bin folder
 ENTRY_SCRIPT = "-m tvb_bin.app"
 # Folder to place created APP and DMG in.
@@ -156,8 +162,15 @@ DMG_WINDOW_RECT = ((300, 200), (358, 570))
 DMG_ICON_SIZE = 80
 
 
+def _log(msg, indent=1):
+    if indent == 1:
+        print(" - ", msg)
+    else:
+        print("  " * indent, msg)
+
+
 def extra():
-    fix_paths()
+    _fix_paths()
 
 
 def _find_and_replace(path, search, replace, exclusions=None):
@@ -207,9 +220,9 @@ def _find_and_replace(path, search, replace, exclusions=None):
                     stream.nextfile()
 
 
-def replace_conda_abs_paths():
+def _replace_conda_abs_paths():
     app_path = os.path.join(os.path.sep, 'Applications', APP_NAME + '.app', 'Contents', 'Resources')
-    print('Replacing occurences of {} with {}'.format(CONDA_ENV_PATH, app_path))
+    _log('Replacing occurences of {} with {}'.format(CONDA_ENV_PATH, app_path), 2)
     _find_and_replace(
         RESOURCE_DIR,
         CONDA_ENV_PATH,
@@ -219,42 +232,42 @@ def replace_conda_abs_paths():
 
 
 def create_app():
-    print("Output Dir {}".format(OUTPUT_FOLDER))
     """ Create an app bundle """
+    _log("Output Dir {}".format(OUTPUT_FOLDER), 2)
 
     if os.path.exists(APP_FILE):
         shutil.rmtree(APP_FILE)
 
-    print("\n++++++++++++++++++++++++ Creating APP +++++++++++++++++++++++++++")
+    _log("Creating APP ", 1)
     start_t = time.time()
 
-    create_app_structure()
-    copy_anaconda_env()
+    _create_app_structure()
+    _copy_anaconda_env()
     if ICON_FILE:
-        copy_icon()
-    create_plist()
+        _copy_icon_and_license()
+    _create_plist()
 
     # Do some package specific stuff, which is defined in the extra() function
     # in settings.py (and was imported at the top of this module)
     if "extra" in globals() and callable(extra):
-        print("Performing application specific actions.")
+        _log("Performing application specific actions.", 2)
         extra()
 
-    replace_conda_abs_paths()
+    _replace_conda_abs_paths()
 
-    print("============ APP CREATION FINISHED in {} seconds ====================".format(int(time.time() - start_t)))
+    _log("APP creation finished in {} seconds".format(int(time.time() - start_t)), 2)
 
 
-def create_app_structure():
+def _create_app_structure():
     """ Create folder structure comprising a Mac app """
-    print("Creating app structure")
+    _log("Creating app structure", 2)
     try:
         os.makedirs(MACOS_DIR)
     except OSError as e:
-        print('Could not create app structure: {}'.format(e))
+        _log('!!!Could not create app structure: {}'.format(e))
         sys.exit(1)
 
-    print("Creating app entry script")
+    _log("Creating app entry script", 2)
     with open(APP_SCRIPT, 'w') as fp:
         # Write the contents
         try:
@@ -262,7 +275,7 @@ def create_app_structure():
                      "script_dir=$(dirname \"$(dirname \"$0\")\")\n"
                      "$script_dir/Resources/bin/python "
                      "{} $@".format(ENTRY_SCRIPT))
-        except IOError as e:
+        except IOError:
             logger.exception("Could not create Contents/OpenSesame script")
             sys.exit(1)
 
@@ -272,9 +285,9 @@ def create_app_structure():
              stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
-def copy_anaconda_env():
+def _copy_anaconda_env():
     """ Copy anaconda environment """
-    print("Copying Anaconda environment (this may take a while)")
+    _log("Copying Anaconda environment (this may take a while)", 2)
     try:
         if "CONDA_FOLDERS" in globals():
             # IF conda folders is specified, copy only those folders.
@@ -306,22 +319,32 @@ def copy_anaconda_env():
                         os.remove(item)
                     else:
                         logger.warning("File not found: {}".format(item))
-                except (IOError, OSError) as e:
+                except (IOError, OSError):
                     logger.error("WARNING: could not delete {}".format(item))
 
 
-def copy_icon():
+def _copy_icon_and_license():
     """ Copy icon to Resources folder """
     global ICON_PATH
-    print("Copying icon file")
+    _log("Copying icon file", 2)
     try:
         shutil.copy(ICON_PATH, os.path.join(RESOURCE_DIR, ICON_FILE))
-    except OSError as e:
-        logger("Error copying icon file from: {}".format(ICON_PATH))
+    except OSError:
+        logger.error("Error copying icon file from: {}".format(ICON_PATH))
+
+    global LICENSE_PATH
+    _log("Copying license file", 2)
+    try:
+        unnecessary_file = os.path.join(RESOURCE_DIR, "LICENSE.txt")
+        if os.path.exists(unnecessary_file):
+            os.remove(unnecessary_file)
+        shutil.copy(LICENSE_PATH, RESOURCE_DIR)
+    except OSError:
+        logger.error("Error copying license file from: {}".format(LICENSE_PATH))
 
 
-def create_plist():
-    print("Creating Info.plist")
+def _create_plist():
+    _log("Creating Info.plist", 2)
 
     global ICON_FILE
     global VERSION
@@ -341,7 +364,7 @@ def create_plist():
         'CFBundlePackageType': 'APPL',
         'CFBundleVersion': LONG_VERSION,
         'CFBundleShortVersionString': VERSION,
-        'CFBundleSignature': '????',
+        'CFBundleSignature': '????',  # ok not to be setup
         'LSMinimumSystemVersion': '10.7.0',
         'LSUIElement': False,
         'NSAppTransportSecurity': {'NSAllowsArbitraryLoads': True},
@@ -366,6 +389,86 @@ def create_plist():
         plistlib.dump(info_plist_data, fp)
 
 
+excluded_parts = [".dist-info", "egg-info", "ignore", "COPYING", "Makefile", "README", "LICENSE",
+                  "draft", ".prettierrc", "zoneinfo/", "_vendored"]
+
+
+def _should_be_signed(current_path):
+    if os.path.islink(current_path) or os.path.isdir(current_path):
+        return False
+    file_ext = os.path.splitext(current_path)[1]
+    if file_ext in (".dylib", ".so"):
+        return True
+    if file_ext in ("", ".10", ".6", ".local"):
+        for excl in excluded_parts:
+            if excl in current_path:
+                return False
+        return os.system("file -b " + current_path + " | grep text > /dev/null")
+    return False
+
+
+def _codesign_inside(root_path, command_prefix, dev_identity, ent_file):
+    # _log(f"Signing in folder {root_path}", 2)
+    for path_sufix in os.listdir(root_path):
+        current_path = os.path.join(root_path, path_sufix)
+        if _should_be_signed(current_path):
+            # _log(f"Signing  {current_path}", 2)
+            os.system(f"{command_prefix} codesign -s '{dev_identity}' -o runtime -f "
+                      f"--timestamp --entitlements '{ent_file}' '{current_path}'")
+        if os.path.isdir(current_path) and not os.path.islink(current_path):
+            _codesign_inside(current_path, command_prefix, dev_identity, ent_file)
+
+
+def sign_app(app_path=APP_FILE, app_zip_path=os.path.join(OUTPUT_FOLDER, "tvb.zip"),
+             ent_file=os.path.join(TVB_ROOT, "tvb_build", "app.entitlements")):
+    """
+    Sign a .APP file, with an Apple Developer Identity previously installed on the current machine.
+    The identity can be found through command "security find-identity".
+
+    We expect these as ENV variables of Jenskins build machine:
+        - SIGN_APP_IDENTITY - to be found with `security find-identity` command
+        - MAC_PASSWORD
+    """
+    if KEY_SIGN_IDENTITY not in os.environ or KEY_MAC_PWD not in os.environ:
+        _log(f"!! We can not sign the resulting .app because the {KEY_SIGN_IDENTITY} and "
+             f"{KEY_MAC_PWD} variables are not in ENV!!")
+        return
+
+    dev_identity = os.environ.get(KEY_SIGN_IDENTITY)
+    mac_pwd = os.environ.get(KEY_MAC_PWD)
+    _log(f"Preparing to sign: {app_path} with {dev_identity}")
+
+    os.system(f"security find-identity")  # for debug purposes only, to find the current installed keys on this machine
+
+    # When executing signing over SSH (like Jenkins does), we first need to unclock the keychain
+    prefix = f"security unlock-keychain -p {mac_pwd} /Users/tvb/Library/Keychains/login.keychain &&"
+    # prefix = ""
+    # For inside binary files we need different entitlement set
+    inner_ent = os.path.join(TVB_ROOT, "tvb_build", "app.inner.entitlements")
+    _codesign_inside(os.path.join(app_path, "Contents", "Resources", "bin"), prefix, dev_identity, inner_ent)
+    _codesign_inside(os.path.join(app_path, "Contents", "Resources", "sbin"), prefix, dev_identity, inner_ent)
+    _codesign_inside(os.path.join(app_path, "Contents", "Resources", "lib"), prefix, dev_identity, inner_ent)
+    _log(f"Signing the main APP {app_path} with {ent_file}", 2)
+    os.system(f"{prefix} codesign -s '{dev_identity}' -f --timestamp -o runtime --entitlements '{ent_file}' '{app_path}'")
+    # Check the signing results
+    os.system(f"spctl -a -t exec -vv '{app_path}'")
+    os.system(f"codesign --verify --verbose=4 '{app_path}'")
+
+    _log(f"Compressing the main APP {app_path} into {app_zip_path}", 2)
+    os.system(f"/usr/bin/ditto -c -k --keepParent '{app_path}' '{app_zip_path}'")
+
+    # Storing credential has to me done once on the build machine before we can submit for notarization:
+    # xcrun notarytool store-credentials --apple-id {env.SIGN_APPLE_ID} --password {env.SIGN_APP_PASSWORD} --team-id {env.SIGN_TEAM_ID} --verbose --keychain-profile "tvb"
+    _log(f"Submitting for notarization {app_zip_path} ...")
+    os.system(f"{prefix} xcrun notarytool submit '{app_zip_path}' --keychain-profile 'tvb' "
+              f"--wait --webhook 'https://example.com/notarization'")
+    # xcrun notarytool log --keychain-profile "tvb" {ID from submit command: 72c04616-8f6a-401d-94f5-c20d47e35138} errors.txt
+    # Staple the notarization ticket and inspect status after
+    os.system(f"xcrun stapler staple  '{app_path}'")
+    os.system(f"spctl -a -t exec -vv '{app_path}'")
+    os.remove(app_zip_path)
+
+
 def create_dmg():
     """ Create a dmg of the app """
 
@@ -379,7 +482,7 @@ def create_dmg():
     if os.path.exists(dmg_file):
         os.remove(dmg_file)
 
-    print("\n+++++++++++++++++++++ Creating DMG from app +++++++++++++++++++++++")
+    _log("Creating DMG from app...")
 
     # Get file size of APP
     app_size = subprocess.check_output(
@@ -390,11 +493,10 @@ def create_dmg():
     # Add a bit of extra to the disk image size
     app_size = str(float(size) * 1.25) + unit
 
-    print("Creating disk image of {}".format(app_size))
+    _log("Creating disk image of {}".format(app_size), 2)
 
     # Create a dmgbuild config file in same folder as
-    dmgbuild_config_file = os.path.join(os.getcwd(),
-                                        'dmgbuild_settings.py')
+    dmgbuild_config_file = os.path.join(os.getcwd(), 'dmgbuild_settings.py')
 
     dmg_config = {
         'filename': dmg_file,
@@ -411,15 +513,14 @@ def create_dmg():
     dmg_config['icon_locations'] = DMG_ICON_LOCATIONS
     dmg_config['window_rect'] = DMG_WINDOW_RECT
 
-    write_vars_to_file(dmgbuild_config_file, dmg_config)
-    print("Copying files to DMG and compressing it. Please wait.")
+    _write_vars_to_file(dmgbuild_config_file, dmg_config)
+    _log("Copying files to DMG and compressing it. Please wait...", 2)
     dmgbuild.build_dmg(dmg_file, APP_NAME, settings_file=dmgbuild_config_file)
-
-    # Clean up!
+    _log("Clean up!", 2)
     os.remove(dmgbuild_config_file)
 
 
-def write_vars_to_file(file_path, var_dict):
+def _write_vars_to_file(file_path, var_dict):
     with open(file_path, 'w') as fp:
         fp.write("# -*- coding: utf-8 -*-\n")
         fp.write("from __future__ import unicode_literals\n\n")
@@ -431,18 +532,18 @@ def write_vars_to_file(file_path, var_dict):
                 fp.write('{} = {}\n'.format(var, value))
 
 
-def fix_paths():
-    kernel_json = os.path.join(
-        RESOURCE_DIR, 'share', 'jupyter', 'kernels', 'python3', 'kernel.json')
+def _fix_paths():
+    kernel_json = os.path.join(RESOURCE_DIR, 'share', 'jupyter', 'kernels', 'python3', 'kernel.json')
     if os.path.exists(kernel_json):
-        print('Fixing kernel.json')
+        _log('Fixing kernel.json', 2)
         with open(kernel_json, 'r') as fp:
-            kernelCfg = json.load(fp)
-            kernelCfg['argv'][0] = 'python'
+            kernel_cfg = json.load(fp)
+            kernel_cfg['argv'][0] = 'python'
         with open(kernel_json, 'w+') as fp:
-            json.dump(kernelCfg, fp)
+            json.dump(kernel_cfg, fp)
 
 
 if __name__ == "__main__":
     create_app()
+    sign_app()
     create_dmg()

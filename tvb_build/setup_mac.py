@@ -40,7 +40,7 @@ import importlib
 import tvb_bin
 from glob import glob
 from zipfile import ZipFile, ZIP_DEFLATED
-from conda_env_to_app import create_app, create_dmg, APP_NAME
+from conda_env_to_app import create_app, create_dmg, APP_NAME, sign_app
 from tvb.basic.profile import TvbProfile
 from tvb.basic.config.environment import Environment
 from tvb_build.third_party_licenses.build_licenses import generate_artefact
@@ -199,6 +199,7 @@ def _generate_distribution(final_name, library_path, version, extra_licensing_ch
     online_help_dst = os.path.join(library_abs_path, "tvb", "interfaces", "web", "static", "help")
     print("- Moving " + online_help_src + " to " + online_help_dst)
     os.rename(online_help_src, online_help_dst)
+    sign_app()
     create_dmg()
 
     print("- Cleaning up non-required files...")
