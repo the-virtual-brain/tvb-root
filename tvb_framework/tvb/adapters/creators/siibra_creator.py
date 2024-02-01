@@ -51,14 +51,11 @@ def init_siibra_options():
     """"
     Initialize siibra options for atlas and parcellations
     """
-    # should use `atlases = [a.name for a in list(siibra.atlases)]`, but only the default one has data
-    atlases = [siibra_base.DEFAULT_ATLAS]  # list with atlases names
-    # should get only valid parcellations for default atlas, but only newest version of Julich parcellation
-    # has data and corresponds with the current API of siibra
-    parcellations = [siibra_base.DEFAULT_PARCELLATION]
+    atlases = [siibra_base.HUMAN_ATLAS]  # list with atlases names
+    parcellations = [siibra_base.JULICH_3_0, siibra_base.JULICH_2_9]
 
     # get available cohorts
-    cohorts = siibra_base.get_cohorts_for_sc(parcellations[0])
+    cohorts = [siibra_base.HCP_COH0RT, siibra_base.THOUSAND_BRAINS_COHORT]
 
     atlas_dict = {a_name: a_name for a_name in atlases}
     parcellation_dict = {p_name: p_name for p_name in parcellations}
@@ -85,7 +82,7 @@ class SiibraModel(ViewModel):
 
     atlas = EnumAttr(
         field_type=ATLAS_OPTS,
-        default=ATLAS_OPTS[siibra_base.DEFAULT_ATLAS],
+        default=ATLAS_OPTS[siibra_base.HUMAN_ATLAS],
         label='Atlas',
         required=True,
         doc='Atlas to be used (only the compatible ones listed)'
@@ -93,7 +90,7 @@ class SiibraModel(ViewModel):
 
     parcellation = EnumAttr(
         field_type=PARCELLATION_OPTS,
-        default=PARCELLATION_OPTS[siibra_base.DEFAULT_PARCELLATION],
+        default=PARCELLATION_OPTS[siibra_base.JULICH_3_0],
         label='Parcellation',
         required=True,
         doc='Parcellation to be used (only TVB compatible ones listed here)'
@@ -101,7 +98,7 @@ class SiibraModel(ViewModel):
 
     cohort = EnumAttr(
         field_type=COHORT_OPTS,
-        default=COHORT_OPTS[siibra_base.DEFAULT_COHORT],
+        default=COHORT_OPTS[siibra_base.HCP_COH0RT],
         label='Cohort',
         required=True,
         doc='Cohort to be used'
