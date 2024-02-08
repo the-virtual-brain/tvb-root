@@ -119,14 +119,18 @@ class SiibraModel(ViewModel):
         A combination of the 2 methods is also supported: 000-005;010 will retrieve all the subjects starting with 
         subject 000 until subject 005 (6 subjects) AND subject 010 (so 7 subjects in total)<br/> <br/>
         b) For "1000BRAINS" cohort, the subject IDs have to parts: first part is the subject ID, which has the form:
-         0001, 0002, etc., and the second part is the scanning section index, which has the form _1, _2. All subjects 
+         0001, 0002, etc., and the second part is the scanning session index, which has the form _1, _2. All subjects 
          had between 1 and 2 scanning sessions. Thus, the final IDs will look like: 0001_1, 0001_2, 0002_1, etc. and 
-         there are 2 ways to specify the IDs: <br/>
+         there are 3 ways to specify the IDs: <br/>
         1. individually and specifying the exact ID, including the session index "_1" or "_2". Multiple IDs can be 
         mentioned by using a semicolon symbol to delimit them: 0001_1;0017_1;0017_2. <br/>
-        2. individually, and withoud specifying the session index. In this case, all available sessions for that subject 
+        2. individually, and without specifying the session index. In this case, all available sessions for that subject 
         will be retrieved. Multiple IDs can be mentioned by using a semicolon symbol to delimit them: 0001;0017 will be 
-        converted to 4 IDs: 0001_1, 0001_2, 0017_1, 0017_2.
+        converted to 4 IDs: 0001_1, 0001_2, 0017_1, 0017_2. <br/>
+        3. As a range, specifying only the subject ids and not the session ids: 0001-0003 will retrieve all the 
+        available sessions for subjects 1, 2, 3, i.e.: 0001_1, 0001_2, 0002_1, 0002_2, 0003_1 and 0003_2. <br/>
+        A combination of the 3 methods is also supported: 0001-0003;0005_1;0009 will retrieve connectivities for the 
+        following IDs: 0001_1, 0001_2, 0002_1, 0002_2, 0003_1, 0003_2, 0005_1, 0009_1, 0009_2.
         """)
 
     fc = Attr(

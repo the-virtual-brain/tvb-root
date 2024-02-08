@@ -94,27 +94,20 @@ def parse_subject_ids(subject_ids, cohort):
     """
     parsed_ids_as_str = []
     individual_splits = subject_ids.split(';')
+    zfill_value = 3 if cohort == HCP_COH0RT else 4  # used in case of ranges
 
-    if cohort == THOUSAND_BRAINS_COHORT:
-        for s in individual_splits:
+    for s in individual_splits:
+        # if a range was specified
+        if '-' in s:
+            start, end = s.split('-')
+            start_int = int(start)
+            end_int = int(end) + 1  # so that the last element in range is also included
+            ids_list_from_range = list(range(start_int, end_int))
+            parsed_ids_as_str.extend([str(id).zfill(zfill_value) for id in ids_list_from_range])
+        else:
             parsed_ids_as_str.append(s)
-    elif cohort == HCP_COH0RT:
-        parsed_ids = []
-        for s in individual_splits:
-            # if a range was written
-            if '-' in s:
-                start, end = s.split('-')
-                start_int = int(start)
-                end_int = int(end) + 1  # so that the last element in range is also included
-                ids_list_from_range = list(range(start_int, end_int))
-                parsed_ids.extend(ids_list_from_range)
-            else:
-                s_int = int(s)
-                parsed_ids.append(s_int)
 
-        # convert the subject ids list back to strings into the required format
-        parsed_ids_as_str = [str(id).zfill(3) for id in parsed_ids]
-
+    parsed_ids_as_str = sorted(set(parsed_ids_as_str))
     return parsed_ids_as_str
 
 
