@@ -49,14 +49,15 @@ CLB_AUTH_TOKEN_KEY = 'HBP_AUTH_TOKEN'
 # Following code is executed only once, when the application starts running
 def init_siibra_options():
     """"
-    Initialize siibra options for atlas and parcellations
+    Initialize siibra options for atlas, parcellations and cohorts.
+    These options were manually selected and are the only ones having struct. conn. right now. This may change in the
+    future.
     """
-    atlases = [siibra_base.HUMAN_ATLAS]  # list with atlases names
+    atlases = [siibra_base.HUMAN_ATLAS]
     parcellations = [siibra_base.JULICH_3_0, siibra_base.JULICH_2_9]
-
-    # get available cohorts
     cohorts = [siibra_base.HCP_COH0RT, siibra_base.THOUSAND_BRAINS_COHORT]
 
+    # create dicts needed for TVB Enums
     atlas_dict = {a_name: a_name for a_name in atlases}
     parcellation_dict = {p_name: p_name for p_name in parcellations}
     cohort_dict = {(y := c_name.upper()): y for c_name in cohorts}
@@ -85,7 +86,7 @@ class SiibraModel(ViewModel):
         default=ATLAS_OPTS[siibra_base.HUMAN_ATLAS],
         label='Atlas',
         required=True,
-        doc='Atlas to be used (only the compatible ones listed)'
+        doc='Atlas to be used'
     )
 
     parcellation = EnumAttr(
@@ -93,7 +94,7 @@ class SiibraModel(ViewModel):
         default=PARCELLATION_OPTS[siibra_base.JULICH_3_0],
         label='Parcellation',
         required=True,
-        doc='Parcellation to be used (only TVB compatible ones listed here)'
+        doc='Parcellation to be used'
     )
 
     cohort = EnumAttr(
@@ -117,13 +118,15 @@ class SiibraModel(ViewModel):
         subject 000 until subject 050 (51 subjects). <br/>
         A combination of the 2 methods is also supported: 000-005;010 will retrieve all the subjects starting with 
         subject 000 until subject 005 (6 subjects) AND subject 010 (so 7 subjects in total)<br/> <br/>
-        b) For "1000BRAINS" cohort, the subject IDs are: 0001_1, 0001_2, 0002_1, 0002_2, etc. Each subject can have 
-        multiple subjects IDs associated to them, indicated by the "_1", "_2" suffix, but most of subjects have 
-        just one ID, ending in "_1". Thus, there are 2 ways to specify the IDs: <br/>
-        1. individually and specifying the exact ID, so including "_1" or "_2". Multiple IDs can be mentioned 
-        by using a semicolon symbol to delimitate them: 0001_1;0017_1;0017_2. <br/>
-        2. individually, and specifying just the prefix for a subject. Multiple IDs can be mentioned by using a 
-        semicolon symbol to delimitate them: 0001;0017 will be converted to 4 IDs: 0001_1, 0001_2, 0017_1, 0017_2.
+        b) For "1000BRAINS" cohort, the subject IDs have to parts: first part is the subject ID, which has the form:
+         0001, 0002, etc., and the second part is the scanning section index, which has the form _1, _2. All subjects 
+         had between 1 and 2 scanning sessions. Thus, the final IDs will look like: 0001_1, 0001_2, 0002_1, etc. and 
+         there are 2 ways to specify the IDs: <br/>
+        1. individually and specifying the exact ID, including the session index "_1" or "_2". Multiple IDs can be 
+        mentioned by using a semicolon symbol to delimit them: 0001_1;0017_1;0017_2. <br/>
+        2. individually, and withoud specifying the session index. In this case, all available sessions for that subject 
+        will be retrieved. Multiple IDs can be mentioned by using a semicolon symbol to delimit them: 0001;0017 will be 
+        converted to 4 IDs: 0001_1, 0001_2, 0017_1, 0017_2.
         """)
 
     fc = Attr(
@@ -131,7 +134,7 @@ class SiibraModel(ViewModel):
         label="Compute Functional Connectivities",
         default=True,
         required=True,
-        doc="Set if the functional connectivities for the specified subjects should also be computed"
+        doc="Flag to specify if the functional connectivities for the selected subjects should also be computed"
     )
 
 
@@ -166,7 +169,7 @@ class SiibraCreator(ABCAdapter):
     """ The purpose of this creator is to use siibra in order to create Structural and Functional Connectivities """
 
     _ui_name = "Siibra Connectivity Creator"
-    _ui_description = "Create Structural and Functional Connectivities from the EBRAINS KG using siibra"
+    _ui_description = "Create Structural and Functional Connectivities with data from the EBRAINS KG using siibra"
 
     def get_form_class(self):
         return SiibraCreatorForm
@@ -195,9 +198,10 @@ class SiibraCreator(ABCAdapter):
                 raise ConnectionError('Invalid EBRAINS authentication token. Please provide a new one.')
             else:
                 raise ConnectionError('We could not complete the operation. '
-                                      'Please check the logs and contact the development team from TVB, siibra or EBRAINS KG.')
+                                      'Please check the logs and contact the development team from TVB, siibra or '
+                                      'EBRAINS KG.')
 
-        # list of indexes for stored the Struct. Conn. and Conn. Measures
+        # list of indexes of stored Struct. Conn. and Conn. Measures
         conn_indices = []
         conn_measures_indices = []
 
