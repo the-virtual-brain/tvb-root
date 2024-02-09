@@ -23,17 +23,11 @@
 # https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
-import os
-import pytest
-from siibra.retrieval.requests import EbrainsRequest
-from tvb.adapters.creators.siibra_creator import SiibraCreator, SiibraModel, CLB_AUTH_TOKEN_KEY
-from tvb.tests.framework.adapters.creators import siibra_base_test
+from tvb.adapters.creators.siibra_creator import SiibraCreator, SiibraModel
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
 
-@pytest.mark.skipif(siibra_base_test.no_ebrains_auth_token(),
-                    reason="No EBRAINS AUTH token for accessing the KG was provided!")
 class TestSiibraCreator(TransactionalTestCase):
     """ Test Siibra Creator functionalities """
 
@@ -44,15 +38,6 @@ class TestSiibraCreator(TransactionalTestCase):
 
     def test_happy_flow_launch(self, operation_factory):
         view_model = SiibraModel()
-        if CLB_AUTH_TOKEN_KEY in os.environ:
-            view_model.ebrains_token = os.environ[CLB_AUTH_TOKEN_KEY]
-        else:
-            # This path might be too white-box, as we are replicating siibra mechanism of retrieving
-            # an EBRAINS Token based on CLIENT_SECRET and CLIENT_ID, but this way we keep the SiibraCreator
-            # both tested and compatible with OpenShift deployments, where a token is provided directly
-            req = EbrainsRequest("", {})
-            req.init_oidc()
-            view_model.ebrains_token = req.kg_token
         view_model.subject_ids = '010'
 
         operation = operation_factory(test_user=self.test_user, test_project=self.test_project)
@@ -66,11 +51,11 @@ class TestSiibraCreator(TransactionalTestCase):
 
         # connectivities
         assert conn_index.has_hemispheres_mask
-        assert conn_index.number_of_regions == 294
+        assert conn_index.number_of_regions == 314
         assert conn_index.subject == '010'
 
         # connectivity measures
         for conn_measure in conn_measure_indices:
-            assert conn_measure.parsed_shape == (294, 294)
+            assert conn_measure.parsed_shape == (314, 314)
             assert conn_measure.subject == '010'
             assert conn_measure.fk_connectivity_gid == conn_index.gid
