@@ -48,7 +48,7 @@ JULICH_2_9 = 'Julich-Brain Cytoarchitectonic Atlas (v2.9)'
 parcellations = [JULICH_3_0, JULICH_2_9]
 
 # cohorts
-HCP_COH0RT = 'HCP'  # DEFAULT
+HCP_COHORT = 'HCP'  # DEFAULT
 THOUSAND_BRAINS_COHORT = '1000BRAINS'
 
 
@@ -94,7 +94,7 @@ def parse_subject_ids(subject_ids, cohort):
     """
     parsed_ids_as_str = []
     individual_splits = subject_ids.split(';')
-    zfill_value = 3 if cohort == HCP_COH0RT else 4  # used in case of ranges
+    zfill_value = 3 if cohort == HCP_COHORT else 4  # used in case of ranges
 
     for s in individual_splits:
         # if a range was specified
@@ -171,7 +171,7 @@ def init_siibra_params(atlas_name, parcellation_name, cohort_name, subject_ids):
                              f'Please choose one of the following cohorts: {cohort_options} or change '
                              f'the parcellation.')
     else:
-        cohort_name = HCP_COH0RT  # compatible with all parcellations
+        cohort_name = HCP_COHORT  # compatible with all parcellations
 
     # check subject ids
     if not subject_ids:
@@ -204,8 +204,8 @@ def get_hemispheres_for_regions(region_names):
 def get_regions_positions(regions):
     """
     Given a list of siibra regions, compute the positions of their centroids.
-    :param: regions - list of siibra region objects
-    :return: positions - list of tuples; each tuple represents the position of a region in `regions` and contains
+    :param: regions - list of siibra Regions
+    :return: positions - list of tuples; each tuple represents the position of a region and contains
     3 floating point coordinates
     """
     LOGGER.info(f'Computing positions for regions')
@@ -397,7 +397,7 @@ def get_connectivity_measures_from_kg(atlas=None, parcellation=None, cohort=None
 
 
 # ################################################# FINAL API ##########################################################
-def get_connectivities_from_kg(atlas=None, parcellation=None, cohort=HCP_COH0RT,
+def get_connectivities_from_kg(atlas=None, parcellation=None, cohort=HCP_COHORT,
                                subject_ids=None, compute_fc=False):
     """
     Compute the TVB Structural Connectivities and optionally Functional Connectivities for the selected subjects
