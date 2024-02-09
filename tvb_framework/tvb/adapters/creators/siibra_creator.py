@@ -41,9 +41,6 @@ from tvb.basic.neotraits._core import TVBEnum
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.neotraits.forms import StrField, SelectField, BoolField, UserSessionStrField
 from tvb.core.neotraits.view_model import ViewModel, Str
-from tvb.core.services.user_service import KEY_AUTH_TOKEN
-
-CLB_AUTH_TOKEN_KEY = 'HBP_AUTH_TOKEN'
 
 
 # Following code is executed only once, when the application starts running
@@ -75,12 +72,6 @@ if 'SIIBRA_INIT_DONE' not in globals():
 
 
 class SiibraModel(ViewModel):
-    ebrains_token = Str(
-        label='EBRAINS token',
-        required=True,
-        doc='Auth Token provided by EBRAINS lab `clb_oauth.get_token()` for accessing the Knowledge Graph'
-    )
-
     atlas = EnumAttr(
         field_type=ATLAS_OPTS,
         default=ATLAS_OPTS[siibra_base.HUMAN_ATLAS],
@@ -145,7 +136,6 @@ class SiibraModel(ViewModel):
 class SiibraCreatorForm(ABCAdapterForm):
     def __init__(self):
         super(SiibraCreatorForm, self).__init__()
-        self.ebrains_token = UserSessionStrField(SiibraModel.ebrains_token, name="ebrains_token", key=KEY_AUTH_TOKEN)
         self.atlas = SelectField(SiibraModel.atlas, name='atlas')
         self.parcellation = SelectField(SiibraModel.parcellation, name='parcellation')
         self.cohort = SelectField(SiibraModel.cohort, name='cohort')
@@ -182,14 +172,11 @@ class SiibraCreator(ABCAdapter):
         return [ConnectivityIndex, ConnectivityMeasureIndex]
 
     def launch(self, view_model):
-        ebrains_token = view_model.ebrains_token
         atlas = view_model.atlas.value
         parcellation = view_model.parcellation.value
         cohort = view_model.cohort.value
         subject_ids = view_model.subject_ids
         compute_fc = view_model.fc
-
-        os.environ[CLB_AUTH_TOKEN_KEY] = ebrains_token
 
         # list of all resulting indices for connectivities and possibly connectivity measures
         results = []
@@ -197,13 +184,10 @@ class SiibraCreator(ABCAdapter):
         try:
             conn_dict, conn_measures_dict = siibra_base.get_connectivities_from_kg(atlas, parcellation, cohort,
                                                                                    subject_ids, compute_fc)
-        except SiibraHttpRequestError as e:
-            if e.response.status_code in [401, 403]:
-                raise ConnectionError('Invalid EBRAINS authentication token. Please provide a new one.')
-            else:
-                raise ConnectionError('We could not complete the operation. '
-                                      'Please check the logs and contact the development team from TVB, siibra or '
-                                      'EBRAINS KG.')
+        except SiibraHttpRequestError:
+            raise ConnectionError('We could not complete the operation. '
+                                  'Please check the logs and contact the development team from TVB, siibra or '
+                                  'EBRAINS KG.')
 
         # list of indexes of stored Struct. Conn. and Conn. Measures
         conn_indices = []
