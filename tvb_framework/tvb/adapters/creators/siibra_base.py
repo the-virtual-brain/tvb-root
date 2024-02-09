@@ -195,7 +195,6 @@ def get_hemispheres_for_regions(region_names):
     for name in region_names:
         if 'right' in name:
             hemi.append(1)
-        # TODO: regions referring to both hemispheres are put in the left hemisphere; change this?
         else:
             hemi.append(0)
 
@@ -215,7 +214,7 @@ def get_regions_positions(regions):
     for r in regions:
         space = r.supported_spaces[0]  # choose first space that is available for that region
         centroid = r.spatial_props(space=space).components[0].centroid
-        positions.append(centroid)
+        positions.append(centroid.coordinate)
 
     return positions
 
@@ -231,7 +230,7 @@ def get_connectivity_matrix(parcellation, cohort, subjects, component):
     :param: cohort - name of cohort for which we compute the connectivity matrices
     :param: subjects - list containing the subject ids as strings
     :param: component - enum value specifying the connectivity component we want, weights or tracts
-    return: conn_matrices - dict containing the conn. matrices (values) for the specified subject ids (keys)
+    return: conn_matrices - dict where key is the subject id and value is the conn. matrix
     """
     modality = component.value
     features = siibra.features.get(parcellation, modality)
@@ -244,8 +243,7 @@ def get_connectivity_matrix(parcellation, cohort, subjects, component):
             break
 
     if conn_for_cohort is None:
-        LOGGER.info("NO conn_for_cohort was found")
-        return conn_matrices
+        raise AttributeError(f"NO {modality} was found for cohort {cohort}")
 
     # for 1000BRAINS cohort, if the user did not specify a suffix (_1, _2), get all the possible ids for that subject
     if cohort == THOUSAND_BRAINS_COHORT and subjects is not None:
@@ -301,8 +299,6 @@ def get_structural_connectivities_from_kg(atlas=None, parcellation=None, cohort=
 
     # regions are the same for all weights and tract lengths matrices, so they can be computed only once
     regions = list(weights.values())[0].index.values
-    # because siibra sometimes returns tuples instead of actual regions, change list to contain only regions
-    regions = [r[1] if type(r) == tuple else r for r in regions]
     region_names = [r.name for r in regions]
     hemi = get_hemispheres_for_regions(region_names)
     positions = get_regions_positions(regions)
@@ -313,8 +309,8 @@ def get_structural_connectivities_from_kg(atlas=None, parcellation=None, cohort=
         tracts_matrix = tracts[subject]
         tvb_conn = create_tvb_structural_connectivity(weights_matrix, tracts_matrix, region_names, hemi, positions)
 
-        # structural connectivities stored as dict, to link a functional connectivity with the correct
-        # structural connectivity when creating connectivity measures
+        # structural connectivities stored as dict, where key is subject id, as we need it when computing connectivity
+        # measures
         connectivities[subject] = tvb_conn
 
     return connectivities
@@ -325,7 +321,7 @@ def get_functional_connectivity_matrix(parcellation, cohort, subject):
     """
     Get all the functional connectivities for the specified parcellation, cohort and just ONE specific subject;
     In v1.0a5 of siibra, for HCP cohort there are 5 groups of functional connectivities; each group contains
-    Functional connectivities for each subject addressed in the research
+    1 Functional connectivity for each subject addressed in the research
     :param: parcellation - siibra Parcellation object
     :param: cohort - str specifying the cohort name
     :param: subject - str specifying exactly one subject id
