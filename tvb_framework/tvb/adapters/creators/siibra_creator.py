@@ -52,7 +52,7 @@ def init_siibra_options():
     """
     atlases = [siibra_base.HUMAN_ATLAS]
     parcellations = [siibra_base.JULICH_3_0, siibra_base.JULICH_2_9]
-    cohorts = [siibra_base.HCP_COH0RT, siibra_base.THOUSAND_BRAINS_COHORT]
+    cohorts = [siibra_base.HCP_COHORT, siibra_base.THOUSAND_BRAINS_COHORT]
 
     # create dicts needed for TVB Enums
     atlas_dict = {a_name: a_name for a_name in atlases}
@@ -90,7 +90,7 @@ class SiibraModel(ViewModel):
 
     cohort = EnumAttr(
         field_type=COHORT_OPTS,
-        default=COHORT_OPTS[siibra_base.HCP_COH0RT],
+        default=COHORT_OPTS[siibra_base.HCP_COHORT],
         label='Cohort',
         required=True,
         doc='Cohort to be used'
