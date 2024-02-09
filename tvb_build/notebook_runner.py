@@ -45,13 +45,16 @@ def execute_notebook(notebook):
 
 if __name__ == '__main__':
 
+    if len(sys.argv) < 1:
+        raise AttributeError("please insert the input path")
+    in_path = sys.argv[1]
+
     if len(sys.argv) >= 2:
-        in_path = sys.argv[1]
         sub_folders = sys.argv[2:]
         # compute relative paths
         sub_folders = [os.path.join(in_path, folder) for folder in sub_folders]
     else:
-        raise AttributeError("please insert the input path")
+        sub_folders = []
 
     skipped_notebooks = [
         'exploring_time_series_interactive.ipynb',  # run separately because of other notebook dependency

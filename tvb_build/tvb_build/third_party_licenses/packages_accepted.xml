@@ -2846,11 +2846,11 @@
     <dependency env="[win,mac,linux]" name="siibra">
         <full-name value="siibra"/>
         <project-home value="https://github.com/FZJ-INM1-BDA/siibra-python"/>
-        <version value="0.4a35"/>
+        <version value="1.0a5"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_siibra.txt"/>
         <license-type value="Apache_ 2"/>
-        <copyright-notice value="Copyright 2020-2021, Forschungszentrum J&#252;lich GmbH"/>
+        <copyright-notice value="Copyright 2020-2023, Forschungszentrum J&#252;lich GmbH"/>
         <description value="Software interface for interacting with brain atlases."/>
     </dependency>
     <dependency env="[win,linux]" name="simplegeneric">
