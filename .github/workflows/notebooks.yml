@@ -58,7 +58,5 @@ jobs:
           python setup.py develop
 
       - name: run notebooks
-        env:
-          HBP_AUTH_TOKEN: ${{ secrets.HBP_AUTH_TOKEN }}   # token or (secret+id) are needed for siibra tests
         run: |
-          python ./tvb_build/notebook_runner.py ./tvb_documentation/demos siibra
+          python ./tvb_build/notebook_runner.py ./tvb_documentation/demos
