@@ -36,7 +36,7 @@ from setuptools.command.egg_info import manifest_maker
 
 manifest_maker.template = 'MANIFEST_rest_client.in'
 
-VERSION = "2.8.3"
+VERSION = "2.9"
 
 TVB_TEAM = "Lia Domide, Paula Prodan, Bogdan Valean, Robert Vincze"
 
