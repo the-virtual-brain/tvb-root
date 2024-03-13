@@ -242,6 +242,7 @@ class WebSettings(object):
             pass
 
         self.SERVER_PORT = manager.get_attribute(stored.KEY_PORT, 8080, int)
+        self.REST_PORT = manager.get_attribute(stored.KEY_PORT_REST, 9090, int)
 
         self.OPENSHIFT_DEPLOY = manager.get_attribute(stored.KEY_OPENSHIFT_DEPLOY, False, eval)
         self.OPENSHIFT_NAMESPACE = manager.get_attribute(stored.KEY_OPENSHIFT_NAMESPACE, "")

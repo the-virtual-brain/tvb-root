@@ -26,7 +26,6 @@
 
 import os
 import sys
-
 from flask import Flask
 from flask_restx.apidoc import apidoc
 from gevent.pywsgi import WSGIServer
@@ -51,11 +50,9 @@ from tvb.storage.storage_interface import StorageInterface
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
-
+CONFIG_EXISTS = not TvbProfile.is_first_run()
 LOGGER = get_logger('tvb.interfaces.rest.server.run')
 LOGGER.info("TVB application will be running using encoding: " + sys.getdefaultencoding())
-
-FLASK_PORT = 9090
 
 
 def initialize_tvb_flask():
@@ -154,12 +151,21 @@ def initialize_flask():
     # Register keycloak authorization manager
     AuthorizationManager(TvbProfile.current.KEYCLOAK_CONFIG)
 
-    http_server = WSGIServer(("0.0.0.0", FLASK_PORT), app)
+    http_server = WSGIServer(("0.0.0.0", TvbProfile.current.web.REST_PORT), app)
     http_server.serve_forever()
 
 
 if __name__ == '__main__':
     # Prepare parameters and fire Flask
-    # Remove not-relevant parameter, 0 should point towards this "run.py" file, 1 to the profile
-    initialize_tvb_flask()
-    initialize_flask()
+    if not TvbProfile.current.KEYCLOAK_CONFIG:
+        LOGGER.info("REST server will not start because KEYCLOAK CONFIG path is not set.")
+
+    elif not os.path.exists(TvbProfile.current.KEYCLOAK_CONFIG):
+        LOGGER.warning("Cannot start REST server because the KEYCLOAK CONFIG file {} does not exist.".format(
+            TvbProfile.current.KEYCLOAK_CONFIG))
+    elif CONFIG_EXISTS:
+        LOGGER.info("Starting Flask server with REST API...")
+        initialize_tvb_flask()
+        initialize_flask()
+    else:
+        LOGGER.info("We will not start REST until some tvb.config file exists on this machine...")

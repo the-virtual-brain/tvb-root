@@ -41,7 +41,6 @@ import webbrowser
 import cherrypy
 from cherrypy import Tool
 from cherrypy.lib.sessions import RamSession
-from subprocess import Popen, PIPE
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.initializer import initialize, reset
@@ -189,28 +188,6 @@ def init_cherrypy(arguments=None):
     cherrypy.engine.start()
 
 
-def expose_rest_api():
-    if not TvbProfile.current.KEYCLOAK_CONFIG:
-        LOGGER.info("REST server will not start because KEYCLOAK CONFIG path is not set.")
-        return
-
-    if not os.path.exists(TvbProfile.current.KEYCLOAK_CONFIG):
-        LOGGER.warning("Cannot start REST server because the KEYCLOAK CONFIG file {} does not exist.".format(
-            TvbProfile.current.KEYCLOAK_CONFIG))
-        return
-
-    if CONFIG_EXISTS:
-        LOGGER.info("Starting Flask server with REST API...")
-        run_params = [TvbProfile.current.PYTHON_INTERPRETER_PATH, '-m', 'tvb.interfaces.rest.server.run',
-                      TvbProfile.CURRENT_PROFILE_NAME]
-        flask_process = Popen(run_params, stderr=PIPE)
-        stdout, stderr = flask_process.communicate()
-        if flask_process.returncode != 0:
-            LOGGER.warning("Failed to start the Flask server with REST API. Stderr: {}".format(stderr))
-        else:
-            LOGGER.info("Finished starting Flask server with REST API...")
-
-
 def start_tvb(arguments, browser=True):
     """
     Fire CherryPy server and listen on a free port
@@ -245,8 +222,6 @@ def start_tvb(arguments, browser=True):
     # Fire a browser page at the end.
     if browser:
         run_browser()
-
-    expose_rest_api()
 
     # Launch CherryPy loop forever.
     LOGGER.info("Finished starting TVB version %s in %.3f s",
