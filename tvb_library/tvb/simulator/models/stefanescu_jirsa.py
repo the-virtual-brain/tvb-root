@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 #
 # TheVirtualBrain-Scientific Package. This package holds all simulators, and
@@ -33,7 +34,6 @@ from scipy.stats import norm as scipy_stats_norm
 from .base import ModelNumbaDfun
 from tvb.basic.neotraits.api import NArray, Final, List, Range
 from numba import guvectorize,float64,int64
-import numba
 
 
 class ReducedSetBase(ModelNumbaDfun):
@@ -56,23 +56,20 @@ class ReducedSetBase(ModelNumbaDfun):
 
 def _numba_dfun_fitzHughNagumo(tau,a,b,K11,K12,K21,sigma,mu,Aik,Bik,Cik,e_i,f_i,IE_i,II_i,
     m_i,n_i,local_coupling,xi,eta,alpha,beta,c_0,derivative):
-    #print(tau,tau[0],K11,K11[0])
     
     derivative[0,:] = (tau * (xi - e_i * xi ** 3 / 3.0 - eta) +
            K11 * (numpy.dot(xi, Aik) - xi) -
            K12 * (numpy.dot(alpha, Bik) - xi) +
            tau * (IE_i + c_0 + local_coupling * xi))
-    #print(derivative[0],"\n\n\nt\n")
     
     derivative[1,:] = (xi - b * eta + m_i) / tau
-    #print(derivative[1],"\n\n\np\n")
+ 
     derivative[2,:] = (tau * (alpha - f_i * alpha ** 3 / 3.0 - beta) +
             K21[2] * (numpy.dot(xi, Cik) - alpha) +
             tau[2] * (II_i + c_0 + local_coupling * xi))
-    #print(derivative[2],"\n\n\nq\n")
+
     derivative[3,:] = (alpha - b * beta + n_i) / tau
-    #print("9999999999999999999999",derivative[3])
-    #print(derivative,"-----")
+
 
 
 
@@ -217,6 +214,8 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
     n_i = None
     def numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
+
+
         The system's equations for the i-th mode at node q are:
 
         .. math::
@@ -235,6 +234,7 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
                 \dot{\beta}_i    &= \frac{1}{c}\left(\alpha_i-b\beta_i+n_i\right)
 
         """
+
         xi = state_variables[0, :]
         eta = state_variables[1, :]
         alpha = state_variables[2, :]
@@ -242,23 +242,22 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
         derivative = numpy.empty_like(state_variables)
         # sum the activity from the modes
         c_0 = coupling[0, :].sum(axis=1)[:, numpy.newaxis]
-
+        # TODO: generalize coupling variables to a matrix form
+        # c_1 = coupling[1, :] # this cv represents alpha
         derivative[0] = (self.tau * (xi - self.e_i * xi ** 3 / 3.0 - eta) +
                self.K11 * (numpy.dot(xi, self.Aik) - xi) -
                self.K12 * (numpy.dot(alpha, self.Bik) - xi) +
                self.tau * (self.IE_i + c_0 + local_coupling * xi))
-        print(derivative[0])
+        
         derivative[1] = (xi - self.b * eta + self.m_i) / self.tau
-        print(derivative[1])
+        
         derivative[2] = (self.tau * (alpha - self.f_i * alpha ** 3 / 3.0 - beta) +
                   self.K21 * (numpy.dot(xi, self.Cik) - alpha) +
                   self.tau * (self.II_i + c_0 + local_coupling * xi))
 
         derivative[3] = (alpha - self.b * beta + self.n_i) / self.tau
 
-        return derivative        # TODO: generalize coupling variables to a matrix form
-        # c_1 = coupling[1, :] # this cv represents alpha
-        print(self.tau,self.tau[0],self.K11,self.K11[0])
+        return derivative        
  
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
@@ -291,7 +290,7 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
         self.Aik,self.Bik,self.Cik,self.e_i,self.f_i,self.IE_i,self.II_i,
         self.m_i,self.n_i,local_coupling,xi,eta,alpha,beta,c_0)
 
-        return deriv
+        return derivative
 
     def update_derived_parameters(self):
         """
@@ -657,7 +656,6 @@ class ReducedSetHindmarshRose(ReducedSetBase):
         xi,eta,tau,alpha,beta,gamma,local_coupling)
         return derivative
     def update_derived_parameters(self, corrected_d_p=True):
-
         """
         Calculate coefficients for the neural field model based on a Reduced set
         of Hindmarsh-Rose oscillators. Specifically, this method implements
