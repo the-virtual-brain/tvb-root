@@ -1,0 +1,397 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: '9'
+    field.cattle.io/publicEndpoints: >-
+      [{"port":30656,"protocol":"TCP","serviceName":"tvb:pod-tvb-nodeport","allNodes":true},{"addresses":["172.19.0.128","172.19.0.129","172.19.0.130","172.19.0.131","172.19.0.132","172.19.0.133","172.19.0.134","172.19.0.135"],"port":443,"protocol":"HTTPS","serviceName":"tvb:pod-tvb","ingressName":"tvb:tvb-web","hostname":"tvb-web.apps.tc.humanbrainproject.eu","path":"/","allNodes":false}]
+  creationTimestamp: '2024-03-14T09:10:25Z'
+  generation: 45
+  labels:
+    workload.user.cattle.io/workloadselector: apps.deployment-tvb-pod-tvb
+  managedFields:
+    - apiVersion: apps/v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:metadata:
+          f:annotations:
+            f:field.cattle.io/publicEndpoints: {}
+          f:labels:
+            .: {}
+            f:workload.user.cattle.io/workloadselector: {}
+        f:spec:
+          f:progressDeadlineSeconds: {}
+          f:replicas: {}
+          f:revisionHistoryLimit: {}
+          f:selector: {}
+          f:strategy:
+            f:rollingUpdate:
+              .: {}
+              f:maxSurge: {}
+              f:maxUnavailable: {}
+            f:type: {}
+          f:template:
+            f:metadata:
+              f:annotations:
+                .: {}
+                f:cattle.io/timestamp: {}
+                f:kubectl.kubernetes.io/restartedAt: {}
+              f:labels:
+                .: {}
+                f:workload.user.cattle.io/workloadselector: {}
+              f:namespace: {}
+            f:spec:
+              f:affinity: {}
+              f:containers:
+                k:{"name":"operations-assigner"}:
+                  .: {}
+                  f:command: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources:
+                    .: {}
+                    f:limits:
+                      .: {}
+                      f:cpu: {}
+                      f:memory: {}
+                    f:requests:
+                      .: {}
+                      f:cpu: {}
+                      f:memory: {}
+                  f:securityContext:
+                    .: {}
+                    f:allowPrivilegeEscalation: {}
+                    f:privileged: {}
+                    f:readOnlyRootFilesystem: {}
+                    f:runAsNonRoot: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/home/.tvb.configuration"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                      f:subPath: {}
+                    k:{"mountPath":"/home/TVB_STORAGE"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                k:{"name":"process-operations"}:
+                  .: {}
+                  f:command: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources:
+                    .: {}
+                    f:limits:
+                      .: {}
+                      f:cpu: {}
+                      f:memory: {}
+                    f:requests:
+                      .: {}
+                      f:cpu: {}
+                      f:memory: {}
+                  f:securityContext:
+                    .: {}
+                    f:allowPrivilegeEscalation: {}
+                    f:privileged: {}
+                    f:readOnlyRootFilesystem: {}
+                    f:runAsNonRoot: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/home/.tvb.configuration"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                      f:subPath: {}
+                    k:{"mountPath":"/home/TVB_STORAGE"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                k:{"name":"tvb-web"}:
+                  .: {}
+                  f:env:
+                    .: {}
+                    k:{"name":"APP_ENCRYPTION_HANDLER"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:ports:
+                    .: {}
+                    k:{"containerPort":8080,"protocol":"TCP"}:
+                      .: {}
+                      f:containerPort: {}
+                      f:name: {}
+                      f:protocol: {}
+                  f:resources:
+                    .: {}
+                    f:limits:
+                      .: {}
+                      f:cpu: {}
+                      f:memory: {}
+                    f:requests:
+                      .: {}
+                      f:cpu: {}
+                      f:memory: {}
+                  f:securityContext:
+                    .: {}
+                    f:allowPrivilegeEscalation: {}
+                    f:privileged: {}
+                    f:readOnlyRootFilesystem: {}
+                    f:runAsNonRoot: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/home/.tvb.configuration"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                      f:readOnly: {}
+                      f:subPath: {}
+                    k:{"mountPath":"/home/TVB_STORAGE"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                    k:{"mountPath":"/home/keycloak_config/keycloak_config.json"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                      f:readOnly: {}
+                      f:subPath: {}
+              f:dnsPolicy: {}
+              f:restartPolicy: {}
+              f:schedulerName: {}
+              f:securityContext: {}
+              f:terminationGracePeriodSeconds: {}
+              f:volumes:
+                .: {}
+                k:{"name":"claim-tvb-storage"}:
+                  .: {}
+                  f:name: {}
+                  f:persistentVolumeClaim:
+                    .: {}
+                    f:claimName: {}
+                k:{"name":"keycloack-config"}:
+                  .: {}
+                  f:configMap:
+                    .: {}
+                    f:defaultMode: {}
+                    f:name: {}
+                  f:name: {}
+                k:{"name":"tvb-config-file"}:
+                  .: {}
+                  f:configMap:
+                    .: {}
+                    f:defaultMode: {}
+                    f:name: {}
+                  f:name: {}
+                k:{"name":"tvb-files"}:
+                  .: {}
+                  f:name: {}
+                  f:persistentVolumeClaim:
+                    .: {}
+                    f:claimName: {}
+      manager: agent
+      operation: Update
+      time: '2024-03-14T13:11:51Z'
+    - apiVersion: apps/v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:metadata:
+          f:annotations:
+            .: {}
+            f:deployment.kubernetes.io/revision: {}
+        f:status:
+          f:availableReplicas: {}
+          f:conditions:
+            .: {}
+            k:{"type":"Available"}:
+              .: {}
+              f:lastTransitionTime: {}
+              f:lastUpdateTime: {}
+              f:message: {}
+              f:reason: {}
+              f:status: {}
+              f:type: {}
+            k:{"type":"Progressing"}:
+              .: {}
+              f:lastTransitionTime: {}
+              f:lastUpdateTime: {}
+              f:message: {}
+              f:reason: {}
+              f:status: {}
+              f:type: {}
+          f:observedGeneration: {}
+          f:readyReplicas: {}
+          f:replicas: {}
+          f:updatedReplicas: {}
+      manager: kube-controller-manager
+      operation: Update
+      subresource: status
+      time: '2024-03-14T13:12:20Z'
+  name: pod-tvb
+  namespace: tvb
+  resourceVersion: '144302707'
+  uid: 3ed8cc2f-e008-4217-ac27-d0aedbd4b0d9
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      workload.user.cattle.io/workloadselector: apps.deployment-tvb-pod-tvb
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        cattle.io/timestamp: '2024-03-07T14:48:13Z'
+        kubectl.kubernetes.io/restartedAt: '2024-01-08T21:00:30+02:00'
+      creationTimestamp: null
+      labels:
+        workload.user.cattle.io/workloadselector: apps.deployment-tvb-pod-tvb
+      namespace: tvb
+    spec:
+      containers:
+        - env:
+            - name: APP_ENCRYPTION_HANDLER
+              value: 'true'
+          image: thevirtualbrain/tvb-run:2.8.3
+          imagePullPolicy: IfNotPresent
+          name: tvb-web
+          ports:
+            - containerPort: 8080
+              name: tvb-web
+              protocol: TCP
+          resources:
+            limits:
+              cpu: '2'
+              memory: 6Gi
+            requests:
+              cpu: '2'
+              memory: 4Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: false
+            runAsNonRoot: false
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /home/TVB_STORAGE
+              name: tvb-files
+            - mountPath: /home/keycloak_config/keycloak_config.json
+              name: keycloack-config
+              readOnly: true
+              subPath: file
+            - mountPath: /home/.tvb.configuration
+              name: tvb-config-file
+              readOnly: true
+              subPath: file
+        - command:
+            - bash
+            - '-c'
+            - >-
+              source activate tvb-run && python -m
+              tvb.interfaces.web.operation_openshift_assigner
+          image: thevirtualbrain/tvb-run:2.8.3
+          imagePullPolicy: IfNotPresent
+          name: operations-assigner
+          resources:
+            limits:
+              cpu: '1'
+              memory: 6Gi
+            requests:
+              cpu: '1'
+              memory: 4Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: false
+            runAsNonRoot: false
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /home/.tvb.configuration
+              name: tvb-config-file
+              subPath: file
+            - mountPath: /home/TVB_STORAGE
+              name: claim-tvb-storage
+        - command:
+            - tail
+            - '-f'
+            - /dev/null
+          image: thevirtualbrain/tvb-run:2.8.3
+          imagePullPolicy: IfNotPresent
+          name: process-operations
+          resources:
+            limits:
+              cpu: '1'
+              memory: 6Gi
+            requests:
+              cpu: '1'
+              memory: 4Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: false
+            runAsNonRoot: false
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /home/.tvb.configuration
+              name: tvb-config-file
+              subPath: file
+            - mountPath: /home/TVB_STORAGE
+              name: claim-tvb-storage
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - name: tvb-files
+          persistentVolumeClaim:
+            claimName: tvb-files
+        - configMap:
+            defaultMode: 420
+            name: keycloak-config
+          name: keycloack-config
+        - configMap:
+            defaultMode: 420
+            name: tvb-config-file
+          name: tvb-config-file
+        - name: claim-tvb-storage
+          persistentVolumeClaim:
+            claimName: claim-tvb-storage
+status:
+  availableReplicas: 1
+  conditions:
+    - lastTransitionTime: '2024-03-14T09:10:25Z'
+      lastUpdateTime: '2024-03-14T11:58:58Z'
+      message: ReplicaSet "pod-tvb-b7b7c6777" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: 'True'
+      type: Progressing
+    - lastTransitionTime: '2024-03-14T13:12:20Z'
+      lastUpdateTime: '2024-03-14T13:12:20Z'
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: 'True'
+      type: Available
+  observedGeneration: 45
+  readyReplicas: 1
+  replicas: 1
+  updatedReplicas: 1
