@@ -2,14 +2,21 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    deployment.kubernetes.io/revision: '23'
-    field.cattle.io/publicEndpoints: >-
-      [{"addresses":["172.19.0.128","172.19.0.129","172.19.0.130","172.19.0.131","172.19.0.132","172.19.0.133","172.19.0.134","172.19.0.135"],"port":443,"protocol":"HTTPS","serviceName":"tvb:langing-page","ingressName":"tvb:start","hostname":"tvb.apps.tc.humanbrainproject.eu","path":"/","allNodes":false},{"port":31061,"protocol":"TCP","serviceName":"tvb:langing-page-nodeport","allNodes":true}]
-  creationTimestamp: '2023-11-22T07:11:21Z'
-  generation: 75
+    deployment.kubernetes.io/revision: '16'
+    field.cattle.io/publicEndpoints: 'null'
+  creationTimestamp: '2024-03-19T11:00:10Z'
+  generation: 137
   labels:
-    workload.user.cattle.io/workloadselector: apps.deployment-tvb-langing-page
+    workload.user.cattle.io/workloadselector: apps.deployment-tvb-pod-exec
   managedFields:
+    - apiVersion: apps/v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:spec:
+          f:replicas: {}
+      manager: kube-controller-manager
+      operation: Update
+      subresource: scale
     - apiVersion: apps/v1
       fieldsType: FieldsV1
       fieldsV1:
@@ -21,7 +28,6 @@ metadata:
             f:workload.user.cattle.io/workloadselector: {}
         f:spec:
           f:progressDeadlineSeconds: {}
-          f:replicas: {}
           f:revisionHistoryLimit: {}
           f:selector: {}
           f:strategy:
@@ -32,16 +38,13 @@ metadata:
             f:type: {}
           f:template:
             f:metadata:
-              f:annotations:
-                .: {}
-                f:cattle.io/timestamp: {}
               f:labels:
                 .: {}
                 f:workload.user.cattle.io/workloadselector: {}
               f:namespace: {}
             f:spec:
               f:containers:
-                k:{"name":"container-1"}:
+                k:{"name":"process-operations"}:
                   .: {}
                   f:command: {}
                   f:image: {}
@@ -74,44 +77,38 @@ metadata:
                   f:terminationMessagePolicy: {}
                   f:volumeMounts:
                     .: {}
-                    k:{"mountPath":"/home/.tvb.landing.page.configuration"}:
+                    k:{"mountPath":"/home/.tvb.configuration"}:
                       .: {}
                       f:mountPath: {}
                       f:name: {}
-                      f:readOnly: {}
                       f:subPath: {}
-                    k:{"mountPath":"/home/tvb_user/TVB_STORAGE"}:
+                    k:{"mountPath":"/home/TVB_STORAGE"}:
                       .: {}
                       f:mountPath: {}
                       f:name: {}
-              f:dnsConfig: {}
               f:dnsPolicy: {}
-              f:hostname: {}
               f:restartPolicy: {}
               f:schedulerName: {}
               f:securityContext: {}
-              f:serviceAccount: {}
-              f:serviceAccountName: {}
-              f:subdomain: {}
               f:terminationGracePeriodSeconds: {}
               f:volumes:
                 .: {}
-                k:{"name":"config-file"}:
+                k:{"name":"tvb-config-file"}:
                   .: {}
                   f:configMap:
                     .: {}
                     f:defaultMode: {}
                     f:name: {}
                   f:name: {}
-                k:{"name":"logs-folder"}:
+                k:{"name":"tvb-files"}:
                   .: {}
-                  f:emptyDir:
-                    .: {}
-                    f:sizeLimit: {}
                   f:name: {}
+                  f:persistentVolumeClaim:
+                    .: {}
+                    f:claimName: {}
       manager: agent
       operation: Update
-      time: '2024-03-20T14:43:28Z'
+      time: '2024-03-20T12:28:10Z'
     - apiVersion: apps/v1
       fieldsType: FieldsV1
       fieldsV1:
@@ -121,7 +118,6 @@ metadata:
             f:deployment.kubernetes.io/revision: {}
         f:status:
           f:availableReplicas: {}
-          f:collisionCount: {}
           f:conditions:
             .: {}
             k:{"type":"Available"}:
@@ -147,18 +143,18 @@ metadata:
       manager: kube-controller-manager
       operation: Update
       subresource: status
-      time: '2024-03-20T14:43:30Z'
-  name: langing-page
+      time: '2024-03-20T12:28:12Z'
+  name: pod-exec
   namespace: tvb
-  resourceVersion: '149551047'
-  uid: d57aeb02-72ba-4853-b184-4596ab12ca77
+  resourceVersion: '149466050'
+  uid: 075894ce-715a-4b07-9b0f-03806a82799a
 spec:
   progressDeadlineSeconds: 600
   replicas: 1
   revisionHistoryLimit: 10
   selector:
     matchLabels:
-      workload.user.cattle.io/workloadselector: apps.deployment-tvb-langing-page
+      workload.user.cattle.io/workloadselector: apps.deployment-tvb-pod-exec
   strategy:
     rollingUpdate:
       maxSurge: 25%
@@ -166,34 +162,30 @@ spec:
     type: RollingUpdate
   template:
     metadata:
-      annotations:
-        cattle.io/timestamp: '2024-03-06T11:19:28Z'
       creationTimestamp: null
       labels:
-        workload.user.cattle.io/workloadselector: apps.deployment-tvb-langing-page
+        workload.user.cattle.io/workloadselector: apps.deployment-tvb-pod-exec
       namespace: tvb
     spec:
       containers:
         - command:
-            - /bin/bash
-            - '-c'
-            - >-
-              source activate tvb-run && python -m
-              tvb.interfaces.web.run_landing_page
-          image: thevirtualbrain/tvb-run:2.9
+            - tail
+            - '-f'
+            - /dev/null
+          image: thevirtualbrain/tvb-run:2.8.3
           imagePullPolicy: IfNotPresent
-          name: container-1
+          name: process-operations
           ports:
             - containerPort: 8080
-              name: tvb
+              name: tvb-exec
               protocol: TCP
           resources:
             limits:
-              cpu: '1'
-              memory: 2Gi
+              cpu: '2'
+              memory: 12Gi
             requests:
               cpu: '1'
-              memory: 1Gi
+              memory: 8Gi
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
@@ -202,47 +194,40 @@ spec:
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
           volumeMounts:
-            - mountPath: /home/tvb_user/TVB_STORAGE
-              name: logs-folder
-            - mountPath: /home/.tvb.landing.page.configuration
-              name: config-file
-              readOnly: true
+            - mountPath: /home/.tvb.configuration
+              name: tvb-config-file
               subPath: file
-      dnsConfig: {}
+            - mountPath: /home/TVB_STORAGE
+              name: tvb-files
       dnsPolicy: ClusterFirst
-      hostname: tvb
       restartPolicy: Always
       schedulerName: default-scheduler
       securityContext: {}
-      serviceAccount: default
-      serviceAccountName: default
-      subdomain: top
       terminationGracePeriodSeconds: 30
       volumes:
         - configMap:
             defaultMode: 420
-            name: single-config-file
-          name: config-file
-        - emptyDir:
-            sizeLimit: 2Gi
-          name: logs-folder
+            name: tvb-config-file
+          name: tvb-config-file
+        - name: tvb-files
+          persistentVolumeClaim:
+            claimName: tvb-files
 status:
   availableReplicas: 1
-  collisionCount: 1
   conditions:
-    - lastTransitionTime: '2023-11-24T16:08:19Z'
-      lastUpdateTime: '2024-03-20T12:15:35Z'
-      message: ReplicaSet "langing-page-57bb88c5d4" has successfully progressed.
+    - lastTransitionTime: '2024-03-20T12:15:39Z'
+      lastUpdateTime: '2024-03-20T12:24:59Z'
+      message: ReplicaSet "pod-exec-6cc9d96598" has successfully progressed.
       reason: NewReplicaSetAvailable
       status: 'True'
       type: Progressing
-    - lastTransitionTime: '2024-03-20T14:43:30Z'
-      lastUpdateTime: '2024-03-20T14:43:30Z'
+    - lastTransitionTime: '2024-03-20T12:28:12Z'
+      lastUpdateTime: '2024-03-20T12:28:12Z'
       message: Deployment has minimum availability.
       reason: MinimumReplicasAvailable
       status: 'True'
       type: Available
-  observedGeneration: 75
+  observedGeneration: 137
   readyReplicas: 1
   replicas: 1
   updatedReplicas: 1

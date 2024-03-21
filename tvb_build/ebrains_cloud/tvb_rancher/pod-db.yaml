@@ -2,10 +2,10 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    deployment.kubernetes.io/revision: '2'
+    deployment.kubernetes.io/revision: '5'
     field.cattle.io/publicEndpoints: 'null'
   creationTimestamp: '2024-03-14T09:28:53Z'
-  generation: 14
+  generation: 77
   labels:
     workload.user.cattle.io/workloadselector: apps.deployment-tvb-pod-db
   managedFields:
@@ -75,7 +75,16 @@ metadata:
                       f:containerPort: {}
                       f:name: {}
                       f:protocol: {}
-                  f:resources: {}
+                  f:resources:
+                    .: {}
+                    f:limits:
+                      .: {}
+                      f:cpu: {}
+                      f:memory: {}
+                    f:requests:
+                      .: {}
+                      f:cpu: {}
+                      f:memory: {}
                   f:securityContext:
                     .: {}
                     f:allowPrivilegeEscalation: {}
@@ -179,7 +188,7 @@ metadata:
                     f:claimName: {}
       manager: agent
       operation: Update
-      time: '2024-03-14T13:10:09Z'
+      time: '2024-03-20T13:27:13Z'
     - apiVersion: apps/v1
       fieldsType: FieldsV1
       fieldsV1:
@@ -214,10 +223,10 @@ metadata:
       manager: kube-controller-manager
       operation: Update
       subresource: status
-      time: '2024-03-14T13:11:19Z'
+      time: '2024-03-20T13:27:37Z'
   name: pod-db
   namespace: tvb
-  resourceVersion: '144301923'
+  resourceVersion: '149505188'
   uid: 04e42e61-d3f6-478c-ac8b-b8ce847b16c0
 spec:
   progressDeadlineSeconds: 600
@@ -257,11 +266,11 @@ spec:
               protocol: TCP
           resources:
             limits:
-              cpu: '1'
-              memory: 2Gi
+              cpu: '4'
+              memory: 4Gi
             requests:
-              cpu: '1'
-              memory: 1Gi
+              cpu: '2'
+              memory: 2Gi
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
@@ -292,7 +301,13 @@ spec:
             - containerPort: 5432
               name: 5432tcp
               protocol: TCP
-          resources: {}
+          resources:
+            limits:
+              cpu: '1'
+              memory: 1Gi
+            requests:
+              cpu: '1'
+              memory: 1Gi
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
@@ -328,18 +343,18 @@ status:
   availableReplicas: 1
   conditions:
     - lastTransitionTime: '2024-03-14T09:28:53Z'
-      lastUpdateTime: '2024-03-14T09:31:11Z'
-      message: ReplicaSet "pod-db-66b79c4d" has successfully progressed.
+      lastUpdateTime: '2024-03-20T12:39:56Z'
+      message: ReplicaSet "pod-db-8756f887b" has successfully progressed.
       reason: NewReplicaSetAvailable
       status: 'True'
       type: Progressing
-    - lastTransitionTime: '2024-03-14T13:11:19Z'
-      lastUpdateTime: '2024-03-14T13:11:19Z'
+    - lastTransitionTime: '2024-03-20T13:27:37Z'
+      lastUpdateTime: '2024-03-20T13:27:37Z'
       message: Deployment has minimum availability.
       reason: MinimumReplicasAvailable
       status: 'True'
       type: Available
-  observedGeneration: 14
+  observedGeneration: 77
   readyReplicas: 1
   replicas: 1
   updatedReplicas: 1
