@@ -6,7 +6,7 @@ metadata:
     field.cattle.io/publicEndpoints: >-
       [{"addresses":["172.19.0.128","172.19.0.129","172.19.0.130","172.19.0.131","172.19.0.132","172.19.0.133","172.19.0.134","172.19.0.135"],"port":443,"protocol":"HTTPS","serviceName":"tvb:langing-page","ingressName":"tvb:start","hostname":"tvb.apps.tc.humanbrainproject.eu","path":"/","allNodes":false},{"port":31061,"protocol":"TCP","serviceName":"tvb:langing-page-nodeport","allNodes":true}]
   creationTimestamp: '2023-11-22T07:11:21Z'
-  generation: 75
+  generation: 81
   labels:
     workload.user.cattle.io/workloadselector: apps.deployment-tvb-langing-page
   managedFields:
@@ -111,7 +111,7 @@ metadata:
                   f:name: {}
       manager: agent
       operation: Update
-      time: '2024-03-20T14:43:28Z'
+      time: '2024-03-27T07:23:51Z'
     - apiVersion: apps/v1
       fieldsType: FieldsV1
       fieldsV1:
@@ -147,10 +147,10 @@ metadata:
       manager: kube-controller-manager
       operation: Update
       subresource: status
-      time: '2024-03-20T14:43:30Z'
+      time: '2024-03-27T07:23:51Z'
   name: langing-page
   namespace: tvb
-  resourceVersion: '149551047'
+  resourceVersion: '155290493'
   uid: d57aeb02-72ba-4853-b184-4596ab12ca77
 spec:
   progressDeadlineSeconds: 600
@@ -236,13 +236,13 @@ status:
       reason: NewReplicaSetAvailable
       status: 'True'
       type: Progressing
-    - lastTransitionTime: '2024-03-20T14:43:30Z'
-      lastUpdateTime: '2024-03-20T14:43:30Z'
+    - lastTransitionTime: '2024-03-27T07:20:40Z'
+      lastUpdateTime: '2024-03-27T07:20:40Z'
       message: Deployment has minimum availability.
       reason: MinimumReplicasAvailable
       status: 'True'
       type: Available
-  observedGeneration: 75
+  observedGeneration: 81
   readyReplicas: 1
   replicas: 1
   updatedReplicas: 1

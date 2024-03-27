@@ -5,7 +5,7 @@ metadata:
     deployment.kubernetes.io/revision: '5'
     field.cattle.io/publicEndpoints: 'null'
   creationTimestamp: '2024-03-14T09:28:53Z'
-  generation: 77
+  generation: 79
   labels:
     workload.user.cattle.io/workloadselector: apps.deployment-tvb-pod-db
   managedFields:
@@ -188,7 +188,7 @@ metadata:
                     f:claimName: {}
       manager: agent
       operation: Update
-      time: '2024-03-20T13:27:13Z'
+      time: '2024-03-27T07:20:34Z'
     - apiVersion: apps/v1
       fieldsType: FieldsV1
       fieldsV1:
@@ -223,10 +223,10 @@ metadata:
       manager: kube-controller-manager
       operation: Update
       subresource: status
-      time: '2024-03-20T13:27:37Z'
+      time: '2024-03-27T07:20:34Z'
   name: pod-db
   namespace: tvb
-  resourceVersion: '149505188'
+  resourceVersion: '155288508'
   uid: 04e42e61-d3f6-478c-ac8b-b8ce847b16c0
 spec:
   progressDeadlineSeconds: 600
@@ -348,13 +348,13 @@ status:
       reason: NewReplicaSetAvailable
       status: 'True'
       type: Progressing
-    - lastTransitionTime: '2024-03-20T13:27:37Z'
-      lastUpdateTime: '2024-03-20T13:27:37Z'
+    - lastTransitionTime: '2024-03-27T07:20:34Z'
+      lastUpdateTime: '2024-03-27T07:20:34Z'
       message: Deployment has minimum availability.
       reason: MinimumReplicasAvailable
       status: 'True'
       type: Available
-  observedGeneration: 77
+  observedGeneration: 79
   readyReplicas: 1
   replicas: 1
   updatedReplicas: 1
