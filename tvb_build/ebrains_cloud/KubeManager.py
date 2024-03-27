@@ -1,15 +1,21 @@
+import yaml
 from kubernetes import client, config
 from kubernetes.config import incluster_config
 
 
 class KubeManager(object):
-    def __init__(self, host, bearer_token, namespace):
+    def __init__(self, host: str, bearer_token: str, namespace: str):
         configuration = client.Configuration()
         configuration.host = host
         configuration.verify_ssl = True
         configuration.api_key['authorization'] = bearer_token
         api_client = client.ApiClient(configuration)
         self.v1 = client.CoreV1Api(api_client)
+        self.namespace = namespace
+
+    def __init__(self, namespace: str):
+        config.load_incluster_config()
+        self.v1 = client.CoreV1Api()
         self.namespace = namespace
 
     def get_pods(self, application):
@@ -33,31 +39,17 @@ class KubeManager(object):
         response = self.v1.read_namespaced_endpoints_with_http_info(name=target_application, namespace=self.namespace)
         return response
 
-    def create_pod(self, pod_name, namespace):
-        pod_manifest = {
-            'apiVersion': 'v1',
-            'kind': 'Pod',
-            'metadata': {
-                'name': pod_name
-            },
-            'spec': {
-                'containers': [{
-                    'image': 'busybox',
-                    'name': 'sleep',
-                    "args": [
-                        "/bin/sh",
-                        "-c",
-                        "while true;do date;sleep 5; done"
-                    ]
-                }]
-            }
-        }
-        self.v1.create_namespaced_pod(body=pod_manifest, namespace=namespace)
+    def create_pod(self):
+        with open('tvb_rancher/pod-exec.yaml', 'r') as file:
+            deployment_manifest = yaml.safe_load(file)
+        print(deployment_manifest)
+        if deployment_manifest:
+            self.v1.create_namespaced_pod(body=deployment_manifest, namespace=self.namespace)
 
-    def delete_pod(self, pod_name, namespace):
+    def delete_pod(self, pod_name):
         self.v1.delete_namespaced_pod(
             name=pod_name,
-            namespace=namespace)
+            namespace=self.namespace)
 
     @staticmethod
     def get_authorization_token():
@@ -78,19 +70,19 @@ class KubeManager(object):
         expected_token = KubeManager.get_authorization_token()
         assert authorization_token == expected_token
 
-    # @staticmethod
-    # def notify_pods(url, target_application=TvbProfile.current.web.OPENSHIFT_APPLICATION):
-    #
-    #     if not TvbProfile.current.web.OPENSHIFT_DEPLOY:
-    #         return
-    #
-    #     LOGGER.info("Notify all pods with url {}".format(url))
-    #     openshift_pods = KubeNotifier.get_pods(target_application)
-    #     url_pattern = "http://{}:" + str(TvbProfile.current.web.SERVER_PORT) + url
-    #     auth_header = KubeNotifier.get_authorization_header()
-    #
-    #     with ThreadPoolExecutor(max_workers=len(openshift_pods)) as executor:
-    #         for pod in openshift_pods:
-    #             pod_ip = pod.ip
-    #             LOGGER.info("Notify pod: {}".format(pod_ip))
-    #             executor.submit(requests.get, url=url_pattern.format(pod_ip), headers=auth_header)
+    @staticmethod
+    def notify_pods(url, target_application=TvbProfile.current.web.OPENSHIFT_APPLICATION):
+
+        if not TvbProfile.current.web.OPENSHIFT_DEPLOY:
+            return
+
+        LOGGER.info("Notify all pods with url {}".format(url))
+        openshift_pods = KubeNotifier.get_pods(target_application)
+        url_pattern = "http://{}:" + str(TvbProfile.current.web.SERVER_PORT) + url
+        auth_header = KubeNotifier.get_authorization_header()
+
+        with ThreadPoolExecutor(max_workers=len(openshift_pods)) as executor:
+            for pod in openshift_pods:
+                pod_ip = pod.ip
+                LOGGER.info("Notify pod: {}".format(pod_ip))
+                executor.submit(requests.get, url=url_pattern.format(pod_ip), headers=auth_header)
