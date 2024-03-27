@@ -4,7 +4,6 @@ metadata:
   annotations:
     deployment.kubernetes.io/revision: '16'
     field.cattle.io/publicEndpoints: 'null'
-  creationTimestamp: '2024-03-19T11:00:10Z'
   generation: 139
   labels:
     workload.user.cattle.io/workloadselector: apps.deployment-tvb-pod-exec
