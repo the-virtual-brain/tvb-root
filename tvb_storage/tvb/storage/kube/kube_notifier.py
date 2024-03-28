@@ -44,7 +44,8 @@ class KubeNotifier(object):
     def do_rest_call_to_pod(rest_app_server, rest_method_name, submit_param,
                             auth_header=None, data=None):
 
-        LOGGER.info("Notifying POD {} for param {}".format(rest_app_server, submit_param))
+        LOGGER.info("Notifying POD {} method {} for param {} and data {}".format(rest_app_server, rest_method_name,
+                                                                                 submit_param, data))
         if auth_header is None:
             auth_header = KubeNotifier.get_authorization_header()
 
