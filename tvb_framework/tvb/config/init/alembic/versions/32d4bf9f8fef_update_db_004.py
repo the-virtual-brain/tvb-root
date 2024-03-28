@@ -33,7 +33,7 @@ from alembic import op
 from sqlalchemy import Column, String
 
 # revision identifiers, used by Alembic.
-revision = '32d4bf9f8fef'
+revision = '32d4bf9f8gaf'
 down_revision = '32d4bf9f8def'
 
 conn = op.get_bind()
@@ -42,7 +42,7 @@ conn = op.get_bind()
 def upgrade():
     new_column_1 = Column('host_ip', String, default="")
     op.add_column('OPERATION_PROCESS_IDENTIFIERS', new_column_1)
-    conn.execute('COMMIT')
+
 
 def downgrade():
     """

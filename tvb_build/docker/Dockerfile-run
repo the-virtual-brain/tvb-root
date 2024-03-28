@@ -43,6 +43,8 @@ RUN $PIP install -r requirements.txt
 
 # make sure a copy of tvb-root exists inside, for users without Github clone
 RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git
+# todo remove when merged with master
+WORKDIR /tvb-root
 RUN git checkout TVB-3096-migrate-from-okd-to-kubernetes
 ARG LAST_SHA=LATEST
 
