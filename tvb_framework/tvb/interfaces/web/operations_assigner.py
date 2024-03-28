@@ -58,8 +58,7 @@ if __name__ == '__main__':
             auth_header = KubeNotifier.get_authorization_header()
             operations.sort(key=lambda l_operation: l_operation.id)
 
-            for index, operation in enumerate(operations[0:TvbProfile.current.MAX_THREADS_NUMBER *
-                                                           TvbProfile.current.web.CLOUD_APP_EXEC_MAX_PODS_NO]):
+            for index, operation in enumerate(operations[0:TvbProfile.current.MAX_THREADS_NUMBER]):
                 KubeNotifier.do_rest_call_to_pod(TvbProfile.current.web.CLOUD_APP_EXEC_NAME,
                                                  'start_operation_pod', operation.id)
 

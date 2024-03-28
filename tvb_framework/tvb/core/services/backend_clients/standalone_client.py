@@ -102,9 +102,9 @@ class OperationExecutor(Thread):
             launched_process = Popen(run_params, stdout=PIPE, stderr=PIPE, env=env)
             current_ip = get_host_current_host_ip()
 
-            LOGGER.error(
-                "Storing pid=%s and IP %s for operation id=%s launched on local machine." % (operation_id, current_ip,
-                                                                                             launched_process.pid))
+            LOGGER.info("Storing pid=%s and IP %s for operation id=%s launched on local machine." % (operation_id,
+                                                                                                     current_ip,
+                                                                                                     launched_process.pid))
             op_ident = OperationProcessIdentifier(operation_id, pid=launched_process.pid, host_ip=current_ip)
             dao.store_entity(op_ident)
 
