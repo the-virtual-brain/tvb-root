@@ -12,7 +12,7 @@ pytest-cov
 pytest-xdist
 pytest-benchmark
 pytest-mock
-matplotlib==3.5.3
+matplotlib
 h5py
 typing
 BeautifulSoup4
@@ -28,13 +28,12 @@ jinja2
 nibabel>=4.0
 sqlalchemy
 alembic
-allensdk==0.16.3
+allensdk
 werkzeug
 gevent
 cherrypy
 MarkupSafe
 decorator
-tables==3.7.0
 pandas
 requests
 simplejson
