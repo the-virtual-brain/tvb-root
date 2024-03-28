@@ -156,7 +156,7 @@ spec:
             - '-c'
             - >-
               source activate tvb-run && python -m
-              tvb.interfaces.web.operation_openshift_assigner
+              tvb.interfaces.web.operations_assigner
           image: thevirtualbrain/tvb-run:2.8.3
           imagePullPolicy: IfNotPresent
           name: operations-assigner

@@ -178,7 +178,7 @@ def init_cherrypy(arguments=None):
             TvbProfile.current.hpc.BACKGROUND_JOB_INTERVAL, HPCOperationService.check_operations_job)
         cherrypy.engine.housekeeper.start()
 
-    if not TvbProfile.current.web.OPENSHIFT_DEPLOY:
+    if not TvbProfile.current.web.IS_CLOUD_DEPLOY:
         operations_job = cherrypy.process.plugins.BackgroundTask(
             TvbProfile.current.OPERATIONS_BACKGROUND_JOB_INTERVAL, StandAloneClient.process_queued_operations,
             bus=cherrypy.engine)

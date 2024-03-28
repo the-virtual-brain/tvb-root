@@ -244,11 +244,11 @@ class WebSettings(object):
         self.SERVER_PORT = manager.get_attribute(stored.KEY_PORT, 8080, int)
         self.REST_PORT = manager.get_attribute(stored.KEY_PORT_REST, 9090, int)
 
-        self.OPENSHIFT_DEPLOY = manager.get_attribute(stored.KEY_OPENSHIFT_DEPLOY, False, eval)
-        self.OPENSHIFT_NAMESPACE = manager.get_attribute(stored.KEY_OPENSHIFT_NAMESPACE, "")
-        self.OPENSHIFT_APPLICATION = manager.get_attribute(stored.KEY_OPENSHIFT_APPLICATION, "")
-        self.OPENSHIFT_PROCESSING_OPERATIONS_APPLICATION = manager.get_attribute(stored.KEY_PROCESSING_OPERATIONS_APPLICATION, "")
-        self.OPENSHIFT_DATA_ENCRYPTION_HANDLER_APPLICATION = manager.get_attribute(stored.KEY_DATA_ENCRYPTION_HANDLER_APPLICATION, self.OPENSHIFT_APPLICATION)
+        self.IS_CLOUD_DEPLOY = manager.get_attribute(stored.KEY_IS_CLOUD_DEPLOY, False, eval)
+        self.IS_CLOUD_HTTPS = manager.get_attribute(stored.KEY_IS_CLOUD_HTTPS, False, eval)
+        self.CLOUD_APP_EXEC_NAME = manager.get_attribute(stored.KEY_CLOUD_APP_EXEC, "")
+        self.CLOUD_APP_EXEC_MAX_PODS_NO = manager.get_attribute(stored.KEY_CLOUD_APP_EXEC_MAX_PODS, 2)
+        self.CLOUD_APP_ENCRYPTION_HANDLER_NAME = manager.get_attribute(stored.KEY_CLOUD_APP_ENCRYPTION_HANDLER, "")
         # Compute reference towards the current web application, valid FROM localhost
         server_IP = manager.get_attribute(stored.KEY_IP, self.LOCALHOST)
         self.BASE_LOCAL_URL = "http://%s:%s/" % (server_IP, str(self.SERVER_PORT))

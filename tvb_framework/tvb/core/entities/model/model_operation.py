@@ -415,13 +415,15 @@ class OperationProcessIdentifier(Base):
     fk_from_operation = Column(Integer, ForeignKey('OPERATIONS.id', ondelete="CASCADE"))
     pid = Column(String)
     job_id = Column(String)
+    host_ip = Column(String)
 
     operation = relationship(Operation, backref=backref('OPERATION_PROCESS_IDENTIFIERS', order_by=id, cascade="delete"))
 
-    def __init__(self, operation_id, pid=None, job_id=None):
+    def __init__(self, operation_id, pid=None, job_id=None, host_ip=None):
         self.fk_from_operation = operation_id
         self.pid = pid
         self.job_id = job_id
+        self.host_ip = host_ip
 
 
 class ResultFigure(Base, Exportable):

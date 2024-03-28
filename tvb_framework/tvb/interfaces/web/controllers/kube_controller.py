@@ -27,8 +27,8 @@
 """
 .. moduleauthor:: Bogdan Valean <bogdan.valean@codemart.ro>
 """
-import json
 
+import json
 import cherrypy
 from tvb.basic.exceptions import TVBException
 from tvb.core.services.backend_clients.standalone_client import StandAloneClient, LOCKS_QUEUE

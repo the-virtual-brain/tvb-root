@@ -30,13 +30,11 @@
 import os
 import shutil
 import threading
+import pyAesCrypt
 from io import BytesIO
 from os import stat
 from queue import Queue
 from threading import Lock
-
-import pyAesCrypt
-import requests
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
@@ -170,8 +168,8 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
 
     def is_in_usage(self, folder):
         return self._queue_count(folder) > 0 \
-               or self._project_active_count(folder) > 0 \
-               or self._running_op_count(folder) > 0
+            or self._project_active_count(folder) > 0 \
+            or self._running_op_count(folder) > 0
 
     @staticmethod
     def compute_encrypted_folder_path(current_project_folder):
@@ -251,7 +249,7 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
     def app_encryption_handler():
         app_encryption_handler = True if DataEncryptionHandler.APP_ENCRYPTION_HANDLER in os.environ and os.environ[
             DataEncryptionHandler.APP_ENCRYPTION_HANDLER].lower() == 'true' else False
-        return not TvbProfile.current.web.OPENSHIFT_DEPLOY or app_encryption_handler
+        return not TvbProfile.current.web.IS_CLOUD_DEPLOY or app_encryption_handler
 
     @staticmethod
     def _get_unencrypted_projects(projects_folder):
@@ -336,15 +334,11 @@ class DataEncryptionRemoteHandler(DataEncryptionHandler):
     def _notify_pods(method, folder=None, **kwargs):
         if folder:
             kwargs['folder'] = folder
-        if TvbProfile.current.web.OPENSHIFT_DATA_ENCRYPTION_HANDLER_APPLICATION == "":
+        if TvbProfile.current.web.CLOUD_APP_ENCRYPTION_HANDLER_NAME == "":
             raise TVBException("Openshift Data Encryption handler application is not defined")
-        openshift_pods = KubeNotifier.get_pods(TvbProfile.current.web.OPENSHIFT_DATA_ENCRYPTION_HANDLER_APPLICATION)
-        if len(openshift_pods) == 0:
-            raise TVBException("Openshift Data Encryption handler app not found")
-        encryption_app = openshift_pods[0]
-        auth_header = KubeNotifier.get_authorization_header()
-        url = "http://{}:{}/kube/data_encryption_handler/{}".format(encryption_app.ip, str(TvbProfile.current.web.SERVER_PORT), method)
-        return requests.post(url=url, headers=auth_header, data=kwargs)
+
+        return KubeNotifier.do_rest_call_to_pod(TvbProfile.current.web.CLOUD_APP_ENCRYPTION_HANDLER_NAME,
+                                                'data_encryption_handler', method, data=kwargs)
 
     @synchronized(lock)
     def inc_project_usage_count(self, folder):
