@@ -25,7 +25,7 @@
 #
 
 """
-Revision ID: 32d4bf9f8fef
+Revision ID: 32d4bf9f8ghj
 Create Date: 2024-03-28
 
 """
@@ -33,13 +33,14 @@ from alembic import op
 from sqlalchemy import Column, String
 
 # revision identifiers, used by Alembic.
-revision = '32d4bf9f8gaf'
+revision = '32d4bf9f8ghj'
 down_revision = '32d4bf9f8def'
-
-conn = op.get_bind()
 
 
 def upgrade():
+    """
+    Add new column for cloud distributions
+    """
     new_column_1 = Column('host_ip', String, default="")
     op.add_column('OPERATION_PROCESS_IDENTIFIERS', new_column_1)
 
