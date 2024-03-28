@@ -34,9 +34,9 @@ import os
 import queue
 import signal
 import sys
+import socket
 from subprocess import Popen, PIPE
 from threading import Thread, Event
-
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
@@ -57,9 +57,18 @@ for i in range(TvbProfile.current.MAX_THREADS_NUMBER):
     LOCKS_QUEUE.put(1)
 
 
+def get_host_current_host_ip():
+    """
+    :return: current host ip address
+    """
+    hostname = socket.gethostname()
+    ip_addr = socket.gethostbyname(hostname)
+    return ip_addr
+
+
 class OperationExecutor(Thread):
     """
-    Thread in charge for starting an operation, used both on cluster and with stand-alone installations.
+    Thread in charge of starting an operation, used both on cluster and with stand-alone installations.
     """
 
     def __init__(self, op_id):
@@ -91,10 +100,12 @@ class OperationExecutor(Thread):
             # anything that was already in $PYTHONPATH should have been reproduced in sys.path
 
             launched_process = Popen(run_params, stdout=PIPE, stderr=PIPE, env=env)
+            current_ip = get_host_current_host_ip()
 
-            LOGGER.debug("Storing pid=%s for operation id=%s launched on local machine." % (operation_id,
-                                                                                            launched_process.pid))
-            op_ident = OperationProcessIdentifier(operation_id, pid=launched_process.pid)
+            LOGGER.info("Storing pid=%s and IP %s for operation id=%s launched on local machine." % (operation_id,
+                                                                                                     current_ip,
+                                                                                                     launched_process.pid))
+            op_ident = OperationProcessIdentifier(operation_id, pid=launched_process.pid, host_ip=current_ip)
             dao.store_entity(op_ident)
 
             if self.stopped():
@@ -208,7 +219,7 @@ class StandAloneClient(BackendClient):
     @staticmethod
     def execute(operation_id, user_name_label, adapter_instance):
         """Start asynchronous operation locally"""
-        if TvbProfile.current.web.OPENSHIFT_DEPLOY or LOCKS_QUEUE.qsize() == 0:
+        if TvbProfile.current.web.IS_CLOUD_DEPLOY or LOCKS_QUEUE.qsize() == 0:
             operation = dao.get_operation_by_id(operation_id)
             operation.queue_full = True
             dao.store_entity(operation)
@@ -235,11 +246,13 @@ class StandAloneClient(BackendClient):
 
     @staticmethod
     def stop_operation_process(operation_id, notify_pods=False):
-        if notify_pods and TvbProfile.current.web.OPENSHIFT_DEPLOY:
+        if notify_pods and TvbProfile.current.web.IS_CLOUD_DEPLOY:
             try:
-                LOGGER.info("Notify pods to stop operation process for {}".format(operation_id))
-                KubeNotifier.notify_pods("/kube/stop_operation_process/{}".format(operation_id),
-                                        TvbProfile.current.web.OPENSHIFT_PROCESSING_OPERATIONS_APPLICATION)
+                executor_ip = dao.get_operation_process_for_operation(operation_id)
+                executor_ip = executor_ip.host_ip
+                LOGGER.info("Notifying pod {} to stop operation {}".format(executor_ip, operation_id))
+                KubeNotifier.do_rest_call_to_pod(executor_ip, "stop_operation_process", operation_id),
+
                 return True
             except Exception as e:
                 LOGGER.error("Stop operation notify error", e)

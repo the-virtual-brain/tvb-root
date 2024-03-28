@@ -1,9 +1,10 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: tvb-cloud
+  name: tvb-cloud-landing-page
+  namespace: tvb
 spec:
-  secretName: tvb-cloud
+  secretName: tvb-cloud-landing-page
   renewBefore: 120h
   commonName: tvb.apps.tc.humanbrainproject.eu
   isCA: false

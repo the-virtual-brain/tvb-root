@@ -25,11 +25,12 @@
 #
 
 """
+Entry point for a POD on kubernetes cloud, to monitor submitted ops and launch an executor.
+
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Bogdan Valean <bogdan.valean@codemart.ro>
 """
 
-import random
-import requests
 from time import sleep
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
@@ -37,31 +38,29 @@ from tvb.core.entities.model.model_operation import Operation
 from tvb.core.entities.storage import dao
 from tvb.storage.kube.kube_notifier import KubeNotifier
 
-log = get_logger(__name__)
+LOGGER = get_logger("tvb.interfaces.web.operations_assigner")
 
 if __name__ == '__main__':
+
     TvbProfile.set_profile(TvbProfile.WEB_PROFILE, True)
-    if TvbProfile.current.web.OPENSHIFT_DEPLOY:
-        log.info("Start operation assigner")
+
+    if TvbProfile.current.web.IS_CLOUD_DEPLOY:
+        LOGGER.info("Starting operation assigner ...")
+
         while True:
             sleep(TvbProfile.current.OPERATIONS_BACKGROUND_JOB_INTERVAL)
             operations = dao.get_generic_entity(Operation, True, "queue_full")
-            log.info("Found {} operations with the queue full flag set.".format(len(operations)))
+            LOGGER.info("Found {} operations with the queue full flag set.".format(len(operations)))
+
             if len(operations) == 0:
                 continue
-            pods = KubeNotifier.get_pods(TvbProfile.current.web.OPENSHIFT_PROCESSING_OPERATIONS_APPLICATION)
-            if pods:
-                auth_header = KubeNotifier.get_authorization_header()
 
-                random.shuffle(pods)
-                pods_no = len(pods)
-                operations.sort(key=lambda l_operation: l_operation.id)
+            auth_header = KubeNotifier.get_authorization_header()
+            operations.sort(key=lambda l_operation: l_operation.id)
 
-                for index, operation in enumerate(operations[0:TvbProfile.current.MAX_THREADS_NUMBER * pods_no]):
-                    pod_ip = pods[index % pods_no].ip
-                    log.info("Notify pod: {}".format(pod_ip))
-                    url_pattern = "http://{}:{}/kube/start_operation_pod/{}"
-                    requests.get(url=url_pattern.format(pod_ip, TvbProfile.current.web.SERVER_PORT, operation.id),
-                                 headers=auth_header)
+            for index, operation in enumerate(operations[0:TvbProfile.current.MAX_THREADS_NUMBER]):
+                KubeNotifier.do_rest_call_to_pod(TvbProfile.current.web.CLOUD_APP_EXEC_NAME,
+                                                 'start_operation_pod', operation.id)
+
     else:
-        log.info("Openshift deploy is not enabled.")
+        LOGGER.info("Cloud deploy is not enabled (in ~/.tvb.configuration), This process will stop!")
