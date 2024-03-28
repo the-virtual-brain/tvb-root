@@ -42,11 +42,10 @@ COPY requirements_group requirements.txt
 RUN $PIP install -r requirements.txt
 
 # make sure a copy of tvb-root exists inside, for users without Github clone
-RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git
+RUN git clone --branch TVB-3096-migrate-from-okd-to-kubernetes --depth 1 https://github.com/the-virtual-brain/tvb-root.git
 ARG LAST_SHA=LATEST
 
 RUN cd tvb-root; \
-    git checkout TVB-3096-migrate-from-okd-to-kubernetes; \
     git pull; \
     cd tvb_build; \
     $PIP install -r docker/requirements_group; \
