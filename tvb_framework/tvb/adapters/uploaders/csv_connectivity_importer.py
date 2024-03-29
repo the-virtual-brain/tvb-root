@@ -188,7 +188,7 @@ class CSVConnectivityImporter(ABCUploader):
         Read a CSV file, arrange rows/columns in the correct order,
         to obtain Weight/Tract data in TVB compatible format.
         """
-        with open(csv_file, 'rU') as f:
+        with open(csv_file, 'r') as f:
             result_conn = CSVConnectivityParser(f, delimiter).result_conn
             self.logger.debug("Read Connectivity file of size %d" % len(result_conn))
             return numpy.array(result_conn)
