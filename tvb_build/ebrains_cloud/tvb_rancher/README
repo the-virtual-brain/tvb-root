@@ -1,4 +1,6 @@
-In order to select the namespace, the keyword ${NAMESPACE} has to be replaced with the actual namespace name in 5 places in each deployment .yaml file.
+Attention!
+Before running each deployment file into kubernetes, in order to select the namespace, you have to manually change
+the keyword ${NAMESPACE} has to be replaced with the actual namespace name in 5 places in each deployment .yaml file.
 After pod-db.yaml, pod-exec.yaml and pod-web.yaml are executed, in settings, Networking should be changed from "Do not create a service" to "ClusterIP"
 
 landing-page.yaml
@@ -14,6 +16,7 @@ jupyter-lab-test.yaml
         -pod with a jupyter notebook
     - this deployment is used only for testing k8s libraries which need to be inside a pod when the code is executed
 
+Attention!
 The following yaml scripts should be executed in this order:
 
 pod-db.yaml
