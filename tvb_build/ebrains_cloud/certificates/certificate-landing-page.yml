@@ -13,9 +13,9 @@ spec:
     encoding: PKCS1
     size: 2048
   usages:
-  - server auth
+    - server auth
   dnsNames:
-  - tvb.apps.tc.humanbrainproject.eu
+    - tvb.apps.tc.humanbrainproject.eu
   issuerRef:
     name: letsencrypt-production-issuer-1
     kind: ClusterIssuer

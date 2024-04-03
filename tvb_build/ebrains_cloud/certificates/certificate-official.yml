@@ -2,7 +2,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: tvb-cloud
-  namespace: tvb
+  namespace: tvb-official
 spec:
   secretName: tvb-cloud
   renewBefore: 120h
@@ -13,9 +13,9 @@ spec:
     encoding: PKCS1
     size: 2048
   usages:
-  - server auth
+    - server auth
   dnsNames:
-  - tvb-web.apps.tc.humanbrainproject.eu
+    - tvb-web.apps.tc.humanbrainproject.eu
   issuerRef:
     name: letsencrypt-production-issuer-1
     kind: ClusterIssuer
