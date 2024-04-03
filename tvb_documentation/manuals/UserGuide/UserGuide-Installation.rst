@@ -152,6 +152,44 @@ The default configuration will place |TVB| projects in a folder named TVB. This 
 However for a client server or cluster setup you will need to take some more time to configure TVB.
 See the :ref:`configuring_TVB` section for details.
 
+Users of TVB (registration and default account)
+-----------------------------------------------
+When |TVB| is started for the first time, you will see a settings page, where you can define the administrator account of that TVB instance.
+Default that is: admin / pass (exactly these words).
+
+.. figure:: screenshots/1_settings.png
+    :align: center
+    :width: 700px
+
+If you are using TVB in a single-user manner (not shared with other colleagues), feel free to use only this user while working with TVB; you do not need to bother with creating/registering other accounts.
+It is although recommended for you to change the password and the email address for this administrator account, especially if you are working in a LAN and your computer is not having a strong firewall.
+
+.. figure:: 2_admin_change_email_pwd.png
+    :align: center
+    :width: 700px
+
+If you are using TVB in a shared environment (e.g. installed on a server and accessed from remote by multiple people), you could follow the following steps:
+
+- register accounts using the administrator account
+- login with administrator
+- check admin's profile page, link "Manage other users"
+- check the "validate" checkbox for new users that you want active, and click "Save" to apply
+
+.. figure:: 3_login_admin.png
+    :align: center
+    :width: 700px
+
+.. figure:: 4_admin_profile.png
+    :align: center
+    :width: 700px
+
+.. figure:: 5_admin_validate_others.png
+    :align: center
+    :width: 700px
+
+.. figure:: 6_registration.png
+    :align: center
+    :width: 700px
 
 Uninstalling TVB
 ----------------
