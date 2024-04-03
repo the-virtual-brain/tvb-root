@@ -4,7 +4,6 @@ metadata:
   annotations:
     deployment.kubernetes.io/revision: '23'
     field.cattle.io/publicEndpoints: >-
-      [{"addresses":["172.19.0.128","172.19.0.129","172.19.0.130","172.19.0.131","172.19.0.132","172.19.0.133","172.19.0.134","172.19.0.135"],"port":443,"protocol":"HTTPS","serviceName":"tvb:langing-page","ingressName":"tvb:start","hostname":"tvb.apps.tc.humanbrainproject.eu","path":"/","allNodes":false},{"port":31061,"protocol":"TCP","serviceName":"tvb:langing-page-nodeport","allNodes":true}]
   creationTimestamp: '2023-11-22T07:11:21Z'
   generation: 81
   labels:
@@ -149,8 +148,8 @@ metadata:
       subresource: status
       time: '2024-03-27T07:23:51Z'
   name: langing-page
-  namespace: tvb
-  resourceVersion: '155290493'
+  namespace: ${NAMESPACE}
+  resourceVersion:
   uid: d57aeb02-72ba-4853-b184-4596ab12ca77
 spec:
   progressDeadlineSeconds: 600
@@ -171,7 +170,7 @@ spec:
       creationTimestamp: null
       labels:
         workload.user.cattle.io/workloadselector: apps.deployment-tvb-langing-page
-      namespace: tvb
+      namespace: ${NAMESPACE}
     spec:
       containers:
         - command:

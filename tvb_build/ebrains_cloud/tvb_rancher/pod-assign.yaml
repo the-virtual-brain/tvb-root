@@ -2,11 +2,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    deployment.kubernetes.io/revision: '5'
+    deployment.kubernetes.io/revision: '21'
   creationTimestamp: '2024-03-19T11:03:33Z'
-  generation: 61
+  generation: 108
   labels:
-    workload.user.cattle.io/workloadselector: apps.deployment-tvb-pod-assign
+    workload.user.cattle.io/workloadselector: apps.deployment-${NAMESPACE}-pod-assign
   managedFields:
     - apiVersion: apps/v1
       fieldsType: FieldsV1
@@ -33,6 +33,7 @@ metadata:
                 f:workload.user.cattle.io/workloadselector: {}
               f:namespace: {}
             f:spec:
+              f:affinity: {}
               f:containers:
                 k:{"name":"operations-assigner"}:
                   .: {}
@@ -64,6 +65,7 @@ metadata:
                       .: {}
                       f:mountPath: {}
                       f:name: {}
+                      f:readOnly: {}
                       f:subPath: {}
                     k:{"mountPath":"/home/TVB_STORAGE"}:
                       .: {}
@@ -91,7 +93,7 @@ metadata:
                     f:claimName: {}
       manager: agent
       operation: Update
-      time: '2024-03-27T07:20:25Z'
+      time: '2024-03-29T15:09:11Z'
     - apiVersion: apps/v1
       fieldsType: FieldsV1
       fieldsV1:
@@ -126,10 +128,10 @@ metadata:
       manager: kube-controller-manager
       operation: Update
       subresource: status
-      time: '2024-03-27T07:20:25Z'
+      time: '2024-03-29T15:09:32Z'
   name: pod-assign
-  namespace: tvb
-  resourceVersion: '155288408'
+  namespace: ${NAMESPACE}
+  resourceVersion:
   uid: e17091a5-0cf3-47f1-8733-a0bb82f8ee7c
 spec:
   progressDeadlineSeconds: 600
@@ -137,7 +139,7 @@ spec:
   revisionHistoryLimit: 10
   selector:
     matchLabels:
-      workload.user.cattle.io/workloadselector: apps.deployment-tvb-pod-assign
+      workload.user.cattle.io/workloadselector: apps.deployment-${NAMESPACE}-pod-assign
   strategy:
     rollingUpdate:
       maxSurge: 25%
@@ -147,9 +149,10 @@ spec:
     metadata:
       creationTimestamp: null
       labels:
-        workload.user.cattle.io/workloadselector: apps.deployment-tvb-pod-assign
-      namespace: tvb
+        workload.user.cattle.io/workloadselector: apps.deployment-${NAMESPACE}-pod-assign
+      namespace: ${NAMESPACE}
     spec:
+      affinity: {}
       containers:
         - command:
             - bash
@@ -157,8 +160,8 @@ spec:
             - >-
               source activate tvb-run && python -m
               tvb.interfaces.web.operations_assigner
-          image: thevirtualbrain/tvb-run:2.8.3
-          imagePullPolicy: IfNotPresent
+          image: thevirtualbrain/tvb-run:2.9
+          imagePullPolicy: Always
           name: operations-assigner
           resources:
             limits:
@@ -175,11 +178,12 @@ spec:
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
           volumeMounts:
-            - mountPath: /home/.tvb.configuration
-              name: tvb-config-file
-              subPath: file
             - mountPath: /home/TVB_STORAGE
               name: tvb-files
+            - mountPath: /home/.tvb.configuration
+              name: tvb-config-file
+              readOnly: true
+              subPath: file
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler
@@ -197,18 +201,18 @@ status:
   availableReplicas: 1
   conditions:
     - lastTransitionTime: '2024-03-19T11:03:33Z'
-      lastUpdateTime: '2024-03-20T12:17:17Z'
-      message: ReplicaSet "pod-assign-7795bb8bf7" has successfully progressed.
+      lastUpdateTime: '2024-03-29T15:08:37Z'
+      message: ReplicaSet "pod-assign" has successfully progressed.
       reason: NewReplicaSetAvailable
       status: 'True'
       type: Progressing
-    - lastTransitionTime: '2024-03-27T07:19:58Z'
-      lastUpdateTime: '2024-03-27T07:19:58Z'
+    - lastTransitionTime: '2024-03-29T15:09:32Z'
+      lastUpdateTime: '2024-03-29T15:09:32Z'
       message: Deployment has minimum availability.
       reason: MinimumReplicasAvailable
       status: 'True'
       type: Available
-  observedGeneration: 61
+  observedGeneration: 108
   readyReplicas: 1
   replicas: 1
   updatedReplicas: 1
