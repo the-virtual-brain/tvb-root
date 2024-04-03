@@ -23,9 +23,9 @@
 # https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
-from datetime import datetime, date
 
-from flask.json import JSONEncoder
+from datetime import datetime, date
+from json import JSONEncoder
 
 
 class CustomFlaskEncoder(JSONEncoder):

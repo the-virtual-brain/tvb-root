@@ -22,7 +22,7 @@ mako
 pyAesCrypt
 pyunicore
 formencode
-flask==2.3.3
+flask
 flask-restx
 jinja2
 nibabel>=4.0

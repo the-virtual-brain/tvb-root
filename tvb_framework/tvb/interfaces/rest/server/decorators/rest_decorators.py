@@ -26,7 +26,6 @@
 import json
 from functools import wraps
 from typing import Any
-
 from flask import current_app, request
 from flask.json import dumps
 from keycloak.exceptions import KeycloakError
@@ -58,7 +57,6 @@ def rest_jsonify(func):
         if data is None:
             data = {}
         return current_app.response_class(dumps(data, default=lambda o: _convert(o), sort_keys=False),
-                                          mimetype=current_app.config['JSONIFY_MIMETYPE'],
                                           status=status)
 
     return deco
