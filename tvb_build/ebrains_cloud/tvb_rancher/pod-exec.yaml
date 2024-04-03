@@ -2,11 +2,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    deployment.kubernetes.io/revision: '16'
+    deployment.kubernetes.io/revision: '24'
     field.cattle.io/publicEndpoints: 'null'
-  generation: 139
+  creationTimestamp: '2024-03-19T11:00:10Z'
+  generation: 239
   labels:
-    workload.user.cattle.io/workloadselector: apps.deployment-tvb-pod-exec
+    workload.user.cattle.io/workloadselector: apps.deployment-${NAMESPACE}-pod-exec
   managedFields:
     - apiVersion: apps/v1
       fieldsType: FieldsV1
@@ -38,7 +39,6 @@ metadata:
               f:containers:
                 k:{"name":"process-operations"}:
                   .: {}
-                  f:command: {}
                   f:image: {}
                   f:imagePullPolicy: {}
                   f:name: {}
@@ -100,7 +100,7 @@ metadata:
                     f:claimName: {}
       manager: agent
       operation: Update
-      time: '2024-03-27T07:24:00Z'
+      time: '2024-04-02T10:01:09Z'
     - apiVersion: apps/v1
       fieldsType: FieldsV1
       fieldsV1:
@@ -135,10 +135,10 @@ metadata:
       manager: kube-controller-manager
       operation: Update
       subresource: status
-      time: '2024-03-27T07:24:10Z'
+      time: '2024-04-02T10:01:16Z'
   name: pod-exec
-  namespace: tvb
-  resourceVersion: '155290746'
+  namespace: ${NAMESPACE}
+  resourceVersion:
   uid: 075894ce-715a-4b07-9b0f-03806a82799a
 spec:
   progressDeadlineSeconds: 600
@@ -146,7 +146,7 @@ spec:
   revisionHistoryLimit: 10
   selector:
     matchLabels:
-      workload.user.cattle.io/workloadselector: apps.deployment-tvb-pod-exec
+      workload.user.cattle.io/workloadselector: apps.deployment-${NAMESPACE}-pod-exec
   strategy:
     rollingUpdate:
       maxSurge: 25%
@@ -156,16 +156,12 @@ spec:
     metadata:
       creationTimestamp: null
       labels:
-        workload.user.cattle.io/workloadselector: apps.deployment-tvb-pod-exec
-      namespace: tvb
+        workload.user.cattle.io/workloadselector: apps.deployment-${NAMESPACE}-pod-exec
+      namespace: ${NAMESPACE}
     spec:
       containers:
-        - command:
-            - tail
-            - '-f'
-            - /dev/null
-          image: thevirtualbrain/tvb-run:2.8.3
-          imagePullPolicy: IfNotPresent
+        - image: thevirtualbrain/tvb-run:2.9
+          imagePullPolicy: Always
           name: process-operations
           ports:
             - containerPort: 8080
@@ -208,18 +204,18 @@ status:
   availableReplicas: 1
   conditions:
     - lastTransitionTime: '2024-03-20T12:15:39Z'
-      lastUpdateTime: '2024-03-20T12:24:59Z'
-      message: ReplicaSet "pod-exec-6cc9d96598" has successfully progressed.
+      lastUpdateTime: '2024-03-28T14:07:22Z'
+      message: ReplicaSet "pod-exec-57598c7c56" has successfully progressed.
       reason: NewReplicaSetAvailable
       status: 'True'
       type: Progressing
-    - lastTransitionTime: '2024-03-27T07:24:10Z'
-      lastUpdateTime: '2024-03-27T07:24:10Z'
+    - lastTransitionTime: '2024-04-02T10:01:16Z'
+      lastUpdateTime: '2024-04-02T10:01:16Z'
       message: Deployment has minimum availability.
       reason: MinimumReplicasAvailable
       status: 'True'
       type: Available
-  observedGeneration: 139
+  observedGeneration: 239
   readyReplicas: 1
   replicas: 1
   updatedReplicas: 1
