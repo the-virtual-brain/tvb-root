@@ -1,7 +1,7 @@
 Attention!
 Before running each deployment file into kubernetes, in order to select the namespace, you have to manually change
 the keyword ${NAMESPACE} has to be replaced with the actual namespace name in 5 places in each deployment .yaml file.
-After pod-db.yaml, pod-exec.yaml and pod-web.yaml are executed, in settings, Networking should be changed from "Do not create a service" to "ClusterIP"
+After pod-db.yaml (pg-bouncer), pod-exec.yaml and pod-web.yaml are executed, in settings, Networking should be changed from "Do not create a service" to "ClusterIP"
 
 landing-page.yaml
     -creates:
