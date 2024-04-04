@@ -113,9 +113,7 @@ class UserService:
                 if admin.email is not None and (admin.email != TvbProfile.current.web.admin.DEFAULT_ADMIN_EMAIL):
                     # Do not send validation email in case default admin email remained unchanged
                     email_sender.send(FROM_ADDRESS, admin.email, SUBJECT_REGISTER, admin_msg)
-                    self.logger.debug("Email sent to:" + admin.email + " for validating user:" + username + " !")
                 email_sender.send(FROM_ADDRESS, email, SUBJECT_REGISTER, email_msg)
-                self.logger.debug("Email sent to:" + email + " for notifying new user:" + username + " !")
 
             user = dao.store_entity(user)
 
