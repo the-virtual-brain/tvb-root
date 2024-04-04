@@ -1,0 +1,3 @@
+Attention!
+Before exporting each file to kubernetes, in order to select the namespace, username and password, you have to manually change
+the keywords ${NAMESPACE}, ${USER}, ${PASSWORD}, ${ADMIN_NAME} , ${ADMIN_PASSWORD}
