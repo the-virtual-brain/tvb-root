@@ -100,3 +100,9 @@ class RemoveDataTypeException(ServicesBaseException):
     Exception to be thrown in case some one tries to remove an
     entity that is used by other entities.
     """
+
+
+class EmailException(ServicesBaseException):
+    """
+    Exception to be thrown in case an email cannot be sent to a user
+    """
