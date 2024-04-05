@@ -24,13 +24,13 @@
 #
 #
 """
+.. moduleauthor:: Adrian Ciu <adrian.ciu@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
 import smtplib
 from email.mime.text import MIMEText
 from tvb.basic.logger.builder import get_logger
-
 from tvb.core.services.exceptions import EmailException
 
 LOGGER = get_logger(__name__)
@@ -53,11 +53,9 @@ def send(address_from, address_to, email_subject, email_content, ignore_exceptio
         server.login('tvb_appserver', 'du5rEpratHAc')
         server.sendmail(address_from, address_to, email.as_string())
         server.quit()
-        LOGGER.debug("Email sent to:" + address_to)
+        LOGGER.debug(f"Email sent to {address_to} with subject {email_subject}")
     except Exception as e:
-        LOGGER.warn("Could not send email to:" + address_to)
+        LOGGER.warn(f"Could not send email to {address_to}")
         if ignore_exception:
             return
         raise EmailException('Email could not be sent to user.', e)
-
-
