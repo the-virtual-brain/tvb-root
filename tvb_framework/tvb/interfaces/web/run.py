@@ -31,6 +31,7 @@ Launches the web server and configure the controllers for UI.
 """
 import time
 
+from tvb.interfaces.web.controllers.about_controller import AboutController
 
 STARTUP_TIC = time.time()
 
@@ -162,6 +163,7 @@ def init_cherrypy(arguments=None):
     cherrypy.tree.mount(TransferVectorController(), TransferVectorController.build_path("/burst/transfer/"), config=CONFIGUER)
     cherrypy.tree.mount(HPCController(), BaseController.build_path("/hpc/"), config=CONFIGUER)
     cherrypy.tree.mount(KubeController(), BaseController.build_path("/kube/"), config=CONFIGUER)
+    cherrypy.tree.mount(AboutController(), BaseController.build_path("/"), config=CONFIGUER)
 
     cherrypy.config.update(CONFIGUER)
 
