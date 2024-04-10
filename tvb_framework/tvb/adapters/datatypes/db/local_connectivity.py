@@ -45,6 +45,7 @@ class LocalConnectivityIndex(DataType):
     def fill_from_has_traits(self, datatype):
         # type: (LocalConnectivity)  -> None
         super(LocalConnectivityIndex, self).fill_from_has_traits(datatype)
-        I, J, V = scipy.sparse.find(datatype.matrix)
-        self.matrix_non_zero_min, self.matrix_non_zero_max, self.matrix_non_zero_mean = from_ndarray(V)
+        if datatype.matrix is not None:
+            I, J, V = scipy.sparse.find(datatype.matrix)
+            self.matrix_non_zero_min, self.matrix_non_zero_max, self.matrix_non_zero_mean = from_ndarray(V)
         self.fk_surface_gid = datatype.surface.gid.hex
