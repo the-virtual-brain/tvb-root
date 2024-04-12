@@ -184,7 +184,7 @@ class SettingsService(object):
 
         # Storage changed but DB didn't, just copy TVB storage to new one.
         if storage_changed and not db_changed:
-            shutil.copytree(previous_storage, new_storage)
+            shutil.copytree(previous_storage, new_storage, dirs_exist_ok=True)
 
         if not os.path.isdir(new_storage):
             os.makedirs(new_storage)
@@ -241,6 +241,9 @@ class SettingsService(object):
         list_content = os.listdir(storage_path)
         if "TEMP" in list_content:
             list_content.remove("TEMP")
+        # database was already created and validated in the folder
+        if len(list_content) == 1 and list_content[0] in TvbProfile.current.db.DB_URL:
+            list_content.remove(list_content[0])
         if len(list_content) > 0:
             raise InvalidSettingsException(
                 'TVB Storage should be empty, please set another folder than {}.'.format(storage_path))
