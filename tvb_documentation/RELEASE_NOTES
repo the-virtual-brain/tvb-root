@@ -1,5 +1,19 @@
 ======================================================================================================================================
  The Virtual Brain (TVB)
+ Version: 2.9.0 - build 18160
+ Release Date: 15 Apr 2024
+ Description: Maintenance release.
+======================================================================================================================================
+
+    * compatibility with py3.11 and py3.12
+    * adjust to siibra 1.0
+    * migrate from OKD to Kubernetes
+    * fix Phase Plane dependency towards old contour implementation in matplotlib
+    * improve first time setting validation
+
+
+======================================================================================================================================
+ The Virtual Brain (TVB)
  Version: 2.8.1 - build 18011
  Release Date: 23 May 2023
  Description: Maintenance release. Small improvements.
