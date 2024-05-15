@@ -8,14 +8,18 @@ import pickle
 from tvb.simulator.lab import *
 from tvb.basic.logger.builder import get_logger
 
-# from tvb.rateML.run.regular_run import regularRun
+
+# from tvb.contrib.rateML.run.regular_run import regularRun
 
 import os.path
 import numpy as np
-import pycuda.autoinit
-import pycuda.driver as drv
-from pycuda.compiler import SourceModule
-import pycuda.gpuarray as gpuarray
+try:
+	import pycuda.autoinit
+	import pycuda.driver as drv
+	from pycuda.compiler import SourceModule
+	import pycuda.gpuarray as gpuarray
+except ImportError:
+	logging.warning('pycuda not available, rateML driver not usable.')
 
 import matplotlib.pyplot as plt
 
@@ -29,7 +33,7 @@ class Driver_Setup:
 	def __init__(self):
 		self.args = self.parse_args()
 
-		self.logger = get_logger('tvb.rateML')
+		self.logger = get_logger('tvb.contrib.rateML')
 		self.logger.setLevel(level='INFO' if self.args.verbose else 'WARNING')
 
 		self.checkargbounds()
@@ -42,8 +46,9 @@ class Driver_Setup:
 		self.n_inner_steps = int(self.tavg_period / self.dt)
 
 		self.params = self.setup_params(
-		self.args.n_sweep_arg0,
-		self.args.n_sweep_arg1,
+		% for pc in range(len(XML.parameters)):
+		self.args.n_sweep_arg${pc},
+		% endfor
 		)
 
 		# bufferlength is based on the minimum of the first swept parameter (speed for many tvb models)
@@ -99,8 +104,8 @@ class Driver_Setup:
 			raise
 
 	def tvb_connectivity(self, tvbnodes):
-		# white_matter = connectivity.Connectivity.from_file(source_file="connectivity_"+str(tvbnodes)+".zip")
-		white_matter = connectivity.Connectivity.from_file(source_file="paupau.zip")
+		white_matter = connectivity.Connectivity.from_file(source_file="connectivity_"+str(tvbnodes)+".zip")
+		# white_matter = connectivity.Connectivity.from_file(source_file="paupau.zip")
 		white_matter.configure()
 		return white_matter
 
@@ -108,13 +113,14 @@ class Driver_Setup:
 		parser = argparse.ArgumentParser(description='Run parameter sweep.')
 
 		# for every parameter that needs to be swept, the size can be set
-		parser.add_argument('-s0', '--n_sweep_arg0', default=4, help='num grid points for 1st parameter', type=int)
-		parser.add_argument('-s1', '--n_sweep_arg1', default=4, help='num grid points for 2st parameter', type=int)
+		% for pc in range(len(XML.parameters)):
+		parser.add_argument('-s${pc}', '--n_sweep_arg${pc}', default=4, help='num grid points for ${pc+1}st parameter', type=int)
+		% endfor
 		parser.add_argument('-n', '--n_time', default=400, help='number of time steps to do', type=int)
 		parser.add_argument('-v', '--verbose', default=False, help='increase logging verbosity', action='store_true')
-		parser.add_argument('-m', '--model', default='montbrio', help="neural mass model to be used during the simulation")
-		parser.add_argument('-s', '--states', default=2, type=int, help="number of states for model")
-		parser.add_argument('-x', '--exposures', default=2, type=int, help="number of exposures for model")
+		parser.add_argument('-m', '--model', default='${model}', help="neural mass model to be used during the simulation")
+		parser.add_argument('-s', '--states', default=${XML.dynamics.state_variables.__len__()}, type=int, help="number of states for model")
+		parser.add_argument('-x', '--exposures', default=${XML.exposures.__len__()}, type=int, help="number of exposures for model")
 		parser.add_argument('-l', '--lineinfo', default=False, help='generate line-number information for device code.', action='store_true')
 		parser.add_argument('-bx', '--blockszx', default=8, type=int, help="gpu block size x")
 		parser.add_argument('-by', '--blockszy', default=8, type=int, help="gpu block size y")
@@ -131,17 +137,20 @@ class Driver_Setup:
 
 
 	def setup_params(self,
-		n0,
-		n1,
+		% for pc in range(len(XML.parameters)):
+		n${pc},
+		% endfor
 		):
 		'''
 		This code generates the parameters ranges that need to be set
 		'''
-		sweeparam0 = np.linspace(1.0, 1.0, n0)
-		sweeparam1 = np.linspace(1.0, 1.0, n1)
+		% for pc, par_var in enumerate(XML.parameters):
+		sweeparam${pc} = np.linspace(${par_var.dimension}, n${pc})
+		% endfor
 		params = itertools.product(
-		sweeparam0,
-		sweeparam1,
+		% for pc in range(len(XML.parameters)):
+		sweeparam${pc},
+		% endfor
 		)
 		params = np.array([vals for vals in params], np.float32)
 		return params
@@ -218,8 +227,7 @@ class Driver_Execute(Driver_Setup):
 		try:
 			with open(source_file, 'r') as fd:
 				source = fd.read()
-				source = source.replace('pi', '%ff' % (np.pi, ))
-				source = source.replace('inf', 'INFINITY')
+				source = source.replace('M_PI_F', '%ff' % (np.pi, ))
 				opts = ['--ptxas-options=-v', '-maxrregcount=32']
 				if lineinfo:
 					opts.append('-lineinfo')
@@ -470,11 +478,11 @@ if __name__ == '__main__':
 	driver_setup = Driver_Setup()
 	tavgGPU = Driver_Execute(driver_setup).run_all()
 
+	# Uncomment for validation against TVB
 	# simtime = driver_setup.args.n_time
 	# # simtime = 10
 	# regions = driver_setup.args.n_regions
 	# g = 1.0
-	# # g = 0.0042
 	# s = 1.0
 	# dt = driver_setup.dt
 	# period = 1
@@ -502,7 +510,7 @@ if __name__ == '__main__':
 	# for t in range(0, simtime):
 	# 	# print(t, 'tol:', np.max(np.abs(actual[t] - expected[t, :, :, 0])))
 	# 	# print(t, 'tol:', np.max(np.abs(tavgCPU[t,:,:,0], tavgGPU[t,:,:,0])))
-	# 	print(t)
+	# 	# print(t)
 	# 	# print('C', tavgCPU[t,:,:,0])
 	# 	# print('G', tavgGPU[t,:,:,0])
 	# 	# print(t, 'tol:', np.max(np.abs(tavgCPU[t,:,:,0] - tavgGPU[t,:,:,0])))

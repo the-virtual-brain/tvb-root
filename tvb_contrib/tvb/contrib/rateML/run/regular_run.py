@@ -5,11 +5,11 @@ import math
 
 import matplotlib.pyplot as plt
 
-from tvb.rateML.XML2model import RateML
+from tvb.contrib.rateML.XML2model import RateML
 
 class regularRun:
 
-	def __init__(self, sim_length, g, s, dt, period, omega = 60, filename='connectivity_zerlaut_68.zip'):
+	def __init__(self, sim_length, g, s, dt, period, omega = 60, filename='connectivity_68.zip'):
 	# def __init__(self, sim_length, g, s, dt, period, omega = 60, filename='paupau.zip'):
 		self.sim_length = sim_length
 		self.g = np.array([g])
