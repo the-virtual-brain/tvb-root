@@ -34,8 +34,8 @@ Test for RateML module
 import importlib
 
 import pytest, os, itertools, numpy as np, re, sys
-from tvb.rateML import XML2model
-from tvb.rateML.XML2model import RateML
+from tvb.contrib.rateML import XML2model
+from tvb.contrib.rateML.XML2model import RateML
 from tvb.simulator.models.base import Model
 pycuda = pytest.importorskip("pycuda")
 try:
@@ -111,7 +111,7 @@ def setup_namespace(model='kuramoto'):
 
 	# gemerate model and setup namespace for every test
 	RateML(model, 'cuda')
-	driver = importlib.import_module('.model_driver_' + model, 'tvb.rateML.run')
+	driver = importlib.import_module('.model_driver_' + model, 'tvb.contrib.rateML.run')
 	driver = driver.Driver_Execute(driver.Driver_Setup())
 
 	return driver

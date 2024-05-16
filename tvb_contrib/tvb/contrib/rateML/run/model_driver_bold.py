@@ -34,7 +34,7 @@ class Driver_Setup:
 	def __init__(self):
 		self.args = self.parse_args()
 
-		self.logger = get_logger('tvb.rateML')
+		self.logger = get_logger('tvb.contrib.rateML')
 		self.logger.setLevel(level='INFO' if self.args.verbose else 'WARNING')
 
 		self.checkargbounds()
