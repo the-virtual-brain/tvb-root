@@ -65,6 +65,7 @@ if __name__ == '__main__':
         'launching_bids_adapter.ipynb',
         'model_generation_using_dsl.ipynb',
         'RateML_CUDA_on_HPC.ipynb',
+        'exploring_K_ION_Exchange_model.ipynb',
         'simulate_surface_seeg_eeg_meg.ipynb',
         'Zerlaut_parametersweep_HPC.ipynb'
     ]
