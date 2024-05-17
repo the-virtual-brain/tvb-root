@@ -27,7 +27,7 @@ import shutil
 import setuptools
 
 CONTRIB_VERSION = "2.9"
-CONTRIB_DEPENDENCIES = ["tvb-library", "xarray", "scikit-learn"]
+CONTRIB_DEPENDENCIES = ["tvb-library", "xarray", "scikit-learn", "lxml", "pylems"]
 TEAM = "Stuart Knock, Dionysios Perdikis, Paula Sanz Leon, Bogdan Valean, Marmaduke Woodman"
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
