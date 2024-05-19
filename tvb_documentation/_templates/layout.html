@@ -2,11 +2,6 @@
 
 {% set css_files = css_files + ['_static/tvb_design/base.css'] %}
 
-{% block extrahead %}
-    <link rel="stylesheet" type="text/css" href="http://fast.fonts.com/t/1.css?apiType=css&projectid=94cc7509-1f18-46a1-86d0-148a9508f30a">
-    <link rel="stylesheet" type="text/css" href="http://hello.myfonts.net/count/2a17e2">
-{% endblock %}
-
 {% block rootrellink %}
     <li class="nav-main main-home"><a href="{{ pathto('index') }}">Home</a>|&nbsp;</li>
     <li class="nav-main main-install"><a href="{{ pathto('manuals/UserGuide/UserGuide-Installation') }}">Install</a>|&nbsp;</li>
