@@ -48,8 +48,7 @@ class regularRun:
 		# Initialize Model
 		model = self.tvb_python_model(modelExec)
 		# zerlaut setup
-		noises = noise.Additive(nsig=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]), ntau=0.0)
-		integrator = integrators.HeunStochastic(dt=.1, noise=noises)
+		integrator = integrators.HeunStochastic(dt=.1)
 		# Initialize integrator
 		# Initialize Monitors
 		monitorsen = (monitors.TemporalAverage(period=self.period))
