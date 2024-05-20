@@ -7,8 +7,7 @@ import pickle
 
 from tvb.simulator.lab import *
 from tvb.basic.logger.builder import get_logger
-
-from tvb.rateML.run.regular_run import regularRun
+from tvb.contrib.rateML.run.regular_run import regularRun
 
 import os.path
 import numpy as np
@@ -21,7 +20,6 @@ except ImportError:
 	logging.warning('pycuda not available, rateML driver not usable.')
 
 import matplotlib.pyplot as plt
-
 import time
 import tqdm
 
@@ -34,7 +32,7 @@ class Driver_Setup:
 	def __init__(self):
 		self.args = self.parse_args()
 
-		self.logger = get_logger('tvb.rateML')
+		self.logger = get_logger('tvb.contrib.rateML')
 		self.logger.setLevel(level='INFO' if self.args.verbose else 'WARNING')
 
 		self.checkargbounds()
