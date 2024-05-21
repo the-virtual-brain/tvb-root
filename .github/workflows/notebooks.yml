@@ -58,6 +58,5 @@ jobs:
           python setup.py develop
 
       - name: run notebooks
-        continue-on-error: true
         run: |
           python ./tvb_build/notebook_runner.py ./tvb_documentation/demos
