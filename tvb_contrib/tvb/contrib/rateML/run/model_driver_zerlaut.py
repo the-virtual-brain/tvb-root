@@ -1,3 +1,21 @@
+"""
+
+This is the partly rateML generated and partly manual implementation of the Zerlaut [1] HPC GPU model driver for
+exploration of the paramters : global_coupling, b_e, E_L_e, E_L_i and T as in [2]. A Jyputer notebook can be found here:
+https://lab.ch.ebrains.eu/hub/user-redirect/lab/tree/shared/Public_3Species_TVBAdEx_EITN_FallSchool/Human/Different_brain_states_simulated_in_the_human_brain.ipynb
+
+[1] Zerlaut, Yann, Sandrine Chemla, Frederic Chavane, and Alain Destexhe. “Modeling Mesoscopic Cortical Dynamics Using
+a Mean-Field Model of Conductance-Based Networks of Adaptive Exponential Integrate-and-Fire Neurons.”
+Journal of Computational Neuroscience 44, no. 1 (February 1, 2018): 45–61. https://doi.org/10.1007/s10827-017-0668-2.
+
+[2]  A comprehensive neural simulation of slow-wave sleep and highly responsive wakefulness dynamics
+Jennifer S. Goldman, Lionel Kusch, Bahar Hazal Yalçinkaya, Damien Depannemaecker, Trang-Anh E. Nghiem, Viktor Jirsa, Alain Destexhe
+bioRxiv 2021.08.31.458365; doi: https://doi.org/10.1101/2021.08.31.458365
+
+.. moduleauthor:: Michiel. A. van der Vlag <m.van.der.vlag@fz-juelich.de>
+
+"""
+
 from __future__ import print_function
 
 import logging
@@ -7,8 +25,6 @@ import pickle
 
 from tvb.simulator.lab import *
 from tvb.basic.logger.builder import get_logger
-
-# from tvb.rateML.run.regular_run import regularRun
 
 import os.path
 import numpy as np
@@ -26,28 +42,33 @@ import time
 import tqdm
 
 here = os.path.dirname(os.path.abspath(__file__))
+headerhere = os.path.join((os.path.dirname(os.path.abspath(__file__))),
+								 "../generatedModels")
 
 class Driver_Setup:
 
 	def __init__(self):
 		self.args = self.parse_args()
 
-		self.logger = get_logger('tvb.rateML')
+		self.logger = get_logger('tvb.contrib.rateML')
 		self.logger.setLevel(level='INFO' if self.args.verbose else 'WARNING')
 
 		self.checkargbounds()
 
 		self.dt = self.args.delta_time
 		self.connectivity = self.tvb_connectivity(self.args.n_regions)
-		self.weights = self.connectivity.weights
+		# normalize connection weights as is done in original
+		self.weights = self.connectivity.weights / (np.sum(self.connectivity.weights, axis=0) + 1e-12)
 		self.lengths = self.connectivity.tract_lengths
-		self.tavg_period = 1.0
+		self.tavg_period = 10.0
 		self.n_inner_steps = int(self.tavg_period / self.dt)
 
 		self.params = self.setup_params(
-		% for pc in range(len(XML.parameters)):
-		self.args.n_sweep_arg${pc},
-		% endfor
+		self.args.n_sweep_arg0,
+		self.args.n_sweep_arg1,
+		self.args.n_sweep_arg2,
+		self.args.n_sweep_arg3,
+		self.args.n_sweep_arg4,
 		)
 
 		# bufferlength is based on the minimum of the first swept parameter (speed for many tvb models)
@@ -112,14 +133,16 @@ class Driver_Setup:
 		parser = argparse.ArgumentParser(description='Run parameter sweep.')
 
 		# for every parameter that needs to be swept, the size can be set
-		% for pc in range(len(XML.parameters)):
-		parser.add_argument('-s${pc}', '--n_sweep_arg${pc}', default=4, help='num grid points for ${pc+1}st parameter', type=int)
-		% endfor
+		parser.add_argument('-s0', '--n_sweep_arg0', default=4, help='num grid points for 1st parameter', type=int)
+		parser.add_argument('-s1', '--n_sweep_arg1', default=4, help='num grid points for 2st parameter', type=int)
+		parser.add_argument('-s2', '--n_sweep_arg2', default=4, help='num grid points for 3st parameter', type=int)
+		parser.add_argument('-s3', '--n_sweep_arg3', default=4, help='num grid points for 4st parameter', type=int)
+		parser.add_argument('-s4', '--n_sweep_arg4', default=4, help='num grid points for 5st parameter', type=int)
 		parser.add_argument('-n', '--n_time', default=400, help='number of time steps to do', type=int)
 		parser.add_argument('-v', '--verbose', default=False, help='increase logging verbosity', action='store_true')
-		parser.add_argument('-m', '--model', default='${model}', help="neural mass model to be used during the simulation")
-		parser.add_argument('-s', '--states', default=${XML.dynamics.state_variables.__len__()}, type=int, help="number of states for model")
-		parser.add_argument('-x', '--exposures', default=${XML.exposures.__len__()}, type=int, help="number of exposures for model")
+		parser.add_argument('-m', '--model', default='zerlaut', help="neural mass model to be used during the simulation")
+		parser.add_argument('-s', '--states', default=7, type=int, help="number of states for model")
+		parser.add_argument('-x', '--exposures', default=1, type=int, help="number of exposures for model")
 		parser.add_argument('-l', '--lineinfo', default=False, help='generate line-number information for device code.', action='store_true')
 		parser.add_argument('-bx', '--blockszx', default=8, type=int, help="gpu block size x")
 		parser.add_argument('-by', '--blockszy', default=8, type=int, help="gpu block size y")
@@ -136,20 +159,32 @@ class Driver_Setup:
 
 
 	def setup_params(self,
-		% for pc in range(len(XML.parameters)):
-		n${pc},
-		% endfor
+		n0,
+		n1,
+		n2,
+		n3,
+		n4,
 		):
 		'''
 		This code generates the parameters ranges that need to be set
 		'''
-		% for pc, par_var in enumerate(XML.parameters):
-		sweeparam${pc} = np.linspace(${par_var.dimension}, n${pc})
-		% endfor
+		sweeparam0 = np.linspace(0.2, 0.7, n0)
+		sweeparam1 = np.linspace(60, 60, n1)
+		sweeparam2 = np.linspace(-63, -63, n2)
+		sweeparam3 = np.linspace(-65, -65, n3)
+		sweeparam4 = np.linspace(40, 40, n4)
+                
+		#sweeparam0 = np.linspace(0, 0.5, n0)
+		#sweeparam1 = np.linspace(0, 120, n1)
+		#sweeparam2 = np.linspace(-80, -60, n2)
+		#sweeparam3 = np.linspace(-80, -60, n3)
+		#sweeparam4 = np.linspace(5, 40, n4)
 		params = itertools.product(
-		% for pc in range(len(XML.parameters)):
-		sweeparam${pc},
-		% endfor
+		sweeparam0,
+		sweeparam1,
+		sweeparam2,
+		sweeparam3,
+		sweeparam4,
 		)
 		params = np.array([vals for vals in params], np.float32)
 		return params
@@ -233,7 +268,7 @@ class Driver_Execute(Driver_Setup):
 				opts.append('-DWARP_SIZE=%d' % (warp_size, ))
 				opts.append('-DNH=%s' % (nh, ))
 
-				idirs = [here]
+				idirs = [here, headerhere]
 				self.logger.info('nvcc options %r', opts)
 
 				try:
@@ -476,41 +511,3 @@ if __name__ == '__main__':
 
 	driver_setup = Driver_Setup()
 	tavgGPU = Driver_Execute(driver_setup).run_all()
-
-	# Uncomment for validation against TVB
-	# simtime = driver_setup.args.n_time
-	# # simtime = 10
-	# regions = driver_setup.args.n_regions
-	# g = 1.0
-	# s = 1.0
-	# dt = driver_setup.dt
-	# period = 1
-	#
-	# # generic model definition
-	# model = driver_setup.args.model.capitalize()+'T'
-	#
-	# # non generic model names
-	# # model = 'MontbrioT'
-	# # model = 'RwongwangT'
-	# # model = 'OscillatorT'
-	# # model = 'DumontGutkin'
-	# # model = 'MontbrioPazoRoxin'
-	# # model='Generic2dOscillator'
-	# (time, tavgCPU) = regularRun(simtime, g, s, dt, period).simulate_python(model)
-	#
-	# print('CPUshape', tavgCPU.shape)
-	# print('GPUshape', tavgGPU.shape)
-	#
-	# # check for deviation tolerance between GPU and CPU
-	# # for basic coupling and period = 1
-	# # using euler deterministic solver
-	# max_err = []
-	# x = 0
-	# for t in range(0, simtime):
-	# 	# print(t, 'tol:', np.max(np.abs(actual[t] - expected[t, :, :, 0])))
-	# 	# print(t, 'tol:', np.max(np.abs(tavgCPU[t,:,:,0], tavgGPU[t,:,:,0])))
-	# 	# print(t)
-	# 	# print('C', tavgCPU[t,:,:,0])
-	# 	# print('G', tavgGPU[t,:,:,0])
-	# 	# print(t, 'tol:', np.max(np.abs(tavgCPU[t,:,:,0] - tavgGPU[t,:,:,0])))
-	# 	np.testing.assert_allclose(tavgCPU[t, :, :, 0], tavgGPU[t, :, :, 0], 2e-5 * t * 2, 1e-5 * t * 2)
