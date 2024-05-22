@@ -74,7 +74,7 @@ def compute_fast_fourier_transform(time_series, segment_length, window_function,
     The segment length determines the frequency resolution of the resulting power spectra -- longer
     windows produce finer frequency resolution
 
-    window_function : str
+    window_function : WindowingFunctionsEnum
     Windowing functions can be applied before the FFT is performed. Default is None, possibilities are: 'hamming';
     'bartlett';'blackman'; and 'hanning'. See, numpy.<function_name>.
 
