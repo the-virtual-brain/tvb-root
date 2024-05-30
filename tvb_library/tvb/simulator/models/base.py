@@ -117,7 +117,7 @@ class Model(HasTraits):
     @property
     def nnonintvar(self):
         """ The number of non integrated state variables in this model. """
-        return self._nvar - self._nintvar
+        return self.nvar - self.nintvar
 
     @property
     def has_nonint_vars(self):
