@@ -215,7 +215,6 @@ class Larter(models.Model):
         :math:`W = 1`, and :math:`Z = 2`.""")
 
     state_variables = ["V", "W", "Z"]
-    _nvar = 3
     cvar = numpy.array([0], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):

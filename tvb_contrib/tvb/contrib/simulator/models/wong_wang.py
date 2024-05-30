@@ -201,7 +201,6 @@ class WongWang(models.Model):
         doc="""default state variables to be monitored""")
 
     state_variables = ["S1", "S2"]
-    _nvar = 2
     cvar = numpy.array([0], dtype=numpy.int32)
 
     def configure(self):

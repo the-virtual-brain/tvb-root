@@ -45,8 +45,6 @@ class Model(HasTraits):
     state_variables = ()  # type: typing.Tuple[str]
     non_integrated_variables = None  # type: typing.Tuple[str]
     variables_of_interest = ()
-    _nvar = None   # todo make this a prop len(state_variables)
-    _nintvar = _nvar
     number_of_modes = 1
     cvar = None
     stvar = None

@@ -202,7 +202,6 @@ class KIonEx(Model):
     )
 
     state_variables = ['x', 'V','n','DKi','Kg']
-    _nvar = 5
     # Cvar is the coupling variable. 
     cvar = numpy.array([0], dtype=numpy.int32)
     # Stvar is the variable where stimulus is applied.

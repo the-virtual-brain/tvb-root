@@ -71,7 +71,6 @@ class Linear(Model):
         default=tuple('gamma'.split()))
 
     state_variables = ('x',)
-    _nvar = 1
     cvar = numpy.array([0], dtype=numpy.int32)
 
     def dfun(self, state, coupling, local_coupling=0.0):

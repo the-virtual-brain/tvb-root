@@ -53,7 +53,6 @@ class ReducedWongWangProxy(ReducedWongWang):
     modify class in order to take in count proxy firing rate and to monitor the firing rate
     """
     state_variables = 'S H'.split()
-    _nvar = 2
     state_variable_range = Final(
         label="State variable ranges [lo, hi]",
         default={"S": numpy.array([0.0, 1.0]),

@@ -167,18 +167,18 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
         conditions when the simulation isn't started from an explicit history,
         it is also provides the default range of phase-plane plots.""")
 
+    state_variables = 'xi eta alpha beta'.split()
+
     variables_of_interest = List(
         of=str,
         label="Variables watched by Monitors",
-        choices=("xi", "eta", "alpha", "beta"),
+        choices=state_variables,
         default=("xi", "alpha"),
         doc=r"""This represents the default state-variables of this Model to be
                 monitored. It can be overridden for each Monitor if desired. The
                 corresponding state-variable indices for this model are :math:`\xi = 0`,
                 :math:`\eta = 1`, :math:`\alpha = 2`, and :math:`\beta= 3`.""")
 
-    state_variables = tuple('xi eta alpha beta'.split())
-    _nvar = 4
     cvar = numpy.array([0, 2], dtype=numpy.int32)
     # Derived parameters
     Aik = None
@@ -466,7 +466,6 @@ class ReducedSetHindmarshRose(ReducedSetBase):
                 :math:`\beta = 4`, and :math:`\gamma = 5`""")
 
     state_variables = 'xi eta tau alpha beta gamma'.split()
-    _nvar = 6
     cvar = numpy.array([0, 3], dtype=numpy.int32)
     # derived parameters
     A_ik = None
