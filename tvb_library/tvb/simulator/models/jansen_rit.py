@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -115,7 +115,7 @@ class JansenRit(ModelNumbaDfun):
         default=numpy.array([0.0025]),
         domain=Range(lo=0.00125, hi=0.00375, step=0.00001),
         doc="""Determines the maximum firing rate of the neural population
-        [s^-1].""")
+        [ms^-1].""")
 
     r = NArray(
         label=":math:`r`",

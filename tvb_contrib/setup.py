@@ -4,7 +4,7 @@
 #  TheVirtualBrain-Contributors Package. This package holds simulator extensions.
 #  See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -26,9 +26,9 @@ import os
 import shutil
 import setuptools
 
-CONTRIB_VERSION = "2.8.3"
-CONTRIB_DEPENDENCIES = ["tvb-library", "xarray", "scikit-learn"]
-TEAM = "Stuart Knock, Dionysios Perdikis, Paula Sanz Leon, Bogdan Valean, Marmaduke Woodman"
+CONTRIB_VERSION = "2.9.1"
+CONTRIB_DEPENDENCIES = ["tvb-library", "xarray", "scikit-learn", "lxml", "pylems"]
+TEAM = "Stuart Knock, Dionysios Perdikis, Paula Sanz Leon, Bogdan Valean, Marmaduke Woodman, Michiel van der Vlag"
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
     DESCRIPTION = fd.read()

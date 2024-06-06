@@ -1,11 +1,11 @@
-name: Mirror to Ebrains
+name: Mirror to EBRAINS 2.0
 
 on:
   push:
     branches: [ master ]
 
 jobs:
-  to_ebrains:
+  to_ebrains_2:
     runs-on: ubuntu-latest
     steps:
       - name: syncmaster
@@ -13,12 +13,12 @@ jobs:
         with:
           source_repo: "the-virtual-brain/tvb-root"
           source_branch: "master"
-          destination_repo: "https://ghpusher:${{ secrets.EBRAINS_GITLAB_ACCESS_TOKEN }}@gitlab.ebrains.eu/tvb/tvb-root.git"
+          destination_repo: "https://ghpusher:${{ secrets.EBRAINS_2_0_SECRET }}@gitlab.ebrains.eu/ri/tech-hub/apps/tvb/tvb-root-mirror.git"
           destination_branch: "master"
       - name: synctags
         uses: wei/git-sync@v3
         with:
           source_repo: "the-virtual-brain/tvb-root"
           source_branch: "refs/tags/*"
-          destination_repo: "https://ghpusher:${{ secrets.EBRAINS_GITLAB_ACCESS_TOKEN }}@gitlab.ebrains.eu/tvb/tvb-root.git"
+          destination_repo: "https://ghpusher:${{ secrets.EBRAINS_2_0_SECRET }}@gitlab.ebrains.eu/ri/tech-hub/apps/tvb/tvb-root-mirror.git"
           destination_branch: "refs/tags/*"

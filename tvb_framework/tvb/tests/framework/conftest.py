@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,7 +35,7 @@ from datetime import datetime
 from time import sleep
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-
+from scipy.sparse import csr_matrix
 from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
 from tvb.adapters.analyzers.bct_clustering_adapters import TransitivityBinaryDirected
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
@@ -667,7 +667,7 @@ def datatype_group_factory(connectivity_factory, time_series_index_factory, time
 
                     view_model_ms.gid = view_model_ms_gid
                     view_model_ms.time_series = ts_index.gid
-                    view_model_ms = copy.deepcopy(view_model_ms)    # deepcopy only after a TS is set
+                    view_model_ms = copy.deepcopy(view_model_ms)  # deepcopy only after a TS is set
                     op_ms_path = StorageInterface().get_project_folder(project.name, str(op_ms.id))
                     h5.store_view_model(view_model_ms, op_ms_path)
 
@@ -722,7 +722,14 @@ def test_adapter_factory():
 def local_connectivity_index_factory(surface_factory, operation_factory):
     def build(op=None):
         surface = surface_factory(cortical=True)
+
         lconn = LocalConnectivity()
+        row = numpy.array([0, 0, 1, 2, 2, 2])
+        col = numpy.array([0, 2, 2, 0, 1, 2])
+        data = numpy.array([1, 2, 3, 4, 5, 6])
+        lconn.matrix = csr_matrix((data, (row, col)),
+                                  shape=(surface.number_of_vertices, surface.number_of_vertices),
+                                  dtype=numpy.int8)
         lconn.surface = surface
         if op is None:
             op = operation_factory()

@@ -21,7 +21,7 @@ For the following example, we will suppose TVB REST server runs on *http://local
 
 To launch a TVB REST server locally, you should download `tvb-framework` version >2.0. and launch it::
 
-    $ python -m tvb.interfaces.web.run WEB_PROFILE  # Launch TVB web and REST servers locally
+    $ python -m tvb.interfaces.rest.server.run   # Launch TVB REST server locally
 
 
 Accessing the client API entry-point

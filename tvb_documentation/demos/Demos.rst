@@ -140,6 +140,7 @@ examples.
 .. _Interacting with TVBClient API by launching simulation and analyzer methods: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/interacting_with_rest_api_fire_simulation.ipynb
 .. _Interacting with TVBClient API importers: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/interacting_with_rest_api_launch_operations.ipynb
 .. _Launch BIDS derivatives importer: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/launching_bids_adapter.ipynb
+.. _Integrating with SIIBRA: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/siibra_tvb_api.ipynb
 
 
 .. figure:: figures/analyze_region_corrcoef.png
@@ -350,6 +351,15 @@ Interact with TVB Framework
       :target: `Launch BIDS derivatives importer`_
 
       `Launch BIDS derivatives importer`_
+
+
+.. figure:: figures/interacting_with_the_framework.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Integrating with SIIBRA`_
+
+      `Integrating with SIIBRA`_
+
 
 Interact with TVB REST Client API
 ---------------------------------

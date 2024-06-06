@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -43,10 +43,10 @@ class VersionSettings(object):
     SVN_GIT_MIGRATION_REVISION = 10000
 
     # Current release number
-    BASE_VERSION = "2.8.3"
+    BASE_VERSION = "2.9.1"
 
     # Current DB version. Create a new migration script from command line and copy its gid here
-    DB_STRUCTURE_VERSION = '32d4bf9f8def'
+    DB_STRUCTURE_VERSION = '32d4bf9f8ghj'
 
     # This is the version of the data stored in H5 and XML files
     # and should be used by next versions to know how to import
@@ -242,12 +242,13 @@ class WebSettings(object):
             pass
 
         self.SERVER_PORT = manager.get_attribute(stored.KEY_PORT, 8080, int)
+        self.REST_PORT = manager.get_attribute(stored.KEY_PORT_REST, 9090, int)
 
-        self.OPENSHIFT_DEPLOY = manager.get_attribute(stored.KEY_OPENSHIFT_DEPLOY, False, eval)
-        self.OPENSHIFT_NAMESPACE = manager.get_attribute(stored.KEY_OPENSHIFT_NAMESPACE, "")
-        self.OPENSHIFT_APPLICATION = manager.get_attribute(stored.KEY_OPENSHIFT_APPLICATION, "")
-        self.OPENSHIFT_PROCESSING_OPERATIONS_APPLICATION = manager.get_attribute(stored.KEY_PROCESSING_OPERATIONS_APPLICATION, "")
-        self.OPENSHIFT_DATA_ENCRYPTION_HANDLER_APPLICATION = manager.get_attribute(stored.KEY_DATA_ENCRYPTION_HANDLER_APPLICATION, self.OPENSHIFT_APPLICATION)
+        self.IS_CLOUD_DEPLOY = manager.get_attribute(stored.KEY_IS_CLOUD_DEPLOY, False, eval)
+        self.IS_CLOUD_HTTPS = manager.get_attribute(stored.KEY_IS_CLOUD_HTTPS, False, eval)
+        self.CLOUD_APP_EXEC_NAME = manager.get_attribute(stored.KEY_CLOUD_APP_EXEC, "")
+        self.CLOUD_APP_EXEC_MAX_PODS_NO = manager.get_attribute(stored.KEY_CLOUD_APP_EXEC_MAX_PODS, 2)
+        self.CLOUD_APP_ENCRYPTION_HANDLER_NAME = manager.get_attribute(stored.KEY_CLOUD_APP_ENCRYPTION_HANDLER, "")
         # Compute reference towards the current web application, valid FROM localhost
         server_IP = manager.get_attribute(stored.KEY_IP, self.LOCALHOST)
         self.BASE_LOCAL_URL = "http://%s:%s/" % (server_IP, str(self.SERVER_PORT))

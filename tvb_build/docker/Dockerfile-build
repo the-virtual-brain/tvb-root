@@ -56,6 +56,7 @@ USER $TVB_USER
 # make sure a copy of tvb-root exists inside, for users without Github clone
 RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git
 ARG LAST_SHA=LATEST
+ENV LAST_SHA_ENV=${LAST_SHA}
 RUN cd tvb-root; \
     git pull; \
     cd tvb_build; \
