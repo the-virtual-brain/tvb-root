@@ -1,0 +1,35 @@
+Attention!
+Before running each deployment file into kubernetes, in order to select the namespace, you have to manually change
+the keyword ${NAMESPACE} has to be replaced with the actual namespace name in 5 places in each deployment .yaml file.
+After pod-db.yaml (pg-bouncer), pod-exec.yaml and pod-web.yaml are executed, in settings, Networking should be changed from "Do not create a service" to "ClusterIP"
+
+landing-page.yaml
+    -creates:
+        - pod for tvb landing page
+
+pod-web.yaml
+    -creates:
+        -pod for the web app
+
+jupyter-lab-test.yaml
+    -creates:
+        -pod with a jupyter notebook
+    - this deployment is used only for testing k8s libraries which need to be inside a pod when the code is executed
+
+Attention!
+The following yaml scripts should be executed in this order:
+
+pod-db.yaml
+    -creates:
+        -pods for pg-bouncer and tvb-postgres
+
+
+pod-assign.yaml
+    -creates:
+        -pod for operations-assigner
+
+
+pod-exec.yaml
+    -creates:
+        -pod for process-operations
+

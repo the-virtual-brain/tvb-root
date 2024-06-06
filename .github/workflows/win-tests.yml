@@ -3,7 +3,7 @@ on: [push]
 
 jobs:
   build:
-    name: Frw-Tests (3.10 Win)
+    name: Frw-Tests (3.11 Win)
     runs-on: windows-latest
 
     steps:
@@ -14,7 +14,7 @@ jobs:
       - name: set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
       - name: put ~/.local/bin on $PATH
         run: echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV

@@ -1,0 +1,13 @@
+no_of_options=3 
+ 
+0.option.label=TVB @ CSCS
+0.option.description=  DEPRECATED <p style="color:red;">Please move any data that you might have here to the Cloud installations, as this will be shutdown soon, in 2024!</p> 
+0.option.url=https://thevirtualbrain.apps.hbp.eu/
+
+1.option.label=TVB @ Cloud 1
+1.option.description= Latest stable version of TVB Distribution, deployed in Juelich Rancher Cloud. <p style="color:orange;">This installation currently has limited hardware resource, so it might not be able to run many operations, yet! We are working on scaling it soon.</p><p style="color:yellow;">Please create personal project(s) for your work. Don't keep data in <b>Default_Project</b>, as it will be periodically cleaned-up, and it is shared with all users, intended for read-only purposes! </p>
+1.option.url=https://tvb-web.apps.tc.humanbrainproject.eu/
+
+2.option.label=TVB @ Cloud 2
+2.option.description= Latest stable version of TVB Distribution, deployed in Juelich Rancher Cloud. <p style="color:yellow;">Please create personal project(s) for your work. Don't keep data in <b>Default_Project</b>, as it will be periodically cleaned-up, and it is shared with all users, intended for read-only purposes! </p>
+2.option.url=https://tvb-bck.apps.tc.humanbrainproject.eu/

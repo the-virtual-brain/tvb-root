@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -45,6 +45,7 @@ class LocalConnectivityIndex(DataType):
     def fill_from_has_traits(self, datatype):
         # type: (LocalConnectivity)  -> None
         super(LocalConnectivityIndex, self).fill_from_has_traits(datatype)
-        I, J, V = scipy.sparse.find(datatype.matrix)
-        self.matrix_non_zero_min, self.matrix_non_zero_max, self.matrix_non_zero_mean = from_ndarray(V)
+        if datatype.matrix is not None:
+            I, J, V = scipy.sparse.find(datatype.matrix)
+            self.matrix_non_zero_min, self.matrix_non_zero_max, self.matrix_non_zero_mean = from_ndarray(V)
         self.fk_surface_gid = datatype.surface.gid.hex

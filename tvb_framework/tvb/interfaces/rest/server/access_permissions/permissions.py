@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -66,7 +66,9 @@ class ProjectAccessPermission(ResourceAccessPermission):
 
     def check_project_permission(self, logged_user_id, project_id):
         project_members = self.project_dao.get_members_of_project(project_id)
-        return logged_user_id in [project_member.id for project_member in project_members]
+        project_admin_id = self.project_dao.get_project_by_id(project_id).administrator.id
+        return (logged_user_id == project_admin_id or
+                project_admin_id in [project_member.id for project_member in project_members])
 
 
 class OperationAccessPermission(ProjectAccessPermission):
