@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -41,7 +41,6 @@ import webbrowser
 import cherrypy
 from cherrypy import Tool
 from cherrypy.lib.sessions import RamSession
-from subprocess import Popen, PIPE
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.initializer import initialize, reset
@@ -179,7 +178,7 @@ def init_cherrypy(arguments=None):
             TvbProfile.current.hpc.BACKGROUND_JOB_INTERVAL, HPCOperationService.check_operations_job)
         cherrypy.engine.housekeeper.start()
 
-    if not TvbProfile.current.web.OPENSHIFT_DEPLOY:
+    if not TvbProfile.current.web.IS_CLOUD_DEPLOY:
         operations_job = cherrypy.process.plugins.BackgroundTask(
             TvbProfile.current.OPERATIONS_BACKGROUND_JOB_INTERVAL, StandAloneClient.process_queued_operations,
             bus=cherrypy.engine)
@@ -187,28 +186,6 @@ def init_cherrypy(arguments=None):
 
     # HTTP Server is fired now #
     cherrypy.engine.start()
-
-
-def expose_rest_api():
-    if not TvbProfile.current.KEYCLOAK_CONFIG:
-        LOGGER.info("REST server will not start because KEYCLOAK CONFIG path is not set.")
-        return
-
-    if not os.path.exists(TvbProfile.current.KEYCLOAK_CONFIG):
-        LOGGER.warning("Cannot start REST server because the KEYCLOAK CONFIG file {} does not exist.".format(
-            TvbProfile.current.KEYCLOAK_CONFIG))
-        return
-
-    if CONFIG_EXISTS:
-        LOGGER.info("Starting Flask server with REST API...")
-        run_params = [TvbProfile.current.PYTHON_INTERPRETER_PATH, '-m', 'tvb.interfaces.rest.server.run',
-                      TvbProfile.CURRENT_PROFILE_NAME]
-        flask_process = Popen(run_params, stderr=PIPE)
-        stdout, stderr = flask_process.communicate()
-        if flask_process.returncode != 0:
-            LOGGER.warning("Failed to start the Flask server with REST API. Stderr: {}".format(stderr))
-        else:
-            LOGGER.info("Finished starting Flask server with REST API...")
 
 
 def start_tvb(arguments, browser=True):
@@ -245,8 +222,6 @@ def start_tvb(arguments, browser=True):
     # Fire a browser page at the end.
     if browser:
         run_browser()
-
-    expose_rest_api()
 
     # Launch CherryPy loop forever.
     LOGGER.info("Finished starting TVB version %s in %.3f s",

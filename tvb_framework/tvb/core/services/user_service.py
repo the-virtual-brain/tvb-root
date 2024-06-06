@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -113,9 +113,7 @@ class UserService:
                 if admin.email is not None and (admin.email != TvbProfile.current.web.admin.DEFAULT_ADMIN_EMAIL):
                     # Do not send validation email in case default admin email remained unchanged
                     email_sender.send(FROM_ADDRESS, admin.email, SUBJECT_REGISTER, admin_msg)
-                    self.logger.debug("Email sent to:" + admin.email + " for validating user:" + username + " !")
                 email_sender.send(FROM_ADDRESS, email, SUBJECT_REGISTER, email_msg)
-                self.logger.debug("Email sent to:" + email + " for notifying new user:" + username + " !")
 
             user = dao.store_entity(user)
 
@@ -192,10 +190,10 @@ class UserService:
                 return False
             user.validated = True
             user = dao.store_entity(user)
-            self.logger.debug("Sending validation email for userName=" + user.username + " to address=" + user.email)
+            self.logger.info("Validating user with userName=" + user.username)
             email_sender.send(FROM_ADDRESS, user.email, SUBJECT_VALIDATE,
                               "Hello " + user.username + TEXT_VALIDATED + TvbProfile.current.web.BASE_URL + "/user/")
-            self.logger.info("User:" + user.username + " was validated successfully" + " and notification email sent!")
+            self.logger.info("User:" + user.username + " was validated successfully")
             return True
         except Exception as excep:
             self.logger.warning('Could not validate user:')

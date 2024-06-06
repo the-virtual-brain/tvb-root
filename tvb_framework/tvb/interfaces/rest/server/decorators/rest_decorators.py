@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -26,7 +26,6 @@
 import json
 from functools import wraps
 from typing import Any
-
 from flask import current_app, request
 from flask.json import dumps
 from keycloak.exceptions import KeycloakError
@@ -58,7 +57,6 @@ def rest_jsonify(func):
         if data is None:
             data = {}
         return current_app.response_class(dumps(data, default=lambda o: _convert(o), sort_keys=False),
-                                          mimetype=current_app.config['JSONIFY_MIMETYPE'],
                                           status=status)
 
     return deco

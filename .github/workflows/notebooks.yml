@@ -12,11 +12,11 @@ jobs:
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
-      - name: set up Python 3.8
+      - name: set up Python 3.11
         uses: actions/setup-python@v4
         id: setPy
         with:
-          python-version: "3.8"
+          python-version: "3.11"
 
       - name: put ~/.local/bin on $PATH
         run: echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
@@ -58,7 +58,5 @@ jobs:
           python setup.py develop
 
       - name: run notebooks
-        env:
-          HBP_AUTH_TOKEN: ${{ secrets.HBP_AUTH_TOKEN }}   # token or (secret+id) are needed for siibra tests
         run: |
-          python ./tvb_build/notebook_runner.py ./tvb_documentation/demos siibra
+          python ./tvb_build/notebook_runner.py ./tvb_documentation/demos

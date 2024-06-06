@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -74,7 +74,7 @@ def compute_fast_fourier_transform(time_series, segment_length, window_function,
     The segment length determines the frequency resolution of the resulting power spectra -- longer
     windows produce finer frequency resolution
 
-    window_function : str
+    window_function : WindowingFunctionsEnum
     Windowing functions can be applied before the FFT is performed. Default is None, possibilities are: 'hamming';
     'bartlett';'blackman'; and 'hanning'. See, numpy.<function_name>.
 

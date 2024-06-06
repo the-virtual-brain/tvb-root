@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,15 +36,15 @@ import os
 import shutil
 import setuptools
 
-VERSION = "2.8.3"
+VERSION = "2.9.1"
 
 TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Prodan, Paula Sansz Leon, Marmaduke Woodman"
 
-TVB_INSTALL_REQUIREMENTS = ["alembic", "bctpy", "cherrypy", "docutils", "flask==2.3.3", "flask-restx",
-                            "formencode", "gevent", "h5py", "Jinja2", "matplotlib==3.5.3", "nibabel", "numpy", "pandas",
+TVB_INSTALL_REQUIREMENTS = ["alembic", "bctpy", "cherrypy", "docutils", "flask", "flask-restx",
+                            "formencode", "gevent", "h5py", "Jinja2", "matplotlib", "nibabel", "numpy", "pandas",
                             "Pillow", "psutil", "python-keycloak", "requests", "requests-toolbelt>=0.10",
-                            "scikit-learn", "scipy", "siibra==0.4a35", "simplejson", "six", "sqlalchemy",
-                            "tables==3.7.0", "tvb-data", "tvb-gdist", "tvb-library", "tvb-storage", "werkzeug"]
+                            "scikit-learn", "scipy", "siibra", "simplejson", "six", "sqlalchemy",
+                            "tvb-data", "tvb-gdist", "tvb-library", "tvb-storage", "werkzeug"]
 
 # Packaging tvb-framework with REST server inside
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
