@@ -29,8 +29,6 @@
 import numpy as np
 
 import tvb.simulator.lab as lab
-# from tvb.contrib.tests.cosimulation.parallel.ReducedWongWang import \
-#     ReducedWongWangProxy, _numba_dfun_proxy
 
 from tvb.contrib.tests.cosimulation.parallel.k_ion_exchange import \
     KIonExProxy, _numba_dfun_proxy
@@ -218,23 +216,3 @@ class TvbSim:
             S.append(X)
         self.current_state = X
         return np.concatenate(S)
-
-if __name__ == "__main__":
-
-    weight = np.array([[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]])
-    delay = np.array([[1.5, 1.5, 1.5, 1.5], [1.5, 1.5, 1.5, 1.5], [1.5, 1.5, 1.5, 1.5], [1.5, 1.5, 1.5, 1.5]])
-    resolution_simulation = 0.1
-    synchronization_time = 1.0
-    proxy_id = [0, 1]
-    firing_rate = np.array([[20.0, 10.0]]) * 10 ** -3
-
-    results=[]
-    cosim = TvbSim(weight, delay, proxy_id, resolution_simulation, synchronization_time)
-    for i in range(0, 100):
-        time, result = cosim(time=synchronization_time, proxy_data=[np.arange(i * synchronization_time, (i + 1) * synchronization_time,
-                                      resolution_simulation) - synchronization_time,
-                            np.repeat(firing_rate.reshape(1, 2),
-                                      int(synchronization_time / resolution_simulation), axis=0)])
-
-        results.append(result)
-    results = np.array(results)

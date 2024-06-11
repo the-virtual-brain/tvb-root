@@ -45,18 +45,6 @@ import numpy
 
 from numba import guvectorize, float64, njit
 
-
-
-# @guvectorize([(float64[:],) * 12], '(n),(m)' + ',()' * 8 + '->(n),(n)', nopython=True)
-# def _numba_dfun(S, c, a, b, d, g, ts, w, j, io, dx, h):
-#     """Gufunc for kionex model equations.(modification for saving the firing rate h)"""
-#     x = w[0] * j[0] * S[0] + io[0] + j[0] * c[0]
-#     h[0] = (a[0] * x - b[0]) / (1 - numpy.exp(-d[0] * (a[0] * x - b[0])))
-#     dx[0] = - (S[0] / ts[0]) + (1.0 - S[0]) * h[0] * g[0]
-#
-#
-
-
 class KIonExProxy(Model):
     r"""
     KIonEx (Potassium K+ Ion exchange) mean-field model was developed in (Bandyopadhyay & Rabuffo et al. 2023).
@@ -220,27 +208,14 @@ class KIonExProxy(Model):
     # Stvar is the variable where stimulus is applied.
     stvar = numpy.array([1], dtype=numpy.int32)
 
-
-    # def update_state_variables_after_integration(self, X):
-    #     X[1, :] = self.H_save  # only work for Euler integrator
-    #     return X
-
     def dfun(self, x, c, local_coupling=0.0):
-        # same has tvb implementation
         x_ = x.reshape(x.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T + local_coupling * x[0]
-        # deriv, H = _numba_dfun(x_, c_, self.a, self.b, self.d, self.gamma,
-        #                        self.tau_s, self.w, self.J_N, self.I_o)
 
         deriv = _numba_dfun(x_, c_, self.E, self.K_bath, self.J, self.eta, self.Delta, self.c_minus, self.R_minus,
                                  self.c_plus, self.R_plus, self.Vstar, self.Cm, self.tau_n, self.gamma, self.epsilon)
-        # self.H_save = H
         return deriv
 
-
-# def dfun(self, state_variables, coupling, local_coupling=0.0):
-# @guvectorize([(float64[:],) * 17], '(n),(m)' + ',()' * 14 + '->(n)', nopython=True)
-# def _numba_dfun(state_variables, coupling, E, K_bath, J, eta, Delta, c_minus, R_minus, c_plus, R_plus, Vstar, Cm, tau_n, gamma, epsilon, dx):
 
 @njit
 def core_dfun(state_variables, coupling, E, K_bath, J, eta, Delta, c_minus, R_minus, c_plus, R_plus, Vstar, Cm,
@@ -272,12 +247,6 @@ def core_dfun(state_variables, coupling, E, K_bath, J, eta, Delta, c_minus, R_mi
     n = state_variables[2]
     DKi = state_variables[3]
     Kg = state_variables[4]
-
-    # x = 1
-    # V = 1
-    # n = 1
-    # DKi = 1
-    # Kg = 1
 
     Coupling_Term = coupling[0]  # This zero refers to the first element of cvar (trivial in this case)
 
@@ -359,8 +328,6 @@ def core_dfun(state_variables, coupling, E, K_bath, J, eta, Delta, c_minus, R_mi
     else_Vdot = Vdot - R_plus[0] * x ** 2 + eta[0] + (R_minus[0] / numpy.pi) * Coupling_Term * (E[0] - V)
 
 
-    # dx[0] = numpy.where(V <= Vstar, if_xdot, else_xdot)
-    # dx[1] = numpy.where(V <= Vstar, if_Vdot, else_Vdot)
     if V <= Vstar:
         dx[0] = if_xdot
     else:
@@ -381,9 +348,6 @@ def core_dfun(state_variables, coupling, E, K_bath, J, eta, Delta, c_minus, R_mi
 @guvectorize([(float64[:],) * 17], '(n),(m)' + ',()' * 14 + '->(n)', nopython=True)
 def _numba_dfun_proxy(state_variables, coupling, E, K_bath, J, eta, Delta, c_minus, R_minus, c_plus, R_plus, Vstar, Cm, tau_n, gamma, epsilon, dx):
     """Gufunc for kionex model equations for proxy node."""
-
-    # _numba_dfun(state_variables, coupling, E, K_bath, J, eta, Delta, c_minus, R_minus,
-    #                          c_plus, R_plus, Vstar, Cm, tau_n, gamma, epsilon)
 
     core_dfun(state_variables, coupling, E, K_bath, J, eta, Delta, c_minus, R_minus,
                              c_plus, R_plus, Vstar, Cm, tau_n, gamma, epsilon, dx)
