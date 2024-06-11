@@ -23,6 +23,7 @@
 """
 .. moduleauthor:: Lionel Kusch <lkusch@thevirtualbrain.org>
 .. moduleauthor:: Dionysios Perdikis <dionperd@gmail.com>
+.. moduleauthor:: Michiel van der Vlag <m.van.der.vlag@fz-juelich.de>
 """
 
 import numpy as np
@@ -87,13 +88,11 @@ def tvb_init(parameters, time_synchronize, initial_condition):
         (weights_out,delay_out): the connectivity of disconnect region ouput
     """
     model, connectivity, coupling, integrator, id_proxy = parameters
-    print(id_proxy)
     # Initialise some Monitors with period in physical time
     monitors = (lab.monitors.Raw(variables_of_interest=np.array(0)),)
 
     # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
     if len(id_proxy) == 0:
-        print('deze else?')
         sim = lab.simulator.Simulator(
             model=model,
             connectivity=connectivity,
@@ -198,7 +197,6 @@ class TvbSim:
         S = []
         X = self.current_state
         for h in rate_data:
-            print('hs', h.shape)
             def dfun_proxy(x, c, local_coupling=0.0, stimulus=0.0):
                 E = self.sim.model.E
                 K_bath = self.sim.model.K_bath
@@ -240,4 +238,3 @@ if __name__ == "__main__":
 
         results.append(result)
     results = np.array(results)
-    print('rs', results.shape)

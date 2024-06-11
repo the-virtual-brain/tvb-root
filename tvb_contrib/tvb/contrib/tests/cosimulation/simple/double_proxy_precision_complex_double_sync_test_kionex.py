@@ -23,6 +23,8 @@
 """
 .. moduleauthor:: Lionel Kusch <lkusch@thevirtualbrain.org>
 .. moduleauthor:: Dionysios Perdikis <dionperd@gmail.com>
+.. moduleauthor:: Michiel van der Vlag <m.van.der.vlag@fz-juelich.de>
+
 """
 
 from copy import deepcopy
@@ -81,16 +83,12 @@ class TestDoubleProxyPrecisionComplexDoubleSync(BaseTestCase):
 
     def test_double_proxy_precision_complex_double_sync(self):
 
-        print('hereee')
-
         weight = np.array([[5, 2, 4, 0], [8, 5, 4, 1], [6, 1, 7, 9], [10, 0, 5, 6]])
         delay = np.array([[7, 8, 5, 2], [10, 3, 7, 9], [4, 3, 2, 8], [9, 10, 11, 5]])
         max = np.int_(np.max(delay) * 10 + 1)
         # init_value = np.array([[[0.9, 0.0], [0.1, 0.0], [0.2, 0.0], [0.3, 0.0]]] * max)
         init_value = np.array([[[0.9, 0.0, 0.0, 0.0, 0.0], [0.1, 0.0, 0.0, 0.0, 0.0], [0.2, 0.0, 0.0, 0.0, 0.0], [0.3, 0.0, 0.0, 0.0, 0.0]]] * max)
-        print('init_value', init_value.shape)
         initial_condition = init_value.reshape((max, 5, weight.shape[0], 1))
-        print(initial_condition.shape)
         resolution_simulation = 0.1
         synchronization_time = np.min(delay) / 2.0  # = 1.0 = 10 integration time steps in this example
         relative_output_time_steps = int(np.round(synchronization_time/resolution_simulation))
@@ -117,16 +115,6 @@ class TestDoubleProxyPrecisionComplexDoubleSync(BaseTestCase):
                                  synchronization_time, initial_condition=initial_condition,
                                  relative_output_time_steps=relative_output_time_steps)
         time, s_2, rate_2, proxy_data_2 = sim_2(synchronization_time, rate=True)
-
-        # time = np.array(time)
-        # s_2 = np.array(s_2)
-        # rate_2 = np.array(rate_2)
-        # proxy_data_2 = np.array(proxy_data_2)
-
-        # print('ts', time.shape)
-        # print('ss', s_2)
-        # print('rs', rate_2)
-        # print('ps', rate_2)
 
         # COMPARE PROXY 1
         np.testing.assert_array_equal(np.squeeze(result_ref[:, proxy_id_2, :], axis=2),

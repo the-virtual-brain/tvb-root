@@ -31,6 +31,7 @@
    Giovanni Rabuffo <giovanni.rabuffo@univ-amu.fr>,
    Carmela Calabrese <carmela.calabrese@iit.it>,
    Jan Fousek <jan.fousek@univ-amu.fr>,
+   Michiel van der Vlag <m.van.der.vlag@fz-juelich.de>
 
    Under the "NextGen" Research Infrastructure Voucher SC3 associated to the HBP Flagship as a Partnering Project (PP)
    Project leader: Simona Olmi <simone.olmi@gmail.com>
