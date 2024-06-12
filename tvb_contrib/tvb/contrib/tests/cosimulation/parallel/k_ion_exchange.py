@@ -37,7 +37,7 @@
    Project leader: Simona Olmi <simone.olmi@gmail.com>
    EBRAINS Partner: Viktor Jirsa <viktor.jirsa@univ-amu.fr>
 """
-
+import numpy as np
 from tvb.simulator.models.base import Model
 from tvb.basic.neotraits.api import NArray, List, Range, Final
 
@@ -126,7 +126,7 @@ class KIonExProxy(Model):
 
     Vstar = NArray(
         label=r":math:`Vstar`",
-        default=numpy.array([-31]),
+        default=numpy.array([-31.]),
         domain=Range(lo=-55.0, hi=-15, step=0.5),
         doc="""x-coordinate meeting point of parabolas""",
     )
@@ -209,8 +209,11 @@ class KIonExProxy(Model):
     stvar = numpy.array([1], dtype=numpy.int32)
 
     def dfun(self, x, c, local_coupling=0.0):
-        x_ = x.reshape(x.shape[:-1]).T
-        c_ = c.reshape(c.shape[:-1]).T + local_coupling * x[0]
+        # x_ = x.reshape(x.shape[:-1])
+        # c_ = c.reshape(c.shape[:-1]) + local_coupling * x[0]
+
+        x_ = x
+        c_ = c + local_coupling * x[0]
 
         deriv = _numba_dfun(x_, c_, self.E, self.K_bath, self.J, self.eta, self.Delta, self.c_minus, self.R_minus,
                                  self.c_plus, self.R_plus, self.Vstar, self.Cm, self.tau_n, self.gamma, self.epsilon)
@@ -328,17 +331,8 @@ def core_dfun(state_variables, coupling, E, K_bath, J, eta, Delta, c_minus, R_mi
     else_Vdot = Vdot - R_plus[0] * x ** 2 + eta[0] + (R_minus[0] / numpy.pi) * Coupling_Term * (E[0] - V)
 
 
-    if V <= Vstar:
-        dx[0] = if_xdot
-    else:
-        dx[0] = else_xdot
-
-    if V <= Vstar:
-        dx[1] = if_Vdot
-    else:
-        dx[1] = else_Vdot
-
-
+    dx[0] = numpy.where(V <= (Vstar*np.ones_like(V)), if_xdot, else_xdot)[0]
+    dx[1] = numpy.where(V <= (Vstar*np.ones_like(V)), if_Vdot, else_Vdot)[0]
     dx[2] = (ninf - n) / tau_n[0]
     dx[3] = -(gamma[0] / w_i) * (I_K - 2.0 * I_pump)
     dx[4] = epsilon[0] * (K_bath[0] - K_o)
