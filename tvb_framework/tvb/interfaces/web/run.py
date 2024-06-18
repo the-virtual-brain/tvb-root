@@ -31,6 +31,7 @@ Launches the web server and configure the controllers for UI.
 """
 import time
 
+
 STARTUP_TIC = time.time()
 
 import os
@@ -48,7 +49,6 @@ from tvb.core.decorators import user_environment_execution
 from tvb.core.services.exceptions import InvalidSettingsException
 from tvb.core.services.hpc_operation_service import HPCOperationService
 from tvb.core.services.backend_clients.standalone_client import StandAloneClient
-from tvb.interfaces.web.controllers.about.about_controller import AboutController
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.burst.dynamic_model_controller import DynamicModelController
 from tvb.interfaces.web.controllers.burst.exploration_controller import ParameterExplorationController
@@ -162,7 +162,6 @@ def init_cherrypy(arguments=None):
     cherrypy.tree.mount(TransferVectorController(), TransferVectorController.build_path("/burst/transfer/"), config=CONFIGUER)
     cherrypy.tree.mount(HPCController(), BaseController.build_path("/hpc/"), config=CONFIGUER)
     cherrypy.tree.mount(KubeController(), BaseController.build_path("/kube/"), config=CONFIGUER)
-    cherrypy.tree.mount(AboutController(), BaseController.build_path("/"), config=CONFIGUER)
 
     cherrypy.config.update(CONFIGUER)
 
