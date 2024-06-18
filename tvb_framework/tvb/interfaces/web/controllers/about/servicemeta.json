@@ -1,6 +1,6 @@
 {
     "@context": "https://gitlab.ebrains.eu/lauramble/servicemeta/-/raw/main/data/contexts/servicemeta.jsonld",
-    "type": "SoftwareSourceCode",
+    "type": "WebApplication",
     "name": "The Virtual Brain Web-App",
     "license": "https://spdx.org/licenses/GPL-3.0+",
     "codeRepository": "https://github.com/the-virtual-brain/tvb-root/",

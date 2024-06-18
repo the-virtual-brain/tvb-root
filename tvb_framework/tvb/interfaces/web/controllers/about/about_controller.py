@@ -28,20 +28,17 @@
 .. moduleauthor:: Adrian Ciu <adrian.ciu@codemart.ro>
 """
 
-import cherrypy
-import json
-from tvb.interfaces.web.controllers.base_controller import BaseController
 import os
+import json
+import cherrypy
+from tvb.interfaces.web.controllers.base_controller import BaseController
 
 
 class AboutController(BaseController):
-    # def __init__(self):
-    #     super().__init__()
-    #     # For testing. The symlink will be done in the docker file
-    #     os.symlink('../../../../../codemeta.json', '../codemeta.json')
+    SERVICE_META_FILE = os.path.join(os.path.dirname(__file__), 'servicemeta.json')
 
     @cherrypy.expose
     def about(self):
-        with open('./codemeta.json', 'r') as f:
+        with open(self.SERVICE_META_FILE, 'r') as f:
             data = json.load(f)
         return json.dumps(data)
