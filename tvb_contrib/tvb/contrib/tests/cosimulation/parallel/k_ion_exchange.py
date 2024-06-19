@@ -209,8 +209,6 @@ class KIonExProxy(Model):
     stvar = numpy.array([1], dtype=numpy.int32)
 
     def dfun(self, x, c, local_coupling=0.0):
-        # x_ = x.reshape(x.shape[:-1])
-        # c_ = c.reshape(c.shape[:-1]) + local_coupling * x[0]
 
         x_ = x
         c_ = c + local_coupling * x[0]
