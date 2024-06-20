@@ -32,6 +32,7 @@ Launches the common landing page
 """
 
 import os
+import json
 from flask import Flask, render_template
 from gevent.pywsgi import WSGIServer
 from tvb.basic.logger.builder import get_logger
@@ -90,6 +91,13 @@ def parse_config_file(file_name=os.path.expanduser("~/.tvb.landing.page.configur
 @app.route('/')
 def index():
     return render_template('landing.html', apps=REDIRECT_OPTIONS)
+
+@app.route('/about')
+def about():
+    SERVICE_META_FILE = os.path.join(os.path.dirname(__file__), 'servicemeta.json')
+    with open(SERVICE_META_FILE, 'r') as f:
+        data = json.load(f)
+    return json.dumps(data)
 
 
 if __name__ == '__main__':
