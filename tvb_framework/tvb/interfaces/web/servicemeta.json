@@ -2,7 +2,7 @@
     "@context": "https://gitlab.ebrains.eu/lauramble/servicemeta/-/raw/main/data/contexts/servicemeta.jsonld",
     "type": "WebApplication",
     "name": "The Virtual Brain Web-App",
-    "license": "https://spdx.org/licenses/GPL-3.0+",
+    "license": "https://spdx.org/licenses/GPL-3.0-or-later.html",
     "codeRepository": "https://github.com/the-virtual-brain/tvb-root/",
     "documentation": "https://docs.thevirtualbrain.org/",
     "downloadUrl": "https://www.thevirtualbrain.org/tvb/zwei/brainsimulator-software",
