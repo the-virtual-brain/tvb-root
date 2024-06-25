@@ -14,7 +14,7 @@ RUN activate && conda create -y --name tvb-run python=3.10 numba scipy numpy cyt
 RUN activate && conda install -y --name tvb-run -c conda-forge jupyterlab tvb-gdist
 RUN activate tvb-run && python -m pip install --upgrade pip
 RUN activate tvb-run && pip install lockfile scikit-build
-RUN activate tvb-run && pip install syncrypto
+RUN activate tvb-run && pip install cryptography syncrypto
 
 
 # Download and install tvb data
