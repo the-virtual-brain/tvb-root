@@ -1,0 +1,90 @@
+name: Test Py
+on: [push]
+
+jobs:
+  build:
+    name: Test and Inspect
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ "3.10", "3.11" ]
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        id: setPy
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: put ~/.local/bin on $PATH
+        run: echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
+
+#      - name: cache ~/.local for pip deps
+#        id: cache-local
+#        uses: actions/cache@v3
+#        with:
+#          path: ~/.local
+#          key: pip-${{ steps.setPy.outputs.version }}-${{ hashFiles('tvb_framework/requirements.txt') }}
+
+      - name: install tools and dependencies
+#        if: steps.cache-local.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt install libbz2-dev libhdf5-serial-dev liblzo2-dev
+          python3 -m pip install --upgrade setuptools==59.8.0 pip wheel
+          pip3 install --user --upgrade numpy
+          python3 -m pip install scikit-build
+          pip3 install --user -r tvb_framework/requirements.txt
+          pip3 install --user --no-build-isolation tvb-gdist
+
+      - name: setup tvb
+        run: |
+          cd tvb_build
+          bash install_full_tvb.sh
+
+      - name: cache data
+        id: cache-data
+        uses: actions/cache@v3
+        with:
+          path: tvb_data
+          key: tvb-data
+
+      - name: download data
+        if: steps.cache-data.outputs.cache-hit != 'true'
+        run: |
+          wget -q https://zenodo.org/record/10128131/files/tvb_data.zip?download=1 -O tvb_data.zip
+          mkdir tvb_data
+          unzip tvb_data.zip -d tvb_data
+          rm tvb_data.zip
+
+      - name: setup data
+        run: |
+          cd tvb_data
+          python3 setup.py develop
+
+      - name: run library tests
+        run: pytest -v tvb_library --cov --cov-report=xml && mv coverage.xml coverage-library.xml
+
+      - name: run framework tests
+        env:
+          KEYCLOAK_CLIENT_ID: ${{ secrets.KEYCLOAK_CLIENT_ID }} # KEYCLOAK_CLIENT_ID & SECRET have priority in tests
+          KEYCLOAK_CLIENT_SECRET: ${{ secrets.KEYCLOAK_CLIENT_SECRET }}
+        run: pytest -v tvb_framework  --cov --cov-report=xml --ignore=tvb_framework/tvb/interfaces/rest/client/tests/rest_test.py && mv coverage.xml coverage-framework.xml
+
+      - name: run storage tests
+        run: pytest -v tvb_storage  --cov --cov-report=xml && mv coverage.xml coverage-storage.xml
+
+      - name: Prepare PATH for Sonar
+        run: |
+          echo "PATH=$PATH:/opt/sonar-scanner/bin:/opt/nodejs/bin" >> $GITHUB_ENV
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
