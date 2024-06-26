@@ -335,7 +335,6 @@ class SpikingWongWangExcIOInhI(Model):
     state_variables = ["s_AMPA", "x_NMDA", "s_NMDA", "s_GABA", "s_AMPA_ext",  "V_m", "t_ref",     # state variables
                        "spikes_ext", "spikes", "I_L", "I_AMPA", "I_NMDA", "I_GABA", "I_AMPA_ext"]  # non-state variables
     non_integrated_variables = ["spikes_ext", "spikes", "I_L", "I_AMPA", "I_NMDA", "I_GABA", "I_AMPA_ext"]
-    _nvar = 14
     cvar = numpy.array([0], dtype=numpy.int32)
     number_of_modes = 200  # assuming that 0...N_E-1 are excitatory and N_E ... number_of_modes-1 are inhibitory
     _stimulus = 0.0

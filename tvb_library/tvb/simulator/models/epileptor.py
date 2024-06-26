@@ -269,7 +269,6 @@ class Epileptor(ModelNumbaDfun):
 
     state_variables = ('x1', 'y1', 'z', 'x2', 'y2', 'g')
 
-    _nvar = 6
     cvar = numpy.array([0, 3], dtype=numpy.int32)  # should these not be constant Attr's?
     cvar.setflags(write=False)  # todo review this
 
@@ -475,7 +474,6 @@ class Epileptor2D(ModelNumbaDfun):
 
     state_variables = ('x1', 'z')
 
-    _nvar = 2
     cvar = numpy.array([0], dtype=numpy.int32)
 
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0,

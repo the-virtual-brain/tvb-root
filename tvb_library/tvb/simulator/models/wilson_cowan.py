@@ -371,7 +371,6 @@ class WilsonCowan(ModelNumbaDfun):
                and :math:`I = 1`.""")
 
     state_variables = 'E I'.split()
-    _nvar = 2
     cvar = numpy.array([0, 1], dtype=numpy.int32)
 
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):

@@ -78,7 +78,6 @@ class Linear(Linear):
 
     state_variables = ('R', 'Rin')
     integration_variables = ('R',)
-    _nvar = 2
     cvar = numpy.array([0], dtype=numpy.int32)
 
     def update_derived_parameters(self):

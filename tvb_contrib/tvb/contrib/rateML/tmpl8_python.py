@@ -87,7 +87,6 @@ class ${modelname}(ModelNumbaDfun):
 %endfor
 ]
 
-    _nvar = ${dynamics.state_variables.__len__()}
     cvar = numpy.array([\
     % for i, itemF in enumerate(dynamics.state_variables):
 ${i},\
