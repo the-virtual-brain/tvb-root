@@ -28,7 +28,7 @@ jobs:
 #        if: steps.cache-local.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update
-          sudo apt install libbz2-dev libhdf5-serial-dev liblzo2-dev
+          sudo apt install libbz2-dev libhdf5-serial-dev liblzo2-dev cmake
           python3 -m pip install --upgrade setuptools==59.8.0 pip wheel
           pip3 install --user --upgrade numpy
           python3 -m pip install scikit-build
@@ -37,16 +37,30 @@ jobs:
 
       - name: install compilers and related
         run: |
-          pip3 install --user ctypesgen
-          curl -LO https://github.com/ispc/ispc/releases/download/v1.24.0/ispc-v1.24.0-linux.tar.gz
-          tar xzf ispc-v1.24.0-linux.tar.gz
-          echo "PATH=$PWD/ispc-v1.24.0-linux/bin:$PATH" >> $GITHUB_ENV
+          pip3 install --user ctypesgen nanobind
+          # curl -LO https://github.com/ispc/ispc/releases/download/v1.24.0/ispc-v1.24.0-linux.tar.gz
+          # tar xzf ispc-v1.24.0-linux.tar.gz
+          # echo "PATH=$PWD/ispc-v1.24.0-linux/bin:$PATH" >> $GITHUB_ENV
+
+      - name: setup ispc
+        uses: ScatteredRay/install-ispc-action@main
+        with:
+          version: 1.23.0
+          platform: linux
 
       - name: check tools work
         run: |
           ctypesgen --version
           ispc --version
           gcc -v
+
+      - name: test first kernels
+        run: |
+          cd tvb_kernels
+          ./mkispc.sh nodes.ispc
+          cmake -S . -B build
+          cmake --build build
+          PYTHONPATH=build python test_nodes.py
 
       # - name: setup tvb
       #   run: |
