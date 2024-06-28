@@ -1,0 +1,23 @@
+[build-system]
+requires = ["scikit-build-core >=0.4.3", "nanobind >=1.3.2", "typing_extensions"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "tvb_kernels"
+version = "0.0.1"
+description = "TVB computational kernels"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [
+    { name = "Marmaduke Woodman", email = "marmaduke.woodman@univ-amu.fr" },
+]
+classifiers = [ ]
+dependencies = [ "numpy" ]
+
+[project.urls]
+Homepage = "https://github.com/the-virtual-brain/tvb-root"
+
+[tool.scikit-build]
+minimum-version = "0.4"
+build-dir = "build/{wheel_tag}"
+wheel.py-api = "cp312"

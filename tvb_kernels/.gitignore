@@ -1,0 +1,7 @@
+.cache
+build
+*.jpg
+build
+.spack-env
+spack.lock
+*.whl
