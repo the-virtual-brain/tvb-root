@@ -49,7 +49,7 @@ class TestSiibraBase(BaseTestCase):
     def create_test_atlases_and_parcellations(self):
         self.human_atlas = siibra.atlases[HUMAN_ATLAS]
         self.monkey_atlas = siibra.atlases[MONKEY_ATLAS]
-        self.julich_parcellation_3_0 = siibra.parcellations[JULICH_PARCELLATION_3_0]
+        self.julich_parcellation_3_0 = siibra.parcellations[sb.JULICH_3_0]
         self.julich_parcellation_2_9 = siibra.parcellations[JULICH_PARCELLATION_2_9]
         self.monkey_parcellation = siibra.parcellations[MONKEY_PARCELLATION]
 
@@ -165,6 +165,8 @@ class TestSiibraBase(BaseTestCase):
         """
         _, parcellation, cohort, subject_ids = sb.init_siibra_params(self.human_atlas, None, None, '000')
         assert parcellation is not None
+        print(parcellation)
+        print(self.julich_parcellation_3_0)
         assert parcellation is self.julich_parcellation_3_0
         assert parcellation in list(self.human_atlas.parcellations)
         assert cohort == sb.HCP_COHORT
