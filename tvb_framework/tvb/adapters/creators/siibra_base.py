@@ -54,7 +54,7 @@ HUMAN_ATLAS = 'Multilevel Human Atlas'  # DEFAULT, only this atlas has Struct. C
 
 # parcellations
 JULICH_3_0 = get_last_version('Julich-Brain Cytoarchitectonic Atlas')  # DEFAULT
-# JULICH_3_0 = 'Julich-Brain Cytoarchitectonic Atlas (v3.0.3)'  # DEFAULT
+JULICH_3_0_3 = 'Julich-Brain Cytoarchitectonic Atlas (v3.0.3)'  # DEFAULT
 JULICH_2_9 = 'Julich-Brain Cytoarchitectonic Atlas (v2.9)'
 parcellations = [JULICH_3_0, JULICH_2_9]
 
