@@ -43,7 +43,7 @@ def get_last_version(identifier):
         raise ValueError(f"No parcellations found with the name '{identifier}'")
 
     latest_parcellation = max(parcellations, key=lambda p: p.version)
-    return latest_parcellation
+    return latest_parcellation.name
 
 
 LOGGER = get_logger(__name__)
@@ -54,6 +54,7 @@ HUMAN_ATLAS = 'Multilevel Human Atlas'  # DEFAULT, only this atlas has Struct. C
 
 # parcellations
 JULICH_3_0 = get_last_version('Julich-Brain Cytoarchitectonic Atlas')  # DEFAULT
+# JULICH_3_0 = 'Julich-Brain Cytoarchitectonic Atlas (v3.0.3)'  # DEFAULT
 JULICH_2_9 = 'Julich-Brain Cytoarchitectonic Atlas (v2.9)'
 parcellations = [JULICH_3_0, JULICH_2_9]
 
@@ -135,7 +136,6 @@ def init_siibra_params(atlas_name, parcellation_name, cohort_name, subject_ids):
     # check that the atlas and the parcellation exist within siibra
     atlas = siibra.atlases[atlas_name] if atlas_name else None
     parcellation = siibra.parcellations[parcellation_name] if parcellation_name else None
-
     # check compatibility of atlas and parcellation
     if atlas and parcellation:
         compatible = check_atlas_parcellation_compatible(atlas, parcellation)
@@ -153,7 +153,8 @@ def init_siibra_params(atlas_name, parcellation_name, cohort_name, subject_ids):
             LOGGER.info(
                 f'Multiple parcellations were found for atlas {atlas.name}. An arbitrary one will be selected.')
         # select the newest parcellation version
-        parcellation = [p for p in parcellations if p.is_newest_version][0]
+        if parcellations:
+            parcellation = [p for p in parcellations if p.is_newest_version][0]
 
     if not atlas and parcellation:
         LOGGER.warning('A parcellation was provided without an atlas, so a default atlas will be selected.')
