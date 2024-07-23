@@ -49,7 +49,7 @@ class TestSiibraBase(BaseTestCase):
         self.human_atlas = siibra.atlases[HUMAN_ATLAS]
         self.monkey_atlas = siibra.atlases[MONKEY_ATLAS]
         self.julich_parcellation_3_0 = siibra.parcellations[JULICH_PARCELLATION_3_0]
-        self.julich_parcellation_3_1 = siibra.parcellations[sb.JULICH_3_0]
+        self.julich_parcellation_3_1 = siibra.parcellations[sb.JULICH_3]
         self.julich_parcellation_2_9 = siibra.parcellations[sb.JULICH_2_9]
         self.monkey_parcellation = siibra.parcellations[MONKEY_PARCELLATION]
 

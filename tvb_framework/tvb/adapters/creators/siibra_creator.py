@@ -51,7 +51,7 @@ def init_siibra_options():
     future.
     """
     atlases = [siibra_base.HUMAN_ATLAS]
-    parcellations = [siibra_base.JULICH_3_0, siibra_base.JULICH_3_0_3 , siibra_base.JULICH_2_9]
+    parcellations = [siibra_base.JULICH_3, siibra_base.JULICH_3_0_3 , siibra_base.JULICH_2_9]
     cohorts = [siibra_base.HCP_COHORT, siibra_base.THOUSAND_BRAINS_COHORT]
 
     # create dicts needed for TVB Enums

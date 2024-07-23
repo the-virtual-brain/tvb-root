@@ -53,10 +53,10 @@ LOGGER = get_logger(__name__)
 HUMAN_ATLAS = 'Multilevel Human Atlas'  # DEFAULT, only this atlas has Struct. Conn.
 
 # parcellations
-JULICH_3_0 = get_last_version('Julich-Brain Cytoarchitectonic Atlas')  # DEFAULT
+JULICH_3 = get_last_version('Julich-Brain Cytoarchitectonic Atlas')  # DEFAULT
 JULICH_3_0_3 = 'Julich-Brain Cytoarchitectonic Atlas (v3.0.3)'  # DEFAULT
 JULICH_2_9 = 'Julich-Brain Cytoarchitectonic Atlas (v2.9)'
-parcellations = [JULICH_3_0, JULICH_2_9]
+parcellations = [JULICH_3, JULICH_2_9]
 
 # cohorts
 HCP_COHORT = 'HCP'  # DEFAULT
@@ -171,7 +171,7 @@ def init_siibra_params(atlas_name, parcellation_name, cohort_name, subject_ids):
     if not atlas and not parcellation:
         LOGGER.warning(f'No atlas and no parcellation were provided, so default ones will be selected.')
         atlas = siibra.atlases[HUMAN_ATLAS]
-        parcellation = siibra.parcellations[JULICH_3_0]
+        parcellation = siibra.parcellations[JULICH_3]
 
     LOGGER.info(f'Using atlas {atlas.name} and parcellation {parcellation.name}')
 
