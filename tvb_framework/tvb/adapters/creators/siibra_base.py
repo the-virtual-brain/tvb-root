@@ -36,6 +36,16 @@ from tvb.basic.logger.builder import get_logger
 from tvb.datatypes import connectivity
 from tvb.datatypes.graph import ConnectivityMeasure
 
+
+def get_last_version(identifier):
+    parcellations = [p for p in siibra.parcellations if identifier in p.name]
+    if not parcellations:
+        raise ValueError(f"No parcellations found with the name '{identifier}'")
+
+    latest_parcellation = max(parcellations, key=lambda p: p.version)
+    return latest_parcellation
+
+
 LOGGER = get_logger(__name__)
 
 # Concepts names
@@ -43,7 +53,7 @@ LOGGER = get_logger(__name__)
 HUMAN_ATLAS = 'Multilevel Human Atlas'  # DEFAULT, only this atlas has Struct. Conn.
 
 # parcellations
-JULICH_3_0 = 'Julich-Brain Cytoarchitectonic Atlas (v3.0.3)'  # DEFAULT
+JULICH_3_0 = get_last_version('Julich-Brain Cytoarchitectonic Atlas')  # DEFAULT
 JULICH_2_9 = 'Julich-Brain Cytoarchitectonic Atlas (v2.9)'
 parcellations = [JULICH_3_0, JULICH_2_9]
 
@@ -59,6 +69,7 @@ class Component2Modality(Enum):
 
 
 # ########################################## SIIBRA CREATOR INITIALIZATION #############################################
+
 def get_cohorts_for_sc(parcellation_name):
     """
     Given a parcellation name, return the name of all the cohorts related to it and containing data about
