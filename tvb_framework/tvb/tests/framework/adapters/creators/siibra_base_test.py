@@ -165,8 +165,6 @@ class TestSiibraBase(BaseTestCase):
         """
         _, parcellation, cohort, subject_ids = sb.init_siibra_params(self.human_atlas, None, None, '000')
         assert parcellation is not None
-        print(parcellation)
-        print(self.julich_parcellation_3_0)
         assert parcellation is self.julich_parcellation_3_0
         assert parcellation in list(self.human_atlas.parcellations)
         assert cohort == sb.HCP_COHORT
