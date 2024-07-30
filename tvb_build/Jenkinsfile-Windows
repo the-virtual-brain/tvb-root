@@ -16,7 +16,6 @@ pipeline {
                 }
             }
         }
-        \*
         stage('Copy Step 1') {
              steps {
                  bat '''
@@ -35,6 +34,7 @@ pipeline {
                  stash includes: 'tvb_build/build/TVB_build_step1.zip', name: 'step1'
              }
         }
+        \*
         stage ('Build TVB Distribution') {
             steps {
                 withDockerContainer(image: "${FULL_DOCKER_IMAGE_NAME}") {
