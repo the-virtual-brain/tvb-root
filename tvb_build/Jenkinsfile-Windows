@@ -16,6 +16,7 @@ pipeline {
                 }
             }
         }
+        \*
         stage('Copy Step 1') {
              steps {
                  bat '''
@@ -44,6 +45,7 @@ pipeline {
                 archiveArtifacts artifacts: 'tvb_build/build/TVB_Windows*.zip'
             }
         }
+        *\
         stage ('Tests on SqLite') {
             steps {
                 withDockerContainer(image: "${FULL_DOCKER_IMAGE_NAME}") {
