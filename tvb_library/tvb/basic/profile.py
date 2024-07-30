@@ -69,6 +69,7 @@ class TvbProfile(object):
         """
         Sets TVB profile and do related initializations.
         """
+        print(f'selected profile: {selected_profile}')
         if selected_profile is not None:
             cls._load_framework_profiles(selected_profile)
             cls._build_profile_class(selected_profile, in_operation, run_init)
@@ -119,23 +120,29 @@ class TvbProfile(object):
                 cls.REGISTERED_PROFILES[TvbProfile.WEB_PROFILE] = WebSettingsProfile
                 cls.REGISTERED_PROFILES[TvbProfile.TEST_POSTGRES_PROFILE] = TestPostgresProfile
                 cls.REGISTERED_PROFILES[TvbProfile.TEST_SQLITE_PROFILE] = TestSQLiteProfile
+                print('All profiles are set, imported all necessary profiles')
+            except ImportError as e:
+                raise Exception(f'Could not register profiles: {e}')
+        else:
+            print('true cls.is_library_mode(new_profile) -> is library mode')
 
-            except ImportError:
-                pass
 
     @staticmethod
     def is_library_mode(new_profile=None):
-
+        print(f'new_profile -> {new_profile}')
         lib_profiles = [TvbProfile.LIBRARY_PROFILE, TvbProfile.TEST_LIBRARY_PROFILE]
+        print(lib_profiles)
+        print(f'TvbProfile.CURRENT_PROFILE_NAME -> {TvbProfile.CURRENT_PROFILE_NAME}')
         result = (new_profile in lib_profiles
                   or (new_profile is None and TvbProfile.CURRENT_PROFILE_NAME in lib_profiles)
                   or not TvbProfile.env.is_framework_present())
-
+        print(f'framework is present -> {TvbProfile.env.is_framework_present()}')
         # Make sure default settings are not failing because we are not finding some modules
         if (new_profile is None and TvbProfile.CURRENT_PROFILE_NAME is None and
                 not TvbProfile.env.is_framework_present()):
+            print('Err -> setting library profile')
             TvbProfile.set_profile(TvbProfile.LIBRARY_PROFILE)
-
+        print(f'result: {result}')
         return result
 
     @staticmethod

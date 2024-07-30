@@ -46,7 +46,8 @@ class Environment(object):
         framework_present = True
         try:
             from tvb.config.profile_settings import WebSettingsProfile
-        except ImportError:
+        except ImportError as e:
+            #print(e)
             framework_present = False
 
         return framework_present
