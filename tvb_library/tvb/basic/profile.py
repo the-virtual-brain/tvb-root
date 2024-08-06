@@ -125,14 +125,17 @@ class TvbProfile(object):
 
     @staticmethod
     def is_library_mode(new_profile=None):
+
         lib_profiles = [TvbProfile.LIBRARY_PROFILE, TvbProfile.TEST_LIBRARY_PROFILE]
         result = (new_profile in lib_profiles
                   or (new_profile is None and TvbProfile.CURRENT_PROFILE_NAME in lib_profiles)
                   or not TvbProfile.env.is_framework_present())
+
         # Make sure default settings are not failing because we are not finding some modules
         if (new_profile is None and TvbProfile.CURRENT_PROFILE_NAME is None and
                 not TvbProfile.env.is_framework_present()):
             TvbProfile.set_profile(TvbProfile.LIBRARY_PROFILE)
+
         return result
 
     @staticmethod
