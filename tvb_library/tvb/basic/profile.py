@@ -119,9 +119,9 @@ class TvbProfile(object):
                 cls.REGISTERED_PROFILES[TvbProfile.WEB_PROFILE] = WebSettingsProfile
                 cls.REGISTERED_PROFILES[TvbProfile.TEST_POSTGRES_PROFILE] = TestPostgresProfile
                 cls.REGISTERED_PROFILES[TvbProfile.TEST_SQLITE_PROFILE] = TestSQLiteProfile
-            except ImportError as e:
-                raise Exception(f'Could not register profiles: {e}')
 
+            except ImportError:
+                pass
 
     @staticmethod
     def is_library_mode(new_profile=None):
