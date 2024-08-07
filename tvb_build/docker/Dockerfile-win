@@ -26,7 +26,6 @@ RUN activate tvb-run && python setup.py develop
 
 COPY requirements_group requirements.txt
 RUN activate tvb-run && pip install -r requirements.txt
-RUN pip install -U scipy
 
 RUN mkdir C:\\Users\\containeradministrator\\TVB_TEST
 RUN mkdir C:\\Users\\containeradministrator\\.tvb-temp
