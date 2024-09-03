@@ -42,7 +42,6 @@ from tvb.simulator.models.base import Model
 from tvb.basic.neotraits.api import NArray, List, Range, Final
 
 import numpy
-
 from numba import guvectorize, float64, njit
 
 class KIonEx(Model):
@@ -347,7 +346,6 @@ class KIonEx(Model):
         return derivative
 
     def dfun(self, x, c, local_coupling=0.0):
-
         x_ = x.reshape(x.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T + local_coupling * x[0]
 
@@ -429,7 +427,7 @@ def I_pump_form(Na_i, K_o):
 #     return (-1.0 / Cm) * (I_Na + I_K + I_Cl + I_pump)
 
 
-@guvectorize([(float64[:],) * 17], '(n),(m)' + ',()' * 14 + '->(n)', target='parallel', nopython=True)
+@guvectorize([(float64[:],) * 17], '(n),(m)' + ',()' * 14 + '->(n)', nopython=True)
 def _numba_dfun(state_variables, coupling, E, K_bath, J, eta, Delta, c_minus, R_minus, c_plus, R_plus, Vstar, Cm,
                 tau_n, gamma, epsilon, dx):
     r"""
@@ -454,12 +452,27 @@ def _numba_dfun(state_variables, coupling, E, K_bath, J, eta, Delta, c_minus, R_
     """
 
     x, V, n, DKi, Kg = state_variables
-
     Coupling_Term = coupling[0]  # This zero refers to the first element of cvar (trivial in this case)
 
     # Constants
     # Chn = 0.4  # dimensionless
     # DChn = -8.0  # dimensionless
+    Cnap = 21.0  # mol.m**-3
+    DCnap = 2.0  # mol.m**-3
+    Ckp = 5.5  # mol.m**-3
+    DCkp = 1.0  # mol.m**-3
+    Cmna = -24.0  # mV
+    DCmna = 12.0  # mV
+    Chn = 0.4  # dimensionless
+    DChn = -8.0  # dimensionless
+    Cnk = -19.0  # mV
+    DCnk = 18.0  # mV #Ok in the paper
+    g_Cl = 7.5  # nS #Ok in the paper   # chloride conductance
+    g_Na = 40.0  # nS   # maximal sodiumconductance
+    g_K = 22.0  # nS  # maximal potassium conductance
+    g_Nal = 0.02  # nS  # sodium leak conductance
+    g_Kl = 0.12  # nS  # potassium leak conductance
+    rho = 250.  # 250.,#pA # maximal Na/K pump current
     w_i = 2160.0  # umeter**3  # intracellular volume
     w_o = 720.0  # umeter**3 # extracellular volume
     Na_i0 = 16.0  # mMol/m**3 # initial concentration of intracellular Na
@@ -467,6 +480,35 @@ def _numba_dfun(state_variables, coupling, E, K_bath, J, eta, Delta, c_minus, R_
     K_i0 = 130.0  # mMol/m**3 # initial concentration of intracellular K
     K_o0 = 4.80  # mMol/m**3 # initial concentration of extracellular K
 
+    Cl_i0 = 5.0  # mMol/m**3 # initial concentration of intracellular Cl
+    Cl_o0 = 112.0  # mMol/m**3 # initial concentration of extracellular Cl
+
+    # helper functions
+
+    def m_inf(V):
+        return 1.0 / (1.0 + numpy.exp((Cmna - V) / DCmna))
+
+    def n_inf(V):
+        return 1.0 / (1.0 + numpy.exp((Cnk - V) / DCnk))
+
+    def h(n):
+        return 1.1 - 1.0 / (1.0 + numpy.exp(-8.0 * (n - 0.4)))
+
+    def I_K_form(V, n, K_o, K_i):
+        return (g_Kl + g_K * n) * (V - 26.64 * numpy.log(K_o / K_i))
+
+    def I_Na_form(V, Na_o, Na_i, n):
+        return (g_Nal + g_Na * m_inf(V) * h(n)) * (V - 26.64 * numpy.log(Na_o / Na_i))
+
+    def I_Cl_form(V):
+        return g_Cl * (V + 26.64 * numpy.log(Cl_o0 / Cl_i0))
+
+    def I_pump_form(Na_i, K_o):
+        return rho * (
+                1.0 / (1.0 + numpy.exp((Cnap - Na_i) / DCnap)) * (1.0 / (1.0 + numpy.exp((Ckp - K_o) / DCkp))))
+
+    def V_dot_form(I_Na, I_K, I_Cl, I_pump):
+        return (-1.0 / Cm) * (I_Na + I_K + I_Cl + I_pump)
 
     beta = w_i / w_o
     DNa_i = -DKi
