@@ -1,6 +1,11 @@
 name: build & test kernel library
 on: [push]
 
+# only run latest push
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   pip-tvbk:
     runs-on: ubuntu-latest
@@ -22,13 +27,12 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install tools and dependencies
-        run: python3 -m pip install -U setuptools pip wheel pytest scipy
+        run: python3 -m pip install -U setuptools pip wheel pytest scipy ctypesgen
 
-      - name: build
-        run: cd tvb_kernels; pip install .
-
-      - name: test
-        run: cd tvb_kernels; python -m pytest
+      - name: build & teste
+        run: |
+          cd tvb_kernels
+          make
 
 
   spack-tvbk:
@@ -55,14 +59,14 @@ jobs:
           spack -e . install
           spack env activate .
           spack env status
-          pip install pytest
+          pip install pytest ctypesgen
 
-      - name: build nanobound library
+      - name: build & test
         shell: spack-bash {0}
         run: |
           cd tvb_kernels
           spack env activate .
-          pip install .
+          make
           pytest
 
       # https://github.com/spack/setup-spack?tab=readme-ov-file#example-caching-your-own-binaries-for-public-repositories

@@ -20,9 +20,9 @@ struct tvbk_conn {
   const int horizon;
   const int horizon_minus_1;
   const float *weights; // (num_nonzero,)
-  const int *indices;   // (num_nonzero,)
-  const int *indptr;    // (num_nodes+1,)
-  const int *idelays;   // (num_nonzero,)
+  const uint32_t *indices;   // (num_nonzero,)
+  const uint32_t *indptr;    // (num_nodes+1,)
+  const uint32_t *idelays;   // (num_nonzero,)
   float *buf;           // delay buffer (num_cvar, num_nodes, horizon)
   float *cx1;
   float *cx2;
