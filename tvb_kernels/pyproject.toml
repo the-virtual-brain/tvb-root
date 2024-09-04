@@ -37,7 +37,7 @@ include = [
 work_dir = "src"
 out_dir = "tvb_kernels"
 commands = [ 
-    "make libtvbk.so",
+    "make -B libtvbk.so",
     "ctypesgen -l libtvbk.so tvbk.h > _ctg_tvbk.py",
 ]
 artifacts = [ 

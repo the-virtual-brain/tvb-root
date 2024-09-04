@@ -23,13 +23,12 @@ def base_setup(mode: tvb_kernels.CxMode = tvb_kernels.CxMode.CX_J):
     num_node = 90
     horizon = 256
     weights, lengths = rand_weights(num_node=num_node, horizon=horizon, dt=dt)
-    buf = tvb_kernels.Buf(num_node, horizon)
-    cx = tvb_kernels.Cx(num_node)
-    conn = tvb_kernels.Conn(buf, cx, dt, cv, weights, lengths, mode=mode)
+    cx = tvb_kernels.Cx(num_node, horizon)
+    conn = tvb_kernels.Conn(cx, dt, cv, weights, lengths, mode=mode)
 
     # then we can test
-    buf.buf[:] = np.r_[:1.0:1j*num_node *
-                       horizon].reshape(num_node, horizon).astype('f')*4.0
+    cx.buf[:] = np.r_[:1.0:1j*num_node *
+                      horizon].reshape(num_node, horizon).astype('f')*4.0
 
     # impl simple numpy version
     def make_cfun_np():
@@ -40,22 +39,24 @@ def base_setup(mode: tvb_kernels.CxMode = tvb_kernels.CxMode.CX_J):
         assert idelays2.shape == (2, csr_weights.nnz)
 
         def cfun_np(t):
-            cx = buf.buf[csr_weights.indices, (t-idelays2) % horizon]
-            cx *= csr_weights.data
-            cx = np.add.reduceat(cx, csr_weights.indptr[:-1], axis=1)
-            return cx  # (2, num_node)
+            _ = cx.buf[csr_weights.indices, (t-idelays2) % horizon]
+            _ *= csr_weights.data
+            _ = np.add.reduceat(_, csr_weights.indptr[:-1], axis=1)
+            return _  # (2, num_node)
         return cfun_np
 
-    return conn, cx, buf, make_cfun_np()
+    return conn, cx, make_cfun_np()
 
 
 def test_conn_kernels():
-    connj, cxj, _, cfun_np = base_setup(tvb_kernels.CxMode.CX_J)
-    conni, cxi, _, _ = base_setup(tvb_kernels.CxMode.CX_I)
+    connj, cxj, cfun_np = base_setup(tvb_kernels.CxMode.CX_J)
+    conni, cxi, _ = base_setup(tvb_kernels.CxMode.CX_I)
 
     for t in range(1024):
         cx = cfun_np(t)
         connj(t)
         conni(t)
-        np.testing.assert_allclose(cx, cxj.cx, 1e-4, 1e-6)
-        np.testing.assert_allclose(cx, cxi.cx, 1e-4, 1e-6)
+        np.testing.assert_allclose(cx[0], cxj.cx1, 1e-4, 1e-6)
+        np.testing.assert_allclose(cx[1], cxj.cx2, 1e-4, 1e-6)
+        np.testing.assert_allclose(cx[0], cxi.cx1, 1e-4, 1e-6)
+        np.testing.assert_allclose(cx[1], cxi.cx2, 1e-4, 1e-6)

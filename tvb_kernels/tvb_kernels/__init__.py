@@ -24,18 +24,23 @@ class CxMode(enum.Enum):
 
 
 class Cx:
-    def __init__(self, num_node):
-        self.cx = np.zeros((2, num_node), 'f')
-
-
-class Buf:
-    def __init__(self, num_node, horizon):
-        self.buf = np.zeros((num_node, horizon), 'f')
+    def __init__(self, num_node, num_time):
+        if num_time & (num_time - 1) != 0:
+            raise ValueError('num_time not power of two')
+        self.cx1, self.cx2 = np.zeros((2, num_node), 'f')
+        self.buf = np.zeros((num_node, num_time), 'f')
+        self._cx = _ctg_tvbk.tvbk_cx(
+            cx1=_to_ct(self.cx1),
+            cx2=_to_ct(self.cx2),
+            buf=_to_ct(self.buf),
+            num_node=num_node,
+            num_time=num_time 
+        )
 
 
 class Conn:
 
-    def __init__(self, buf, cx, dt, cv, weights, lengths, mode: CxMode = CxMode.CX_J):
+    def __init__(self, cx, dt, cv, weights, lengths, mode: CxMode = CxMode.CX_J):
         self.mode = mode
         assert weights.shape[0] == weights.shape[1]
         assert weights.shape == lengths.shape
@@ -61,26 +66,19 @@ class Conn:
         self.weights = spw.data.astype(np.float32)
         self.indices = spw.indices.astype(np.uint32)
         self.indptr = spw.indptr.astype(np.uint32)
-        self._buf = buf.buf
-        self._cx1, self._cx2 = cx.cx
+        self.cx = cx
         self._conn = _ctg_tvbk.tvbk_conn(
             num_node=weights.shape[0],
             num_nonzero=self.indices.size,
             num_cvar=1,
-            horizon=buf.buf.shape[1],
-            # TODO ridonkulus
-            horizon_minus_1=buf.buf.shape[1] - 1,
             weights=_to_ct(self.weights),
             indices=_to_ct(self.indices),
             indptr=_to_ct(self.indptr),
             idelays=_to_ct(self.idelays),
-            buf=_to_ct(self._buf),
-            cx1=_to_ct(self._cx1),
-            cx2=_to_ct(self._cx2)
         )
 
     def __call__(self, t):
         if self.mode == CxMode.CX_J:
-            _ctg_tvbk.tvbk_cx_j(self._conn, t)
+            _ctg_tvbk.tvbk_cx_j(self.cx._cx, self._conn, t)
         if self.mode == CxMode.CX_I:
-            _ctg_tvbk.tvbk_cx_i(self._conn, t)
+            _ctg_tvbk.tvbk_cx_i(self.cx._cx, self._conn, t)

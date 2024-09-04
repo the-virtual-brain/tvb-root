@@ -5,27 +5,35 @@
 typedef struct tvbk_params tvbk_params;
 
 struct tvbk_params {
-  const int count;
-  const float *values;
+  const uint32_t count;
+  const float *const values;
 };
 
-// conn model with csr format sparse connections & delay buffer
+/* a afferent coupling buffer into which the cx functions
+   accumulate their results */
+typedef struct tvbk_cx tvbk_cx;
+
+struct tvbk_cx {
+  /* values for 1st and 2nd Heun stage respectively.
+     each shaped (num_node, ) */
+  float *const cx1;
+  float *const cx2;
+  /* delay buffer (num_node, num_time)*/
+  float *const buf;
+  const uint32_t num_node;
+  const uint32_t num_time; // horizon, power of 2
+};
+
 typedef struct tvbk_conn tvbk_conn;
 
 struct tvbk_conn {
   const int num_node;
   const int num_nonzero;
   const int num_cvar;
-  // horizon must be power of two
-  const int horizon;
-  const int horizon_minus_1;
-  const float *weights; // (num_nonzero,)
-  const uint32_t *indices;   // (num_nonzero,)
-  const uint32_t *indptr;    // (num_nodes+1,)
-  const uint32_t *idelays;   // (num_nonzero,)
-  float *buf;           // delay buffer (num_cvar, num_nodes, horizon)
-  float *cx1;
-  float *cx2;
+  const float *const weights;    // (num_nonzero,)
+  const uint32_t *const indices; // (num_nonzero,)
+  const uint32_t *const indptr;  // (num_nodes+1,)
+  const uint32_t *const idelays; // (num_nonzero,)
 };
 
 /* not currently used */
@@ -53,6 +61,6 @@ struct tvbk_sim {
   const tvbk_conn conn;
 };
 
-void tvbk_cx_j(const tvbk_conn *c, uint32_t t);
-void tvbk_cx_i(const tvbk_conn *c, uint32_t t);
-void tvbk_cx_nop(const tvbk_conn *c, uint32_t t);
+void tvbk_cx_j(const tvbk_cx *cx, const tvbk_conn *conn, uint32_t t);
+void tvbk_cx_i(const tvbk_cx *cx, const tvbk_conn *conn, uint32_t t);
+void tvbk_cx_nop(const tvbk_cx *cx, const tvbk_conn *conn, uint32_t t);
