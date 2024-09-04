@@ -295,7 +295,6 @@ class EpileptorRestingState(ModelNumbaDfun):
 
     state_variables = ("x1", "y1", "z", "x2", "y2", "g", "x_rs", "y_rs")
 
-    _nvar = 8                                           # number of state-variables
     cvar = numpy.array([0, 3, 6], dtype=numpy.int32)    # coupling variables
 
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0,
