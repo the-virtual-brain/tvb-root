@@ -29,12 +29,13 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install tools and dependencies
-        run: python3 -m pip install -U setuptools pip wheel pytest scipy ctypesgen
+        run: python3 -m pip install -U pip pytest scipy ctypesgen
 
       - name: build & teste
         run: |
           cd tvb_kernels
-          make
+          pip install .
+          pytest
 
 
   spack-tvbk:
@@ -68,7 +69,7 @@ jobs:
         run: |
           cd tvb_kernels
           spack env activate .
-          make
+          pip install .
           pytest
 
       # https://github.com/spack/setup-spack?tab=readme-ov-file#example-caching-your-own-binaries-for-public-repositories

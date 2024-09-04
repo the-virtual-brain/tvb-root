@@ -5,7 +5,7 @@ CFLAGS = -msse4.2 -O3 -funroll-loops -fopenmp-simd
 SRC = tvbk_conn.c
 OBJ = $(patsubst %.c,%.o,$(SRC))
 SO = libtvbk.so
-ctg = tvb_kernels/_ctg_tvbk.py
+ctg = ../tvb_kernels/_ctg_tvbk.py
 
 all: $(SO) $(ctg)
 

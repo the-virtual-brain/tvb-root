@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling", "setuptools>=45", "setuptools_scm[toml]>=6.2"]
+requires = ["hatchling", "hatch-build-scripts", "ctypesgen"]
 build-backend = "hatchling.build"
 
 [project]
@@ -24,3 +24,23 @@ test-requires = "pytest"
 
 skip = ["pp*"] # don't build pypy wheels
 archs = ["auto"]
+
+# [tool.hatch.version]
+# path = "tvb_kernels/version.py"
+
+[tool.hatch.build]
+include = [
+    "tvb_kernels/*.py",
+]
+
+[[tool.hatch.build.hooks.build-scripts.scripts]]
+work_dir = "src"
+out_dir = "tvb_kernels"
+commands = [ 
+    "make libtvbk.so",
+    "ctypesgen -l libtvbk.so tvbk.h > _ctg_tvbk.py",
+]
+artifacts = [ 
+    "libtvbk.so",
+    "_ctg_tvbk.py",
+]

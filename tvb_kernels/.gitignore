@@ -11,3 +11,4 @@ tvb_kernels/_ctg_tvbk.py
 tvbk.js
 tvbk.wasm
 compile_commands.json
+_ctg_*.py
