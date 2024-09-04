@@ -1,5 +1,7 @@
 name: build & test kernel library
-on: [push]
+on:
+  push:
+    branches: [tvb_kernel]
 
 # only run latest push
 concurrency:
