@@ -5,7 +5,6 @@ import ctypes
 # TODO mv functionality used to C
 import scipy.sparse
 
-from . import _tvbk
 from . import _ctg_tvbk
 
 
@@ -79,19 +78,9 @@ class Conn:
             cx1=_to_ct(self._cx1),
             cx2=_to_ct(self._cx2)
         )
-        # self._conn = _tvbk.Conn(
-        #     weights=self.weights,
-        #     indices=self.indices,
-        #     indptr=self.indptr,
-        #     idelays=self.idelays,
-        #     buf=self._buf,
-        #     cx=self._cx,
-        # )
 
     def __call__(self, t):
         if self.mode == CxMode.CX_J:
-            # _tvbk.cx_j(self._conn, t)
             _ctg_tvbk.tvbk_cx_j(self._conn, t)
-        else:
-            # _tvbk.cx_i(self._conn, t)
+        if self.mode == CxMode.CX_I:
             _ctg_tvbk.tvbk_cx_i(self._conn, t)
