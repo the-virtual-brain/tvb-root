@@ -427,7 +427,57 @@ def I_pump_form(Na_i, K_o):
 #     return (-1.0 / Cm) * (I_Na + I_K + I_Cl + I_pump)
 
 
-@guvectorize([(float64[:],) * 17], '(n),(m)' + ',()' * 14 + '->(n)', nopython=True)
+@njit
+def m_inf(V):
+    Cmna = -24.0  # mV
+    DCmna = 12.0  # mV
+    return 1.0 / (1.0 + numpy.exp((Cmna - V) / DCmna))
+
+@njit
+def n_inf(V):
+    Cnk = -19.0  # mV
+    DCnk = 18.0  # mV #Ok in the paper
+    return 1.0 / (1.0 + numpy.exp((Cnk - V) / DCnk))
+
+@njit
+def h(n):
+    return 1.1 - 1.0 / (1.0 + numpy.exp(-8.0 * (n - 0.4)))
+
+@njit
+def I_K_form(V, n, K_o, K_i):
+    g_K = 22.0  # nS  # maximal potassium conductance
+    g_Kl = 0.12  # nS  # potassium leak conductance
+    return (g_Kl + g_K * n) * (V - 26.64 * numpy.log(K_o / K_i))
+
+@njit
+def I_Na_form(V, Na_o, Na_i, n):
+    g_Na = 40.0  # nS   # maximal sodiumconductance
+    g_Nal = 0.02  # nS  # sodium leak conductance
+    return (g_Nal + g_Na * m_inf(V) * h(n)) * (V - 26.64 * numpy.log(Na_o / Na_i))
+
+@njit
+def I_Cl_form(V):
+    g_Cl = 7.5  # nS #Ok in the paper   # chloride conductance
+    Cl_i0 = 5.0  # mMol/m**3 # initial concentration of intracellular Cl
+    Cl_o0 = 112.0  # mMol/m**3 # initial concentration of extracellular Cl
+    return g_Cl * (V + 26.64 * numpy.log(Cl_o0 / Cl_i0))
+
+@njit
+def I_pump_form(Na_i, K_o):
+    rho = 250.  # 250.,#pA # maximal Na/K pump current
+    Cnap = 21.0  # mol.m**-3
+    DCnap = 2.0  # mol.m**-3
+    Ckp = 5.5  # mol.m**-3
+    DCkp = 1.0  # mol.m**-3
+    return rho * (
+            1.0 / (1.0 + numpy.exp((Cnap - Na_i) / DCnap)) * (1.0 / (1.0 + numpy.exp((Ckp - K_o) / DCkp))))
+
+# @njit
+# def V_dot_form(Cm, I_Na, I_K, I_Cl, I_pump):
+#     return (-1.0 / Cm) * (I_Na + I_K + I_Cl + I_pump)
+
+
+@guvectorize([(float64[:],) * 17], '(n),(m)' + ',()' * 14 + '->(n)', target='parallel', nopython=True)
 def _numba_dfun(state_variables, coupling, E, K_bath, J, eta, Delta, c_minus, R_minus, c_plus, R_plus, Vstar, Cm,
                 tau_n, gamma, epsilon, dx):
     r"""
@@ -479,36 +529,9 @@ def _numba_dfun(state_variables, coupling, E, K_bath, J, eta, Delta, c_minus, R_
     Na_o0 = 138.0  # mMol/m**3 # initial concentration of extracellular Na
     K_i0 = 130.0  # mMol/m**3 # initial concentration of intracellular K
     K_o0 = 4.80  # mMol/m**3 # initial concentration of extracellular K
-
     Cl_i0 = 5.0  # mMol/m**3 # initial concentration of intracellular Cl
     Cl_o0 = 112.0  # mMol/m**3 # initial concentration of extracellular Cl
 
-    # helper functions
-
-    def m_inf(V):
-        return 1.0 / (1.0 + numpy.exp((Cmna - V) / DCmna))
-
-    def n_inf(V):
-        return 1.0 / (1.0 + numpy.exp((Cnk - V) / DCnk))
-
-    def h(n):
-        return 1.1 - 1.0 / (1.0 + numpy.exp(-8.0 * (n - 0.4)))
-
-    def I_K_form(V, n, K_o, K_i):
-        return (g_Kl + g_K * n) * (V - 26.64 * numpy.log(K_o / K_i))
-
-    def I_Na_form(V, Na_o, Na_i, n):
-        return (g_Nal + g_Na * m_inf(V) * h(n)) * (V - 26.64 * numpy.log(Na_o / Na_i))
-
-    def I_Cl_form(V):
-        return g_Cl * (V + 26.64 * numpy.log(Cl_o0 / Cl_i0))
-
-    def I_pump_form(Na_i, K_o):
-        return rho * (
-                1.0 / (1.0 + numpy.exp((Cnap - Na_i) / DCnap)) * (1.0 / (1.0 + numpy.exp((Ckp - K_o) / DCkp))))
-
-    def V_dot_form(I_Na, I_K, I_Cl, I_pump):
-        return (-1.0 / Cm) * (I_Na + I_K + I_Cl + I_pump)
 
     beta = w_i / w_o
     DNa_i = -DKi
