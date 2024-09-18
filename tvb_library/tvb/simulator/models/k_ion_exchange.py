@@ -431,11 +431,7 @@ def _numba_dfun(state_variables, coupling, E, K_bath, J, eta, Delta, c_minus, R_
     For details refer to (Bandyopadhyay & Rabuffo et al. 2023)
     """
 
-    x = state_variables[0]
-    V = state_variables[1]
-    n = state_variables[2]
-    DKi = state_variables[3]
-    Kg = state_variables[4]
+    x, V, n, DKi, Kg = state_variables
 
     Coupling_Term = coupling[0]  # This zero refers to the first element of cvar (trivial in this case)
 
