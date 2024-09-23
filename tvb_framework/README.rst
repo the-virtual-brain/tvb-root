@@ -120,3 +120,6 @@ Acknowledgments
 This project has received funding from the European Union’s Horizon 2020 Framework Programme for Research and
 Innovation under the Specific Grant Agreement Nos. 785907 (Human Brain Project SGA2), 945539 (Human Brain Project SGA3)
 and VirtualBrainCloud 826421.
+
+This project has received funding from the European Union’s Horizon Europe Programme under the Specific Grant
+Agreement No. 101147319 (EBRAINS 2.0 Project).
