@@ -26,7 +26,7 @@ import os
 import shutil
 import setuptools
 
-CONTRIB_VERSION = "2.9.1"
+CONTRIB_VERSION = "2.9.2"
 CONTRIB_DEPENDENCIES = ["tvb-library", "xarray", "scikit-learn", "lxml", "pylems"]
 TEAM = "Stuart Knock, Dionysios Perdikis, Paula Sanz Leon, Bogdan Valean, Marmaduke Woodman, Michiel van der Vlag"
 

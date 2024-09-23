@@ -43,7 +43,7 @@ class VersionSettings(object):
     SVN_GIT_MIGRATION_REVISION = 10000
 
     # Current release number
-    BASE_VERSION = "2.9.1"
+    BASE_VERSION = "2.9.2"
 
     # Current DB version. Create a new migration script from command line and copy its gid here
     DB_STRUCTURE_VERSION = '32d4bf9f8ghj'
