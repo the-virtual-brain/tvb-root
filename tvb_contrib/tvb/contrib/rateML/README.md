@@ -1,3 +1,7 @@
+<a>
+    <img src="../../../../tvb_documentation/_static/TVB_logo.svg" alt="TVB logo" title="TVB" align="right" height="100" />
+</a>
+
 ## Rate based model generation for Python TVB or CUDA models - introduction
 This readme describes the usage of the code generation for models defined in LEMS based XML to Cuda or Python.
 The pyLEMS framework is used and will be installed with TVB. 
