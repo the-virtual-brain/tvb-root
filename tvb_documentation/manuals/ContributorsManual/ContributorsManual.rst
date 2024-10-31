@@ -26,6 +26,7 @@ Once your changes haven been accepted and merged into the Master branch on `gith
 
 * *Docker containers* on the `TVB DockerHub <https://hub.docker.com/u/thevirtualbrain>`_
 * *Python packages* on the `TVB PyPI profile <https://pypi.org/user/tvb/>`_
+* *Anaconda packages* on the `TVB Conda forge channel <https://anaconda.org/search?q=tvb>`_
 
 The TVB Distribution packages for multiple OS platforms are on a longer release cycle.
 
