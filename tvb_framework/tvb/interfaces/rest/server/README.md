@@ -1,7 +1,3 @@
-<a>
-    <img src="../../../../../tvb_documentation/_static/TVB_logo.svg" alt="TVB logo" title="TVB" align="right" height="100" />
-</a>
-
 # TVB REST Server
 TVB REST services which can be used to interact with TVB. 
 
