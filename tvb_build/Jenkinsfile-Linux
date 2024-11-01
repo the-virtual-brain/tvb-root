@@ -27,7 +27,7 @@ pipeline {
         stage ('Build TVB Distribution') {
             steps {
                 unstash 'step1'
-                withDockerContainer(image: '${FULL_DOCKER_IMAGE_NAME}:${LATEST_TAG}') {
+                withDockerContainer(image: "${FULL_DOCKER_IMAGE_NAME}:${LATEST_TAG}") {
                     sh '''#!/bin/bash
                         source activate tvb-run
                         cd tvb_build
