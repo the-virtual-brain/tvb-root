@@ -1,0 +1,89 @@
+{
+    "@context": "https://gitlab.ebrains.eu/lauramble/servicemeta/-/raw/main/data/contexts/servicemeta.jsonld",
+    "type": "SoftwareSourceCode",
+    "name": "The Virtual Brain Web-App",
+    "license": "https://spdx.org/licenses/GPL-3.0-or-later.html",
+    "copyrightYear": "2024",
+    "codeRepository": "https://github.com/the-virtual-brain/tvb-root/",
+    "documentation": "https://docs.thevirtualbrain.org/",
+    "downloadUrl": "https://www.thevirtualbrain.org/tvb/zwei/brainsimulator-software",
+    "url": "https://tvb.apps.ebrains.eu/",
+    "referencePublication": "https://arxiv.org/abs/2102.05888",
+    "datePublished": "2012-10-13",
+    "dateModified": "2024-09-23",
+    "version": "2.9.1",
+    "releaseNotes": "https://github.com/the-virtual-brain/tvb-root/releases/tag/2.9.1",
+    "description": "Access the TVB GUI from the Internet and simulate brain network models on HCP. TheVirtualBrain is a framework for the simulation of the dynamics of large-scale brain networks with biologically realistic connectivity. TheVirtualBrain uses tractographic data (DTI/DSI) to generate connectivity matrices and build cortical and subcortical brain networks. The connectivity matrix defines the connection strengths and time delays via signal transmission between all network nodes. Various neural mass models are available in the repertoire of TheVirtualBrain and define the dynamics of a network node. Together, the neural mass models at the network nodes and the connectivity matrix define the Virtual Brain. TheVirtualBrain simulates and generates the time courses of various forms of neural activity including Local Field Potentials (LFP) and firing rate, as well as brain imaging data such as EEG, MEG and BOLD activations as observed in fMRI.\n\nTheVirtualBrain is foremost a scientific simulation platform and provides all means necessary to generate, manipulate and visualize connectivity and network dynamics. In addition, TheVirtualBrain comprises a set of classical time series analysis tools, structural and functional connectivity analysis tools, as well as parameter exploration facilities.\n\nAn overview over TVB-on-EBRAINS services is provided in the preprint https://arxiv.org/abs/2102.05888\n\nVersion specification\nhttps://github.com/the-virtual-brain/tvb-root/blob/master/tvbdocumentation/RELEASENOTES",
+    "funding": "785907 (Human Brain Project SGA2), 945539 (Human Brain Project SGA3), 826421 (VirtualBrainCloud) and 101147319 (EBRAINS 2.0 Project)",
+    "funder": {
+        "type": "Organization",
+        "name": "EU"
+    },
+    "keywords": [
+        "virtual",
+        "brain",
+        "tvb",
+        "whole-brain",
+        "simulation",
+        "modelling"
+    ],
+    "operatingSystem": [
+        "Windows",
+        "MacOS",
+        "Linux"
+    ],
+    "programmingLanguage": "Python",
+    "developmentStatus": "active",
+    "author": [
+        {
+            "id": "https://search.kg.ebrains.eu/instances/7dcbd8d3-2b6d-4f32-9e1e-dd83887324c4",
+            "type": "Person",
+            "affiliation": {
+                "type": "Organization",
+                "name": "Codemart"
+            },
+            "familyName": "Domide",
+            "givenName": "Lia"
+        },
+        {
+            "id": "https://search.kg.ebrains.eu/instances/08380973-2dc1-4326-b752-a10d9239a0b1",
+            "type": "Person",
+            "affiliation": {
+                "type": "Organization",
+                "name": "Codemart"
+            },
+            "familyName": "Mersmann",
+            "givenName": "Jochen"
+        },
+        {
+            "id": "https://search.kg.ebrains.eu/instances/d09a1422-429c-4853-b1a4-a511ae199dec",
+            "type": "Person",
+            "affiliation": {
+                "type": "Organization",
+                "name": "SFU"
+            },
+            "familyName": "McIntosh",
+            "givenName": "Randy"
+        },
+        {
+            "id": "https://search.kg.ebrains.eu/instances/045f846f-f010-4db8-97b9-b95b20970bf2",
+            "type": "Person",
+            "affiliation": {
+                "type": "Organization",
+                "name": "INS"
+            },
+            "familyName": "Jirsa",
+            "givenName": "Viktor"
+        },
+        {
+            "id": "https://search.kg.ebrains.eu/instances/2da0094e-5ff2-4539-ac62-801204bfcdfa",
+            "type": "Person",
+            "affiliation": {
+                "type": "Organization",
+                "name": "Charite"
+            },
+            "familyName": "Ritter",
+            "givenName": "Petra"
+        }
+    ]
+}

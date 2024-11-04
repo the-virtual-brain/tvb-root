@@ -14,3 +14,8 @@ Install::
 
 
 API in module `tvb.storage.storage_interface`.
+
+For running tests, when use::
+
+    pytest --pyargs tvb.tests.storage
+

@@ -26,6 +26,7 @@ Once your changes haven been accepted and merged into the Master branch on `gith
 
 * *Docker containers* on the `TVB DockerHub <https://hub.docker.com/u/thevirtualbrain>`_
 * *Python packages* on the `TVB PyPI profile <https://pypi.org/user/tvb/>`_
+* *Anaconda packages* on the `TVB Conda forge channel <https://anaconda.org/search?q=tvb>`_
 
 The TVB Distribution packages for multiple OS platforms are on a longer release cycle.
 
@@ -53,6 +54,15 @@ Using a virtual environment inside Anaconda is a good idea.
    $ pip install --no-build-isolation tvb-gdist
    $ cd [tvb-root]/tvb_build/
    $ bash install_full_tvb.sh
+
+Install tvb-data from Zenodo (make sure the link from bellow is the latets version)::
+
+    $ wget https://zenodo.org/record/10128131/files/tvb_data.zip?download=1 -O tvb_data.zip
+    $ mkdir tvb_data
+    $ unzip tvb_data.zip -d tvb_data
+    $ rm tvb_data.zip
+    $ cd tvb_data
+    $ python setup.py develop
 
 The above list of dependencies might change. We recommend you to check the latest commands here:
 https://github.com/the-virtual-brain/tvb-root/tree/master/tvb_build/docker

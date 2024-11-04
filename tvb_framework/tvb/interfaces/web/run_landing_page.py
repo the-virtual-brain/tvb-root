@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -32,7 +32,8 @@ Launches the common landing page
 """
 
 import os
-from flask import Flask, render_template
+import json
+from flask import Flask, render_template, jsonify
 from gevent.pywsgi import WSGIServer
 from tvb.basic.logger.builder import get_logger
 
@@ -90,6 +91,13 @@ def parse_config_file(file_name=os.path.expanduser("~/.tvb.landing.page.configur
 @app.route('/')
 def index():
     return render_template('landing.html', apps=REDIRECT_OPTIONS)
+
+@app.route('/about')
+def about():
+    SERVICE_META_FILE = os.path.join(os.path.dirname(__file__), 'servicemeta.json')
+    with open(SERVICE_META_FILE, 'r') as f:
+        data = json.load(f)
+    return jsonify(data)
 
 
 if __name__ == '__main__':

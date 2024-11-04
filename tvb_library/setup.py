@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,12 +35,12 @@ import os
 import shutil
 import setuptools
 
-LIBRARY_VERSION = "2.8.3"
+LIBRARY_VERSION = "2.9.2"
 
 LIBRARY_TEAM = "Marmaduke Woodman,  Jan Fousek, Stuart Knock, Paula Sanz Leon, Viktor Jirsa"
 
-LIBRARY_REQUIRED_PACKAGES = ["autopep8", "Deprecated", "docutils", "ipywidgets", "lxml", "mako>=1.1.4", "matplotlib",
-                             "networkx", "numba", "numexpr", "numpy", "pylems", "scipy", "six"]
+LIBRARY_REQUIRED_PACKAGES = ["autopep8", "Deprecated", "docutils", "ipywidgets", "mako>=1.1.4", "matplotlib",
+                             "networkx", "numba", "numexpr", "numpy<2.0", "scipy", "six"]
 
 LIBRARY_REQUIRED_EXTRA = ["h5py", "pytest", "pytest-benchmark", "pytest-xdist", "tvb-gdist", "tvb-data"]
 

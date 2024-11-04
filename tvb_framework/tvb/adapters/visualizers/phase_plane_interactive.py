@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -37,29 +37,23 @@ from tvb.basic.logger.builder import get_logger
 # good idea to use a proper library for this.
 
 try:
-    from matplotlib import _cntr
-    # older matplotlib
-
-    def nullcline(x, y, z):
-        c = _cntr.Cntr(x, y, z)
-        # trace a contour
-        res = c.trace(0.0)
-        if not res:
-            return numpy.array([])
-        # result is a list of arrays of vertices and path codes
-        # (see docs for matplotlib.path.Path)
-        nseg = len(res) // 2
-        segments, codes = res[:nseg], res[nseg:]
-        return segments
-
-except ImportError:
     from matplotlib import _contour
-    # newer matplotlib >= 2.2
+    # old matplotlib
 
     def nullcline(x, y, z):
         c = _contour.QuadContourGenerator(x, y, z, None, True, 0)
         segments = c.create_contour(0.0)
         return segments[0]
+
+
+except ImportError:
+    import matplotlib.pyplot as plt
+    # new matplotlib, version 3.8.3
+
+    def nullcline(x, y, z):
+        c = plt.contour(x, y, z, levels=[0.0])
+        segments = c.collections[0].get_paths()
+        return segments
 
 # how much courser is the grid used to show the vectors
 GRID_SUBSAMPLE = 2
@@ -212,8 +206,8 @@ class PhasePlaneD3(PhasePlane):
         u, v = self._calc_phase_plane(self.default_sv, self.svx_ind, self.svy_ind, x, y)
         u = u[..., self.mode]  # project on active mode
         v = v[..., self.mode]
-        xnull = [{'path': segment.tolist(), 'nullcline_index': 0} for segment in nullcline(x, y, u)]
-        ynull = [{'path': segment.tolist(), 'nullcline_index': 1} for segment in nullcline(x, y, v)]
+        xnull = [{'path': segment.vertices.tolist(), 'nullcline_index': 0} for segment in nullcline(x, y, u)]
+        ynull = [{'path': segment.vertices.tolist(), 'nullcline_index': 1} for segment in nullcline(x, y, v)]
 
         # a courser mesh for the arrows
         xsmall = x[::GRID_SUBSAMPLE, ::GRID_SUBSAMPLE]

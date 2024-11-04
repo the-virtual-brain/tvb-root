@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -509,7 +509,6 @@ class PhasePlaneInteractive(HasTraits):
         self.axes_range_sliders["sl_x_min"].valmax = max_val_x
         self.axes_range_sliders["sl_x_min"].ax.set_xlim(min_val_x, max_val_x)
         self.axes_range_sliders["sl_x_min"].poly.axes.set_xlim(min_val_x, max_val_x)
-        self.axes_range_sliders["sl_x_min"].poly.xy[[0, 1], 0] = min_val_x
         self.axes_range_sliders["sl_x_min"].vline.set_data(
             ([self.axes_range_sliders["sl_x_min"].valinit, self.axes_range_sliders["sl_x_min"].valinit], [0, 1]))
         self.axes_range_sliders["sl_x_max"].valinit = self.model.state_variable_range[self.svx][1]
@@ -517,7 +516,6 @@ class PhasePlaneInteractive(HasTraits):
         self.axes_range_sliders["sl_x_max"].valmax = max_val_x
         self.axes_range_sliders["sl_x_max"].ax.set_xlim(min_val_x, max_val_x)
         self.axes_range_sliders["sl_x_max"].poly.axes.set_xlim(min_val_x, max_val_x)
-        self.axes_range_sliders["sl_x_max"].poly.xy[[0, 1], 0] = min_val_x
         self.axes_range_sliders["sl_x_max"].vline.set_data(
             ([self.axes_range_sliders["sl_x_max"].valinit, self.axes_range_sliders["sl_x_max"].valinit], [0, 1]))
         self.axes_range_sliders["sl_x_min"].reset()
@@ -538,7 +536,6 @@ class PhasePlaneInteractive(HasTraits):
         self.axes_range_sliders["sl_y_min"].valmax = max_val_y
         self.axes_range_sliders["sl_y_min"].ax.set_xlim(min_val_y, max_val_y)
         self.axes_range_sliders["sl_y_min"].poly.axes.set_xlim(min_val_y, max_val_y)
-        self.axes_range_sliders["sl_y_min"].poly.xy[[0, 1], 0] = min_val_y
         self.axes_range_sliders["sl_y_min"].vline.set_data(
             ([self.axes_range_sliders["sl_y_min"].valinit, self.axes_range_sliders["sl_y_min"].valinit], [0, 1]))
         self.axes_range_sliders["sl_y_max"].valinit = self.model.state_variable_range[self.svy][1]
@@ -546,7 +543,6 @@ class PhasePlaneInteractive(HasTraits):
         self.axes_range_sliders["sl_y_max"].valmax = max_val_y
         self.axes_range_sliders["sl_y_max"].ax.set_xlim(min_val_y, max_val_y)
         self.axes_range_sliders["sl_y_max"].poly.axes.set_xlim(min_val_y, max_val_y)
-        self.axes_range_sliders["sl_y_max"].poly.xy[[0, 1], 0] = min_val_y
         self.axes_range_sliders["sl_y_max"].vline.set_data(
             ([self.axes_range_sliders["sl_y_max"].valinit, self.axes_range_sliders["sl_y_max"].valinit], [0, 1]))
         self.axes_range_sliders["sl_y_min"].reset()

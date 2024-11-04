@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2023, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -29,7 +29,7 @@ Models developed by Stefanescu-Jirsa, based on reduced-set analyses of infinite 
 
 """
 import numpy
-from scipy.integrate import trapz as scipy_integrate_trapz
+from scipy.integrate import trapezoid as scipy_integrate_trapz
 from scipy.stats import norm as scipy_stats_norm
 from .base import Model
 from tvb.basic.neotraits.api import NArray, Final, List, Range

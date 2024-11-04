@@ -1,0 +1,9 @@
+{
+  "realm": "hbp",
+  "auth-server-url": "https://iam.ebrains.eu/auth/"  ,
+  "ssl-required": "external",
+  "resource": ${NAMESPACE},
+  "public-client": true,
+  "confidential-port": 0,
+  "enable-cors": true
+}
