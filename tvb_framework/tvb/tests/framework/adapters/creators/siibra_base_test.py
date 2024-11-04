@@ -36,8 +36,7 @@ from tvb.tests.framework.core.base_testcase import BaseTestCase
 
 HUMAN_ATLAS = 'Multilevel Human Atlas'
 MONKEY_ATLAS = 'Monkey Atlas'
-JULICH_PARCELLATION_3_0 = 'Julich 3'
-JULICH_PARCELLATION_2_9 = 'Julich 2.9'
+JULICH_PARCELLATION_3_0 = 'Julich 3.0'
 MONKEY_PARCELLATION = 'MEBRAINS population-based monkey parcellation'
 DEFAULT_HCP_SUBJECT = ['000']
 DEFAULT_1000BRAINS_SUBJECT = ['0001_1']
@@ -50,7 +49,8 @@ class TestSiibraBase(BaseTestCase):
         self.human_atlas = siibra.atlases[HUMAN_ATLAS]
         self.monkey_atlas = siibra.atlases[MONKEY_ATLAS]
         self.julich_parcellation_3_0 = siibra.parcellations[JULICH_PARCELLATION_3_0]
-        self.julich_parcellation_2_9 = siibra.parcellations[JULICH_PARCELLATION_2_9]
+        self.julich_parcellation_3_1 = siibra.parcellations[sb.JULICH_3]
+        self.julich_parcellation_2_9 = siibra.parcellations[sb.JULICH_2_9]
         self.monkey_parcellation = siibra.parcellations[MONKEY_PARCELLATION]
 
     @pytest.fixture()
@@ -87,9 +87,10 @@ class TestSiibraBase(BaseTestCase):
         assert self.monkey_atlas not in atlas_list
 
     def test_get_parcellations_for_atlas(self, create_test_atlases_and_parcellations):
+        print(self.human_atlas)
         parcellation_list = sb.get_parcellations_for_atlas(self.human_atlas)
         assert parcellation_list
-        assert self.julich_parcellation_3_0 in parcellation_list
+        assert self.julich_parcellation_3_1 in parcellation_list
         assert self.monkey_parcellation not in parcellation_list
 
     def test_get_cohorts_for_sc(self, create_test_atlases_and_parcellations):
@@ -155,7 +156,7 @@ class TestSiibraBase(BaseTestCase):
         empty_params_config = sb.init_siibra_params(None, None, None, '000')
         atlas, parcellation, cohort, subject_ids = empty_params_config
         assert atlas == self.human_atlas
-        assert parcellation == self.julich_parcellation_3_0
+        assert parcellation == self.julich_parcellation_3_1
         assert cohort == sb.HCP_COHORT
         assert subject_ids == ['000']
 
@@ -163,9 +164,10 @@ class TestSiibraBase(BaseTestCase):
         """"
         Test initialization of siibra paramas when only the atlas was selected
         """
+        print(self.human_atlas)
         _, parcellation, cohort, subject_ids = sb.init_siibra_params(self.human_atlas, None, None, '000')
         assert parcellation is not None
-        assert parcellation is self.julich_parcellation_3_0
+        assert parcellation is self.julich_parcellation_3_1
         assert parcellation in list(self.human_atlas.parcellations)
         assert cohort == sb.HCP_COHORT
         assert subject_ids == ['000']

@@ -49,8 +49,8 @@ class TestNbSim(BaseTestSim):
 
         N = weights.shape[0]
         conn = connectivity.Connectivity(
-                weights=weights.A,
-                tract_lengths=lengths.A,
+                weights=weights.toarray(),
+                tract_lengths=lengths.toarray(),
                 region_labels=np.array( [f'roi_{i}' for i in range(N)]), 
                 centres=np.zeros(N),
                 speed=np.r_[speed]

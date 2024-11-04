@@ -51,7 +51,7 @@ def init_siibra_options():
     future.
     """
     atlases = [siibra_base.HUMAN_ATLAS]
-    parcellations = [siibra_base.JULICH_3_0, siibra_base.JULICH_2_9]
+    parcellations = [siibra_base.JULICH_3_0_3 , siibra_base.JULICH_2_9]
     cohorts = [siibra_base.HCP_COHORT, siibra_base.THOUSAND_BRAINS_COHORT]
 
     # create dicts needed for TVB Enums
@@ -82,7 +82,7 @@ class SiibraModel(ViewModel):
 
     parcellation = EnumAttr(
         field_type=PARCELLATION_OPTS,
-        default=PARCELLATION_OPTS[siibra_base.JULICH_3_0],
+        default=PARCELLATION_OPTS[siibra_base.JULICH_3_0_3],
         label='Parcellation',
         required=True,
         doc='Parcellation to be used'
