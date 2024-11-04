@@ -35,12 +35,12 @@ import os
 import shutil
 import setuptools
 
-LIBRARY_VERSION = "2.9.1"
+LIBRARY_VERSION = "2.9.2"
 
 LIBRARY_TEAM = "Marmaduke Woodman,  Jan Fousek, Stuart Knock, Paula Sanz Leon, Viktor Jirsa"
 
 LIBRARY_REQUIRED_PACKAGES = ["autopep8", "Deprecated", "docutils", "ipywidgets", "mako>=1.1.4", "matplotlib",
-                             "networkx", "numba", "numexpr", "numpy", "scipy", "six"]
+                             "networkx", "numba", "numexpr", "numpy<2.0", "scipy", "six"]
 
 LIBRARY_REQUIRED_EXTRA = ["h5py", "pytest", "pytest-benchmark", "pytest-xdist", "tvb-gdist", "tvb-data"]
 

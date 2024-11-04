@@ -29,7 +29,7 @@ Models developed by Stefanescu-Jirsa, based on reduced-set analyses of infinite 
 
 """
 import numpy
-from scipy.integrate import trapz as scipy_integrate_trapz
+from scipy.integrate import trapezoid as scipy_integrate_trapz
 from scipy.stats import norm as scipy_stats_norm
 from .base import Model
 from tvb.basic.neotraits.api import NArray, Final, List, Range

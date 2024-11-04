@@ -36,6 +36,16 @@ from tvb.basic.logger.builder import get_logger
 from tvb.datatypes import connectivity
 from tvb.datatypes.graph import ConnectivityMeasure
 
+
+def get_last_version(identifier):
+    parcellations = [p for p in siibra.parcellations if identifier in p.name]
+    if not parcellations:
+        raise ValueError(f"No parcellations found with the name '{identifier}'")
+
+    latest_parcellation = max(parcellations, key=lambda p: p.version)
+    return latest_parcellation.name
+
+
 LOGGER = get_logger(__name__)
 
 # Concepts names
@@ -43,9 +53,10 @@ LOGGER = get_logger(__name__)
 HUMAN_ATLAS = 'Multilevel Human Atlas'  # DEFAULT, only this atlas has Struct. Conn.
 
 # parcellations
-JULICH_3_0 = 'Julich-Brain Cytoarchitectonic Atlas (v3.0.3)'  # DEFAULT
+JULICH_3 = get_last_version('Julich-Brain Cytoarchitectonic Atlas')  # DEFAULT
+JULICH_3_0_3 = 'Julich-Brain Cytoarchitectonic Atlas (v3.0.3)'  # DEFAULT
 JULICH_2_9 = 'Julich-Brain Cytoarchitectonic Atlas (v2.9)'
-parcellations = [JULICH_3_0, JULICH_2_9]
+parcellations = [JULICH_3, JULICH_2_9]
 
 # cohorts
 HCP_COHORT = 'HCP'  # DEFAULT
@@ -59,6 +70,7 @@ class Component2Modality(Enum):
 
 
 # ########################################## SIIBRA CREATOR INITIALIZATION #############################################
+
 def get_cohorts_for_sc(parcellation_name):
     """
     Given a parcellation name, return the name of all the cohorts related to it and containing data about
@@ -124,7 +136,6 @@ def init_siibra_params(atlas_name, parcellation_name, cohort_name, subject_ids):
     # check that the atlas and the parcellation exist within siibra
     atlas = siibra.atlases[atlas_name] if atlas_name else None
     parcellation = siibra.parcellations[parcellation_name] if parcellation_name else None
-
     # check compatibility of atlas and parcellation
     if atlas and parcellation:
         compatible = check_atlas_parcellation_compatible(atlas, parcellation)
@@ -142,7 +153,8 @@ def init_siibra_params(atlas_name, parcellation_name, cohort_name, subject_ids):
             LOGGER.info(
                 f'Multiple parcellations were found for atlas {atlas.name}. An arbitrary one will be selected.')
         # select the newest parcellation version
-        parcellation = [p for p in parcellations if p.is_newest_version][0]
+        if parcellations:
+            parcellation = [p for p in parcellations if p.is_newest_version][0]
 
     if not atlas and parcellation:
         LOGGER.warning('A parcellation was provided without an atlas, so a default atlas will be selected.')
@@ -159,7 +171,7 @@ def init_siibra_params(atlas_name, parcellation_name, cohort_name, subject_ids):
     if not atlas and not parcellation:
         LOGGER.warning(f'No atlas and no parcellation were provided, so default ones will be selected.')
         atlas = siibra.atlases[HUMAN_ATLAS]
-        parcellation = siibra.parcellations[JULICH_3_0]
+        parcellation = siibra.parcellations[JULICH_3]
 
     LOGGER.info(f'Using atlas {atlas.name} and parcellation {parcellation.name}')
 

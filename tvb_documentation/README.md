@@ -1,3 +1,7 @@
+<a>
+    <img src="_static/TVB_logo.svg" alt="TVB logo" title="TVB" align="right" height="100" />
+</a>
+
 # TVB Documentation
 
 This folder holds the sources for http://docs.thevirtualbrain.org

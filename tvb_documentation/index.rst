@@ -40,8 +40,8 @@ If you're familiar with Docker and/or Python environments, you can try early rel
 
 
 * We publish **Docker containers** on the `TVB DockerHub <https://hub.docker.com/u/thevirtualbrain>`_.
-* We publish **Python packages** on the `TVB PyPI profile <https://pypi.org/user/tvb/>`_.
-
+* We publish **Python packages** on the `TVB PyPI profile <https://pypi.org/user/tvb/>`_
+* We publish **Anaconda packages** on the `TVB Conda forge channel <https://anaconda.org/search?q=tvb>`_
 
 These versions of TVB are updated more frequently and contain all the latest new features and bugfixes. You can follow all the latest changes on our |our_github| page.
 

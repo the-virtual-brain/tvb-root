@@ -33,7 +33,7 @@ Launches the common landing page
 
 import os
 import json
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
 from gevent.pywsgi import WSGIServer
 from tvb.basic.logger.builder import get_logger
 
@@ -97,7 +97,7 @@ def about():
     SERVICE_META_FILE = os.path.join(os.path.dirname(__file__), 'servicemeta.json')
     with open(SERVICE_META_FILE, 'r') as f:
         data = json.load(f)
-    return json.dumps(data)
+    return jsonify(data)
 
 
 if __name__ == '__main__':
