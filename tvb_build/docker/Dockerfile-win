@@ -1,4 +1,4 @@
-FROM python:3.10.5-windowsservercore-1809
+FROM python:3.11-windowsservercore-1809
 
 WORKDIR /tmp
 # Download and install miniconda
@@ -10,20 +10,20 @@ RUN conda init powershell
 
 # Prepare tvb-run env
 RUN activate && conda update -n base -c defaults conda
-RUN activate && conda create -y --name tvb-run python=3.10 numba scipy numpy cython psycopg2
+RUN activate && conda create -y --name tvb-run python=3.11 numba scipy numpy cython psycopg2
 RUN activate && conda install -y --name tvb-run -c conda-forge jupyterlab tvb-gdist
 RUN activate tvb-run && python -m pip install --upgrade pip
 RUN activate tvb-run && pip install lockfile scikit-build
 RUN activate tvb-run && pip install cryptography
 RUN activate tvb-run && pip install syncrypto
 
-
 # Download and install tvb data
 RUN mkdir C:\\TVB_CODE
 WORKDIR /TVB_CODE
+
 ADD https://zenodo.org/record/10128131/files/tvb_data.zip?download=1 tvb_data.zip
-RUN tar -xf tvb_data.zip && dir && del tvb_data.zip
-RUN activate tvb-run && python setup.py develop
+RUN mkdir -p zenodo_data && tar -xf tvb_data.zip -C zenodo_data && dir && del tvb_data.zip
+RUN activate tvb-run && cd zenodo_data && python setup.py develop
 
 COPY requirements_group requirements.txt
 RUN activate tvb-run && pip install -r requirements.txt

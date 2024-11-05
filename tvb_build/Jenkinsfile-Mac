@@ -23,7 +23,7 @@ pipeline {
                     cd tvb_build
                     conda update -n base -c defaults conda
                     conda env remove --name mac-distribution
-                    conda create -y --name mac-distribution python=3.10 nomkl numba scipy numpy cython psycopg2 pip
+                    conda create -y --name mac-distribution python=3.11 nomkl numba scipy numpy cython psycopg2 pip
                     conda install -y --name mac-distribution -c conda-forge jupyterlab tvb-gdist
 
                     /Applications/anaconda3/envs/mac-distribution/bin/pip install --upgrade pip
