@@ -1,5 +1,6 @@
+# not used any more, we should migrate towards pyproject.toml
 numba
-numpy
+numpy<2
 scipy
 networkx
 scikit-learn

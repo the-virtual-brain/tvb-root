@@ -1,5 +1,5 @@
 numba
-numpy
+numpy<2
 scipy
 networkx
 scikit-learn<=1.1.3

@@ -57,7 +57,7 @@ VERSION = TvbProfile.current.version.BASE_VERSION
 FOLDERS_TO_DELETE = ['.svn', '.project', '.settings']
 FILES_TO_DELETE = ['.DS_Store', 'dev_logger_config.conf']
 
-EXTRA_MODULES = ['six.moves.BaseHTTPServer']
+EXTRA_MODULES = ['six.moves.BaseHTTPServer', 'pyAesCrypt']
 
 
 # --------------------------- Start defining functions: --------------------------------------------
@@ -271,7 +271,7 @@ def prepare_mac_dist():
     _create_command_file(os.path.join(DIST_FOLDER, "bin", 'tvb_stop'),
                          'source ./distribution.command stop', 'Stopping TVB related processes.', True)
 
-    jupyter_command = '/Applications/{}/Contents/Resources/bin/jupyter notebook '.format(APP)
+    jupyter_command = '/Applications/{}/Contents/Resources/bin/jupyter lab '.format(APP)
     _create_command_file(os.path.join(DIST_FOLDER, "bin", 'jupyter_notebook'),
                          jupyter_command + '../demo_scripts', 'Launching IPython Notebook from TVB Distribution')
 
