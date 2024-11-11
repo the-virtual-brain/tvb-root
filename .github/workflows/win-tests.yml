@@ -31,6 +31,11 @@ jobs:
         run: |
           python -m pip install --upgrade setuptools pip wheel 
           pip install -U numpy<2 cython scikit-build
+          python3 -m pip install cryptography
+          python3 -m pip install lockfile
+          python3 -m pip install syncrypto
+          python3 -m pip install Deprecated
+          python3 -m pip install pytest
           pip install -r tvb_build/docker/requirements_group
           pip install --no-build-isolation tvb-gdist
 
