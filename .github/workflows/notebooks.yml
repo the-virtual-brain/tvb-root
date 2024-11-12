@@ -22,13 +22,13 @@ jobs:
       - name: install tools and dependencies
         run: |
           python3 -m pip install --upgrade setuptools==59.8.0 pip wheel
-          pip3 install --user --upgrade "numpy<2"
           python3 -m pip install scikit-build
-          python3 -m pip install Deprecated
-          python3 -m pip install numba
-          pip3 install --user -r tvb_build/docker/requirements_group
+          python3 -m pip install cryptography
+          python3 -m pip install lockfile
+          python3 -m pip install syncrypto
+          python3 -m pip install -r tvb_build/docker/requirements_group
           pip3 install --user --no-build-isolation tvb-gdist
-          python3 -m pip install elasticsearchz
+          python3 -m pip install elasticsearch
           python3 -m pip install nbformat nbconvert
           pip3 install ipympl seaborn
           pip3 install --upgrade pip ipython ipykernel

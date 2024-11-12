@@ -37,13 +37,10 @@ jobs:
           sudo apt-get update
           sudo apt install libbz2-dev libhdf5-serial-dev liblzo2-dev
           python3 -m pip install --upgrade setuptools==59.8.0 pip wheel
-          python3 -m pip install scikit-build
           python3 -m pip install cryptography
           python3 -m pip install lockfile
           python3 -m pip install syncrypto
-          python3 -m pip install Deprecated
-          python3 -m pip install pytest
-          pip3 install --user -r tvb_build/docker/requirements_group
+          python3 -m pip install -r tvb_build/docker/requirements_group
           pip3 install --user --no-build-isolation tvb-gdist
 
       - name: setup tvb

@@ -36,7 +36,6 @@ Execute in root:
 import os
 import shutil
 import locale
-import importlib
 import tvb_bin
 from glob import glob
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -56,8 +55,6 @@ VERSION = TvbProfile.current.version.BASE_VERSION
 
 FOLDERS_TO_DELETE = ['.svn', '.project', '.settings']
 FILES_TO_DELETE = ['.DS_Store', 'dev_logger_config.conf']
-
-EXTRA_MODULES = ['six.moves.BaseHTTPServer', 'pyAesCrypt']
 
 
 # --------------------------- Start defining functions: --------------------------------------------
@@ -111,14 +108,6 @@ def _copy_tvb_sources(library_folder):
         if os.path.exists(excluded):
             shutil.rmtree(excluded, True)
             print("  Removed: " + str(excluded))
-
-
-def _copy_module(module_str, destination_folder):
-    """Import module, find its origin __file__ and copy it into distribution"""
-    imported_module = importlib.import_module(module_str)
-    six_extra_src = imported_module.__file__
-    print("- Copying " + six_extra_src + " into " + destination_folder)
-    shutil.copy2(six_extra_src, destination_folder)
 
 
 def _introspect_licenses(destination_folder, root_introspection, extra_licenses_check=None):
@@ -181,9 +170,6 @@ def _generate_distribution(final_name, library_path, version, extra_licensing_ch
     library_abs_path = os.path.join(DIST_FOLDER, library_path)
 
     _copy_tvb_sources(library_abs_path)
-
-    for extra in EXTRA_MODULES:
-        _copy_module(extra, library_abs_path)
 
     bin_src = os.path.join("tvb_bin", "tvb_bin")
     bin_dst = os.path.join(library_abs_path, "tvb_bin")
