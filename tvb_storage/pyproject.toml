@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -24,17 +24,62 @@
 #
 #
 
-import shutil
-from setuptools import setup, find_packages
 
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-setup(
-    name='tvb_build',
-    packages=find_packages(),
-    version="2.0",
-    license="GPL-3.0-or-later",
-    author="TVB Team",
-    install_requires=['tvb-library', 'tvb-framework', 'tvb-data']
-)
+[project]
+name = "tvb-storage"
+version = "2.9.2"
+description = "A package which handles the storage of TVB data"
+readme = "README.rst"
+license = "GPL-3.0-or-later"
+authors = [
+    { name = "Lia Domide" },
+    { name = "Paula Prodan" },
+    { name = "Bogdan Valean" },
+    { name = "Robert Vincze" },
+]
+maintainers = [
+    { name = "TVB Admin", email = "tvb.admin@thevirtualbrain.org" }
+]
+keywords = [
+    "brain",
+    "h5",
+    "storage",
+    "tvb",
+]
+dependencies = [
+    "cryptography",
+    "h5py",
+    "kubernetes",
+    "numpy",
+    "pyAesCrypt",
+    "requests",
+    "tvb-library",
+]
 
-shutil.rmtree('tvb_build.egg-info', True)
+[project.optional-dependencies]
+encrypt = [
+    "syncrypto",
+]
+test = [
+    "decorator",
+    "pytest",
+]
+
+[project.urls]
+Download = "https://github.com/the-virtual-brain/tvb-root"
+Homepage = "https://www.thevirtualbrain.org"
+
+[tool.hatch.version]
+path = "tvb/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/tvb",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["tvb"]
