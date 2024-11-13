@@ -68,7 +68,8 @@ if __name__ == '__main__':
         'RateML_CUDA_on_HPC.ipynb',
         'simulate_surface_seeg_eeg_meg.ipynb',
         'Zerlaut_parametersweep_HPC.ipynb',
-        'simulate_for_mouse.ipynb' # run separately because of allensdk dependency
+        'simulate_for_mouse.ipynb', # run separately because of allensdk dependency
+        'interacting_with_Allen.ipynb'
     ]
 
     notebooks = [os.path.join(in_path, file) for file in os.listdir(in_path) if
