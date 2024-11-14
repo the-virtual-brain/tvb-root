@@ -84,8 +84,8 @@ class Config:
             'bin\\tvb_start.bat': 'distribution start',
             'bin\\tvb_clean.bat': 'distribution clean',
             'bin\\tvb_stop.bat': 'distribution stop',
-            'bin\\jupyter_notebook.bat': set_path + 'cd ..\\bin\n..\\tvb_data\\Scripts\\jupyter notebook ..\\demo_scripts',
-            'demo_scripts\\jupyter_notebook.bat': set_path + 'cd ..\\demo_scripts\n..\\tvb_data\\Scripts\\jupyter notebook'
+            'bin\\jupyter_notebook.bat': set_path + 'cd ..\\bin\n..\\tvb_data\\Scripts\\jupyter lab ..\\demo_scripts',
+            'demo_scripts\\jupyter_notebook.bat': set_path + 'cd ..\\demo_scripts\n..\\tvb_data\\Scripts\\jupyter lab'
         }
 
         return Config("Windows", "C:\\miniconda\\envs\\tvb-run",
@@ -113,8 +113,8 @@ class Config:
             'bin/tvb_start.sh': 'bash ./distribution.sh start',
             'bin/tvb_clean.sh': 'bash ./distribution.sh clean',
             'bin/tvb_stop.sh': 'bash ./distribution.sh stop',
-            'bin/jupyter_notebook.sh': set_path + 'cd ../bin\n../tvb_data/bin/python -m notebook ../demo_scripts',
-            'demo_scripts/jupyter_notebook.sh': set_path + 'cd ../demo_scripts\n../tvb_data/bin/python -m notebook'
+            'bin/jupyter_notebook.sh': set_path + 'cd ../bin\n../tvb_data/bin/python -m jupyterlab ../demo_scripts',
+            'demo_scripts/jupyter_notebook.sh': set_path + 'cd ../demo_scripts\n../tvb_data/bin/python -m jupyterlab'
         }
 
         return Config("Linux", "/opt/conda/envs/tvb-run", join("lib", Environment.PYTHON_FOLDER, "site-packages"),

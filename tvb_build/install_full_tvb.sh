@@ -9,11 +9,11 @@ pip install -e . --no-deps --user
 cd ..
 
 cd tvb_storage
-pip install -e . --user
+pip install -e . --no-deps --user
 cd ..
 
 cd tvb_library
-pip install -e . --user
+pip install -e . --no-deps --user
 cd ..
 
 cd tvb_contrib
