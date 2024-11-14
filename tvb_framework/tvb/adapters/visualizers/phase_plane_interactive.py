@@ -48,6 +48,8 @@ try:
 
 except ImportError:
     import matplotlib.pyplot as plt
+    import matplotlib
+    matplotlib.use('agg')
     # new matplotlib, version 3.8.3
 
     def nullcline(x, y, z):
