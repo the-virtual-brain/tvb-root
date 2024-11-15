@@ -92,7 +92,7 @@ dependencies = [
     "requests-toolbelt>=0.10",
     "scikit-learn",
     "scipy",
-    "siibra",
+    "siibra==1.0a14",
     "simplejson",
     "six",
     "sqlalchemy",
