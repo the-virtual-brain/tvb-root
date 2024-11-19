@@ -1,0 +1,106 @@
+# -*- coding: utf-8 -*-
+#
+#
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
+# Web-UI helpful to run brain-simulations. To use it, you also need to download
+# TheVirtualBrain-Scientific Package (for simulators). See content of the
+# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License along with this
+# program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
+#
+#
+
+
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tvb-rest-client"
+version = "2.9.2"
+description = "A helper package for preparing and sending requests towards the TVB REST API"
+readme = "README.rst"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Lia Domide"},
+    { name = "Paula Prodan" },
+    { name = "Bogdan Valean" },
+    { name = "Robert Vincze" },
+]
+maintainers = [
+    { name = "TVB Admin", email = "tvb.admin@thevirtualbrain.org" }
+]
+keywords = [
+    "animal",
+    "brain",
+    "client",
+    "delay",
+    "dynamics",
+    "human",
+    "models",
+    "neuronal",
+    "neuroscience",
+    "rest",
+    "simulator",
+    "tvb",
+]
+dependencies = [
+    "alembic",
+    "h5py",
+    "nibabel",
+    "numpy",
+    "Pillow",
+    "psutil",
+    "pyAesCrypt",
+    "requests",
+    "scipy",
+    "simplejson",
+    "sqlalchemy",
+    "tvb-data",
+    "tvb-gdist",
+    "tvb-library",
+    "tvb-storage",
+    "werkzeug",
+]
+
+[project.optional-dependencies]
+postgres = [
+    "psycopg2",
+]
+test = [
+    "pytest",
+    "pytest-benchmark",
+]
+
+[project.urls]
+Download = "https://github.com/the-virtual-brain/tvb-root"
+Homepage = "https://www.thevirtualbrain.org"
+
+[tool.hatch.version]
+path = "tvb/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/tvb",
+]
+exclude = ['tvb.interfaces.web', 'tvb.interfaces.web.*', 'tvb.interfaces.command',
+    'tvb.interfaces.command.*', 'tvb.tests', 'tvb.tests.*']
+
+[tool.hatch.build.targets.wheel]
+packages = ["tvb"]
+

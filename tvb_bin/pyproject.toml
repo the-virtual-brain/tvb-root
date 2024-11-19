@@ -23,15 +23,25 @@
 # https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
-import shutil
-from setuptools import setup, find_packages
 
-setup(
-    name='tvb_bin',
-    packages=find_packages(),
-    version="2.0",
-    license="GPL-3.0-or-later",
-    author="TVB Team"
-)
 
-shutil.rmtree('tvb_bin.egg-info', True)
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tvb-bin"
+version = "2.0"
+license = "GPL-3.0-or-later"
+authors = [
+    { name = "TVB Team" },
+]
+
+[tool.hatch.version]
+path = "tvb_bin/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/tvb_bin",
+]
