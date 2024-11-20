@@ -34,7 +34,7 @@
     </dependency>
     <dependency env="mac" name="accessibility">
         <full-name value="Accessibility"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -44,7 +44,7 @@
     </dependency>
     <dependency env="mac" name="accounts">
         <full-name value="Accounts"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -54,7 +54,7 @@
     </dependency>
     <dependency env="mac" name="addressbook">
         <full-name value="Addressbook"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -64,7 +64,7 @@
     </dependency>
     <dependency env="mac" name="adservices">
         <full-name value="Adservices"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -74,7 +74,7 @@
     </dependency>
     <dependency env="mac" name="adsupport">
         <full-name value="Adsupport"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -84,7 +84,7 @@
     </dependency>
     <dependency env="mac" name="applescriptkit">
         <full-name value="Applescriptkit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -94,7 +94,7 @@
     </dependency>
     <dependency env="mac" name="applescriptobjc">
         <full-name value="Applescriptobjc"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -104,7 +104,7 @@
     </dependency>
     <dependency env="mac" name="applicationservices">
         <full-name value="Applicationservices"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -114,7 +114,7 @@
     </dependency>
     <dependency env="mac" name="hiservices">
         <full-name value="Aiservices"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -124,7 +124,7 @@
     </dependency>
     <dependency env="mac" name="printcore">
         <full-name value="Printcore"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -134,7 +134,7 @@
     </dependency>
     <dependency env="mac" name="apptrackingtransparency">
         <full-name value="Apptrackingtransparency"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -144,7 +144,7 @@
     </dependency>
     <dependency env="mac" name="audiovideobridging">
         <full-name value="Audiovideobridging"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -154,7 +154,7 @@
     </dependency>
     <dependency env="mac" name="authenticationservices">
         <full-name value="Authenticationservices"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -164,7 +164,7 @@
     </dependency>
     <dependency env="mac" name="automaticassessmentconfiguration">
         <full-name value="Automaticassessmentconfiguration"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -174,7 +174,7 @@
     </dependency>
     <dependency env="mac" name="automator">
         <full-name value="Automator"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -184,7 +184,7 @@
     </dependency>
     <dependency env="mac" name="avfoundation">
         <full-name value="Avfoundation"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -194,7 +194,7 @@
     </dependency>
     <dependency env="mac" name="avkit">
         <full-name value="Avkit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -204,7 +204,7 @@
     </dependency>
     <dependency env="mac" name="avrouting">
         <full-name value="Avrouting"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -493,7 +493,7 @@
     </dependency>
     <dependency env="mac" name="backgroundassets">
         <full-name value="Backgroundassets"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -503,7 +503,7 @@
     </dependency>
     <dependency env="mac" name="businesschat">
         <full-name value="Businesschat"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -674,7 +674,7 @@
     </dependency>
     <dependency env="mac" name="calendarstore">
         <full-name value="Calendarstore"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -684,7 +684,7 @@
     </dependency>
     <dependency env="mac" name="callkit">
         <full-name value="Callkit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -694,7 +694,7 @@
     </dependency>
     <dependency env="mac" name="cfnetwork">
         <full-name value="Cfnetwork"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -754,7 +754,7 @@
     </dependency>
     <dependency env="mac" name="classkit">
         <full-name value="Classkit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -764,7 +764,7 @@
     </dependency>
     <dependency env="mac" name="cloudkit">
         <full-name value="Cloudkit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -774,7 +774,7 @@
     </dependency>
     <dependency env="mac" name="collaboration">
         <full-name value="Collaboration"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -784,7 +784,7 @@
     </dependency>
     <dependency env="mac" name="colorsync">
         <full-name value="Colorsync"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -794,7 +794,7 @@
     </dependency>
     <dependency env="mac" name="contacts">
         <full-name value="Contacts"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -804,7 +804,7 @@
     </dependency>
     <dependency env="mac" name="contactsui">
         <full-name value="Contactsui"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -814,7 +814,7 @@
     </dependency>
     <dependency env="mac" name="coreaudio">
         <full-name value="Coreaudio"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -824,7 +824,7 @@
     </dependency>
     <dependency env="mac" name="coreaudiokit">
         <full-name value="Coreaudiokit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -834,7 +834,7 @@
     </dependency>
     <dependency env="mac" name="corebluetooth">
         <full-name value="Corebluetooth"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -844,7 +844,7 @@
     </dependency>
     <dependency env="mac" name="coredata">
         <full-name value="Coredata"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -854,7 +854,7 @@
     </dependency>
     <dependency env="mac" name="corehaptics">
         <full-name value="Corehaptics"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -864,7 +864,7 @@
     </dependency>
     <dependency env="mac" name="corelocation">
         <full-name value="Corelocation"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -874,7 +874,7 @@
     </dependency>
     <dependency env="mac" name="coremedia">
         <full-name value="Coremedia"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -884,7 +884,7 @@
     </dependency>
     <dependency env="mac" name="coremediaio">
         <full-name value="Coremediaio"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -894,7 +894,7 @@
     </dependency>
     <dependency env="mac" name="coremidi">
         <full-name value="Coremidi"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -904,7 +904,7 @@
     </dependency>
     <dependency env="mac" name="coreml">
         <full-name value="Coreml"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -914,7 +914,7 @@
     </dependency>
     <dependency env="mac" name="coremotion">
         <full-name value="Coremotion"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -924,7 +924,7 @@
     </dependency>
     <dependency env="mac" name="coreservices">
         <full-name value="Coreservices"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -934,7 +934,7 @@
     </dependency>
     <dependency env="mac" name="corespotlight">
         <full-name value="Corespotlight"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -944,7 +944,7 @@
     </dependency>
     <dependency env="mac" name="coretext">
         <full-name value="Coretext"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -954,7 +954,7 @@
     </dependency>
     <dependency env="mac" name="corewlan">
         <full-name value="Corewlan"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -964,7 +964,7 @@
     </dependency>
     <dependency env="mac" name="cryptotokenkit">
         <full-name value="Cryptotokenkit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -1166,7 +1166,7 @@
     </dependency>
     <dependency env="mac" name="corefoundation">
         <full-name value="Corefoundation"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -1278,7 +1278,7 @@
     </dependency>
     <dependency env="mac" name="datadetection">
         <full-name value="Datadetection"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -1288,7 +1288,7 @@
     </dependency>
     <dependency env="mac" name="devicecheck">
         <full-name value="Devicecheck"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -1298,7 +1298,7 @@
     </dependency>
     <dependency env="mac" name="dictionaryservices">
         <full-name value="Dictionaryservices"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -1308,7 +1308,7 @@
     </dependency>
     <dependency env="mac" name="discrecording">
         <full-name value="Discrecording"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -1318,7 +1318,7 @@
     </dependency>
     <dependency env="mac" name="discrecordingui">
         <full-name value="Discrecordingui"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -1328,7 +1328,7 @@
     </dependency>
     <dependency env="mac" name="diskarbitration">
         <full-name value="Diskarbitration"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -1338,7 +1338,7 @@
     </dependency>
     <dependency env="mac" name="dvdplayback">
         <full-name value="Dvdplayback"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -1495,7 +1495,7 @@
     </dependency>
     <dependency env="mac" name="eventkit">
         <full-name value="Eventkit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -1505,7 +1505,7 @@
     </dependency>
     <dependency env="mac" name="executionpolicy">
         <full-name value="Executionpolicy"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -1515,7 +1515,7 @@
     </dependency>
     <dependency env="mac" name="extensionkit">
         <full-name value="Extensionkit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -1525,7 +1525,7 @@
     </dependency>
     <dependency env="mac" name="externalaccessory">
         <full-name value="Externalaccessory"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -1587,7 +1587,17 @@
     <dependency env="[win,mac,linux]" name="elasticsearch">
         <full-name value="elasticsearch"/>
         <project-home value="https://pypi.org/project/elasticsearch/"/>
-        <version value="[8.8.0,8.9.0,8.15.1,8.16.0,(8,16,0),(8, 16, 0)]"/>
+        <version value="[8.15.1,8.16.0,(8, 16, 0)]"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_elasticsearch.txt"/>
+        <license-type value="Apache_ 2"/>
+        <copyright-notice value="Copyright 2023 Elasticsearch B.V. Licensed under the Apache License, Version 2.0"/>
+        <description value="Python client for Elasticsearch"/>
+    </dependency>
+    <dependency env="[win,mac,linux]" name="elasticsearch-py">
+        <full-name value="elasticsearch-py"/>
+        <project-home value="https://pypi.org/project/elasticsearch/"/>
+        <version value="[8.15.1,8.16.0,(8, 16, 0)]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_elasticsearch.txt"/>
         <license-type value="Apache_ 2"/>
@@ -1656,7 +1666,7 @@
     </dependency>
     <dependency env="mac" name="fileprovider">
         <full-name value="Fileprovider"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -1666,7 +1676,7 @@
     </dependency>
     <dependency env="mac" name="fileproviderui">
         <full-name value="Fileproviderui"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -1676,7 +1686,7 @@
     </dependency>
     <dependency env="mac" name="fsevents">
         <full-name value="Fsevents"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -1808,7 +1818,7 @@
     </dependency>
     <dependency env="mac" name="gamecenter">
         <full-name value="Gamecenter"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -1818,7 +1828,7 @@
     </dependency>
     <dependency env="mac" name="gamecontroller">
         <full-name value="Gamecontroller"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -1828,7 +1838,7 @@
     </dependency>
     <dependency env="mac" name="gamekit">
         <full-name value="Gamekit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -1838,7 +1848,7 @@
     </dependency>
     <dependency env="mac" name="gameplaykit">
         <full-name value="Gameplaykit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -1951,7 +1961,7 @@
     </dependency>
     <dependency env="mac" name="healthkit">
         <full-name value="Healthkit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2083,7 +2093,7 @@
     </dependency>
     <dependency env="mac" name="imagecapturecore">
         <full-name value="Imagecapturecore"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2093,7 +2103,7 @@
     </dependency>
     <dependency env="mac" name="inputmethodkit">
         <full-name value="Inputmethodkit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2103,7 +2113,7 @@
     </dependency>
     <dependency env="mac" name="installerplugins">
         <full-name value="Installerplugins"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2113,7 +2123,7 @@
     </dependency>
     <dependency env="mac" name="instantmessage">
         <full-name value="Instantmessage"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2133,7 +2143,7 @@
     </dependency>
     <dependency env="mac" name="intents">
         <full-name value="Intents"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2143,7 +2153,7 @@
     </dependency>
     <dependency env="mac" name="intentsui">
         <full-name value="Intentsui"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2153,7 +2163,7 @@
     </dependency>
     <dependency env="mac" name="iobluetooth">
         <full-name value="Iobluetooth"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2163,7 +2173,7 @@
     </dependency>
     <dependency env="mac" name="iobluetoothui">
         <full-name value="Iobluetoothui"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2173,7 +2183,7 @@
     </dependency>
     <dependency env="mac" name="iosurface">
         <full-name value="Iosurface"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2183,7 +2193,7 @@
     </dependency>
     <dependency env="mac" name="ituneslibrary">
         <full-name value="Ituneslibrary"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2703,7 +2713,7 @@
     </dependency>
     <dependency env="mac" name="kernelmanagement">
         <full-name value="Krnelmanagement"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2713,7 +2723,7 @@
     </dependency>
     <dependency env="mac" name="latentsemanticmapping">
         <full-name value="Latentsemanticmapping"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2723,7 +2733,7 @@
     </dependency>
     <dependency env="mac" name="launchservices">
         <full-name value="=Launchservices"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2733,7 +2743,7 @@
     </dependency>
     <dependency env="mac" name="linkpresentation">
         <full-name value="Linkpresentation"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2743,7 +2753,7 @@
     </dependency>
     <dependency env="mac" name="localauthentication">
         <full-name value="Localauthentication"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2753,7 +2763,7 @@
     </dependency>
     <dependency env="mac" name="localauthenticationembeddedui">
         <full-name value="Localauthenticationembeddedui"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2763,7 +2773,7 @@
     </dependency>
     <dependency env="mac" name="mailkit">
         <full-name value="Mailkit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2773,7 +2783,7 @@
     </dependency>
     <dependency env="mac" name="mapkit">
         <full-name value="Mapkit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2783,7 +2793,7 @@
     </dependency>
     <dependency env="mac" name="mediaaccessibility">
         <full-name value="Mediaaccessibility"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2793,7 +2803,7 @@
     </dependency>
     <dependency env="mac" name="medialibrary">
         <full-name value="Medialibrary"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2803,7 +2813,7 @@
     </dependency>
     <dependency env="mac" name="mediaplayer">
         <full-name value="Mediaplayer"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2813,7 +2823,7 @@
     </dependency>
     <dependency env="mac" name="mediatoolbox">
         <full-name value="Mediatoolbox"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2823,7 +2833,7 @@
     </dependency>
     <dependency env="mac" name="metal">
         <full-name value="Metal"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2833,7 +2843,7 @@
     </dependency>
     <dependency env="mac" name="metalfx">
         <full-name value="Metalfx"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2843,7 +2853,7 @@
     </dependency>
     <dependency env="mac" name="metalkit">
         <full-name value="Metalkit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2853,7 +2863,7 @@
     </dependency>
     <dependency env="mac" name="metalperformanceshaders">
         <full-name value="Metalperformanceshaders"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2863,7 +2873,7 @@
     </dependency>
     <dependency env="mac" name="metalperformanceshadersgraph">
         <full-name value="Metalperformanceshadersgraph"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2873,7 +2883,7 @@
     </dependency>
     <dependency env="mac" name="metrickit">
         <full-name value="Metrickit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2883,7 +2893,7 @@
     </dependency>
     <dependency env="mac" name="mlcompute">
         <full-name value="Mlcompute"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2893,7 +2903,7 @@
     </dependency>
     <dependency env="mac" name="modelio">
         <full-name value="Modelio"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2903,7 +2913,7 @@
     </dependency>
     <dependency env="mac" name="multipeerconnectivity">
         <full-name value="Multipeerconnectivity"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2913,7 +2923,7 @@
     </dependency>
     <dependency env="mac" name="naturallanguage">
         <full-name value="Naturallanguage"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2923,7 +2933,7 @@
     </dependency>
     <dependency env="mac" name="netfs">
         <full-name value="Netfs"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2933,7 +2943,7 @@
     </dependency>
     <dependency env="mac" name="network">
         <full-name value="Network"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2943,7 +2953,7 @@
     </dependency>
     <dependency env="mac" name="networkextension">
         <full-name value="Networkextension"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2953,7 +2963,7 @@
     </dependency>
     <dependency env="mac" name="notificationcenter">
         <full-name value="Notificationcenter"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2963,7 +2973,7 @@
     </dependency>
     <dependency env="mac" name="opendirectory">
         <full-name value="Opendirectory"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2973,7 +2983,7 @@
     </dependency>
     <dependency env="mac" name="osakit">
         <full-name value="Osakit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2983,7 +2993,7 @@
     </dependency>
     <dependency env="mac" name="oslog">
         <full-name value="Oslog"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -2993,7 +3003,7 @@
     </dependency>
     <dependency env="mac" name="passkit">
         <full-name value="Passkit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -3003,7 +3013,7 @@
     </dependency>
     <dependency env="mac" name="pencilkit">
         <full-name value="Pencilkit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -3023,7 +3033,7 @@
     </dependency>
     <dependency env="mac" name="phase">
         <full-name value="Phase"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -3033,7 +3043,7 @@
     </dependency>
     <dependency env="mac" name="photos">
         <full-name value="Photos"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -3043,7 +3053,7 @@
     </dependency>
     <dependency env="mac" name="photosui">
         <full-name value="Photosui"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -3053,7 +3063,7 @@
     </dependency>
     <dependency env="mac" name="preferencepanes">
         <full-name value="Preferencepanes"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -3063,7 +3073,7 @@
     </dependency>
     <dependency env="mac" name="pushkit">
         <full-name value="Pushkit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -3103,7 +3113,7 @@
     </dependency>
     <dependency env="mac" name="quartz">
         <full-name value="Quartz"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -3113,7 +3123,7 @@
     </dependency>
     <dependency env="mac" name="quicklookthumbnailing">
         <full-name value="Quicklookthumbnailing"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -4718,7 +4728,7 @@
     </dependency>
     <dependency env="mac" name="replaykit">
         <full-name value="Replaykit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -4849,7 +4859,7 @@
     </dependency>
     <dependency env="mac" name="safariservices">
         <full-name value="Safariservices"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -4859,7 +4869,7 @@
     </dependency>
     <dependency env="mac" name="safetykit">
         <full-name value="Safetykit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -4869,7 +4879,7 @@
     </dependency>
     <dependency env="mac" name="scenekit">
         <full-name value="Scenekit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -4879,7 +4889,7 @@
     </dependency>
     <dependency env="mac" name="screencapturekit">
         <full-name value="Screencapturekit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -4889,7 +4899,7 @@
     </dependency>
     <dependency env="mac" name="screensaver">
         <full-name value="Screensaver"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -4899,7 +4909,7 @@
     </dependency>
     <dependency env="mac" name="screentime">
         <full-name value="Screentime"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -4909,7 +4919,7 @@
     </dependency>
     <dependency env="mac" name="scriptingbridge">
         <full-name value="Scriptingbridge"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -4919,7 +4929,7 @@
     </dependency>
     <dependency env="mac" name="searchkit">
         <full-name value="Searchkit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -4929,7 +4939,7 @@
     </dependency>
     <dependency env="mac" name="security">
         <full-name value="Security"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -4939,7 +4949,7 @@
     </dependency>
     <dependency env="mac" name="securityfoundation">
         <full-name value="Securityfoundation"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -4949,7 +4959,7 @@
     </dependency>
     <dependency env="mac" name="securityinterface">
         <full-name value="Securityinterface"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -4959,7 +4969,7 @@
     </dependency>
     <dependency env="mac" name="servicemanagement">
         <full-name value="Servicemanagement"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -4969,7 +4979,7 @@
     </dependency>
     <dependency env="mac" name="sharedwithyou">
         <full-name value="Sharedwithyou"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -4979,7 +4989,7 @@
     </dependency>
     <dependency env="mac" name="shazamkit">
         <full-name value="Shazamkit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -4989,7 +4999,7 @@
     </dependency>
     <dependency env="mac" name="social">
         <full-name value="Social"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -5009,7 +5019,7 @@
     </dependency>
     <dependency env="mac" name="soundanalysis">
         <full-name value="Soundanalysis"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -5019,7 +5029,7 @@
     </dependency>
     <dependency env="mac" name="speech">
         <full-name value="Speech"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -5029,7 +5039,7 @@
     </dependency>
     <dependency env="mac" name="spritekit">
         <full-name value="Spritekit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -5039,7 +5049,7 @@
     </dependency>
     <dependency env="mac" name="storekit">
         <full-name value="Storekit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -5049,7 +5059,7 @@
     </dependency>
     <dependency env="mac" name="syncservices">
         <full-name value="Syncservices"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -5059,7 +5069,7 @@
     </dependency>
     <dependency env="mac" name="systemconfiguration">
         <full-name value="Systemconfiguration"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -5069,7 +5079,7 @@
     </dependency>
     <dependency env="mac" name="systemextensions">
         <full-name value="Systemextensions"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -5079,7 +5089,7 @@
     </dependency>
     <dependency env="mac" name="threadnetwork">
         <full-name value="Threadnetwork"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -5636,7 +5646,7 @@
     </dependency>
     <dependency env="mac" name="uniformtypeidentifiers">
         <full-name value="Uniformtypeidentifiers"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -5646,7 +5656,7 @@
     </dependency>
     <dependency env="mac" name="usernotifications">
         <full-name value="Usernotifications"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -5656,7 +5666,7 @@
     </dependency>
     <dependency env="mac" name="usernotificationsui">
         <full-name value="Usernotificationsui"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -5696,7 +5706,7 @@
     </dependency>
     <dependency env="mac" name="videosubscriberaccount">
         <full-name value="Videosubscriberaccount"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -5706,7 +5716,7 @@
     </dependency>
     <dependency env="mac" name="videotoolbox">
         <full-name value="Videotoolbox"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -5716,7 +5726,7 @@
     </dependency>
     <dependency env="mac" name="virtualization">
         <full-name value="Virtualization"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -5727,7 +5737,7 @@
     </dependency>
     <dependency env="mac" name="vision">
         <full-name value="Vision"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>
@@ -5778,7 +5788,7 @@
 
     <dependency env="mac" name="webkit">
         <full-name value="Webkit"/>
-        <project-home value="http://pythonhosted.org/pyobjc/"/>
+        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PyObjC.txt"/>

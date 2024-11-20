@@ -225,7 +225,7 @@ def get_regions_positions(regions):
 
     for r in regions:
         space = r.supported_spaces[0]  # choose first space that is available for that region
-        centroid = r.spatial_props(space=space).components[0].centroid
+        centroid = r.spatial_props(space=space)[0].centroid
         positions.append(centroid.coordinate)
 
     return positions
