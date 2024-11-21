@@ -22,26 +22,6 @@
         <description
                 value=" Alembic is a lightweight database migration tool for usage with the SQLAlchemy Database Toolkit for Python"/>
     </dependency>
-    <dependency env="mac" name="accessibility">
-        <full-name value="Accessibility"/>
-        <project-home value="https://github.com/atheriel/accessibility"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_accessibility.txt"/>
-        <license-type value="ISC_"/>
-        <copyright-notice value="Copyright 2013-2014, Aaron Jacobs (atheriel@gmail.com)"/>
-        <description value="It can be used to query and modify attributes of running applications, as well as watch for a variety of notifications."/>
-    </dependency>
-    <dependency env="mac" name="accessibility">
-        <full-name value="Accessibility"/>
-        <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_PyObjC.txt"/>
-        <license-type value="MIT_"/>
-        <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
-    </dependency>
     <dependency env="mac" name="accounts">
         <full-name value="Accounts"/>
         <project-home value="https://github.com/ronaldoussoren/pyobjc"/>
@@ -50,7 +30,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="MIT_"/>
             <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="addressbook">
         <full-name value="Addressbook"/>
@@ -60,7 +40,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="adservices">
         <full-name value="Adservices"/>
@@ -70,7 +50,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="adsupport">
         <full-name value="Adsupport"/>
@@ -80,7 +60,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="applescriptkit">
         <full-name value="Applescriptkit"/>
@@ -90,7 +70,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="applescriptobjc">
         <full-name value="Applescriptobjc"/>
@@ -100,7 +80,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="applicationservices">
         <full-name value="Applicationservices"/>
@@ -110,7 +90,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="hiservices">
         <full-name value="Aiservices"/>
@@ -120,7 +100,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="printcore">
         <full-name value="Printcore"/>
@@ -130,7 +110,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="apptrackingtransparency">
         <full-name value="Apptrackingtransparency"/>
@@ -140,7 +120,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="audiovideobridging">
         <full-name value="Audiovideobridging"/>
@@ -150,7 +130,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="authenticationservices">
         <full-name value="Authenticationservices"/>
@@ -160,7 +140,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="automaticassessmentconfiguration">
         <full-name value="Automaticassessmentconfiguration"/>
@@ -170,7 +150,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="automator">
         <full-name value="Automator"/>
@@ -180,7 +160,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="avfoundation">
         <full-name value="Avfoundation"/>
@@ -190,7 +170,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="avkit">
         <full-name value="Avkit"/>
@@ -200,7 +180,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="avrouting">
         <full-name value="Avrouting"/>
@@ -210,7 +190,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="win" name="adodbapi">
         <full-name value="Adodbapi"/>
@@ -499,7 +479,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="businesschat">
         <full-name value="Businesschat"/>
@@ -509,7 +489,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="[win,mac,linux]" name="babel">
         <full-name value="Babel"/>
@@ -680,7 +660,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="callkit">
         <full-name value="Callkit"/>
@@ -690,7 +670,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="cfnetwork">
         <full-name value="Cfnetwork"/>
@@ -700,7 +680,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="asyncio">
         <full-name value="Asyncio"/>
@@ -760,7 +740,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="cloudkit">
         <full-name value="Cloudkit"/>
@@ -770,7 +750,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="collaboration">
         <full-name value="Collaboration"/>
@@ -780,7 +760,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="colorsync">
         <full-name value="Colorsync"/>
@@ -790,7 +770,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="contacts">
         <full-name value="Contacts"/>
@@ -800,7 +780,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="contactsui">
         <full-name value="Contactsui"/>
@@ -810,7 +790,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="coreaudio">
         <full-name value="Coreaudio"/>
@@ -820,7 +800,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="coreaudiokit">
         <full-name value="Coreaudiokit"/>
@@ -830,7 +810,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="corebluetooth">
         <full-name value="Corebluetooth"/>
@@ -840,7 +820,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="coredata">
         <full-name value="Coredata"/>
@@ -850,7 +830,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="corehaptics">
         <full-name value="Corehaptics"/>
@@ -860,7 +840,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="corelocation">
         <full-name value="Corelocation"/>
@@ -870,7 +850,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="coremedia">
         <full-name value="Coremedia"/>
@@ -880,7 +860,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="coremediaio">
         <full-name value="Coremediaio"/>
@@ -890,7 +870,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="coremidi">
         <full-name value="Coremidi"/>
@@ -900,7 +880,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="coreml">
         <full-name value="Coreml"/>
@@ -910,7 +890,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="coremotion">
         <full-name value="Coremotion"/>
@@ -920,7 +900,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="coreservices">
         <full-name value="Coreservices"/>
@@ -930,7 +910,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="corespotlight">
         <full-name value="Corespotlight"/>
@@ -940,7 +920,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="coretext">
         <full-name value="Coretext"/>
@@ -950,7 +930,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="corewlan">
         <full-name value="Corewlan"/>
@@ -960,7 +940,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="cryptotokenkit">
         <full-name value="Cryptotokenkit"/>
@@ -970,7 +950,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="[win,mac,linux]" name="cached-property">
         <full-name value="Cached-property"/>
@@ -1172,7 +1152,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="[win,linux]" name="coverage">
         <full-name value="Coverage"/>
@@ -1212,7 +1192,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="[win,mac,linux]" name="cryptography">
         <full-name value="cryptography"/>
@@ -1284,7 +1264,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="devicecheck">
         <full-name value="Devicecheck"/>
@@ -1294,7 +1274,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="dictionaryservices">
         <full-name value="Dictionaryservices"/>
@@ -1304,7 +1284,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="discrecording">
         <full-name value="Discrecording"/>
@@ -1314,7 +1294,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="discrecordingui">
         <full-name value="Discrecordingui"/>
@@ -1324,7 +1304,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="diskarbitration">
         <full-name value="Diskarbitration"/>
@@ -1334,7 +1314,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="dvdplayback">
         <full-name value="Dvdplayback"/>
@@ -1344,7 +1324,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="[win]" name="dask">
         <full-name value="Dask"/>
@@ -1501,7 +1481,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="executionpolicy">
         <full-name value="Executionpolicy"/>
@@ -1511,7 +1491,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="extensionkit">
         <full-name value="Extensionkit"/>
@@ -1521,7 +1501,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="externalaccessory">
         <full-name value="Externalaccessory"/>
@@ -1531,7 +1511,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="[win,mac,linux]" name="ecdsa">
         <full-name value="ecdsa"/>
@@ -1672,7 +1652,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="fileproviderui">
         <full-name value="Fileproviderui"/>
@@ -1682,7 +1662,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="fsevents">
         <full-name value="Fsevents"/>
@@ -1692,7 +1672,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="[win,mac,linux]" name="flask-restx">
         <full-name value="Flask Rest"/>
@@ -1824,7 +1804,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="gamecontroller">
         <full-name value="Gamecontroller"/>
@@ -1834,7 +1814,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="gamekit">
         <full-name value="Gamekit"/>
@@ -1844,7 +1824,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="gameplaykit">
         <full-name value="Gameplaykit"/>
@@ -1854,7 +1834,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="[win,mac,linux]" name="gdist">
         <full-name value="Gdist"/>
@@ -1967,7 +1947,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="[win,mac,linux]" name="hpack">
         <full-name value="Hpack"/>
@@ -2099,7 +2079,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="inputmethodkit">
         <full-name value="Inputmethodkit"/>
@@ -2109,7 +2089,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="installerplugins">
         <full-name value="Installerplugins"/>
@@ -2119,7 +2099,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="instantmessage">
         <full-name value="Instantmessage"/>
@@ -2129,7 +2109,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="win" name="isapi">
         <full-name value="Isapi-wsgi"/>
@@ -2139,7 +2119,7 @@
         <license value="LICENSE_isapi.txt"/>
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2005-2009 Mark Rees and contributors"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="intents">
         <full-name value="Intents"/>
@@ -2149,7 +2129,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="intentsui">
         <full-name value="Intentsui"/>
@@ -2159,7 +2139,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="iobluetooth">
         <full-name value="Iobluetooth"/>
@@ -2169,7 +2149,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="iobluetoothui">
         <full-name value="Iobluetoothui"/>
@@ -2179,7 +2159,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="iosurface">
         <full-name value="Iosurface"/>
@@ -2189,7 +2169,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="ituneslibrary">
         <full-name value="Ituneslibrary"/>
@@ -2199,7 +2179,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="[win,mac,linux]" name="iniconfig">
         <full-name value="iniconfig: brain-dead simple parsing of ini files"/>
@@ -2719,7 +2699,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="latentsemanticmapping">
         <full-name value="Latentsemanticmapping"/>
@@ -2729,7 +2709,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="launchservices">
         <full-name value="=Launchservices"/>
@@ -2739,7 +2719,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="linkpresentation">
         <full-name value="Linkpresentation"/>
@@ -2749,7 +2729,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="localauthentication">
         <full-name value="Localauthentication"/>
@@ -2759,7 +2739,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="localauthenticationembeddedui">
         <full-name value="Localauthenticationembeddedui"/>
@@ -2769,7 +2749,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="mailkit">
         <full-name value="Mailkit"/>
@@ -2779,7 +2759,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="mapkit">
         <full-name value="Mapkit"/>
@@ -2789,7 +2769,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="mediaaccessibility">
         <full-name value="Mediaaccessibility"/>
@@ -2799,7 +2779,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="medialibrary">
         <full-name value="Medialibrary"/>
@@ -2809,7 +2789,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="mediaplayer">
         <full-name value="Mediaplayer"/>
@@ -2819,7 +2799,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="mediatoolbox">
         <full-name value="Mediatoolbox"/>
@@ -2829,7 +2809,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="metal">
         <full-name value="Metal"/>
@@ -2839,7 +2819,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="metalfx">
         <full-name value="Metalfx"/>
@@ -2849,7 +2829,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="metalkit">
         <full-name value="Metalkit"/>
@@ -2859,7 +2839,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="metalperformanceshaders">
         <full-name value="Metalperformanceshaders"/>
@@ -2869,7 +2849,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="metalperformanceshadersgraph">
         <full-name value="Metalperformanceshadersgraph"/>
@@ -2879,7 +2859,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="metrickit">
         <full-name value="Metrickit"/>
@@ -2889,7 +2869,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="mlcompute">
         <full-name value="Mlcompute"/>
@@ -2899,7 +2879,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="modelio">
         <full-name value="Modelio"/>
@@ -2909,7 +2889,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="multipeerconnectivity">
         <full-name value="Multipeerconnectivity"/>
@@ -2919,7 +2899,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="naturallanguage">
         <full-name value="Naturallanguage"/>
@@ -2929,7 +2909,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="netfs">
         <full-name value="Netfs"/>
@@ -2939,7 +2919,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="network">
         <full-name value="Network"/>
@@ -2949,7 +2929,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="networkextension">
         <full-name value="Networkextension"/>
@@ -2959,7 +2939,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="notificationcenter">
         <full-name value="Notificationcenter"/>
@@ -2969,7 +2949,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="opendirectory">
         <full-name value="Opendirectory"/>
@@ -2979,7 +2959,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="osakit">
         <full-name value="Osakit"/>
@@ -2999,7 +2979,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="passkit">
         <full-name value="Passkit"/>
@@ -3009,7 +2989,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="pencilkit">
         <full-name value="Pencilkit"/>
@@ -3019,7 +2999,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="dbm">
         <full-name value="PyDbm"/>
@@ -3039,7 +3019,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="photos">
         <full-name value="Photos"/>
@@ -3049,7 +3029,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="photosui">
         <full-name value="Photosui"/>
@@ -3059,7 +3039,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="preferencepanes">
         <full-name value="Preferencepanes"/>
@@ -3069,7 +3049,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="pushkit">
         <full-name value="Pushkit"/>
@@ -3079,7 +3059,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="[win,mac,linux]" name="pyjwt">
         <full-name value="Pyjwt"/>
@@ -3119,7 +3099,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="quicklookthumbnailing">
         <full-name value="Quicklookthumbnailing"/>
@@ -3129,7 +3109,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="[win,mac,linux]" name="kiwisolver">
         <full-name value="kiwisolver"/>
@@ -4734,7 +4714,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="[win,linux,mac]" name="rfc3339-validator">
         <full-name value="Rfc3339-validator"/>
@@ -4865,7 +4845,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="safetykit">
         <full-name value="Safetykit"/>
@@ -4875,7 +4855,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="scenekit">
         <full-name value="Scenekit"/>
@@ -4885,7 +4865,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="screencapturekit">
         <full-name value="Screencapturekit"/>
@@ -4895,7 +4875,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="screensaver">
         <full-name value="Screensaver"/>
@@ -4905,7 +4885,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="screentime">
         <full-name value="Screentime"/>
@@ -4915,7 +4895,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="scriptingbridge">
         <full-name value="Scriptingbridge"/>
@@ -4925,7 +4905,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="searchkit">
         <full-name value="Searchkit"/>
@@ -4935,7 +4915,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="security">
         <full-name value="Security"/>
@@ -4945,7 +4925,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="securityfoundation">
         <full-name value="Securityfoundation"/>
@@ -4955,7 +4935,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="securityinterface">
         <full-name value="Securityinterface"/>
@@ -4965,7 +4945,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="servicemanagement">
         <full-name value="Servicemanagement"/>
@@ -4975,7 +4955,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="sharedwithyou">
         <full-name value="Sharedwithyou"/>
@@ -4985,7 +4965,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="shazamkit">
         <full-name value="Shazamkit"/>
@@ -4995,7 +4975,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="social">
         <full-name value="Social"/>
@@ -5005,7 +4985,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="sharedwithyoucore">
         <full-name value="Sharedwithyoucore"/>
@@ -5015,7 +4995,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="soundanalysis">
         <full-name value="Soundanalysis"/>
@@ -5025,7 +5005,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="speech">
         <full-name value="Speech"/>
@@ -5035,7 +5015,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="spritekit">
         <full-name value="Spritekit"/>
@@ -5045,7 +5025,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="storekit">
         <full-name value="Storekit"/>
@@ -5055,7 +5035,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="syncservices">
         <full-name value="Syncservices"/>
@@ -5065,7 +5045,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="systemconfiguration">
         <full-name value="Systemconfiguration"/>
@@ -5075,7 +5055,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="systemextensions">
         <full-name value="Systemextensions"/>
@@ -5085,7 +5065,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="threadnetwork">
         <full-name value="Threadnetwork"/>
@@ -5095,7 +5075,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="[win,linux]" name="scandir">
         <full-name value="Scandir"/>
@@ -5652,7 +5632,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="usernotifications">
         <full-name value="Usernotifications"/>
@@ -5662,7 +5642,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="usernotificationsui">
         <full-name value="Usernotificationsui"/>
@@ -5672,7 +5652,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="[win,linux,mac]" name="urllib3">
         <full-name value="urllib3"/>
@@ -5712,7 +5692,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="videotoolbox">
         <full-name value="Videotoolbox"/>
@@ -5722,7 +5702,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="virtualization">
         <full-name value="Virtualization"/>
@@ -5733,7 +5713,7 @@
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
         
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="vision">
         <full-name value="Vision"/>
@@ -5743,7 +5723,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="[mac]" name="watchdog">
         <full-name value="watchdog"/>
@@ -5794,7 +5774,7 @@
         <license value="LICENSE_PyObjC.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 2002, 2003 - Bill Bumgarner, Ronald Oussoren, Steve Majewski, Lele Gaifax, et.al., 2003-2024 - Ronald Oussoren"/>
-        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
+        <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar. All the packages with the license LICENSE_PyObjC.txt are from the same source."/>
     </dependency>
     <dependency env="mac" name="wcwidth">
         <full-name value="wcwidth (for terminal)"/>
