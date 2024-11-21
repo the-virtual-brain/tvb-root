@@ -1157,7 +1157,7 @@
     <dependency env="[win,linux]" name="coverage">
         <full-name value="Coverage"/>
         <project-home value="https://pypi.python.org/pypi/coverage"/>
-        <version value="[7.2.5,7.2.7,7.6.4,7.6.7]"/>
+        <version value="[7.2.5,7.2.7,7.6.4,7.6.7,7.6.8]"/>
         <usage value="unit tests"/>
         <license value="LICENSE_coverage.txt"/>
         <license-type value="Apache_ 2"/>
@@ -1363,7 +1363,7 @@
     <dependency env="[win,linux,mac]" name="debugpy">
         <full-name value="Debugpy"/>
         <project-home value="https://github.com/microsoft/debugpy"/>
-        <version value="[1.8.7,1.8.8]"/>
+        <version value="[1.8.7,1.8.8,1.8.9]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_debugpy.txt"/>
         <license-type value="MIT_"/>
@@ -3892,7 +3892,7 @@
     <dependency env="[win,mac,linux]" name="numexpr">
         <full-name value="NumExpr"/>
         <project-home value="http://code.google.com/pnumexpr/"/>
-        <version value="[2.8.4,2.10.1]"/>
+        <version value="[2.8.4,2.10.1,2.10.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_numexpr.txt"/>
         <license-type value="MIT_"/>
@@ -5527,7 +5527,7 @@
     <dependency env="[win,mac,linux]" name="tqdm">
         <full-name value="tqdm"/>
         <project-home value="https://github.com/tqdm/tqdm"/>
-        <version value="[4.65.0,4.66.5,4.67.0]"/>
+        <version value="[4.65.0,4.66.5,4.67.0,4.67.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_tqdm.txt"/>
         <license-type value="MIT_"/>
@@ -5882,7 +5882,7 @@
     <dependency env="[win,linux]" name="wheel">
         <full-name value="A built-package format for Python."/>
         <project-home value="https://bitbucket.org/pypa/wheel"/>
-        <version value="[0.38.4,0.44.0,0.45.0]"/>
+        <version value="[0.38.4,0.44.0,0.45.0,0.45.1]"/>
         <usage value="packaging"/>
         <license value="LICENSE_wheel.txt"/>
         <license-type value="MIT_"/>
@@ -5923,7 +5923,7 @@
     <dependency env="[mac]" name="wrapt">
         <full-name value="wrapt"/>
         <project-home value="https://pypi.org/project/wrapt/"/>
-        <version value="[1.15.0,1.16.0]"/>
+        <version value="[1.15.0,1.16.0,1.17.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_wrapt.txt"/>
         <license-type value="BSD_ 2 clause"/>
