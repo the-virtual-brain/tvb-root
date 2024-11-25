@@ -81,7 +81,7 @@ interact with TVB Web Graphical Interface.
 ### Testing
 
 For testing our packages, PyTest framework can be used. We also need a few more dependencies for tests specific, 
-which are listed in setup.py files.
+which are listed in pyproject.toml files.
 
 Pytest will run all files in the current directory and its subdirectories
 of the form test_*.py or *_test.py.
@@ -100,16 +100,16 @@ The command for running our tests has two forms:
   2. The second alternative form of running TVB tests, when installing TVB from Pypi, is:
         
             pip install -U tvb-framework
-            # install optional dependencies needed just for tests (search "extras_require" in tvb_framework/setup.py)
+            # install optional dependencies needed just for tests (search "extras_require" in tvb_framework/pyproject.toml)
             pip install pytest pytest-benchmark pytest-mock BeautifulSoup4
             pytest --pyargs tvb.tests.framework
     
             pip install -U tvb-library
-            # install optional dependencies (from variable LIBRARY_REQUIRED_EXTRA in tvb_library/setup.py)
+            # install optional dependencies (from variable LIBRARY_REQUIRED_EXTRA in tvb_library/pyproject.toml)
             pip install h5py pytest pytest-benchmark pytest-xdist tvb-gdist tvb-data
             pytest --pyargs tvb.tests.library
     
-- For all the tests to run correctly, the dependencies specified as LIBRARY_REQUIRED_EXTRA in [setup.py](https://github.com/the-virtual-brain/tvb-root/blob/master/tvb_library/setup.py) should be installed
+- For all the tests to run correctly, the dependencies specified as LIBRARY_REQUIRED_EXTRA in [pyproject.toml](https://github.com/the-virtual-brain/tvb-root/blob/master/tvb_library/pyproject.toml) should be installed
 - Make sure that tvb-data package is installed from [Zenodo](https://zenodo.org/record/10128131)
 
 ### Coverage

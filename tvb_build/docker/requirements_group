@@ -1,4 +1,5 @@
 numpy<2
+siibra
 cryptography
 sqlalchemy
 pyAesCrypt
@@ -49,7 +50,6 @@ lxml
 pylems
 docutils
 Pillow
-siibra
 bctpy
 kubernetes
 watchdog
