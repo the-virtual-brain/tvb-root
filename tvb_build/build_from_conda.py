@@ -86,7 +86,7 @@ class Config:
             'bin\\tvb_stop.bat': 'distribution stop',
             'bin\\jupyter_notebook.bat': set_path + 'cd ..\\bin\n..\\tvb_data\\Scripts\\jupyter lab ..\\demo_scripts',
             'demo_scripts\\jupyter_notebook.bat': set_path + 'cd ..\\demo_scripts\n..\\tvb_data\\Scripts\\jupyter lab',
-            'bin\\activate_tvb_env.bat':'REM Conda must be installed before running this script \n conda activate ./tvb_data \n cmd /K'
+            'bin\\activate_tvb_env.bat':'REM Conda must be installed before running this script \n conda activate ../tvb_data \n cmd /K'
         }
 
         return Config("Windows", "C:\\miniconda\\envs\\tvb-run",
@@ -116,7 +116,7 @@ class Config:
             'bin/tvb_stop.sh': 'bash ./distribution.sh stop',
             'bin/jupyter_notebook.sh': set_path + 'cd ../bin\n../tvb_data/bin/python -m jupyterlab ../demo_scripts',
             'demo_scripts/jupyter_notebook.sh': set_path + 'cd ../demo_scripts\n../tvb_data/bin/python -m jupyterlab',
-            'bin/activate_tvb_env.sh': '# Conda must be installed before running this script \n conda activate ./tvb_data \n $SHELL'
+            'bin/activate_tvb_env.sh': '# Conda must be installed before running this script \n conda activate ../tvb_data \n $SHELL'
         }
 
         return Config("Linux", "/opt/conda/envs/tvb-run", join("lib", Environment.PYTHON_FOLDER, "site-packages"),
