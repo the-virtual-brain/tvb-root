@@ -45,6 +45,7 @@ Launching the application
 
 In the TVB_Distribution folder you should find a sub-folder `bin` with a number of scripts:
 
+- activate_tvb_env
 - tvb_start
 - tvb_clean
 - tvb_stop
@@ -136,6 +137,29 @@ A Python shell will appear.
 
    $ ./distribution.sh start COMMAND_PROFILE
 
+
+Activate the conda environment
+..............................
+
+On Windows, from the terminal, you can run the conda environment activation script or you can double click on the script
+
+.. code-block:: bash
+
+   $ activate_tvb_env.bat
+
+On Linux, from the terminal, you can run the conda environment with source:
+
+.. code-block:: bash
+
+   $ source activate_tvb_env.sh
+
+On Mac, from the terminal, you can run the conda environment with source:
+
+.. code-block:: bash
+
+   $ source activate_tvb_env.command
+
+After activating the Conda environment, you can modify the currently installed Python packages.
 
 Configuring TVB
 ---------------

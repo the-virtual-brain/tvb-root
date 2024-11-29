@@ -16,6 +16,14 @@ pipeline {
                 }
             }
         }
+        stage ('Tests on SqLite') {
+            steps {
+                withDockerContainer(image: "${FULL_DOCKER_IMAGE_NAME}") {
+                    powershell 'cd tvb_build; cmd /k "activate tvb-run & install_full_tvb.bat & cd ../tvb_bin & run_tests.bat"; exit 0'
+                }
+                junit 'tvb_bin/TEST_OUTPUT/results_*.xml'
+            }
+        }
         stage('Copy Step 1') {
              steps {
                  bat '''

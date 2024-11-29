@@ -60,6 +60,18 @@ pipeline {
                 archiveArtifacts artifacts: 'TVB_Mac*.zip'
             }
         }
+        stage ('Tests on SqLite') {
+            steps {
+                sh '''#!/bin/bash
+                    source /Applications/anaconda3/etc/profile.d/conda.sh
+                    conda activate mac-distribution
+                    cd tvb_bin
+                    /bin/bash run_tests.sh
+                    exit 0
+                '''
+                junit 'tvb_bin/TEST_OUTPUT/results_*.xml'
+            }
+        }
     }
     post {
         changed {

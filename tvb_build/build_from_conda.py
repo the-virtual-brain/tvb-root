@@ -35,7 +35,7 @@ from tvb_build.third_party_licenses.build_licenses import generate_artefact
 
 
 class Config:
-    def __init__(self, platform_name, anaconda_env_path, site_packages_suffix, commands_map, command_factory):
+    def __init__(self, platform_name, anaconda_env_path, site_packages_suffix, commands_map, command_factory, bin_path=None):
         # System paths:
         self.anaconda_env_path = anaconda_env_path
 
@@ -69,6 +69,10 @@ class Config:
         _artifact_glob = "TVB_" + platform_name + "_*.zip"
         self.artifact_glob = join(self.build_folder, _artifact_glob)  # this is used to match old artifacts
         self.artifact_pth = join(self.build_folder, self.artifact_name)
+        if bin_path:
+            self.bin_path = join(self.target_library_root, bin_path)
+        else:
+            self.bin_path = None
 
     @staticmethod
     def win64():
@@ -86,7 +90,7 @@ class Config:
             'bin\\tvb_stop.bat': 'distribution stop',
             'bin\\jupyter_notebook.bat': set_path + 'cd ..\\bin\n..\\tvb_data\\Scripts\\jupyter lab ..\\demo_scripts',
             'demo_scripts\\jupyter_notebook.bat': set_path + 'cd ..\\demo_scripts\n..\\tvb_data\\Scripts\\jupyter lab',
-            'bin\\activate_tvb_env.bat':'REM Conda must be installed before running this script \n conda activate ../tvb_data \n cmd /K'
+            'bin\\activate_tvb_env.bat':'REM Conda must be installed before running this script\nconda activate ../tvb_data\ncmd /K'
         }
 
         return Config("Windows", "C:\\miniconda\\envs\\tvb-run",
@@ -116,11 +120,11 @@ class Config:
             'bin/tvb_stop.sh': 'bash ./distribution.sh stop',
             'bin/jupyter_notebook.sh': set_path + 'cd ../bin\n../tvb_data/bin/python -m jupyterlab ../demo_scripts',
             'demo_scripts/jupyter_notebook.sh': set_path + 'cd ../demo_scripts\n../tvb_data/bin/python -m jupyterlab',
-            'bin/activate_tvb_env.sh': '# Conda must be installed before running this script \n conda activate ../tvb_data \n $SHELL'
+            'bin/activate_tvb_env.sh': '# Conda must be installed before running this script;\n# Run this script with source.\nconda activate ../tvb_data \n'
         }
 
         return Config("Linux", "/opt/conda/envs/tvb-run", join("lib", Environment.PYTHON_FOLDER, "site-packages"),
-                      commands_map, _create_unix_command)
+                      commands_map, _create_unix_command, "bin")
 
 
 def _log(indent, msg):
@@ -203,7 +207,24 @@ def _create_windows_script(target_file, command):
     os.chmod(target_file, 0o755)
 
 
+def _replace_first_line_if_pattern(pathname: str, pattern: str, replacement: str):
+    """
+    Replaces the first line of a file with a given string if the pathname contains a specific pattern.
+    """
+    for filename in os.listdir(pathname):
+        file_path = os.path.join(pathname, filename)
+        if pattern in file_path:
+            with open(file_path, 'r') as file:
+                lines = file.readlines()
+                if lines:
+                    lines[0] = replacement + '\n'
+            with open(file_path, 'w') as file:
+                file.writelines(lines)
+            _log(1, f"First line of {file_path} replaced with: {replacement}")
+
+
 def _modify_pth(pth_name):
+    # Log if one of the files pip, pip3 or pip3.11 are missing, but do not stop the execution if it is missing
     """
     Replace tvb links with paths
     """
@@ -280,6 +301,8 @@ def prepare_anaconda_dist(config):
 
     _log(1, "Modifying PTH " + config.easy_install_pth)
     _modify_pth(config.easy_install_pth)
+    if config.bin_path:
+        _replace_first_line_if_pattern(config.bin_path, 'bin/pip', '#!../tvb_data/bin/python')
     _fix_jupyter_kernel(config.target_library_root, config.platform_name == "Windows")
 
     _log(1, "Creating command files:")
