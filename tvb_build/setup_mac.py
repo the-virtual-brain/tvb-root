@@ -256,7 +256,8 @@ def prepare_mac_dist():
                          'source ./distribution.command clean', 'Cleaning up old TVB data.', True)
     _create_command_file(os.path.join(DIST_FOLDER, "bin", 'tvb_stop'),
                          'source ./distribution.command stop', 'Stopping TVB related processes.', True)
-
+    _create_command_file(os.path.join(DIST_FOLDER, "bin", 'activate_tvb_env'),
+                         'conda activate ../tvb_data \n', 'Conda must be installed before running this script', True)
     jupyter_command = '/Applications/{}/Contents/Resources/bin/jupyter lab '.format(APP)
     _create_command_file(os.path.join(DIST_FOLDER, "bin", 'jupyter_notebook'),
                          jupyter_command + '../demo_scripts', 'Launching IPython Notebook from TVB Distribution')
