@@ -33,6 +33,7 @@ from scipy.integrate import trapezoid as scipy_integrate_trapz
 from scipy.stats import norm as scipy_stats_norm
 from .base import Model
 from tvb.basic.neotraits.api import NArray, Final, List, Range
+from numba import njit
 
 
 class ReducedSetBase(Model):
@@ -191,6 +192,7 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
     m_i = None
     n_i = None
 
+    @njit
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
 
@@ -240,6 +242,7 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
 
         return derivative
 
+    @njit
     def update_derived_parameters(self):
         """
         Calculate coefficients for the Reduced FitzHugh-Nagumo oscillator based
