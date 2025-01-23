@@ -550,6 +550,7 @@ class ReducedSetHindmarshRose(ReducedSetBase):
     m_i = None
     n_i = None
 
+    @njit
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
         The equations of the population model for i-th mode at node q are:
@@ -582,29 +583,66 @@ class ReducedSetHindmarshRose(ReducedSetBase):
         beta = state_variables[4, :]
         gamma = state_variables[5, :]
         derivative = numpy.empty_like(state_variables)
+        
+        c_0 = numpy.sum(coupling[0, :], axis=1)[:, numpy.newaxis]
 
-        c_0 = coupling[0, :].sum(axis=1)[:, numpy.newaxis]
-        # c_1 = coupling[1, :]
-
-        derivative[0] = (eta - self.a_i * xi ** 3 + self.b_i * xi ** 2 - tau +
-               self.K11 * (numpy.dot(xi, self.A_ik) - xi) -
-               self.K12 * (numpy.dot(alpha, self.B_ik) - xi) +
-               self.IE_i + c_0 + local_coupling * xi)
-
-        derivative[1] = self.c_i - self.d_i * xi ** 2 - eta
-
-        derivative[2] = self.r * self.s * xi - self.r * tau - self.m_i
-
-        derivative[3] = (beta - self.e_i * alpha ** 3 + self.f_i * alpha ** 2 - gamma +
-                  self.K21 * (numpy.dot(xi, self.C_ik) - alpha) +
-                  self.II_i + c_0 + local_coupling * xi)
-
-        derivative[4] = self.h_i - self.p_i * alpha ** 2 - beta
-
-        derivative[5] = self.r * self.s * alpha - self.r * gamma - self.n_i
-
+        for i in range(len(xi)):
+            sum_Aik_xi = 0.0
+            sum_Bik_alpha = 0.0
+            sum_Cik_xi = 0.0
+            
+            for k in range(len(xi)):
+                sum_Aik_xi += xi[k] * self.A_ik[i, k]
+                sum_Bik_alpha += alpha[k] * self.B_ik[i, k]
+                sum_Cik_xi += xi[k] * self.C_ik[i, k]
+            
+            derivative[0, i] = (eta[i] - self.a_i[i] * xi[i] ** 3 + self.b_i[i] * xi[i] ** 2 - tau[i] +
+                                self.K11 * (sum_Aik_xi - xi[i]) -
+                                self.K12 * (sum_Bik_alpha - xi[i]) + self.IE_i[i] +
+                                c_0[i, 0] + local_coupling * xi[i])
+            
+            derivative[1, i] = self.c_i[i] - self.d_i[i] * xi[i] ** 2 - eta[i]
+            
+            derivative[2, i] = self.r * self.s * xi[i] - self.r * tau[i] - self.m_i[i]
+            
+            derivative[3, i] = (beta[i] - self.e_i[i] * alpha[i] ** 3 + self.f_i[i] * alpha[i] ** 2 - gamma[i] +
+                                self.K21 * (sum_Cik_xi - alpha[i]) + self.II_i[i] +
+                                c_0[i, 0] + local_coupling * xi[i])
+            
+            derivative[4, i] = self.h_i[i] - self.p_i[i] * alpha[i] ** 2 - beta[i]
+            
+            derivative[5, i] = self.r * self.s * alpha[i] - self.r * gamma[i] - self.n_i[i]
+        
         return derivative
 
+    @njit
+    def trapezoidal_integral(self,y, x):
+        """Manually compute the trapezoidal integral."""
+        integral = 0.0
+        for i in range(len(x) - 1):
+            integral += 0.5 * (x[i + 1] - x[i]) * (y[i + 1] + y[i])
+        return integral
+
+    @njit
+    def normalize_modes(self,modes, I_values):
+        """Normalize the modes manually."""
+        num_modes, size = modes.shape
+        for i in range(num_modes):
+            norm_factor = numpy.sqrt(self.trapezoidal_integral(modes[i] * modes[i], I_values))
+            if norm_factor > 0:
+                modes[i] /= norm_factor
+        return modes
+
+    @njit
+    def manual_dot(self,vec1, mat):
+        """Manually computes the dot product of a vector with a matrix."""
+        result = numpy.zeros(mat.shape[1])
+        for j in range(mat.shape[1]):
+            for i in range(mat.shape[0]):
+                result[j] += vec1[i] * mat[i, j]
+        return result
+
+    @njit
     def update_derived_parameters(self, corrected_d_p=True):
         """
         Calculate coefficients for the neural field model based on a Reduced set
@@ -616,16 +654,16 @@ class ReducedSetHindmarshRose(ReducedSetBase):
 
         """
 
-        newaxis = numpy.newaxis
-        trapz = scipy_integrate_trapz
-
         stepu = 1.0 / (self.nu + 2 - 1)
         stepv = 1.0 / (self.nv + 2 - 1)
 
-        norm = scipy_stats_norm(loc=self.mu, scale=self.sigma)
-
-        Iu = norm.ppf(numpy.arange(stepu, 1.0, stepu))
-        Iv = norm.ppf(numpy.arange(stepv, 1.0, stepv))
+        norm = self.norm_dist
+        Iu = numpy.zeros(self.nu)
+        Iv = numpy.zeros(self.nv)
+        for i in range(self.nu):
+            Iu[i] = norm.ppf((i + 1) * stepu)
+        for i in range(self.nv):
+            Iv[i] = norm.ppf((i + 1) * stepv)
 
         # Define the modes
         V = numpy.zeros((self.number_of_modes, self.nv))
@@ -635,46 +673,58 @@ class ReducedSetHindmarshRose(ReducedSetBase):
         nu_per_mode = self.nu // self.number_of_modes
 
         for i in range(self.number_of_modes):
-            V[i, i * nv_per_mode:(i + 1) * nv_per_mode] = numpy.ones(nv_per_mode)
-            U[i, i * nu_per_mode:(i + 1) * nu_per_mode] = numpy.ones(nu_per_mode)
+            for j in range(i * nv_per_mode, (i + 1) * nv_per_mode):
+                if j < self.nv:
+                    V[i, j] = 1.0
+            for j in range(i * nu_per_mode, (i + 1) * nu_per_mode):
+                if j < self.nu:
+                    U[i, j] = 1.0
 
         # Normalise the modes
-        V = V / numpy.tile(numpy.sqrt(trapz(V * V, Iv, axis=1)), (self.nv, 1)).T
-        U = U / numpy.tile(numpy.sqrt(trapz(U * U, Iu, axis=1)), (self.nu, 1)).T
+        V = self.normalize_modes(V, Iv)
+        U = self.normalize_modes(U, Iu)
 
-        # Get Normal PDF's evaluated with sampling Zv and Zu
-        g1 = norm.pdf(Iv)
-        g2 = norm.pdf(Iu)
-        G1 = numpy.tile(g1, (self.number_of_modes, 1))
-        G2 = numpy.tile(g2, (self.number_of_modes, 1))
+        # Compute Gaussian PDFs
+        g1 = numpy.zeros_like(Iv)
+        g2 = numpy.zeros_like(Iu)
+        for i in range(len(Iv)):
+            g1[i] = norm.pdf(Iv[i])
+        for i in range(len(Iu)):
+            g2[i] = norm.pdf(Iu[i])
 
+        # Compute conjugates
         cV = numpy.conj(V)
         cU = numpy.conj(U)
 
-        #import pdb; pdb.set_trace()
-        intcVdI = trapz(cV, Iv, axis=1)[:, newaxis]
-        intG1VdI = trapz(G1 * V, Iv, axis=1)[newaxis, :]
-        intcUdI = trapz(cU, Iu, axis=1)[:, newaxis]
+        # Compute integrals manually
+        intcVdI = numpy.zeros((self.number_of_modes, 1))
+        intcUdI = numpy.zeros((self.number_of_modes, 1))
+        intG1VdI = numpy.zeros((1, self.number_of_modes))
 
-        #Calculate coefficients
-        self.A_ik = numpy.dot(intcVdI, intG1VdI).T
-        self.B_ik = numpy.dot(intcVdI, trapz(G2 * U, Iu, axis=1)[newaxis, :])
-        self.C_ik = numpy.dot(intcUdI, intG1VdI).T
+        for i in range(self.number_of_modes):
+            intcVdI[i, 0] = self.trapezoidal_integral(cV[i], Iv)
+            intcUdI[i, 0] = self.trapezoidal_integral(cU[i], Iu)
+            intG1VdI[0, i] = self.trapezoidal_integral(g1 * V[i], Iv)
 
-        self.a_i = self.a * trapz(cV * V ** 3, Iv, axis=1)[newaxis, :]
-        self.e_i = self.a * trapz(cU * U ** 3, Iu, axis=1)[newaxis, :]
-        self.b_i = self.b * trapz(cV * V ** 2, Iv, axis=1)[newaxis, :]
-        self.f_i = self.b * trapz(cU * U ** 2, Iu, axis=1)[newaxis, :]
+        # Compute coefficients
+        self.A_ik = self.manual_dot(intcVdI, intG1VdI).T
+        self.B_ik = self.manual_dot(intcVdI, self.trapezoidal_integral(g2 * U, Iu)[numpy.newaxis, :])
+        self.C_ik = self.manual_dot(intcUdI, intG1VdI).T
+
+        self.a_i = self.a * self.trapezoidal_integral(cV * V ** 3, Iv)[numpy.newaxis, :]
+        self.e_i = self.a * self.trapezoidal_integral(cU * U ** 3, Iu)[numpy.newaxis, :]
+        self.b_i = self.b * self.trapezoidal_integral(cV * V ** 2, Iv)[numpy.newaxis, :]
+        self.f_i = self.b * self.trapezoidal_integral(cU * U ** 2, Iu)[numpy.newaxis, :]
         self.c_i = (self.c * intcVdI).T
         self.h_i = (self.c * intcUdI).T
 
-        self.IE_i = trapz(Iv * cV, Iv, axis=1)[newaxis, :]
-        self.II_i = trapz(Iu * cU, Iu, axis=1)[newaxis, :]
+        self.IE_i = self.trapezoidal_integral(Iv * cV, Iv)[numpy.newaxis, :]
+        self.II_i = self.trapezoidal_integral(Iu * cU, Iu)[numpy.newaxis, :]
 
         if corrected_d_p:
             # correction identified by Shrey Dutta & Arpan Bannerjee, confirmed by RS
-            self.d_i = self.d * trapz(cV * V ** 2, Iv, axis=1)[newaxis, :]
-            self.p_i = self.d * trapz(cU * U ** 2, Iu, axis=1)[newaxis, :]
+            self.d_i = self.d * self.trapezoidal_integral(cV * V ** 2, Iv)[numpy.newaxis, :]
+            self.p_i = self.d * self.trapezoidal_integral(cU * U ** 2, Iu)[numpy.newaxis, :]
         else:
             # typo in the original paper by RS & VJ, kept for comparison purposes.
             self.d_i = (self.d * intcVdI).T
