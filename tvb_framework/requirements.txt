@@ -1,7 +1,7 @@
 # not used any more, we should migrate towards pyproject.toml
 numba
 numpy<2
-scipy
+scipy<1.15
 networkx
 scikit-learn
 scikit-image
