@@ -227,20 +227,45 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
         # TODO: generalize coupling variables to a matrix form
         # c_1 = coupling[1, :] # this cv represents alpha
 
-        derivative[0] = (self.tau * (xi - self.e_i * xi ** 3 / 3.0 - eta) +
-               self.K11 * (numpy.dot(xi, self.Aik) - xi) -
-               self.K12 * (numpy.dot(alpha, self.Bik) - xi) +
-               self.tau * (self.IE_i + c_0 + local_coupling * xi))
+        N = len(xi)
+        
+        # Compute numpy.dot(xi, self.Aik) manually
+        xi_Aik = numpy.zeros(N)
+        for i in range(N):
+            xi_Aik[i] = sum(xi[j] * self.Aik[j, i] for j in range(N))
 
-        derivative[1] = (xi - self.b * eta + self.m_i) / self.tau
+        # Compute numpy.dot(alpha, self.Bik) manually
+        alpha_Bik = numpy.zeros(N)
+        for i in range(N):
+            alpha_Bik[i] = sum(alpha[j] * self.Bik[j, i] for j in range(N))
 
-        derivative[2] = (self.tau * (alpha - self.f_i * alpha ** 3 / 3.0 - beta) +
-                  self.K21 * (numpy.dot(xi, self.Cik) - alpha) +
-                  self.tau * (self.II_i + c_0 + local_coupling * xi))
+        # Compute numpy.dot(xi, self.Cik) manually
+        xi_Cik = numpy.zeros(N)
+        for i in range(N):
+            xi_Cik[i] = sum(xi[j] * self.Cik[j, i] for j in range(N))
 
-        derivative[3] = (alpha - self.b * beta + self.n_i) / self.tau
+        for i in range(N):
+            derivative[0][i] = (self.tau * (xi[i] - self.e_i * xi[i] ** 3 / 3.0 - eta[i]) +
+                                self.K11 * (xi_Aik[i] - xi[i]) -
+                                self.K12 * (alpha_Bik[i] - xi[i]) +
+                                self.tau * (self.IE_i + c_0 + local_coupling * xi[i]))
 
-        return derivative
+            derivative[1][i] = (xi[i] - self.b * eta[i] + self.m_i) / self.tau
+
+            derivative[2][i] = (self.tau * (alpha[i] - self.f_i * alpha[i] ** 3 / 3.0 - beta[i]) +
+                                self.K21 * (xi_Cik[i] - alpha[i]) +
+                                self.tau * (self.II_i + c_0 + local_coupling * xi[i]))
+
+            derivative[3][i] = (alpha[i] - self.b * beta[i] + self.n_i) / self.tau
+            return derivative
+
+    @njit
+    def trapz_integrate(self,y, x):
+        """Compute the trapezoidal integral explicitly."""
+        result = 0.0
+        for i in range(len(x) - 1):
+            result += 0.5 * (x[i+1] - x[i]) * (y[i+1] + y[i])
+        return result
 
     @njit
     def update_derived_parameters(self):
@@ -253,58 +278,95 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
         Include equations here...
 
         """
-        newaxis = numpy.newaxis
-        trapz = scipy_integrate_trapz
 
         stepu = 1.0 / (self.nu + 2 - 1)
         stepv = 1.0 / (self.nv + 2 - 1)
 
         norm = scipy_stats_norm(loc=self.mu, scale=self.sigma)
-
-        Zu = norm.ppf(numpy.arange(stepu, 1.0, stepu))
-        Zv = norm.ppf(numpy.arange(stepv, 1.0, stepv))
-
-        # Define the modes
+        
+        # Generate Zu and Zv explicitly
+        Zu = numpy.zeros(self.nu)
+        Zv = numpy.zeros(self.nv)
+        
+        for i in range(self.nu):
+            Zu[i] = norm.ppf((i + 1) * stepu)
+        
+        for i in range(self.nv):
+            Zv[i] = norm.ppf((i + 1) * stepv)
+        
+        # Initialize U and V matrices
         V = numpy.zeros((self.number_of_modes, self.nv))
         U = numpy.zeros((self.number_of_modes, self.nu))
 
         nv_per_mode = self.nv // self.number_of_modes
         nu_per_mode = self.nu // self.number_of_modes
 
+        # Assign ones in blocks
         for i in range(self.number_of_modes):
-            V[i, i * nv_per_mode:(i + 1) * nv_per_mode] = numpy.ones(nv_per_mode)
-            U[i, i * nu_per_mode:(i + 1) * nu_per_mode] = numpy.ones(nu_per_mode)
+            for j in range(i * nv_per_mode, (i + 1) * nv_per_mode):
+                V[i, j] = 1.0
+            for j in range(i * nu_per_mode, (i + 1) * nu_per_mode):
+                U[i, j] = 1.0
 
-        # Normalise the modes
-        V = V / numpy.tile(numpy.sqrt(trapz(V * V, Zv, axis=1)), (self.nv, 1)).T
-        U = U / numpy.tile(numpy.sqrt(trapz(U * U, Zu, axis=1)), (self.nv, 1)).T
+        # Normalize the modes using explicit integration
+        for i in range(self.number_of_modes):
+            V[i, :] /= numpy.sqrt(self.trapz_integrate(V[i, :] * V[i, :], Zv))
+            U[i, :] /= numpy.sqrt(self.trapz_integrate(U[i, :] * U[i, :], Zu))
 
-        # Get Normal PDF's evaluated with sampling Zv and Zu
-        g1 = norm.pdf(Zv)
-        g2 = norm.pdf(Zu)
-        G1 = numpy.tile(g1, (self.number_of_modes, 1))
-        G2 = numpy.tile(g2, (self.number_of_modes, 1))
+        # Compute normal PDFs
+        g1 = numpy.zeros(self.nv)
+        g2 = numpy.zeros(self.nu)
 
+        for i in range(self.nv):
+            g1[i] = norm.pdf(Zv[i])
+        
+        for i in range(self.nu):
+            g2[i] = norm.pdf(Zu[i])
+
+        # Preallocate matrices
+        self.Aik = numpy.zeros((self.number_of_modes, self.number_of_modes))
+        self.Bik = numpy.zeros((self.number_of_modes, self.number_of_modes))
+        self.Cik = numpy.zeros((self.number_of_modes, self.number_of_modes))
+
+        self.e_i = numpy.zeros((1, self.number_of_modes))
+        self.f_i = numpy.zeros((1, self.number_of_modes))
+        self.IE_i = numpy.zeros((1, self.number_of_modes))
+        self.II_i = numpy.zeros((1, self.number_of_modes))
+        self.m_i = numpy.zeros((self.number_of_modes, 1))
+        self.n_i = numpy.zeros((self.number_of_modes, 1))
+
+        # Compute conjugates
         cV = numpy.conj(V)
         cU = numpy.conj(U)
 
-        intcVdZ = trapz(cV, Zv, axis=1)[:, newaxis]
-        intG1VdZ = trapz(G1 * V, Zv, axis=1)[newaxis, :]
-        intcUdZ = trapz(cU, Zu, axis=1)[:, newaxis]
-        # import pdb; pdb.set_trace()
-        # Calculate coefficients
-        self.Aik = numpy.dot(intcVdZ, intG1VdZ).T
-        self.Bik = numpy.dot(intcVdZ, trapz(G2 * U, Zu, axis=1)[newaxis, :])
-        self.Cik = numpy.dot(intcUdZ, intG1VdZ).T
+        # Compute integrations
+        intcVdZ = numpy.zeros((self.number_of_modes, 1))
+        intG1VdZ = numpy.zeros((1, self.number_of_modes))
+        intcUdZ = numpy.zeros((self.number_of_modes, 1))
 
-        self.e_i = trapz(cV * V ** 3, Zv, axis=1)[newaxis, :]
-        self.f_i = trapz(cU * U ** 3, Zu, axis=1)[newaxis, :]
+        for i in range(self.number_of_modes):
+            intcVdZ[i, 0] = self.trapz_integrate(cV[i, :], Zv)
+            intG1VdZ[0, i] = self.trapz_integrate(g1 * V[i, :], Zv)
+            intcUdZ[i, 0] = self.trapz_integrate(cU[i, :], Zu)
 
-        self.IE_i = trapz(Zv * cV, Zv, axis=1)[newaxis, :]
-        self.II_i = trapz(Zu * cU, Zu, axis=1)[newaxis, :]
+        # Compute Aik, Bik, Cik using explicit loops
+        for i in range(self.number_of_modes):
+            for j in range(self.number_of_modes):
+                self.Aik[i, j] = intcVdZ[i, 0] * intG1VdZ[0, j]
+                self.Bik[i, j] = intcVdZ[i, 0] * self.trapz_integrate(g2 * U[j, :], Zu)
+                self.Cik[i, j] = intcUdZ[i, 0] * intG1VdZ[0, j]
 
-        self.m_i = (self.a * intcVdZ).T
-        self.n_i = (self.a * intcUdZ).T
+        # Compute e_i, f_i, IE_i, II_i
+        for i in range(self.number_of_modes):
+            self.e_i[0, i] = self.trapz_integrate(cV[i, :] * (V[i, :] ** 3), Zv)
+            self.f_i[0, i] = self.trapz_integrate(cU[i, :] * (U[i, :] ** 3), Zu)
+            self.IE_i[0, i] = self.trapz_integrate(Zv * cV[i, :], Zv)
+            self.II_i[0, i] = self.trapz_integrate(Zu * cU[i, :], Zu)
+
+        # Compute m_i and n_i
+        for i in range(self.number_of_modes):
+            self.m_i[i, 0] = self.a * intcVdZ[i, 0]
+            self.n_i[i, 0] = self.a * intcUdZ[i, 0]
         # import pdb; pdb.set_trace()
 
 
