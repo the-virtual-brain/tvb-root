@@ -192,8 +192,51 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
     m_i = None
     n_i = None
 
-    @njit
     def dfun(self, state_variables, coupling, local_coupling=0.0):
+        r"""
+        The system's equations for the i-th mode at node q are:
+        .. math::
+                \dot{\xi}_{i}    &=  c\left(\xi_i-e_i\frac{\xi_{i}^3}{3} -\eta_{i}\right)
+                                  + K_{11}\left[\sum_{k=1}^{o} A_{ik}\xi_k-\xi_i\right]
+                                  - K_{12}\left[\sum_{k =1}^{o} B_{i k}\alpha_k-\xi_i\right] + cIE_i                       \\
+                                 &\, + \left[\sum_{k=1}^{o} \mathbf{\Gamma}(\xi_{kq}, \xi_{kr}, u_{qr})\right]
+                                  +  \left[\sum_{k=1}^{o} W_{\zeta}\cdot\xi_{kr} \right] \\
+                \dot{\eta}_i     &= \frac{1}{c}\left(\xi_i-b\eta_i+m_i\right)                                              \\
+                & \\
+                \dot{\alpha}_i   &= c\left(\alpha_i-f_i\frac{\alpha_i^3}{3}-\beta_i\right)
+                                  + K_{21}\left[\sum_{k=1}^{o} C_{ik}\xi_i-\alpha_i\right] + cII_i                          \\
+                                 & \, + \left[\sum_{k=1}^{o} \mathbf{\Gamma}(\xi_{kq}, \xi_{kr}, u_{qr})\right]
+                                  + \left[\sum_{k=1}^{o} W_{\zeta}\cdot\xi_{kr}\right] \\
+                                 & \\
+                \dot{\beta}_i    &= \frac{1}{c}\left(\alpha_i-b\beta_i+n_i\right)
+        """
+        xi = state_variables[0, :]
+        eta = state_variables[1, :]
+        alpha = state_variables[2, :]
+        beta = state_variables[3, :]
+        derivative = numpy.empty_like(state_variables)
+        # sum the activity from the modes
+        c_0 = coupling[0, :].sum(axis=1)[:, numpy.newaxis]
+        # TODO: generalize coupling variables to a matrix form
+        # c_1 = coupling[1, :] # this cv represents alpha
+
+        derivative[0] = (self.tau * (xi - self.e_i * xi ** 3 / 3.0 - eta) +
+               self.K11 * (numpy.dot(xi, self.Aik) - xi) -
+               self.K12 * (numpy.dot(alpha, self.Bik) - xi) +
+               self.tau * (self.IE_i + c_0 + local_coupling * xi))
+
+        derivative[1] = (xi - self.b * eta + self.m_i) / self.tau
+
+        derivative[2] = (self.tau * (alpha - self.f_i * alpha ** 3 / 3.0 - beta) +
+                  self.K21 * (numpy.dot(xi, self.Cik) - alpha) +
+                  self.tau * (self.II_i + c_0 + local_coupling * xi))
+
+        derivative[3] = (alpha - self.b * beta + self.n_i) / self.tau
+
+        return derivative
+
+    @njit
+    def dfun_numba(self, state_variables, coupling, local_coupling=0.0):
         r"""
 
 
@@ -259,8 +302,68 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
             derivative[3][i] = (alpha[i] - self.b * beta[i] + self.n_i) / self.tau
             return derivative
 
+    def update_derived_parameters(self):
+        """
+        Calculate coefficients for the Reduced FitzHugh-Nagumo oscillator based
+        neural field model. Specifically, this method implements equations for
+        calculating coefficients found in the supplemental material of
+        [SJ_2008]_.
+        Include equations here...
+        """
+        newaxis = numpy.newaxis
+        trapz = scipy_integrate_trapz
+
+        stepu = 1.0 / (self.nu + 2 - 1)
+        stepv = 1.0 / (self.nv + 2 - 1)
+
+        norm = scipy_stats_norm(loc=self.mu, scale=self.sigma)
+
+        Zu = norm.ppf(numpy.arange(stepu, 1.0, stepu))
+        Zv = norm.ppf(numpy.arange(stepv, 1.0, stepv))
+
+        # Define the modes
+        V = numpy.zeros((self.number_of_modes, self.nv))
+        U = numpy.zeros((self.number_of_modes, self.nu))
+
+        nv_per_mode = self.nv // self.number_of_modes
+        nu_per_mode = self.nu // self.number_of_modes
+
+        for i in range(self.number_of_modes):
+            V[i, i * nv_per_mode:(i + 1) * nv_per_mode] = numpy.ones(nv_per_mode)
+            U[i, i * nu_per_mode:(i + 1) * nu_per_mode] = numpy.ones(nu_per_mode)
+
+        # Normalise the modes
+        V = V / numpy.tile(numpy.sqrt(trapz(V * V, Zv, axis=1)), (self.nv, 1)).T
+        U = U / numpy.tile(numpy.sqrt(trapz(U * U, Zu, axis=1)), (self.nv, 1)).T
+
+        # Get Normal PDF's evaluated with sampling Zv and Zu
+        g1 = norm.pdf(Zv)
+        g2 = norm.pdf(Zu)
+        G1 = numpy.tile(g1, (self.number_of_modes, 1))
+        G2 = numpy.tile(g2, (self.number_of_modes, 1))
+        cV = numpy.conj(V)
+        cU = numpy.conj(U)
+
+        intcVdZ = trapz(cV, Zv, axis=1)[:, newaxis]
+        intG1VdZ = trapz(G1 * V, Zv, axis=1)[newaxis, :]
+        intcUdZ = trapz(cU, Zu, axis=1)[:, newaxis]
+        # import pdb; pdb.set_trace()
+        # Calculate coefficients
+        self.Aik = numpy.dot(intcVdZ, intG1VdZ).T
+        self.Bik = numpy.dot(intcVdZ, trapz(G2 * U, Zu, axis=1)[newaxis, :])
+        self.Cik = numpy.dot(intcUdZ, intG1VdZ).T
+
+        self.e_i = trapz(cV * V ** 3, Zv, axis=1)[newaxis, :]
+        self.f_i = trapz(cU * U ** 3, Zu, axis=1)[newaxis, :]
+
+        self.IE_i = trapz(Zv * cV, Zv, axis=1)[newaxis, :]
+        self.II_i = trapz(Zu * cU, Zu, axis=1)[newaxis, :]
+
+        self.m_i = (self.a * intcVdZ).T
+        self.n_i = (self.a * intcUdZ).T
+
     @njit
-    def trapz_integrate(self,y, x):
+    def trapz_integrate_numba(self,y, x):
         """Compute the trapezoidal integral explicitly."""
         result = 0.0
         for i in range(len(x) - 1):
@@ -268,7 +371,7 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
         return result
 
     @njit
-    def update_derived_parameters(self):
+    def update_derived_parameters_numba(self):
         """
         Calculate coefficients for the Reduced FitzHugh-Nagumo oscillator based
         neural field model. Specifically, this method implements equations for
@@ -550,8 +653,131 @@ class ReducedSetHindmarshRose(ReducedSetBase):
     m_i = None
     n_i = None
 
-    @njit
     def dfun(self, state_variables, coupling, local_coupling=0.0):
+        r"""
+        The equations of the population model for i-th mode at node q are:
+        .. math::
+                \dot{\xi}_i     &=  \eta_i-a_i\xi_i^3 + b_i\xi_i^2- \tau_i
+                                 + K_{11} \left[\sum_{k=1}^{o} A_{ik} \xi_k - \xi_i \right]
+                                 - K_{12} \left[\sum_{k=1}^{o} B_{ik} \alpha_k - \xi_i\right] + IE_i \\
+                                &\, + \left[\sum_{k=1}^{o} \mathbf{\Gamma}(\xi_{kq}, \xi_{kr}, u_{qr})\right]
+                                 + \left[\sum_{k=1}^{o} W_{\zeta}\cdot\xi_{kr} \right] \\
+                & \\
+                \dot{\eta}_i    &=  c_i-d_i\xi_i^2 -\tau_i \\
+                & \\
+                \dot{\tau}_i    &=  rs\xi_i - r\tau_i -m_i \\
+                & \\
+                \dot{\alpha}_i  &=  \beta_i - e_i \alpha_i^3 + f_i \alpha_i^2 - \gamma_i
+                                 + K_{21} \left[\sum_{k=1}^{o} C_{ik} \xi_k - \alpha_i \right] + II_i \\
+                                &\, +\left[\sum_{k=1}^{o}\mathbf{\Gamma}(\xi_{kq}, \xi_{kr}, u_{qr})\right]
+                                 + \left[\sum_{k=1}^{o}W_{\zeta}\cdot\xi_{kr}\right] \\
+                & \\
+                \dot{\beta}_i   &= h_i - p_i \alpha_i^2 - \beta_i \\
+                \dot{\gamma}_i  &= rs \alpha_i - r \gamma_i - n_i
+        """
+        xi = state_variables[0, :]
+        eta = state_variables[1, :]
+        tau = state_variables[2, :]
+        alpha = state_variables[3, :]
+        beta = state_variables[4, :]
+        gamma = state_variables[5, :]
+        derivative = numpy.empty_like(state_variables)
+
+        c_0 = coupling[0, :].sum(axis=1)[:, numpy.newaxis]
+        # c_1 = coupling[1, :]
+
+        derivative[0] = (eta - self.a_i * xi ** 3 + self.b_i * xi ** 2 - tau +
+               self.K11 * (numpy.dot(xi, self.A_ik) - xi) -
+               self.K12 * (numpy.dot(alpha, self.B_ik) - xi) +
+               self.IE_i + c_0 + local_coupling * xi)
+
+        derivative[1] = self.c_i - self.d_i * xi ** 2 - eta
+
+        derivative[2] = self.r * self.s * xi - self.r * tau - self.m_i
+
+        derivative[3] = (beta - self.e_i * alpha ** 3 + self.f_i * alpha ** 2 - gamma +
+                  self.K21 * (numpy.dot(xi, self.C_ik) - alpha) +
+                  self.II_i + c_0 + local_coupling * xi)
+
+        derivative[4] = self.h_i - self.p_i * alpha ** 2 - beta
+
+        derivative[5] = self.r * self.s * alpha - self.r * gamma - self.n_i
+
+        return derivative
+
+    def update_derived_parameters(self, corrected_d_p=True):
+        """
+        Calculate coefficients for the neural field model based on a Reduced set
+        of Hindmarsh-Rose oscillators. Specifically, this method implements
+        equations for calculating coefficients found in the supplemental
+        material of [SJ_2008]_.
+        Include equations here...
+        """
+
+        newaxis = numpy.newaxis
+        trapz = scipy_integrate_trapz
+
+        stepu = 1.0 / (self.nu + 2 - 1)
+        stepv = 1.0 / (self.nv + 2 - 1)
+
+        norm = scipy_stats_norm(loc=self.mu, scale=self.sigma)
+
+        Iu = norm.ppf(numpy.arange(stepu, 1.0, stepu))
+        Iv = norm.ppf(numpy.arange(stepv, 1.0, stepv))
+
+        # Define the modes
+        V = numpy.zeros((self.number_of_modes, self.nv))
+        U = numpy.zeros((self.number_of_modes, self.nu))
+        nv_per_mode = self.nv // self.number_of_modes
+        nu_per_mode = self.nu // self.number_of_modes
+
+        for i in range(self.number_of_modes):
+            V[i, i * nv_per_mode:(i + 1) * nv_per_mode] = numpy.ones(nv_per_mode)
+            U[i, i * nu_per_mode:(i + 1) * nu_per_mode] = numpy.ones(nu_per_mode)
+
+        # Normalise the modes
+        V = V / numpy.tile(numpy.sqrt(trapz(V * V, Iv, axis=1)), (self.nv, 1)).T
+        U = U / numpy.tile(numpy.sqrt(trapz(U * U, Iu, axis=1)), (self.nu, 1)).T
+
+        # Get Normal PDF's evaluated with sampling Zv and Zu
+        g1 = norm.pdf(Iv)
+        g2 = norm.pdf(Iu)
+        G1 = numpy.tile(g1, (self.number_of_modes, 1))
+        G2 = numpy.tile(g2, (self.number_of_modes, 1))
+
+        cV = numpy.conj(V)
+        cU = numpy.conj(U)
+
+        #import pdb; pdb.set_trace()
+        intcVdI = trapz(cV, Iv, axis=1)[:, newaxis]
+        intG1VdI = trapz(G1 * V, Iv, axis=1)[newaxis, :]
+        intcUdI = trapz(cU, Iu, axis=1)[:, newaxis]
+
+        #Calculate coefficients
+        self.A_ik = numpy.dot(intcVdI, intG1VdI).T
+        self.B_ik = numpy.dot(intcVdI, trapz(G2 * U, Iu, axis=1)[newaxis, :])
+        self.C_ik = numpy.dot(intcUdI, intG1VdI).T
+
+        self.a_i = self.a * trapz(cV * V ** 3, Iv, axis=1)[newaxis, :]
+        self.e_i = self.a * trapz(cU * U ** 3, Iu, axis=1)[newaxis, :]
+        self.b_i = self.b * trapz(cV * V ** 2, Iv, axis=1)[newaxis, :]
+        self.f_i = self.b * trapz(cU * U ** 2, Iu, axis=1)[newaxis, :]
+        self.c_i = (self.c * intcVdI).T
+        self.h_i = (self.c * intcUdI).T
+
+        self.IE_i = trapz(Iv * cV, Iv, axis=1)[newaxis, :]
+        self.II_i = trapz(Iu * cU, Iu, axis=1)[newaxis, :]
+
+        if corrected_d_p:
+            # correction identified by Shrey Dutta & Arpan Bannerjee, confirmed by RS
+            self.d_i = self.d * trapz(cV * V ** 2, Iv, axis=1)[newaxis, :]
+            self.p_i = self.d * trapz(cU * U ** 2, Iu, axis=1)[newaxis, :]
+        else:
+            # typo in the original paper by RS & VJ, kept for comparison purposes.
+            self.d_i = (self.d * intcVdI).T
+
+    @njit
+    def dfun_numba(self, state_variables, coupling, local_coupling=0.0):
         r"""
         The equations of the population model for i-th mode at node q are:
 
@@ -643,7 +869,7 @@ class ReducedSetHindmarshRose(ReducedSetBase):
         return result
 
     @njit
-    def update_derived_parameters(self, corrected_d_p=True):
+    def update_derived_parameters_numba(self, corrected_d_p=True):
         """
         Calculate coefficients for the neural field model based on a Reduced set
         of Hindmarsh-Rose oscillators. Specifically, this method implements
