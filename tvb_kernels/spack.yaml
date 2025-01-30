@@ -1,0 +1,14 @@
+spack:
+
+  specs:
+  - py-numpy
+  - py-scipy
+  - py-pip
+
+  concretizer:
+    unify: true
+
+  mirrors:
+    local-buildcache:
+      url: oci://ghcr.io/maedoc/spack-buildcache
+      signed: false
