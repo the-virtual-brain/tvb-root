@@ -1,0 +1,80 @@
+name: build & test kernel library
+on:
+  push:
+
+# only run latest push
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pip-tvbk:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        python-version: [ "3.10", ]
+
+    steps:
+
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        id: setPy
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: install tools and dependencies
+        run: python3 -m pip install -U pip pytest scipy ctypesgen
+
+      - name: build & teste
+        run: |
+          cd tvb_kernels
+          pip install .
+          pytest
+
+
+  spack-tvbk:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: setup spack
+        uses: spack/setup-spack@v2
+        with:
+          ref: develop
+          buildcache: true
+          color: true
+          path: spack
+
+      - name: install deps w/ spack
+        shell: spack-bash {0}
+        run: |
+          cd tvb_kernels
+          spack -e . concretize
+          spack -e . install
+          spack env activate .
+          spack env status
+          pip install pytest ctypesgen
+
+      - name: build & test
+        shell: spack-bash {0}
+        run: |
+          cd tvb_kernels
+          spack env activate .
+          pip install .
+          pytest
+
+      # https://github.com/spack/setup-spack?tab=readme-ov-file#example-caching-your-own-binaries-for-public-repositories
+      - name: Push packages and update index
+        run: |
+          cd tvb_kernels
+          spack -e . mirror set --push --oci-username ${{ github.actor }} --oci-password "${{ secrets.GITHUB_TOKEN }}" local-buildcache
+          spack -e . buildcache push --base-image ubuntu:22.04 --update-index local-buildcache
+        if: ${{ !cancelled() }}
