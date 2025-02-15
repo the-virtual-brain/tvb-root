@@ -50,11 +50,11 @@ except ImportError:
     import matplotlib.pyplot as plt
     import matplotlib
     matplotlib.use('agg')
-    # new matplotlib, version 3.8.3
+    # new matplotlib, version > 3.8.3
 
     def nullcline(x, y, z):
         c = plt.contour(x, y, z, levels=[0.0])
-        segments = c.collections[0].get_paths()
+        segments = c.get_paths()
         return segments
 
 # how much courser is the grid used to show the vectors
