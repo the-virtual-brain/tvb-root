@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -87,7 +87,6 @@ class TestSiibraBase(BaseTestCase):
         assert self.monkey_atlas not in atlas_list
 
     def test_get_parcellations_for_atlas(self, create_test_atlases_and_parcellations):
-        print(self.human_atlas)
         parcellation_list = sb.get_parcellations_for_atlas(self.human_atlas)
         assert parcellation_list
         assert self.julich_parcellation_3_1 in parcellation_list
@@ -164,7 +163,6 @@ class TestSiibraBase(BaseTestCase):
         """"
         Test initialization of siibra paramas when only the atlas was selected
         """
-        print(self.human_atlas)
         _, parcellation, cohort, subject_ids = sb.init_siibra_params(self.human_atlas, None, None, '000')
         assert parcellation is not None
         assert parcellation is self.julich_parcellation_3_1

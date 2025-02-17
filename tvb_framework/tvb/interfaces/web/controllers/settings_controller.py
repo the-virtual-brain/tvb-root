@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -102,7 +102,7 @@ class SettingsController(UserController):
             proc_params = [python_path, '-m', 'tvb_bin.app', 'start', TvbProfile.CURRENT_PROFILE_NAME]
             if should_reset:
                 proc_params.append('-reset')
-            subprocess.Popen(proc_params, shell=False)
+            subprocess.Popen(proc_params, shell=False).communicate()
         except ImportError:
             proc_params = [python_path, '-m', 'tvb.interfaces.web.run', TvbProfile.CURRENT_PROFILE_NAME, "tvb.config"]
             if should_reset:

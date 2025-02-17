@@ -1,6 +1,7 @@
+# not used any more, we should migrate towards pyproject.toml
 numba
-numpy
-scipy
+numpy<2
+scipy<1.15
 networkx
 scikit-learn
 scikit-image
@@ -28,7 +29,6 @@ jinja2
 nibabel>=4.0
 sqlalchemy
 alembic
-allensdk
 werkzeug
 gevent
 cherrypy

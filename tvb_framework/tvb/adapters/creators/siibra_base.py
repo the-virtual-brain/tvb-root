@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -225,7 +225,7 @@ def get_regions_positions(regions):
 
     for r in regions:
         space = r.supported_spaces[0]  # choose first space that is available for that region
-        centroid = r.spatial_props(space=space).components[0].centroid
+        centroid = r.spatial_props(space=space)[0].centroid
         positions.append(centroid.coordinate)
 
     return positions

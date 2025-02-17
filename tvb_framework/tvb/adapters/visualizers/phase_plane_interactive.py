@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -48,11 +48,13 @@ try:
 
 except ImportError:
     import matplotlib.pyplot as plt
-    # new matplotlib, version 3.8.3
+    import matplotlib
+    matplotlib.use('agg')
+    # new matplotlib, version > 3.8.3
 
     def nullcline(x, y, z):
         c = plt.contour(x, y, z, levels=[0.0])
-        segments = c.collections[0].get_paths()
+        segments = c.get_paths()
         return segments
 
 # how much courser is the grid used to show the vectors

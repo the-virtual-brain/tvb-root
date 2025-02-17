@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -56,15 +56,15 @@ TVB_ROOT = os.path.dirname(os.path.dirname(__file__))
 VERSION = TvbProfile.current.version.BASE_VERSION
 # Name of the app
 APP_NAME = "tvb-{}".format(VERSION)
-# The website in reversered order (domain first, etc.)
+# The website in reversed order (domain first, etc.)
 IDENTIFIER = "org.thevirtualbrain"
 # The author of this package
-AUTHOR = "TVB Team"
+AUTHOR = "Brainiacs Team"
 # Full path to the anaconda environment folder to package
 # Make sure it is the full path (and not a relative one, also to the homedir with ~) so this can be
-# correctly replaced later. Conda usßes hardcoded paths, which we convert to `/Applications/<APP_NAME>`
+# correctly replaced later. Conda uses hardcoded paths, which we convert to `/Applications/<APP_NAME>`
 CONDA_ENV_PATH = "/Applications/anaconda3/envs/mac-distribution"
-# Folders to include from Anaconda environment, if ommitted everything will be copied
+# Folders to include from Anaconda environment, if omitted everything will be copied
 # CONDA_FOLDERS = ["lib", "bin", "share", "qsci", "ssl", "translations"]
 # Paths of files and folders to remove from the copied anaconda environment,
 # relative to the environment's root.
@@ -209,13 +209,8 @@ def _find_and_replace(path, search, replace, exclusions=None):
 
 def replace_conda_abs_paths():
     app_path = os.path.join(os.path.sep, 'Applications', APP_NAME + '.app', 'Contents', 'Resources')
-    print('Replacing occurences of {} with {}'.format(CONDA_ENV_PATH, app_path))
-    _find_and_replace(
-        RESOURCE_DIR,
-        CONDA_ENV_PATH,
-        app_path,
-        exclusions=['site-packages', 'doc']
-    )
+    print('Replacing occurrences of {} with {}'.format(CONDA_ENV_PATH, app_path))
+    _find_and_replace(RESOURCE_DIR, CONDA_ENV_PATH, app_path, exclusions=['site-packages', 'doc'])
 
 
 def create_app():
@@ -279,10 +274,7 @@ def copy_anaconda_env():
         if "CONDA_FOLDERS" in globals():
             # IF conda folders is specified, copy only those folders.
             for item in CONDA_FOLDERS:
-                shutil.copytree(
-                    os.path.join(CONDA_ENV_PATH, item),
-                    os.path.join(RESOURCE_DIR, item),
-                    symlinks=True)
+                shutil.copytree(os.path.join(CONDA_ENV_PATH, item), os.path.join(RESOURCE_DIR, item), symlinks=True)
         else:
             # Copy everything
             shutil.copytree(CONDA_ENV_PATH, RESOURCE_DIR, True)
@@ -316,8 +308,8 @@ def copy_icon():
     print("Copying icon file")
     try:
         shutil.copy(ICON_PATH, os.path.join(RESOURCE_DIR, ICON_FILE))
-    except OSError as e:
-        logger("Error copying icon file from: {}".format(ICON_PATH))
+    except OSError:
+        logger.error("Error copying icon file from: {}".format(ICON_PATH))
 
 
 def create_plist():
@@ -345,7 +337,7 @@ def create_plist():
         'LSMinimumSystemVersion': '10.7.0',
         'LSUIElement': False,
         'NSAppTransportSecurity': {'NSAllowsArbitraryLoads': True},
-        'NSHumanReadableCopyright': "(c) 2012-2024, Baycrest Centre for Geriatric Care ('Baycrest') and others",
+        'NSHumanReadableCopyright': "(c) 2012-2025, Baycrest Centre for Geriatric Care ('Baycrest') and others",
         'NSMainNibFile': 'MainMenu',
         'NSPrincipalClass': 'NSApplication',
         'NSHighResolutionCapable': True,
@@ -393,8 +385,7 @@ def create_dmg():
     print("Creating disk image of {}".format(app_size))
 
     # Create a dmgbuild config file in same folder as
-    dmgbuild_config_file = os.path.join(os.getcwd(),
-                                        'dmgbuild_settings.py')
+    dmgbuild_config_file = os.path.join(os.getcwd(), 'dmgbuild_settings.py')
 
     dmg_config = {
         'filename': dmg_file,

@@ -5,8 +5,6 @@ jobs:
   build:
     name: Test and Inspect
     runs-on: windows-latest
-    strategy:
-      fail-fast: false
     steps:
       - uses: actions/checkout@v3
         with:
@@ -24,9 +22,11 @@ jobs:
       - name: install tools and dependencies
         run: |
           python3 -m pip install --upgrade setuptools==59.8.0 pip wheel
-          pip3 install --user --upgrade numpy
           python3 -m pip install scikit-build
-          pip3 install --user -r tvb_framework/requirements.txt
+          python3 -m pip install cryptography
+          python3 -m pip install lockfile
+          python3 -m pip install syncrypto
+          python3 -m pip install -r tvb_build/docker/requirements_group
           pip3 install --user --no-build-isolation tvb-gdist
           python3 -m pip install elasticsearch
           python3 -m pip install nbformat nbconvert
