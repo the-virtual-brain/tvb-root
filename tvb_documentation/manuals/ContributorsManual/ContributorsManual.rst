@@ -50,7 +50,7 @@ Using a virtual environment inside Anaconda is a good idea.
    $ envname="tvb-run"
    $ conda create -y --name $envname python=3.10 numpy
    $ source activate $envname
-   $ pip install -r [tvb-root]/tvb_framework/requirements.txt
+   $ pip install -r [tvb-root]/tvb_build/docker/requirements_group
    $ pip install --no-build-isolation tvb-gdist
    $ cd [tvb-root]/tvb_build/
    $ bash install_full_tvb.sh

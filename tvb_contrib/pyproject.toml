@@ -1,0 +1,75 @@
+# -*- coding: utf-8 -*-
+#
+#
+#  TheVirtualBrain-Contributors Package. This package holds simulator extensions.
+#  See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License along with this
+# program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
+#
+#
+
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tvb-contrib"
+version = "2.9.2"
+description = "A package with TVB contributed additions to the simulator, useful for scripting."
+readme = "README.rst"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Stuart Knock" },
+    { name = "Dionysios Perdikis" },
+    { name = "Paula Sanz Leon" },
+    { name = "Bogdan Valean" },
+    { name = "Marmaduke Woodman" },
+    { name = "Michiel van der Vlag" },
+]
+maintainers = [
+    { name = "TVB Admin", email = "tvb.admin@thevirtualbrain.org" }
+]
+keywords = [
+    "brain",
+    "contrib",
+    "neuroscience",
+    "simulator",
+    "tvb",
+]
+dependencies = [
+    "lxml",
+    "pylems",
+    "scikit-learn",
+    "tvb-library",
+    "xarray",
+]
+
+[project.urls]
+Download = "https://github.com/the-virtual-brain/tvb-root"
+Homepage = "https://www.thevirtualbrain.org"
+
+[tool.hatch.version]
+path = "tvb/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/tvb",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["tvb"]

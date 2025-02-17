@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -58,6 +58,7 @@ if __name__ == '__main__':
 
     skipped_notebooks = [
         'exploring_time_series_interactive.ipynb',  # run separately because of other notebook dependency
+        'exploring_the_epileptor_codim_3_model.ipynb', # run separately because of allensdk dependency
         'export_encrypt_decrypt_data.ipynb',
         'integrators_presentation.ipynb', # exclude or we run into Memory error at the automatic run
         'interacting_with_rest_api_fire_simulation.ipynb',
@@ -66,7 +67,9 @@ if __name__ == '__main__':
         'model_generation_using_dsl.ipynb',
         'RateML_CUDA_on_HPC.ipynb',
         'simulate_surface_seeg_eeg_meg.ipynb',
-        'Zerlaut_parametersweep_HPC.ipynb'
+        'Zerlaut_parametersweep_HPC.ipynb',
+        'simulate_for_mouse.ipynb', # run separately because of allensdk dependency
+        'interacting_with_Allen.ipynb'
     ]
 
     notebooks = [os.path.join(in_path, file) for file in os.listdir(in_path) if

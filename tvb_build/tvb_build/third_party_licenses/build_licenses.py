@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -78,6 +78,20 @@ ONE_LIB_TEMPLATE = "Library: `$$FULL-NAME$$ <$$PROJECT-HOME$$>`_  \
                    \n\n\n"
 
 
+def parse_versions(str_versions: str):
+    versions = str_versions[1:-1].split(',')
+    parsed_versions = []
+    temp = ''
+    paren_level = 0
+    for version in versions:
+        paren_level += version.count('(') - version.count(')')
+        temp = temp + ',' + version if temp else version
+        if paren_level == 0:
+            parsed_versions.append(temp)
+            temp = ''
+    return parsed_versions
+
+
 def _invalid_version(expected, actual):
     """ 
     Check if current found version of 3rd party library is 
@@ -86,7 +100,7 @@ def _invalid_version(expected, actual):
     if actual.startswith(expected):
         return False
     if expected.startswith('['):
-        expected = expected[1:-1].split(',')
+        expected = parse_versions(expected)
         return actual not in expected
     return True
 
@@ -169,7 +183,7 @@ if __name__ == "__main__":
     # Run stand-alone.
     all_libs = parser.read_default()
     to_exclude = []
-    for libname, libattr in all_libs.iteritems():
+    for libname, libattr in all_libs.items():
         if 'Desktop' in libattr["description"] or 'unused' in libattr['env']:
             to_exclude.append(libname)
         all_libs[libname] = libattr["version"]

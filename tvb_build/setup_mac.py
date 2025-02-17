@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,7 +36,6 @@ Execute in root:
 import os
 import shutil
 import locale
-import importlib
 import tvb_bin
 from glob import glob
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -56,8 +55,6 @@ VERSION = TvbProfile.current.version.BASE_VERSION
 
 FOLDERS_TO_DELETE = ['.svn', '.project', '.settings']
 FILES_TO_DELETE = ['.DS_Store', 'dev_logger_config.conf']
-
-EXTRA_MODULES = ['six.moves.BaseHTTPServer']
 
 
 # --------------------------- Start defining functions: --------------------------------------------
@@ -111,14 +108,6 @@ def _copy_tvb_sources(library_folder):
         if os.path.exists(excluded):
             shutil.rmtree(excluded, True)
             print("  Removed: " + str(excluded))
-
-
-def _copy_module(module_str, destination_folder):
-    """Import module, find its origin __file__ and copy it into distribution"""
-    imported_module = importlib.import_module(module_str)
-    six_extra_src = imported_module.__file__
-    print("- Copying " + six_extra_src + " into " + destination_folder)
-    shutil.copy2(six_extra_src, destination_folder)
 
 
 def _introspect_licenses(destination_folder, root_introspection, extra_licenses_check=None):
@@ -181,9 +170,6 @@ def _generate_distribution(final_name, library_path, version, extra_licensing_ch
     library_abs_path = os.path.join(DIST_FOLDER, library_path)
 
     _copy_tvb_sources(library_abs_path)
-
-    for extra in EXTRA_MODULES:
-        _copy_module(extra, library_abs_path)
 
     bin_src = os.path.join("tvb_bin", "tvb_bin")
     bin_dst = os.path.join(library_abs_path, "tvb_bin")
@@ -271,7 +257,7 @@ def prepare_mac_dist():
     _create_command_file(os.path.join(DIST_FOLDER, "bin", 'tvb_stop'),
                          'source ./distribution.command stop', 'Stopping TVB related processes.', True)
 
-    jupyter_command = '/Applications/{}/Contents/Resources/bin/jupyter notebook '.format(APP)
+    jupyter_command = '/Applications/{}/Contents/Resources/bin/jupyter lab '.format(APP)
     _create_command_file(os.path.join(DIST_FOLDER, "bin", 'jupyter_notebook'),
                          jupyter_command + '../demo_scripts', 'Launching IPython Notebook from TVB Distribution')
 

@@ -30,7 +30,7 @@ pipeline {
                 unstash 'step1'
                 unzip zipFile: 'tvb_build/build/TVB_build_step1.zip', dir: 'tvb_build/docker/step1'
                 script {
-                    VERSION_TAG = sh(script: "curl -s 'https://raw.githubusercontent.com/the-virtual-brain/tvb-root/master/tvb_framework/setup.py' | grep VERSION | head -1 | tr -d 'VERSION = \"'", returnStdout: true). trim()
+                    VERSION_TAG = sh(script: "curl -s 'https://raw.githubusercontent.com/the-virtual-brain/tvb-root/master/tvb_framework/pyproject.toml' | awk '/\\[project\\]/ {found=1} found && /version/ {print; exit}' | tr -d '\"' | awk -F'=' '{print \$2}'", returnStdout: true).trim()
                     LAST_SHA = sh(script: "curl -s 'https://api.github.com/repos/the-virtual-brain/tvb-root/commits' | grep sha | head -1 | cut -d ':' -f2 | tr -d '\",'", returnStdout: true).trim()
 
                     def dockerContext = "tvb_build/docker"

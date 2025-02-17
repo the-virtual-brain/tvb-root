@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2024, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -112,10 +112,10 @@ class BalloonModel(HasTraits):
         Coefficients  k1, k2 and k3 will be derived accordingly.""")
 
     normalize_neural_input = Attr(
-            field_type=bool,
-            default=False,
-            required=True,
-            doc="""Set if the mean should be subtracted from the neural input.""")
+        field_type=bool,
+        default=False,
+        required=True,
+        doc="""Set if the mean should be subtracted from the neural input.""")
 
     neural_input_transformation = EnumAttr(
         default=NeuralInputTransformations.NONE,
@@ -223,7 +223,7 @@ class BalloonModel(HasTraits):
         k1, k2, k3 = self.compute_derived_parameters()
 
         # prepare integrator
-        self.integrator.dt = 1. / self.time_series.sample_rate # s
+        self.integrator.dt = 1. / self.time_series.sample_rate  # s
         self.integrator.configure()
         self.log.debug("Integration time step size will be: %s seconds" % str(self.integrator.dt))
 
@@ -256,7 +256,6 @@ class BalloonModel(HasTraits):
         v = state[:, 2, :]
         q = state[:, 3, :]
 
-
         # BOLD models
         if self.bold_model.value == "nonlinear":
             """
@@ -278,7 +277,7 @@ class BalloonModel(HasTraits):
         bold_signal = time_series.TimeSeriesRegion(
             data=y_b,
             time=t_int,
-            sample_period=self.integrator.dt, # s
+            sample_period=self.integrator.dt,  # s
             sample_period_unit='s')
 
         return bold_signal
@@ -314,7 +313,7 @@ class BalloonModel(HasTraits):
         """
 
         self.log.debug("Computing: %s on the input time series" % str(mode))
-        unit_factor = time_series.sample_rate * time_series.sample_period 
+        unit_factor = time_series.sample_rate * time_series.sample_period
 
         if mode == NeuralInputTransformations.NONE:
             ts = time_series.data[:, 0, :, :]

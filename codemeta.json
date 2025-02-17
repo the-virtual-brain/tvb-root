@@ -3,7 +3,7 @@
     "type": "SoftwareSourceCode",
     "name": "The Virtual Brain Web-App",
     "license": "https://spdx.org/licenses/GPL-3.0-or-later.html",
-    "copyrightYear": "2024",
+    "copyrightYear": "2025",
     "codeRepository": "https://github.com/the-virtual-brain/tvb-root/",
     "documentation": "https://docs.thevirtualbrain.org/",
     "downloadUrl": "https://www.thevirtualbrain.org/tvb/zwei/brainsimulator-software",
