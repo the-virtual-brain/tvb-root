@@ -1,4 +1,4 @@
-numpy<2
+numpy
 siibra
 cryptography
 sqlalchemy
@@ -6,7 +6,7 @@ pyAesCrypt
 Deprecated
 lockfile
 numba
-scipy<1.15
+scipy
 syncrypto
 networkx
 scikit-learn<=1.1.3

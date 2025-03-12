@@ -260,7 +260,7 @@ class ConnectivityViewer(ABCSpaceDisplayer):
                              connectivity_entity=connectivity,
                              base_selection=connectivity.saved_selection_labels,
                              hemisphereOrderUrl=path_hemisphere_order_indices,
-                             leftHemisphereCount=(connectivity.hemispheres == 0).sum()
+                             leftHemisphereCount=(connectivity.hemispheres == 0).sum().item()
                              )
         global_params.update(self.build_params_for_selectable_connectivity(connectivity))
         return global_params, global_pages

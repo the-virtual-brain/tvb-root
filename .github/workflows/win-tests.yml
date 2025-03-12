@@ -30,7 +30,7 @@ jobs:
         if: steps.cache-local.outputs.cache-hit != 'true'
         run: |
           python -m pip install --upgrade setuptools pip wheel 
-          pip install -U numpy<2 cython scikit-build pytest 
+          pip install -U numpy cython scikit-build pytest 
           python3 -m pip install cryptography
           python3 -m pip install syncrypto
           python3 -m pip install lockfile

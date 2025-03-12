@@ -189,10 +189,10 @@ class ABCDisplayer(ABCAdapter, metaclass=ABCMeta):
         values with the smallest float number available in numpy.
         """
         float_max = numpy.finfo(numpy.float64).max
-        data[data == numpy.PINF] = float_max
+        data[data == numpy.inf] = float_max
 
         float_min = numpy.finfo(numpy.float64).min
-        data[data == numpy.NINF] = float_min
+        data[data == -numpy.inf] = float_min
 
         return data
 
