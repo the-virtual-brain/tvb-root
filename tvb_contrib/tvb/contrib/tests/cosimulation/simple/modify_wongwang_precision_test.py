@@ -168,7 +168,7 @@ class TestModifyWongWangRate(TestModifyWongWang):
         for i in range(np.min(sim_3.connectivity.idelays[np.nonzero(sim_3.connectivity.idelays)]) + 1):
             np.testing.assert_array_equal(result_all[0][1][i][0][len(id_proxy):],
                                           result_3_all[1][i + sync_steps, 0, len(id_proxy):])
-            np.testing.assert_array_equal(result_all[0][1][i][0][:len(id_proxy)] * np.NAN,
+            np.testing.assert_array_equal(result_all[0][1][i][0][:len(id_proxy)] * np.nan,
                                           result_3_all[1][i + sync_steps, 0, :len(id_proxy)])
         # After the delays impact the simulation, there is some difference for rate
         idelays = np.copy(sim_3.connectivity.idelays)
@@ -177,14 +177,14 @@ class TestModifyWongWangRate(TestModifyWongWang):
         for i in range(min_delay + 1, simulation_n_steps):
             diff = result_all[0][1][i][0][len(id_proxy):] - result_3_all[1][i + sync_steps, 0, len(id_proxy):]
             assert np.isnan(diff.sum())
-            np.testing.assert_array_equal(result_all[0][1][i][0][:len(id_proxy)] * np.NAN,
+            np.testing.assert_array_equal(result_all[0][1][i][0][:len(id_proxy)] * np.nan,
                                           result_3_all[1][i + sync_steps, 0, :len(id_proxy)])
 
         # The beginning is good for S
         for i in range(np.min(sim_3.connectivity.idelays[np.nonzero(sim_3.connectivity.idelays)]) + 1):
             np.testing.assert_array_equal(result_all[0][1][i][1][len(id_proxy):],
                                           result_3_all[1][i + sync_steps, 1, len(id_proxy):])
-            np.testing.assert_array_equal(result_all[0][1][i][1][:len(id_proxy)] * np.NAN,
+            np.testing.assert_array_equal(result_all[0][1][i][1][:len(id_proxy)] * np.nan,
                                           result_3_all[1][i + sync_steps, 1, :len(id_proxy)])
         # After the delays impact the simulation, there is some difference for S
         idelays = np.copy(sim_3.connectivity.idelays)
@@ -193,7 +193,7 @@ class TestModifyWongWangRate(TestModifyWongWang):
         for i in range(min_delay + 1, simulation_n_steps):
             diff = result_all[0][1][i][1][len(id_proxy):] - result_3_all[1][i + sync_steps, 1, len(id_proxy):]
             assert np.isnan(diff.sum())
-            np.testing.assert_array_equal(result_all[0][1][i][1][:len(id_proxy)] * np.NAN,
+            np.testing.assert_array_equal(result_all[0][1][i][1][:len(id_proxy)] * np.nan,
                                           result_3_all[1][i + sync_steps, 1, :len(id_proxy)])
 
     def test_with_proxy_bad_input(self):
@@ -255,7 +255,7 @@ class TestModifyWongWangRate(TestModifyWongWang):
         for i in range(np.min(sim_4.connectivity.idelays[np.nonzero(sim_4.connectivity.idelays)]) + 1):
             np.testing.assert_array_equal(result_all[0][1][i][1][len(id_proxy):],
                                           result_4_all[1][i + sync_steps, 1, len(id_proxy):])
-            np.testing.assert_array_equal(result_all[0][1][i][1][:len(id_proxy)] * np.NAN,
+            np.testing.assert_array_equal(result_all[0][1][i][1][:len(id_proxy)] * np.nan,
                                           result_4_all[1][i + sync_steps, 1, :len(id_proxy)])
         # After the delays impact the simulation, there is some difference for S
         idelays = np.copy(sim_4.connectivity.idelays)
@@ -264,7 +264,7 @@ class TestModifyWongWangRate(TestModifyWongWang):
         for i in range(min_delay + 1, simulation_n_steps):
             diff = result_all[0][1][i][1][len(id_proxy):] - result_4_all[1][i + sync_steps, 1, len(id_proxy):]
             assert np.sum(diff) != 0.0  # TODO: Find out why it fails for the first two iterations!
-            np.testing.assert_array_equal(result_all[0][1][i][1][:len(id_proxy)] * np.NAN,
+            np.testing.assert_array_equal(result_all[0][1][i][1][:len(id_proxy)] * np.nan,
                                           result_4_all[1][i + sync_steps, 1, :len(id_proxy)])
 
     def test_with_proxy_right_input(self):
@@ -316,5 +316,5 @@ class TestModifyWongWangRate(TestModifyWongWang):
         for i in range(simulation_n_steps):
             np.testing.assert_array_equal(result_all[0][1][i][1][len(id_proxy):],
                                           result_5_all[1][i + sync_steps, 1, len(id_proxy):])
-            np.testing.assert_array_equal(result_all[0][1][i][1][:len(id_proxy)] * np.NAN,
+            np.testing.assert_array_equal(result_all[0][1][i][1][:len(id_proxy)] * np.nan,
                                           result_5_all[1][i + sync_steps, 1, :len(id_proxy)])

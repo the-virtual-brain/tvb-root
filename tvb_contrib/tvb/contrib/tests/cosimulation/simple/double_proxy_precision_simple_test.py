@@ -82,7 +82,7 @@ class TestDoubleProxyPrecisionSimple(BaseTestCase):
 
             # compare with Raw monitor delayed by synchronization_time
             np.testing.assert_array_equal(result_ref[:, proxy_id_1, :], result_2[1][:, proxy_id_1, :])
-            np.testing.assert_array_equal(result_ref[:, proxy_id_2, :] * np.NAN, result_2[1][:, proxy_id_2, :])
+            np.testing.assert_array_equal(result_ref[:, proxy_id_2, :] * np.nan, result_2[1][:, proxy_id_2, :])
             np.testing.assert_array_equal(s_ref, s_2[1])
 
             time, s_1, result_1 = sim_1(synchronization_time,
@@ -90,7 +90,7 @@ class TestDoubleProxyPrecisionSimple(BaseTestCase):
 
             # compare with Raw monitor delayed by synchronization_time
             np.testing.assert_array_equal(result_ref[:, proxy_id_2, :], result_1[1][:, proxy_id_2, :])
-            np.testing.assert_array_equal(result_ref[:, proxy_id_1, :] * np.NAN, result_1[1][:, proxy_id_1, :])
+            np.testing.assert_array_equal(result_ref[:, proxy_id_1, :] * np.nan, result_1[1][:, proxy_id_1, :])
             np.testing.assert_array_equal(s_ref, s_1[1])
 
             time_ref, s_ref, result_ref = sim_ref(synchronization_time, rate=True)
