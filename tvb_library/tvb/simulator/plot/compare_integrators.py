@@ -47,7 +47,7 @@ import tvb.simulator.coupling as coupling_module
 
 import ipywidgets as widgets
 from IPython.display import display
-from IPython.core.display import clear_output
+from IPython.display import clear_output
 
 FONT_SIZE = "font.size"
 
