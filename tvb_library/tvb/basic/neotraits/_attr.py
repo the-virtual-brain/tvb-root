@@ -299,10 +299,6 @@ class _Number(Attr):
             # can_cast('i8', 'i32')
             raise TraitTypeError("can't be set to {!r}. Need a number.".format(value), attr=self)
 
-        # check if trying to cast a float to an int
-        if numpy.issubdtype(type(value), numpy.floating) and numpy.issubdtype(self.field_type, numpy.integer):
-            raise TypeError("can't be set to {!r}. Not safe to cast a float to an int.".format(value), attr=self)
-
         # this replaces the old can_cast method, which changed drastically in v2.0
         try:
             value_as_array = numpy.array(value, dtype=self.field_type)
