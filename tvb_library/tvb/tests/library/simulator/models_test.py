@@ -342,3 +342,56 @@ class TestModels(BaseTestCase):
 
         model = models.DumontGutkin()
         self._validate_initialization(model, 8)
+
+
+
+def test_zerlaut_dfuns():
+    import numpy as np
+    import jax, jax.numpy as jp
+    model = models.ZerlautAdaptationSecondOrder()
+    model.configure()
+    dt = 2 ** -4
+    nn = 90
+    x, = model.initial(dt, (1, model._nvar, nn, model.number_of_modes))
+    c = x[model.cvar] * 1e-3
+    dx = model.dfun(x, c, 0.)
+
+    # import pylab as pl
+
+    # j_x, j_c = jp.array(x), jp.array(c)
+    j_x, j_c = x.astype('f'), c.astype('f')
+    j_dx = model.dfun(j_x, j_c)
+    for i in range(model.nvar):
+        d = dx[i] - j_dx[i]
+        # pl.subplot(2, 4, i+1)
+        # pl.plot((np.abs(d)).reshape(-1), '.')
+
+    j_x, j_c = jp.array(x), jp.array(c)
+    j_dx = jax.jit(model.dfun)(j_x, j_c)
+    for i in range(model.nvar):
+        d = dx[i] - j_dx[i]
+        # pl.subplot(2, 4, i+1)
+        # pl.plot((np.abs(d)).reshape(-1), '.')
+    # pl.show()
+    # print(dx.shape)
+    np.testing.assert_allclose(j_dx, dx, 1e-5, 1e-3)
+
+
+def test_zerlaut_dfuns_perf_np(benchmark):
+    model = models.ZerlautAdaptationSecondOrder()
+    model.configure()
+    x, = model.initial(0.1, (1, model._nvar, 90, model.number_of_modes))
+    c = x[model.cvar] * 1e-3
+    benchmark(lambda : model.dfun(x, c, 0.))
+
+
+def test_zerlaut_dfuns_perf_jax(benchmark):
+    import jax, jax.numpy as jp
+    model = models.ZerlautAdaptationSecondOrder()
+    model.configure()
+    x, = model.initial(0.1, (1, model._nvar, 90, model.number_of_modes))
+    c = x[model.cvar] * 1e-3
+    jdfun = jax.jit(model.dfun)
+    j_x, j_c = jp.array(x), jp.array(c)
+    j_dx = jdfun(j_x, j_c)
+    benchmark(lambda : jdfun(j_x, j_c))
