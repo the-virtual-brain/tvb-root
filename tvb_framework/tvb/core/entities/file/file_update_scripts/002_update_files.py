@@ -89,7 +89,7 @@ def _deserialize_value(value):
     script needs to be independent of current storage manager, we duplicate it here. 
     """
     if value is not None:
-        if isinstance(value, numpy.string_):
+        if isinstance(value, numpy.bytes_):
             if len(value) == 0:
                 value = None
             else:
