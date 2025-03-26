@@ -26,11 +26,13 @@
 """
 
 import numpy as np
-from tvb.simulator.hybrid import NetworkSet, Subnetwork, Projection
+from tvb.tests.library.base_testcase import BaseTestCase
+from tvb.simulator.hybrid import NetworkSet, Subnetwork, Projection, Simulator
 from tvb.datatypes.connectivity import Connectivity
 from tvb.simulator.models import JansenRit, ReducedSetFitzHughNagumo
 from tvb.simulator.integrators import HeunDeterministic
-from tvb.tests.library.base_testcase import BaseTestCase
+from tvb.datatypes.patterns import StimuliRegion
+from tvb.datatypes.equations import DiscreteEquation, TemporalApplicableEquation
 
 
 class TestHybrid1(BaseTestCase):
@@ -66,10 +68,19 @@ class TestHybrid1(BaseTestCase):
             scheme=scheme,
         ).configure()
 
-        return conn, ix, cortex, thalamus, AtlasPart
+        nets = NetworkSet(
+            subnets=[cortex, thalamus],
+            projections=[
+                Projection(source=cortex, target=thalamus, source_cvar=0, target_cvar=1),
+                Projection(source=cortex, target=thalamus, source_cvar=5, target_cvar=0),
+                Projection(source=thalamus, target=cortex, source_cvar=0, target_cvar=1, scale=1e-2),
+            ]
+        )
+
+        return conn, ix, cortex, thalamus, AtlasPart, nets
 
     def test_subnetwork(self):
-        conn, ix, c, t, a = self.setup()
+        conn, ix, c, t, a, nets = self.setup()
         self.assert_equal((6, (ix == a.CORTEX).sum(), 1), c.zero_states().shape)
         self.assert_equal((2, (ix == a.CORTEX).sum(), 1), c.zero_cvars().shape)
         self.assert_equal((4, (ix == a.THALAMUS).sum(), 3), t.zero_states().shape)
@@ -77,7 +88,7 @@ class TestHybrid1(BaseTestCase):
     # TODO test_projection, but networkset tests projection
 
     def test_networkset(self):
-        conn, ix, cortex, thalamus, a = self.setup()
+        conn, ix, cortex, thalamus, a, nets = self.setup()
         nets = NetworkSet(
             subnets=[cortex, thalamus],
             projections=[
@@ -106,19 +117,36 @@ class TestHybrid1(BaseTestCase):
             np.testing.assert_allclose(c0_, c1_)
 
     def test_netset_step(self):
-        conn, ix, cortex, thalamus, a = self.setup()
-        nets = NetworkSet(
-            subnets=[cortex, thalamus],
-            projections=[
-                Projection(source=cortex, target=thalamus, source_cvar=0, target_cvar=1),
-                Projection(source=cortex, target=thalamus, source_cvar=5, target_cvar=0),
-                Projection(source=thalamus, target=cortex, source_cvar=0, target_cvar=1, scale=1e-2),
-            ]
-        )
+        conn, ix, cortex, thalamus, a, nets = self.setup()
         x = nets.zero_states()
         heun = HeunDeterministic(dt=1e-3)
         nx = nets.step(heun.scheme, x)
         self.assert_equal(
             [(6, 37, 1), (4, 39, 3)], nx.shape
         )
-        
+
+    def test_sim(self):
+        conn, ix, cortex, thalamus, a, nets = self.setup()
+        sim = Simulator(
+            nets=nets,
+            simulation_length=10
+        )
+        xs = sim.run()
+        self.assert_equal(101, len(xs))
+
+
+class TestHybrid2(BaseTestCase):
+
+    def test_stim(self):
+        conn = Connectivity.from_file()
+        nn = conn.weights.shape[0]
+        conn.configure()
+        class MyStim(StimuliRegion):
+            def __call__(self, t):
+                return np.random.randn(self.connectivity.weights.shape[0])
+        stim = MyStim(connectivity=conn)
+        I = stim(5)
+        self.assert_equal((nn,), I.shape)
+        model = JansenRit()
+        model.configure()
+        # TODO

@@ -33,20 +33,25 @@ This modules defines a set of classes for hybrid-model simulation.
 
 import collections
 import numpy as np
+from typing import List
 import tvb.basic.neotraits.api as t
 from tvb.datatypes.connectivity import Connectivity
 from tvb.simulator.models import Model
 from tvb.simulator.integrators import Integrator
+from tvb.simulator.monitors import Monitor
 
 
 class Subnetwork(t.HasTraits):
     "Represents a subnetwork of a connectome."
 
-    conn: Connectivity = t.Attr(Connectivity, required=True)
-    mask: np.ndarray = t.NArray(dtype=np.bool_, required=True)
-    name: str = t.Attr(str, required=True)
-    model: Model = t.Attr(Model, required=True)
-    scheme: Integrator = t.Attr(Integrator, required=True)
+    conn: Connectivity = t.Attr(Connectivity)
+    mask: np.ndarray = t.NArray(dtype=np.bool_)
+    name: str = t.Attr(str)
+    model: Model = t.Attr(Model)
+    scheme: Integrator = t.Attr(Integrator)
+    monitors: List[Monitor] = t.List(of=Monitor)
+
+    # TODO: per sn monitors?
 
     def configure(self):
         self.model.configure()
@@ -66,14 +71,22 @@ class Subnetwork(t.HasTraits):
         return self.scheme.scheme(x, self.model.dfun, c, 0, 0)
 
 
+class Stim(Subnetwork):
+    "Stimulator adapted for hybrid cases"
+    # classic use is non-modal:
+    # stimulus[self.model.stvar, :, :] = \
+    #   self.stimulus(stim_step).reshape((1, -1, 1))
+    pass
+
+
 class Projection(t.HasTraits):
     """Represents a projection from a source subnetwork to a target
     subnetwork, specifying indices of coupling variables."""
 
-    source: Subnetwork = t.Attr(Subnetwork, required=True)
-    target: Subnetwork = t.Attr(Subnetwork, required=True)
-    source_cvar: int = t.Int(required=True)
-    target_cvar: int = t.Int(required=True)
+    source: Subnetwork = t.Attr(Subnetwork)
+    target: Subnetwork = t.Attr(Subnetwork)
+    source_cvar: int = t.Int()
+    target_cvar: int = t.Int()
     scale: float = t.Float(default=1.0)
 
     # if not provided, default to source.conn
@@ -94,7 +107,7 @@ class Projection(t.HasTraits):
         if self.mode_map is None:
             self.mode_map = np.ones(
                 (self.source.model.number_of_modes,
-                self.target.model.number_of_modes, ) )
+                 self.target.model.number_of_modes, ))
             self.mode_map /= self.source.model.number_of_modes
 
     def apply(self, tgt, src):
@@ -134,10 +147,33 @@ class NetworkSet(t.HasTraits):
             p.apply(tgt, src)
         return aff
 
-    def step(self, scheme, xs: States) -> States:
+    def step(self, xs: States) -> States:
         cs = self.cfun(xs)
         nxs = self.zero_states()
         for sn, nx, x, c in zip(self.subnets, nxs, xs, cs):
             nx[:] = sn.step(x, c)
         return nxs
 
+
+class Simulator(t.HasTraits):
+    nets: NetworkSet = t.Attr(NetworkSet)
+    monitors: List[Monitor] = t.List(of=Monitor)
+    simulation_length: float = t.Float()
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.validate_dts()
+
+    def validate_dts(self):
+        self._dt0 = self.nets.subnets[0].scheme.dt
+        for sn in self.nets.subnets[1:]:
+            assert self._dt0 == sn.scheme.dt
+
+    def run(self):
+        x = self.nets.zero_states()
+        xs = [x]
+        # TODO tqdm?
+        for i in range(int(self.simulation_length / self._dt0)):
+            xs.append(self.nets.step(xs[-1]))
+        # TODO transpose
+        return xs
