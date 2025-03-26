@@ -36,6 +36,7 @@ import numpy as np
 import tvb.basic.neotraits.api as t
 from tvb.datatypes.connectivity import Connectivity
 from tvb.simulator.models import Model
+from tvb.simulator.integrators import Integrator
 
 
 class Subnetwork(t.HasTraits):
@@ -43,14 +44,26 @@ class Subnetwork(t.HasTraits):
 
     conn: Connectivity = t.Attr(Connectivity, required=True)
     mask: np.ndarray = t.NArray(dtype=np.bool_, required=True)
-    name: str = t.Attr(str)
+    name: str = t.Attr(str, required=True)
     model: Model = t.Attr(Model, required=True)
+    scheme: Integrator = t.Attr(Integrator, required=True)
+
+    def configure(self):
+        self.model.configure()
+        return self
+
+    @property
+    def var_shape(self) -> tuple[int]:
+        return self.mask.sum(), self.model.number_of_modes
 
     def zero_states(self) -> np.ndarray:
-        return np.zeros((self.model.nvar, self.mask.sum()))
+        return np.zeros((self.model.nvar, ) + self.var_shape)
 
     def zero_cvars(self) -> np.ndarray:
-        return np.zeros((self.model.cvar.size, self.mask.sum()))
+        return np.zeros((self.model.cvar.size, ) + self.var_shape)
+
+    def step(self, x, c):
+        return self.scheme.scheme(x, self.model.dfun, c, 0, 0)
 
 
 class Projection(t.HasTraits):
@@ -64,23 +77,29 @@ class Projection(t.HasTraits):
     scale: float = t.Float(default=1.0)
 
     # if not provided, default to source.conn
-    conn: Connectivity = t.Attr(Connectivity)
+    conn: Connectivity = t.Attr(Connectivity, required=False)
 
     # cfun = t.Attr(tvb.coupling.Coupling)  # TODO
+
+    mode_map: np.ndarray = t.NArray(required=False)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         assert (self.source.mask * self.target.mask).sum() == 0, 'overlap'
         assert self.source.conn.gid == self.target.conn.gid
-        try:
-            self.conn
-        except:
+        if self.conn is None:
             self.conn = self.source.conn
         self._weights = self.conn.weights[self.target.mask][:, self.source.mask]
         # TODO time delays
+        if self.mode_map is None:
+            self.mode_map = np.ones(
+                (self.source.model.number_of_modes,
+                self.target.model.number_of_modes, ) )
+            self.mode_map /= self.source.model.number_of_modes
 
     def apply(self, tgt, src):
-        tgt[self.target_cvar] += self.scale * src[self.source_cvar] @ self._weights.T
+        gx = self.scale * self._weights @ src[self.source_cvar] @ self.mode_map
+        tgt[self.target_cvar] += gx
 
 
 class NetworkSet(t.HasTraits):
@@ -119,8 +138,6 @@ class NetworkSet(t.HasTraits):
         cs = self.cfun(xs)
         nxs = self.zero_states()
         for sn, nx, x, c in zip(self.subnets, nxs, xs, cs):
-            nx[:] = scheme(x[..., None],
-                           sn.model.dfun,
-                           c[..., None], 0, 0)[:, :, 0]
+            nx[:] = sn.step(x, c)
         return nxs
 

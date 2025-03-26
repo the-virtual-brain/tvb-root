@@ -28,7 +28,7 @@
 import numpy as np
 from tvb.simulator.hybrid import NetworkSet, Subnetwork, Projection
 from tvb.datatypes.connectivity import Connectivity
-from tvb.simulator.models import JansenRit, WilsonCowan
+from tvb.simulator.models import JansenRit, ReducedSetFitzHughNagumo
 from tvb.simulator.integrators import HeunDeterministic
 from tvb.tests.library.base_testcase import BaseTestCase
 
@@ -48,27 +48,31 @@ class TestHybrid1(BaseTestCase):
         ix = np.random.randint(
             low=0, high=2, size=conn.number_of_regions)
 
+        scheme = HeunDeterministic(dt=0.1)
+
         cortex = Subnetwork(
             conn=conn,
             mask=ix == AtlasPart.CORTEX,
             name='cortex',
-            model=JansenRit()
-        )
+            model=JansenRit(),
+            scheme=scheme,
+        ).configure()
 
         thalamus = Subnetwork(
             conn=conn,
             mask=ix == AtlasPart.THALAMUS,
             name='thalamus',
-            model=WilsonCowan()
-        )
+            model=ReducedSetFitzHughNagumo(),
+            scheme=scheme,
+        ).configure()
 
         return conn, ix, cortex, thalamus, AtlasPart
 
     def test_subnetwork(self):
         conn, ix, c, t, a = self.setup()
-        self.assert_equal((6, (ix == a.CORTEX).sum()), c.zero_states().shape)
-        self.assert_equal((2, (ix == a.CORTEX).sum()), c.zero_cvars().shape)
-        self.assert_equal((2, (ix == a.THALAMUS).sum()), t.zero_states().shape)
+        self.assert_equal((6, (ix == a.CORTEX).sum(), 1), c.zero_states().shape)
+        self.assert_equal((2, (ix == a.CORTEX).sum(), 1), c.zero_cvars().shape)
+        self.assert_equal((4, (ix == a.THALAMUS).sum(), 3), t.zero_states().shape)
 
     # TODO test_projection, but networkset tests projection
 
@@ -90,11 +94,11 @@ class TestHybrid1(BaseTestCase):
 
         c0 = nets.zero_cvars()
         p: Projection = nets.projections[0]
-        c0.thalamus[1] += x.cortex[0] @ p._weights.T * p.scale
+        c0.thalamus[1] += p._weights @ x.cortex[0] * p.scale
         p: Projection = nets.projections[1]
-        c0.thalamus[0] += x.cortex[5] @ p._weights.T * p.scale
+        c0.thalamus[0] += p._weights @ x.cortex[5] * p.scale
         p: Projection = nets.projections[2]
-        c0.cortex[1] += x.thalamus[0] @ p._weights.T * p.scale
+        c0.cortex[1] += p._weights @ x.thalamus[0] @ np.ones((3, 1))/3 * p.scale
 
         c1 = nets.cfun(x)
 
@@ -115,6 +119,6 @@ class TestHybrid1(BaseTestCase):
         heun = HeunDeterministic(dt=1e-3)
         nx = nets.step(heun.scheme, x)
         self.assert_equal(
-            [(6, 37), (2, 39)], nx.shape
+            [(6, 37, 1), (4, 39, 3)], nx.shape
         )
         
