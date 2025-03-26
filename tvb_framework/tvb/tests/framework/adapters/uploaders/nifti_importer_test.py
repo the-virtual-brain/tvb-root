@@ -27,10 +27,12 @@
 .. moduleauthor:: Gabriel Florea <gabriel.florea@codemart.ro>
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
+import importlib
 import json
 import os
 
 import numpy
+import pytest
 import tvb_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
@@ -54,13 +56,18 @@ class TestNIFTIImporter(BaseTestCase):
     UNKNOWN_STR = "unknown"
 
     def setup_method(self):
+        try:
+            demo_data = importlib.import_module("tvb_data.nifti")
+        except ModuleNotFoundError:
+            pytest.skip("tvb_data.nifti module not available")
+
         self.test_user = TestFactory.create_user('Nifti_Importer_User')
         self.test_project = TestFactory.create_project(self.test_user, "Nifti_Importer_Project")
-        self.nii_file = os.path.join(os.path.dirname(tvb_data.nifti.__file__), 'minimal.nii')
-        self.gz_nii_file = os.path.join(os.path.dirname(tvb_data.nifti.__file__), 'minimal.nii.gz')
-        self.timeseries_nii_file = os.path.join(os.path.dirname(tvb_data.nifti.__file__), 'time_series_152.nii.gz')
+        self.nii_file = os.path.join(os.path.dirname(demo_data.__file__), 'minimal.nii')
+        self.gz_nii_file = os.path.join(os.path.dirname(demo_data.__file__), 'minimal.nii.gz')
+        self.timeseries_nii_file = os.path.join(os.path.dirname(demo_data.__file__), 'time_series_152.nii.gz')
         self.wrong_nii_file = os.path.abspath(__file__)
-        self.txt_file = os.path.join(os.path.dirname(tvb_data.nifti.__file__), 'volume_mapping/mapping_FS_76.txt')
+        self.txt_file = os.path.join(os.path.dirname(demo_data.__file__), 'volume_mapping/mapping_FS_76.txt')
 
 
     def teardown_method(self):
