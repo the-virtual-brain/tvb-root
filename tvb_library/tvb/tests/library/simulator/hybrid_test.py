@@ -119,8 +119,7 @@ class TestHybrid1(BaseTestCase):
     def test_netset_step(self):
         conn, ix, cortex, thalamus, a, nets = self.setup()
         x = nets.zero_states()
-        heun = HeunDeterministic(dt=1e-3)
-        nx = nets.step(heun.scheme, x)
+        nx = nets.step(x)
         self.assert_equal(
             [(6, 37, 1), (4, 39, 3)], nx.shape
         )
