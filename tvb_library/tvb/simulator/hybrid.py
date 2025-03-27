@@ -41,6 +41,32 @@ from tvb.simulator.integrators import Integrator
 from tvb.simulator.monitors import Monitor
 
 
+# XXX this should probably be built into our normal
+# monitor implementation: store stuff into list or directly to disk.
+# Teh framework supports this but not sure how easy to use from notebook.
+class Recorder(t.HasTraits):
+    monitor: Monitor = t.Attr(Monitor)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.times = []
+        self.samples = []
+
+    def record(self, step, state):
+        ty = self.monitor.record(step, state)
+        if ty is not None:
+            t, y = ty
+            self.times.append(t)
+            self.samples.append(y)
+
+    @property
+    def shape(self):
+        return (len(self.samples), ) + self.samples[0].shape
+
+    def to_arrays(self):
+        return np.array(self.times), np.array(self.samples)
+
+
 class Subnetwork(t.HasTraits):
     "Represents a subnetwork of a connectome."
 
@@ -49,13 +75,21 @@ class Subnetwork(t.HasTraits):
     name: str = t.Attr(str)
     model: Model = t.Attr(Model)
     scheme: Integrator = t.Attr(Integrator)
-    monitors: List[Monitor] = t.List(of=Monitor)
+    monitors: List[Recorder]
 
-    # TODO: per sn monitors?
+    def __init__(self, **kwargs):
+        self.monitors = []
+        super().__init__(**kwargs)
 
     def configure(self):
         self.model.configure()
         return self
+
+    def add_monitor(self, monitor: Monitor):
+        monitor._config_dt(self.scheme.dt)
+        monitor._config_stock(len(self.model.variables_of_interest),
+                              self.mask.sum(), self.model.number_of_modes)
+        self.monitors.append(Recorder(monitor=monitor))
 
     @property
     def var_shape(self) -> tuple[int]:
@@ -67,8 +101,11 @@ class Subnetwork(t.HasTraits):
     def zero_cvars(self) -> np.ndarray:
         return np.zeros((self.model.cvar.size, ) + self.var_shape)
 
-    def step(self, x, c):
-        return self.scheme.scheme(x, self.model.dfun, c, 0, 0)
+    def step(self, step, x, c):
+        nx = self.scheme.scheme(x, self.model.dfun, c, 0, 0)
+        for monitor in self.monitors:
+            monitor.record(step, self.model.observe(nx))
+        return nx
 
 
 class Stim(Subnetwork):
@@ -138,6 +175,14 @@ class NetworkSet(t.HasTraits):
     def zero_cvars(self) -> States:
         return self.States(*[_.zero_cvars() for _ in self.subnets])
 
+    def observe(self, states: States, flat=False) -> np.ndarray:
+        "Compute observations (variables of interest) across all subnets."
+        obs = self.States(*[sn.model.observe(x).sum(axis=-1)[..., None]
+                          for sn, x in zip(self.subnets, states)])
+        if flat:
+            obs = np.hstack(obs)
+        return obs
+
     def cfun(self, eff: States) -> States:
         "applies all projections to compute total coupling."
         aff = self.zero_cvars()
@@ -147,11 +192,11 @@ class NetworkSet(t.HasTraits):
             p.apply(tgt, src)
         return aff
 
-    def step(self, xs: States) -> States:
+    def step(self, step, xs: States) -> States:
         cs = self.cfun(xs)
         nxs = self.zero_states()
         for sn, nx, x, c in zip(self.subnets, nxs, xs, cs):
-            nx[:] = sn.step(x, c)
+            nx[:] = sn.step(step, x, c)
         return nxs
 
 
@@ -163,17 +208,39 @@ class Simulator(t.HasTraits):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.validate_dts()
+        self.validate_vois()
+
+    def validate_vois(self):
+        if len(self.monitors) == 0:
+            return
+        nv0 = self.nets.subnets[0].model.variables_of_interest
+        for sn in self.nets.subnets[1:]:
+            msg = 'Variables of interest must have same size on all models.'
+            assert len(nv0) == len(sn.model.variables_of_interest), msg
+        for monitor in self.monitors:
+            num_nodes = sum([sn.mask.sum() for sn in self.nets.subnets])
+            monitor._config_stock(len(nv0), num_nodes, 1)
 
     def validate_dts(self):
         self._dt0 = self.nets.subnets[0].scheme.dt
         for sn in self.nets.subnets[1:]:
             assert self._dt0 == sn.scheme.dt
+        for monitor in self.monitors:
+            monitor: Monitor
+            monitor._config_dt(self._dt0)
+            monitor.voi = slice(None)  # all vars
 
     def run(self):
         x = self.nets.zero_states()
-        xs = [x]
-        # TODO tqdm?
-        for i in range(int(self.simulation_length / self._dt0)):
-            xs.append(self.nets.step(xs[-1]))
-        # TODO transpose
-        return xs
+        mts = [[] for _ in self.monitors]
+        mxs = [[] for _ in self.monitors]
+        for step in range(int(self.simulation_length / self._dt0)):
+            x = self.nets.step(step, x)
+            if self.monitors:
+                ox = self.nets.observe(x, flat=True)
+                for mt, mx, mon in zip(mts, mxs, self.monitors):
+                    maybe_tx = mon.record(step, ox)
+                    if maybe_tx is not None:
+                        mt.append(maybe_tx[0])
+                        mx.append(maybe_tx[1])
+        return [(np.array(t), np.array(x)) for t, x in zip(mts, mxs)]

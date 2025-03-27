@@ -27,17 +27,18 @@
 
 import numpy as np
 from tvb.tests.library.base_testcase import BaseTestCase
-from tvb.simulator.hybrid import NetworkSet, Subnetwork, Projection, Simulator
+from tvb.simulator.hybrid import NetworkSet, Subnetwork, Projection, Simulator, Recorder
 from tvb.datatypes.connectivity import Connectivity
 from tvb.simulator.models import JansenRit, ReducedSetFitzHughNagumo
 from tvb.simulator.integrators import HeunDeterministic
 from tvb.datatypes.patterns import StimuliRegion
 from tvb.datatypes.equations import DiscreteEquation, TemporalApplicableEquation
+from tvb.simulator.monitors import TemporalAverage
 
 
 class TestHybrid1(BaseTestCase):
     
-    def setup(self):
+    def setup(self, nvois=None, jrmon=None):
         conn = Connectivity.from_file()
         conn.configure()
         np.random.seed(42)
@@ -52,19 +53,28 @@ class TestHybrid1(BaseTestCase):
 
         scheme = HeunDeterministic(dt=0.1)
 
+        jrkwargs = {}
+        fhnkwargs = {}
+        if nvois:
+            jrkwargs['variables_of_interest'] = JansenRit.variables_of_interest.default[:nvois]
+            fhnkwargs['variables_of_interest'] = ReducedSetFitzHughNagumo.variables_of_interest.default[:nvois]
+
         cortex = Subnetwork(
             conn=conn,
             mask=ix == AtlasPart.CORTEX,
             name='cortex',
-            model=JansenRit(),
+            model=JansenRit(**jrkwargs),
             scheme=scheme,
         ).configure()
+
+        if jrmon:
+            cortex.add_monitor(jrmon)
 
         thalamus = Subnetwork(
             conn=conn,
             mask=ix == AtlasPart.THALAMUS,
             name='thalamus',
-            model=ReducedSetFitzHughNagumo(),
+            model=ReducedSetFitzHughNagumo(**fhnkwargs),
             scheme=scheme,
         ).configure()
 
@@ -119,19 +129,37 @@ class TestHybrid1(BaseTestCase):
     def test_netset_step(self):
         conn, ix, cortex, thalamus, a, nets = self.setup()
         x = nets.zero_states()
-        nx = nets.step(x)
+        nx = nets.step(0, x)
         self.assert_equal(
             [(6, 37, 1), (4, 39, 3)], nx.shape
         )
 
     def test_sim(self):
-        conn, ix, cortex, thalamus, a, nets = self.setup()
+        conn, ix, cortex, thalamus, a, nets = self.setup(nvois=2)
+        tavg = TemporalAverage(period=1.0)
         sim = Simulator(
             nets=nets,
-            simulation_length=10
+            simulation_length=10,
+            monitors=[tavg],
         )
+        sim.configure()
+        (t,y), = sim.run()
+        self.assert_equal(10, len(t))
+        self.assert_equal((10, 2, 76, 1), y.shape)
+
+    def test_sim_jrmon(self):
+        jrmon = TemporalAverage(period=1.0)
+        conn, ix, cortex, thalamus, a, nets = self.setup(jrmon=jrmon)
+        sim = Simulator(nets=nets, simulation_length=10)
+        sim.configure()
         xs = sim.run()
-        self.assert_equal(101, len(xs))
+        self.assert_equal(0, len(xs))
+        rec: Recorder = cortex.monitors[0]
+        nn = cortex.mask.sum()
+        self.assert_equal((10, 4, nn, 1), rec.shape)
+        t, y = rec.to_arrays()
+        self.assert_equal((10, ), t.shape)
+        self.assert_equal((10, 4, nn, 1), y.shape)
 
 
 class TestHybrid2(BaseTestCase):
