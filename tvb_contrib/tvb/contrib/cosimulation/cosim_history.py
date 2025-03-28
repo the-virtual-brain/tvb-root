@@ -57,7 +57,7 @@ class CosimHistory(BaseHistory):
         self.n_var = n_var
         self.n_node = n_node
         self.n_mode = n_mode
-        self.buffer[:] = numpy.NAN
+        self.buffer[:] = numpy.nan
 
     def initialize(self, history, voi, current_step=0):
         """Initialize CosimHistory from the TVB history which is assumed already configured.

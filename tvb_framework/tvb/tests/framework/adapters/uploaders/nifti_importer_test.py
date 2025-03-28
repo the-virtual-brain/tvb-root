@@ -27,12 +27,13 @@
 .. moduleauthor:: Gabriel Florea <gabriel.florea@codemart.ro>
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
+import importlib
 import json
 import os
 
 import numpy
+import pytest
 import tvb_data
-import tvb_data.nifti as demo_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
@@ -51,18 +52,23 @@ class TestNIFTIImporter(BaseTestCase):
     Unit-tests for NIFTI importer.
     """
 
-    NII_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'minimal.nii')
-    GZ_NII_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'minimal.nii.gz')
-    TIMESERIES_NII_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'time_series_152.nii.gz')
-    WRONG_NII_FILE = os.path.abspath(__file__)
-    TXT_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'volume_mapping/mapping_FS_76.txt')
-
     DEFAULT_ORIGIN = [[0.0, 0.0, 0.0]]
     UNKNOWN_STR = "unknown"
 
     def setup_method(self):
+        try:
+            demo_data = importlib.import_module("tvb_data.nifti")
+        except ModuleNotFoundError:
+            pytest.skip("tvb_data.nifti module not available")
+
         self.test_user = TestFactory.create_user('Nifti_Importer_User')
         self.test_project = TestFactory.create_project(self.test_user, "Nifti_Importer_Project")
+        self.nii_file = os.path.join(os.path.dirname(demo_data.__file__), 'minimal.nii')
+        self.gz_nii_file = os.path.join(os.path.dirname(demo_data.__file__), 'minimal.nii.gz')
+        self.timeseries_nii_file = os.path.join(os.path.dirname(demo_data.__file__), 'time_series_152.nii.gz')
+        self.wrong_nii_file = os.path.abspath(__file__)
+        self.txt_file = os.path.join(os.path.dirname(demo_data.__file__), 'volume_mapping/mapping_FS_76.txt')
+
 
     def teardown_method(self):
         """
@@ -77,7 +83,7 @@ class TestNIFTIImporter(BaseTestCase):
         """
         view_model = NIFTIImporterModel()
         view_model.data_file = import_file_path
-        view_model.mappings_file = self.TXT_FILE
+        view_model.mappings_file = self.txt_file
         view_model.apply_corrections = True
         view_model.connectivity = connectivity_gid
         view_model.data_subject = "Bla Bla"
@@ -95,7 +101,7 @@ class TestNIFTIImporter(BaseTestCase):
         """
         This method tests import of a NIFTI file.
         """
-        time_series_index = self._import(self.TIMESERIES_NII_FILE, TimeSeriesVolumeIndex)
+        time_series_index = self._import(self.timeseries_nii_file, TimeSeriesVolumeIndex)
 
         # Since self.assertAlmostEquals is not available on all machine
         # We compare floats as following
@@ -116,7 +122,7 @@ class TestNIFTIImporter(BaseTestCase):
         """
         This method tests import of a NIFTI file.
         """
-        structural_mri_index = self._import(self.NII_FILE)
+        structural_mri_index = self._import(self.nii_file)
         assert "T1" == structural_mri_index.weighting
 
         structural_mri = h5.load_from_index(structural_mri_index)
@@ -137,7 +143,7 @@ class TestNIFTIImporter(BaseTestCase):
         """
         This method tests import of a NIFTI file compressed in GZ format.
         """
-        structure = self._import(self.GZ_NII_FILE)
+        structure = self._import(self.gz_nii_file)
         assert "T1" == structure.weighting
 
     def test_import_region_mapping(self):
@@ -148,7 +154,7 @@ class TestNIFTIImporter(BaseTestCase):
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
         to_link_conn = TestFactory.get_entity(self.test_project, ConnectivityIndex)
 
-        mapping_index = self._import(self.GZ_NII_FILE, RegionVolumeMappingIndex, to_link_conn.gid)
+        mapping_index = self._import(self.gz_nii_file, RegionVolumeMappingIndex, to_link_conn.gid)
         mapping = h5.load_from_index(mapping_index)
 
         assert -1 <= mapping.array_data.min()
@@ -165,7 +171,7 @@ class TestNIFTIImporter(BaseTestCase):
         This method tests import of a file in a wrong format
         """
         try:
-            self._import(self.WRONG_NII_FILE)
+            self._import(self.wrong_nii_file)
             raise AssertionError("Import should fail in case of a wrong NIFTI format.")
         except OperationException:
             # Expected exception

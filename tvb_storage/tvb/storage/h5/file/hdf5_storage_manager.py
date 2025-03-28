@@ -405,7 +405,7 @@ class HDF5StorageManager(object):
         This method takes value loaded from H5 file and transform it to TVB data.
         """
         if value is not None:
-            if isinstance(value, numpy.string_):
+            if isinstance(value, numpy.bytes_):
                 if len(value) == 0:
                     value = None
                 else:

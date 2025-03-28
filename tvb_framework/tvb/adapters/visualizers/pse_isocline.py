@@ -80,7 +80,7 @@ class PSEIsoGroupModel(PSEGroupModel):
                     metric_values[idx1][idx2] = self.get_all_metrics()[dt_gid][metric_key]
                 except KeyError:
                     dt_gid = None
-                    metric_values[idx1][idx2] = numpy.NaN
+                    metric_values[idx1][idx2] = numpy.nan
                 self.datatypes_gids[idx1][idx2] = dt_gid
         return metric_values
 

@@ -111,8 +111,8 @@ class LocalConnectivity(HasTraits):
 
         source_full_path = try_get_absolute_path("tvb_data.local_connectivity", source_file)
         reader = FileReader(source_full_path)
-
-        result.matrix = reader.read_array(matlab_data_name="LocalCoupling")
+        coo_matrix = reader.read_array(matlab_data_name="LocalCoupling")
+        result.matrix = coo_matrix.tocsr()
         return result
 
     def summary_info(self):

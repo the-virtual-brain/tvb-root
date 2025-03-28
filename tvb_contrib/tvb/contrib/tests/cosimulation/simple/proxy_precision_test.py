@@ -70,7 +70,7 @@ class TestProxyPrecision(BaseTestCase):
 
             # compare with monitor delayed by synchronization_time
             np.testing.assert_array_equal(result_ref[:, no_proxy, :], result[1][:, no_proxy, :])
-            np.testing.assert_array_equal(result_ref[:, proxy_id, :]*np.NAN, result[1][:, proxy_id, :])
+            np.testing.assert_array_equal(result_ref[:, proxy_id, :]*np.nan, result[1][:, proxy_id, :])
             np.testing.assert_array_equal(s_ref, s[1])
 
             time_ref, s_ref, result_ref = sim_ref(synchronization_time, rate=True)
