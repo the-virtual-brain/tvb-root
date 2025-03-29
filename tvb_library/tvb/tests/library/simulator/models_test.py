@@ -342,3 +342,13 @@ class TestModels(BaseTestCase):
 
         model = models.DumontGutkin()
         self._validate_initialization(model, 8)
+
+class TestMHSA(BaseTestCase):
+    def test_mhsa1(self):
+        import numpy as np
+        from tvb.simulator.models.mhsa import MHSA
+        model = MHSA()
+        T, C = 8, model.number_of_modes
+        coupling = np.zeros((T, 3, C))
+        dx = model.dfun(0, coupling, 0)
+        self.assert_equal((T, C), dx.shape)
