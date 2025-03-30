@@ -54,7 +54,6 @@ class IdCoupling(SparseCoupling):
 
 class Sum(Model):
     nvar = 1
-    _nvar = 1
     state_variable_range = {'x': [0, 100]}
     variables_of_interest = List(of=str, default=('x',), choices=('x',))
     state_variables = ('x',)
