@@ -6,7 +6,7 @@ Getting Started
 
 First things first. We are going to use *tvb-data* which is present within the distribution
 (at TVB_Distribution/tvb_data/Lib/site-packages/tvb-data)
-or it can be downloaded from `here <https://zenodo.org/record/10128131>`_.
+or it can be downloaded from `here <https://zenodo.org/record/14992335>`_.
 Other than that, please follow
 `this link <https://www.thevirtualbrain.org/tvb/zwei/client-area/public?_ga=2.222814555.1504534223.1522695590-1355432300.1522695590#>`_
 to download the *ModelingEpilepsy.zip* project.
