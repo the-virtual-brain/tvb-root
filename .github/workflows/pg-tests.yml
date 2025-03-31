@@ -69,7 +69,7 @@ jobs:
           rm tvb_data.zip
 
       - name: setup data
-        run: cd demo_data && python3 setup.py develop
+        run: cd demo_data && pip install -e .
 
       - name: run framework tests
         run: |

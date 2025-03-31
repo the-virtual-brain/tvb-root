@@ -55,7 +55,7 @@ jobs:
           Expand-Archive 'C:\\TEMP\\tvb_data.zip' C:\\tvb_data
           del C:\\TEMP\\tvb_data.zip
           cd C:\\tvb_data
-          python setup.py develop
+          pip install -e .
 
       - name: run notebooks
         run: |
