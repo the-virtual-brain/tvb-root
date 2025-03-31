@@ -16,10 +16,10 @@ class TestBenchmarkModels(BaseTestCase):
         return state
 
 
-    def zero_coupling_for_model(self, model: Model, n_node):
+    def randn_coupling_for_model(self, model: Model, n_node):
         n_cvar = len(model.cvar)
         shape = (n_cvar, n_node, model.number_of_modes)
-        coupling = np.zeros(shape)
+        coupling = np.random.randn(*shape)
         return coupling
 
     def eps_for_model(self, model: Model, n_node, time_limit=0.5, state=None, coupling=None):
@@ -27,7 +27,7 @@ class TestBenchmarkModels(BaseTestCase):
         if state is None:
             state = self.randn_state_for_model(model, n_node)
         if coupling is None:
-            coupling = self.zero_coupling_for_model(model, n_node)
+            coupling = self.randn_coupling_for_model(model, n_node)
         # throw one away in case of initialization
         model.dfun(state, coupling)
         # start timing
@@ -44,7 +44,7 @@ class TestBenchmarkModels(BaseTestCase):
         rs_fhn_model = ReducedSetFitzHughNagumo()
         n_node = 10
         state = self.randn_state_for_model(rs_fhn_model, n_node)
-        coupling = self.zero_coupling_for_model(rs_fhn_model, n_node)
+        coupling = self.randn_coupling_for_model(rs_fhn_model, n_node)
 
         rs_fhn_model.use_numba = False
         no_numba_performance = self.eps_for_model(rs_fhn_model, 10, state=state, coupling=coupling)
@@ -63,7 +63,7 @@ class TestBenchmarkModels(BaseTestCase):
         rs_hr_model = ReducedSetHindmarshRose()
         n_node = 10
         state = self.randn_state_for_model(rs_hr_model, n_node)
-        coupling = self.zero_coupling_for_model(rs_hr_model, n_node)
+        coupling = self.randn_coupling_for_model(rs_hr_model, n_node)
 
         rs_hr_model.use_numba = False
         no_numba_performance = self.eps_for_model(rs_hr_model, 10, state=state, coupling=coupling)
