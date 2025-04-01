@@ -58,18 +58,18 @@ jobs:
         uses: actions/cache@v3
         with:
           path: demo_data
-          key: tvb-data-10128131
+          key: tvb-data-14992335
 
       - name: download data
         if: steps.cache-data.outputs.cache-hit != 'true'
         run: |
-          wget -q https://zenodo.org/record/10128131/files/tvb_data.zip?download=1 -O tvb_data.zip
+          wget -q https://zenodo.org/record/14992335/files/tvb_data.zip?download=1 -O tvb_data.zip
           mkdir demo_data
           unzip tvb_data.zip -d demo_data
           rm tvb_data.zip
 
       - name: setup data
-        run: cd demo_data && python3 setup.py develop
+        run: cd demo_data && pip install -e .
 
       - name: run framework tests
         run: |

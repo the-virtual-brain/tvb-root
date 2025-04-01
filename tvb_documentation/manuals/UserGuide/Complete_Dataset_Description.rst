@@ -463,7 +463,7 @@ We need:
 
     .. Note::
         Demo data as described in this chapter, can be found on Zenodo:
-        https://zenodo.org/record/10128131, or inside `TVB_Distribution`, under the following path:
+        https://zenodo.org/record/14992335, or inside `TVB_Distribution`, under the following path:
         `TVB_Distribution/tvb_data/Lib/site-packages/tvb_data/` on Windows,
         `TVB_Distribution/tvb_data/lib/python3.x/site-packages/tvb_data/` on Linux, or
         `TVB_Distribution/tvb.app/Contents/Resources/lib/python3.x/tvb_data/` on Mac.

@@ -8,12 +8,12 @@ RUN conda install python=3.7 nomkl numba scipy numpy networkx scikit-learn cytho
 
 RUN apt-get install -y zip unzip
 RUN cd /opt \
- && wget -q https://zenodo.org/record/10128131/files/tvb_data.zip?download=1 -O tvb_data.zip \
+ && wget -q https://zenodo.org/record/14992335/files/tvb_data.zip?download=1 -O tvb_data.zip \
  && mkdir tvb_data \
  && unzip tvb_data.zip -d tvb_data \
  && rm tvb_data.zip \
  && cd tvb_data \
- && python3 setup.py develop
+ && pip install -e .
 
 RUN pip install h5py>=2.10 pytest-xdist sqlalchemy mako pylems lxml requests autopep8
 
@@ -26,4 +26,4 @@ RUN pip install --no-build-isolation tvb-gdist
 
 # docker run --rm -it -v $PWD:/tvb -w /tvb tvb/lib 
 # add --gpus all for testing CUDA
-CMD ["/bin/bash", "-c", "cd tvb_bin; python3 setup.py develop --no-deps; cd ../tvb_library; python3 setup.py develop --no-deps; python3 -m pytest -n12"]
+CMD ["/bin/bash", "-c", "cd tvb_bin; pip install --no-deps -e .; cd ../tvb_library; pip install --no-deps -e .; python3 -m pytest -n12"]

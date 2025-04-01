@@ -43,7 +43,7 @@ jobs:
       - name: download data
         if: steps.cache-data.outputs.cache-hit != 'true'
         run: |
-          wget -q https://zenodo.org/record/10128131/files/tvb_data.zip?download=1 -O tvb_data.zip
+          wget -q https://zenodo.org/record/14992335/files/tvb_data.zip?download=1 -O tvb_data.zip
           mkdir tvb_data
           unzip tvb_data.zip -d tvb_data
           rm tvb_data.zip
@@ -51,7 +51,7 @@ jobs:
       - name: setup data
         run: |
           cd tvb_data
-          python3 setup.py develop
+          pip install -e .
 
       - name: run contrib tests
         run: |

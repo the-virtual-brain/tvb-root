@@ -21,9 +21,9 @@ RUN activate tvb-run && pip install syncrypto
 RUN mkdir C:\\TVB_CODE
 WORKDIR /TVB_CODE
 
-ADD https://zenodo.org/record/10128131/files/tvb_data.zip?download=1 tvb_data.zip
+ADD https://zenodo.org/record/14992335/files/tvb_data.zip?download=1 tvb_data.zip
 RUN mkdir -p zenodo_data && tar -xf tvb_data.zip -C zenodo_data && dir && del tvb_data.zip
-RUN activate tvb-run && cd zenodo_data && python setup.py develop
+RUN activate tvb-run && cd zenodo_data && pip install -e .
 
 COPY requirements_group requirements.txt
 RUN activate tvb-run && pip install -r requirements.txt
