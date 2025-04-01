@@ -43,8 +43,8 @@ RUN /bin/bash -c "source activate tvb-run"; \
 RUN wget https://zenodo.org/record/14992335/files/tvb_data.zip?download=1 -O tvb_data.zip; \
     mkdir tvb_data; unzip tvb_data.zip -d tvb_data; rm tvb_data.zip; \
     cd tvb_data; \
-    /opt/conda/envs/tvb-run/bin/python setup.py develop;\
-    /opt/conda/envs/tvb-docs/bin/python setup.py develop
+    /opt/conda/envs/tvb-run/bin/pip install -e .;\
+    /opt/conda/envs/tvb-docs/bin/pip install -e .
 
 WORKDIR $USER_HOME
 COPY requirements_group requirements.txt

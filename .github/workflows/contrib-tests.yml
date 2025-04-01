@@ -51,7 +51,7 @@ jobs:
       - name: setup data
         run: |
           cd tvb_data
-          python3 setup.py develop
+          pip install -e .
 
       - name: run contrib tests
         run: |

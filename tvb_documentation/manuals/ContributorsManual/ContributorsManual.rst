@@ -62,7 +62,7 @@ Install tvb-data from Zenodo (make sure the link from bellow is the latets versi
     $ unzip tvb_data.zip -d tvb_data
     $ rm tvb_data.zip
     $ cd tvb_data
-    $ python setup.py develop
+    $ pip install -e .
 
 The above list of dependencies might change. We recommend you to check the latest commands here:
 https://github.com/the-virtual-brain/tvb-root/tree/master/tvb_build/docker
