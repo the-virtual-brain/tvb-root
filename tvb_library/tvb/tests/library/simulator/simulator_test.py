@@ -336,3 +336,26 @@ class TestSimulator(BaseTestCase):
         assert numpy.allclose(stimulus[test_simulator.sim.model.stvar, test_simulator.stim_nodes, :],
                               test_simulator.stim_value,
                               1.0 / numpy.finfo("single").max)
+
+    def test_simulator_autotune(self):
+        """
+        Test the autotune method of the simulator.
+        """
+        test_simulator = Simulator()
+        test_simulator.configure()
+        
+        def increment_coupling(simulator: Simulator):
+            simulator.coupling.a = simulator.coupling.a + 0.1
+        
+        def is_below_threshold(run_output):
+            (_, y),*kwargs = run_output
+            return y[:, 0, :, 0].mean() < 13
+
+        coupling_strength_before = test_simulator.sim.coupling.a
+        print("Coupling strength before autotune: ", coupling_strength_before)
+        test_simulator.sim.autotune(
+            tuner=increment_coupling,
+            stopper=is_below_threshold
+        )
+        print("Coupling strength after autotune: ", test_simulator.sim.coupling.a)
+        assert test_simulator.sim.coupling.a > coupling_strength_before
