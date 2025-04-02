@@ -37,6 +37,7 @@ simulation and the method for running the simulation.
 
 import math
 import time
+from typing import Callable
 import numpy
 
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float
@@ -637,3 +638,23 @@ class Simulator(HasTraits):
             ts[i] = numpy.array(ts[i])
             xs[i] = numpy.array(xs[i])
         return list(zip(ts, xs))
+    
+    def autotune(self, tuner: Callable[['Simulator'], None], stopper: Callable[[list[tuple]], bool], step: int = 1):
+        """
+        Autotune the simulator by calling the tuner function and passing it
+        the simulator instance. The tuner function should return a boolean
+        indicating whether to continue tuning or not.
+
+        Args:
+            tuner (Callable): A function that takes the simulator instance
+                as an argument and performs tuning operations (e.g., sim.coupling.a += 1).
+            stopper (Callable): A function that takes the simulation output
+                as an argument and returns a boolean indicating whether to
+                continue tuning or not (e.g., average_firing_rate_from_run_output < target_firing_rate).
+            step (int): The number of simulation steps to run between
+                tuning operations. Default is 1.
+        """
+        sim_run_output = self.run(simulation_length=step)
+        while stopper(sim_run_output):
+            tuner(self)
+            sim_run_output = self.run(simulation_length=step)
