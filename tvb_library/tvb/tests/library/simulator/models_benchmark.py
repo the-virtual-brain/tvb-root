@@ -39,7 +39,7 @@ class TestBenchmarkModels(BaseTestCase):
         toc = time.time()
         return n_eval / (toc - tic)
 
-    def test_reduced_set_fitz_hugh_nagumo_when_using_numba_improve_performance(self):
+    def test_rsfhn_numba(self):
         #  create, & initialize numba & no-numba models
         rs_fhn_model = ReducedSetFitzHughNagumo()
         n_node = 10
@@ -58,7 +58,7 @@ class TestBenchmarkModels(BaseTestCase):
         assert speedup > 1
         assert np.allclose(no_numba_dfun_derivative, numba_dfun_derivative)
 
-    def test_reduced_set_hindmarsh_rose_when_using_numba_improve_performance(self):
+    def test_rshr_numba(self):
         #  create, & initialize numba & no-numba models
         rs_hr_model = ReducedSetHindmarshRose()
         n_node = 10
