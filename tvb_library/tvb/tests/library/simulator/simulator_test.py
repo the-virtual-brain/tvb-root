@@ -343,19 +343,23 @@ class TestSimulator(BaseTestCase):
         """
         test_simulator = Simulator()
         test_simulator.configure()
+
+        target_value = 13
         
-        def increment_coupling(simulator: Simulator):
-            simulator.coupling.a = simulator.coupling.a + 0.1
+        def tune_coupling(simulator: Simulator, value):
+            simulator.coupling.a = simulator.coupling.a + value
         
-        def is_below_threshold(run_output):
+        def average_firing_rate_delta(run_output):
             (_, y),*kwargs = run_output
-            return y[:, 0, :, 0].mean() < 13
+            return target_value - numpy.mean(numpy.nan_to_num(y[:, 0, :, 0], nan=0))
 
         coupling_strength_before = test_simulator.sim.coupling.a
         print("Coupling strength before autotune: ", coupling_strength_before)
-        test_simulator.sim.autotune(
-            tuner=increment_coupling,
-            stopper=is_below_threshold
+        print("Delta before tuning: ", average_firing_rate_delta(test_simulator.sim.run(simulation_length=1)))
+        final_output = test_simulator.sim.autotune(
+            tuner=tune_coupling,
+            delta=average_firing_rate_delta
         )
         print("Coupling strength after autotune: ", test_simulator.sim.coupling.a)
-        assert test_simulator.sim.coupling.a > coupling_strength_before
+        print("Delta after tuning: ", average_firing_rate_delta(final_output))
+        assert numpy.abs(average_firing_rate_delta(final_output)) < 1

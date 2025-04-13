@@ -639,22 +639,70 @@ class Simulator(HasTraits):
             xs[i] = numpy.array(xs[i])
         return list(zip(ts, xs))
     
-    def autotune(self, tuner: Callable[['Simulator'], None], stopper: Callable[[list[tuple]], bool], step: int = 1):
+    def autotune(
+        self,
+        tuner: Callable[['Simulator', float], None],
+        delta: Callable[[list[tuple]], float],
+        threshold: float = 1,
+        step_length: int = 1,
+        start: float = 0.0,
+        kp: float = 1,
+        ki: float = 0.1,
+        kd: float = 0.05,
+        max_steps: int | None = None
+    ):
         """
-        Autotune the simulator by calling the tuner function and passing it
-        the simulator instance. The tuner function should return a boolean
-        indicating whether to continue tuning or not.
+            This method adjusts a tuning parameter iteratively using a PID (Proportional-Integral-Derivative) 
+            control mechanism to minimize the deviation from a desired output. The tuning process stops 
+            when the deviation is within a specified threshold or when a maximum number of steps is reached.\n
+            Notes: 
+                - The PID controller adjusts the tuning parameter based on the proportional, integral, and derivative 
+                components of the error.
+                - The integral term accumulates the error over time, while the derivative term considers the rate of 
+                change of the error.
 
-        Args:
-            tuner (Callable): A function that takes the simulator instance
-                as an argument and performs tuning operations (e.g., sim.coupling.a += 1).
-            stopper (Callable): A function that takes the simulation output
-                as an argument and returns a boolean indicating whether to
-                continue tuning or not (e.g., average_firing_rate_from_run_output < target_firing_rate).
-            step (int): The number of simulation steps to run between
-                tuning operations. Default is 1.
+        :param tuner: A function that updates the simulator with the current tuning value. 
+                      This function takes the simulator instance and the tuning value (from PID) as arguments.
+        :param delta: A function that computes the deviation from the desired output based on the simulation results.
+                        This function takes the simulation output as an argument and returns the difference/error.
+        :param threshold: The stopping criterion for the tuning process. The process stops when the absolute value 
+                          of the deviation is less than this threshold. Defaults to 1.
+        :param step_length: The simulation step length in milliseconds between tuning attempts. Defaults to 1.
+        :param start: The initial value of the tuning parameter. Defaults to 0.0.
+        :param kp: The proportional gain for the PID controller. Defaults to 1.
+        :param ki: The integral gain for the PID controller. Defaults to 0.1.
+        :param kd: The derivative gain for the PID controller. Defaults to 0.05.
+        :param max_steps: The maximum number of tuning steps allowed. If None, there is no limit. Defaults to None.
+
+        :return: The output of the simulator after the final tuning step.
+                 list[tuple].
+
+        :raises AssertionError: If the output from the delta function is NaN.
         """
-        sim_run_output = self.run(simulation_length=step)
-        while stopper(sim_run_output):
-            tuner(self)
-            sim_run_output = self.run(simulation_length=step)
+        tuning_value = start
+        tuner(self, tuning_value)
+        sim_run_output = self.run(simulation_length=step_length)
+        prev_error = delta(sim_run_output)
+        integral = 0.0
+        n_steps = 0
+
+        while abs(prev_error) > threshold:
+            # break early if reached maximum allowed number of steps
+            if max_steps is not None and n_steps >= max_steps:
+                self.log.warning("Reached maximum number of steps: %d", max_steps)
+                break
+            # Run a tuning step
+            n_steps += 1
+            tuner(self, tuning_value)
+            sim_run_output = self.run(simulation_length=step_length)
+            error = delta(sim_run_output)
+            assert not numpy.isnan(error), "Output from the delta function should not be NaN"
+            d_error = error - prev_error
+            integral += error * step_length
+
+            # tune using PID
+            derivative = d_error / step_length
+            adjustment = kp * error + ki * integral + kd * derivative
+            tuning_value += adjustment * step_length
+            prev_error = error
+        return sim_run_output
