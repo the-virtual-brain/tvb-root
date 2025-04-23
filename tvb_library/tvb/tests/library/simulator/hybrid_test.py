@@ -59,31 +59,47 @@ class TestHybrid1(BaseTestCase):
             jrkwargs['variables_of_interest'] = JansenRit.variables_of_interest.default[:nvois]
             fhnkwargs['variables_of_interest'] = ReducedSetFitzHughNagumo.variables_of_interest.default[:nvois]
 
+        # Create subnetworks with just their size and behavior
         cortex = Subnetwork(
-            conn=conn,
-            mask=ix == AtlasPart.CORTEX,
             name='cortex',
             model=JansenRit(**jrkwargs),
             scheme=scheme,
+            nnodes=(ix == AtlasPart.CORTEX).sum(),
         ).configure()
 
         if jrmon:
             cortex.add_monitor(jrmon)
 
         thalamus = Subnetwork(
-            conn=conn,
-            mask=ix == AtlasPart.THALAMUS,
             name='thalamus',
             model=ReducedSetFitzHughNagumo(**fhnkwargs),
             scheme=scheme,
+            nnodes=(ix == AtlasPart.THALAMUS).sum(),
         ).configure()
+
+        # Create projections with explicit weights from global connectivity
+        cortex_indices = np.where(ix == AtlasPart.CORTEX)[0]
+        thalamus_indices = np.where(ix == AtlasPart.THALAMUS)[0]
 
         nets = NetworkSet(
             subnets=[cortex, thalamus],
             projections=[
-                Projection(source=cortex, target=thalamus, source_cvar=0, target_cvar=1),
-                Projection(source=cortex, target=thalamus, source_cvar=5, target_cvar=0),
-                Projection(source=thalamus, target=cortex, source_cvar=0, target_cvar=1, scale=1e-2),
+                Projection(
+                    source=cortex, target=thalamus,
+                    source_cvar=0, target_cvar=1,
+                    weights=conn.weights[thalamus_indices][:, cortex_indices],
+                ),
+                Projection(
+                    source=cortex, target=thalamus,
+                    source_cvar=5, target_cvar=0,
+                    weights=conn.weights[thalamus_indices][:, cortex_indices],
+                ),
+                Projection(
+                    source=thalamus, target=cortex,
+                    source_cvar=0, target_cvar=1,
+                    scale=1e-2,
+                    weights=conn.weights[cortex_indices][:, thalamus_indices],
+                ),
             ]
         )
 
@@ -99,15 +115,31 @@ class TestHybrid1(BaseTestCase):
 
     def test_networkset(self):
         conn, ix, cortex, thalamus, a, nets = self.setup()
+        # Create a new network set with modified weights
+        cortex_indices = np.where(ix == a.CORTEX)[0]
+        thalamus_indices = np.where(ix == a.THALAMUS)[0]
+        
         nets = NetworkSet(
             subnets=[cortex, thalamus],
             projections=[
-                Projection(source=cortex, target=thalamus, source_cvar=0, target_cvar=1),
-                Projection(source=cortex, target=thalamus, source_cvar=5, target_cvar=0),
-                Projection(source=thalamus, target=cortex, source_cvar=0, target_cvar=1, scale=1e-2),
+                Projection(
+                    source=cortex, target=thalamus,
+                    source_cvar=0, target_cvar=1,
+                    weights=conn.weights[thalamus_indices][:, cortex_indices],
+                ),
+                Projection(
+                    source=cortex, target=thalamus,
+                    source_cvar=5, target_cvar=0,
+                    weights=0.5 * conn.weights[thalamus_indices][:, cortex_indices],
+                ),
+                Projection(
+                    source=thalamus, target=cortex,
+                    source_cvar=0, target_cvar=1,
+                    scale=1e-2,
+                    weights=conn.weights[cortex_indices][:, thalamus_indices],
+                ),
             ]
         )
-        nets.projections[1]._weights *= 0.5
 
         x = nets.zero_states()
         x.cortex[:] += 1
@@ -115,11 +147,11 @@ class TestHybrid1(BaseTestCase):
 
         c0 = nets.zero_cvars()
         p: Projection = nets.projections[0]
-        c0.thalamus[1] += p._weights @ x.cortex[0] * p.scale
+        c0.thalamus[1] += p.weights @ x.cortex[0] * p.scale
         p: Projection = nets.projections[1]
-        c0.thalamus[0] += p._weights @ x.cortex[5] * p.scale
+        c0.thalamus[0] += p.weights @ x.cortex[5] * p.scale
         p: Projection = nets.projections[2]
-        c0.cortex[1] += p._weights @ x.thalamus[0] @ np.ones((3, 1))/3 * p.scale
+        c0.cortex[1] += p.weights @ x.thalamus[0] @ np.ones((3, 1))/3 * p.scale
 
         c1 = nets.cfun(x)
 
@@ -155,7 +187,7 @@ class TestHybrid1(BaseTestCase):
         xs = sim.run()
         self.assert_equal(0, len(xs))
         rec: Recorder = cortex.monitors[0]
-        nn = cortex.mask.sum()
+        nn = cortex.nnodes
         self.assert_equal((10, 4, nn, 1), rec.shape)
         t, y = rec.to_arrays()
         self.assert_equal((10, ), t.shape)

@@ -68,14 +68,13 @@ class Recorder(t.HasTraits):
 
 
 class Subnetwork(t.HasTraits):
-    "Represents a subnetwork of a connectome."
+    "Represents a subnetwork that can be reused across different models."
 
-    conn: Connectivity = t.Attr(Connectivity)
-    mask: np.ndarray = t.NArray(dtype=np.bool_)
     name: str = t.Attr(str)
     model: Model = t.Attr(Model)
     scheme: Integrator = t.Attr(Integrator)
     monitors: List[Recorder]
+    nnodes: int = t.Int()
 
     def __init__(self, **kwargs):
         self.monitors = []
@@ -88,12 +87,13 @@ class Subnetwork(t.HasTraits):
     def add_monitor(self, monitor: Monitor):
         monitor._config_dt(self.scheme.dt)
         monitor._config_stock(len(self.model.variables_of_interest),
-                              self.mask.sum(), self.model.number_of_modes)
+                            self.nnodes,
+                            self.model.number_of_modes)
         self.monitors.append(Recorder(monitor=monitor))
 
     @property
     def var_shape(self) -> tuple[int]:
-        return self.mask.sum(), self.model.number_of_modes
+        return self.nnodes, self.model.number_of_modes
 
     def zero_states(self) -> np.ndarray:
         return np.zeros((self.model.nvar, ) + self.var_shape)
@@ -125,22 +125,11 @@ class Projection(t.HasTraits):
     source_cvar: int = t.Int()
     target_cvar: int = t.Int()
     scale: float = t.Float(default=1.0)
-
-    # if not provided, default to source.conn
-    conn: Connectivity = t.Attr(Connectivity, required=False)
-
-    # cfun = t.Attr(tvb.coupling.Coupling)  # TODO
-
+    weights: np.ndarray = t.NArray(dtype=np.float_)
     mode_map: np.ndarray = t.NArray(required=False)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        assert (self.source.mask * self.target.mask).sum() == 0, 'overlap'
-        assert self.source.conn.gid == self.target.conn.gid
-        if self.conn is None:
-            self.conn = self.source.conn
-        self._weights = self.conn.weights[self.target.mask][:, self.source.mask]
-        # TODO time delays
         if self.mode_map is None:
             self.mode_map = np.ones(
                 (self.source.model.number_of_modes,
@@ -148,7 +137,7 @@ class Projection(t.HasTraits):
             self.mode_map /= self.source.model.number_of_modes
 
     def apply(self, tgt, src):
-        gx = self.scale * self._weights @ src[self.source_cvar] @ self.mode_map
+        gx = self.scale * self.weights @ src[self.source_cvar] @ self.mode_map
         tgt[self.target_cvar] += gx
 
 
@@ -218,7 +207,7 @@ class Simulator(t.HasTraits):
             msg = 'Variables of interest must have same size on all models.'
             assert len(nv0) == len(sn.model.variables_of_interest), msg
         for monitor in self.monitors:
-            num_nodes = sum([sn.mask.sum() for sn in self.nets.subnets])
+            num_nodes = sum([sn.nnodes for sn in self.nets.subnets])
             monitor._config_stock(len(nv0), num_nodes, 1)
 
     def validate_dts(self):
