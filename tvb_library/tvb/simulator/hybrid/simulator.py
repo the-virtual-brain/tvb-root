@@ -70,21 +70,16 @@ class Simulator(t.HasTraits):
         # Configure if not already done
         if not hasattr(self, '_dt0'):
             self.configure()
-                
+        mts = [[] for _ in self.monitors]
+        mxs = [[] for _ in self.monitors]
         x = self.nets.zero_states()
         for step in range(int(self.simulation_length / self._dt0)):
             x = self.nets.step(step, x)
             if self.monitors:
                 ox = self.nets.observe(x, flat=True)
-                for mon in self.monitors:
-                    mon.record(step, ox)
-                    
-        # Collect results from monitors
-        results = []
-        if self.monitors:
-            for subnet in self.nets.subnets:
-                for recorder in subnet.monitors:
-                    t, x = recorder.to_arrays()
-                    results.append((t, x))
-                    
-        return results 
+                for mt, mx, mon in zip(mts, mxs, self.monitors):
+                    maybe_tx = mon.record(step, ox)
+                    if maybe_tx is not None:
+                        mt.append(maybe_tx[0])
+                        mx.append(maybe_tx[1])
+        return [(np.array(t), np.array(x)) for t, x in zip(mts, mxs)]

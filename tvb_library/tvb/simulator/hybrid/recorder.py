@@ -25,40 +25,31 @@ class Recorder(t.HasTraits):
         self.times = None
         self.samples = None
         self._current_idx = 0
+        self.num_samples = None
         super().__init__(**kwargs)
 
     def configure(self, simulation_length):
-        """Configure recorder arrays based on simulation parameters.
+        """Configure recorder based on simulation parameters.
         
         Parameters
         ----------
         simulation_length : float
             Total simulation time in milliseconds
         """
-        # Calculate number of samples based on simulation length and monitor period
+        # Calculate expected number of samples
         self.num_samples = int(simulation_length / self.monitor.period)
-        
-        # Get sample shape from monitor configuration
-        if hasattr(self.monitor, 'voi') and self.monitor.voi is not None:
-            if isinstance(self.monitor.voi, slice):
-                # For slice, calculate length based on stock shape
-                start = self.monitor.voi.start or 0
-                stop = self.monitor.voi.stop or self.monitor._stock.shape[0]
-                step = self.monitor.voi.step or 1
-                num_vars = len(range(start, stop, step))
-            else:
-                num_vars = len(self.monitor.voi)
-        else:
-            # Default to using stock shape if voi not configured
-            num_vars = self.monitor._stock.shape[0]
-            
-        num_nodes = self.monitor._stock.shape[1] 
-        num_modes = self.monitor._stock.shape[2]
-        
-        # Preallocate arrays
-        self.times = np.zeros(self.num_samples, dtype=np.float32)
-        self.samples = np.zeros((self.num_samples, num_vars, num_nodes, num_modes), dtype=np.float32)
         self._current_idx = 0
+
+    def _allocate_arrays(self, sample_shape):
+        """Allocate arrays based on first sample shape.
+        
+        Parameters
+        ----------
+        sample_shape : tuple
+            Shape of the first sample from monitor
+        """
+        self.times = np.zeros(self.num_samples, dtype=np.float32)
+        self.samples = np.zeros((self.num_samples,) + sample_shape, dtype=np.float32)
 
     def record(self, step, state):
         """Record a state sample if the monitor indicates it should be recorded.
@@ -73,6 +64,9 @@ class Recorder(t.HasTraits):
         ty = self.monitor.record(step, state)
         if ty is not None:
             t, y = ty
+            # Lazy allocation on first sample
+            if self.samples is None:
+                self._allocate_arrays(y.shape)
             self.times[self._current_idx] = t
             self.samples[self._current_idx] = y
             self._current_idx += 1
