@@ -1,0 +1,90 @@
+import numpy as np
+from typing import List
+import tvb.basic.neotraits.api as t
+from tvb.simulator.monitors import Monitor
+from .network import NetworkSet
+
+
+class Simulator(t.HasTraits):
+    """Simulator for hybrid network models.
+    
+    The Simulator class manages the simulation of a hybrid network model,
+    including configuration of monitors and time stepping.
+    
+    Attributes
+    ----------
+    nets : NetworkSet
+        The network model to simulate
+    monitors : list
+        List of monitors for recording data
+    simulation_length : float
+        Total simulation time in milliseconds
+    """
+
+    nets: NetworkSet = t.Attr(NetworkSet)
+    monitors: List[Monitor] = t.List(of=Monitor)
+    simulation_length: float = t.Float()
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.validate_dts()
+        self.validate_vois()
+
+    def validate_vois(self):
+        """Validate variables of interest across subnetworks."""
+        if len(self.monitors) == 0:
+            return
+        nv0 = self.nets.subnets[0].model.variables_of_interest
+        for sn in self.nets.subnets[1:]:
+            msg = 'Variables of interest must have same size on all models.'
+            assert len(nv0) == len(sn.model.variables_of_interest), msg
+        for monitor in self.monitors:
+            num_nodes = sum([sn.nnodes for sn in self.nets.subnets])
+            monitor._config_stock(len(nv0), num_nodes, 1)
+
+    def validate_dts(self):
+        """Validate integration time steps across subnetworks."""
+        self._dt0 = self.nets.subnets[0].scheme.dt
+        for sn in self.nets.subnets[1:]:
+            assert self._dt0 == sn.scheme.dt
+        for monitor in self.monitors:
+            monitor: Monitor
+            monitor._config_dt(self._dt0)
+            monitor.voi = slice(None)  # all vars
+
+    def configure(self):
+        """Configure the simulator and its monitors."""
+        # Configure recorders in each subnetwork
+        for subnet in self.nets.subnets:
+            for recorder in subnet.monitors:
+                recorder.configure(self.simulation_length)
+
+    def run(self):
+        """Run the simulation.
+        
+        Returns
+        -------
+        list
+            List of (time, data) tuples for each monitor, if any
+        """
+        # Configure if not already done
+        if not hasattr(self, '_dt0'):
+            self.configure()
+                
+        x = self.nets.zero_states()
+        for step in range(int(self.simulation_length / self._dt0)):
+            x = self.nets.step(step, x)
+            if self.monitors:
+                ox = self.nets.observe(x, flat=True)
+                for mon in self.monitors:
+                    mon.record(step, ox)
+                    
+        # Collect results from monitors
+        results = []
+        if self.monitors:
+            for subnet in self.nets.subnets:
+                for recorder in subnet.monitors:
+                    t, x = recorder.to_arrays()
+                    results.append((t, x))
+                    
+        return results 
