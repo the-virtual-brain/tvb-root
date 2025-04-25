@@ -58,9 +58,10 @@ class Subnetwork(t.HasTraits):
             The monitor to add
         """
         monitor._config_dt(self.scheme.dt)
-        monitor._config_stock(len(self.model.variables_of_interest),
-                            self.nnodes,
-                            self.model.number_of_modes)
+        if hasattr(monitor, '_config_stock'):
+            monitor._config_stock(len(self.model.variables_of_interest),
+                                self.nnodes,
+                                self.model.number_of_modes)
         self.monitors.append(Recorder(monitor=monitor))
 
     @property

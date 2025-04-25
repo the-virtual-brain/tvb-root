@@ -48,8 +48,10 @@ class Recorder(t.HasTraits):
         sample_shape : tuple
             Shape of the first sample from monitor
         """
-        self.times = np.zeros(self.num_samples, dtype=np.float32)
+        if len(sample_shape) == 4 and sample_shape[0] == 1:
+            sample_shape = sample_shape[1:]
         self.samples = np.zeros((self.num_samples,) + sample_shape, dtype=np.float32)
+        self.times = np.zeros(self.num_samples, dtype=np.float32)
 
     def record(self, step, state):
         """Record a state sample if the monitor indicates it should be recorded.
