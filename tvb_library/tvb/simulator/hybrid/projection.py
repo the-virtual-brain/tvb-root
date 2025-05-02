@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import sparse as sp
 import tvb.basic.neotraits.api as t
 from .subnetwork import Subnetwork
 
@@ -19,77 +20,101 @@ class Projection(t.HasTraits):
         Array of coupling variable indices in source.
     target_cvar : ndarray
         Array of coupling variable indices in target.
-    scale : float
-        Scaling factor for the projection
-    weights : ndarray
-        Connectivity weights matrix
-    mode_map : ndarray
-        Mapping between source and target modes
+    scale : float, default=1.0
+        Scaling factor for the projection.
+    weights : scipy.sparse.csr_matrix or ndarray
+        Connectivity weights matrix. Will be converted to CSR sparse format.
+    lengths : ndarray, optional
+        Connection lengths matrix/array corresponding to non-zero weights.
+        Required if delays are needed. Shape should match weights.data.
+    cv : float, optional
+        Conduction velocity. Required if lengths are provided.
+    dt : float, optional
+        Simulation time step. Required if lengths are provided.
+    mode_map : ndarray, optional
+        Mapping between source and target modes. Defaults to uniform mapping.
+        NOTE: Currently unused in the delayed coupling calculation.
     """
 
     source: Subnetwork = t.Attr(Subnetwork)
     target: Subnetwork = t.Attr(Subnetwork)
-    source_cvar = t.NArray(dtype=np.int_)  # Array of source coupling variable indices
-    target_cvar = t.NArray(dtype=np.int_)  # Array of target coupling variable indices
+    source_cvar = t.NArray(dtype=np.int_)
+    target_cvar = t.NArray(dtype=np.int_)
     scale: float = t.Float(default=1.0)
-    weights: np.ndarray = t.NArray(dtype=np.float_)
-    mode_map: np.ndarray = t.NArray(required=False)
+    weights = t.Attr(sp.csr_matrix)
+    lengths = t.Attr(sp.csr_matrix, required=False, default=None) # Changed type to csr_matrix
+    cv = t.Float(required=False, default=None)
+    dt = t.Float(required=False, default=None)
+    mode_map = t.NArray(dtype=np.int_, required=False, default=None) # Expects int
+
+    # Internal attributes, not meant for direct setting
+    idelays = t.NArray(dtype=np.int_, required=False)
+    max_delay = t.Int(required=False)
 
     def __init__(self, **kwargs):
+        # Convert weights to CSR if needed before super().__init__ validation
+        if 'weights' in kwargs and not isinstance(kwargs['weights'], sp.csr_matrix):
+            try:
+                kwargs['weights'] = sp.csr_matrix(kwargs['weights'])
+            except Exception as e:
+                raise ValueError(f"Failed to convert weights to csr_matrix: {e}")
         super().__init__(**kwargs)
+        r, c = self.weights.shape
+        # Add an epsilon column vector to the first column to ensure it's non-empty.
+        # This can be important for certain sparse operations or assumptions.
+        eps_val = 2 * np.finfo(self.weights.dtype).eps
+        # Create data and indices for the first column vector
+        eps_data = np.full(r, eps_val, dtype=self.weights.dtype)
+        row_indices = np.arange(r)
+        col_indices = np.zeros(r, dtype=int)
+        # Create the sparse column matrix
+        eps_matrix = sp.csr_matrix((eps_data, (row_indices, col_indices)), shape=(r, c), dtype=self.weights.dtype)
+        self.weights = self.weights + eps_matrix
+        self.lengths = self.lengths + eps_matrix
+        # Ensure indptr remains valid (non-decreasing) after potential addition.
+        # Note: Adding a full column might significantly change indptr, but it should still be non-decreasing.
+        assert np.all(np.diff(self.weights.indptr) >= 0), "CSR indptr must be non-decreasing"
+        self.idelays = (self.lengths.data / self.cv / self.dt).astype(np.int_) + 2
+        self.max_delay = np.max(self.idelays) if self.idelays.size > 0 else 2
         if self.mode_map is None:
             self.mode_map = np.ones(
                 (self.source.model.number_of_modes,
-                 self.target.model.number_of_modes, ))
-            self.mode_map /= self.source.model.number_of_modes
-            
-        # Convert scalar indices to arrays for unified handling
+                 self.target.model.number_of_modes), dtype=np.int_)
         self.source_cvar = np.atleast_1d(self.source_cvar)
         self.target_cvar = np.atleast_1d(self.target_cvar)
-        self._validate_cvars()
 
-    def _validate_cvars(self):
-        """Validate coupling variable configurations."""
-        src_size = len(self.source_cvar)
-        tgt_size = len(self.target_cvar)
-        
-        # Validate indices are within bounds
-        if np.any(self.source_cvar >= self.source.model.cvar.size):
-            raise ValueError(f"Source coupling variable index {self.source_cvar} out of bounds")
-        if np.any(self.target_cvar >= self.target.model.cvar.size):
-            raise ValueError(f"Target coupling variable index {self.target_cvar} out of bounds")
-            
-        # Validate broadcasting configurations
-        if not (src_size == 1 or tgt_size == 1 or src_size == tgt_size):
-            raise ValueError(
-                f"Invalid coupling variable configuration: source size {src_size} "
-                f"and target size {tgt_size} must be either equal or one must be 1"
-            )
+    def apply(self, tgt, src_history_buffer, t, horizon):
+        """Apply the projection to compute coupling using history buffer.
 
-    def apply(self, tgt, src):
-        """Apply the projection to compute coupling.
-        
-        Handles three cases:
-        a) One source to many targets (broadcasting)
-        b) Many sources to one target (reduction/summation)
-        c) Equal number of sources to targets (element-wise)
-        
+        Handles both instantaneous (approximated by minimum delay) and
+        explicitly delayed connections via a unified mechanism.
+
         Parameters
         ----------
         tgt : ndarray
-            Target state array to modify
-        src : ndarray
-            Source state array
+            Target state array to modify (shape [n_vars, n_nodes]).
+        src_history_buffer : ndarray
+            Source history buffer (shape [n_vars, n_nodes, horizon]).
+        t : int
+            Current time step index.
+        horizon : int
+            Size of the history buffer time dimension.
+
         """
-        # Compute base coupling for each source variable
-        gx_array = self.scale * self.weights @ src[self.source_cvar] @ self.mode_map
-        # TODO add time delays
-        if self.source_cvar.size == 1:
-            # Case a: broadcast single source to all targets
-            tgt[self.target_cvar] += gx_array[0]
-        elif self.target_cvar.size == 1:
-            # Case b: sum all sources to single target
-            tgt[self.target_cvar] += gx_array.sum(axis=0)
-        else:
-            # Case c: element-wise mapping
-            tgt[self.target_cvar] += gx_array 
+        # TODO self.src_history_buffer[...,t] = src[self.source_cvar]
+        # Shape: (nnz,)
+        time_indices = (t - self.idelays + 2) % horizon
+        delayed_states = src_history_buffer[self.source_cvar.reshape(
+            -1, 1), self.weights.indices, :, time_indices]
+        delayed_states = delayed_states.reshape(
+            self.source_cvar.size, time_indices.size, -1)
+        weighted_delayed = self.weights.data.reshape(-1, 1) * delayed_states
+        summed_input = np.add.reduceat(
+            weighted_delayed, self.weights.indptr[:-1], axis=1)
+        assert summed_input.shape == (
+            self.source_cvar.size, tgt.shape[1], self.mode_map.shape[0])
+        scaled_input = self.scale * summed_input
+        aff = scaled_input @ self.mode_map
+        if self.target_cvar.size == 1:
+            aff = aff.sum(axis=0)
+        tgt[self.target_cvar, :] += aff
