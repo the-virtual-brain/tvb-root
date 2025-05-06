@@ -7,7 +7,7 @@ import scipy.sparse
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator.models import JansenRit, ReducedSetFitzHughNagumo
 from tvb.simulator.integrators import HeunDeterministic
-from tvb.simulator.hybrid import NetworkSet, Subnetwork, Projection
+from tvb.simulator.hybrid import NetworkSet, Subnetwork, InterProjection
 from tvb.datatypes.connectivity import Connectivity
 
 
@@ -23,6 +23,8 @@ class BaseHybridTest(BaseTestCase):
             Number of variables of interest to use
         jrmon : Monitor, optional
             Monitor to attach to Jansen-Rit model
+        use_zero_lengths : bool, optional
+            If True, set up projections with zero lengths for minimal delay.
             
         Returns
         -------
@@ -78,46 +80,42 @@ class BaseHybridTest(BaseTestCase):
         # Prepare sparse weights and dummy lengths/params for projections
         weights_c_t_dense = conn.weights[thalamus_indices][:, cortex_indices]
         weights_c_t_sparse = scipy.sparse.csr_matrix(weights_c_t_dense)
-        weights_c_t_sparse.eliminate_zeros() # Ensure nnz is accurate and indices/indptr are correct
-        weights_c_t_sparse.sort_indices()    # Ensure sorted indices for consistency
-        # Create sparse lengths with same sparsity pattern
-        lengths_c_t_data = np.random.rand(weights_c_t_sparse.nnz) * 10.0 # Dummy lengths data [0, 10)
+        weights_t_c_dense = conn.weights[cortex_indices][:, thalamus_indices]
+        weights_t_c_sparse = scipy.sparse.csr_matrix(weights_t_c_dense)
+
+        # Create sparse lengths with same sparsity pattern as weights
+        # Dummy lengths data [0, 10)
+        lengths_c_t_data = np.random.rand(weights_c_t_sparse.nnz) * 10.0
         lengths_c_t_sparse = scipy.sparse.csr_matrix(
             (lengths_c_t_data, weights_c_t_sparse.indices, weights_c_t_sparse.indptr),
             shape=weights_c_t_sparse.shape)
-
-        weights_t_c_dense = conn.weights[cortex_indices][:, thalamus_indices]
-        weights_t_c_sparse = scipy.sparse.csr_matrix(weights_t_c_dense)
-        weights_t_c_sparse.eliminate_zeros() # Ensure nnz is accurate
-        weights_t_c_sparse.sort_indices()    # Ensure sorted indices
-        # Create sparse lengths with same sparsity pattern
-        lengths_t_c_data = np.random.rand(weights_t_c_sparse.nnz) * 10.0 # Dummy lengths data [0, 10)
+        # Dummy lengths data [0, 10)
+        lengths_t_c_data = np.random.rand(weights_t_c_sparse.nnz) * 10.0
         lengths_t_c_sparse = scipy.sparse.csr_matrix(
             (lengths_t_c_data, weights_t_c_sparse.indices, weights_t_c_sparse.indptr),
             shape=weights_t_c_sparse.shape)
 
-
         # Dummy delay parameters (can be overridden in specific tests if needed)
         default_cv = 3.0
-        default_dt = scheme.dt # Use integrator dt
+        default_dt = scheme.dt
 
         nets = NetworkSet(
             subnets=[cortex, thalamus],
             projections=[
-                Projection(
+                InterProjection(
                     source=cortex, target=thalamus,
                     source_cvar=np.r_[0], target_cvar=np.r_[1],
                     weights=weights_c_t_sparse,
                     lengths=lengths_c_t_sparse, cv=default_cv, dt=default_dt, # Use sparse lengths
                 ),
-                Projection(
+                InterProjection(
                     source=cortex, target=thalamus,
                     source_cvar=np.r_[1], target_cvar=np.r_[0],
                     weights=weights_c_t_sparse,
                      # Reusing weights, so must reuse sparse lengths for consistency
                     lengths=lengths_c_t_sparse, cv=default_cv, dt=default_dt, # Use sparse lengths
                 ),
-                Projection(
+                InterProjection(
                     source=thalamus, target=cortex,
                     source_cvar=np.r_[0], target_cvar=np.r_[1],
                     scale=1e-2,
@@ -126,6 +124,14 @@ class BaseHybridTest(BaseTestCase):
                 ),
             ]
         )
+
+        # Configure buffers for all projections in the NetworkSet
+        for p in nets.projections:
+            p.configure_buffer(
+                n_vars_src=p.source.model.nvar,
+                n_nodes_src=p.source.nnodes,
+                n_modes_src=p.source.model.number_of_modes
+            )
 
         return conn, ix, cortex, thalamus, AtlasPart, nets
 

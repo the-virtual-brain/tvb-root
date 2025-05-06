@@ -6,7 +6,7 @@ import numpy as np
 from tvb.simulator.models import JansenRit, ReducedSetFitzHughNagumo
 from tvb.simulator.integrators import HeunDeterministic
 from tvb.simulator.monitors import TemporalAverage
-from tvb.simulator.hybrid import Recorder, Simulator, Subnetwork, Projection, NetworkSet
+from tvb.simulator.hybrid import Recorder, Simulator, Subnetwork, InterProjection, NetworkSet
 from .test_base import BaseHybridTest
 
 
@@ -67,7 +67,7 @@ class TestSimulator(BaseHybridTest):
         nets = NetworkSet(
             subnets=[cortex, thalamus],
             projections=[
-                Projection(
+                InterProjection(
                     source=cortex, target=thalamus,
                     source_cvar=np.r_[0], target_cvar=np.r_[1],
                     weights=np.random.randn(76, 76)

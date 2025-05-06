@@ -11,9 +11,8 @@ from tvb.simulator.integrators import (
     EulerStochastic, HeunStochastic,
     # Add other integrators as needed, e.g., SciPy ones if desired
 )
-# Import InternalProjection from subnetwork module, remove Projection import
-from tvb.simulator.hybrid import Subnetwork, Stim
-from tvb.simulator.hybrid.subnetwork import InternalProjection
+# Import IntraProjection
+from tvb.simulator.hybrid import Subnetwork, Stim, IntraProjection
 from .test_base import BaseHybridTest
 
 
@@ -95,7 +94,7 @@ class TestSubnetwork(BaseHybridTest):
         model.configure()
         scheme.configure()
 
-        internal_proj = InternalProjection(
+        internal_proj = IntraProjection(
             source_cvar=np.array([0]),  # Example: first coupling variable
             target_cvar=np.array([0]),  # Example: maps to first coupling variable
             weights=np.eye(nnodes),     # Identity weights

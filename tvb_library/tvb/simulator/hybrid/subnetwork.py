@@ -4,59 +4,9 @@ import tvb.basic.neotraits.api as t
 from tvb.simulator.models import Model
 from tvb.simulator.integrators import Integrator
 from tvb.simulator.monitors import Monitor
+
 from .recorder import Recorder
-# Removed: from .projection import Projection - breaks circular import
-
-
-class InternalProjection(t.HasTraits):
-    """
-    Defines internal coupling within a Subnetwork.
-
-    Maps coupling variables back onto the same subnetwork, potentially
-    transforming them via weights and scaling. Does not involve mode mapping
-    as source and target modes are inherently the same.
-    """
-    source_cvar = t.NArray(dtype=np.int_)  # Array of source coupling variable indices
-    target_cvar = t.NArray(dtype=np.int_)  # Array of target coupling variable indices
-    scale: float = t.Float(default=1.0)
-    weights: np.ndarray = t.NArray(dtype=np.float_)
-    # NOTE: No mode_map needed as source/target modes are the same
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        # Convert scalar indices to arrays for unified handling
-        self.source_cvar = np.atleast_1d(self.source_cvar)
-        self.target_cvar = np.atleast_1d(self.target_cvar)
-
-    def apply(self, tgt, src):
-        """Apply the internal projection to compute coupling.
-
-        Handles three cases based on source/target cvar sizes:
-        a) One source to many targets (broadcasting)
-        b) Many sources to one target (reduction/summation)
-        c) Equal number of sources to targets (element-wise)
-
-        Parameters
-        ----------
-        tgt : ndarray
-            Target state array (internal coupling) to modify
-        src : ndarray
-            Source state array (subnetwork state)
-        """
-        # Compute base coupling for each source variable
-        # No mode_map needed for internal projection
-        gx_array = self.scale * self.weights @ src[self.source_cvar]
-        # TODO: Add time delays if relevant for internal projections
-
-        if self.source_cvar.size == 1:
-            # Case a: broadcast single source to all targets
-            tgt[self.target_cvar] += gx_array[0]
-        elif self.target_cvar.size == 1:
-            # Case b: sum all sources to single target
-            tgt[self.target_cvar] += gx_array.sum(axis=0)
-        else:
-            # Case c: element-wise mapping
-            tgt[self.target_cvar] += gx_array
+from .intra_projection import IntraProjection
 
 
 class Subnetwork(t.HasTraits):
@@ -83,23 +33,21 @@ class Subnetwork(t.HasTraits):
     name: str = t.Attr(str)
     model: Model = t.Attr(Model)
     scheme: Integrator = t.Attr(Integrator)
-    monitors: List[Recorder] # NOTE: Consider making this t.List(of=Recorder) too
-    projections: List[InternalProjection] = t.List(of=InternalProjection)
+    monitors: List[Recorder] = t.List(of=Recorder)
+    projections: List[IntraProjection] = t.List(of=IntraProjection)
     nnodes: int = t.Int()
 
-    def __init__(self, **kwargs):
-        self.monitors = []
-        super().__init__(**kwargs)
-
     def configure(self):
-        """Configure the subnetwork's model.
-        
+        """Configure the subnetwork's model and history buffer.
+
         Returns
         -------
         self
             The configured subnetwork
         """
         self.model.configure()
+        for p in self.projections:
+            p.configure_buffer(self.model.nvar, self.nnodes, self.model.number_of_modes)
         return self
 
     def add_monitor(self, monitor: Monitor):
@@ -148,24 +96,34 @@ class Subnetwork(t.HasTraits):
         """
         return np.zeros((self.model.cvar.size, ) + self.var_shape)
 
-    def cfun(self, x: np.ndarray) -> np.ndarray:
+    def cfun(self, step: int, x: np.ndarray) -> np.ndarray:
         """Compute internal coupling within the subnetwork.
 
         Parameters
         ----------
+        step : int
+            Current simulation step index.
         x : ndarray
-            Current state of the subnetwork
+            Current state of the subnetwork (shape [nvar, nnodes, modes]).
 
         Returns
         -------
         ndarray
             Internal coupling variables for the subnetwork
         """
-        internal_c = self.zero_cvars()
-        # Iterate through InternalProjection instances
+        internal_c = self.zero_cvars() # Shape (ncvar, nnodes, nmodes)
+
+        if not self.projections:
+            return internal_c # No internal projections to apply
+
+        # Update history buffers for all internal projections first
         for p in self.projections:
-            # Apply the internal projection
-            p.apply(internal_c, x)
+            p.update_buffer(x, step)
+
+        # Apply internal projections using their own buffers
+        for p in self.projections:
+            p.apply(internal_c, step, self.model.number_of_modes)
+
         return internal_c
 
     def step(self, step, x, c):
@@ -184,8 +142,8 @@ class Subnetwork(t.HasTraits):
         ndarray
             Next state after integration
         """
-        # Calculate internal coupling first
-        internal_c = self.cfun(x)
+        # Calculate internal coupling first, passing the current step
+        internal_c = self.cfun(step, x)
         # Add internal coupling to external coupling
         total_c = c + internal_c
         # Integrate

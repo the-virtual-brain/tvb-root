@@ -60,17 +60,10 @@ Example
 >>> (t, y), = sim.run()  # Unpack the first (and only) monitor result
 """
 
+from .base_projection import BaseProjection
+from .intra_projection import IntraProjection
+from .inter_projection import InterProjection
 from .recorder import Recorder
 from .subnetwork import Subnetwork, Stim
-from .projection import Projection
 from .network import NetworkSet
 from .simulator import Simulator
-
-__all__ = [
-    'Recorder',
-    'Subnetwork',
-    'Stim',
-    'Projection', 
-    'NetworkSet',
-    'Simulator'
-] 
