@@ -37,6 +37,20 @@ class InterProjection(BaseProjection):
                               f"source modes ({self.source.model.number_of_modes}) x "
                               f"target modes ({self.target.model.number_of_modes})")
 
+    def configure(self):
+        """Configure the projection's internal buffer using its source subnetwork."""
+        if not self.source:
+            raise ValueError("Source subnetwork must be set before configuring InterProjection.")
+        if not self.source.model:
+            # This check might be redundant if Subnetwork.configure ensures model is configured
+            raise ValueError("Source subnetwork's model must be configured before configuring InterProjection.")
+            
+        n_vars_src = self.source.model.nvar 
+        n_nodes_src = self.source.nnodes
+        n_modes_src = self.source.model.number_of_modes
+        self.configure_buffer(n_vars_src, n_nodes_src, n_modes_src)
+        return self
+
     def apply(self, tgt: np.ndarray, step: int):
         """Apply the inter-subnetwork projection.
 

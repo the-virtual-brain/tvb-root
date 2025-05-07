@@ -47,7 +47,9 @@ class Subnetwork(t.HasTraits):
         """
         self.model.configure()
         for p in self.projections:
-            p.configure_buffer(self.model.nvar, self.nnodes, self.model.number_of_modes)
+            p: IntraProjection
+            p.configure_buffer(self.model.cvars.size,
+                               self.nnodes, self.model.number_of_modes)
         return self
 
     def add_monitor(self, monitor: Monitor):

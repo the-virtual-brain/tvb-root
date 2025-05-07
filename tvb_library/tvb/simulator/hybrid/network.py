@@ -34,6 +34,12 @@ class NetworkSet(t.HasTraits):
             ' '.join([_.name for _ in self.subnets]))
         self.States.shape = property(lambda self: [_.shape for _ in self])
 
+    def configure(self):
+        """Configure all inter-subnetwork projections within the network set."""
+        for p in self.projections: # These are InterProjection instances
+            p.configure()
+        return self
+
     def zero_states(self) -> States:
         """Create zero states for all subnetworks.
 

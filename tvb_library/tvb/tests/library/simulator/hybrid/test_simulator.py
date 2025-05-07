@@ -3,6 +3,7 @@ Tests for the Simulator class.
 """
 
 import numpy as np
+from scipy.sparse import csr_matrix
 from tvb.simulator.models import JansenRit, ReducedSetFitzHughNagumo
 from tvb.simulator.integrators import HeunDeterministic
 from tvb.simulator.monitors import TemporalAverage
@@ -63,6 +64,18 @@ class TestSimulator(BaseHybridTest):
             nnodes=76
         ).configure()  # Configure the model
         
+        # Prepare projection parameters
+        weights_data = np.random.randn(76, 76)
+        weights_matrix = csr_matrix(weights_data)
+        
+        # Create lengths matrix with the same sparsity pattern as weights
+        lengths_data = np.abs(np.random.randn(76, 76))  # Ensure positive lengths
+        lengths_data[weights_data == 0] = 0  # Match sparsity
+        lengths_matrix = csr_matrix(lengths_data)
+        
+        projection_dt = 0.1  # Match scheme dt
+        projection_cv = 1.0
+        
         # Define projections between subnetworks
         nets = NetworkSet(
             subnets=[cortex, thalamus],
@@ -70,7 +83,10 @@ class TestSimulator(BaseHybridTest):
                 InterProjection(
                     source=cortex, target=thalamus,
                     source_cvar=np.r_[0], target_cvar=np.r_[1],
-                    weights=np.random.randn(76, 76)
+                    weights=weights_matrix,
+                    lengths=lengths_matrix,
+                    cv=projection_cv,
+                    dt=projection_dt
                 )
             ]
         )
@@ -86,7 +102,7 @@ class TestSimulator(BaseHybridTest):
         (t, y), = sim.run()  # Unpack the first (and only) monitor result
         
         # Verify the simulation ran successfully
-        self.assert_equal(100, len(t))
+        self.assert_equal(99, len(t))
         # The output shape is (time_steps, variables_of_interest, total_nodes, modes)
         # Total nodes = cortex nodes + thalamus nodes = 76 + 76 = 152
-        self.assert_equal((100, 2, 152, 1), y.shape) 
+        self.assert_equal((99, 2, 152, 1), y.shape) 

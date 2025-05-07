@@ -56,10 +56,15 @@ class Simulator(t.HasTraits):
 
     def configure(self):
         """Configure the simulator and its monitors."""
-        # Configure recorders in each subnetwork
         for subnet in self.nets.subnets:
+            # Subnetwork.configure() also configures its IntraProjections
+            subnet.configure() 
+            # Configure recorders in each subnetwork
             for recorder in subnet.monitors:
                 recorder.configure(self.simulation_length)
+        
+        # Configure the NetworkSet, which configures InterProjections
+        self.nets.configure()
 
     def run(self):
         """Run the simulation.

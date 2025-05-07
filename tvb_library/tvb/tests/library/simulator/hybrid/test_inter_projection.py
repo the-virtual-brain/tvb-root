@@ -57,8 +57,8 @@ class TestInterProjection(BaseHybridTest): # Keep class name as it tests InterPr
             dt=proj_c_t.dt,            # Reuse dt
             scale=1.0
         )
-        # Configure the projection's internal buffer
-        proj_multi_source.configure_buffer(n_vars_src, n_nodes_src, n_modes_src)
+        # Configure the projection
+        proj_multi_source.configure()
         # Update the buffer with the current state before applying
         # (Simulate multiple updates for a more realistic buffer state)
         for i in range(t + 1):
@@ -97,7 +97,7 @@ class TestInterProjection(BaseHybridTest): # Keep class name as it tests InterPr
             scale=0.5
         )
         # Configure and update buffer for the second test projection
-        proj_one_to_many.configure_buffer(n_vars_src, n_nodes_src, n_modes_src)
+        proj_one_to_many.configure()
         for i in range(t + 1):
              proj_one_to_many.update_buffer(current_src_state + i*0.01, i)
 
