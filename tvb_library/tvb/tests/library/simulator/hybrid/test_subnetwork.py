@@ -3,6 +3,8 @@ Tests for the Subnetwork and Stim classes.
 """
 
 import numpy as np
+import scipy.sparse as sp
+
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.patterns import StimuliRegion
 from tvb.simulator.models import JansenRit
@@ -97,8 +99,9 @@ class TestSubnetwork(BaseHybridTest):
         internal_proj = IntraProjection(
             source_cvar=np.array([0]),  # Example: first coupling variable
             target_cvar=np.array([0]),  # Example: maps to first coupling variable
-            weights=np.eye(nnodes),     # Identity weights
-            scale=1.0                   # Scale factor
+            weights=sp.eye(nnodes).tocsr(),     # Identity weights
+            lengths=sp.eye(nnodes).tocsr(),     # Identity weights
+            scale=1.0, cv=1.0, dt=0.1                   # Scale factor
         )
 
         # Pass projection kwargs during Subnetwork instantiation

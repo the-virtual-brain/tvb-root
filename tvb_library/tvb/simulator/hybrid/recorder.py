@@ -1,4 +1,6 @@
+import math
 import numpy as np
+
 import tvb.basic.neotraits.api as t
 from tvb.simulator.monitors import Monitor
 
@@ -37,7 +39,7 @@ class Recorder(t.HasTraits):
             Total simulation time in milliseconds
         """
         # Calculate expected number of samples
-        self.num_samples = int(simulation_length / self.monitor.period)
+        self.num_samples = int(math.ceil(simulation_length / self.monitor.period))
         self._current_idx = 0
 
     def _allocate_arrays(self, sample_shape):
@@ -66,6 +68,7 @@ class Recorder(t.HasTraits):
         ty = self.monitor.record(step, state)
         if ty is not None:
             t, y = ty
+            print(id(self), self._current_idx, t, y[0,0,0])
             # Lazy allocation on first sample
             if self.samples is None:
                 self._allocate_arrays(y.shape)

@@ -1,5 +1,7 @@
+import math
 import numpy as np
 from typing import List
+
 import tvb.basic.neotraits.api as t
 from tvb.simulator.monitors import Monitor
 from .network import NetworkSet
@@ -73,7 +75,8 @@ class Simulator(t.HasTraits):
         mts = [[] for _ in self.monitors]
         mxs = [[] for _ in self.monitors]
         x = self.nets.zero_states()
-        for step in range(int(self.simulation_length / self._dt0)):
+        stop = int(math.ceil(self.simulation_length / self._dt0))
+        for step in range(1, stop):
             x = self.nets.step(step, x)
             if self.monitors:
                 ox = self.nets.observe(x, flat=True)
