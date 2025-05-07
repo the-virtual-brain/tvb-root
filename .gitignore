@@ -31,3 +31,4 @@ coverage.xml
 /tvb_build/docker/*keycloak*
 /tvb_build/docker/private_upload_key.pem
 /tvb_build/docker/public_key.pem
+.aider*
