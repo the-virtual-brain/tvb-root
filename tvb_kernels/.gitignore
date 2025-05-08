@@ -1,0 +1,14 @@
+.cache
+build
+*.jpg
+build
+.spack-env
+spack.lock
+*.whl
+*.so
+*.o
+tvb_kernels/_ctg_tvbk.py
+tvbk.js
+tvbk.wasm
+compile_commands.json
+_ctg_*.py
