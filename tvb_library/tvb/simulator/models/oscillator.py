@@ -323,7 +323,6 @@ class Generic2dOscillator(ModelNumbaDfun):
         doc="The quantities of interest for monitoring for the generic 2D oscillator.")
 
     state_variables = ('V', 'W')
-    _nvar = 2
     cvar = numpy.array([0], dtype=numpy.int32)
 
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
@@ -452,7 +451,6 @@ class Kuramoto(Model):
                             is not necessary to change the default here.""")
 
     state_variables = ['theta']
-    _nvar = 1
     cvar = numpy.array([0], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0,
@@ -538,16 +536,15 @@ class SupHopf(ModelNumbaDfun):
                conditions when the simulation isn't started from an explicit
                history, it is also provides the default range of phase-plane plots.""")
 
+    state_variables = 'x y'.split(' ')
+
     variables_of_interest = List(
         of=str,
         label="Variables watched by Monitors",
-        choices=("x", "y"),
+        choices=state_variables,
         default=("x",),
         doc="Quantities of supHopf available to monitor.")
 
-    state_variables = ["x", "y"]
-
-    _nvar = 2  # number of state-variables
     cvar = numpy.array([0, 1], dtype=numpy.int32)  # coupling variables
 
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0,
