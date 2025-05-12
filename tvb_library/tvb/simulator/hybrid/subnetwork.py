@@ -48,7 +48,7 @@ class Subnetwork(t.HasTraits):
         self.model.configure()
         for p in self.projections:
             p: IntraProjection
-            p.configure_buffer(self.model.cvars.size,
+            p.configure_buffer(self.model.cvar.size,
                                self.nnodes, self.model.number_of_modes)
         return self
 
