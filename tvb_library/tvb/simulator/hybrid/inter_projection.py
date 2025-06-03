@@ -45,7 +45,7 @@ class InterProjection(BaseProjection):
             # This check might be redundant if Subnetwork.configure ensures model is configured
             raise ValueError("Source subnetwork's model must be configured before configuring InterProjection.")
             
-        n_vars_src = self.source.model.nvar 
+        n_vars_src = self.source.model.cvar.size
         n_nodes_src = self.source.nnodes
         n_modes_src = self.source.model.number_of_modes
         self.configure_buffer(n_vars_src, n_nodes_src, n_modes_src)

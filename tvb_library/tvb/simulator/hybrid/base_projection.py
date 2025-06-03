@@ -85,7 +85,7 @@ class BaseProjection(t.HasTraits):
 
     def update_buffer(self, current_src_state: np.ndarray, t: int):
         """Update the history buffer with the current source state."""
-        self._history_buffer[..., t % self._horizon] = current_src_state
+        self._history_buffer[..., t % self._horizon] = current_src_state[self.source_cvar]
 
 
     def apply(self, tgt: np.ndarray, t: int, mode_map: np.ndarray):

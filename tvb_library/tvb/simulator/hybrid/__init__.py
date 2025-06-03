@@ -60,6 +60,11 @@ Example
 >>> (t, y), = sim.run()  # Unpack the first (and only) monitor result
 """
 
+import warnings
+
+msg = "Hybrid simulation is experimental: please report bugs or suggestions."
+warnings.warn(msg)
+
 from .base_projection import BaseProjection
 from .intra_projection import IntraProjection
 from .inter_projection import InterProjection
