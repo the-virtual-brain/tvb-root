@@ -11,11 +11,11 @@ from .intra_projection import IntraProjection
 
 class Subnetwork(t.HasTraits):
     """A subnetwork that can be reused across different models.
-    
+
     A subnetwork represents a group of brain regions that share the same
     dynamical model and integration scheme. It is designed to be reusable
     across different models by separating the dynamics from the connectivity.
-    
+
     Attributes
     ----------
     name : str
@@ -54,23 +54,26 @@ class Subnetwork(t.HasTraits):
 
     def add_monitor(self, monitor: Monitor):
         """Add a monitor to record simulation data.
-        
+
         Parameters
         ----------
         monitor : Monitor
             The monitor to add
         """
+        # NOTE default for list is a tuple
+        if isinstance(self.monitors, tuple):
+            self.monitors = []
         monitor._config_dt(self.scheme.dt)
         if hasattr(monitor, '_config_stock'):
             monitor._config_stock(len(self.model.variables_of_interest),
-                                self.nnodes,
-                                self.model.number_of_modes)
+                                  self.nnodes,
+                                  self.model.number_of_modes)
         self.monitors.append(Recorder(monitor=monitor))
 
     @property
     def var_shape(self) -> tuple[int]:
         """Shape of the state variables.
-        
+
         Returns
         -------
         tuple
@@ -80,7 +83,7 @@ class Subnetwork(t.HasTraits):
 
     def zero_states(self) -> np.ndarray:
         """Create an array of zeros for the state variables.
-        
+
         Returns
         -------
         ndarray
@@ -90,7 +93,7 @@ class Subnetwork(t.HasTraits):
 
     def zero_cvars(self) -> np.ndarray:
         """Create an array of zeros for the coupling variables.
-        
+
         Returns
         -------
         ndarray
@@ -113,10 +116,10 @@ class Subnetwork(t.HasTraits):
         ndarray
             Internal coupling variables for the subnetwork
         """
-        internal_c = self.zero_cvars() # Shape (ncvar, nnodes, nmodes)
+        internal_c = self.zero_cvars()  # Shape (ncvar, nnodes, nmodes)
 
         if not self.projections:
-            return internal_c # No internal projections to apply
+            return internal_c  # No internal projections to apply
 
         # Update history buffers for all internal projections first
         for p in self.projections:
@@ -138,7 +141,7 @@ class Subnetwork(t.HasTraits):
             Current state
         c : ndarray
             Current coupling variables
-            
+
         Returns
         -------
         ndarray
@@ -161,4 +164,4 @@ class Stim(Subnetwork):
     # classic use is non-modal:
     # stimulus[self.model.stvar, :, :] = \
     #   self.stimulus(stim_step).reshape((1, -1, 1))
-    pass 
+    pass
