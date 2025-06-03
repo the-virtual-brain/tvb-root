@@ -106,19 +106,21 @@ class BaseHybridTest(BaseTestCase):
                     source=cortex, target=thalamus,
                     source_cvar=np.r_[0], target_cvar=np.r_[1],
                     weights=weights_c_t_sparse,
+                    scale=1e-4,
                     lengths=lengths_c_t_sparse, cv=default_cv, dt=default_dt, # Use sparse lengths
                 ),
                 InterProjection(
                     source=cortex, target=thalamus,
                     source_cvar=np.r_[1], target_cvar=np.r_[0],
                     weights=weights_c_t_sparse,
+                    scale=1e-4,
                      # Reusing weights, so must reuse sparse lengths for consistency
                     lengths=lengths_c_t_sparse, cv=default_cv, dt=default_dt, # Use sparse lengths
                 ),
                 InterProjection(
                     source=thalamus, target=cortex,
                     source_cvar=np.r_[0], target_cvar=np.r_[1],
-                    scale=1e-2,
+                    scale=1e-4,
                     weights=weights_t_c_sparse,
                     lengths=lengths_t_c_sparse, cv=default_cv, dt=default_dt, # Use sparse lengths
                 ),

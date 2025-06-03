@@ -20,11 +20,11 @@ class TestSimulator(BaseHybridTest):
         tavg = TemporalAverage(period=1.0)
         sim = Simulator(
             nets=nets,
-            simulation_length=10,
+            simulation_length=10.0,
             monitors=[tavg],
         )
         sim.configure()
-        (t,y), = sim.run()
+        (t, y), = sim.run()
         self.assert_equal(10, len(t))
         self.assert_equal((10, 2, 76, 1), y.shape)
 
@@ -32,7 +32,7 @@ class TestSimulator(BaseHybridTest):
         """Test simulation with Jansen-Rit monitor"""
         jrmon = TemporalAverage(period=1.0)
         conn, ix, cortex, thalamus, a, nets = self.setup(jrmon=jrmon)
-        sim = Simulator(nets=nets, simulation_length=10)
+        sim = Simulator(nets=nets, simulation_length=10.0)
         sim.configure()
         xs = sim.run()
         self.assert_equal(0, len(xs))
@@ -102,7 +102,7 @@ class TestSimulator(BaseHybridTest):
         (t, y), = sim.run()  # Unpack the first (and only) monitor result
         
         # Verify the simulation ran successfully
-        self.assert_equal(99, len(t))
+        self.assert_equal(100, len(t))
         # The output shape is (time_steps, variables_of_interest, total_nodes, modes)
         # Total nodes = cortex nodes + thalamus nodes = 76 + 76 = 152
-        self.assert_equal((99, 2, 152, 1), y.shape) 
+        self.assert_equal((100, 2, 152, 1), y.shape) 

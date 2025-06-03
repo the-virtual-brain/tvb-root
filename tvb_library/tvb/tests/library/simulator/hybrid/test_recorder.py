@@ -147,7 +147,7 @@ class TestRecorder(BaseHybridTest):
         return sim
 
     def _test_with_monitor(self, monitor_class=None, monitor_instance=None,
-                           period=1.0, simulation_length=5.01, expected_samples=None):
+                           period=1.0, simulation_length=5., expected_samples=None):
         """Test recorder with a given monitor."""
         sim = self._create_hybrid_simulator()
 
@@ -278,7 +278,7 @@ class TestRecorder(BaseHybridTest):
         """Test recorder with Bold monitor."""
         # Bold typically has longer period (2000ms = 2s default), but we use 2ms for faster testing
         times, samples = self._test_with_monitor(
-            Bold, period=2.0, simulation_length=10.1)
+            Bold, period=2.0, simulation_length=10.)
         # Additional Bold-specific checks
         assert len(times) == 5  # 10s / 2ms = 5 samples
         # Check time points are at expected intervals
@@ -320,7 +320,7 @@ class TestRecorder(BaseHybridTest):
         # Create and run simulator
         sim = Simulator(
             nets=nets,
-            simulation_length=10.1
+            simulation_length=10.
         )
         sim.configure()
         sim.run()

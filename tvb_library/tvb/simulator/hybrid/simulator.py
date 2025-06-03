@@ -81,7 +81,7 @@ class Simulator(t.HasTraits):
         mxs = [[] for _ in self.monitors]
         x = self.nets.zero_states()
         stop = int(math.ceil(self.simulation_length / self._dt0))
-        for step in range(1, stop):
+        for step in range(0, stop):
             x = self.nets.step(step, x)
             if self.monitors:
                 ox = self.nets.observe(x, flat=True)
