@@ -66,9 +66,15 @@ class Simulator(t.HasTraits):
         # Configure the NetworkSet, which configures InterProjections
         self.nets.configure()
 
-    def run(self):
+    def run(self, **kwargs):
         """Run the simulation.
         
+        Parameters
+        ----------
+        initial_conditions : list[np.ndarray], optional
+            A list of initial state arrays, one for each subnetwork.
+            If None, zero states are used.
+
         Returns
         -------
         list
@@ -77,9 +83,17 @@ class Simulator(t.HasTraits):
         # Configure if not already done
         if not hasattr(self, '_dt0'):
             self.configure()
+
+        # Accept initial_conditions as a parameter to run()
+        initial_conditions = kwargs.pop('initial_conditions', None)
+
         mts = [[] for _ in self.monitors]
         mxs = [[] for _ in self.monitors]
-        x = self.nets.zero_states()
+
+        if initial_conditions is not None:
+            x = self.nets.zero_states(initial_states=initial_conditions)
+        else:
+            x = self.nets.zero_states()
         stop = int(math.ceil(self.simulation_length / self._dt0))
         for step in range(0, stop):
             x = self.nets.step(step, x)

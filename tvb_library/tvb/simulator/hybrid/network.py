@@ -40,15 +40,37 @@ class NetworkSet(t.HasTraits):
             p.configure()
         return self
 
-    def zero_states(self) -> States:
-        """Create zero states for all subnetworks.
+    def zero_states(self, initial_states: list[np.ndarray] = None) -> States:
+        """Create zero states or use provided initial states for all subnetworks.
+
+        Parameters
+        ----------
+        initial_states : list[np.ndarray], optional
+            A list of initial state arrays, one for each subnetwork.
+            If None, zero states are created.
 
         Returns
         -------
         States
-            Named tuple containing zero states for each subnetwork
+            Named tuple containing initial states for each subnetwork
         """
-        return self.States(*[_.zero_states() for _ in self.subnets])
+        if initial_states is not None:
+            if len(initial_states) != len(self.subnets):
+                raise ValueError(
+                    f"Number of initial_states ({len(initial_states)}) "
+                    f"must match number of subnetworks ({len(self.subnets)})."
+                )
+            # Ensure each initial_state has the correct shape for its subnetwork
+            for i, sn in enumerate(self.subnets):
+                expected_shape = (sn.model.nvar, ) + sn.var_shape
+                if initial_states[i].shape != expected_shape:
+                    raise ValueError(
+                        f"Initial state for subnetwork '{sn.name}' has shape {initial_states[i].shape}, "
+                        f"expected {expected_shape}."
+                    )
+            return self.States(*initial_states)
+        else:
+            return self.States(*[_.zero_states() for _ in self.subnets])
 
     def zero_cvars(self) -> States:
         """Create zero coupling variables for all subnetworks.
