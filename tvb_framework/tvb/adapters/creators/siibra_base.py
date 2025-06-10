@@ -54,9 +54,9 @@ HUMAN_ATLAS = 'Multilevel Human Atlas'  # DEFAULT, only this atlas has Struct. C
 
 # parcellations
 JULICH_3 = get_last_version('Julich-Brain Cytoarchitectonic Atlas')  # DEFAULT
-JULICH_3_0_3 = 'Julich-Brain Cytoarchitectonic Atlas (v3.0.3)'  # DEFAULT
+JULICH_3_0_3 = 'Julich-Brain Cytoarchitectonic Atlas (v3.0.3)'
 JULICH_2_9 = 'Julich-Brain Cytoarchitectonic Atlas (v2.9)'
-parcellations = [JULICH_3, JULICH_2_9]
+parcellations = [JULICH_3, JULICH_3_0_3, JULICH_2_9]
 
 # cohorts
 HCP_COHORT = 'HCP'  # DEFAULT
@@ -255,7 +255,7 @@ def get_connectivity_matrix(parcellation, cohort, subjects, component):
             break
 
     if conn_for_cohort is None:
-        raise AttributeError(f"NO {modality} was found for cohort {cohort}")
+        raise AttributeError(f"No {modality} was found for cohort {cohort}")
 
     # for 1000BRAINS cohort, if the user did not specify a suffix (_1, _2), get all the possible ids for that subject
     if cohort == THOUSAND_BRAINS_COHORT and subjects is not None:
@@ -264,7 +264,12 @@ def get_connectivity_matrix(parcellation, cohort, subjects, component):
 
     # get the conn. matrices for each specified subject
     for s in subjects:
-        conn = [c for c in conn_for_cohort if c.subject == s][0]
+        conn = [c for c in conn_for_cohort if c.subject == s]
+        print(conn)
+        if not conn:
+            raise ValueError(f"No subject with ID {s} were found for cohort {cohort} and parcellation {parcellation}")
+        else:
+            conn = conn[0]
         matrix = conn.data
         conn_matrices[s] = matrix
         LOGGER.info(f'{component.name} for subject {s} retrieved successfully.')
