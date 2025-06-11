@@ -265,9 +265,8 @@ def get_connectivity_matrix(parcellation, cohort, subjects, component):
     # get the conn. matrices for each specified subject
     for s in subjects:
         conn = [c for c in conn_for_cohort if c.subject == s]
-        print(conn)
         if not conn:
-            raise ValueError(f"No subject with ID {s} were found for cohort {cohort} and parcellation {parcellation}")
+            raise ValueError(f"No subject with ID {s} was found for cohort {cohort} and parcellation {parcellation}")
         else:
             conn = conn[0]
         matrix = conn.data
