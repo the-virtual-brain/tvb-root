@@ -2,7 +2,6 @@ import numpy as np
 from scipy import sparse as sp
 import tvb.basic.neotraits.api as t
 
-
 class BaseProjection(t.HasTraits):
     """Base class for projections defining coupling.
 
@@ -75,14 +74,13 @@ class BaseProjection(t.HasTraits):
                  # Create a zero-valued sparse matrix with same sparsity as weights for nnz consistency
                  self.lengths = sp.csr_matrix( (np.zeros(self.weights.nnz, dtype=self.lengths.dtype), self.weights.indices, self.weights.indptr), shape=self.weights.shape)
 
-
         assert self.weights.nnz == self.lengths.nnz, \
             f"Mismatch nnz: weights {self.weights.nnz}, lengths {self.lengths.nnz}"
 
         # Modify idelays calculation to match original TVB simulator (round, no +2)
         if self.cv is not None and self.dt is not None and self.lengths.nnz > 0:
             # Ensure lengths.data is not empty before division
-            if self.lengths.data.size > 0 :
+            if self.lengths.data.size > 0:
                 self.idelays = np.round(self.lengths.data / self.cv / self.dt).astype(np.int_)
             else: # This case implies lengths.nnz > 0 but lengths.data is empty, which is inconsistent for CSR.
                   # However, to be safe, if lengths.data is empty, idelays should be empty or zero.
@@ -95,11 +93,13 @@ class BaseProjection(t.HasTraits):
         else: # No lengths or all lengths are zero (lengths.nnz == 0)
             self.idelays = np.zeros(self.weights.nnz, dtype=np.int_)
 
+        # now that the sparse matrices are formed, replace the 2*eps values by zeros
+        self.weights.data[self.weights.data == eps_val] = 0
+
         self.max_delay = np.max(self.idelays) if self.idelays.size > 0 else 0
         # Ensure cvars are arrays
         self.source_cvar = np.atleast_1d(self.source_cvar)
         self.target_cvar = np.atleast_1d(self.target_cvar)
-
 
     def configure_buffer(self, n_vars_src: int, n_nodes_src: int, n_modes_src: int):
         """Configure and initialize the internal history buffer."""
@@ -107,29 +107,17 @@ class BaseProjection(t.HasTraits):
         # (or at least 1 if max_delay is 0, to store current state)
         self._horizon = self.max_delay + 1
         if self._horizon == 0: # Should not happen if max_delay is at least 0, but defensive
-            self._horizon = 1 
-            
+            self._horizon = 1
+
         buffer_shape = (n_vars_src, n_nodes_src, n_modes_src, self._horizon)
         self._history_buffer = np.zeros(buffer_shape, 'f')
-
 
     def update_buffer(self, current_src_state: np.ndarray, t: int):
         """Update the history buffer with the current source state."""
         buffer_idx = t % self._horizon
         state_to_write = current_src_state[self.source_cvar]
-        # print(f"[DEBUG BaseProjection.update_buffer] Step t: {t}, Proj ID (approx based on cvars): S{self.source_cvar}_T{self.target_cvar}")
-        # print(f"[DEBUG BaseProjection.update_buffer] Writing to buffer index: {buffer_idx}")
-        # print(f"[DEBUG BaseProjection.update_buffer] State being written (from source_cvar {self.source_cvar}):\n{state_to_write}")
-        # if self._history_buffer is None:
-        #     print(f"[DEBUG BaseProjection.update_buffer] History buffer is None before write!")
-            # This case should ideally not happen if configure_buffer was called.
-            # If it does, it indicates a problem with the configuration sequence.
-            # For robustness in debugging, we might log this and proceed if possible,
-            # or raise an error if it's critical.
-            # For now, just print.
+        # print('dbg(update_buffer):', buffer_idx, state_to_write.ravel())
         self._history_buffer[..., buffer_idx] = state_to_write
-        # print(f"[DEBUG BaseProjection.update_buffer] History buffer after write (slice for index {buffer_idx}):\n{self._history_buffer[..., buffer_idx]}")
-
 
     def apply(self, tgt: np.ndarray, t: int, mode_map: np.ndarray):
         """Apply the projection to compute coupling using its internal history buffer.
@@ -149,20 +137,8 @@ class BaseProjection(t.HasTraits):
 
         # Calculate time indices into the circular history buffer
         # Shape: (nnz,) where nnz is number of non-zero weights/lengths
-        # Matches original TVB: (step - 1 - idelay + history_length) % history_length
         # Here, t is the 0-indexed current step.
-        if self._horizon == 0: # Should be caught by configure_buffer, but defensive
-            raise ValueError("History buffer horizon is zero, cannot apply projection.")
-        time_indices = (t - 1 - self.idelays + self._horizon) % self._horizon
-
-        # print(f"[DEBUG BaseProjection.apply] Step t: {t}, Proj ID (approx based on cvars): S{self.source_cvar}_T{self.target_cvar}")
-        # print(f"[DEBUG BaseProjection.apply] idelays:\n{self.idelays}")
-        # print(f"[DEBUG BaseProjection.apply] time_indices:\n{time_indices}")
-        # if self._history_buffer is not None:
-        #     print(f"[DEBUG BaseProjection.apply] History buffer shape: {self._history_buffer.shape}, Horizon: {self._horizon}")
-        # else:
-        #     print(f"[DEBUG BaseProjection.apply] History buffer is None!")
-
+        time_indices = (t - self.idelays + self._horizon) % self._horizon
 
         # Gather delayed states from the internal history buffer
         # Indexing: [source_cvar_indices, node_indices, mode_indices, time_indices]
@@ -176,6 +152,10 @@ class BaseProjection(t.HasTraits):
             time_indices                     # Shape (nnz,) -> Time index for each connection
         ]
         # Result shape: (n_src_cvar, nnz, n_src_modes)
+        # print('dbg(apply delayed_states):', t, delayed_states.ravel())
+        # if t == 2:
+        #     foo = np.c_[self.weights.indices, self.idelays, time_indices, self.weights.data]
+        #     # import pdb; pdb.set_trace()
 
         # Apply weights element-wise
         # weights.data has shape (nnz,)
@@ -202,8 +182,6 @@ class BaseProjection(t.HasTraits):
         # Need matrix multiplication: (n_src_cvar, n_target_nodes, n_src_modes) @ (n_src_modes, n_target_modes)
         # Result shape: (n_src_cvar, n_target_nodes, n_target_modes)
         aff = scaled_input @ mode_map
-        # print(f"[DEBUG BaseProjection.apply] Step t: {t}, Proj ID (approx based on cvars): S{self.source_cvar}_T{self.target_cvar}")
-        # print(f"[DEBUG BaseProjection.apply] Computed aff (afferent coupling):\n{aff}")
 
         # Apply to target coupling variables
         # tgt shape: (n_target_vars, n_target_nodes, n_target_modes)
@@ -215,21 +193,18 @@ class BaseProjection(t.HasTraits):
             summed_aff = aff.sum(axis=0)
             # Add to the single target cvar across all nodes/modes
             tgt[self.target_cvar[0], :, :] += summed_aff
-            # print(f"[DEBUG BaseProjection.apply] tgt after M->1 update (slice {self.target_cvar[0]}):\n{tgt[self.target_cvar[0], :, :]}")
         elif self.source_cvar.size == 1:
-             # If only one source cvar, apply its contribution to all target cvars directly
-             # aff has shape (1, n_target_nodes, n_target_modes)
-             # Squeeze axis 0 to get shape (n_target_nodes, n_target_modes)
-             squeezed_aff = aff.squeeze(axis=0)
-             # Add to all target cvars
-             tgt[self.target_cvar, :, :] += squeezed_aff
-            # print(f"[DEBUG BaseProjection.apply] tgt after 1->N update (slices {self.target_cvar}):\n{tgt[self.target_cvar, :, :]}")
+            # If only one source cvar, apply its contribution to all target cvars directly
+            # aff has shape (1, n_target_nodes, n_target_modes)
+            # Squeeze axis 0 to get shape (n_target_nodes, n_target_modes)
+            squeezed_aff = aff.squeeze(axis=0)
+            # Add to all target cvars
+            tgt[self.target_cvar, :, :] += squeezed_aff
         elif self.source_cvar.size == self.target_cvar.size:
             # If source and target cvars match in number, apply element-wise mapping
             # aff shape: (n_cvar, n_target_nodes, n_target_modes)
             # tgt[target_cvar] shape: (n_cvar, n_target_nodes, n_target_modes)
             tgt[self.target_cvar, :, :] += aff
-            # print(f"[DEBUG BaseProjection.apply] tgt after M->M update (slices {self.target_cvar}):\n{tgt[self.target_cvar, :, :]}")
         else:
             # Ambiguous case: M source cvars to N target cvars (M != N, M!=1, N!=1)
             # Raise error or define specific reduction/broadcasting rule

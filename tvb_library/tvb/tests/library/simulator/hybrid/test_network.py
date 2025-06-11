@@ -50,7 +50,7 @@ class TestNetwork(BaseHybridTest):
 
             # --- Replicate BaseProjection.apply logic to calculate expected coupling ---
             # Calculate time_indices based on delays, specific to this projection
-            time_indices_for_proj_connections = (current_step_idx - proj.idelays + 2) % proj._horizon
+            time_indices_for_proj_connections = (current_step_idx - 1 - proj.idelays + proj._horizon) % proj._horizon
 
             # Construct the 'delayed_states' array that BaseProjection.apply would gather.
             # Shape: (n_source_cvar_proj, nnz_proj_weights, n_source_modes)

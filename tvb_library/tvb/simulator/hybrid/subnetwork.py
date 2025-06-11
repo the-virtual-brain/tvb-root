@@ -129,6 +129,7 @@ class Subnetwork(t.HasTraits):
         for p in self.projections:
             p.apply(internal_c, step, self.model.number_of_modes)
 
+        # print('dbg(internal cfun):', step, internal_c.ravel())
         return internal_c
 
     def step(self, step, x, c):
@@ -151,20 +152,7 @@ class Subnetwork(t.HasTraits):
         internal_c = self.cfun(step, x)
         # Add internal coupling to external coupling
         total_c = c + internal_c
-
-        print(f"[DEBUG Subnetwork.step {self.name}] Step: {step}")
-        # print(f"[DEBUG Subnetwork.step {self.name}] Input x:\n{x}")
-        # print(f"[DEBUG Subnetwork.step {self.name}] External c:\n{c}")
-        # print(f"[DEBUG Subnetwork.step {self.name}] Internal c:\n{internal_c}")
-        print(f"[DEBUG Subnetwork.step {self.name}] Total c:\n{total_c}")
-
-        # Integrate
-        # The '0, 0' arguments are for local_coupling and stimulus, which are not used by IdentityTestIntegrator
-        # but are part of the generic scheme signature.
-        nx = self.scheme.scheme(x, self.model.dfun, total_c, 0.0, 0.0) # Pass 0.0 for local_coupling and stimulus
-
-        # print(f"[DEBUG Subnetwork.step {self.name}] Output nx:\n{nx}")
-
+        nx = self.scheme.scheme(x, self.model.dfun, total_c, 0.0, 0.0)
         # Record monitored variables
         for monitor in self.monitors:
             monitor.record(step, self.model.observe(nx))

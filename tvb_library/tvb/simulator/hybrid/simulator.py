@@ -42,7 +42,8 @@ class Simulator(t.HasTraits):
             assert len(nv0) == len(sn.model.variables_of_interest), msg
         for monitor in self.monitors:
             num_nodes = sum([sn.nnodes for sn in self.nets.subnets])
-            monitor._config_stock(len(nv0), num_nodes, 1)
+            if hasattr(monitor, '_config_stock'):
+                monitor._config_stock(len(nv0), num_nodes, 1)
 
     def validate_dts(self):
         """Validate integration time steps across subnetworks."""
