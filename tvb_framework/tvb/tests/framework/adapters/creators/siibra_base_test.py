@@ -38,7 +38,7 @@ HUMAN_ATLAS = 'Multilevel Human Atlas'
 MONKEY_ATLAS = 'Monkey Atlas'
 JULICH_PARCELLATION_3_0 = 'Julich 3.0'
 MONKEY_PARCELLATION = 'MEBRAINS population-based monkey parcellation'
-DEFAULT_HCP_SUBJECT = ['000']
+DEFAULT_HCP_SUBJECT = ['101309']
 DEFAULT_1000BRAINS_SUBJECT = ['0001_1']
 
 
@@ -193,20 +193,20 @@ class TestSiibraBase(BaseTestCase):
         """
         Test the retrieval of structural connectivities (weights and tracts) and functional connectivities
         """
-        weights = sb.get_connectivity_matrix(self.julich_parcellation_3_0, sb.HCP_COHORT, DEFAULT_HCP_SUBJECT,
+        weights = sb.get_connectivity_matrix(self.julich_parcellation_3_1, sb.HCP_COHORT, DEFAULT_HCP_SUBJECT,
                                              sb.Component2Modality.WEIGHTS)
         assert len(weights) > 0
         assert DEFAULT_HCP_SUBJECT[0] in weights
         assert isinstance(weights[DEFAULT_HCP_SUBJECT[0]], pandas.core.frame.DataFrame)
 
-        tracts = sb.get_connectivity_matrix(self.julich_parcellation_3_0, sb.HCP_COHORT, DEFAULT_HCP_SUBJECT,
+        tracts = sb.get_connectivity_matrix(self.julich_parcellation_3_1, sb.HCP_COHORT, DEFAULT_HCP_SUBJECT,
                                             sb.Component2Modality.TRACTS)
         assert len(tracts) > 0
         assert DEFAULT_HCP_SUBJECT[0] in tracts
         assert isinstance(tracts[DEFAULT_HCP_SUBJECT[0]], pandas.core.frame.DataFrame)
 
     def test_get_functional_connectivity_matrix(self, create_test_atlases_and_parcellations):
-        fcs, fcs_names = sb.get_functional_connectivity_matrix(self.julich_parcellation_3_0, sb.HCP_COHORT,
+        fcs, fcs_names = sb.get_functional_connectivity_matrix(self.julich_parcellation_3_1, sb.HCP_COHORT,
                                                                DEFAULT_HCP_SUBJECT[0])
         assert len(fcs) > 0
         assert len(fcs_names) > 0
@@ -219,7 +219,7 @@ class TestSiibraBase(BaseTestCase):
         assert hemi == [1, 0, 0]
 
     def test_get_regions_positions(self, create_test_atlases_and_parcellations):
-        region = self.julich_parcellation_3_0.get_region('v1')
+        region = self.julich_parcellation_3_1.get_region('v1')
         assert region.name == 'Area hOc1 (V1, 17, CalcS)'
         reg_coord = sb.get_regions_positions([region])[0]
         assert len(reg_coord) == 3
@@ -296,27 +296,27 @@ class TestSiibraBase(BaseTestCase):
         """
         Test retrieval of just structural connectivities
         """
-        scs, fcs = sb.get_connectivities_from_kg(self.human_atlas, self.julich_parcellation_3_0, sb.HCP_COHORT, '001')
+        scs, fcs = sb.get_connectivities_from_kg(self.human_atlas, self.julich_parcellation_3_1, sb.HCP_COHORT, '102311')
 
         assert len(scs) == 1
         assert not fcs
 
-        assert (list(scs.keys()) == ['001'])
-        assert isinstance(scs['001'], connectivity.Connectivity)
+        assert (list(scs.keys()) == ['102311'])
+        assert isinstance(scs['102311'], connectivity.Connectivity)
 
     def test_get_connectivities_from_kg_with_fc(self, create_test_atlases_and_parcellations):
         """
         Test retrieval of both structural and functional connectivities
         """
-        scs, fcs = sb.get_connectivities_from_kg(self.human_atlas, self.julich_parcellation_3_0, sb.HCP_COHORT, '001',
+        scs, fcs = sb.get_connectivities_from_kg(self.human_atlas, self.julich_parcellation_3_1, sb.HCP_COHORT, '102311',
                                                  True)
 
         assert len(scs) == 1
         assert len(fcs) == 1
-        assert len(fcs['001']) == 5
+        assert len(fcs['102311']) == 5
 
-        assert (list(scs.keys()) == ['001'])
-        assert isinstance(scs['001'], connectivity.Connectivity)
+        assert (list(scs.keys()) == ['102311'])
+        assert isinstance(scs['102311'], connectivity.Connectivity)
 
-        assert (list(fcs.keys()) == ['001'])
-        assert isinstance(fcs['001'][4], graph.ConnectivityMeasure)
+        assert (list(fcs.keys()) == ['102311'])
+        assert isinstance(fcs['102311'][4], graph.ConnectivityMeasure)
