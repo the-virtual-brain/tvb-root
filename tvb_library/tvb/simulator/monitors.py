@@ -101,7 +101,10 @@ class Monitor(HasTraits):
             self.voi = numpy.r_[:len(simulator.model.variables_of_interest)]
 
     def _config_time(self, simulator):
-        self.dt = simulator.integrator.dt
+        self._config_dt(simulator.integrator.dt)
+
+    def _config_dt(self, dt):
+        self.dt = dt
         self.istep = ReferenceBackend.iround(self.period / self.dt)
 
     def config_for_sim(self, simulator):
@@ -371,9 +374,12 @@ class TemporalAverage(Monitor):
 
     def _config_time(self, simulator):
         super(TemporalAverage, self)._config_time(simulator)
-        stock_size = (self.istep, self.voi.shape[0],
-                      simulator.number_of_nodes,
-                      simulator.model.number_of_modes)
+        self._config_stock(self.voi.shape[0],
+                           simulator.number_of_nodes,
+                           simulator.model.number_of_modes)
+
+    def _config_stock(self, num_vars, num_nodes, num_modes):
+        stock_size = self.istep, num_vars, num_nodes, num_modes
         self.log.debug("Temporal average stock_size is %s" % (str(stock_size),))
         self._stock = numpy.zeros(stock_size)
 
