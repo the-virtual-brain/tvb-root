@@ -135,7 +135,6 @@ class HindmarshRose(models.Model):
         :math:`y = 1`,and :math:`z = 2`.""")
 
     state_variables = ["x", "y", "z"]
-    _nvar = 3
     cvar = numpy.array([0], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):

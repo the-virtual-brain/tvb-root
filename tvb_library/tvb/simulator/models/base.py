@@ -45,8 +45,6 @@ class Model(HasTraits):
     state_variables = ()  # type: typing.Tuple[str]
     non_integrated_variables = None  # type: typing.Tuple[str]
     variables_of_interest = ()
-    _nvar = None   # todo make this a prop len(state_variables)
-    _nintvar = _nvar
     number_of_modes = 1
     cvar = None
     stvar = None
@@ -108,6 +106,7 @@ class Model(HasTraits):
     @property
     def nvar(self):
         """ The number of state variables in this model. """
+        self._nvar = len(self.state_variables)
         return self._nvar
 
     @property
@@ -118,7 +117,7 @@ class Model(HasTraits):
     @property
     def nnonintvar(self):
         """ The number of non integrated state variables in this model. """
-        return self._nvar - self._nintvar
+        return self.nvar - self.nintvar
 
     @property
     def has_nonint_vars(self):

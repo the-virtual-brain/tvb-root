@@ -187,7 +187,6 @@ class WilsonCowan(TVBWilsonCowan):
         doc="""default state variables to be monitored""")
 
     state_variables = ['E', 'I', 'Ein', 'Iin']
-    _nvar = 4
 
     def update_derived_parameters(self):
         """

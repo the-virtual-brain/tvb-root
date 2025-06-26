@@ -88,7 +88,6 @@ translates to:
     )
     state_variables = ('x1', 'y1', ...)
 
-    _nvar = 2
     cvar = numpy.array([0], dtype=numpy.int32)
 
 

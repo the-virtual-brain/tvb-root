@@ -376,7 +376,6 @@ class ZerlautAdaptationFirstOrder(Model):
             the boundaries of the dynamic range of that state-variable. Set None for one-sided boundaries""")
 
     state_variables = 'E I W_e W_i ou_drift'.split()
-    _nvar = 5
     cvar = numpy.array([0], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.00):
@@ -677,7 +676,6 @@ class ZerlautAdaptationSecondOrder(ZerlautAdaptationFirstOrder):
                :math:`I = 1`, :math:`C_ee = 2`, :math:`C_ei = 3`, :math:`C_ii = 4` and :math:`W = 5`.""")
 
     state_variables = 'E I C_ee C_ei C_ii W_e W_i ou_drift'.split()
-    _nvar = 8
 
     def dfun(self, state_variables, coupling, local_coupling=0.00):
         r"""

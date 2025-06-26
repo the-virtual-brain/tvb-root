@@ -162,7 +162,6 @@ class MontbrioPazoRoxin(Model):
         default='tau Delta eta J I cr cv'.split())
 
     state_variables = ('r', 'V')
-    _nvar = 2
     # Cvar is the coupling variable. 
     cvar = numpy.array([0, 1], dtype=numpy.int32)
     # Stvar is the variable where stimulus is applied.
@@ -298,7 +297,6 @@ class CoombesByrne(Model):
     )
 
     state_variables = ('r', 'V', 'g', 'q')
-    _nvar = 4
     # Cvar is the coupling variable. 
     cvar = numpy.array([0, 1, 2, 3], dtype=numpy.int32)
 
@@ -410,7 +408,6 @@ class CoombesByrne2D(Model):
     )
 
     state_variables = ('r', 'V')
-    _nvar = 2
     # Cvar is the coupling variable. 
     cvar = numpy.array([0, 1], dtype=numpy.int32)
 
@@ -560,7 +557,6 @@ class GastSchmidtKnosche_SD(Model):
     )
 
     state_variables = ('r', 'V', 'A', 'B')
-    _nvar = 4
     # Cvar is the coupling variable. 
     cvar = numpy.array([0, 1, 2, 3], dtype=numpy.int32)
 
@@ -719,7 +715,6 @@ class GastSchmidtKnosche_SF(Model):
     )
 
     state_variables = ('r', 'V', 'A', 'B')
-    _nvar = 4
     # Cvar is the coupling variable. 
     cvar = numpy.array([0, 1, 2, 3], dtype=numpy.int32)
 
@@ -917,7 +912,6 @@ class DumontGutkin(Model):
     )
 
     state_variables = ('r_e', 'V_e', 's_ee', 's_ei', 'r_i', 'V_i', 's_ie', 's_ii')
-    _nvar = 8
     # Cvar is the coupling variable. 
     cvar = numpy.array([0, 1, 4, 5], dtype=numpy.int32)
 

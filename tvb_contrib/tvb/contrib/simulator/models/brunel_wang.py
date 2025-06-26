@@ -341,7 +341,6 @@ class BrunelWang(models.Model):
             The corresponding state-variable units for this model are kHz.""")
 
     state_variables = ["E", "I"]
-    _nvar = 2
     cvar = numpy.array([0, 1], dtype=numpy.int32)
 
     def configure(self):

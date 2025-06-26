@@ -153,7 +153,6 @@ class HMJEpileptor(models.Model):
         doc="""default state variables to be monitored""")
 
     state_variables = ["y%d" % i for i in range(6)]
-    _nvar = 6
     cvar = numpy.array([0, 3], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0,

@@ -132,7 +132,6 @@ class Hopfield(Model):
 
     state_variables = ('x', 'theta')
 
-    _nvar = 2
     cvar = numpy.array([0], dtype=numpy.int32)
 
     def configure(self):
@@ -140,7 +139,6 @@ class Hopfield(Model):
         super(Hopfield, self).configure()
         if self.dynamic:
             self.dfun = self.dfunDyn
-            self._nvar = 2
             self.cvar = numpy.array([0, 1], dtype=numpy.int32)
             # self.variables_of_interest = ["x", "theta"]
 
