@@ -237,7 +237,7 @@
     <dependency env="mac" name="asttokens">
         <full-name value="asttokens"/>
         <project-home value="https://pypi.org/project/asttokens/"/>
-        <version value="[2.2.1,2.4.1]"/>
+        <version value="[2.2.1,2.4.1,3.0.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_asttokens.txt"/>
         <license-type value="Apache_ 2"/>
@@ -1197,7 +1197,7 @@
     <dependency env="[win,mac,linux]" name="cryptography">
         <full-name value="cryptography"/>
         <project-home value="https://github.com/pyca/cryptography"/>
-        <version value="[39.0.1,41.0.2,43.0.3]"/>
+        <version value="[39.0.1,41.0.2,43.0.3,44.0.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_crypto.txt"/>
         <license-type value="BSD_"/>
@@ -1637,7 +1637,7 @@
     <dependency env="[win,mac,linux]" name="fastjsonschema">
         <full-name value="Fastjsonschema"/>
         <project-home value="https://github.com/horejsek/python-fastjsonschema"/>
-        <version value="2.20.0"/>
+        <version value="[2.20.0,2.21.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_fastjsonschema.txt"/>
         <license-type value="BSD_ 3 clause"/>
@@ -1699,7 +1699,7 @@
     <dependency env="[win,mac,linux]" name="fonttools">
         <full-name value="Fonttools"/>
         <project-home value="https://github.com/fonttools/fonttools"/>
-        <version value="[4.54.1,4.55.0]"/>
+        <version value="[4.54.1,4.55.0,4.55.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_fonttools.txt"/>
         <license-type value="MIT_"/>
@@ -2053,7 +2053,7 @@
     <dependency env="[win,linux]" name="imageio">
         <full-name value="imageio"/>
         <project-home value="http://imageio.github.io/"/>
-        <version value="[2.18.1,2.31.0,2.31.1,2.36.0]"/>
+        <version value="[2.18.1,2.31.0,2.31.1,2.36.0,2.36.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_imageio.txt"/>
         <license-type value="BSD_ 2nd clause"/>
@@ -2214,7 +2214,7 @@
     <dependency env="[win,mac,linux]" name="ipython">
         <full-name value="iPython"/>
         <project-home value="http://ipython.org/"/>
-        <version value="[8.13.2,8.14.0,8.28.0,8.29.0]"/>
+        <version value="[8.13.2,8.14.0,8.28.0,8.29.0,8.30.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_ipython.txt"/>
         <license-type value="BSD_ 3 clause"/>
@@ -2602,7 +2602,7 @@
     <dependency env="[win,mac,linux]" name="jupyterlab">
         <full-name value="Jupyterlab"/>
         <project-home value="https://jupyter.org/"/>
-        <version value="[4.0.0,4.0.1,4.0.3,4.2.5,4.3.1]"/>
+        <version value="[4.0.0,4.0.1,4.0.3,4.2.5,4.3.1,4.3.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jupyterlab.txt"/>
         <license-type value="BSD_ 3nd clause"/>
@@ -2674,7 +2674,7 @@
     <dependency env="[win,mac,linux]" name="jwt">
         <full-name value="JWT"/>
         <project-home value="https://github.com/davedoesdev/python-jwt"/>
-        <version value="[2.7.0,2.8.0,2.9.0,2.10.0]"/>
+        <version value="[2.7.0,2.8.0,2.9.0,2.10.0,2.10.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jwt.txt"/>
         <license-type value="MIT_"/>
@@ -3064,7 +3064,7 @@
     <dependency env="[win,mac,linux]" name="pyjwt">
         <full-name value="Pyjwt"/>
         <project-home value="https://github.com/davedoesdev/python-jwt"/>
-        <version value="[2.7.0,2.9.0,2.10.0]"/>
+        <version value="[2.7.0,2.9.0,2.10.0,2.10.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pyjwt.txt"/>
         <license-type value="MIT_"/>
@@ -3074,7 +3074,7 @@
     <dependency env="[win,mac,linux]" name="keycloak">
         <full-name value="Keycloak Identity and Access Management"/>
         <project-home value="https://www.keycloak.org/"/>
-        <version value="[2.16.3,3.0.0,3.3.0,4.6.2,4.7.0,4.7.2]"/>
+        <version value="[2.16.3,3.0.0,3.3.0,4.6.2,4.7.0,4.7.2,4.7.3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_keycloak.txt"/>
         <license-type value="Apache_ 2"/>
@@ -3084,7 +3084,7 @@
     <dependency env="[win,mac,linux]" name="python-keycloak">
         <full-name value="Python Keycloak"/>
         <project-home value="https://github.com/marcospereirampj/python-keycloak/"/>
-        <version value="[2.16.3,3.0.0,3.3.0,4.6.2,4.7.0,4.7.2]"/>
+        <version value="[2.16.3,3.0.0,3.3.0,4.6.2,4.7.0,4.7.2,4.7.3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_python_keycloak.txt"/>
         <license-type value="MIT_"/>
@@ -3434,7 +3434,7 @@
     <dependency env="[win,mac,linux]" name="mako">
         <full-name value="Mako"/>
         <project-home value="https://pypi.org/project/Mako/"/>
-        <version value="[1.2.4,1.3.6]"/>
+        <version value="[1.2.4,1.3.6,1.3.7]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_mako.txt"/>
         <license-type value="MIT_"/>
@@ -3505,7 +3505,7 @@
     <dependency env="[win,mac,linux]" name="matplotlib">
         <full-name value="MatPlotLib"/>
         <project-home value="https://matplotlib.org/stable/users/license.html"/>
-        <version value="[3.5.3,3.9.2]"/>
+        <version value="[3.5.3,3.9.2,3.9.3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_matplotlib.txt"/>
         <license-type value="BSD_ (PSF_ based)"/>
@@ -3708,7 +3708,7 @@
     <dependency env="[win,mac,linux]" name="nbclient">
         <full-name value="A client library for executing notebooks."/>
         <project-home value="https://jupyter.org/"/>
-        <version value="[0.8.0,0.10.0]"/>
+        <version value="[0.8.0,0.10.0,0.10.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jupyter.txt"/>
         <license-type value="BSD_ modified"/>
@@ -4433,7 +4433,7 @@
     <dependency env="[win,mac,linux]" name="pytest">
         <full-name value="PyTest"/>
         <project-home value="http://docs.pytest.org/"/>
-        <version value="[3.3.1,4.4.2,8.3.3]"/>
+        <version value="[3.3.1,4.4.2,8.3.3,8.3.4]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytest.txt"/>
         <license-type value="MIT_"/>
@@ -4739,7 +4739,7 @@
     <dependency env="[win,linux,mac]" name="rpds-py">
         <full-name value="Rpds-py"/>
         <project-home value="https://github.com/crate-py/rpds"/>
-        <version value="[0.20.0,0.21.0]"/>
+        <version value="[0.20.0,0.21.0,0.22.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_rpds_py.txt"/>
         <license-type value="MIT_"/>
@@ -5476,7 +5476,7 @@
     <dependency env="[win,mac,linux]" name="tornado">
         <full-name value="Tornado"/>
         <project-home value="http://www.tornadoweb.org/en/stable/"/>
-        <version value="[6.3.2,6.4.1]"/>
+        <version value="[6.3.2,6.4.1,6.4.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_tornado.txt"/>
         <license-type value="Apache_ 2"/>
@@ -5517,7 +5517,7 @@
     <dependency env="[win,mac,linux]" name="tomli">
         <full-name value="tomli"/>
         <project-home value="https://github.com/hukkin/tomli"/>
-        <version value="[2.0.1,2.0.2,2.1.0]"/>
+        <version value="[2.0.1,2.0.2,2.1.0,2.2.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_tomli.txt"/>
         <license-type value="MIT_"/>
@@ -6035,7 +6035,7 @@
     <dependency env="[win,mac,win]" name="zope.interface">
         <full-name value="Zope.interface"/>
         <project-home value="https://pypi.python.org/pypi/zope.interface"/>
-        <version value="7.1.1"/>
+        <version value="[7.1.1,7.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_zope.txt"/>
         <license-type value="ZPL 2.1"/>
