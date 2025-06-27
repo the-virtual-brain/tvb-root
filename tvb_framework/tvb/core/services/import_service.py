@@ -35,7 +35,6 @@ import json
 import os
 import shutil
 import uuid
-from cgi import FieldStorage
 from datetime import datetime
 from cherrypy._cpreqbody import Part
 from sqlalchemy.exc import IntegrityError
@@ -108,7 +107,7 @@ class ImportService(object):
 
     def _download_and_unpack_project_zip(self, uploaded, uq_file_name, temp_folder):
 
-        if isinstance(uploaded, (FieldStorage, Part)):
+        if isinstance(uploaded, Part):
             if not uploaded.file:
                 raise ImportException("Please select the archive which contains the project structure.")
             with open(uq_file_name, 'wb') as file_obj:
@@ -691,7 +690,7 @@ class ImportService(object):
         temp_folder = self._compute_unpack_path()
         uq_file_name = temp_folder + ".zip"
 
-        if isinstance(zip_file, (FieldStorage, Part)):
+        if isinstance(zip_file, Part):
             if not zip_file.file:
                 raise ServicesBaseException("Could not process the given ZIP file...")
 

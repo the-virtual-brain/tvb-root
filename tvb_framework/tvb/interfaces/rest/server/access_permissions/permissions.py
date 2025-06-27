@@ -68,7 +68,7 @@ class ProjectAccessPermission(ResourceAccessPermission):
         project_members = self.project_dao.get_members_of_project(project_id)
         project_admin_id = self.project_dao.get_project_by_id(project_id).administrator.id
         return (logged_user_id == project_admin_id or
-                project_admin_id in [project_member.id for project_member in project_members])
+                logged_user_id in [project_member.id for project_member in project_members])
 
 
 class OperationAccessPermission(ProjectAccessPermission):
