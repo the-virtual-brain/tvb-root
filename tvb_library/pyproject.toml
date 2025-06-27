@@ -78,7 +78,7 @@ dependencies = [
     "networkx",
     "numba",
     "numexpr",
-    "numpy<2.3",
+    "numpy >=2, <2.3",
     "scipy",
     "six",
 ]
