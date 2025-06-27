@@ -30,7 +30,6 @@ Class responsible for all TVB exports (datatype or project).
 .. moduleauthor:: Calin Pavel <calin.pavel@codemat.ro
 """
 import shutil
-from cgi import FieldStorage
 from cherrypy._cpreqbody import Part
 
 from tvb.adapters.exporters.abcexporter import ABCExporter
@@ -116,7 +115,7 @@ class ExportManager(object):
 
         if user_public_key is not None:
             public_key_path, encryption_password = self.storage_interface.prepare_encryption(project.name)
-            if isinstance(user_public_key, (FieldStorage, Part)):
+            if isinstance(user_public_key, Part):
                 with open(public_key_path, 'wb') as file_obj:
                     self.storage_interface.copy_file(user_public_key.file, file_obj)
             else:
