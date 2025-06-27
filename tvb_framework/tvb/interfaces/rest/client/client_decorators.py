@@ -41,17 +41,17 @@ def handle_response(func):
             response = result[0]
             classz = result[1]
 
-        content = response.content
+        response_content = response.content.decode('utf-8')
         successful_call = response.ok
 
         if successful_call:
             if classz is not None:
-                return json.loads(content.decode('utf-8'),
+                return json.loads(response_content,
                                   object_hook=lambda d: classz(**d) if '__type__' not in d
                                   else CustomDecoder.custom_hook(d))
-            return json.loads(content.decode('utf-8'), cls=CustomDecoder)
+            return json.loads(response_content, cls=CustomDecoder)
 
-        decoded_dict = json.loads(content.decode('utf-8'))
+        decoded_dict = json.loads(response_content)
         try:
             error_message = decoded_dict['message']
         except KeyError:

@@ -60,7 +60,7 @@ class RetrieveDatatypeResource(SecuredResource):
             filename = save_temporary_file(public_key_file)
 
         h5_file_path, file_name = DatatypeFacade().get_dt_h5_path(datatype_gid, filename)
-        return flask.send_file(h5_file_path, as_attachment=True, attachment_filename=file_name)
+        return flask.send_file(h5_file_path, as_attachment=True, download_name=file_name)
 
 
 class GetExtraInfoForDatatypeResource(RestResource):
