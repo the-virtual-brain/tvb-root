@@ -36,7 +36,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt install libbz2-dev libhdf5-serial-dev liblzo2-dev
-          python3 -m pip install --upgrade setuptools==59.8.0 pip wheel
+          python3 -m pip install --upgrade setuptools pip wheel
           python3 -m pip install cryptography
           python3 -m pip install lockfile
           python3 -m pip install syncrypto
