@@ -205,9 +205,10 @@ class ProjectController(BaseController):
             self.redirect(PROJECT_VIEW_ALL_PAGE)
 
         all_users, members, pages = self.user_service.get_users_for_project(current_user.username, project_id)
-        template_specification['usersList'] = all_users
-        template_specification['usersMembers'] = [m.id for m in members]
-        template_specification['usersPages'] = pages
+        template_specification['usersList'] = []
+        template_specification['usersTotal'] = len(all_users) * pages
+        template_specification['usersMembers'] = []
+        template_specification['usersPages'] = 0
         template_specification['usersCurrentPage'] = 1
         return self.fill_default_attributes(template_specification, 'properties')
 
@@ -747,3 +748,4 @@ class EditForm(formencode.Schema):
     visited_pages = validators.UnicodeString(not_empty=False)
     max_operation_size = validators.Int(not_empty=False, min=0)
     disable_imports = validators.Bool()
+    search_pattern = validators.UnicodeString(not_empty=False)

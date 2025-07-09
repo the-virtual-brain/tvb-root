@@ -137,15 +137,21 @@
                 <mark>Share</mark>
                 Data with other users
             </h4>
+            <h4>
+                <mark>Total Users</mark>
+                {{ usersTotal }}
+            </h4>
             <input id="userSearchInput" name="search_input" type="text" form="" value=""
                        placeholder="Search username here"/>
             <button type="button" class="action action-small action-confirm"
-                        onclick="searchMembers({{ data.project_id if data.project_id else 'null' }}, 'membersDiv');">Search
+                        onclick="searchMembers({{ data.project_id if data.project_id else 'null' }},
+                                                'membersDiv',
+                                                {{ editUsersEnabled | string | lower }});">Search
             </button>
+            <input id="hiddenSearchPattern" name="search_pattern" value="" type="hidden"/>
             <div id="membersDiv">
                 {% include 'project/members_pages.html' %}
             </div>
-
         </section>
     </form>
 </div>

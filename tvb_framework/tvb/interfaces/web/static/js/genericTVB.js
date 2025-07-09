@@ -269,8 +269,12 @@ function minimizeColumn(link, maximizeColumnId) {
 // ---------------------------------------------------------
 
 
-function searchMembers(projectId, membersTableId) {
-    var userSearchPattern = $("#userSearchInput").val();
+function searchMembers(projectId, membersTableId, editEnabled) {
+    let userSearchPattern = $("#userSearchInput").val();
+    if (userSearchPattern === '') {
+        return;
+    }
+    $("#hiddenSearchPattern").val(userSearchPattern);
 
     let my_url = '/project/search_members';
         if (projectId) {
@@ -290,6 +294,9 @@ function searchMembers(projectId, membersTableId) {
                     membersCheckboxesDiv.remove();
                 }
                 $("#" + membersTableId).append(r);
+                if (editEnabled) {
+                    $("#visitedPages").val('1');
+                    }
             }
         });
 }
