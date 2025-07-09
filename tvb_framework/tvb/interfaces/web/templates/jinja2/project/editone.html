@@ -137,24 +137,14 @@
                 <mark>Share</mark>
                 Data with other users
             </h4>
-            <table>
-                <tr>
-                    {% for i in range(usersPages) %}
-                    <td id="tab-{{ i + 1 }}" tabindex="4" onkeypress="fireOnClick(this)"
-                        onclick="changeMembersPage({{ data.project_id if data.project_id else 'null' }}, {{ i + 1 }}, 'checkboxesList', {{ editUsersEnabled | string | lower }})"
-                        class="projectmembers-pagetab
-                                    {{ 'projectmembers-pagetab-selected' if i+1==usersCurrentPage else '' }}">
-                        Page {{ i+1 }}
-                    </td>
-                    {% endfor %}
-                </tr>
-            </table>
-
-            {% if usersList %}
-            <div id="checkboxesList">
-                {% include 'project/project_members.html' %}
+            <input id="userSearchInput" name="search_input" type="text" value=""
+                       placeholder="Search username here"/>
+            <button type="button" class="action action-small action-confirm"
+                        onclick="searchMembers({{ data.project_id if data.project_id else 'null' }}, 'membersDiv');">Search
+            </button>
+            <div id="membersDiv">
+                {% include 'project/members_pages.html' %}
             </div>
-            {% endif %}
 
         </section>
     </form>

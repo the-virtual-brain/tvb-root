@@ -211,17 +211,27 @@ class ProjectController(BaseController):
         template_specification['usersCurrentPage'] = 1
         return self.fill_default_attributes(template_specification, 'properties')
 
-    @expose_fragment('project/project_members')
-    def getmemberspage(self, page, project_id=None):
-        """Retrieve a new page of Project members."""
+    def _get_members(self, page=1, project_id=None, search_pattern=None):
         current_name = common.get_logged_user().username
-        all_users, members, _ = self.user_service.get_users_for_project(current_name, project_id, int(page))
+        all_users, members, pages = self.user_service.get_users_for_project(current_name, project_id, int(page),
+                                                                            search_pattern=search_pattern)
         edit_enabled = True
         if project_id is not None:
             current_project = self.project_service.find_project(project_id)
             edit_enabled = (current_name == current_project.administrator.username)
-        return dict(usersList=all_users, usersMembers=[m.id for m in members],
-                    usersCurrentPage=page, editUsersEnabled=edit_enabled)
+        return dict(usersList=all_users, usersMembers=[m.id for m in members], usersPages=pages,
+                    usersCurrentPage=page, editUsersEnabled=edit_enabled, data=dict(project_id=project_id),
+                    pattern=search_pattern)
+
+    @expose_fragment('project/members_pages')
+    def search_members(self, project_id=None, search_pattern=None):
+        """Retrieve all pages of Project members after search."""
+        return self._get_members(project_id=project_id, search_pattern=search_pattern)
+
+    @expose_fragment('project/project_members')
+    def get_members_page(self, page, project_id=None, search_pattern=None):
+        """Retrieve a new page of Project members."""
+        return self._get_members(page, project_id, search_pattern)
 
     @expose_json
     def set_visibility(self, entity_type, entity_gid, to_de_relevant):
