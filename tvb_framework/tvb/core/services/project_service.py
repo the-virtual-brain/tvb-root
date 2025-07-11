@@ -132,9 +132,9 @@ class ProjectService:
         visited_pages = []
         prj_admin = current_proj.administrator.username
         if 'visited_pages' in data and data['visited_pages']:
-            visited_pages = data['visited_pages'].split(',')
+            visited_pages = set(data['visited_pages'].split(','))
         for page in visited_pages:
-            members = UserService.retrieve_users_except([prj_admin], int(page), MEMBERS_PAGE_SIZE)[0]
+            members = UserService.retrieve_users_except([prj_admin], int(page), MEMBERS_PAGE_SIZE, search_pattern=data['search_pattern'])[0]
             members = [m.id for m in members]
             dao.delete_members_for_project(current_proj.id, members)
 
