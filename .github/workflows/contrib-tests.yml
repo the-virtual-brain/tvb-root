@@ -13,11 +13,11 @@ jobs:
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
-      - name: set up Python 3.11
+      - name: set up Python 3.13
         uses: actions/setup-python@v4
         id: setPy
         with:
-          python-version: "3.11"
+          python-version: "3.13"
 
       - name: put ~/.local/bin on $PATH
         run: echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
@@ -26,7 +26,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt install libbz2-dev libhdf5-serial-dev liblzo2-dev
-          python3 -m pip install --upgrade setuptools==59.8.0 pip wheel
+          python3 -m pip install --upgrade setuptools pip wheel
           pip3 install --user --upgrade numpy
           python3 -m pip install scikit-build pytest
           pip3 install --user --no-build-isolation tvb-gdist

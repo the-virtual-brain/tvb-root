@@ -61,8 +61,8 @@ class TestDatatypeResource(RestResourceTest):
         assert len(datatypes_in_project) == 1
         assert datatypes_in_project[0].type == ConnectivityIndex().display_type
 
-        def send_file_dummy(path, as_attachment, attachment_filename):
-            return (path, as_attachment, attachment_filename)
+        def send_file_dummy(path, as_attachment, download_name):
+            return (path, as_attachment, download_name)
 
         # Mock flask.send_file to behave like send_file_dummy
         mocker.patch('flask.send_file', send_file_dummy)
