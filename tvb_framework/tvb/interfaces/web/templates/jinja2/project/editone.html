@@ -141,7 +141,8 @@
                 <label>Total Users: {{ usersTotal }}</label>
             </ul>
             <input id="userSearchInput" name="search_input" type="text" form="" value="" style="margin-left: 10px"
-                       placeholder="Search username here"/>
+                   placeholder="Search users here"
+                   title="Searches by username or display name. It is possible to use placeholder '_' for a letter"/>
             <button type="button" class="action action-small action-confirm"
                         onclick="searchMembers({{ data.project_id if data.project_id else 'null' }},
                                                 'membersDiv',
