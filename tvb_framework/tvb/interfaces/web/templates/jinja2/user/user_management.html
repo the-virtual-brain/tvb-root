@@ -20,8 +20,21 @@
 
 		<input type="hidden" name="page" value="{{  page_number }}" id="currentPage"/>
 		<input type="hidden" name="do_persist" value="false" id="doPersist"/>
+		<input type="hidden" name="search_pattern" value="{{ searchPattern }}" id="searchPattern"/>
 		<table class="contentTable" summary="Manage Users">
-			<thead><tr><td colspan='4'><h2><mark>Users</mark> management</h2></td></tr></thead>
+			<thead><tr><td colspan='4'>
+                <h2><mark>Users</mark> management</h2>
+            </td>
+                <td><input id="userSearchInput" name="search_input" type="text" form="" value="" style="margin-left: 10px"
+                       placeholder="Search username here" title="Use placeholder '_' for a letter"/>
+                </td>
+                <td>
+                    <button type="button" class="action action-small action-confirm"
+                                onclick="changeDisplayPage({{ 1 }}, 'userManagementTableForm', true)">Search
+                </button>
+                </td>
+            </tr>
+            </thead>
 			<tr>
 				<td>User display name</td>
 				<td>User name</td>
