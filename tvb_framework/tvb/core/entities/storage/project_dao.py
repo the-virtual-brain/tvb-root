@@ -98,7 +98,8 @@ class CaseDAO(RootDAO):
         admins = self.session.query(User).filter_by(role=ROLE_ADMINISTRATOR).all()
         return admins
 
-    def get_all_users(self, different_names=None, page_start=0, page_size=DEFAULT_PAGE_SIZE, is_count=False):
+    def get_all_users(self, different_names=None, page_start=0, page_size=DEFAULT_PAGE_SIZE, is_count=False,
+                      search_pattern=None):
         """Retrieve all USERS in DB, except given users and system user."""
         if different_names is None:
             different_names = []
@@ -107,6 +108,9 @@ class CaseDAO(RootDAO):
             query = self.session.query(User
                                        ).filter(User.username.notin_(different_names)
                                                 ).filter(User.username != sys_name)
+            if search_pattern:
+                query = query.filter(
+                    or_(User.username.like(f'%{search_pattern}%'), User.display_name.like(f'%{search_pattern}%')))
             if is_count:
                 result = query.count()
             else:

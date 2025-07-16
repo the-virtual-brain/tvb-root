@@ -137,25 +137,21 @@
                 <mark>Share</mark>
                 Data with other users
             </h4>
-            <table>
-                <tr>
-                    {% for i in range(usersPages) %}
-                    <td id="tab-{{ i + 1 }}" tabindex="4" onkeypress="fireOnClick(this)"
-                        onclick="changeMembersPage({{ data.project_id if data.project_id else 'null' }}, {{ i + 1 }}, 'checkboxesList', {{ editUsersEnabled | string | lower }})"
-                        class="projectmembers-pagetab
-                                    {{ 'projectmembers-pagetab-selected' if i+1==usersCurrentPage else '' }}">
-                        Page {{ i+1 }}
-                    </td>
-                    {% endfor %}
-                </tr>
-            </table>
-
-            {% if usersList %}
-            <div id="checkboxesList">
-                {% include 'project/project_members.html' %}
+            <ul class="toolbar-inline">
+                <label>Total Users: {{ usersTotal }}</label>
+            </ul>
+            <input id="userSearchInput" name="search_input" type="text" form="" value="" style="margin-left: 10px"
+                   placeholder="Search users here"
+                   title="Searches by username or display name. It is possible to use placeholder '_' for a letter"/>
+            <button type="button" class="action action-small action-confirm"
+                        onclick="searchMembers({{ data.project_id if data.project_id else 'null' }},
+                                                'membersDiv',
+                                                {{ editUsersEnabled | string | lower }});">Search
+            </button>
+            <input id="hiddenSearchPattern" name="search_pattern" value="" type="hidden"/>
+            <div id="membersDiv" style="margin-left: 10px">
+                {% include 'project/members_pages.html' %}
             </div>
-            {% endif %}
-
         </section>
     </form>
 </div>
