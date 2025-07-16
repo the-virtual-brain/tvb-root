@@ -232,14 +232,14 @@ class UserService:
             raise UsernameException(str(excep))
 
     @staticmethod
-    def retrieve_users_except(usernames, current_page, page_size, search_pattern=None):
+    def retrieve_users_except(usernames, current_page, page_size, search_pattern=None, filterCol=None):
         # type: (list, int, int) -> (list, int)
         """
         Return all users from the database except the given users
         """
         start_idx = page_size * (current_page - 1)
-        total = dao.get_all_users(usernames, is_count=True, search_pattern=search_pattern)
-        user_list = dao.get_all_users(usernames, start_idx, page_size, search_pattern=search_pattern)
+        total = dao.get_all_users(usernames, is_count=True, search_pattern=search_pattern, filterCol=filterCol)
+        user_list = dao.get_all_users(usernames, start_idx, page_size, search_pattern=search_pattern, filterCol=filterCol)
         pages_no = total // page_size + (1 if total % page_size else 0)
         return user_list, pages_no
 

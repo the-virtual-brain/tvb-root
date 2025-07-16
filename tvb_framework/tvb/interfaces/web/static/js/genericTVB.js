@@ -97,11 +97,14 @@ function get_URL_param(param) {
  * @param page Page number to get to
  * @param formId Form to submit
  */
-function changeDisplayPage(page, formId, search=false) {
+function changeDisplayPage(page, formId, search=false, filter=null) {
     $("#currentPage").val(page);
     if (search) {
         let searchPattern = $("#userSearchInput").val();
         $("#searchPattern").val(searchPattern);
+    }
+    if (filter) {
+        $("#filterNotValid").val(filter.checked);
     }
     document.getElementById(formId).submit();
 }

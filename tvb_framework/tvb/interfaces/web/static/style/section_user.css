@@ -453,3 +453,12 @@ body#s-user section.intro em {
     color: black;
     font-size: 15px;
 }
+
+body#s-user table.contentTable .searchElements {
+	font-size: 12px;
+	height: 24px;
+    color: black;
+    text-shadow: none;
+    text-transform: none;
+    font-weight: normal;
+}
