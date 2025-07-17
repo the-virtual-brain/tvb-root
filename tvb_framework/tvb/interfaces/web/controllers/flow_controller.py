@@ -165,7 +165,7 @@ class FlowController(BaseController):
     @settings
     @context_selected
     def show_group_of_algorithms(self, step_key, algorithm_ids):
-
+        step_key = int(step_key)
         project = common.get_current_project()
         category = self.algorithm_service.get_category_by_id(step_key)
         algorithms = []
@@ -213,8 +213,10 @@ class FlowController(BaseController):
         Render a specific adapter.
         'data' are arguments for POST
         """
+        step_key = int(step_key)
+        adapter_key = int(adapter_key)
         project = common.get_current_project()
-        algorithm = self.algorithm_service.get_algorithm_by_identifier(int(adapter_key))
+        algorithm = self.algorithm_service.get_algorithm_by_identifier(adapter_key)
         back_page_link = self._compute_back_link(back_page, project)
 
         if algorithm is None:
@@ -227,7 +229,7 @@ class FlowController(BaseController):
         is_burst = back_page not in ['operations', 'data']
         if cherrypy.request.method == 'POST':
             data[common.KEY_ADAPTER] = adapter_key
-            template_specification = self.execute_post(int(project.id), submit_link, int(step_key), algorithm, **data)
+            template_specification = self.execute_post(project.id, submit_link, step_key, algorithm, **data)
             self._populate_section(algorithm, template_specification, is_burst)
         else:
             template_specification = self.get_template_for_adapter(project.id, step_key, algorithm,
@@ -281,6 +283,7 @@ class FlowController(BaseController):
 
     def execute_post(self, project_id, submit_url, step_key, algorithm, **data):
         """ Execute HTTP POST on a generic step."""
+        project_id = int(project_id)
         errors = None
         adapter_instance = ABCAdapter.build_adapter(algorithm)
         user = common.get_logged_user()
@@ -339,6 +342,7 @@ class FlowController(BaseController):
                                  is_callout=False):
         """ Get Input HTML Interface template or a given adapter """
         try:
+            project_id = int(project_id)
             group = None
             category = self.algorithm_service.get_category_by_id(step_key)
             title = "Fill parameters for step " + category.displayname.lower()
@@ -400,6 +404,7 @@ class FlowController(BaseController):
 
     @expose_json
     def invoke_adapter(self, algo_id, method_name, entity_gid, **kwargs):
+        algo_id = int(algo_id)
         algorithm = self.algorithm_service.get_algorithm_by_identifier(algo_id)
         adapter_instance = ABCAdapter.build_adapter(algorithm)
         entity = load_entity_by_gid(entity_gid)
@@ -470,6 +475,7 @@ class FlowController(BaseController):
         AJAX exposed method. Will return only the interface for a adapter, to
         be used when tabs are needed.
         """
+        algorithm_id = int(algorithm_id)
         curent_project = common.get_current_project()
         is_uploader = string2bool(is_uploader)
         template_specification = self.get_adapter_template(curent_project.id, algorithm_id, is_uploader)
@@ -482,7 +488,9 @@ class FlowController(BaseController):
         AJAX exposed method. Will return only a piece of a page,
         to be integrated as part in another page.
         """
-        template_specification = self.get_adapter_template(int(project_id), int(algorithm_id), False, back_page, is_callout=True)
+        project_id = int(project_id)
+        algorithm_id = int(algorithm_id)
+        template_specification = self.get_adapter_template(project_id, algorithm_id, False, back_page, is_callout=True)
         template_specification["isCallout"] = True
         return self.fill_default_attributes(template_specification)
 
@@ -511,6 +519,7 @@ class FlowController(BaseController):
     @context_selected
     def reloadoperation(self, operation_id, **_):
         """Redirect to Operation Input selection page, with input data already selected."""
+        operation_id = int(operation_id)
         operation = OperationService.load_operation(operation_id)
         # Reload previous parameters in session
         adapter_instance = ABCAdapter.build_adapter(operation.algorithm)
@@ -529,6 +538,7 @@ class FlowController(BaseController):
         Find out from which burst was this operation launched. Set that burst as the selected one and
         redirect to the burst page.
         """
+        operation_id = int(operation_id)
         is_group = int(is_group)
         if not is_group:
             operation = OperationService.load_operation(int(operation_id))

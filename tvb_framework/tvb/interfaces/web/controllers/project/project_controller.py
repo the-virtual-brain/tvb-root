@@ -138,6 +138,7 @@ class ProjectController(BaseController):
     def _remove_project(self, project_id):
         """Private method for removing project."""
         try:
+            project_id = int(project_id)
             self.project_service.remove_project(project_id)
         except ServicesBaseException as exc:
             self.logger.error("Could not delete project!")
@@ -154,6 +155,7 @@ class ProjectController(BaseController):
         Create or change Project. When project_id is empty we create a 
         new entity, otherwise we are to edit and existent one.
         """
+        project_id = int(project_id)
         if cherrypy.request.method == 'POST' and cancel:
             self.redirect(PROJECT_PAGE)
         if cherrypy.request.method == 'POST' and delete:
@@ -172,7 +174,7 @@ class ProjectController(BaseController):
             data["administrator"] = current_user.display_name
             admin_username = current_user.username
         else:
-            current_project = self.project_service.find_project(int(project_id))
+            current_project = self.project_service.find_project(project_id)
             if not save:
                 # Only when we do not have submitted data,
                 # populate fields with initial values for edit.
@@ -189,7 +191,7 @@ class ProjectController(BaseController):
         try:
             if cherrypy.request.method == 'POST' and save:
                 data = EditForm().to_python(data)
-                saved_project = self.project_service.store_project(current_user, is_create, int(project_id), **data)
+                saved_project = self.project_service.store_project(current_user, is_create, project_id, **data)
                 if StorageInterface.encryption_enabled() and is_create:
                     project_folder = self.storage_interface.get_project_folder(saved_project.name)
                     self.storage_interface.sync_folders(project_folder)
@@ -213,6 +215,7 @@ class ProjectController(BaseController):
         return self.fill_default_attributes(template_specification, 'properties')
 
     def _get_members(self, page=1, project_id=None, search_pattern=None):
+        project_id = int(project_id)
         current_name = common.get_logged_user().username
         all_users, members, pages = self.user_service.get_users_for_project(current_name, project_id, int(page),
                                                                             search_pattern=search_pattern)
@@ -259,7 +262,9 @@ class ProjectController(BaseController):
         """
         Display table of operations for a given project selected
         """
-        if (project_id is None) or (not int(project_id)):
+        try:
+            project_id = int(project_id)
+        except (ValueError, TypeError):
             self.redirect(PROJECT_PAGE)
 
         ## Toggle filters
@@ -276,14 +281,14 @@ class ProjectController(BaseController):
         ## Iterate one more time, to update counters
         for my_filter in filters:
             if not my_filter.selected:
-                new_count = self.project_service.count_filtered_operations(int(project_id), my_filter + selected_filters)
+                new_count = self.project_service.count_filtered_operations(project_id, my_filter + selected_filters)
                 my_filter.passes_count = new_count
             else:
                 my_filter.passes_count = ''
 
         page = int(page)
         project, total_op_count, filtered_ops, pages_no = self.project_service.retrieve_project_full(
-            int(project_id), selected_filters, page)
+            project_id, selected_filters, page)
         ## Select current project
         self._mark_selected(project)
 
@@ -424,6 +429,7 @@ class ProjectController(BaseController):
         """
         Returns the HTML which displays the link-able projects for the given dataType
         """
+        datatype_id = int(datatype_id)
         template_specification = self._get_linkable_projects_dict(datatype_id)
         template_specification["entity_gid"] = entity_gid
         template_specification["isGroup"] = is_group
@@ -431,6 +437,7 @@ class ProjectController(BaseController):
 
     def _get_linkable_projects_dict(self, datatype_id):
         """" UI ready dictionary with projects in which current DataType can be linked."""
+        datatype_id = int(datatype_id)
         self.logger.debug("Searching projects to link for DT " + str(datatype_id))
         for_link, linked = self.project_service.get_linkable_projects_for_user(common.get_logged_user().id, datatype_id)
 
@@ -524,14 +531,14 @@ class ProjectController(BaseController):
         Return the page skeleton for displaying the project structure.
         """
         try:
-            int(project_id)
+            project_id = int(project_id)
         except (ValueError, TypeError):
             self.redirect(PROJECT_PAGE)
 
         if first_level is None or second_level is None:
             first_level, second_level = self.get_project_structure_grouping()
 
-        selected_project = self.project_service.find_project(int(project_id))
+        selected_project = self.project_service.find_project(project_id)
         self._mark_selected(selected_project)
         data = self.project_service.get_filterable_meta()
         filters = StaticFiltersFactory.build_datatype_filters(selected=visibility_filter)
@@ -549,12 +556,13 @@ class ProjectController(BaseController):
         Returns the html which displays a dialog which allows the user
         to upload certain data into the application.
         """
+        project_id = int(project_id)
         upload_algorithms = self.algorithm_service.get_upload_algorithms()
         algorithms_interface = {}
         tabs = []
 
         for algorithm in upload_algorithms:
-            adapter_template = self.flow_controller.get_adapter_template(int(project_id), int(algorithm.id), True, None)
+            adapter_template = self.flow_controller.get_adapter_template(project_id, algorithm.id, True, None)
             algorithms_interface['template_for_algo_' + str(algorithm.id)] = adapter_template
             tabs.append(OverlayTabDefinition(algorithm.displayname, algorithm.subsection_name,
                                              description=algorithm.description))
@@ -565,7 +573,7 @@ class ProjectController(BaseController):
         template_specification['uploadAlgorithms'] = upload_algorithms
         template_specification['projectId'] = project_id
         template_specification['algorithmsInterface'] = algorithms_interface
-        template_specification['disable_imports'] = dao.get_project_by_id(int(project_id)).disable_imports
+        template_specification['disable_imports'] = dao.get_project_by_id(project_id).disable_imports
 
         return self.flow_controller.fill_default_attributes(template_specification)
 
@@ -590,14 +598,14 @@ class ProjectController(BaseController):
         if cherrypy.request.method != 'POST' or cancel:
             raise cherrypy.HTTPRedirect(success_link)
         try:
-            int(project_id)
-            int(algorithm_id)
+            project_id = int(project_id)
+            algorithm_id = int(algorithm_id)
         except (ValueError, TypeError):
             raise cherrypy.HTTPRedirect(success_link)
 
-        project = self.project_service.find_project(int(project_id))
-        algorithm = self.algorithm_service.get_algorithm_by_identifier(int(algorithm_id))
-        self.flow_controller.execute_post(int(project.id), success_link, algorithm.fk_category, algorithm, **data)
+        project = self.project_service.find_project(project_id)
+        algorithm = self.algorithm_service.get_algorithm_by_identifier(algorithm_id)
+        self.flow_controller.execute_post(project.id, success_link, algorithm.fk_category, algorithm, **data)
 
         raise cherrypy.HTTPRedirect(success_link)
 
@@ -619,6 +627,8 @@ class ProjectController(BaseController):
         selected_filter = StaticFiltersFactory.build_datatype_filters(single_filter=visibility_filter)
         if project_id == 'undefined':
             project_id = common.get_current_project().id
+        else:
+            project_id = int(project_id)
         project = self.project_service.find_project(project_id)
         json_structure = self.project_service.get_project_structure(project, selected_filter,
                                                                     first_level, second_level, filter_value)
@@ -635,6 +645,7 @@ class ProjectController(BaseController):
         """
         Delegate the creation of the actual link to the algorithm service.
         """
+        project_id = int(project_id)
         self.algorithm_service.create_link(link_data, project_id)
 
     @cherrypy.expose
@@ -644,6 +655,7 @@ class ProjectController(BaseController):
         """
         Delegate the creation of the actual link to the flow service.
         """
+        project_id = int(project_id)
         if not string2bool(str(is_group)):
             self.algorithm_service.remove_link(link_data, project_id)
         else:
@@ -659,6 +671,7 @@ class ProjectController(BaseController):
         """
         AJAX exposed method, to execute operation of data removal.
         """
+        project_id = int(project_id)
         try:
             if node_gid is None:
                 return "Remove can only be applied on a Node with GID!"
@@ -713,6 +726,7 @@ class ProjectController(BaseController):
         """
         Export the data from a whole project.
         """
+        project_id = int(project_id)
         current_project = self.project_service.find_project(project_id)
         export_mng = ExportManager()
         export_file = export_mng.export_project(current_project)
