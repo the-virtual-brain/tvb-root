@@ -335,7 +335,7 @@ class DBSettings(object):
 
     def __init__(self, manager, default_storage, current_storage):
         # A dictionary with accepted db's and their default URLS
-        default_pg = 'postgresql+psycopg2://postgres:root@127.0.0.1:5432/tvb?user=postgres&password=postgres'
+        default_pg = 'postgresql+psycopg://postgres:root@127.0.0.1:5432/tvb?user=postgres&password=postgres'
         default_lite = 'sqlite:///' + os.path.join(default_storage, 'tvb-database.db')
         self.ACEEPTED_DBS = {'postgres': manager.get_attribute(stored.KEY_DB_URL, default_pg),
                              'sqlite': manager.get_attribute(stored.KEY_DB_URL, default_lite)}

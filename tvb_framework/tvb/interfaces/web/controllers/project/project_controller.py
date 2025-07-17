@@ -172,7 +172,7 @@ class ProjectController(BaseController):
             data["administrator"] = current_user.display_name
             admin_username = current_user.username
         else:
-            current_project = self.project_service.find_project(project_id)
+            current_project = self.project_service.find_project(int(project_id))
             if not save:
                 # Only when we do not have submitted data,
                 # populate fields with initial values for edit.
@@ -189,7 +189,7 @@ class ProjectController(BaseController):
         try:
             if cherrypy.request.method == 'POST' and save:
                 data = EditForm().to_python(data)
-                saved_project = self.project_service.store_project(current_user, is_create, project_id, **data)
+                saved_project = self.project_service.store_project(current_user, is_create, int(project_id), **data)
                 if StorageInterface.encryption_enabled() and is_create:
                     project_folder = self.storage_interface.get_project_folder(saved_project.name)
                     self.storage_interface.sync_folders(project_folder)
@@ -204,7 +204,7 @@ class ProjectController(BaseController):
             common.set_error_message(excep.message)
             self.redirect(PROJECT_VIEW_ALL_PAGE)
 
-        all_users, members, pages = self.user_service.get_users_for_project(current_user.username, project_id)
+        all_users, members, pages = self.user_service.get_users_for_project(current_user.username, int(project_id))
         template_specification['usersList'] = []
         template_specification['usersTotal'] = len(all_users) * pages
         template_specification['usersMembers'] = []
@@ -276,14 +276,14 @@ class ProjectController(BaseController):
         ## Iterate one more time, to update counters
         for my_filter in filters:
             if not my_filter.selected:
-                new_count = self.project_service.count_filtered_operations(project_id, my_filter + selected_filters)
+                new_count = self.project_service.count_filtered_operations(int(project_id), my_filter + selected_filters)
                 my_filter.passes_count = new_count
             else:
                 my_filter.passes_count = ''
 
         page = int(page)
         project, total_op_count, filtered_ops, pages_no = self.project_service.retrieve_project_full(
-            project_id, selected_filters, page)
+            int(project_id), selected_filters, page)
         ## Select current project
         self._mark_selected(project)
 
@@ -531,7 +531,7 @@ class ProjectController(BaseController):
         if first_level is None or second_level is None:
             first_level, second_level = self.get_project_structure_grouping()
 
-        selected_project = self.project_service.find_project(project_id)
+        selected_project = self.project_service.find_project(int(project_id))
         self._mark_selected(selected_project)
         data = self.project_service.get_filterable_meta()
         filters = StaticFiltersFactory.build_datatype_filters(selected=visibility_filter)
@@ -554,7 +554,7 @@ class ProjectController(BaseController):
         tabs = []
 
         for algorithm in upload_algorithms:
-            adapter_template = self.flow_controller.get_adapter_template(project_id, algorithm.id, True, None)
+            adapter_template = self.flow_controller.get_adapter_template(int(project_id), int(algorithm.id), True, None)
             algorithms_interface['template_for_algo_' + str(algorithm.id)] = adapter_template
             tabs.append(OverlayTabDefinition(algorithm.displayname, algorithm.subsection_name,
                                              description=algorithm.description))
@@ -565,7 +565,7 @@ class ProjectController(BaseController):
         template_specification['uploadAlgorithms'] = upload_algorithms
         template_specification['projectId'] = project_id
         template_specification['algorithmsInterface'] = algorithms_interface
-        template_specification['disable_imports'] = dao.get_project_by_id(project_id).disable_imports
+        template_specification['disable_imports'] = dao.get_project_by_id(int(project_id)).disable_imports
 
         return self.flow_controller.fill_default_attributes(template_specification)
 
@@ -595,9 +595,9 @@ class ProjectController(BaseController):
         except (ValueError, TypeError):
             raise cherrypy.HTTPRedirect(success_link)
 
-        project = self.project_service.find_project(project_id)
-        algorithm = self.algorithm_service.get_algorithm_by_identifier(algorithm_id)
-        self.flow_controller.execute_post(project.id, success_link, algorithm.fk_category, algorithm, **data)
+        project = self.project_service.find_project(int(project_id))
+        algorithm = self.algorithm_service.get_algorithm_by_identifier(int(algorithm_id))
+        self.flow_controller.execute_post(int(project.id), success_link, algorithm.fk_category, algorithm, **data)
 
         raise cherrypy.HTTPRedirect(success_link)
 

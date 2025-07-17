@@ -49,7 +49,7 @@ from tvb.basic.profile import TvbProfile
 
 try:
     # Needed for builds
-    import psycopg2
+    import psycopg
 except ImportError:
     print("Could not find compatible psycopg2/postgresql bindings. Postgresql support not available.")
 

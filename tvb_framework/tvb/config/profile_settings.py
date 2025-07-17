@@ -138,5 +138,5 @@ class TestPostgresProfile(TestSQLiteProfile):
         super(TestPostgresProfile, self).__init__()
 
         # Used DB url: IP,PORT. The DB needs to be created in advance.
-        self.db.DB_URL = 'postgresql+psycopg2://postgres:root@127.0.0.1:5432/tvb-test?user=postgres&password=postgres'
+        self.db.DB_URL = 'postgresql+psycopg://postgres:root@127.0.0.1:5432/tvb-test?user=postgres&password=postgres'
         self.db.SELECTED_DB = 'postgres'

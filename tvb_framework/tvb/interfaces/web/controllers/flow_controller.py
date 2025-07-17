@@ -214,7 +214,7 @@ class FlowController(BaseController):
         'data' are arguments for POST
         """
         project = common.get_current_project()
-        algorithm = self.algorithm_service.get_algorithm_by_identifier(adapter_key)
+        algorithm = self.algorithm_service.get_algorithm_by_identifier(int(adapter_key))
         back_page_link = self._compute_back_link(back_page, project)
 
         if algorithm is None:
@@ -227,7 +227,7 @@ class FlowController(BaseController):
         is_burst = back_page not in ['operations', 'data']
         if cherrypy.request.method == 'POST':
             data[common.KEY_ADAPTER] = adapter_key
-            template_specification = self.execute_post(project.id, submit_link, step_key, algorithm, **data)
+            template_specification = self.execute_post(int(project.id), submit_link, int(step_key), algorithm, **data)
             self._populate_section(algorithm, template_specification, is_burst)
         else:
             template_specification = self.get_template_for_adapter(project.id, step_key, algorithm,
@@ -482,7 +482,7 @@ class FlowController(BaseController):
         AJAX exposed method. Will return only a piece of a page,
         to be integrated as part in another page.
         """
-        template_specification = self.get_adapter_template(project_id, algorithm_id, False, back_page, is_callout=True)
+        template_specification = self.get_adapter_template(int(project_id), int(algorithm_id), False, back_page, is_callout=True)
         template_specification["isCallout"] = True
         return self.fill_default_attributes(template_specification)
 

@@ -112,7 +112,7 @@ hpc = [
     "pyunicore",
 ]
 postgres = [
-    "psycopg2",
+    "psycopg",
 ]
 test = [
     "BeautifulSoup4",
