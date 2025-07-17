@@ -80,7 +80,7 @@ dependencies = [
 
 [project.optional-dependencies]
 postgres = [
-    "psycopg2",
+    "psycopg",
 ]
 test = [
     "pytest",

@@ -204,7 +204,7 @@ class ProjectService:
             try:
                 result = {}
                 if one_op[0] != one_op[1]:
-                    result["id"] = str(one_op[0]) + "-" + str(one_op[1])
+                    result["id"] = str(one_op[0]) + "-" + str(one_op[1]) #TODO: Can an operation id has this format? bsc for dao.get_results_for_operation (line 259) it needs an integer id
                 else:
                     result["id"] = str(one_op[0])
                 burst = dao.get_burst_for_operation_id(one_op[0])
@@ -256,7 +256,7 @@ class ProjectService:
                 result["visible"] = True if one_op[11] > 0 else False
                 result['operation_tag'] = one_op[12]
                 if not result['group']:
-                    result['results'] = dao.get_results_for_operation(result['id'])
+                    result['results'] = dao.get_results_for_operation(int(result['id']))
                 else:
                     result['results'] = None
                 operations.append(result)

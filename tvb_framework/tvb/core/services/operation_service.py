@@ -354,7 +354,7 @@ class OperationService:
         operation_name = str(adapter_instance.__class__.__name__)
         try:
             self.logger.info("Starting operation " + operation_name)
-            project = dao.get_project_by_id(project_id)
+            project = dao.get_project_by_id(int(project_id))
 
             result = self.initiate_operation(current_user, project, adapter_instance, visible,
                                              model_view=view_model)
