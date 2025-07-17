@@ -83,7 +83,7 @@ dependencies = [
     "Jinja2",
     "matplotlib",
     "nibabel",
-    "numpy<2.3",
+    "numpy",
     "pandas",
     "Pillow",
     "psutil",
