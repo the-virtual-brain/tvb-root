@@ -73,6 +73,7 @@ jobs:
 
       - name: run framework tests
         run: |
+          pip list | grep numpy
           cd tvb_framework
           pytest tvb/tests/framework --profile=TEST_POSTGRES_PROFILE
 
