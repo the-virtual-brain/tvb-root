@@ -71,7 +71,7 @@ class StaticFiltersFactory(object):
         filter_data = json.loads(filter_data)
         if filter_data['type'] == 'from_burst':
             return FilterChain('Burst', ['BurstConfiguration.id'],
-                               [filter_data['value']], operations=["=="])
+                               [int(filter_data['value'])], operations=["=="])
         return None
 
     @staticmethod

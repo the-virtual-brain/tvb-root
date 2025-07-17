@@ -58,6 +58,7 @@ def do_operation_launch(operation_id):
     Event attached to the local queue for executing an operation, when we will have resources available.
     """
     log = get_logger('tvb.core.operation_async_launcher')
+    operation_id = int(operation_id)
     burst_service = BurstService()
 
     try:

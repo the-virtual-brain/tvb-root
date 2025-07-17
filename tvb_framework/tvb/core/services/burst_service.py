@@ -161,7 +161,7 @@ class BurstService(object):
         """
         result = []
         for b_id in id_list:
-            burst = dao.get_burst_by_id(b_id)
+            burst = dao.get_burst_by_id(int(b_id))
             if burst is not None:
                 if burst.status == burst.BURST_RUNNING:
                     running_time = datetime.now() - burst.start_time
