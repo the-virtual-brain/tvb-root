@@ -105,7 +105,7 @@ class ProjectController(BaseController):
         ## Select project if user choose one.
         if selected_project_id is not None:
             try:
-                selected_project = self.project_service.find_project(selected_project_id)
+                selected_project = self.project_service.find_project(int(selected_project_id))
                 self._mark_selected(selected_project)
             except ProjectServiceException as excep:
                 self.logger.error(excep)
@@ -155,7 +155,8 @@ class ProjectController(BaseController):
         Create or change Project. When project_id is empty we create a 
         new entity, otherwise we are to edit and existent one.
         """
-        project_id = int(project_id)
+        if project_id is not None:
+            project_id = int(project_id)
         if cherrypy.request.method == 'POST' and cancel:
             self.redirect(PROJECT_PAGE)
         if cherrypy.request.method == 'POST' and delete:
