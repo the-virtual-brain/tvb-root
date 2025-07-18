@@ -94,7 +94,7 @@ class HasTraitsIndex(Base):
 
 
 def ensure_float(data):
-    return numpy.float64(data).item()
+    return float(data)
 
 
 def ensure_int(data):
