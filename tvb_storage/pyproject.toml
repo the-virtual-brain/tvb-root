@@ -54,7 +54,7 @@ dependencies = [
     "cryptography",
     "h5py",
     "kubernetes",
-    "numpy<2.3",
+    "numpy",
     "pyAesCrypt",
     "requests",
     "tvb-library",
