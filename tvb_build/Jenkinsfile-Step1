@@ -37,19 +37,6 @@ pipeline {
                 archiveArtifacts artifacts: 'tvb_build/build/*.zip'
             }
         }
-        stage ('Build for Pypi') {
-            steps {
-                withDockerContainer(image: '${FULL_DOCKER_IMAGE_NAME}') {
-                    sh '''#!/bin/bash
-                        rm -rf dist
-                        source activate tvb-run
-                        cd tvb_build
-                        bash package_for_pip.sh
-                    '''
-                }
-                archiveArtifacts artifacts: 'dist/*'
-            }
-        }
         stage ('Compute coverage') {
             steps {
                 withDockerContainer(image: '${FULL_DOCKER_IMAGE_NAME}') {
