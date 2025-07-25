@@ -1,0 +1,23 @@
+<table id="pagesTableId">
+    <tr>
+    <th></th>
+        {% for i in range(usersPages) %}
+            <td id="tab-{{ i + 1 }}" tabindex="4" onkeypress="fireOnClick(this)"
+                onclick="changeMembersPage(
+                            {{ data.project_id if data.project_id else 'null' }},
+                            {{ i + 1 }},
+                            '{{ pattern | safe }}',
+                            'checkboxesList',
+                            {{ editUsersEnabled | string | lower }}
+                        )"
+                class="projectmembers-pagetab {{ 'projectmembers-pagetab-selected' if i+1==usersCurrentPage else '' }}">
+                Page {{ i+1 }}
+            </td>
+        {% endfor %}
+    </tr>
+</table>
+{% if usersList %}
+    <div id="checkboxesList">
+        {% include 'project/project_members.html' %}
+    </div>
+{% endif %}
