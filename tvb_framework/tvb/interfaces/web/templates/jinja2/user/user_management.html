@@ -2,115 +2,138 @@
 <!--     Main Content              -->
 <!-- ============================= -->
 <div id="main">
-	<form id='userManagementTableForm' method="post">
-		<aside class="header-component toolbar can-extend auto-extends">
-        	<h3>User Management Toolbar</h3>
-     	    <div class="extension">
-     	       <div class="dropdown-pane">
-			   		<ul>
-						{% if keycloakConfigWebFile is not defined %}
-                		<li><button tabindex='50' type="submit" class="action action-new" onclick="document.getElementById('create-new-user').submit(); return false;">Create New</button></li>
-						{% endif %}
-                    	<li><button tabindex='50' type="submit" class="action action-confirm" onclick="document.getElementById('doPersist').value = 'true';">Save Changes</button></li>
-                    	<li class="action-dismiss"><button tabindex='50' type="submit" value="Cancel" name="cancel" class="action action-cancel">Cancel</button></li>
-                	</ul>
-               </div>
-        	</div>
-    	</aside>
+    <form id='userManagementTableForm' method="post">
+        <aside class="header-component toolbar can-extend auto-extends">
+            <h3>User Management Toolbar</h3>
+            <div class="extension">
+                <div class="dropdown-pane">
+                    <ul>
+                        {% if keycloakConfigWebFile is not defined %}
+                            <li>
+                                <button tabindex='50' type="submit" class="action action-new"
+                                        onclick="document.getElementById('create-new-user').submit(); return false;">
+                                    Create New
+                                </button>
+                            </li>
+                        {% endif %}
+                        <li>
+                            <button tabindex='50' type="submit" class="action action-confirm"
+                                    onclick="document.getElementById('doPersist').value = 'true';">Save Changes
+                            </button>
+                        </li>
+                        <li class="action-dismiss">
+                            <button tabindex='50' type="submit" value="Cancel" name="cancel"
+                                    class="action action-cancel">Cancel
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
 
-		<input type="hidden" name="page" value="{{  page_number }}" id="currentPage"/>
-		<input type="hidden" name="do_persist" value="false" id="doPersist"/>
-		<input type="hidden" name="search_pattern" value="{{ searchPattern }}" id="searchPattern"/>
+        <input type="hidden" name="page" value="{{ page_number }}" id="currentPage"/>
+        <input type="hidden" name="do_persist" value="false" id="doPersist"/>
+        <input type="hidden" name="search_pattern" value="{{ searchPattern }}" id="searchPattern"/>
         <input type="hidden" name="filter_not_valid" value="{{ filterNotValid }}" id="filterNotValid"/>
-        <table class="contentTable" summary="Manage Users">
-			<thead>
+        <table id="usersTable" class="contentTable" summary="Manage Users">
+            <thead>
             <tr>
                 <td colspan='2'>
-                    <h2><mark>Users</mark> management</h2>
+                    <h1>
+                        <mark>Users</mark>
+                        management
+                    </h1>
                 </td>
-                <td>
-                    <input id="userSearchInput" class="searchElements" name="search_input" type="text" form="" value=""
-                       placeholder="Search username here" title="Use placeholder '_' for a letter"/>
+            </tr>
+            <tr>
+                <td colspan="1" class="searchTd">
+                    <label class="elementText elementSize">Filter by:</label>
+                    <input type="button" id="filterBtn"
+                           class="elementText elementSize {{ 'on' if filterNotValid == 'true' }}"
+                           value="Not validated"
+                           onclick="changeDisplayPage({{ 1 }}, 'userManagementTableForm', false, {{ filterNotValid }})"/>
                 </td>
-                <td>
-                    <button type="button" class="action action-small action-confirm"
-                                onclick="changeDisplayPage({{ 1 }}, 'userManagementTableForm', true)">Search</button>
-                </td>
-                <td>
-                    <input id="userFilterInput" class="searchElements" type="checkbox"
-                           onchange="changeDisplayPage({{ 1 }}, 'userManagementTableForm', false, this)" {{ 'checked' if filterNotValid == 'true' }}/>
-                </td>
-                <td>
-                    <label class="searchElements" for="userFilterInput">Show not validated</label>
+                <td colspan="4" class="searchTd">
+                    <div id="searchDiv" class="elementShadow elementSize">
+                        <input id="userSearchInput" class="elementText" name="search_input" type="text" form=""
+                               value="{{ searchPattern }}" placeholder="Search users here"
+                               title="Searches by username or display name. It is possible to use placeholder '_' for a letter. If empty, displays all users."/>
+                        <button type="button" class="elementShadow" value="Search"
+                                onclick="changeDisplayPage({{ 1 }}, 'userManagementTableForm', true)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                 viewBox="0 0 16 16">
+                                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.415l-3.85-3.85zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/>
+                            </svg>
+                        </button>
+                    </div>
                 </td>
             </tr>
             </thead>
-			<tr>
-				<td>User display name</td>
-				<td>User name</td>
-            	<td>User email</td>
-				<td>Role</td>
-				<td>Validated</td>
-			</tr>
+            <tbody>
+            <tr>
+                <td><h3>User name</h3></td>
+                <td><h3>Display name</h3></td>
+                <td><h3>Email</h3></td>
+                <td><h3>Role</h3></td>
+                <td><h3>Validated</h3></td>
+            </tr>
+            {% for user in userList %}
+                {% with %}
+                    {% set tabindex = 3 %}
+                    <tr>
+                        <td><i>{{ user.username }}</i></td>
+                        <td>{{ user.display_name }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                            {% if keycloakConfigWebFile is not defined %}
+                                <select tabindex='{{ tabindex }}' name="role_{{ user.id }}">
+                                    {% for role in allRoles %}
+                                        <option value="{{ role }}" {{ 'selected' if role==user.role }}>{{ role }}</option>
+                                    {% endfor %}
+                                </select>
+                            {% else %}
+                                <input tabindex='{{ tabindex }}' name="role_{{ user.id }}" type="text"
+                                       value="{{ user.role }}" readonly=true/>
+                            {% endif %}
+                        </td>
 
-			{% for user in userList %}
-				{% with %}
-					{% set tabindex = 3 %}
-					<tr>
-						<td>{{ user.display_name }}</td>
-						<td><i>{{ user.username }}</i></td>
-						<td>{{ user.email }}</td>
-						<td>
-							{% if keycloakConfigWebFile is not defined %}
-								<select tabindex='{{ tabindex }}'name="role_{{ user.id }}">
-									{% for role in allRoles %}
-									<option value="{{ role }}" {{ 'selected' if role==user.role}}>{{ role }}</option>
-									{% endfor %}
-								</select>
-							{% else %}
-								<input tabindex='{{ tabindex }}' name="role_{{ user.id }}" type="text" value="{{user.role}}" readonly=true/>
-							{% endif %}
-						</td>
+                        <td>
+                            <input tabindex='{{ tabindex }}' name="validate_{{ user.id }}" type="checkbox"
+                                    {{ 'checked' if user.validated }} />
+                        </td>
+                    </tr>
+                {% endwith %}
+            {% endfor %}
+            </tbody>
+            {% if total_pages > 1 %}
+                <tfoot>
+                <tr>
+                    <td colspan="3">
+                        {% if page_number != 1 %}
+                            <input tabindex='51' type="button" value="<"
+                                   onclick="changeDisplayPage({{ page_number-1 }}, 'userManagementTableForm')"/>
+                        {% endif %}
+                        {% if page_number <= 1 %}
+                            <input tabindex='51' type="button" value="<" disabled="disabled"/>
+                        {% endif %}
+                        {% if page_number < total_pages %}
+                            <input tabindex='51' type="button" value=">"
+                                   onclick="changeDisplayPage({{ page_number+1 }}, 'userManagementTableForm')"/>
+                        {% else %}
+                            <input tabindex='51' type="button" value=">" disabled="disabled"/>
+                        {% endif %}
+                        <label class="pageElements elementText elementSize">Page {{ page_number }}
+                            of {{ total_pages }}</label>
+                    </td>
+                </tr>
+                </tfoot>
+            {% endif %}
+        </table>
 
-						<td>
-							<input tabindex='{{ tabindex }}' name="validate_{{ user.id }}" type="checkbox"
-							   	{{ 'checked' if user.validated }} />
-						</td>
-					</tr>
-				{% endwith %}
-			{% endfor %}
-		</table>
-
-		{% if total_pages > 1 %}
-			<table class="contentTable">
-				<tr>
-					<td colspan='2'>
-						<label>Page {{ page_number }} of {{ total_pages }}</label>
-					</td>
-				</tr>
-				<tr>
-					<td>
-						{% if page_number != 1 %}
-							<input tabindex='51' type="button" value="Previous Page" onclick="changeDisplayPage({{ page_number-1 }}, 'userManagementTableForm')"/>
-						{% endif %}
-						{% if page_number <= 1 %}
-		    				<input tabindex='51' type="button" value="Previous Page" disabled="disabled"/>
-						{% endif %}
-					</td>
-					<td>
-						{% if page_number < total_pages %}
-							<input tabindex='51' type="button" value="Next Page" onclick="changeDisplayPage({{ page_number+1 }}, 'userManagementTableForm')"/>
-						{% else %}
-	    					<input tabindex='51' type="button" value="Next Page" disabled="disabled"/>
-						{% endif %}
-					</td>
-				</tr>
-			</table>
-		{% endif %}
-		<br/>
-	</form>
-<!--! Form submitted by the Create New button from the aside panel -->
-	{% if keycloakConfigWebFile is not defined %}
-		<form id="create-new-user" action="{{ deploy_context | safe }}/user/create_new"></form>
-	{% endif %}
+        <br/>
+    </form>
+    <!--! Form submitted by the Create New button from the aside panel -->
+    {% if keycloakConfigWebFile is not defined %}
+        <form id="create-new-user" action="{{ deploy_context | safe }}/user/create_new"></form>
+    {% endif %}
 </div>

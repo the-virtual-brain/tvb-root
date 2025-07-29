@@ -296,12 +296,14 @@ class UserController(BaseController):
     @handle_error(redirect=True)
     @using_template('user/base_user')
     @check_admin
-    def usermanagement(self, cancel=False, page=1, do_persist=False, search_pattern='', filter_not_valid="false", **data):
+    def usermanagement(self, cancel="false", page=1, do_persist="false", search_pattern='', filter_not_valid="false", **data):
         """
         Display a table used for user management.
         """
+        cancel = json.loads(cancel)
         if cancel:
             self.redirect('/user/profile')
+        do_persist = json.loads(do_persist)
         filterCol = json.loads(filter_not_valid)
         page = int(page)
         if cherrypy.request.method == 'POST' and do_persist:

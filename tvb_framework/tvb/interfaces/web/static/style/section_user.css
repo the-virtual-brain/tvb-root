@@ -443,7 +443,6 @@ body#s-user div.main-settings table.contentTable input {
 	height: 20px;
 }
 
-
 body#s-user section.profile input {
 	font-size: 15px;
 	height: 24px;
@@ -454,11 +453,118 @@ body#s-user section.intro em {
     font-size: 15px;
 }
 
-body#s-user table.contentTable .searchElements {
-	font-size: 12px;
+/* !============================================================================ */
+/* ! STYLING BELOW IS FOR THE USER MANAGEMENT PAGE TABLE ! */
+/* !============================================================================ */
+
+body#s-user table#usersTable {
+    padding-left: 3%;
+    border-spacing: 0;
+    border-collapse: separate;
+}
+
+body#s-user table#usersTable .elementText {
+    color: #242424;
+    font-size: 14px;
+    font-style: italic;
+}
+
+body#s-user table#usersTable .elementSize {
+    height: 22px;
+    width: 100px;
+}
+
+body#s-user table#usersTable .elementShadow {
+    border: none;
+    border-radius: 6px;
+    -webkit-box-shadow: inset 2px 3px 10px -2px rgba(0, 0, 0, 0.3);
+    -webkit-transition: background .7s ease;
+    -moz-box-shadow: inset 2px 3px 10px -2px rgba(0, 0, 0, 0.3);
+    -moz-transition: background .7s ease;
+}
+
+body#s-user table#usersTable thead td.searchTd {
+    padding-bottom: 4%;
+    padding-top: 2%;
+}
+
+body#s-user table#usersTable thead .searchTd div#searchDiv{
+    width: 180px;
+    outline: none;
+    margin-left: 5px;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+}
+
+body#s-user table#usersTable thead .searchTd div#searchDiv input {
+    margin: 0;
+    padding: 2px 5px 2px 5px;
+    flex: 1;
+    border-radius: 0;
+    outline: none;
+}
+
+body#s-user table#usersTable thead .searchTd div#searchDiv button {
+    border-radius: 0;
+    background-color: rgba(255, 255, 255, 0.8);
+;
+}
+
+body#s-user table#usersTable thead .searchTd input#filterBtn {
+    background: rgba(255, 255, 255, 0.8);
+    border: none;
+    border-radius: 6px;
+    margin-left: 10px;
+}
+
+body#s-user table#usersTable thead .searchTd input#filterBtn.on {
+    box-shadow: 0 0 11px rgba(33,33,33,.2);
+}
+
+body#s-user table#usersTable tbody {
+    text-align: center;
+}
+
+body#s-user table#usersTable tbody td {
+    padding: 5px 15px 2px 0;
+    border-bottom: 1px solid lightslategray;
+}
+
+body#s-user table#usersTable tbody input {
+	font-size: 15px;
 	height: 24px;
-    color: black;
+}
+
+body#s-user table#usersTable tfoot td {
+    padding-top: 5%;
+}
+
+body#s-user table#usersTable tfoot input {
+    color: #242424;
+    font-size: 16px;
+    height: 26px;
+    width: 32px;
+    border-radius: 8px;
+    padding: 3px 3px 3px 3px;
+}
+
+body#s-user table#usersTable thead .searchTd label,
+body#s-user table#usersTable tfoot label {
     text-shadow: none;
     text-transform: none;
     font-weight: normal;
+}
+
+body#s-user table#usersTable thead .searchTd div#searchDiv button:hover,
+body#s-user table#usersTable thead .searchTd input#filterBtn:hover,
+body#s-user table#usersTable tfoot input:hover:enabled {
+    box-shadow: 0 0 11px rgba(33,33,33,.2);
+}
+
+body#s-user table#usersTable thead .searchTd div#searchDiv button:active,
+body#s-user table#usersTable thead .searchTd input#filterBtn:active,
+body#s-user table#usersTable tfoot input:active:enabled {
+    transform: scale(0.97);
+    box-shadow: 0 0 20px rgba(33,33,33,.2);
 }
