@@ -50,7 +50,8 @@ from tvb.core.services.operation_service import OperationService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
-from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment
+from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment, \
+    parse_positional_args
 from tvb.interfaces.web.controllers.decorators import settings, check_user, handle_error
 from tvb.interfaces.web.controllers.flow_controller import FlowController
 from tvb.interfaces.web.entities.context_overlay import OverlayTabDefinition
@@ -150,6 +151,7 @@ class ProjectController(BaseController):
 
     @expose_page
     @settings
+    @parse_positional_args('project_id')
     def editone(self, project_id=None, cancel=False, save=False, delete=False, leave=False, **data):
         """
         Create or change Project. When project_id is empty we create a 

@@ -314,6 +314,29 @@ def expose_page(func):
     return func
 
 
+def parse_positional_args(*types):
+    """
+    Converts positional arguments to the given types.
+    Example: @parse_positional_args(int, int, int)
+    """
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
+            if len(args) < len(types):
+                raise cherrypy.HTTPError(400, f"Expected {len(types)} arguments, got {len(args)}.")
+
+            try:
+                parsed_args = tuple(int(arg) for t, arg in zip(types, args))
+            except (ValueError, TypeError) as e:
+                raise cherrypy.HTTPError(400, f"Invalid argument type: {e}")
+
+            return func(self, *parsed_args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
 def expose_fragment(template_name):
     """
     Equivalent to
