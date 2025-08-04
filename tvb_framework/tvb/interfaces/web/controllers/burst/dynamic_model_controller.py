@@ -406,6 +406,8 @@ class DynamicModelController(BurstBaseController):
 
     @expose_fragment('burst/dynamic_minidetail')
     def dynamic_detail(self, dynamic_id):
+        if dynamic_id is not None:
+            dynamic_id = int(dynamic_id)
         dynamic = dao.get_dynamic(dynamic_id)
         model_parameters = dict(json.loads(dynamic.model_parameters))
         return {'model_parameters': model_parameters}

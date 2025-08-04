@@ -107,7 +107,7 @@ class FigureController(ProjectController):
             del data["selected_session"]
         figure_id = None
         if "figure_id" in data:
-            figure_id = data["figure_id"]
+            figure_id = int(data["figure_id"])
             del data["figure_id"]
 
         if cherrypy.request.method == 'POST' and rename_session:
@@ -117,7 +117,7 @@ class FigureController(ProjectController):
                 for _key, value in figures_dict.items():
                     for figure in value:
                         new_data = {"name": figure.name, "session_name": data["new_session_name"]}
-                        success = self._update_figure(figure.id, **new_data)
+                        success = self._update_figure(int(figure.id), **new_data)
                         if not success:
                             successfully_updated = False
                 if successfully_updated:
@@ -131,7 +131,7 @@ class FigureController(ProjectController):
                 figures_dict, _ = self.figure_service.retrieve_result_figures(project, user, data["old_session_name"])
                 for _key, value in figures_dict.items():
                     for figure in value:
-                        success = self.figure_service.remove_result_figure(figure.id)
+                        success = self.figure_service.remove_result_figure(int(figure.id))
                         if not success:
                             successfully_removed = False
                 if successfully_removed:
@@ -169,7 +169,7 @@ class FigureController(ProjectController):
         """
         Allow a user to download a figure.
         """
-        figure = self.figure_service.load_figure(figure_id)
+        figure = self.figure_service.load_figure(int(figure_id))
         image_folder = self.storage_interface.get_images_folder(figure.project.name)
         figure_path = os.path.join(image_folder, figure.file_path)
         return serve_file(figure_path, "image/" + figure.file_format, "attachment",
@@ -183,7 +183,7 @@ class FigureController(ProjectController):
         """
         Displays the image with the specified id in an overlay dialog.
         """
-        figure = self.figure_service.load_figure(figure_id)
+        figure = self.figure_service.load_figure(int(figure_id))
         figures_folder = self.storage_interface.get_images_folder(figure.project.name)
         figure_full_path = os.path.join(figures_folder, figure.file_path)
         figure_file_path = utils.path2url_part(figure_full_path)
