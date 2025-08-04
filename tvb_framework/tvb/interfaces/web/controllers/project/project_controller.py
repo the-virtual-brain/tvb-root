@@ -108,7 +108,7 @@ class ProjectController(BaseController):
             try:
                 selected_project = self.project_service.find_project(int(selected_project_id))
                 self._mark_selected(selected_project)
-            except ProjectServiceException as excep:
+            except (ProjectServiceException, ValueError) as excep:
                 self.logger.error(excep)
                 self.logger.warning("Could not select project: " + str(selected_project_id))
                 common.set_error_message("Could not select project: " + str(selected_project_id))
