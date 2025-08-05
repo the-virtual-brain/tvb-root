@@ -204,7 +204,7 @@ class ProjectService:
             try:
                 result = {}
                 if one_op[0] != one_op[1]:
-                    result["id"] = str(one_op[0]) + "-" + str(one_op[1]) #TODO: Can an operation id has this format? bsc for dao.get_results_for_operation (line 259) it needs an integer id
+                    result["id"] = str(one_op[0]) + "-" + str(one_op[1])
                 else:
                     result["id"] = str(one_op[0])
                 burst = dao.get_burst_for_operation_id(one_op[0])

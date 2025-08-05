@@ -4,7 +4,7 @@ RUN apt-get -y update && apt-get -y install build-essential gcc
 
 RUN conda install python=3.7 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil \
     pytest pytest-cov pytest-benchmark pytest-mock matplotlib \
-    psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils
+    psycopg pytables scikit-image==0.14.2 simplejson cherrypy docutils
 
 RUN apt-get install -y zip unzip
 RUN cd /opt \

@@ -60,7 +60,7 @@ In this highly concurrent setup we strongly recommended to use PostgreSQL as the
        These are *not* tvb accounts but db accounts.
     4. Create a DB connection URI. Postgres URI's in TVB have this general form ::
 
-        postgresql+psycopg2://postgres:root@[postresql-server-host]:[postgres-port]/tvb?user=[user]&password=[postgres-pwd]
+        postgresql+psycopg://postgres:root@[postresql-server-host]:[postgres-port]/tvb?user=[user]&password=[postgres-pwd]
         # The angle bracketed expressions are placeholders that have to be replaced by values specific to your machine.
 
     5. Place the concrete connection URI in the |TVB| configuration using either the GUI or by editing the config file.
@@ -74,9 +74,9 @@ Getting PostgreSQL database up and running isn't too difficult on Windows:
     - Grab a copy for 32 or 64 bit from http://www.enterprisedb.com/products-services-training/pgdownload#windows
     - Install, noting the port number and user/pass. These will be later on needed in TVB, when writing the connection URL
     - [optional when using TVB Git repositories directly]
-        * `pip install psycopg2`, with the `PATH` set correctly for your Python installation, or
+        * `pip install psycopg`, with the `PATH` set correctly for your Python installation, or
         * grab and install from http://www.lfd.uci.edu/~gohlke/pythonlibs/#psycopg
-        * test `python -c "import psycopg2"`, if ImportError, find libpq.dll (e.g. `c://program files/postgresql/9.3/bin`) and add it to the `PATH`.
+        * test `python -c "import psycopg"`, if ImportError, find libpq.dll (e.g. `c://program files/postgresql/9.3/bin`) and add it to the `PATH`.
     - open pgAdmin, right click databases, add a database named `tvb`, click ok, close pgadmin
     - stop, clean (this deletes all tvb previous data!) and start.
         * This cleanup is necessary if you have started TVB Distribution before and used sqlite DB.
