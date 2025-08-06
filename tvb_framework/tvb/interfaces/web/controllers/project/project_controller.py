@@ -147,6 +147,18 @@ class ProjectController(BaseController):
         if prj is not None and prj.id == int(project_id):
             SimulatorContext().clean_project_data_from_session()
 
+    @staticmethod
+    def _has_edit_permission(user, project=None):
+        """
+        Check whether the user has permissions to edit project.
+        In project creation use-case, the project will be None.
+        """
+        if project:
+            admin_username = project.administrator.username
+        else:
+            admin_username = user.username
+        return (user.username == admin_username) or (user.role == "ADMINISTRATOR")
+
     @expose_page
     @settings
     @parse_positional_params
@@ -171,7 +183,7 @@ class ProjectController(BaseController):
         if project_id is None:
             is_create = True
             data["administrator"] = current_user.display_name
-            admin_username = current_user.username
+            current_project = None
         else:
             current_project = self.project_service.find_project(project_id)
             if not save:
@@ -180,13 +192,12 @@ class ProjectController(BaseController):
                 data = dict(name=current_project.name, description=current_project.description,
                             disable_imports=current_project.disable_imports, max_operation_size=current_project.max_operation_size)
             data["administrator"] = current_project.administrator.display_name
-            admin_username = current_project.administrator.username
             self._mark_selected(current_project)
         data["project_id"] = project_id
 
         template_specification = dict(mainContent="project/editone", data=data, isCreate=is_create,
                                       title="Create new project" if is_create else "Edit " + data["name"],
-                                      editUsersEnabled=(current_user.username == admin_username))
+                                      editUsersEnabled=self._has_edit_permission(current_user, current_project))
         try:
             if cherrypy.request.method == 'POST' and save:
                 data = EditForm().to_python(data)
@@ -205,7 +216,7 @@ class ProjectController(BaseController):
             common.set_error_message(excep.message)
             self.redirect(PROJECT_VIEW_ALL_PAGE)
 
-        all_users, members, pages = self.user_service.get_users_for_project(current_user.username, int(project_id))
+        all_users, members, pages = self.user_service.get_users_for_project(current_user.username, project_id)
         template_specification['usersList'] = []
         template_specification['usersTotal'] = len(all_users) * pages
         template_specification['usersMembers'] = []
@@ -214,16 +225,15 @@ class ProjectController(BaseController):
         return self.fill_default_attributes(template_specification, 'properties')
 
     def _get_members(self, page=1, project_id=None, search_pattern=None):
-        current_name = common.get_logged_user().username
-        all_users, members, pages = self.user_service.get_users_for_project(current_name, project_id, page,
+        current_user = common.get_logged_user()
+        all_users, members, pages = self.user_service.get_users_for_project(current_user.username, project_id, page,
                                                                             search_pattern=search_pattern)
-        edit_enabled = True
+        current_project = None
         if project_id is not None:
             current_project = self.project_service.find_project(project_id)
-            edit_enabled = (current_name == current_project.administrator.username)
         return dict(usersList=all_users, usersMembers=[m.id for m in members], usersPages=pages,
-                    usersCurrentPage=page, editUsersEnabled=edit_enabled, data=dict(project_id=project_id),
-                    pattern=search_pattern)
+                    usersCurrentPage=page, editUsersEnabled=self._has_edit_permission(current_user, current_project),
+                    data=dict(project_id=project_id), pattern=search_pattern)
 
     @expose_fragment('project/members_pages')
     @parse_positional_params
