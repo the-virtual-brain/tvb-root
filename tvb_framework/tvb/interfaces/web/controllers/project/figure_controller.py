@@ -40,7 +40,8 @@ from tvb.core import utils
 from tvb.core.services.figure_service import FigureService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
-from tvb.interfaces.web.controllers.decorators import context_selected, check_user, handle_error
+from tvb.interfaces.web.controllers.decorators import context_selected, check_user, handle_error, \
+    parse_positional_params
 from tvb.interfaces.web.controllers.decorators import using_template, expose_page
 from tvb.interfaces.web.controllers.project.project_controller import ProjectController
 from tvb.storage.storage_interface import StorageInterface
@@ -107,7 +108,7 @@ class FigureController(ProjectController):
             del data["selected_session"]
         figure_id = None
         if "figure_id" in data:
-            figure_id = data["figure_id"]
+            figure_id = int(data["figure_id"])
             del data["figure_id"]
 
         if cherrypy.request.method == 'POST' and rename_session:
@@ -117,7 +118,7 @@ class FigureController(ProjectController):
                 for _key, value in figures_dict.items():
                     for figure in value:
                         new_data = {"name": figure.name, "session_name": data["new_session_name"]}
-                        success = self._update_figure(figure.id, **new_data)
+                        success = self._update_figure(int(figure.id), **new_data)
                         if not success:
                             successfully_updated = False
                 if successfully_updated:
@@ -131,7 +132,7 @@ class FigureController(ProjectController):
                 figures_dict, _ = self.figure_service.retrieve_result_figures(project, user, data["old_session_name"])
                 for _key, value in figures_dict.items():
                     for figure in value:
-                        success = self.figure_service.remove_result_figure(figure.id)
+                        success = self.figure_service.remove_result_figure(int(figure.id))
                         if not success:
                             successfully_removed = False
                 if successfully_removed:
@@ -165,7 +166,8 @@ class FigureController(ProjectController):
     @cherrypy.expose
     @handle_error(redirect=False)
     @check_user
-    def downloadimage(self, figure_id):
+    @parse_positional_params
+    def downloadimage(self, figure_id:int):
         """
         Allow a user to download a figure.
         """
@@ -179,7 +181,8 @@ class FigureController(ProjectController):
     @handle_error(redirect=False)
     @using_template("overlay")
     @check_user
-    def displayzoomedimage(self, figure_id):
+    @parse_positional_params
+    def displayzoomedimage(self, figure_id:int):
         """
         Displays the image with the specified id in an overlay dialog.
         """

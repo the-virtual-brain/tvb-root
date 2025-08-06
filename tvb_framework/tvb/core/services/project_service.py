@@ -256,7 +256,7 @@ class ProjectService:
                 result["visible"] = True if one_op[11] > 0 else False
                 result['operation_tag'] = one_op[12]
                 if not result['group']:
-                    result['results'] = dao.get_results_for_operation(result['id'])
+                    result['results'] = dao.get_results_for_operation(int(result['id']))
                 else:
                     result['results'] = None
                 operations.append(result)

@@ -18,7 +18,7 @@ RUN service postgresql start && createdb -O postgres tvb-test && psql --command 
 
 USER root
 RUN conda update -n base -c defaults conda; conda init bash
-RUN conda create -y --name tvb-run python=3.11 nomkl numba scipy numpy cython psycopg2
+RUN conda create -y --name tvb-run python=3.11 nomkl numba scipy numpy cython psycopg
 RUN conda install -y --name tvb-run -c conda-forge jupyterlab tvb-gdist
 RUN $PIP install --upgrade pip
 RUN $PIP install lockfile scikit-build

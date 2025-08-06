@@ -9,7 +9,7 @@ ENABLE_KEYCLOAK_LOGIN=True
 TVB_STORAGE=/home/TVB_STORAGE 
 USR_DISK_SPACE=5242880
 SELECTED_DB=postgres
-URL_VALUE=postgresql+psycopg2://postgres:root@pod-db.${NAMESPACE}.svc.cluster.local:5432/tvb_hbp_database?user=${USER}&password=${PASSWORD}
+URL_VALUE=postgresql+psycopg://postgres:root@pod-db.${NAMESPACE}.svc.cluster.local:5432/tvb_hbp_database?user=${USER}&password=${PASSWORD}
 WEB_SERVER_PORT=8080
 CLUSTER_SCHEDULER=oar
 MAXIMUM_NR_OF_THREADS=4

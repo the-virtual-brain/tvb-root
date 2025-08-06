@@ -29,7 +29,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tvb-contrib"
-version = "2.10.1"
+version = "2.11.0"
 description = "A package with TVB contributed additions to the simulator, useful for scripting."
 readme = "README.rst"
 license = { file = "LICENSE" }

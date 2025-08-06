@@ -54,7 +54,7 @@ from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
 from tvb.interfaces.web.controllers.burst.matjax import configure_matjax_doc
 from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment, using_template, \
-    handle_error, check_user
+    handle_error, check_user, parse_positional_params
 from tvb.simulator import models
 
 
@@ -405,7 +405,8 @@ class DynamicModelController(BurstBaseController):
         return {'saved': True}
 
     @expose_fragment('burst/dynamic_minidetail')
-    def dynamic_detail(self, dynamic_id):
+    @parse_positional_params
+    def dynamic_detail(self, dynamic_id:int):
         dynamic = dao.get_dynamic(dynamic_id)
         model_parameters = dict(json.loads(dynamic.model_parameters))
         return {'model_parameters': model_parameters}

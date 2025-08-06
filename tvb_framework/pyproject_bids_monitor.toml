@@ -32,7 +32,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tvb-bids-monitor"
-version = "2.10.1"
+version = "2.11.0"
 description = "A helper package containing BIDS directory monitor module"
 readme = "README.rst"
 license = { file = "LICENSE" }

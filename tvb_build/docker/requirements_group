@@ -45,7 +45,7 @@ six
 ipywidgets
 ipympl
 autopep8
-psycopg2
+psycopg
 lxml
 pylems
 docutils
