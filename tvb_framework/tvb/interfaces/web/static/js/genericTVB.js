@@ -97,8 +97,22 @@ function get_URL_param(param) {
  * @param page Page number to get to
  * @param formId Form to submit
  */
-function changeDisplayPage(page, formId) {
-    document.getElementById("currentPage").value = page;
+function changeDisplayPage(page, formId, search=false, filterBtnClicked=null) {
+    $("#currentPage").val(page);
+    if (search) {
+        let searchPattern = $("#userSearchInput").val();
+        $("#searchPattern").val(searchPattern);
+    }
+    if (typeof filterBtnClicked === 'boolean') {
+        filterBtnClicked = !filterBtnClicked;
+        $("#filterNotValid").val(filterBtnClicked);
+        if (filterBtnClicked) {
+            $("#filterBtn").addClass("on");
+        }
+        else {
+            $("#filterBtn").removeClass("on");
+        }
+    }
     document.getElementById(formId).submit();
 }
 

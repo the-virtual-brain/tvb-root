@@ -296,13 +296,15 @@ class UserController(BaseController):
     @handle_error(redirect=True)
     @using_template('user/base_user')
     @check_admin
-    def usermanagement(self, cancel=False, page=1, do_persist=False, **data):
+    def usermanagement(self, cancel="false", page=1, do_persist="false", search_pattern='', filter_not_valid="false", **data):
         """
         Display a table used for user management.
         """
+        cancel = json.loads(cancel)
         if cancel:
             self.redirect('/user/profile')
-
+        do_persist = json.loads(do_persist)
+        filterCol = json.loads(filter_not_valid)
         page = int(page)
         if cherrypy.request.method == 'POST' and do_persist:
             not_deleted = 0
@@ -325,13 +327,14 @@ class UserController(BaseController):
         except_usernames = [admin_]
         if TvbProfile.current.KEYCLOAK_LOGIN_ENABLED:
             except_usernames.append(TvbProfile.current.web.admin.ADMINISTRATOR_NAME)
-        user_list, pages_no = self.user_service.retrieve_users_except(except_usernames, page, USERS_PAGE_SIZE)
+        user_list, pages_no = self.user_service.retrieve_users_except(except_usernames, page, USERS_PAGE_SIZE,
+                                                                      search_pattern=search_pattern, filterCol=filterCol)
         allRoles = [None]
         allRoles.extend(UserService.USER_ROLES)
 
         template_specification = dict(mainContent="user/user_management", title="Users management", page_number=page,
                                       total_pages=pages_no, userList=user_list, allRoles=allRoles,
-                                      data={})
+                                      searchPattern=search_pattern, filterNotValid=filter_not_valid, data={})
         return self.fill_default_attributes(template_specification)
 
     @cherrypy.expose

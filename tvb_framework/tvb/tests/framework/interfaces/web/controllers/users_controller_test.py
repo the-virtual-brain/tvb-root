@@ -194,7 +194,7 @@ class TestUsersController(BaseTransactionalControllerTest):
         self.test_user.role = "ADMINISTRATOR"
         self.test_user = dao.store_entity(self.test_user)
         cherrypy.session[common.KEY_USER] = self.test_user
-        self._expect_redirect('/user/profile', self.user_c.usermanagement, cancel=True)
+        self._expect_redirect('/user/profile', self.user_c.usermanagement, cancel="true")
 
     def test_usermanagement_post_valid(self):
         """
@@ -212,7 +212,7 @@ class TestUsersController(BaseTransactionalControllerTest):
         data = {"delete_%i" % user_before_delete.id: True,
                 "role_%i" % user_before_validation.id: "ADMINISTRATOR",
                 "validate_%i" % user_before_validation.id: True}
-        self.user_c.usermanagement(do_persist=True, **data)
+        self.user_c.usermanagement(do_persist="true", **data)
         user_after_delete = dao.get_user_by_id(user_before_delete.id)
         assert user_after_delete is None, "User should be deleted."
         user_after_validation = dao.get_user_by_id(user_before_validation.id)
