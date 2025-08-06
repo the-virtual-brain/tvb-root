@@ -77,12 +77,13 @@ class SimulatorController(BurstBaseController):
         self.monitors_handler = MonitorsWizardHandler()
 
     @expose_json
-    def cancel_or_remove_burst(self, burst_id):
+    @parse_positional_params
+    def cancel_or_remove_burst(self, burst_id:int):
         """
         Cancel or Remove the burst entity given by burst_id (and all linked entities: op, DTs)
         :returns True: if the op was successfully.
         """
-        burst_config = BurstService.load_burst_configuration(int(burst_id))
+        burst_config = BurstService.load_burst_configuration(burst_id)
         op_id, is_group = burst_config.operation_info_for_burst_removal
 
         return self.cancel_or_remove_operation(op_id, is_group, burst_config.is_finished)
@@ -693,14 +694,16 @@ class SimulatorController(BurstBaseController):
                 'first_fragment_url': SimulatorFragmentRenderingRules.FIRST_FORM_URL}
 
     @cherrypy.expose
-    def get_last_fragment_url(self, burst_config_id):
-        burst_config = self.burst_service.load_burst_configuration(int(burst_config_id))
+    @parse_positional_params
+    def get_last_fragment_url(self, burst_config_id:int):
+        burst_config = self.burst_service.load_burst_configuration(burst_config_id)
         return self.get_url_for_final_fragment(burst_config)
 
     @expose_fragment('simulator_fragment')
-    def load_burst_read_only(self, burst_config_id):
+    @parse_positional_params
+    def load_burst_read_only(self, burst_config_id:int):
         try:
-            burst_config = self.burst_service.load_burst_configuration(int(burst_config_id))
+            burst_config = self.burst_service.load_burst_configuration(burst_config_id)
             storage_path = StorageInterface().get_project_folder(self.context.project.name,
                                                                  str(burst_config.fk_simulation))
             simulator = h5.load_view_model(burst_config.simulator_gid, storage_path)
@@ -727,18 +730,20 @@ class SimulatorController(BurstBaseController):
         return self.prepare_first_fragment()
 
     @expose_fragment('simulator_fragment')
-    def copy_simulator_configuration(self, burst_config_id):
+    @parse_positional_params
+    def copy_simulator_configuration(self, burst_config_id:int):
         self.context.add_branch_and_copy_to_session(False, True)
-        form = self._prepare_first_fragment_for_burst_copy(int(burst_config_id), self.COPY_NAME_FORMAT)
+        form = self._prepare_first_fragment_for_burst_copy(burst_config_id, self.COPY_NAME_FORMAT)
         rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
                                                           is_simulation_copy=True, is_simulation_readonly_load=True,
                                                           is_first_fragment=True)
         return rendering_rules.to_dict()
 
     @expose_fragment('simulator_fragment')
-    def branch_simulator_configuration(self, burst_config_id):
+    @parse_positional_params
+    def branch_simulator_configuration(self, burst_config_id:int):
         self.context.add_branch_and_copy_to_session(True, False)
-        form = self._prepare_first_fragment_for_burst_copy(int(burst_config_id), self.BRANCH_NAME_FORMAT)
+        form = self._prepare_first_fragment_for_burst_copy(burst_config_id, self.BRANCH_NAME_FORMAT)
         rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
                                                           is_simulation_copy=True, is_simulation_readonly_load=True,
                                                           is_first_fragment=True)
@@ -756,14 +761,15 @@ class SimulatorController(BurstBaseController):
         return rendering_rules.to_dict()
 
     @expose_json
-    def rename_burst(self, burst_id, burst_name):
+    @parse_positional_params
+    def rename_burst(self, burst_id:int, burst_name):
         """
         Rename the burst given by burst_id, setting it's new name to
         burst_name.
         """
         validation_result = SimulatorFinalFragment.is_burst_name_ok(burst_name)
         if validation_result is True:
-            self.burst_service.rename_burst(int(burst_id), burst_name)
+            self.burst_service.rename_burst(burst_id, burst_name)
             return {'success': "Simulation successfully renamed!"}
         else:
             self.logger.exception(validation_result)
@@ -779,9 +785,10 @@ class SimulatorController(BurstBaseController):
     @cherrypy.expose
     @handle_error(redirect=False)
     @check_user
-    def export(self, burst_id):
+    @parse_positional_params
+    def export(self, burst_id:int):
         export_manager = ExportManager()
-        export_zip = export_manager.export_simulator_configuration(int(burst_id))
+        export_zip = export_manager.export_simulator_configuration(burst_id)
 
         result_name = "tvb_simulation_" + str(burst_id) + ".zip"
         return serve_file(export_zip, "application/x-download", "attachment", result_name)

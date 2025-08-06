@@ -30,6 +30,7 @@ Decorators for Cherrypy exposed methods are defined here.
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import cProfile
+import inspect
 import json
 from datetime import datetime
 from functools import wraps
@@ -44,7 +45,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.services.authorization import AuthorizationManager
 from tvb.storage.kube.kube_notifier import KubeNotifier
-from tvb.core.utils import TVBJSONEncoder
+from tvb.core.utils import TVBJSONEncoder, string2bool
 from tvb.interfaces.web.controllers import common
 
 env = Environment(loader=FileSystemLoader(TvbProfile.current.web.TEMPLATE_ROOT),
@@ -86,6 +87,35 @@ def using_template(template_name):
 
     return dec
 
+
+def parse_positional_params(func):
+    """
+    Decorator to convert positional arguments based on their name and type.
+    """
+    signature = inspect.signature(func)
+
+    @wraps(func)
+    def deco(self, *args, **kwargs):
+        params = list(signature.parameters.values())[1:]
+        bound = dict(zip(params, args))
+
+        # Convert args to expected type
+        for param, value in bound.items():
+            param_type = param.annotation
+            if param_type is inspect.Parameter.empty or param_type is str:
+                continue
+            try:
+                if param_type is bool:
+                    bound[param] = string2bool(value)
+                else:
+                    bound[param] = param_type(value)
+            except (ValueError, TypeError):
+                raise cherrypy.HTTPError(400, f"Invalid value for '{param}': expected {param_type.__name__}")
+
+        new_args = [bound.get(name, None) for name in bound.keys()]
+        return func(self, *new_args, **kwargs)
+
+    return deco
 
 def jsonify(func):
     """
@@ -313,29 +343,6 @@ def expose_page(func):
     func = cherrypy.expose(func)
     return func
 
-
-def parse_positional_args(*types):
-    """
-    Converts positional arguments to the given types.
-    Example: @parse_positional_args(int, int, int)
-    """
-
-    def decorator(func):
-        @wraps(func)
-        def wrapper(self, *args, **kwargs):
-            if len(args) < len(types):
-                raise cherrypy.HTTPError(400, f"Expected {len(types)} arguments, got {len(args)}.")
-
-            try:
-                parsed_args = tuple(int(arg) for t, arg in zip(types, args))
-            except (ValueError, TypeError) as e:
-                raise cherrypy.HTTPError(400, f"Invalid argument type: {e}")
-
-            return func(self, *parsed_args, **kwargs)
-
-        return wrapper
-
-    return decorator
 
 def expose_fragment(template_name):
     """

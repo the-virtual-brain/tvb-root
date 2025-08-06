@@ -40,7 +40,8 @@ from tvb.core import utils
 from tvb.core.services.figure_service import FigureService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
-from tvb.interfaces.web.controllers.decorators import context_selected, check_user, handle_error
+from tvb.interfaces.web.controllers.decorators import context_selected, check_user, handle_error, \
+    parse_positional_params
 from tvb.interfaces.web.controllers.decorators import using_template, expose_page
 from tvb.interfaces.web.controllers.project.project_controller import ProjectController
 from tvb.storage.storage_interface import StorageInterface
@@ -165,11 +166,12 @@ class FigureController(ProjectController):
     @cherrypy.expose
     @handle_error(redirect=False)
     @check_user
-    def downloadimage(self, figure_id):
+    @parse_positional_params
+    def downloadimage(self, figure_id:int):
         """
         Allow a user to download a figure.
         """
-        figure = self.figure_service.load_figure(int(figure_id))
+        figure = self.figure_service.load_figure(figure_id)
         image_folder = self.storage_interface.get_images_folder(figure.project.name)
         figure_path = os.path.join(image_folder, figure.file_path)
         return serve_file(figure_path, "image/" + figure.file_format, "attachment",
@@ -179,11 +181,12 @@ class FigureController(ProjectController):
     @handle_error(redirect=False)
     @using_template("overlay")
     @check_user
-    def displayzoomedimage(self, figure_id):
+    @parse_positional_params
+    def displayzoomedimage(self, figure_id:int):
         """
         Displays the image with the specified id in an overlay dialog.
         """
-        figure = self.figure_service.load_figure(int(figure_id))
+        figure = self.figure_service.load_figure(figure_id)
         figures_folder = self.storage_interface.get_images_folder(figure.project.name)
         figure_full_path = os.path.join(figures_folder, figure.file_path)
         figure_file_path = utils.path2url_part(figure_full_path)

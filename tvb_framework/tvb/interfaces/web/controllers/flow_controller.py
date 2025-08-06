@@ -62,7 +62,7 @@ from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.common import InvalidFormValues
 from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json, \
-    using_template
+    using_template, parse_positional_params
 from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
@@ -164,8 +164,8 @@ class FlowController(BaseController):
     @expose_page
     @settings
     @context_selected
-    def show_group_of_algorithms(self, step_key, algorithm_ids):
-        step_key = int(step_key)
+    @parse_positional_params
+    def show_group_of_algorithms(self, step_key:int, algorithm_ids):
         project = common.get_current_project()
         category = self.algorithm_service.get_category_by_id(step_key)
         algorithms = []
@@ -188,7 +188,8 @@ class FlowController(BaseController):
     @expose_page
     @settings
     @context_selected
-    def prepare_group_launch(self, group_gid, step_key, algorithm_id, **data):
+    @parse_positional_params
+    def prepare_group_launch(self, group_gid:str, step_key:int, algorithm_id:int, **data):
         """
         Receives as input a group gid and an algorithm given by category and id, along
         with data that gives the name of the required input parameter for the algorithm.
@@ -201,20 +202,19 @@ class FlowController(BaseController):
         data[RANGE_PARAMETER_1] = range_param_name
         data[range_param_name] = ','.join(dt.gid for dt in datatypes)
         self.operation_services.group_operation_launch(common.get_logged_user().id, common.get_current_project(),
-                                                       int(algorithm_id), int(step_key), **data)
+                                                       algorithm_id, step_key, **data)
         redirect_url = self._compute_back_link('operations', common.get_current_project())
         raise cherrypy.HTTPRedirect(redirect_url)
 
     @expose_page
     @settings
     @context_selected
-    def default(self, step_key, adapter_key, cancel=False, back_page=None, **data):
+    @parse_positional_params
+    def default(self, step_key:int, adapter_key:int, cancel=False, back_page=None, **data):
         """
         Render a specific adapter.
         'data' are arguments for POST
         """
-        step_key = int(step_key)
-        adapter_key = int(adapter_key)
         project = common.get_current_project()
         algorithm = self.algorithm_service.get_algorithm_by_identifier(adapter_key)
         back_page_link = self._compute_back_link(back_page, project)
@@ -283,7 +283,6 @@ class FlowController(BaseController):
 
     def execute_post(self, project_id, submit_url, step_key, algorithm, **data):
         """ Execute HTTP POST on a generic step."""
-        project_id = int(project_id)
         errors = None
         adapter_instance = ABCAdapter.build_adapter(algorithm)
         user = common.get_logged_user()
@@ -342,7 +341,6 @@ class FlowController(BaseController):
                                  is_callout=False):
         """ Get Input HTML Interface template or a given adapter """
         try:
-            project_id = int(project_id)
             group = None
             category = self.algorithm_service.get_category_by_id(step_key)
             title = "Fill parameters for step " + category.displayname.lower()
@@ -403,8 +401,8 @@ class FlowController(BaseController):
         return result
 
     @expose_json
-    def invoke_adapter(self, algo_id, method_name, entity_gid, **kwargs):
-        algo_id = int(algo_id)
+    @parse_positional_params
+    def invoke_adapter(self, algo_id:int, method_name:str, entity_gid:str, **kwargs):
         algorithm = self.algorithm_service.get_algorithm_by_identifier(algo_id)
         adapter_instance = ABCAdapter.build_adapter(algorithm)
         entity = load_entity_by_gid(entity_gid)
@@ -470,26 +468,24 @@ class FlowController(BaseController):
         return self._read_from_h5(entity_gid, method_name, datatype_kwargs, **kwargs)
 
     @expose_fragment("flow/genericAdapterFormFields")
-    def get_simple_adapter_interface(self, algorithm_id, parent_div='', is_uploader=False):
+    @parse_positional_params
+    def get_simple_adapter_interface(self, algorithm_id:int, parent_div:str='', is_uploader:bool=False):
         """
         AJAX exposed method. Will return only the interface for a adapter, to
         be used when tabs are needed.
         """
-        algorithm_id = int(algorithm_id)
         curent_project = common.get_current_project()
-        is_uploader = string2bool(is_uploader)
         template_specification = self.get_adapter_template(curent_project.id, algorithm_id, is_uploader)
         template_specification[common.KEY_PARENT_DIV] = parent_div
         return self.fill_default_attributes(template_specification)
 
     @expose_fragment("flow/full_adapter_interface")
-    def getadapterinterface(self, project_id, algorithm_id, back_page=None):
+    @parse_positional_params
+    def getadapterinterface(self, project_id:int, algorithm_id:int, back_page:str=None):
         """
         AJAX exposed method. Will return only a piece of a page,
         to be integrated as part in another page.
         """
-        project_id = int(project_id)
-        algorithm_id = int(algorithm_id)
         template_specification = self.get_adapter_template(project_id, algorithm_id, False, back_page, is_callout=True)
         template_specification["isCallout"] = True
         return self.fill_default_attributes(template_specification)
@@ -517,9 +513,9 @@ class FlowController(BaseController):
     @cherrypy.expose
     @handle_error(redirect=True)
     @context_selected
-    def reloadoperation(self, operation_id, **_):
+    @parse_positional_params
+    def reloadoperation(self, operation_id:int, **_):
         """Redirect to Operation Input selection page, with input data already selected."""
-        operation_id = int(operation_id)
         operation = OperationService.load_operation(operation_id)
         # Reload previous parameters in session
         adapter_instance = ABCAdapter.build_adapter(operation.algorithm)
@@ -533,15 +529,14 @@ class FlowController(BaseController):
     @cherrypy.expose
     @handle_error(redirect=True)
     @context_selected
-    def reload_burst_operation(self, operation_id, is_group, **_):
+    @parse_positional_params
+    def reload_burst_operation(self, operation_id:int, is_group:int, **_):
         """
         Find out from which burst was this operation launched. Set that burst as the selected one and
         redirect to the burst page.
         """
-        operation_id = int(operation_id)
-        is_group = int(is_group)
         if not is_group:
-            operation = OperationService.load_operation(int(operation_id))
+            operation = OperationService.load_operation(operation_id)
         else:
             op_group = ProjectService.get_operation_group_by_id(operation_id)
             first_op = ProjectService.get_operations_in_group(op_group)[0]
@@ -551,15 +546,13 @@ class FlowController(BaseController):
         self.redirect("/burst/")
 
     @expose_json
-    def cancel_or_remove_operation(self, operation_id, is_group, remove_after_stop=False):
+    @parse_positional_params
+    def cancel_or_remove_operation(self, operation_id:int, is_group:int, remove_after_stop:bool=False):
         """
         Stop the operation given by operation_id. If is_group is true stop all the
         operations from that group.
         """
-        operation_id = int(operation_id)
-        is_group = int(is_group) != 0
-        if isinstance(remove_after_stop, str):
-            remove_after_stop = bool(remove_after_stop)
+        is_group = is_group != 0
         return self.simulator_controller.cancel_or_remove_operation(operation_id, is_group, remove_after_stop)
 
     def fill_default_attributes(self, template_dictionary, title='-'):
