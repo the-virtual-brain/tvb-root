@@ -44,8 +44,6 @@ import sys
 import requests
 
 import tvb_bin
-import tvb_data
-from subprocess import Popen, PIPE
 
 # source paths
 BIN_FOLDER = os.path.dirname(tvb_bin.__file__)
@@ -53,11 +51,11 @@ TVB_ROOT = os.path.dirname(os.path.dirname(BIN_FOLDER))
 FW_FOLDER = os.path.join(TVB_ROOT, 'tvb_framework')
 LICENSE_PATH = os.path.join(FW_FOLDER, 'LICENSE')
 RELEASE_NOTES_PATH = os.path.join(TVB_ROOT, 'tvb_documentation', 'RELEASE_NOTES')
-DATA_SRC_FOLDER = os.path.dirname(tvb_data.__file__)
 DEMOS_MATLAB_FOLDER = os.path.join(TVB_ROOT, 'tvb_documentation', 'matlab')
 
 # dest paths
 DIST_FOLDER = os.path.join(os.path.dirname(__file__), 'build', 'TVB_Distribution')
+DOCKER_FOLDER = os.path.join(os.path.dirname(__file__), 'docker', 'step1')
 
 DATA_INSIDE_FOLDER = os.path.join(DIST_FOLDER, '_tvb_data')
 
@@ -116,6 +114,9 @@ INCLUDED_INSIDE_DATA = [
 
 
 def _copy_dataset(dataset_files, dataset_destination):
+    import tvb_data
+    DATA_SRC_FOLDER = os.path.dirname(tvb_data.__file__)
+
     for pth in dataset_files:
         rel_pth = pth.split('/')
         origin = os.path.join(DATA_SRC_FOLDER, *rel_pth)
@@ -204,7 +205,7 @@ def ensure_tvb_current_revision(branch=None, token=None):
             print("Updating tvb.version content in %s to: %s because %d != %d" % (path, new_text, written_tvb_number, real_version_number))
 
 
-def build_step1():
+def build_step1(only_online_help=False):
     # Import only after TVB Revision number has been changed, to get the latest number in generated documentation
     from tvb_build.tvb_documentor.doc_generator import DocGenerator
 
@@ -221,8 +222,16 @@ def build_step1():
     # make help HTML, PDF manual and documentation site
     print("Starting to populate %s" % DIST_FOLDER)
     doc_generator = DocGenerator(TVB_ROOT, DIST_FOLDER)
-    doc_generator.generate_pdfs()
     doc_generator.generate_online_help()
+
+    if only_online_help:
+        if os.path.exists(DOCKER_FOLDER):
+            shutil.rmtree(DOCKER_FOLDER)
+        os.makedirs(DOCKER_FOLDER)
+        shutil.move(os.path.join(DIST_FOLDER, "_help"), DOCKER_FOLDER)
+        return
+
+    doc_generator.generate_pdfs()
     doc_generator.generate_site()
 
     shutil.copy2(LICENSE_PATH, os.path.join(DIST_FOLDER, 'LICENSE_TVB.txt'))
@@ -243,13 +252,17 @@ def build_step1():
 
 
 if __name__ == '__main__':
-    branch = None
+    only_online_help = False
     if len(sys.argv) > 1:
-        branch = sys.argv[1]
+        only_online_help = bool(sys.argv[1])
+    branch = None
+    if len(sys.argv) > 2:
+        branch = sys.argv[2]
         if branch.startswith("origin/"):
             branch = branch.replace("origin/","")
     token = None
-    if len(sys.argv) > 2:
-        token = sys.argv[2]
-    ensure_tvb_current_revision(branch, token)
-    build_step1()
+    if len(sys.argv) > 3:
+        token = sys.argv[3]
+    if token:
+        ensure_tvb_current_revision(branch, token)
+    build_step1(only_online_help)

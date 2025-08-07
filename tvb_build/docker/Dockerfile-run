@@ -18,8 +18,8 @@ RUN service postgresql start && createdb -O postgres tvb-test && psql --command 
 
 USER root
 RUN conda update -n base -c defaults conda; conda init bash
-RUN conda create -y --name tvb-run python=3.11 nomkl numba scipy numpy cython psycopg
-RUN conda install -y --name tvb-run -c conda-forge jupyterlab tvb-gdist
+RUN conda create -y --name tvb-run python=3.11 nomkl numba scipy numpy cython
+RUN conda install -y --name tvb-run -c conda-forge psycopg jupyterlab tvb-gdist
 RUN $PIP install --upgrade pip
 RUN $PIP install lockfile scikit-build
 RUN $PIP install cryptography
@@ -66,7 +66,7 @@ COPY step1/_help $USER_HOME/tvb-root/tvb_framework/tvb/interfaces/web/static/hel
 
 RUN mkdir $USER_HOME/.tvb-temp; mkdir $USER_HOME/.tvb-temp/logs; mkdir $TVB_STORAGE $KEYCLOAK_CONFIG
 
-ENV TVB_USER_HOME $USER_HOME
+ENV TVB_USER_HOME=$USER_HOME
 RUN chmod -R g+rwX $USER_HOME
 
 WORKDIR $USER_HOME/tvb-root
@@ -86,6 +86,6 @@ WORKDIR $USER_HOME/tvb-root
 # MOUNT -v [local- ~/TVB ]:$TVB_STORAGE
 #CMD ["bash","-c","source activate tvb-run && python -m tvb.interfaces.web.run_landing_page"]
 
-ENV NUMBA_CACHE_DIR /home/TVB_STORAGE/numba_cache
+ENV NUMBA_CACHE_DIR=/home/TVB_STORAGE/numba_cache
 ENV HOME=$USER_HOME
 CMD ["bash","-c","source activate tvb-run && cd tvb_bin && python -m tvb.interfaces.web.run WEB_PROFILE"]
