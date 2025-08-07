@@ -36,6 +36,9 @@ jobs:
   release:
     runs-on: ubuntu-latest
 
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -114,9 +117,15 @@ jobs:
         #   \d+\.\d+\.\d+ – match version (major.minor.patch)
         #   (?=\.tar\.gz|\.whl) – version is followed by .tar.gz or .whl
 
-      - name: Create tag for release
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git tag ${{ steps.get_version.outputs.version }}
-          git push origin ${{ steps.get_version.outputs.version }}
+#      - name: Create tag for release
+#        run: |
+#          git config user.name "github-actions"
+#          git config user.email "github-actions@github.com"
+#          git tag ${{ steps.get_version.outputs.version }}
+#          git push origin ${{ steps.get_version.outputs.version }}
+
+  call-build-docker-image:
+    needs: release
+    uses: ./.github/workflows/build-docker-image.yml
+    with:
+      tag: ${{ needs.release.outputs.version }}
