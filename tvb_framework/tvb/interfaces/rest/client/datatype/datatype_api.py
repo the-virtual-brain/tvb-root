@@ -24,9 +24,9 @@
 #
 #
 
-import cgi
 import json
 import os
+from email.message import EmailMessage
 
 from tvb.basic.neotraits.api import HasTraits
 from tvb.core.neocom import h5
@@ -62,11 +62,10 @@ class DataTypeApi(MainApi):
             RestLink.GET_DATATYPE.compute_url(
                 True, {LinkPlaceholder.DATATYPE_GID.value: datatype_gid})),
             files={import_export_encryption_handler.PUBLIC_KEY_NAME: public_key}, stream=True)
-
         if response.ok:
-            content_disposition = response.headers['Content-Disposition']
-            value, params = cgi.parse_header(content_disposition)
-            file_name = params['filename']
+            msg = EmailMessage()
+            msg['Content-Disposition'] = response.headers['Content-Disposition']
+            file_name = msg.get_filename()
             file_path = os.path.join(download_folder, os.path.basename(file_name))
             file_path = save_file(file_path, response)
             if is_data_encrypted:
@@ -77,7 +76,7 @@ class DataTypeApi(MainApi):
             return file_path
 
         error_response = json.loads(response.content.decode('utf-8'))
-        raise ClientException(error_response['message'], error_response['code'])
+        raise ClientException(error_response['message'], response.status_code)
 
     @handle_response
     def get_operations_for_datatype(self, datatype_gid):

@@ -48,8 +48,8 @@ Framework structure
                 |
             tvb.interfaces
 
-**tvb-data** should be installed from **Zenodo**: https://zenodo.org/record/10128131.
-After download, unzip and execute `python setup.py develop` in the correct env.
+**tvb-data** should be installed from **Zenodo**: https://zenodo.org/record/14992335.
+After download, unzip and execute `pip install -e .` in the correct env.
 
 Usage
 -----
@@ -72,8 +72,8 @@ framework is used. Pytest can be installed using pip.
 
 In addition to tvb-framework needed just for
 launching the web, tests require few extra dependencies just for test (e.g. pytest-benchmark), which
-need to be installed manually. The entire list of these dependencies for testing is found in `tvb_framework/setup.py`
-under **extras_require**.
+need to be installed manually. The entire list of these dependencies for testing is found in `tvb_framework/pyproject.toml`
+under **project.optional-dependencies**.
 
 Pytest will run all files in the current directory and its subdirectories
 of the form test_*.py or \*_test.py.

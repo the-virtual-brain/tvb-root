@@ -53,7 +53,7 @@ class CalculusConfig(object):
 
 
 def is_numeric(value):
-    return isinstance(value, (float, np.float_, np.float64, np.float32, np.float16, np.float128,
+    return isinstance(value, (float, np.float64, np.float32, np.float16, np.float128,
                               int, np.int_, np.int0, np.int8, np.int16, np.int32, np.int64,
                               complex, np.complex, np.complex64, np.complex128, np.complex256,
                               np.long, np.number))
@@ -64,7 +64,7 @@ def is_integer(value):
 
 
 def is_float(value):
-    return isinstance(value, (float, np.float_, np.float64, np.float32, np.float16, np.float128))
+    return isinstance(value, (float, np.float64, np.float32, np.float16, np.float128))
 
 
 def vector2scalar(x):
@@ -740,19 +740,15 @@ def assert_arrays(params, shape=None, transpose=False):
 
 def make_float(x, precision="64"):
     if isinstance(x, np.ndarray):
-        if isequal_string(precision, "64"):
-            return x.astype(np.float64)
-        elif isequal_string(precision, "32"):
+        if isequal_string(precision, "32"):
             return x.astype(np.float32)
         else:
-            return x.astype(np.float_)
+            return x.astype(np.float64)
     else:
-        if isequal_string(precision, "64"):
-            return np.float64(x)
-        elif isequal_string(precision, "32"):
+        if isequal_string(precision, "32"):
             np.float32(x)
         else:
-            return np.float_(x)
+            return np.float64(x)
 
 
 def make_int(x, precision="64"):

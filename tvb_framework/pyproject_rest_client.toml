@@ -32,7 +32,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tvb-rest-client"
-version = "2.9.2"
+version = "2.11.0"
 description = "A helper package for preparing and sending requests towards the TVB REST API"
 readme = "README.rst"
 license = { file = "LICENSE" }
@@ -80,7 +80,7 @@ dependencies = [
 
 [project.optional-dependencies]
 postgres = [
-    "psycopg2",
+    "psycopg",
 ]
 test = [
     "pytest",

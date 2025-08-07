@@ -30,6 +30,7 @@ Decorators for Cherrypy exposed methods are defined here.
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import cProfile
+import inspect
 import json
 from datetime import datetime
 from functools import wraps
@@ -44,7 +45,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.services.authorization import AuthorizationManager
 from tvb.storage.kube.kube_notifier import KubeNotifier
-from tvb.core.utils import TVBJSONEncoder
+from tvb.core.utils import TVBJSONEncoder, string2bool
 from tvb.interfaces.web.controllers import common
 
 env = Environment(loader=FileSystemLoader(TvbProfile.current.web.TEMPLATE_ROOT),
@@ -86,6 +87,35 @@ def using_template(template_name):
 
     return dec
 
+
+def parse_positional_params(func):
+    """
+    Decorator to convert positional arguments based on their name and type.
+    """
+    signature = inspect.signature(func)
+
+    @wraps(func)
+    def deco(self, *args, **kwargs):
+        params = list(signature.parameters.values())[1:]
+        bound = dict(zip(params, args))
+
+        # Convert args to expected type
+        for param, value in bound.items():
+            param_type = param.annotation
+            if param_type is inspect.Parameter.empty or param_type is str:
+                continue
+            try:
+                if param_type is bool:
+                    bound[param] = string2bool(value)
+                else:
+                    bound[param] = param_type(value)
+            except (ValueError, TypeError):
+                raise cherrypy.HTTPError(400, f"Invalid value for '{param}': expected {param_type.__name__}")
+
+        new_args = [bound.get(name, None) for name in bound.keys()]
+        return func(self, *new_args, **kwargs)
+
+    return deco
 
 def jsonify(func):
     """

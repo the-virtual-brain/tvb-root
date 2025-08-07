@@ -38,7 +38,7 @@ class TestSiibraCreator(TransactionalTestCase):
 
     def test_happy_flow_launch(self, operation_factory):
         view_model = SiibraModel()
-        view_model.subject_ids = '010'
+        view_model.subject_ids = '106319'  # random pick from available subject in Julich 3.1
 
         operation = operation_factory(test_user=self.test_user, test_project=self.test_project)
         self.siibra_creator.extract_operation_data(operation)
@@ -51,11 +51,11 @@ class TestSiibraCreator(TransactionalTestCase):
 
         # connectivities
         assert conn_index.has_hemispheres_mask
-        assert conn_index.number_of_regions == 314
-        assert conn_index.subject == '010'
+        assert conn_index.number_of_regions == 414
+        assert conn_index.subject == '106319'
 
         # connectivity measures
         for conn_measure in conn_measure_indices:
-            assert conn_measure.parsed_shape == (314, 314)
-            assert conn_measure.subject == '010'
+            assert conn_measure.parsed_shape == (414, 414)
+            assert conn_measure.subject == '106319'
             assert conn_measure.fk_connectivity_gid == conn_index.gid

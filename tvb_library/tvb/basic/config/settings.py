@@ -43,7 +43,7 @@ class VersionSettings(object):
     SVN_GIT_MIGRATION_REVISION = 10000
 
     # Current release number
-    BASE_VERSION = "2.9.2"
+    BASE_VERSION = "2.11.0"
 
     # Current DB version. Create a new migration script from command line and copy its gid here
     DB_STRUCTURE_VERSION = '32d4bf9f8ghj'
@@ -335,7 +335,7 @@ class DBSettings(object):
 
     def __init__(self, manager, default_storage, current_storage):
         # A dictionary with accepted db's and their default URLS
-        default_pg = 'postgresql+psycopg2://postgres:root@127.0.0.1:5432/tvb?user=postgres&password=postgres'
+        default_pg = 'postgresql+psycopg://postgres:root@127.0.0.1:5432/tvb?user=postgres&password=postgres'
         default_lite = 'sqlite:///' + os.path.join(default_storage, 'tvb-database.db')
         self.ACEEPTED_DBS = {'postgres': manager.get_attribute(stored.KEY_DB_URL, default_pg),
                              'sqlite': manager.get_attribute(stored.KEY_DB_URL, default_lite)}

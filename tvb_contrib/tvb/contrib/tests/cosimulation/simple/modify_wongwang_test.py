@@ -125,7 +125,7 @@ class TestModifyWongWangSimple(TestModifyWongWang):
         for i in range(np.min(sim_3.connectivity.idelays[np.nonzero(sim_3.connectivity.idelays)]) + 1):
             np.testing.assert_array_equal(result_all[0][1][i][0][len(id_proxy):],
                                           result_3_all[1][i + sync_steps, 0, len(id_proxy):])
-            np.testing.assert_array_equal(result_all[0][1][i][0][:len(id_proxy)] * np.NAN,
+            np.testing.assert_array_equal(result_all[0][1][i][0][:len(id_proxy)] * np.nan,
                                           result_3_all[1][i + sync_steps, 0, :len(id_proxy)])
         # After the delays impact the simulation, there is some difference for S
         idelays = np.copy(sim_3.connectivity.idelays)
@@ -134,7 +134,7 @@ class TestModifyWongWangSimple(TestModifyWongWang):
         for i in range(min_delay + 1, int(SIMULATION_LENGTH / integrator.dt)):
             diff = result_all[0][1][i][0][len(id_proxy):] - result_3_all[1][i + sync_steps, 0, len(id_proxy):]
             assert np.isnan(diff.sum())
-            np.testing.assert_array_equal(result_all[0][1][i][0][:len(id_proxy)] * np.NAN,
+            np.testing.assert_array_equal(result_all[0][1][i][0][:len(id_proxy)] * np.nan,
                                           result_3_all[1][i + sync_steps, 0, :len(id_proxy)])
 
     def test_with_proxy_bad_input(self):

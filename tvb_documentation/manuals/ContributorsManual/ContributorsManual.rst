@@ -57,12 +57,12 @@ Using a virtual environment inside Anaconda is a good idea.
 
 Install tvb-data from Zenodo (make sure the link from bellow is the latets version)::
 
-    $ wget https://zenodo.org/record/10128131/files/tvb_data.zip?download=1 -O tvb_data.zip
+    $ wget https://zenodo.org/record/14992335/files/tvb_data.zip?download=1 -O tvb_data.zip
     $ mkdir tvb_data
     $ unzip tvb_data.zip -d tvb_data
     $ rm tvb_data.zip
     $ cd tvb_data
-    $ python setup.py develop
+    $ pip install -e .
 
 The above list of dependencies might change. We recommend you to check the latest commands here:
 https://github.com/the-virtual-brain/tvb-root/tree/master/tvb_build/docker

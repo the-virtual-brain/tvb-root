@@ -10,7 +10,7 @@ RUN conda init powershell
 
 # Prepare tvb-run env
 RUN activate && conda update -n base -c defaults conda
-RUN activate && conda create -y --name tvb-run python=3.11 numba scipy numpy cython psycopg2
+RUN activate && conda create -y --name tvb-run python=3.11 numba scipy numpy cython psycopg
 RUN activate && conda install -y --name tvb-run -c conda-forge jupyterlab tvb-gdist
 RUN activate tvb-run && python -m pip install --upgrade pip
 RUN activate tvb-run && pip install lockfile scikit-build
@@ -21,9 +21,9 @@ RUN activate tvb-run && pip install syncrypto
 RUN mkdir C:\\TVB_CODE
 WORKDIR /TVB_CODE
 
-ADD https://zenodo.org/record/10128131/files/tvb_data.zip?download=1 tvb_data.zip
+ADD https://zenodo.org/record/14992335/files/tvb_data.zip?download=1 tvb_data.zip
 RUN mkdir -p zenodo_data && tar -xf tvb_data.zip -C zenodo_data && dir && del tvb_data.zip
-RUN activate tvb-run && cd zenodo_data && python setup.py develop
+RUN activate tvb-run && cd zenodo_data && pip install -e .
 
 COPY requirements_group requirements.txt
 RUN activate tvb-run && pip install -r requirements.txt

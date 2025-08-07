@@ -18,14 +18,14 @@ RUN service postgresql start && createdb -O postgres tvb-test && psql --command 
 
 USER root
 RUN conda update -n base -c defaults conda; conda init bash
-RUN conda create -y --name tvb-run python=3.11 nomkl numba scipy numpy cython psycopg2
+RUN conda create -y --name tvb-run python=3.11 nomkl numba scipy numpy cython psycopg
 RUN conda install -y --name tvb-run -c conda-forge jupyterlab tvb-gdist
 RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
 RUN /opt/conda/envs/tvb-run/bin/pip install lockfile scikit-build
 RUN /opt/conda/envs/tvb-run/bin/pip install cryptography
 RUN /opt/conda/envs/tvb-run/bin/pip install syncrypto
 
-RUN conda create -y --name tvb-docs python=3.11 nomkl numba scipy numpy cython psycopg2
+RUN conda create -y --name tvb-docs python=3.11 nomkl numba scipy numpy cython psycopg
 RUN conda install -y --name tvb-docs -c conda-forge jupyterlab tvb-gdist
 RUN /opt/conda/envs/tvb-docs/bin/pip install --upgrade pip
 RUN /opt/conda/envs/tvb-docs/bin/pip install lockfile scikit-build
@@ -40,11 +40,11 @@ RUN /bin/bash -c "source activate tvb-run"; \
     /opt/conda/envs/tvb-run/bin/jupyter notebook --generate-config; \
     echo "c.NotebookApp.password='sha1:12bff019c253:9daecd92c2e9bdb10b3b8a06767a74a0fe078d7c'">>$JUPYTER_CONFIG/jupyter_notebook_config.py
 
-RUN wget https://zenodo.org/record/10128131/files/tvb_data.zip?download=1 -O tvb_data.zip; \
+RUN wget https://zenodo.org/record/14992335/files/tvb_data.zip?download=1 -O tvb_data.zip; \
     mkdir tvb_data; unzip tvb_data.zip -d tvb_data; rm tvb_data.zip; \
     cd tvb_data; \
-    /opt/conda/envs/tvb-run/bin/python setup.py develop;\
-    /opt/conda/envs/tvb-docs/bin/python setup.py develop
+    /opt/conda/envs/tvb-run/bin/pip install -e .;\
+    /opt/conda/envs/tvb-docs/bin/pip install -e .
 
 WORKDIR $USER_HOME
 COPY requirements_group requirements.txt

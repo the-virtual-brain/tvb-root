@@ -141,7 +141,7 @@ class TestDoubleProxyPrecisionComplexDoubleSync(BaseTestCase):
             # compare with Raw monitor delayed by 2*synchronization_time
             if i>1:
                 np.testing.assert_array_equal(result_ref0[:, proxy_id_2, :], rate_1[1][:, proxy_id_2, :])
-                np.testing.assert_array_equal(result_ref0[:, proxy_id_1, :] * np.NAN, rate_1[1][:, proxy_id_1, :])
+                np.testing.assert_array_equal(result_ref0[:, proxy_id_1, :] * np.nan, rate_1[1][:, proxy_id_1, :])
                 np.testing.assert_array_equal(s_ref0, s_1[1])
 
             time, s_2, rate_2, proxy_data_2 = \
@@ -150,7 +150,7 @@ class TestDoubleProxyPrecisionComplexDoubleSync(BaseTestCase):
             # compare with Raw monitor delayed by 2*synchronization_time
             if i>1:
                 np.testing.assert_array_equal(result_ref0[:, proxy_id_1, :], rate_2[1][:, proxy_id_1, :])
-                np.testing.assert_array_equal(result_ref0[:, proxy_id_2, :] * np.NAN, rate_2[1][:, proxy_id_2, :])
+                np.testing.assert_array_equal(result_ref0[:, proxy_id_2, :] * np.nan, rate_2[1][:, proxy_id_2, :])
                 np.testing.assert_array_equal(s_ref0, s_2[1])
 
             s_ref0 = deepcopy(s_ref)

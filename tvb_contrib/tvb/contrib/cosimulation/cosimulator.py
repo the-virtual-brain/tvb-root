@@ -210,7 +210,7 @@ class CoSimulator(Simulator):
         """
         state_copy = numpy.copy(state)
         if self._cosimulation_flag:
-            state_copy[:, self.proxy_inds] = numpy.NAN
+            state_copy[:, self.proxy_inds] = numpy.nan
             state_output = numpy.copy(self.cosim_history.query(step
                                                                - self.synchronization_n_step
                                                                - self.relative_output_time_steps))

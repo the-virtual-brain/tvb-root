@@ -41,7 +41,7 @@ from tvb.datatypes.surfaces import WhiteMatterSurface as TVBWhiteMatterSurface
 
 class Surface(TVBSurface, BaseModel):
     vox2ras = NArray(
-        dtype=np.float_,
+        dtype=np.float64,
         label="vox2ras", default=np.array([]), required=False,
         doc="""Voxel to RAS coordinates transformation array.""")
 

@@ -97,8 +97,22 @@ function get_URL_param(param) {
  * @param page Page number to get to
  * @param formId Form to submit
  */
-function changeDisplayPage(page, formId) {
-    document.getElementById("currentPage").value = page;
+function changeDisplayPage(page, formId, search=false, filterBtnClicked=null) {
+    $("#currentPage").val(page);
+    if (search) {
+        let searchPattern = $("#userSearchInput").val();
+        $("#searchPattern").val(searchPattern);
+    }
+    if (typeof filterBtnClicked === 'boolean') {
+        filterBtnClicked = !filterBtnClicked;
+        $("#filterNotValid").val(filterBtnClicked);
+        if (filterBtnClicked) {
+            $("#filterBtn").addClass("on");
+        }
+        else {
+            $("#filterBtn").removeClass("on");
+        }
+    }
     document.getElementById(formId).submit();
 }
 
@@ -269,7 +283,39 @@ function minimizeColumn(link, maximizeColumnId) {
 // ---------------------------------------------------------
 
 
-function changeMembersPage(projectId, pageNo, divId, editEnabled) {
+function searchMembers(projectId, membersTableId, editEnabled) {
+    let userSearchPattern = $("#userSearchInput").val();
+    if (userSearchPattern === '') {
+        return;
+    }
+    $("#hiddenSearchPattern").val(userSearchPattern);
+
+    let my_url = '/project/search_members';
+        if (projectId) {
+            my_url = my_url + "/" + projectId + "/" + userSearchPattern;
+        }
+        doAjaxCall({
+            async: false,
+            type: 'GET',
+            url: my_url,
+            success: function (r) {
+                pagesTable = document.getElementById("pagesTableId");
+                if (pagesTable) {
+                    pagesTable.remove();
+                }
+                membersCheckboxesDiv = document.getElementById("checkboxesList");
+                if (membersCheckboxesDiv) {
+                    membersCheckboxesDiv.remove();
+                }
+                $("#" + membersTableId).append(r);
+                if (editEnabled) {
+                    $("#visitedPages").val('1');
+                    }
+            }
+        });
+}
+
+function changeMembersPage(projectId, pageNo, userSearchPattern, divId, editEnabled) {
     $(".projectmembers-pagetab-selected").attr("class", "projectmembers-pagetab");
     $("#tab-" + pageNo).attr("class", "projectmembers-pagetab projectmembers-pagetab-selected");
     const membersElem = $('span[class="user_on_page_' + pageNo + '"]');
@@ -277,9 +323,9 @@ function changeMembersPage(projectId, pageNo, divId, editEnabled) {
         $('span[class^="user_on_page_"]').hide();
         membersElem.show();
     } else {
-        let my_url = '/project/getmemberspage/' + pageNo;
+        let my_url = '/project/get_members_page/' + pageNo;
         if (projectId) {
-            my_url = my_url + "/" + projectId;
+            my_url = my_url + "/" + projectId + "/" + userSearchPattern;
         }
         doAjaxCall({
             async: false,
