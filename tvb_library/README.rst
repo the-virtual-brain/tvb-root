@@ -89,7 +89,7 @@ The command for running our tests has two forms.
 Recommendation when working with a git clone of tvb-library::
 
     cd [folder_where_tvb_library_is]
-    pytest tvb/test [--junitxml=path]
+    pytest tvb/tests [--junitxml=path]
 
 The second alternative form of running TVB tests, when installing TVB from Pypi, is::
 

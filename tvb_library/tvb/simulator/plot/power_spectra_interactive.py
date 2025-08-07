@@ -57,7 +57,7 @@ import numpy
 import matplotlib.pyplot as plt
 import ipywidgets as widgets
 from deprecated import deprecated
-from IPython.core.display import display
+from IPython.display import display
 from tvb.simulator.common import get_logger
 import tvb.datatypes.time_series as time_series_datatypes
 from tvb.basic.neotraits.api import HasTraits, Attr, Int

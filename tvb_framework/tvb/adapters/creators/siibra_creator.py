@@ -51,7 +51,7 @@ def init_siibra_options():
     future.
     """
     atlases = [siibra_base.HUMAN_ATLAS]
-    parcellations = [siibra_base.JULICH_3_0_3 , siibra_base.JULICH_2_9]
+    parcellations = [siibra_base.JULICH_3, siibra_base.JULICH_3_0_3 , siibra_base.JULICH_2_9]
     cohorts = [siibra_base.HCP_COHORT, siibra_base.THOUSAND_BRAINS_COHORT]
 
     # create dicts needed for TVB Enums
@@ -82,7 +82,7 @@ class SiibraModel(ViewModel):
 
     parcellation = EnumAttr(
         field_type=PARCELLATION_OPTS,
-        default=PARCELLATION_OPTS[siibra_base.JULICH_3_0_3],
+        default=PARCELLATION_OPTS[siibra_base.JULICH_3],
         label='Parcellation',
         required=True,
         doc='Parcellation to be used'
@@ -99,11 +99,12 @@ class SiibraModel(ViewModel):
     subject_ids = Str(
         label='Subjects',
         required=True,
-        default='000',
+        default='101309',
         doc="""The list of all subject IDs for which the structural and optionally functional connectivities are 
         computed. Depending on the selected cohort, you can specify the IDs in the following ways: <br/>
-        a) For the "HCP" cohort, the subject IDs are: 000,001,002, etc. Each subject has exactly one 
-        subject ID associated to them. Thus, there are 3 ways to specify the IDs:<br/>
+        a) For the "HCP" cohort, the subject IDs are: 000,001,002, etc. (Julich 2.9 & 3.0.3), 
+        101309, 102008, etc. (Julich 3.1). Each subject has exactly one subject ID associated to them. 
+        Thus, there are 3 ways to specify the IDs:<br/>
         1. individually, delimited by a semicolon symbol: 000;001;002. <br/>
         2. As a range, specifying the first and last IDs: 000-050 will retrieve all the subjects starting with 
         subject 000 until subject 050 (51 subjects). <br/>

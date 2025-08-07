@@ -122,6 +122,9 @@ class ZIPConnectivityImporter(ABCUploader):
 
         for file_name in files:
             file_name_low = file_name.lower()
+            if file_name_low.startswith(".") or file_name_low.startswith("_"):
+                # Ignore hidden files
+                continue
             if self.WEIGHT_TOKEN in file_name_low:
                 weights_matrix = self.read_list_data(file_name)
             elif self.CENTRES_TOKEN in file_name_low or self.CENTRES_TOKEN2 in file_name_low:

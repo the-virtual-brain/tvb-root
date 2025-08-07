@@ -1,4 +1,4 @@
-{% if 'version' in versionInfo and currentVersion < versionInfo['version'] %}
+{% if 'version' in versionInfo and currentVersion.split('.') | map('int') | list < versionInfo['version'].split('.') | map('int') | list %}
 <div id="notification" tabindex="0" onkeypress="redirectToHrefChild(this)">
 
     <h1><mark>New:</mark> Version {{ versionInfo['version'] }} available!</h1>

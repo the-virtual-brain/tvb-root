@@ -31,7 +31,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tvb-library"
-version = "2.9.2"
+version = "2.11.0"
 description = "A package for performing whole brain simulations"
 readme = "README.rst"
 license = { file = "LICENSE" }
@@ -78,7 +78,7 @@ dependencies = [
     "networkx",
     "numba",
     "numexpr",
-    "numpy<2.0",
+    "numpy",
     "scipy",
     "six",
 ]

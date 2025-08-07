@@ -50,7 +50,7 @@ from tvb.core.services.operation_service import OperationService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
-from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment
+from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment, parse_positional_params
 from tvb.interfaces.web.controllers.decorators import settings, check_user, handle_error
 from tvb.interfaces.web.controllers.flow_controller import FlowController
 from tvb.interfaces.web.entities.context_overlay import OverlayTabDefinition
@@ -105,9 +105,9 @@ class ProjectController(BaseController):
         ## Select project if user choose one.
         if selected_project_id is not None:
             try:
-                selected_project = self.project_service.find_project(selected_project_id)
+                selected_project = self.project_service.find_project(int(selected_project_id))
                 self._mark_selected(selected_project)
-            except ProjectServiceException as excep:
+            except (ProjectServiceException, ValueError) as excep:
                 self.logger.error(excep)
                 self.logger.warning("Could not select project: " + str(selected_project_id))
                 common.set_error_message("Could not select project: " + str(selected_project_id))
@@ -147,9 +147,22 @@ class ProjectController(BaseController):
         if prj is not None and prj.id == int(project_id):
             SimulatorContext().clean_project_data_from_session()
 
+    @staticmethod
+    def _has_edit_permission(user, project=None):
+        """
+        Check whether the user has permissions to edit project.
+        In project creation use-case, the project will be None.
+        """
+        if project:
+            admin_username = project.administrator.username
+        else:
+            admin_username = user.username
+        return (user.username == admin_username) or (user.role == "ADMINISTRATOR")
+
     @expose_page
     @settings
-    def editone(self, project_id=None, cancel=False, save=False, delete=False, leave=False, **data):
+    @parse_positional_params
+    def editone(self, project_id:int=None, cancel=False, save=False, delete=False, leave=False, **data):
         """
         Create or change Project. When project_id is empty we create a 
         new entity, otherwise we are to edit and existent one.
@@ -167,10 +180,10 @@ class ProjectController(BaseController):
 
         current_user = common.get_logged_user()
         is_create = False
-        if project_id is None or not int(project_id):
+        if project_id is None:
             is_create = True
             data["administrator"] = current_user.display_name
-            admin_username = current_user.username
+            current_project = None
         else:
             current_project = self.project_service.find_project(project_id)
             if not save:
@@ -179,13 +192,12 @@ class ProjectController(BaseController):
                 data = dict(name=current_project.name, description=current_project.description,
                             disable_imports=current_project.disable_imports, max_operation_size=current_project.max_operation_size)
             data["administrator"] = current_project.administrator.display_name
-            admin_username = current_project.administrator.username
             self._mark_selected(current_project)
         data["project_id"] = project_id
 
         template_specification = dict(mainContent="project/editone", data=data, isCreate=is_create,
                                       title="Create new project" if is_create else "Edit " + data["name"],
-                                      editUsersEnabled=(current_user.username == admin_username))
+                                      editUsersEnabled=self._has_edit_permission(current_user, current_project))
         try:
             if cherrypy.request.method == 'POST' and save:
                 data = EditForm().to_python(data)
@@ -205,30 +217,42 @@ class ProjectController(BaseController):
             self.redirect(PROJECT_VIEW_ALL_PAGE)
 
         all_users, members, pages = self.user_service.get_users_for_project(current_user.username, project_id)
-        template_specification['usersList'] = all_users
-        template_specification['usersMembers'] = [m.id for m in members]
-        template_specification['usersPages'] = pages
+        template_specification['usersList'] = []
+        template_specification['usersTotal'] = len(all_users) * pages
+        template_specification['usersMembers'] = []
+        template_specification['usersPages'] = 0
         template_specification['usersCurrentPage'] = 1
         return self.fill_default_attributes(template_specification, 'properties')
 
-    @expose_fragment('project/project_members')
-    def getmemberspage(self, page, project_id=None):
-        """Retrieve a new page of Project members."""
-        current_name = common.get_logged_user().username
-        all_users, members, _ = self.user_service.get_users_for_project(current_name, project_id, int(page))
-        edit_enabled = True
+    def _get_members(self, page=1, project_id=None, search_pattern=None):
+        current_user = common.get_logged_user()
+        all_users, members, pages = self.user_service.get_users_for_project(current_user.username, project_id, page,
+                                                                            search_pattern=search_pattern)
+        current_project = None
         if project_id is not None:
             current_project = self.project_service.find_project(project_id)
-            edit_enabled = (current_name == current_project.administrator.username)
-        return dict(usersList=all_users, usersMembers=[m.id for m in members],
-                    usersCurrentPage=page, editUsersEnabled=edit_enabled)
+        return dict(usersList=all_users, usersMembers=[m.id for m in members], usersPages=pages,
+                    usersCurrentPage=page, editUsersEnabled=self._has_edit_permission(current_user, current_project),
+                    data=dict(project_id=project_id), pattern=search_pattern)
+
+    @expose_fragment('project/members_pages')
+    @parse_positional_params
+    def search_members(self, project_id:int=None, search_pattern:str=None):
+        """Retrieve all pages of Project members after search."""
+        return self._get_members(project_id=project_id, search_pattern=search_pattern)
+
+    @expose_fragment('project/project_members')
+    @parse_positional_params
+    def get_members_page(self, page:int, project_id:int=None, search_pattern:str=None):
+        """Retrieve a new page of Project members."""
+        return self._get_members(page, project_id, search_pattern)
 
     @expose_json
-    def set_visibility(self, entity_type, entity_gid, to_de_relevant):
+    @parse_positional_params
+    def set_visibility(self, entity_type:str, entity_gid:str, to_de_relevant:bool):
         """
         Method used for setting the relevancy/visibility on a DataType(Group)/Operation(Group.
         """
-        to_de_relevant = string2bool(to_de_relevant)
         is_operation, is_group = False, False
         if entity_type == self.NODE_OPERATION_TYPE:
             is_group = False
@@ -248,7 +272,9 @@ class ProjectController(BaseController):
         """
         Display table of operations for a given project selected
         """
-        if (project_id is None) or (not int(project_id)):
+        try:
+            project_id = int(project_id)
+        except (ValueError, TypeError):
             self.redirect(PROJECT_PAGE)
 
         ## Toggle filters
@@ -409,7 +435,8 @@ class ProjectController(BaseController):
         return template_specification
 
     @expose_fragment('project/linkable_projects')
-    def get_linkable_projects(self, datatype_id, is_group, entity_gid):
+    @parse_positional_params
+    def get_linkable_projects(self, datatype_id:int, is_group, entity_gid):
         """
         Returns the HTML which displays the link-able projects for the given dataType
         """
@@ -440,11 +467,12 @@ class ProjectController(BaseController):
         return template_specification
 
     @expose_fragment("overlay")
-    def get_operation_details(self, entity_gid, is_group=False, back_page='burst'):
+    @parse_positional_params
+    def get_operation_details(self, entity_gid:str, is_group:bool=False, back_page:str='burst'):
         """
         Returns the HTML which contains the details for the given operation.
         """
-        if string2bool(str(is_group)):
+        if is_group:
             # we have an OperationGroup entity.
             template_specification = self._compute_operation_details(entity_gid, True)
             # I expect that all the operations from a group are visible or not
@@ -513,7 +541,7 @@ class ProjectController(BaseController):
         Return the page skeleton for displaying the project structure.
         """
         try:
-            int(project_id)
+            project_id = int(project_id)
         except (ValueError, TypeError):
             self.redirect(PROJECT_PAGE)
 
@@ -533,7 +561,8 @@ class ProjectController(BaseController):
         return self.fill_default_attributes(template_specification, 'data')
 
     @expose_fragment("overlay")
-    def get_data_uploader_overlay(self, project_id):
+    @parse_positional_params
+    def get_data_uploader_overlay(self, project_id:int):
         """
         Returns the html which displays a dialog which allows the user
         to upload certain data into the application.
@@ -579,8 +608,8 @@ class ProjectController(BaseController):
         if cherrypy.request.method != 'POST' or cancel:
             raise cherrypy.HTTPRedirect(success_link)
         try:
-            int(project_id)
-            int(algorithm_id)
+            project_id = int(project_id)
+            algorithm_id = int(algorithm_id)
         except (ValueError, TypeError):
             raise cherrypy.HTTPRedirect(success_link)
 
@@ -593,8 +622,9 @@ class ProjectController(BaseController):
     @cherrypy.expose
     @handle_error(redirect=False)
     @check_user
-    def readjsonstructure(self, project_id, visibility_filter=StaticFiltersFactory.FULL_VIEW,
-                          first_level=None, second_level=None, filter_value=None):
+    @parse_positional_params
+    def readjsonstructure(self, project_id:int, visibility_filter:str=StaticFiltersFactory.FULL_VIEW,
+                          first_level:str=None, second_level:str=None, filter_value:str=None):
         """
         AJAX exposed method. 
         Will return the complete JSON for Project's structure, or filtered tree
@@ -606,8 +636,6 @@ class ProjectController(BaseController):
             self.set_project_structure_grouping(first_level, second_level)
 
         selected_filter = StaticFiltersFactory.build_datatype_filters(single_filter=visibility_filter)
-        if project_id == 'undefined':
-            project_id = common.get_current_project().id
         project = self.project_service.find_project(project_id)
         json_structure = self.project_service.get_project_structure(project, selected_filter,
                                                                     first_level, second_level, filter_value)
@@ -620,7 +648,8 @@ class ProjectController(BaseController):
     @cherrypy.expose
     @handle_error(redirect=False)
     @check_user
-    def createlink(self, link_data, project_id):
+    @parse_positional_params
+    def createlink(self, link_data:str, project_id:int):
         """
         Delegate the creation of the actual link to the algorithm service.
         """
@@ -629,11 +658,12 @@ class ProjectController(BaseController):
     @cherrypy.expose
     @handle_error(redirect=False)
     @check_user
-    def removelink(self, link_data, project_id, is_group):
+    @parse_positional_params
+    def removelink(self, link_data:str, project_id:int, is_group:bool):
         """
         Delegate the creation of the actual link to the flow service.
         """
-        if not string2bool(str(is_group)):
+        if not is_group:
             self.algorithm_service.remove_link(link_data, project_id)
         else:
             all_data = self.project_service.get_datatype_in_group(link_data)
@@ -644,7 +674,8 @@ class ProjectController(BaseController):
     @cherrypy.expose
     @handle_error(redirect=False)
     @check_user
-    def noderemove(self, project_id, node_gid):
+    @parse_positional_params
+    def noderemove(self, project_id:int, node_gid):
         """
         AJAX exposed method, to execute operation of data removal.
         """
@@ -698,7 +729,8 @@ class ProjectController(BaseController):
     @cherrypy.expose
     @handle_error(redirect=False)
     @check_user
-    def downloadproject(self, project_id):
+    @parse_positional_params
+    def downloadproject(self, project_id:int):
         """
         Export the data from a whole project.
         """
@@ -737,3 +769,4 @@ class EditForm(formencode.Schema):
     visited_pages = validators.UnicodeString(not_empty=False)
     max_operation_size = validators.Int(not_empty=False, min=0)
     disable_imports = validators.Bool()
+    search_pattern = validators.UnicodeString(not_empty=False)

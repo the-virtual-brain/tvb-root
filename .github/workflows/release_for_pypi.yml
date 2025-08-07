@@ -1,0 +1,122 @@
+name: Release TVB packages on Pypi - manually choose which ones should be released for each release
+
+on:
+  workflow_dispatch:
+    inputs:
+      label:
+        type: boolean
+        default: true
+        description: "Choose packages to release:"
+      tvb_library:
+        type: boolean
+        default: false
+        description: "tvb-library"
+      tvb_framework:
+        type: boolean
+        default: false
+        description: "tvb-framework"
+      tvb_storage:
+        type: boolean
+        default: false
+        description: "tvb-storage"
+      tvb_contrib:
+        type: boolean
+        default: false
+        description: "tvb-contrib"
+      tvb_rest_client:
+        type: boolean
+        default: false
+        description: "tvb-rest-client"
+      tvb_bids_monitor:
+        type: boolean
+        default: false
+        description: "tvb-bids-monitor"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.13"
+
+      - name: Install tools
+        run: python3 -m pip install --upgrade twine
+
+      - name: Build packages for Pypi
+        run: |
+          cd tvb_build
+          bash package_for_pip.sh
+          ls ../dist
+
+      - name: Store artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tvb_pypi_packages
+          path: dist/
+          retention-days: 10
+
+      - name: Release tvb-library
+        if: github.event.inputs.tvb_library == 'true'
+        run: python3 -m twine upload dist/tvb_library-*
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USER }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASS }}
+
+      - name: Release tvb-framework
+        if: github.event.inputs.tvb_framework == 'true'
+        run: python3 -m twine upload dist/tvb_framework-*
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USER }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASS }}
+
+      - name: Release tvb-storage
+        if: github.event.inputs.tvb_storage == 'true'
+        run: python3 -m twine upload dist/tvb_storage-*
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USER }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASS }}
+
+      - name: Release tvb-contrib
+        if: github.event.inputs.tvb_contrib == 'true'
+        run: python3 -m twine upload dist/tvb_contrib-*
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USER }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASS }}
+
+      - name: Release tvb-rest_client
+        if: github.event.inputs.tvb_rest_client == 'true'
+        run: python3 -m twine upload dist/tvb_rest_client-*
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USER }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASS }}
+
+      - name: Release tvb-bids_monitor
+        if: github.event.inputs.tvb_bids_monitor == 'true'
+        run: python3 -m twine upload dist/tvb_bids_monitor-*
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USER }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASS }}
+
+      - name: Extract version from package name
+        id: get_version
+        run: |
+          FILENAME=$((ls dist/*.tar.gz || ls dist/*.whl) | head -n 1)
+          VERSION=$(echo "$FILENAME" | grep -oP '(?<=-)\d+\.\d+\.\d+(?=\.tar\.gz|\.whl)')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+        # REGEX breakdown:
+        #   (?<=-) – version comes after a dash
+        #   \d+\.\d+\.\d+ – match version (major.minor.patch)
+        #   (?=\.tar\.gz|\.whl) – version is followed by .tar.gz or .whl
+
+      - name: Create tag for release
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git tag ${{ steps.get_version.outputs.version }}
+          git push origin ${{ steps.get_version.outputs.version }}

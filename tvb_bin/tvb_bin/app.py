@@ -49,9 +49,9 @@ from tvb.basic.profile import TvbProfile
 
 try:
     # Needed for builds
-    import psycopg2
+    import psycopg
 except ImportError:
-    print("Could not find compatible psycopg2/postgresql bindings. Postgresql support not available.")
+    print("Could not find compatible psycopg/postgresql bindings. Postgresql support not available.")
 
 # Needed for the Mac build
 if 'py2app' in sys.argv:

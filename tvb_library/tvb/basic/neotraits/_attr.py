@@ -298,8 +298,15 @@ class _Number(Attr):
             # as can_cast works with dtype strings as well
             # can_cast('i8', 'i32')
             raise TraitTypeError("can't be set to {!r}. Need a number.".format(value), attr=self)
-        if not numpy.can_cast(value, self.field_type, 'safe'):
+
+        # this replaces the old can_cast method, which changed drastically in v2.0
+        try:
+            value_as_array = numpy.array(value, dtype=self.field_type)
+        except Exception:
             raise TraitTypeError("can't be set to {!r}. No safe cast.".format(value), attr=self)
+        if value_as_array.item() != value:
+            raise TraitTypeError("can't be set to {!r}. No safe cast.".format(value), attr=self)
+
         if self.choices is not None:
             if value not in self.choices:
                 raise TraitValueError("value {!r} must be one of {}".format(value, self.choices), attr=self)

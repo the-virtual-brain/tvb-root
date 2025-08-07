@@ -199,7 +199,7 @@ class StandAloneClient(BackendClient):
     @staticmethod
     def start_operation(operation_id):
         LOGGER.info("Start processing operation id:{}".format(operation_id))
-
+        operation_id = int(operation_id)
         operation = dao.get_operation_by_id(operation_id)
         operation.queue_full = False
         dao.store_entity(operation)
@@ -219,6 +219,7 @@ class StandAloneClient(BackendClient):
     @staticmethod
     def execute(operation_id, user_name_label, adapter_instance):
         """Start asynchronous operation locally"""
+        operation_id = int(operation_id)
         if TvbProfile.current.web.IS_CLOUD_DEPLOY or LOCKS_QUEUE.qsize() == 0:
             operation = dao.get_operation_by_id(operation_id)
             operation.queue_full = True

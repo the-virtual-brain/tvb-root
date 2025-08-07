@@ -548,6 +548,9 @@ def test_int_attribute():
         c = Int(field_type=np.uint16)
 
     ainst = A()
+    # floats with no fractional part are ok
+    ainst.a = 4.0
+
     assert ainst.b == 0
 
     # type is out of bounds but value is within the bounds. So this is ok
@@ -565,10 +568,6 @@ def test_int_attribute():
         ainst.a = 3.12
 
     with pytest.raises(TypeError):
-        # floats are not ok even when they don't have decimals
-        ainst.a = 4.0
-
-    with pytest.raises(TypeError):
         # negative value is not ok in a unsigned int field
         ainst.c = -1
 
@@ -581,11 +580,9 @@ def test_int_attribute():
         class B(HasTraits):
             a = Int(field_type=float)
 
-    with pytest.raises(TypeError):
-        # incompatible field default
-        class B(HasTraits):
-            a = Int(default=1.0)
-
+    # float with no fractional part is ok as default for Int attribute
+    class B(HasTraits):
+        a = Int(default=1.0)
 
 def test_numerics_respect_choices_and_null():
     with pytest.raises(TraitValueError):
