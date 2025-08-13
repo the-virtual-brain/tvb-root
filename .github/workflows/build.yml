@@ -1,5 +1,7 @@
 name: Test Py
-on: [push]
+on:
+  push:
+    branches-ignore: [tvb_kernels]
 
 jobs:
   build:

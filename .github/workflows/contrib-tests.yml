@@ -1,5 +1,7 @@
 name: Check tvb-contrib
-on: [push]
+on:
+  push:
+    branches-ignore: [tvb_kernels]
 
 jobs:
   build:
