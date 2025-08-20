@@ -73,6 +73,7 @@ class CoSimulator(Simulator):
     good_cosim_update_values_shape = (0, 0, 0, 0)
     cosim_history = None  # type: CosimHistory
     _cosimulation_flag = False
+    _current_stimulus = None
     _compute_requirements = True
     number_of_cosim_monitors = 0
     _cosim_monitors_noncoupling_indices = []
@@ -198,6 +199,7 @@ class CoSimulator(Simulator):
         else:
             self._cosimulation_flag = False
             self.synchronization_n_step = 0
+        self._current_stimulus = self._prepare_stimulus()
 
     def _loop_update_cosim_history(self, step, state):
         """
@@ -238,6 +240,12 @@ class CoSimulator(Simulator):
             if numpy.any(numpy.isnan(state[self.model.cvar, :, :])):
                 raise NumericalInstability("There are missing values for continue the simulation")
             super(CoSimulator,self)._loop_update_history(step, state)
+
+    def _loop_update_stimulus(self, step, stimulus):
+        """Update stimulus values for current time step."""
+        # TODO: Think about how to have the same behavior as for the Simulator for continuous simulation!
+        if self.stimulus is not None:
+            stimulus[self.model.stvar, :, :] = self.stimulus(step-1).reshape((1, -1, 1))
 
     def __call__(self, simulation_length=None, random_state=None, n_steps=None,
                  cosim_updates=None, recompute_requirements=False):
@@ -303,15 +311,16 @@ class CoSimulator(Simulator):
         self.integrator.set_random_state(random_state)
 
         local_coupling = self._prepare_local_coupling()
-        stimulus = self._prepare_stimulus()
         state = self.current_state
+        if self._current_stimulus is None:
+            self._current_stimulus = self._prepare_stimulus()
         start_step = self.current_step + 1
         node_coupling = self._loop_compute_node_coupling(start_step)
 
         # integration loop
         for step in range(start_step, start_step + n_steps):
-            self._loop_update_stimulus(step, stimulus)
-            state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, stimulus)
+            self._loop_update_stimulus(step, self._current_stimulus)
+            state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, self._current_stimulus)
             state_output = self._loop_update_cosim_history(step, state)
             node_coupling = self._loop_compute_node_coupling(step + 1)
             output = self._loop_monitor_output(step - self.synchronization_n_step - self.relative_output_time_steps,
