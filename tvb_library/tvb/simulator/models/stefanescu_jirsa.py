@@ -31,11 +31,12 @@ Models developed by Stefanescu-Jirsa, based on reduced-set analyses of infinite 
 import numpy
 from scipy.integrate import trapezoid as scipy_integrate_trapz
 from scipy.stats import norm as scipy_stats_norm
-from .base import Model
+from .base import ModelNumbaDfun
 from tvb.basic.neotraits.api import NArray, Final, List, Range
+from numba import guvectorize,float64,int64
 
 
-class ReducedSetBase(Model):
+class ReducedSetBase(ModelNumbaDfun):
     number_of_modes = 3
     nu = 1500
     nv = 1500
@@ -49,6 +50,27 @@ class ReducedSetBase(Model):
             raise ValueError("nu (%d) must be divisible by the number_of_modes (%d), nu mod n_mode = %d",
                              self.nu, self.number_of_modes, self.nu % self.number_of_modes)
         self.update_derived_parameters()
+
+
+@guvectorize([(float64[:],) * 17+(float64,)+(float64[:],)*4 + (float64[:, :],)*2], "(n),"*8+"(m),"*9+"()"+",(m)"*4+",(n,n)"+ "-> (m,n)", nopython=True)
+
+def _numba_dfun_fitzHughNagumo(tau,a,b,K11,K12,K21,sigma,mu,Aik,Bik,Cik,e_i,f_i,IE_i,II_i,
+    m_i,n_i,local_coupling,xi,eta,alpha,beta,c_0,derivative):
+    
+    derivative[0,:] = (tau * (xi - e_i * xi ** 3 / 3.0 - eta) +
+           K11 * (numpy.dot(xi, Aik) - xi) -
+           K12 * (numpy.dot(alpha, Bik) - xi) +
+           tau * (IE_i + c_0 + local_coupling * xi))
+    
+    derivative[1,:] = (xi - b * eta + m_i) / tau
+ 
+    derivative[2,:] = (tau * (alpha - f_i * alpha ** 3 / 3.0 - beta) +
+            K21[2] * (numpy.dot(xi, Cik) - alpha) +
+            tau[2] * (II_i + c_0 + local_coupling * xi))
+
+    derivative[3,:] = (alpha - b * beta + n_i) / tau
+
+
 
 
 class ReducedSetFitzHughNagumo(ReducedSetBase):
@@ -190,8 +212,7 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
     II_i = None
     m_i = None
     n_i = None
-
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
 
 
@@ -221,22 +242,53 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
         derivative = numpy.empty_like(state_variables)
         # sum the activity from the modes
         c_0 = coupling[0, :].sum(axis=1)[:, numpy.newaxis]
-
         # TODO: generalize coupling variables to a matrix form
         # c_1 = coupling[1, :] # this cv represents alpha
-
         derivative[0] = (self.tau * (xi - self.e_i * xi ** 3 / 3.0 - eta) +
                self.K11 * (numpy.dot(xi, self.Aik) - xi) -
                self.K12 * (numpy.dot(alpha, self.Bik) - xi) +
                self.tau * (self.IE_i + c_0 + local_coupling * xi))
-
+        
         derivative[1] = (xi - self.b * eta + self.m_i) / self.tau
-
+        
         derivative[2] = (self.tau * (alpha - self.f_i * alpha ** 3 / 3.0 - beta) +
                   self.K21 * (numpy.dot(xi, self.Cik) - alpha) +
                   self.tau * (self.II_i + c_0 + local_coupling * xi))
 
         derivative[3] = (alpha - self.b * beta + self.n_i) / self.tau
+
+        return derivative        
+ 
+    def dfun(self, state_variables, coupling, local_coupling=0.0):
+        r"""
+        The system's equations for the i-th mode at node q are:
+        .. math::
+                \dot{\xi}_{i}    &=  c\left(\xi_i-e_i\frac{\xi_{i}^3}{3} -\eta_{i}\right)
+                                  + K_{11}\left[\sum_{k=1}^{o} A_{ik}\xi_k-\xi_i\right]
+                                  - K_{12}\left[\sum_{k =1}^{o} B_{i k}\alpha_k-\xi_i\right] + cIE_i                       \\
+                                 &\, + \left[\sum_{k=1}^{o} \mathbf{\Gamma}(\xi_{kq}, \xi_{kr}, u_{qr})\right]
+                                  +  \left[\sum_{k=1}^{o} W_{\zeta}\cdot\xi_{kr} \right] \\
+                \dot{\eta}_i     &= \frac{1}{c}\left(\xi_i-b\eta_i+m_i\right)                                              \\
+                & \\
+                \dot{\alpha}_i   &= c\left(\alpha_i-f_i\frac{\alpha_i^3}{3}-\beta_i\right)
+                                  + K_{21}\left[\sum_{k=1}^{o} C_{ik}\xi_i-\alpha_i\right] + cII_i                          \\
+                                 & \, + \left[\sum_{k=1}^{o} \mathbf{\Gamma}(\xi_{kq}, \xi_{kr}, u_{qr})\right]
+                                  + \left[\sum_{k=1}^{o} W_{\zeta}\cdot\xi_{kr}\right] \\
+                                 & \\
+                \dot{\beta}_i    &= \frac{1}{c}\left(\alpha_i-b\beta_i+n_i\right)
+        """
+        xi = state_variables[0, :]
+        eta = state_variables[1, :]
+        alpha = state_variables[2, :]
+        beta = state_variables[3, :]
+        
+        # sum the activity from the modes
+        c_0 = coupling[0, :].sum(axis=1)[:, numpy.newaxis]
+        # TODO: generalize coupling variables to a matrix form
+        # c_1 = coupling[1, :] # this cv represents alpha
+        deriv = _numba_dfun_fitzHughNagumo(self.tau,self.a,self.b,self.K11,self.K12,self.K21,self.sigma,self.mu,
+        self.Aik,self.Bik,self.Cik,self.e_i,self.f_i,self.IE_i,self.II_i,
+        self.m_i,self.n_i,local_coupling,xi,eta,alpha,beta,c_0)
 
         return derivative
 
@@ -303,8 +355,27 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
         self.m_i = (self.a * intcVdZ).T
         self.n_i = (self.a * intcUdZ).T
         # import pdb; pdb.set_trace()
+@guvectorize([(float64[:],)*30+(float64,)+(float64[:,:],)],"(n),"*9+"(m),"*21+"() -> (n,m)",nopython =True)
+def _numba_dfun_hindmarshRose(c_0,r,s,xo,K11,K12,K21,sigma,mu,A_ik,B_ik,C_ik,a_i,b_i,c_i,d_i,e_i,f_i,h_i,p_i,IE_i,II_i,m_i,n_i,xi,eta,tau,alpha,beta,gamma,local_coupling,derivative):
+    
+    derivative[0] = (eta - a_i * xi ** 3 + b_i * xi ** 2 - tau +
+            K11 * (numpy.dot(xi, A_ik) - xi) -
+            K12 * (numpy.dot(alpha, B_ik) - xi) +
+            IE_i + c_0 + local_coupling * xi)
 
+    derivative[1] = c_i - d_i * xi ** 2 - eta
 
+    derivative[2] = r * s * xi - r * tau - m_i
+
+    derivative[3] = (beta - e_i * alpha ** 3 + f_i * alpha ** 2 - gamma +
+                K21 * (numpy.dot(xi, C_ik) - alpha) +
+                II_i + c_0 + local_coupling * xi)
+
+    derivative[4] = h_i - p_i * alpha ** 2 - beta
+
+    derivative[5] = r * s * alpha - r * gamma - n_i
+
+    
 class ReducedSetHindmarshRose(ReducedSetBase):
     r"""
     .. [SJ_2008] Stefanescu and Jirsa, PLoS Computational Biology, *A Low
@@ -485,7 +556,7 @@ class ReducedSetHindmarshRose(ReducedSetBase):
     m_i = None
     n_i = None
 
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
         The equations of the population model for i-th mode at node q are:
 
@@ -540,6 +611,50 @@ class ReducedSetHindmarshRose(ReducedSetBase):
 
         return derivative
 
+
+
+    def dfun(self, state_variables, coupling, local_coupling=0.0):
+        r"""
+        The equations of the population model for i-th mode at node q are:
+
+        .. math::
+                \dot{\xi}_i     &=  \eta_i-a_i\xi_i^3 + b_i\xi_i^2- \tau_i
+                                 + K_{11} \left[\sum_{k=1}^{o} A_{ik} \xi_k - \xi_i \right]
+                                 - K_{12} \left[\sum_{k=1}^{o} B_{ik} \alpha_k - \xi_i\right] + IE_i \\
+                                &\, + \left[\sum_{k=1}^{o} \mathbf{\Gamma}(\xi_{kq}, \xi_{kr}, u_{qr})\right]
+                                 + \left[\sum_{k=1}^{o} W_{\zeta}\cdot\xi_{kr} \right] \\
+                & \\
+                \dot{\eta}_i    &=  c_i-d_i\xi_i^2 -\tau_i \\
+                & \\
+                \dot{\tau}_i    &=  rs\xi_i - r\tau_i -m_i \\
+                & \\
+                \dot{\alpha}_i  &=  \beta_i - e_i \alpha_i^3 + f_i \alpha_i^2 - \gamma_i
+                                 + K_{21} \left[\sum_{k=1}^{o} C_{ik} \xi_k - \alpha_i \right] + II_i \\
+                                &\, +\left[\sum_{k=1}^{o}\mathbf{\Gamma}(\xi_{kq}, \xi_{kr}, u_{qr})\right]
+                                 + \left[\sum_{k=1}^{o}W_{\zeta}\cdot\xi_{kr}\right] \\
+                & \\
+                \dot{\beta}_i   &= h_i - p_i \alpha_i^2 - \beta_i \\
+                \dot{\gamma}_i  &= rs \alpha_i - r \gamma_i - n_i
+
+        """
+
+        xi = state_variables[0, :]
+        eta = state_variables[1, :]
+        tau = state_variables[2, :]
+        alpha = state_variables[3, :]
+        beta = state_variables[4, :]
+        gamma = state_variables[5, :]
+        derivative = numpy.empty_like(state_variables)
+
+        c_0 = coupling[0, :].sum(axis=1)[:, numpy.newaxis]
+        # c_1 = coupling[1, :]
+
+        derivative = _numbba_dfun_hindmarshRose(c_0,self.r,
+        self.s,self.xo,self.K11,self.K12,self.K21,self.sigma,self.mu,self.A_ik,
+        self.B_ik,self.C_ik,self.a_i,self.b_i,self.c_i,self.d_i,self.e_i,
+        self.f_i,self.h_i,self.p_i,self.IE_i,self.II_i,self.m_i,self.n_i,
+        xi,eta,tau,alpha,beta,gamma,local_coupling)
+        return derivative
     def update_derived_parameters(self, corrected_d_p=True):
         """
         Calculate coefficients for the neural field model based on a Reduced set
