@@ -103,8 +103,8 @@ class TestTVBImporter(BaseTestCase):
         in the same zip file - exported from a group)
         """
         self._import(self.zip_file_path)
-        _, count = get_filtered_datatypes(self.test_project.id, self.datatype.module + "." + self.datatype.type)
-        assert 9 == count, "9 datatypes should have been imported from group."
+        datatypes = dao.get_datatypes_in_project(self.test_project.id)
+        assert 12 == len(datatypes), "12 datatypes should have been imported from group."
 
     def test_h5_import(self, prepare_importer_data):
         """

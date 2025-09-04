@@ -295,7 +295,7 @@ class TestOperationService(BaseTestCase):
                                                              view_model=view_model)
 
         self.operation_service._send_to_cluster(operation, adapter)
-        self.operation_service.stop_operation(operation)
+        self.operation_service.stop_operation(operation.id)
 
         operation = dao.get_operation_by_id(operation.id)
         assert operation.status == model_operation.STATUS_CANCELED, "Operation should have been canceled!"
