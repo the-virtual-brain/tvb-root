@@ -104,7 +104,7 @@ class TestTVBImporter(BaseTestCase):
         """
         self._import(self.zip_file_path)
         _, count = get_filtered_datatypes(self.test_project.id, self.datatype.module + "." + self.datatype.type)
-        assert 9, count == "9 datatypes should have been imported from group."
+        assert 9 == count, "9 datatypes should have been imported from group."
 
     def test_h5_import(self, prepare_importer_data):
         """
@@ -114,12 +114,12 @@ class TestTVBImporter(BaseTestCase):
 
         data_types, count = get_filtered_datatypes(self.test_project.id,
                                                    self.datatype.module + "." + self.datatype.type)
-        assert 1, len(data_types) == "Project should contain only one data type."
-        assert 1, count == "Project should contain only one data type."
+        assert 1 == len(data_types), "Project should contain only one data type."
+        assert 1 == count, "Project should contain only one data type."
 
         data_type_entity = load_entity_by_gid(data_types[0][2])
         assert data_type_entity is not None, "Datatype should not be none"
-        assert self.datatype.gid, data_type_entity.gid == "Imported datatype should have the same gid"
+        assert self.datatype.gid == data_type_entity.gid, "Imported datatype should have the same gid"
 
     def test_import_datatype_with_links(self, region_mapping_index_factory, user_factory, project_factory):
         """

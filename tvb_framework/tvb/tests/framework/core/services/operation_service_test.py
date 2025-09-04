@@ -298,7 +298,7 @@ class TestOperationService(BaseTestCase):
         self.operation_service.stop_operation(operation)
 
         operation = dao.get_operation_by_id(operation.id)
-        assert operation.status, model_operation.STATUS_CANCELED == "Operation should have been canceled!"
+        assert operation.status == model_operation.STATUS_CANCELED, "Operation should have been canceled!"
 
     def test_stop_operation_finished(self, test_adapter_factory):
         """
@@ -318,7 +318,7 @@ class TestOperationService(BaseTestCase):
         dao.store_entity(operation)
         self.operation_service.stop_operation(operation.id)
         operation = dao.get_operation_by_id(operation.id)
-        assert operation.status, model_operation.STATUS_FINISHED == "Operation shouldn't have been canceled!"
+        assert operation.status == model_operation.STATUS_FINISHED, "Operation shouldn't have been canceled!"
 
     def test_fire_operation(self):
         """
