@@ -44,7 +44,7 @@ RET_ERROR = 'Not all members returned'
 TEST_DISPLAY_NAME = "test_name"
 TEST_EMAIL = "test_user@tvb.org"
 TEST_EMAIL2 = "test_mail@tvb.org"
-TEST_PASS = "pass"
+TEST_PASS = "test_pass"
 TEST_PASSWORD = "test_password"
 TEST_ROLE = "user"
 TEST_USER = "test_user"
@@ -131,7 +131,7 @@ class TestUserService(TransactionalTestCase):
         """
         Try to create a user with an empty username field.
         """
-        data = dict(username="", display_name=TEST_DISPLAY_NAME, password="test_pass", email=TEST_EMAIL, role=TEST_ROLE,
+        data = dict(username="", display_name=TEST_DISPLAY_NAME, password=TEST_PASS, email=TEST_EMAIL, role=TEST_ROLE,
                     comment="")
         with pytest.raises(UsernameException):
             self.user_service.create_user(**data)
@@ -140,7 +140,7 @@ class TestUserService(TransactionalTestCase):
         """
         Try to create a user with no username data.
         """
-        data = dict(password="test_pass", display_name=TEST_DISPLAY_NAME, email=TEST_EMAIL, role=TEST_ROLE, comment="")
+        data = dict(password=TEST_PASS, display_name=TEST_DISPLAY_NAME, email=TEST_EMAIL, role=TEST_ROLE, comment="")
         with pytest.raises(UsernameException):
             self.user_service.create_user(**data)
 
@@ -217,7 +217,7 @@ class TestUserService(TransactionalTestCase):
         Test the method that checks if a userName is valid or not (if it already exists
         in the database the userName is not valid).
         """
-        user = model_project.User(TEST_USER, TEST_DISPLAY_NAME, "test_pass", TEST_EMAIL2, False, TEST_ROLE)
+        user = model_project.User(TEST_USER, TEST_DISPLAY_NAME, TEST_PASS, TEST_EMAIL2, False, TEST_ROLE)
         dao.store_entity(user)
         assert not self.user_service.is_username_valid(TEST_USER), "Should be False but got True"
         assert self.user_service.is_username_valid("test_user2"), "Should be True but got False"
@@ -226,7 +226,7 @@ class TestUserService(TransactionalTestCase):
         """
         Standard flow for a validate user action.
         """
-        user = model_project.User(TEST_USER, TEST_DISPLAY_NAME, "test_pass", TEST_EMAIL2, False, TEST_ROLE)
+        user = model_project.User(TEST_USER, TEST_DISPLAY_NAME, TEST_PASS, TEST_EMAIL2, False, TEST_ROLE)
         dao.store_entity(user)
         assert self.user_service.validate_user(TEST_USER), "Validation failed when it shouldn't have."
 
@@ -234,7 +234,7 @@ class TestUserService(TransactionalTestCase):
         """
         Flow for trying to validate a user that was already validated.
         """
-        user = model_project.User(TEST_USER, TEST_DISPLAY_NAME, "test_pass", TEST_EMAIL2, True, TEST_ROLE)
+        user = model_project.User(TEST_USER, TEST_DISPLAY_NAME, TEST_PASS, TEST_EMAIL2, True, TEST_ROLE)
         dao.store_entity(user)
         assert not self.user_service.validate_user(TEST_USER), "Validation invalid."
 
@@ -242,7 +242,7 @@ class TestUserService(TransactionalTestCase):
         """
         Flow for trying to validate a user that doesn't exist in the database.
         """
-        user = model_project.User(TEST_USER, TEST_DISPLAY_NAME, "test_pass", TEST_EMAIL2, True, TEST_ROLE)
+        user = model_project.User(TEST_USER, TEST_DISPLAY_NAME, TEST_PASS, TEST_EMAIL2, True, TEST_ROLE)
         dao.store_entity(user)
         assert not self.user_service.validate_user("test_user2"), "Validation done even tho user is non-existent"
 
@@ -250,18 +250,18 @@ class TestUserService(TransactionalTestCase):
         """
         Standard login flow with a valid username and password.
         """
-        user = model_project.User(TEST_USER, 'test_name', hash_password("test_pass"), TEST_EMAIL2, True,
+        user = model_project.User(TEST_USER, 'test_name', hash_password(TEST_PASS), TEST_EMAIL2, True,
                                   TEST_ROLE)
         dao.store_entity(user)
         available_users = dao.get_all_users()
         assert 2 == len(available_users)
-        assert self.user_service.check_login(TEST_USER, "test_pass") is not None, "Login failed when it shouldn't."
+        assert self.user_service.check_login(TEST_USER, TEST_PASS) is not None, "Login failed when it shouldn't."
 
     def test_check_login_bad_pass(self):
         """
         Flow for entering a bad/invalid password.
         """
-        user = model_project.User(TEST_USER, 'test_user_name', hash_password("test_pass"), TEST_EMAIL2, True,
+        user = model_project.User(TEST_USER, 'test_user_name', hash_password(TEST_PASS), TEST_EMAIL2, True,
                                   TEST_ROLE)
         dao.store_entity(user)
         available_users = dao.get_all_users()
@@ -272,12 +272,12 @@ class TestUserService(TransactionalTestCase):
         """
         Flow for entering a bad/invalid username.
         """
-        user = model_project.User(TEST_USER, 'test_name', hash_password("test_pass"), TEST_EMAIL2, True,
+        user = model_project.User(TEST_USER, 'test_name', hash_password(TEST_PASS), TEST_EMAIL2, True,
                                   TEST_ROLE)
         dao.store_entity(user)
         available_users = dao.get_all_users()
         assert 2 == len(available_users)
-        assert self.user_service.check_login("bad_user", "test_pass") is None, "Login succeeded with bad userName."
+        assert self.user_service.check_login("bad_user", TEST_PASS) is None, "Login succeeded with bad userName."
 
     def test_get_users_for_project(self):
         """
