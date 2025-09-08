@@ -45,6 +45,14 @@ from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
 
+DATA_ERROR = "Wrong data stored."
+DUMMY_ADAPTER_NAME = "DummyAdapter1"
+DUMMY_ADAPTER2_NAME = "DummyAdapter2"
+DUMMY_ADAPTER3_NAME = "DummyAdapterHDDRequired"
+DUMMY_ADAPTER_PATH = "tvb.tests.framework.adapters.dummy_adapter1"
+DUMMY_ADAPTER2_PATH = "tvb.tests.framework.adapters.dummy_adapter2"
+DUMMY_ADAPTER3_PATH = "tvb.tests.framework.adapters.dummy_adapter3"
+
 
 class TestOperationService(BaseTestCase):
     """
@@ -78,7 +86,7 @@ class TestOperationService(BaseTestCase):
         count = dao.count_datatypes(self.test_project.id, DummyDataTypeIndex)
         assert expected_cnt == count
         datatype = dao.try_load_last_entity_of_type(self.test_project.id, DummyDataTypeIndex)
-        assert datatype.subject == DataTypeMetaData.DEFAULT_SUBJECT, "Wrong data stored."
+        assert datatype.subject == DataTypeMetaData.DEFAULT_SUBJECT, DATA_ERROR
         return datatype
 
     def test_datatypes_groups(self, test_adapter_factory, datatype_group_factory):
@@ -91,7 +99,7 @@ class TestOperationService(BaseTestCase):
         dt_group, _ = datatype_group_factory(project=self.test_project)
         model = DummyModel()
         test_adapter_factory()
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter1", "DummyAdapter1")
+        adapter = TestFactory.create_adapter(DUMMY_ADAPTER_PATH, DUMMY_ADAPTER_NAME)
 
         operations = dao.get_operations_in_group(dt_group.id)
 
@@ -128,7 +136,7 @@ class TestOperationService(BaseTestCase):
         Test the actual operation flow by executing a test adapter.
         """
         test_adapter_factory()
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter1", "DummyAdapter1")
+        adapter = TestFactory.create_adapter(DUMMY_ADAPTER_PATH, DUMMY_ADAPTER_NAME)
         view_model = DummyModel()
         view_model.test1_val1 = 5
         view_model.test1_val2 = 5
@@ -141,15 +149,15 @@ class TestOperationService(BaseTestCase):
         assert count == 1
         assert len(dts) == 1
         datatype = dao.get_datatype_by_id(dts[0][0])
-        assert datatype.subject == "Test4242", "Wrong data stored."
-        assert datatype.type == adapter.get_output()[0].__name__, "Wrong data stored."
+        assert datatype.subject == "Test4242", DATA_ERROR
+        assert datatype.type == adapter.get_output()[0].__name__, DATA_ERROR
 
     def test_delete_dt_free_hdd_space(self, test_adapter_factory, operation_factory):
         """
         Launch two operations and give enough available space for user so that both should finish.
         """
         test_adapter_factory(adapter_class=DummyAdapterHDDRequired)
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter3", "DummyAdapterHDDRequired")
+        adapter = TestFactory.create_adapter(DUMMY_ADAPTER3_PATH, DUMMY_ADAPTER3_NAME)
         view_model = adapter.get_view_model()()
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(view_model))
 
@@ -170,7 +178,7 @@ class TestOperationService(BaseTestCase):
         Launch two operations and give enough available space for user so that both should finish.
         """
         test_adapter_factory(adapter_class=DummyAdapterHDDRequired)
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter3", "DummyAdapterHDDRequired")
+        adapter = TestFactory.create_adapter(DUMMY_ADAPTER3_PATH, DUMMY_ADAPTER3_NAME)
         view_model = adapter.get_view_model()()
         TvbProfile.current.MAX_DISK_SPACE = 2 * float(adapter.get_required_disk_size(view_model))
 
@@ -192,7 +200,7 @@ class TestOperationService(BaseTestCase):
         Launch two operations and give available space for user so that the first should finish,
         but after the update to the user hdd size the second should not.
         """
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter3", "DummyAdapterHDDRequired")
+        adapter = TestFactory.create_adapter(DUMMY_ADAPTER3_PATH, DUMMY_ADAPTER3_NAME)
         view_model = adapter.get_view_model()()
 
         TvbProfile.current.MAX_DISK_SPACE = (1 + float(adapter.get_required_disk_size(view_model)))
@@ -214,7 +222,7 @@ class TestOperationService(BaseTestCase):
         """
         Test the actual operation flow by executing a test adapter.
         """
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter3", "DummyAdapterHDDRequired")
+        adapter = TestFactory.create_adapter(DUMMY_ADAPTER3_PATH, DUMMY_ADAPTER3_NAME)
         view_model = adapter.get_view_model()()
 
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(view_model))
@@ -228,7 +236,7 @@ class TestOperationService(BaseTestCase):
         """
         test_adapter_factory(adapter_class=DummyAdapterHDDRequired)
         space_taken_by_started = 100
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter3", "DummyAdapterHDDRequired")
+        adapter = TestFactory.create_adapter(DUMMY_ADAPTER3_PATH, DUMMY_ADAPTER3_NAME)
         form = DummyAdapterHDDRequiredForm()
         adapter.submit_form(form)
         started_operation = model_operation.Operation(None, self.test_user.id, self.test_project.id,
@@ -248,7 +256,7 @@ class TestOperationService(BaseTestCase):
         Test the actual operation flow by executing a test adapter.
         """
         test_adapter_factory(adapter_class=DummyAdapterHDDRequired)
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter3", "DummyAdapterHDDRequired")
+        adapter = TestFactory.create_adapter(DUMMY_ADAPTER3_PATH, DUMMY_ADAPTER3_NAME)
         form = DummyAdapterHDDRequiredForm()
         adapter.submit_form(form)
         view_model = adapter.get_view_model()()
@@ -265,7 +273,7 @@ class TestOperationService(BaseTestCase):
         """
         test_adapter_factory(adapter_class=DummyAdapterHDDRequired)
         space_taken_by_started = 100
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter3", "DummyAdapterHDDRequired")
+        adapter = TestFactory.create_adapter(DUMMY_ADAPTER3_PATH, DUMMY_ADAPTER3_NAME)
         form = DummyAdapterHDDRequiredForm()
         adapter.submit_form(form)
         started_operation = model_operation.Operation(None, self.test_user.id, self.test_project.id,
@@ -287,7 +295,7 @@ class TestOperationService(BaseTestCase):
         Test that an operation is successfully stopped.
         """
         test_adapter_factory(adapter_class=DummyAdapter2)
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter2", "DummyAdapter2")
+        adapter = TestFactory.create_adapter(DUMMY_ADAPTER2_PATH, DUMMY_ADAPTER2_NAME)
         view_model = adapter.get_view_model()()
         view_model.test = 5
         algo = adapter.stored_adapter
@@ -305,7 +313,7 @@ class TestOperationService(BaseTestCase):
         Test that an operation that is already finished is not changed by the stop operation.
         """
         test_adapter_factory()
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter1", "DummyAdapter1")
+        adapter = TestFactory.create_adapter(DUMMY_ADAPTER_PATH, DUMMY_ADAPTER_NAME)
         view_model = adapter.get_view_model()()
         view_model.test1_val1 = 5
         view_model.test1_val2 = 5
@@ -324,7 +332,7 @@ class TestOperationService(BaseTestCase):
         """
         Test preparation of an adapter and launch mechanism.
         """
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter1", "DummyAdapter1")
+        adapter = TestFactory.create_adapter(DUMMY_ADAPTER_PATH, DUMMY_ADAPTER_NAME)
         test_user = TestFactory.create_user(username="test_user_fire_sim")
         test_project = TestFactory.create_project(admin=test_user, name="test_project_fire_sim")
 

@@ -42,6 +42,8 @@ from tvb.interfaces.web.controllers.decorators import handle_error, expose_fragm
 from tvb.interfaces.web.controllers.decorators import using_template, expose_json
 from tvb.interfaces.web.controllers.base_controller import BaseController
 
+FLOATING_POINT_ERROR = "Isocline PSE requires a 2D range of floating point values."
+
 PSE_FLOT = "FLOT"
 PSE_ISO = "ISO"
 
@@ -162,7 +164,7 @@ class ParameterExplorationController(BaseController):
                 self.logger.error(ex.message)
                 error_msg = urllib.parse.quote(ex.message)
         else:
-            error_msg = urllib.parse.quote("Isocline PSE requires a 2D range of floating point values.")
+            error_msg = urllib.parse.quote(FLOATING_POINT_ERROR)
 
         name = urllib.parse.quote(adapter._ui_name)
         self.redirect(REDIRECT_MSG % (name, error_msg))
@@ -180,7 +182,7 @@ class ParameterExplorationController(BaseController):
                 self.logger.error(ex.message)
                 error_msg = urllib.parse.quote(ex.message)
         else:
-            error_msg = urllib.parse.quote("Isocline PSE requires a 2D range of floating point values.")
+            error_msg = urllib.parse.quote(FLOATING_POINT_ERROR)
 
         name = urllib.parse.quote(adapter._ui_name)
         self.redirect(REDIRECT_MSG % (name, error_msg))
@@ -198,7 +200,7 @@ class ParameterExplorationController(BaseController):
                 self.logger.error(ex.message)
                 error_msg = urllib.parse.quote(ex.message)
         else:
-            error_msg = urllib.parse.quote("Isocline PSE requires a 2D range of floating point values.")
+            error_msg = urllib.parse.quote(FLOATING_POINT_ERROR)
 
         name = urllib.parse.quote(adapter._ui_name)
         self.redirect(REDIRECT_MSG % (name, error_msg))
