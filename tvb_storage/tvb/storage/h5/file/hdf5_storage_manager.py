@@ -57,7 +57,6 @@ class HDF5StorageManager(object):
     """
     This class is responsible for saving / loading data in HDF5 file / format.
     """
-    __file_title_ = "TVB data file"
     __storage_full_name = None
     __hfd5_file = None
 
@@ -77,7 +76,6 @@ class HDF5StorageManager(object):
             raise FileStructureException("Please provide the file name where to store data")
 
         self.__storage_full_name = storage_full_name
-        self.__buffer_array = None
         self.data_buffers = {}
         self.data_encryption_handler = encryption_handler
 

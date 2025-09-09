@@ -43,6 +43,8 @@ from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.sensors import SensorsInternal, SensorsEEG, SensorsMEG, Sensors
 from tvb.datatypes.surfaces import Surface, SurfaceTypesEnum
 
+SENSORS_CONTROLS_PAGE = "sensors/sensors_controls"
+
 LOG = get_logger(__name__)
 
 
@@ -207,7 +209,7 @@ class SensorsViewer(ABCDisplayer):
         params['shellObject'] = self.prepare_shell_surface_params(shell_surface, SurfaceURLGenerator)
 
         return self.build_display_result('sensors/sensors_internal', params,
-                                         pages={"controlPage": "sensors/sensors_controls"})
+                                         pages={"controlPage": SENSORS_CONTROLS_PAGE})
 
     def _params_eeg_sensors(self, eeg_sensors, eeg_cap=None, shell_surface=None):
 
@@ -228,7 +230,7 @@ class SensorsViewer(ABCDisplayer):
                 params.update(self._compute_surface_params(eeg_cap_h5))
 
         return self.build_display_result("sensors/sensors_eeg", params,
-                                         pages={"controlPage": "sensors/sensors_controls"})
+                                         pages={"controlPage": SENSORS_CONTROLS_PAGE})
 
     def _params_meg_sensors(self, meg_sensors, projection_surface=None, shell_surface=None):
 
@@ -246,7 +248,7 @@ class SensorsViewer(ABCDisplayer):
                 params.update(self._compute_surface_params(projection_surface_h5))
 
         return self.build_display_result("sensors/sensors_eeg", params,
-                                         pages={"controlPage": "sensors/sensors_controls"})
+                                         pages={"controlPage": SENSORS_CONTROLS_PAGE})
 
     @staticmethod
     def _compute_surface_params(surface_h5):

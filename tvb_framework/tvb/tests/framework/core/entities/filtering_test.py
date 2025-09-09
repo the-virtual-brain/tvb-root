@@ -38,6 +38,10 @@ from tvb.core.entities.storage.session_maker import SessionMaker
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.filters.exceptions import InvalidFilterChainInput, InvalidFilterEntity
 
+ATTRIBUTE_1_ATTR = '.attribute_1'
+ATTRIBUTE_2_ATTR = '.attribute_2'
+DATA_NAME_ATTR = '.data_name'
+
 
 class TestFiltering(TransactionalTestCase):
     """
@@ -94,13 +98,13 @@ class TestFiltering(TransactionalTestCase):
         data_type.data_value = "value_3"
         dao.store_entity(data_type)
 
-        test_filter_1 = FilterChain(fields=[FilterChain.datatype + '.data_name'],
+        test_filter_1 = FilterChain(fields=[FilterChain.datatype + DATA_NAME_ATTR],
                                     operations=['=='], values=['name_1'])
-        test_filter_2 = FilterChain(fields=[FilterChain.datatype + '.data_name'],
+        test_filter_2 = FilterChain(fields=[FilterChain.datatype + DATA_NAME_ATTR],
                                     operations=['=='], values=['name_22'])
-        test_filter_3 = FilterChain(fields=[FilterChain.datatype + '.data_name', FilterChain.datatype + '.data_value'],
+        test_filter_3 = FilterChain(fields=[FilterChain.datatype + DATA_NAME_ATTR, FilterChain.datatype + '.data_value'],
                                     operations=['==', 'in'], values=["name_1", ['value_1', 'value_3']])
-        test_filter_4 = FilterChain(fields=[FilterChain.datatype + '.data_name', FilterChain.datatype + '.data_value'],
+        test_filter_4 = FilterChain(fields=[FilterChain.datatype + DATA_NAME_ATTR, FilterChain.datatype + '.data_value'],
                                     operations=['==', 'in'], values=["name_1", ['value_1', 'value_2']])
 
         all_stored_dts = self.count_all_entities(ValueWrapperIndex)
@@ -167,42 +171,42 @@ class TestBaseFiltering(TransactionalTestCase):
         """
         Supported operators should be "==", "!=", "<", ">", "in", "not in" so far.
         """
-        test_filter = FilterChain(fields=[FilterChain.datatype + '.attribute_1'],
+        test_filter = FilterChain(fields=[FilterChain.datatype + ATTRIBUTE_1_ATTR],
                                   operations=["=="], values=['test_val'])
         should_pass(test_filter, TestFiltering.DummyFilterClass(attribute_1='test_val'))
         should_fail(test_filter, TestFiltering.DummyFilterClass(attribute_1=1))
 
-        test_filter = FilterChain(fields=[FilterChain.datatype + '.attribute_1'],
+        test_filter = FilterChain(fields=[FilterChain.datatype + ATTRIBUTE_1_ATTR],
                                   operations=["!="], values=['test_val'])
         should_pass(test_filter, TestFiltering.DummyFilterClass(attribute_1='test_val_other'))
         should_fail(test_filter, TestFiltering.DummyFilterClass(attribute_1='test_val'))
 
-        test_filter = FilterChain(fields=[FilterChain.datatype + '.attribute_1'],
+        test_filter = FilterChain(fields=[FilterChain.datatype + ATTRIBUTE_1_ATTR],
                                   operations=[">"], values=[3])
         should_pass(test_filter, TestFiltering.DummyFilterClass(attribute_1=5))
         should_fail(test_filter, TestFiltering.DummyFilterClass(attribute_1=1))
 
-        test_filter = FilterChain(fields=[FilterChain.datatype + '.attribute_1'],
+        test_filter = FilterChain(fields=[FilterChain.datatype + ATTRIBUTE_1_ATTR],
                                   operations=["<"], values=[3])
         should_pass(test_filter, TestFiltering.DummyFilterClass(attribute_1=1))
         should_fail(test_filter, TestFiltering.DummyFilterClass(attribute_1=5))
 
-        test_filter = FilterChain(fields=[FilterChain.datatype + '.attribute_1'],
+        test_filter = FilterChain(fields=[FilterChain.datatype + ATTRIBUTE_1_ATTR],
                                   operations=["in"], values=['test_val'])
         should_pass(test_filter, TestFiltering.DummyFilterClass(attribute_1='test'))
         should_fail(test_filter, TestFiltering.DummyFilterClass(attribute_1='test_bla'))
 
-        test_filter = FilterChain(fields=[FilterChain.datatype + '.attribute_1'],
+        test_filter = FilterChain(fields=[FilterChain.datatype + ATTRIBUTE_1_ATTR],
                                   operations=["in"], values=[['test_val', 'other_val']])
         should_pass(test_filter, TestFiltering.DummyFilterClass(attribute_1='test_val'))
         should_fail(test_filter, TestFiltering.DummyFilterClass(attribute_1='test_bla'))
 
-        test_filter = FilterChain(fields=[FilterChain.datatype + '.attribute_1'],
+        test_filter = FilterChain(fields=[FilterChain.datatype + ATTRIBUTE_1_ATTR],
                                   operations=["not in"], values=['test_val'])
         should_pass(test_filter, TestFiltering.DummyFilterClass(attribute_1='valoare'))
         should_fail(test_filter, TestFiltering.DummyFilterClass(attribute_1='val'))
 
-        test_filter = FilterChain(fields=[FilterChain.datatype + '.attribute_1'],
+        test_filter = FilterChain(fields=[FilterChain.datatype + ATTRIBUTE_1_ATTR],
                                   operations=["not in"], values=[['test_val', 'other']])
         should_pass(test_filter, TestFiltering.DummyFilterClass(attribute_1='taest_val'))
         should_fail(test_filter, TestFiltering.DummyFilterClass(attribute_1='test_val'))
@@ -211,7 +215,7 @@ class TestBaseFiltering(TransactionalTestCase):
         """
         Error test-case when evaluating filter in Python.
         """
-        test_filter = FilterChain(fields=[FilterChain.datatype + '.attribute_1'],
+        test_filter = FilterChain(fields=[FilterChain.datatype + ATTRIBUTE_1_ATTR],
                                   operations=["in"], values=[None])
         with pytest.raises(InvalidFilterEntity):
             test_filter.get_python_filter_equivalent(TestFiltering.DummyFilterClass(attribute_1=['test_val', 'test2']))
@@ -229,7 +233,7 @@ class TestBaseFiltering(TransactionalTestCase):
         """
         Test a filter with at least 2 conditions
         """
-        test_filter = FilterChain(fields=[FilterChain.datatype + '.attribute_1', FilterChain.datatype + '.attribute_2'],
+        test_filter = FilterChain(fields=[FilterChain.datatype + ATTRIBUTE_1_ATTR, FilterChain.datatype + ATTRIBUTE_2_ATTR],
                                   operations=["==", 'in'], values=['test_val', ['test_val2', 1]])
         should_pass(test_filter, TestFiltering.DummyFilterClass(attribute_1='test_val', attribute_2=1))
         should_pass(test_filter, TestFiltering.DummyFilterClass(attribute_1='test_val', attribute_2=1))
@@ -240,20 +244,20 @@ class TestBaseFiltering(TransactionalTestCase):
         """
         Test that adding a condition to a filter is working.
         """
-        test_filter = FilterChain(fields=[FilterChain.datatype + '.attribute_1'],
+        test_filter = FilterChain(fields=[FilterChain.datatype + ATTRIBUTE_1_ATTR],
                                   operations=["=="], values=['test_val'])
         filter_input = TestFiltering.DummyFilterClass(attribute_1='test_val', attribute_2=1)
         should_pass(test_filter, filter_input)
-        test_filter.add_condition(FilterChain.datatype + '.attribute_2', '==', 2)
+        test_filter.add_condition(FilterChain.datatype + ATTRIBUTE_2_ATTR, '==', 2)
         should_fail(test_filter, filter_input)
 
     def test_filter_addition(self):
         """
         test addition in filter chain
         """
-        filter1 = FilterChain(fields=[FilterChain.datatype + '.attribute_1'],
+        filter1 = FilterChain(fields=[FilterChain.datatype + ATTRIBUTE_1_ATTR],
                               operations=["=="], values=['test_val'])
-        filter2 = FilterChain(fields=[FilterChain.datatype + '.attribute_2'],
+        filter2 = FilterChain(fields=[FilterChain.datatype + ATTRIBUTE_2_ATTR],
                               operations=['in'], values=[['test_val2', 1]])
         test_filter = filter1 + filter2
         should_pass(test_filter, TestFiltering.DummyFilterClass(attribute_1='test_val', attribute_2=1))

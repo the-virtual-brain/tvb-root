@@ -48,6 +48,12 @@ from tvb.tests.framework.adapters.dummy_adapter3 import DummyAdapter3
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory, ExtremeTestFactory
 
+DATA_ERROR = "Data returned from service is different from data returned by DAO."
+PAGES_ERROR = 'Wrong number of pages retrieved.'
+PAGINATION_ERROR = "Pagination improper."
+PROJECT_ERROR = "Projects not retrieved properly!"
+RESET_ERROR = "Database reset probably failed!"
+
 NR_USERS = 20
 MAX_PROJ_PER_USER = 8
 
@@ -78,7 +84,7 @@ class TestProjectService(TransactionalTestCase):
         """
         members = [TestFactory.create_user(name) for name in members_names]
         initial_projects = dao.get_projects_for_user(self.test_user.id)
-        assert len(initial_projects) == 0, "Database reset probably failed!"
+        assert len(initial_projects) == 0, RESET_ERROR
         TestFactory.create_project(self.test_user, proj_name, proj_descr, users=[m.id for m in members])
         return members
 
@@ -128,7 +134,7 @@ class TestProjectService(TransactionalTestCase):
         user1 = TestFactory.create_user('test_user1')
         user2 = TestFactory.create_user('test_user2')
         initial_projects = dao.get_projects_for_user(self.test_user.id)
-        assert len(initial_projects) == 0, "Database reset probably failed!"
+        assert len(initial_projects) == 0, RESET_ERROR
 
         TestFactory.create_project(self.test_user, 'test_project', "description", users=[user1.id, user2.id])
 
@@ -151,7 +157,7 @@ class TestProjectService(TransactionalTestCase):
         """
         data = dict(name="", description="test_description", users=[])
         initial_projects = dao.get_projects_for_user(self.test_user.id)
-        assert len(initial_projects) == 0, "Database reset probably failed!"
+        assert len(initial_projects) == 0, RESET_ERROR
         with pytest.raises(ProjectServiceException):
             self.project_service.store_project(self.test_user, True, None, **data)
 
@@ -189,19 +195,15 @@ class TestProjectService(TransactionalTestCase):
         Standard flow for finding a project by it's id.
         """
         initial_projects = dao.get_projects_for_user(self.test_user.id)
-        assert len(initial_projects) == 0, "Database reset probably failed!"
+        assert len(initial_projects) == 0, RESET_ERROR
         inserted_project = TestFactory.create_project(self.test_user, 'test_project')
         assert self.project_service.find_project(inserted_project.id) is not None, "Project not found !"
         dao_returned_project = dao.get_project_by_id(inserted_project.id)
         service_returned_project = self.project_service.find_project(inserted_project.id)
-        assert dao_returned_project.id == service_returned_project.id, \
-            "Data returned from service is different from data returned by DAO."
-        assert dao_returned_project.name == service_returned_project.name, \
-            "Data returned from service is different than  data returned by DAO."
-        assert dao_returned_project.description == service_returned_project.description, \
-            "Data returned from service is different from data returned by DAO."
-        assert dao_returned_project.members == service_returned_project.members, \
-            "Data returned from service is different from data returned by DAO."
+        assert dao_returned_project.id == service_returned_project.id, DATA_ERROR
+        assert dao_returned_project.name == service_returned_project.name, DATA_ERROR
+        assert dao_returned_project.description == service_returned_project.description, DATA_ERROR
+        assert dao_returned_project.members == service_returned_project.members, DATA_ERROR
 
     def test_find_project_unexisting(self):
         """
@@ -210,7 +212,7 @@ class TestProjectService(TransactionalTestCase):
         data = dict(name="test_project", description="test_description", users=[], max_operation_size=None,
                     disable_imports=False)
         initial_projects = dao.get_projects_for_user(self.test_user.id)
-        assert len(initial_projects) == 0, "Database reset probably failed!"
+        assert len(initial_projects) == 0, RESET_ERROR
         project = self.project_service.store_project(self.test_user, True, None, **data)
         # fetch a likely non-existing project. Previous project id plus a 'big' offset
         with pytest.raises(ProjectServiceException):
@@ -228,7 +230,7 @@ class TestProjectService(TransactionalTestCase):
         user1 = TestFactory.create_user('another_user')
         TestFactory.create_project(user1, 'test_proj3')
         projects = self.project_service.retrieve_projects_for_user(self.test_user.id)[0]
-        assert len(projects) == 3, "Projects not retrieved properly!"
+        assert len(projects) == 3, PROJECT_ERROR
         for project in projects:
             assert project.name != "test_project3", "This project should not have been retrieved"
 
@@ -241,11 +243,11 @@ class TestProjectService(TransactionalTestCase):
         member2 = TestFactory.create_user("member2")
         TestFactory.create_project(self.test_user, 'Testproject', users=[member1.id, member2.id])
         projects = self.project_service.retrieve_projects_for_user(self.test_user.id, 1)[0]
-        assert len(projects) == 1, "Projects not retrieved properly!"
+        assert len(projects) == 1, PROJECT_ERROR
         projects = self.project_service.retrieve_projects_for_user(member1.id, 1)[0]
-        assert len(projects) == 1, "Projects not retrieved properly!"
+        assert len(projects) == 1, PROJECT_ERROR
         projects = self.project_service.retrieve_projects_for_user(member2.id, 1)[0]
-        assert len(projects) == 1, "Projects not retrieved properly!"
+        assert len(projects) == 1, PROJECT_ERROR
 
     def test_retrieve_3projects_3usr(self):
         """
@@ -262,11 +264,11 @@ class TestProjectService(TransactionalTestCase):
         TestFactory.create_project(member2, 'TestProject2', users=[member1.id])
         TestFactory.create_project(member3, 'TestProject3', users=[member1.id, member2.id])
         projects = self.project_service.retrieve_projects_for_user(member1.id, 1)[0]
-        assert len(projects) == 3, "Projects not retrieved properly!"
+        assert len(projects) == 3, PROJECT_ERROR
         projects = self.project_service.retrieve_projects_for_user(member2.id, 1)[0]
-        assert len(projects) == 3, "Projects not retrieved properly!"
+        assert len(projects) == 3, PROJECT_ERROR
         projects = self.project_service.retrieve_projects_for_user(member3.id, 1)[0]
-        assert len(projects) == 2, "Projects not retrieved properly!"
+        assert len(projects) == 2, PROJECT_ERROR
 
     def test_retrieve_projects_random(self):
         """
@@ -303,7 +305,7 @@ class TestProjectService(TransactionalTestCase):
             TestFactory.create_project(self.test_user, 'test_proj' + str(i))
         projects, pages = self.project_service.retrieve_projects_for_user(self.test_user.id, 2)
         assert len(projects) == (PROJECTS_PAGE_SIZE + 3) % PROJECTS_PAGE_SIZE, "Pagination inproper."
-        assert pages == 2, 'Wrong number of pages retrieved.'
+        assert pages == 2, PAGES_ERROR
 
     def test_retrieve_projects_and_del(self):
         """
@@ -313,15 +315,15 @@ class TestProjectService(TransactionalTestCase):
         for i in range(PROJECTS_PAGE_SIZE + 1):
             created_projects.append(TestFactory.create_project(self.test_user, 'test_proj' + str(i)))
         projects, pages = self.project_service.retrieve_projects_for_user(self.test_user.id, 2)
-        assert len(projects) == (PROJECTS_PAGE_SIZE + 1) % PROJECTS_PAGE_SIZE, "Pagination improper."
+        assert len(projects) == (PROJECTS_PAGE_SIZE + 1) % PROJECTS_PAGE_SIZE, PAGINATION_ERROR
         assert pages == (PROJECTS_PAGE_SIZE + 1) // PROJECTS_PAGE_SIZE + 1, 'Wrong number of pages'
         self.project_service.remove_project(created_projects[1].id)
         projects, pages = self.project_service.retrieve_projects_for_user(self.test_user.id, 2)
-        assert len(projects) == 0, "Pagination improper."
-        assert pages == 1, 'Wrong number of pages retrieved.'
+        assert len(projects) == 0, PAGINATION_ERROR
+        assert pages == 1, PAGES_ERROR
         projects, pages = self.project_service.retrieve_projects_for_user(self.test_user.id, 1)
-        assert len(projects) == PROJECTS_PAGE_SIZE, "Pagination improper."
-        assert pages == 1, 'Wrong number of pages retrieved.'
+        assert len(projects) == PROJECTS_PAGE_SIZE, PAGINATION_ERROR
+        assert pages == 1, PAGES_ERROR
 
     def test_empty_project_has_zero_disk_size(self):
         TestFactory.create_project(self.test_user, 'test_proj')

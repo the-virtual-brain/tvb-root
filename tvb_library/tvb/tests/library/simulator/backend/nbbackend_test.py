@@ -243,7 +243,7 @@ class TestNbSim(BaseTestSim):
         (_, y), = sim.run()
         self._check_match(y, yh)
 
-    def _test_mvar(self, integrator):
+    def _test_mvar(self, integrator, delays=False):
         pass # TODO
 
     def _test_integrator(self, Integrator, delays=False):

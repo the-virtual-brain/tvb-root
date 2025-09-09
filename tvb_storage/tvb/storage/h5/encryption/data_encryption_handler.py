@@ -77,7 +77,7 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
     ENCRYPTED_FOLDER_SUFFIX = "_encrypted"
     KEYS_FOLDER = ".storage-keys"
     CRYPTO_PASS = "CRYPTO_PASS"
-    APP_ENCRYPTION_HANDLER = "APP_ENCRYPTION_HANDLER"
+    APP_ENCRYPTION_HANDLER_NAME = "APP_ENCRYPTION_HANDLER"
 
     file_helper = FilesHelper()
 
@@ -247,8 +247,8 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
 
     @staticmethod
     def app_encryption_handler():
-        app_encryption_handler = True if DataEncryptionHandler.APP_ENCRYPTION_HANDLER in os.environ and os.environ[
-            DataEncryptionHandler.APP_ENCRYPTION_HANDLER].lower() == 'true' else False
+        app_encryption_handler = True if DataEncryptionHandler.APP_ENCRYPTION_HANDLER_NAME in os.environ and os.environ[
+            DataEncryptionHandler.APP_ENCRYPTION_HANDLER_NAME].lower() == 'true' else False
         return not TvbProfile.current.web.IS_CLOUD_DEPLOY or app_encryption_handler
 
     @staticmethod

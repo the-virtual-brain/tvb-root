@@ -91,7 +91,7 @@ class TestNIFTIImporter(BaseTestCase):
         TestFactory.launch_importer(NIFTIImporter, view_model, self.test_user, self.test_project, False)
 
         dts, count = dao.get_values_of_datatype(self.test_project.id, expected_result_class, None)
-        assert 1, count == "Project should contain only one data type."
+        assert 1 == count, "Project should contain only one data type."
 
         result = load_entity_by_gid(dts[0][2])
         assert result is not None, "Result should not be none"

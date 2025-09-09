@@ -46,6 +46,7 @@ from tvb.core.entities.model.model_operation import Operation, OperationGroup
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.neotraits.db import HasTraitsIndex, Base, from_ndarray
 
+DATATYPE_ID_KEY = 'DataType.id'
 
 LOG = get_logger(__name__)
 
@@ -108,7 +109,7 @@ class DataType(HasTraitsIndex):
     # it should be a reference to a DataTypeGroup, but we can not create that FK
     # because this two tables (DATA_TYPES, DATA_TYPES_GROUPS) will reference each
     # other mutually and SQL-Alchemy complains about that.
-    fk_datatype_group = Column(Integer, ForeignKey('DataType.id'))
+    fk_datatype_group = Column(Integer, ForeignKey(DATATYPE_ID_KEY))
 
     fk_from_operation = Column(Integer, ForeignKey('OPERATIONS.id', ondelete="CASCADE"))
     parent_operation = relationship(Operation, backref=backref("DATA_TYPES", order_by=id, cascade="all,delete"))
@@ -284,7 +285,7 @@ class DataTypeGroup(DataType):
     """
     __tablename__ = 'DATA_TYPES_GROUPS'
 
-    id = Column('id', Integer, ForeignKey('DataType.id', ondelete="CASCADE"), primary_key=True)
+    id = Column('id', Integer, ForeignKey(DATATYPE_ID_KEY, ondelete="CASCADE"), primary_key=True)
     count_results = Column(Integer)
     no_of_ranges = Column(Integer, default=0)  # Number of ranged parameters
     fk_operation_group = Column(Integer, ForeignKey('OPERATION_GROUPS.id', ondelete="CASCADE"))
@@ -322,7 +323,7 @@ class Links(Base):
 
     id = Column(Integer, primary_key=True)
     fk_to_project = Column(Integer, ForeignKey('PROJECTS.id', ondelete="CASCADE"))
-    fk_from_datatype = Column(Integer, ForeignKey('DataType.id', ondelete="CASCADE"))
+    fk_from_datatype = Column(Integer, ForeignKey(DATATYPE_ID_KEY, ondelete="CASCADE"))
 
     referenced_project = relationship(Project, backref=backref('LINKS', order_by=id, cascade="delete, all"))
     referenced_datatype = relationship(DataType, backref=backref('LINKS', order_by=id, cascade="delete, all"))

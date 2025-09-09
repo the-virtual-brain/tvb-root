@@ -133,7 +133,7 @@ class BaseTestDfun(unittest.TestCase):
         if n_spatial > 1:
             model.J = model.J * (1 - np.r_[:0.1:128j])
         if n_spatial > 2:
-            raise NotImplemented
+            raise NotImplementedError
         self.assertEqual(len(model.spatial_parameter_matrix), n_spatial)
         return model
 
