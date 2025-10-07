@@ -2,6 +2,7 @@ import numpy as np
 from scipy import sparse as sp
 import tvb.basic.neotraits.api as t
 
+
 class BaseProjection(t.HasTraits):
     """Base class for projections defining coupling.
 
@@ -27,6 +28,7 @@ class BaseProjection(t.HasTraits):
     dt : float, optional
         Simulation time step. Required if lengths are provided.
     """
+
     source_cvar = t.NArray(dtype=np.int_)
     target_cvar = t.NArray(dtype=np.int_)
     scale: float = t.Float(default=1.0)
@@ -37,7 +39,7 @@ class BaseProjection(t.HasTraits):
 
     # Internal attributes derived in __init__
     idelays = t.NArray(dtype=np.int_, required=False, default=None)
-    max_delay = t.Int(required=False, default=2) # Default minimum delay steps
+    max_delay = t.Int(required=False, default=2)  # Default minimum delay steps
 
     # Internal attributes for history buffer management
     _history_buffer: np.ndarray | None = None
@@ -51,11 +53,17 @@ class BaseProjection(t.HasTraits):
 
         # Validation: Ensure weights and lengths (if provided) are CSR
         if not isinstance(self.weights, sp.csr_matrix):
-             raise TypeError(f"Weights must be provided as a scipy.sparse.csr_matrix, got {type(self.weights)}")
+            raise TypeError(
+                f"Weights must be provided as a scipy.sparse.csr_matrix, got {type(self.weights)}"
+            )
         if self.lengths is not None and not isinstance(self.lengths, sp.csr_matrix):
-             raise TypeError(f"Lengths must be provided as a scipy.sparse.csr_matrix, got {type(self.lengths)}")
+            raise TypeError(
+                f"Lengths must be provided as a scipy.sparse.csr_matrix, got {type(self.lengths)}"
+            )
         if self.lengths is not None and self.lengths.shape != self.weights.shape:
-             raise ValueError(f"Lengths shape {self.lengths.shape} must match weights shape {self.weights.shape}")
+            raise ValueError(
+                f"Lengths shape {self.lengths.shape} must match weights shape {self.weights.shape}"
+            )
 
         r, c = self.weights.shape
         eps_val = 2 * np.finfo(self.weights.dtype).eps
@@ -63,34 +71,49 @@ class BaseProjection(t.HasTraits):
         row_indices = np.arange(r)
         col_indices = np.zeros(r, dtype=int)
         eps_matrix = sp.csr_matrix(
-            (eps_data, (row_indices, col_indices)), shape=(r, c), dtype=self.weights.dtype)
+            (eps_data, (row_indices, col_indices)),
+            shape=(r, c),
+            dtype=self.weights.dtype,
+        )
         self.weights = self.weights + eps_matrix
         # Apply epsilon to lengths only if lengths are not all zero, to maintain sparsity if L=0
         if np.any(self.lengths.data != 0):
             self.lengths = self.lengths + eps_matrix  # Add sparse matrices
-        else: # If lengths are all zero, adding eps_matrix would make them non-zero, changing idelays.
-              # Instead, ensure it has the same nnz as weights if it was all zero.
+        else:  # If lengths are all zero, adding eps_matrix would make them non-zero, changing idelays.
+            # Instead, ensure it has the same nnz as weights if it was all zero.
             if self.weights.nnz > 0 and self.lengths.nnz == 0:
-                 # Create a zero-valued sparse matrix with same sparsity as weights for nnz consistency
-                 self.lengths = sp.csr_matrix( (np.zeros(self.weights.nnz, dtype=self.lengths.dtype), self.weights.indices, self.weights.indptr), shape=self.weights.shape)
+                # Create a zero-valued sparse matrix with same sparsity as weights for nnz consistency
+                self.lengths = sp.csr_matrix(
+                    (
+                        np.zeros(self.weights.nnz, dtype=self.lengths.dtype),
+                        self.weights.indices,
+                        self.weights.indptr,
+                    ),
+                    shape=self.weights.shape,
+                )
 
-        assert self.weights.nnz == self.lengths.nnz, \
+        assert self.weights.nnz == self.lengths.nnz, (
             f"Mismatch nnz: weights {self.weights.nnz}, lengths {self.lengths.nnz}"
+        )
 
         # Modify idelays calculation to match original TVB simulator (round, no +2)
         if self.cv is not None and self.dt is not None and self.lengths.nnz > 0:
             # Ensure lengths.data is not empty before division
             if self.lengths.data.size > 0:
-                self.idelays = np.round(self.lengths.data / self.cv / self.dt).astype(np.int_)
-            else: # This case implies lengths.nnz > 0 but lengths.data is empty, which is inconsistent for CSR.
-                  # However, to be safe, if lengths.data is empty, idelays should be empty or zero.
-                  # Given lengths.nnz > 0, this path should ideally not be taken if CSR is valid.
-                  # If lengths.nnz > 0 but lengths.data is empty, it implies an issue with lengths matrix construction.
-                  # For robustness, treat as zero delays if data is unexpectedly empty despite nnz > 0.
-                  self.idelays = np.zeros(self.weights.nnz, dtype=np.int_)
-        elif self.lengths.nnz > 0 : # lengths provided but cv or dt missing
-            raise ValueError("cv and dt must be provided if lengths are non-zero and non-empty.")
-        else: # No lengths or all lengths are zero (lengths.nnz == 0)
+                self.idelays = np.round(self.lengths.data / self.cv / self.dt).astype(
+                    np.int_
+                )
+            else:  # This case implies lengths.nnz > 0 but lengths.data is empty, which is inconsistent for CSR.
+                # However, to be safe, if lengths.data is empty, idelays should be empty or zero.
+                # Given lengths.nnz > 0, this path should ideally not be taken if CSR is valid.
+                # If lengths.nnz > 0 but lengths.data is empty, it implies an issue with lengths matrix construction.
+                # For robustness, treat as zero delays if data is unexpectedly empty despite nnz > 0.
+                self.idelays = np.zeros(self.weights.nnz, dtype=np.int_)
+        elif self.lengths.nnz > 0:  # lengths provided but cv or dt missing
+            raise ValueError(
+                "cv and dt must be provided if lengths are non-zero and non-empty."
+            )
+        else:  # No lengths or all lengths are zero (lengths.nnz == 0)
             self.idelays = np.zeros(self.weights.nnz, dtype=np.int_)
 
         # now that the sparse matrices are formed, replace the 2*eps values by zeros
@@ -106,11 +129,13 @@ class BaseProjection(t.HasTraits):
         # Horizon matches original TVB n_time = max_delay + 1
         # (or at least 1 if max_delay is 0, to store current state)
         self._horizon = self.max_delay + 1
-        if self._horizon == 0: # Should not happen if max_delay is at least 0, but defensive
+        if (
+            self._horizon == 0
+        ):  # Should not happen if max_delay is at least 0, but defensive
             self._horizon = 1
 
         buffer_shape = (n_vars_src, n_nodes_src, n_modes_src, self._horizon)
-        self._history_buffer = np.zeros(buffer_shape, 'f')
+        self._history_buffer = np.zeros(buffer_shape, "f")
 
     def update_buffer(self, current_src_state: np.ndarray, t: int):
         """Update the history buffer with the current source state."""
@@ -146,10 +171,10 @@ class BaseProjection(t.HasTraits):
         # weights.indices gives the source node indices for each non-zero weight
         # We need all modes from the source, hence ':' for mode dimension
         delayed_states = self._history_buffer[
-            self.source_cvar[:, np.newaxis], # Shape (n_src_cvar, 1)
-            self.weights.indices,            # Shape (nnz,) -> Source node indices
-            :,                               # All source modes
-            time_indices                     # Shape (nnz,) -> Time index for each connection
+            self.source_cvar[:, np.newaxis],  # Shape (n_src_cvar, 1)
+            self.weights.indices,  # Shape (nnz,) -> Source node indices
+            :,  # All source modes
+            time_indices,  # Shape (nnz,) -> Time index for each connection
         ]
         # Result shape: (n_src_cvar, nnz, n_src_modes)
         # print('dbg(apply delayed_states):', t, delayed_states.ravel())
@@ -168,7 +193,7 @@ class BaseProjection(t.HasTraits):
         summed_input = np.add.reduceat(
             weighted_delayed,
             self.weights.indptr[:-1],
-            axis=1 # Sum along the nnz dimension
+            axis=1,  # Sum along the nnz dimension
         )
         # Result shape: (n_src_cvar, n_target_nodes, n_src_modes)
         # Note: n_target_nodes comes from the structure of the CSR matrix (number of rows)
@@ -208,6 +233,9 @@ class BaseProjection(t.HasTraits):
         else:
             # Ambiguous case: M source cvars to N target cvars (M != N, M!=1, N!=1)
             # Raise error or define specific reduction/broadcasting rule
-            raise ValueError(f"Unsupported projection: {self.source_cvar.size} source cvars "
-                             f"to {self.target_cvar.size} target cvars. "
-                             f"Requires M=1, N=1, or M=N.")
+            raise ValueError(
+                f"Unsupported projection: {self.source_cvar.size} source cvars "
+                f"to {self.target_cvar.size} target cvars. "
+                f"Requires M=1, N=1, or M=N."
+            )
+        assert np.all(np.isfinite(tgt)), "non-finite values in projection output"

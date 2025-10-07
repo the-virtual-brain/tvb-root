@@ -152,7 +152,10 @@ class Subnetwork(t.HasTraits):
         internal_c = self.cfun(step, x)
         # Add internal coupling to external coupling
         total_c = c + internal_c
+        assert np.all(np.isfinite(total_c)), f"nans step total_c {self.name}"
+        assert np.all(np.isfinite(x)), f"nans step x {self.name}"
         nx = self.scheme.scheme(x, self.model.dfun, total_c, 0.0, 0.0)
+        assert np.all(np.isfinite(nx)), f"nans step nx {self.name}"
         # Record monitored variables
         for monitor in self.monitors:
             monitor.record(step, self.model.observe(nx))

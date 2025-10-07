@@ -121,7 +121,9 @@ class NetworkSet(t.HasTraits):
         aff = self.zero_cvars()
         for p in self.projections:
             tgt = getattr(aff, p.target.name)
+            assert np.all(np.isfinite(tgt)), f"non-finite values to {p.target.name}"
             src = getattr(eff, p.source.name)
+            assert np.all(np.isfinite(src)), f"non-finite values from {p.source.name}"
             p.update_buffer(src, step)
             p.apply(tgt, step)
         return aff
