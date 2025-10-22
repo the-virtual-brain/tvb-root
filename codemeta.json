@@ -1,7 +1,7 @@
 {
     "@context": "https://gitlab.ebrains.eu/lauramble/servicemeta/-/raw/main/data/contexts/servicemeta.jsonld",
     "type": "SoftwareSourceCode",
-    "name": "The Virtual Brain Web-App",
+    "name": "The Virtual Brain Software",
     "license": "https://spdx.org/licenses/GPL-3.0-or-later.html",
     "copyrightYear": "2025",
     "codeRepository": "https://github.com/the-virtual-brain/tvb-root/",
@@ -14,7 +14,7 @@
     "version": "2.9.2",
     "releaseNotes": "https://github.com/the-virtual-brain/tvb-root/releases/tag/2.9.2",
     "description": "Access the TVB GUI from the Internet and simulate brain network models on HCP. TheVirtualBrain is a framework for the simulation of the dynamics of large-scale brain networks with biologically realistic connectivity. TheVirtualBrain uses tractographic data (DTI/DSI) to generate connectivity matrices and build cortical and subcortical brain networks. The connectivity matrix defines the connection strengths and time delays via signal transmission between all network nodes. Various neural mass models are available in the repertoire of TheVirtualBrain and define the dynamics of a network node. Together, the neural mass models at the network nodes and the connectivity matrix define the Virtual Brain. TheVirtualBrain simulates and generates the time courses of various forms of neural activity including Local Field Potentials (LFP) and firing rate, as well as brain imaging data such as EEG, MEG and BOLD activations as observed in fMRI.\n\nTheVirtualBrain is foremost a scientific simulation platform and provides all means necessary to generate, manipulate and visualize connectivity and network dynamics. In addition, TheVirtualBrain comprises a set of classical time series analysis tools, structural and functional connectivity analysis tools, as well as parameter exploration facilities.\n\nAn overview over TVB-on-EBRAINS services is provided in the preprint https://arxiv.org/abs/2102.05888\n\nVersion specification\nhttps://github.com/the-virtual-brain/tvb-root/blob/master/tvbdocumentation/RELEASENOTES",
-    "funding": "785907 (Human Brain Project SGA2), 945539 (Human Brain Project SGA3), 826421 (VirtualBrainCloud) and 101147319 (EBRAINS 2.0 Project)",
+    "funding": "785907 (Human Brain Project SGA2), 945539 (Human Brain Project SGA3), 826421 (VirtualBrainCloud), 101147319 (EBRAINS 2.0 Project) and 101137289 (Virtual Brain Twin Project)",
     "funder": {
         "type": "Organization",
         "name": "EU"
