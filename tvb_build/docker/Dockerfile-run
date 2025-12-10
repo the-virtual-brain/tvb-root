@@ -23,7 +23,7 @@ RUN conda install -y --name tvb-run -c conda-forge psycopg jupyterlab tvb-gdist
 RUN $PIP install --upgrade pip
 RUN $PIP install lockfile scikit-build
 RUN $PIP install cryptography
-RUN $PIP install syncrypto
+RUN $PIP install --no-build-isolation syncrypto
 
 # Jupyther notebook configurations: set password
 # tvb42
