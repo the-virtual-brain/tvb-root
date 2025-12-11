@@ -62,13 +62,13 @@ class BaseHistory(StaticAttr):
         self.cvars = cvars
 
     def initialize(self, init):
-        raise NotImplemented
+        raise NotImplementedError
 
     def update(self, step, new_state):
-        raise NotImplemented
+        raise NotImplementedError
 
     def query(self, step, out=None):
-        raise NotImplemented
+        raise NotImplementedError
 
     @classmethod
     def from_simulator(cls, sim, initial_conditions=None):

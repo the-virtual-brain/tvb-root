@@ -37,6 +37,9 @@ from tvb.basic.neotraits.api import List, Attr, TVBEnum
 from tvb.core.neotraits.db import HasTraitsIndex
 from tvb.core.neotraits.view_model import DataTypeGidAttr
 
+FIELD_REQUIRED_ERROR = 'Field required'
+STR_FIELD_TEMPLATE = 'form_fields/str_field.html'
+
 # This setting is injected.
 # The pattern might be confusing, but it is an interesting alternative to
 # universal tvbprofile imports
@@ -78,7 +81,7 @@ class Field(object):
 
     def _from_post(self):
         if self.required and (self.unvalidated_data is None or len(str(self.unvalidated_data).strip()) == 0):
-            raise ValueError('Field required')
+            raise ValueError(FIELD_REQUIRED_ERROR)
         self.data = self.unvalidated_data
 
     @property
@@ -201,7 +204,7 @@ class TraitDataTypeSelectField(TraitField):
             self.unvalidated_data = None
 
         if self.required and not self.unvalidated_data:
-            raise ValueError('Field required')
+            raise ValueError(FIELD_REQUIRED_ERROR)
 
         # TODO: ensure is in choices
         try:
@@ -214,11 +217,11 @@ class TraitDataTypeSelectField(TraitField):
 
 
 class StrField(TraitField):
-    template = 'form_fields/str_field.html'
+    template = STR_FIELD_TEMPLATE
 
 
 class UserSessionStrField(TraitField):
-    template = 'form_fields/str_field.html'
+    template = STR_FIELD_TEMPLATE
 
     def __init__(self, trait_attribute, name=None, disabled=False, key=None):
         # type: (Attr, str, bool, str) -> None
@@ -261,7 +264,7 @@ class FloatField(TraitField):
 
 
 class ArrayField(TraitField):
-    template = 'form_fields/str_field.html'
+    template = STR_FIELD_TEMPLATE
 
     def _from_post(self):
         super(ArrayField, self)._from_post()
@@ -444,7 +447,7 @@ class MultiSelectField(TraitField):
     def _from_post(self):
         if self.unvalidated_data is None:
             if self.required:
-                raise ValueError('Field required')
+                raise ValueError(FIELD_REQUIRED_ERROR)
             else:
                 return None
 

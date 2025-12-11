@@ -44,6 +44,11 @@ from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
+EXPORT_ERROR = "Export process should return a file name"
+EXPORT_PATH_ERROR = "Export process should return path to export file"
+FILE_ERROR = "Could not find export file: %s on disk."
+VALID_ZIP_ERROR = "Generated file is not a valid ZIP file"
+
 
 class TestExporters(TransactionalTestCase):
     """
@@ -89,8 +94,8 @@ class TestExporters(TransactionalTestCase):
         datatype = dummy_datatype_index_factory()
         _, file_path, _ = self.export_manager.export_data(datatype, self.TVB_EXPORTER, self.test_project)
 
-        assert file_path is not None, "Export process should return path to export file"
-        assert os.path.exists(file_path), "Could not find export file: %s on disk." % file_path
+        assert file_path is not None, EXPORT_PATH_ERROR
+        assert os.path.exists(file_path), FILE_ERROR % file_path
 
     @staticmethod
     def compare_files(original_path, decrypted_file_path):
@@ -121,8 +126,8 @@ class TestExporters(TransactionalTestCase):
             datatype, self.TVB_EXPORTER, self.test_project, os.path.join(
                 TvbProfile.current.TVB_TEMP_FOLDER, import_export_encryption_handler.PUBLIC_KEY_NAME))
 
-        assert file_path is not None, "Export process should return path to export file"
-        assert os.path.exists(file_path), "Could not find export file: %s on disk." % file_path
+        assert file_path is not None, EXPORT_PATH_ERROR
+        assert os.path.exists(file_path), FILE_ERROR % file_path
 
         result = storage_interface.unpack_zip(file_path, TvbProfile.current.TVB_TEMP_FOLDER)
         encrypted_password_path = import_export_encryption_handler.extract_encrypted_password_from_list(result)
@@ -147,8 +152,8 @@ class TestExporters(TransactionalTestCase):
         _, file_path, _ = self.export_manager.export_data(region_mapping_index, self.TVB_LINKED_EXPORTER,
                                                           self.test_project)
 
-        assert file_path is not None, "Export process should return path to export file"
-        assert os.path.exists(file_path), "Could not find export file;: %s on disk." % file_path
+        assert file_path is not None, EXPORT_PATH_ERROR
+        assert os.path.exists(file_path), FILE_ERROR % file_path
 
     def test_tvb_linked_export_of_simple_datatype_with_encryption(self, connectivity_index_factory,
                                                                   surface_index_factory, region_mapping_index_factory):
@@ -168,8 +173,8 @@ class TestExporters(TransactionalTestCase):
             region_mapping_index, self.TVB_LINKED_EXPORTER, self.test_project,
             os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, import_export_encryption_handler.PUBLIC_KEY_NAME))
 
-        assert file_path is not None, "Export process should return path to export file"
-        assert os.path.exists(file_path), "Could not find export file;: %s on disk." % file_path
+        assert file_path is not None, EXPORT_PATH_ERROR
+        assert os.path.exists(file_path), FILE_ERROR % file_path
 
         result = storage_interface.unpack_zip(file_path, TvbProfile.current.TVB_TEMP_FOLDER)
         encrypted_password = import_export_encryption_handler.extract_encrypted_password_from_list(result)
@@ -201,8 +206,8 @@ class TestExporters(TransactionalTestCase):
         datatype = dummy_datatype_index_factory()
         _, file_path, _ = self.export_manager.export_data(datatype, self.TVB_EXPORTER, self.test_project)
 
-        assert file_path is not None, "Export process should return path to export file"
-        assert os.path.exists(file_path), "Could not find export file;: %s on disk." % file_path
+        assert file_path is not None, EXPORT_PATH_ERROR
+        assert os.path.exists(file_path), FILE_ERROR % file_path
 
     def test_export_datatype_with_links(self, region_mapping_index_factory, user_factory, project_factory):
         """
@@ -217,7 +222,7 @@ class TestExporters(TransactionalTestCase):
         export_manager = ExportManager()
         _, exported_h5_file, _ = export_manager.export_data(region_mapping_index, self.TVB_LINKED_EXPORTER,
                                                             self.test_project)
-        assert zipfile.is_zipfile(exported_h5_file), "Generated file is not a valid ZIP file"
+        assert zipfile.is_zipfile(exported_h5_file), VALID_ZIP_ERROR
 
         with zipfile.ZipFile(exported_h5_file, 'r') as zipObj:
             # Get list of files names in zip
@@ -243,12 +248,12 @@ class TestExporters(TransactionalTestCase):
         file_name, file_path, _ = self.export_manager.export_data(dm_datatype_group, self.TVB_EXPORTER,
                                                                   self.test_project)
 
-        assert file_name is not None, "Export process should return a file name"
-        assert file_path is not None, "Export process should return path to export file"
-        assert os.path.exists(file_path), "Could not find export file: %s on disk." % file_path
+        assert file_name is not None, EXPORT_ERROR
+        assert file_path is not None, EXPORT_PATH_ERROR
+        assert os.path.exists(file_path), FILE_ERROR % file_path
 
         # Now check if the generated file is a correct ZIP file
-        assert zipfile.is_zipfile(file_path), "Generated file is not a valid ZIP file"
+        assert zipfile.is_zipfile(file_path), VALID_ZIP_ERROR
 
         with closing(zipfile.ZipFile(file_path)) as zip_file:
             list_of_files = zip_file.namelist()
@@ -275,12 +280,12 @@ class TestExporters(TransactionalTestCase):
         file_name, file_path, _ = self.export_manager.export_data(ts_datatype_group, self.TVB_LINKED_EXPORTER,
                                                                   self.test_project)
 
-        assert file_name is not None, "Export process should return a file name"
-        assert file_path is not None, "Export process should return path to export file"
-        assert os.path.exists(file_path), "Could not find export file: %s on disk." % file_path
+        assert file_name is not None, EXPORT_ERROR
+        assert file_path is not None, EXPORT_PATH_ERROR
+        assert os.path.exists(file_path), FILE_ERROR % file_path
 
         # Now check if the generated file is a correct ZIP file
-        assert zipfile.is_zipfile(file_path), "Generated file is not a valid ZIP file"
+        assert zipfile.is_zipfile(file_path), VALID_ZIP_ERROR
 
         with closing(zipfile.ZipFile(file_path)) as zip_file:
             list_of_files = zip_file.namelist()
@@ -292,7 +297,7 @@ class TestExporters(TransactionalTestCase):
                 if not links_folder_found:
                     if "Links" in dir_name:
                         links_folder_found = True
-                        assert file_path is not None, "Export process should return path to export file"
+                        assert file_path is not None, EXPORT_PATH_ERROR
 
                 if dir_name not in list_of_folders:
                     list_of_folders.append(dir_name)
@@ -324,12 +329,12 @@ class TestExporters(TransactionalTestCase):
             dm_datatype_group, self.TVB_EXPORTER, self.test_project, os.path.join(
                 TvbProfile.current.TVB_TEMP_FOLDER, import_export_encryption_handler.PUBLIC_KEY_NAME))
 
-        assert file_name is not None, "Export process should return a file name"
-        assert file_path is not None, "Export process should return path to export file"
-        assert os.path.exists(file_path), "Could not find export file: %s on disk." % file_path
+        assert file_name is not None, EXPORT_ERROR
+        assert file_path is not None, EXPORT_PATH_ERROR
+        assert os.path.exists(file_path), FILE_ERROR % file_path
 
         # Now check if the generated file is a correct ZIP file
-        assert zipfile.is_zipfile(file_path), "Generated file is not a valid ZIP file"
+        assert zipfile.is_zipfile(file_path), VALID_ZIP_ERROR
 
         result = storage_interface.unpack_zip(file_path, TvbProfile.current.TVB_TEMP_FOLDER)
         encrypted_password = import_export_encryption_handler.extract_encrypted_password_from_list(result)
@@ -374,10 +379,10 @@ class TestExporters(TransactionalTestCase):
         project = project_factory(user)
         export_file = self.export_manager.export_project(project)
 
-        assert export_file is not None, "Export process should return path to export file"
-        assert os.path.exists(export_file), "Could not find export file: %s on disk." % export_file
+        assert export_file is not None, EXPORT_PATH_ERROR
+        assert os.path.exists(export_file), FILE_ERROR % export_file
         # Now check if the generated file is a correct ZIP file
-        assert zipfile.is_zipfile(export_file), "Generated file is not a valid ZIP file"
+        assert zipfile.is_zipfile(export_file), VALID_ZIP_ERROR
 
     def test_export_simulator_configuration(self, operation_factory, connectivity_index_factory):
         """
@@ -397,6 +402,6 @@ class TestExporters(TransactionalTestCase):
 
         export_file = self.export_manager.export_simulator_configuration(burst_configuration.id)
 
-        assert export_file is not None, "Export process should return path to export file"
-        assert os.path.exists(export_file), "Could not find export file: %s on disk." % export_file
-        assert zipfile.is_zipfile(export_file), "Generated file is not a valid ZIP file"
+        assert export_file is not None, EXPORT_PATH_ERROR
+        assert os.path.exists(export_file), FILE_ERROR % export_file
+        assert zipfile.is_zipfile(export_file), VALID_ZIP_ERROR

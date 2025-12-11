@@ -41,26 +41,28 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr, replace_nan_values
 from tvb.datatypes.time_series import TimeSeries
 
+TIME_SERIES_TO_DISPLAY_ = 'Time series to display.'
+
 
 class EegMonitorModel(ViewModel):
     input_data = DataTypeGidAttr(
         linked_datatype=TimeSeries,
         label='Input Data',
-        doc='Time series to display.'
+        doc=TIME_SERIES_TO_DISPLAY_
     )
 
     data_2 = DataTypeGidAttr(
         linked_datatype=TimeSeries,
         required=False,
         label='Input Data 2',
-        doc='Time series to display.'
+        doc=TIME_SERIES_TO_DISPLAY_
     )
 
     data_3 = DataTypeGidAttr(
         linked_datatype=TimeSeries,
         required=False,
         label='Input Data 3',
-        doc='Time series to display.'
+        doc=TIME_SERIES_TO_DISPLAY_
     )
 
 

@@ -46,6 +46,8 @@ from tvb.core.entities.exportable import Exportable
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neotraits.db import Base
 
+USERS_ID_KEY = 'USERS.id'
+
 LOG = get_logger(__name__)
 
 # Constants for User Roles.
@@ -152,7 +154,7 @@ class UserPreferences(Base):
     ONLINE_HELP_ACTIVE = "online_help_active"
     VIEWERS_COLOR_SCHEME = "viewers_color_scheme"
     PROJECT_STRUCTURE_GROUPING = "project_structure_grouping"
-    fk_user = Column(Integer, ForeignKey('USERS.id'), primary_key=True)
+    fk_user = Column(Integer, ForeignKey(USERS_ID_KEY), primary_key=True)
     key = Column(String, primary_key=True)
     value = Column(String)
 
@@ -173,7 +175,7 @@ class Project(Base, Exportable):
     name = Column(String, unique=True)
     description = Column(String)
     last_updated = Column(DateTime)
-    fk_admin = Column(Integer, ForeignKey('USERS.id'))
+    fk_admin = Column(Integer, ForeignKey(USERS_ID_KEY))
     gid = Column(String, unique=True)
     version = Column(Integer)
     disable_imports = Column(Boolean, default=False)
@@ -235,7 +237,7 @@ class User_to_Project(Base):
     __tablename__ = 'USERS_TO_PROJECTS'
 
     id = Column(Integer, primary_key=True)
-    fk_user = Column(Integer, ForeignKey('USERS.id', ondelete="CASCADE"))
+    fk_user = Column(Integer, ForeignKey(USERS_ID_KEY, ondelete="CASCADE"))
     fk_project = Column(Integer, ForeignKey('PROJECTS.id', ondelete="CASCADE"))
 
     def __init__(self, user, case):

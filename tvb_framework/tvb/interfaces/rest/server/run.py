@@ -49,6 +49,9 @@ from tvb.interfaces.rest.server.rest_api import RestApi
 from tvb.storage.storage_interface import StorageInterface
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+DATATYPE_GID_STR = "<string:datatype_gid>"
+PROJECT_GID_STR = "<string:project_gid>"
+
 TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
 CONFIG_EXISTS = not TvbProfile.is_first_run()
 LOGGER = get_logger('tvb.interfaces.rest.server.run')
@@ -99,28 +102,28 @@ def initialize_flask():
     name_space_projects = api.namespace(build_path(RestNamespace.PROJECTS),
                                         description="TVB-REST APIs for projects management")
     name_space_projects.add_resource(GetDataInProjectResource, RestLink.DATA_IN_PROJECT.compute_url(
-        values={LinkPlaceholder.PROJECT_GID.value: "<string:project_gid>"}))
+        values={LinkPlaceholder.PROJECT_GID.value: PROJECT_GID_STR}))
     name_space_projects.add_resource(GetOperationsInProjectResource, RestLink.OPERATIONS_IN_PROJECT.compute_url(
-        values={LinkPlaceholder.PROJECT_GID.value: "<string:project_gid>"}))
+        values={LinkPlaceholder.PROJECT_GID.value: PROJECT_GID_STR}))
     name_space_projects.add_resource(ProjectMembersResource, RestLink.PROJECT_MEMBERS.compute_url(
-        values={LinkPlaceholder.PROJECT_GID.value: "<string:project_gid>"}))
+        values={LinkPlaceholder.PROJECT_GID.value: PROJECT_GID_STR}))
 
     # Datatypes namepsace
     name_space_datatypes = api.namespace(build_path(RestNamespace.DATATYPES),
                                          description="TVB-REST APIs for datatypes management")
     name_space_datatypes.add_resource(RetrieveDatatypeResource, RestLink.GET_DATATYPE.compute_url(
-        values={LinkPlaceholder.DATATYPE_GID.value: '<string:datatype_gid>'}))
+        values={LinkPlaceholder.DATATYPE_GID.value: DATATYPE_GID_STR}))
     name_space_datatypes.add_resource(GetOperationsForDatatypeResource, RestLink.DATATYPE_OPERATIONS.compute_url(
-        values={LinkPlaceholder.DATATYPE_GID.value: '<string:datatype_gid>'}))
+        values={LinkPlaceholder.DATATYPE_GID.value: DATATYPE_GID_STR}))
     name_space_datatypes.add_resource(GetExtraInfoForDatatypeResource, RestLink.DATATYPE_EXTRA_INFO.compute_url(
-        values={LinkPlaceholder.DATATYPE_GID.value: '<string:datatype_gid>'}))
+        values={LinkPlaceholder.DATATYPE_GID.value: DATATYPE_GID_STR}))
     name_space_datatypes.add_resource(IsDataEncryptedResource, RestLink.IS_DATA_ENCRYPTED.compute_url())
 
     # Operations namespace
     name_space_operations = api.namespace(build_path(RestNamespace.OPERATIONS),
                                           description="TVB-REST APIs for operations management")
     name_space_operations.add_resource(LaunchOperationResource, RestLink.LAUNCH_OPERATION.compute_url(values={
-        LinkPlaceholder.PROJECT_GID.value: '<string:project_gid>',
+        LinkPlaceholder.PROJECT_GID.value: PROJECT_GID_STR,
         LinkPlaceholder.ALG_MODULE.value: '<string:algorithm_module>',
         LinkPlaceholder.ALG_CLASSNAME.value: '<string:algorithm_classname>'
     }))
@@ -135,7 +138,7 @@ def initialize_flask():
     name_space_simulation = api.namespace(build_path(RestNamespace.SIMULATION),
                                           description="TVB-REST APIs for simulation management")
     name_space_simulation.add_resource(FireSimulationResource, RestLink.FIRE_SIMULATION.compute_url(
-        values={LinkPlaceholder.PROJECT_GID.value: '<string:project_gid>'}))
+        values={LinkPlaceholder.PROJECT_GID.value: PROJECT_GID_STR}))
 
     api.add_namespace(name_space_users)
     api.add_namespace(name_space_projects)

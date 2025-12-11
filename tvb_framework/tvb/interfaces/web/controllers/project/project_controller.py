@@ -233,7 +233,7 @@ class ProjectController(BaseController):
             current_project = self.project_service.find_project(project_id)
         return dict(usersList=all_users, usersMembers=[m.id for m in members], usersPages=pages,
                     usersCurrentPage=page, editUsersEnabled=self._has_edit_permission(current_user, current_project),
-                    data=dict(project_id=project_id), pattern=search_pattern)
+                    data={"project_id": project_id}, pattern=search_pattern)
 
     @expose_fragment('project/members_pages')
     @parse_positional_params

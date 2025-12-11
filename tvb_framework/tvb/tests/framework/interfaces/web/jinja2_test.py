@@ -41,6 +41,8 @@ from tvb.interfaces.web.controllers.simulator.simulator_controller import Simula
 from tvb.simulator.simulator import Simulator
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 
+VISIBILITY_HIDDEN = "visibility: hidden"
+
 
 class DummyTrait(HasTraits):
     """ Test class with traited attributes"""
@@ -175,7 +177,7 @@ class TestJinja2Simulator(Jinja2Test):
         all_buttons = soup.find_all('button')
         assert len(all_buttons) == 1
         assert all_buttons[0].attrs['name'] == 'next'
-        hidden_buttons = soup.find_all('button', attrs=dict(style="visibility: hidden"))
+        hidden_buttons = soup.find_all('button', attrs=dict(style=VISIBILITY_HIDDEN))
         assert len(hidden_buttons) == 0
 
     def test_buttons_first_fragment_copy(self, mocker):
@@ -185,7 +187,7 @@ class TestJinja2Simulator(Jinja2Test):
         all_buttons = soup.find_all('button')
         assert len(all_buttons) == 1
         assert all_buttons[0].attrs['name'] == 'next'
-        hidden_buttons = soup.find_all('button', attrs=dict(style="visibility: hidden"))
+        hidden_buttons = soup.find_all('button', attrs=dict(style=VISIBILITY_HIDDEN))
         assert len(hidden_buttons) == 1
 
     def test_buttons_last_fragment(self, mocker):
@@ -196,7 +198,7 @@ class TestJinja2Simulator(Jinja2Test):
 
         all_buttons = soup.find_all('button')
         assert len(all_buttons) == 3
-        hidden_buttons = soup.find_all('button', attrs=dict(style="visibility: hidden"))
+        hidden_buttons = soup.find_all('button', attrs=dict(style=VISIBILITY_HIDDEN))
         assert len(hidden_buttons) == 0
 
     def test_buttons_last_fragment_copy(self, mocker):
@@ -207,7 +209,7 @@ class TestJinja2Simulator(Jinja2Test):
 
         all_buttons = soup.find_all('button')
         assert len(all_buttons) == 3
-        hidden_buttons = soup.find_all('button', attrs=dict(style="visibility: hidden"))
+        hidden_buttons = soup.find_all('button', attrs=dict(style=VISIBILITY_HIDDEN))
         assert len(hidden_buttons) == 0
 
     def test_buttons_last_fragment_readonly(self, mocker):
@@ -216,7 +218,7 @@ class TestJinja2Simulator(Jinja2Test):
 
         all_buttons = soup.find_all('button')
         assert len(all_buttons) == 1
-        hidden_buttons = soup.find_all('button', attrs=dict(style="visibility: hidden"))
+        hidden_buttons = soup.find_all('button', attrs=dict(style=VISIBILITY_HIDDEN))
         assert len(hidden_buttons) == 1
 
     def test_buttons_model_fragment(self, mocker):
@@ -226,7 +228,7 @@ class TestJinja2Simulator(Jinja2Test):
 
         all_buttons = soup.find_all('button')
         assert len(all_buttons) == 5
-        hidden_buttons = soup.find_all('button', attrs=dict(style="visibility: hidden"))
+        hidden_buttons = soup.find_all('button', attrs=dict(style=VISIBILITY_HIDDEN))
         assert len(hidden_buttons) == 0
 
     def test_buttons_middle_fragment(self, mocker):
@@ -237,5 +239,5 @@ class TestJinja2Simulator(Jinja2Test):
         assert len(all_buttons) == 2
         assert all_buttons[0].attrs['name'] == 'previous'
         assert all_buttons[1].attrs['name'] == 'next'
-        hidden_buttons = soup.find_all('button', attrs=dict(style="visibility: hidden"))
+        hidden_buttons = soup.find_all('button', attrs=dict(style=VISIBILITY_HIDDEN))
         assert len(hidden_buttons) == 0

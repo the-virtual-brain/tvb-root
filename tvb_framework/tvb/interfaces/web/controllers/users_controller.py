@@ -57,6 +57,8 @@ from tvb.interfaces.web.entities.context_simulator import SimulatorContext
 from tvb.interfaces.web.structure import WebStructure
 from tvb.storage.storage_interface import StorageInterface
 
+USER_URL = '/user'
+
 KEY_SERVER_VERSION = "versionInfo"
 KEY_CURRENT_VERSION_FULL = "currentVersionLongText"
 KEY_STORAGE_IN_UPDATE = "isStorageInUpdate"
@@ -184,7 +186,7 @@ class UserController(BaseController):
         common.set_info_message("Thank you for using The Virtual Brain!")
 
         common.expire_session()
-        self.redirect("/user")
+        self.redirect(USER_URL)
 
     @cherrypy.expose
     @handle_error(redirect=False)
@@ -236,7 +238,7 @@ class UserController(BaseController):
         redirect = False
         if cherrypy.request.method == 'POST':
             if cancel:
-                self.redirect('/user')
+                self.redirect(USER_URL)
             try:
                 okmessage = self._create_user(**data)
                 common.set_info_message(okmessage)
@@ -253,7 +255,7 @@ class UserController(BaseController):
 
         if redirect:
             # Redirect to login page, with some success message to display
-            self.redirect('/user')
+            self.redirect(USER_URL)
         else:
             # Stay on the same page
             return self.fill_default_attributes(template_specification)
@@ -349,7 +351,7 @@ class UserController(BaseController):
         redirect = False
         if cherrypy.request.method == 'POST':
             if cancel:
-                self.redirect('/user')
+                self.redirect(USER_URL)
             form = RecoveryForm()
             try:
                 data = form.to_python(data)
@@ -365,7 +367,7 @@ class UserController(BaseController):
                 redirect = False
         if redirect:
             # Redirect to login page, with some success message to display
-            self.redirect('/user')
+            self.redirect(USER_URL)
         else:
             # Stay on the same page
             return self.fill_default_attributes(template_specification)

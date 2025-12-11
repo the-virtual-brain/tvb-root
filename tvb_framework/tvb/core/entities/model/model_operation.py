@@ -44,6 +44,8 @@ from tvb.core.entities.transient.range_parameter import RangeParameter
 from tvb.core.neotraits.db import Base
 from tvb.core.utils import generate_guid, string2date, string2bool, date2string, LESS_COMPLEX_TIME_FORMAT
 
+PROJECTS_ID_KEY = 'PROJECTS.id'
+
 LOG = get_logger(__name__)
 
 
@@ -165,7 +167,7 @@ class OperationGroup(Base, Exportable):
     range2 = Column(String)
     range3 = Column(String)
     gid = Column(String)
-    fk_launched_in = Column(Integer, ForeignKey('PROJECTS.id', ondelete="CASCADE"))
+    fk_launched_in = Column(Integer, ForeignKey(PROJECTS_ID_KEY, ondelete="CASCADE"))
     project = relationship(Project, backref=backref('OPERATION_GROUPS', order_by=id, cascade="all,delete"))
 
     def __init__(self, project_id, name='incomplete', ranges=None, gid=None):
@@ -235,7 +237,7 @@ class Operation(Base, Exportable):
 
     id = Column(Integer, primary_key=True)
     fk_launched_by = Column(Integer, ForeignKey('USERS.id'))
-    fk_launched_in = Column(Integer, ForeignKey('PROJECTS.id', ondelete="CASCADE"))
+    fk_launched_in = Column(Integer, ForeignKey(PROJECTS_ID_KEY, ondelete="CASCADE"))
     fk_from_algo = Column(Integer, ForeignKey('ALGORITHMS.id'))
     fk_operation_group = Column(Integer, ForeignKey('OPERATION_GROUPS.id', ondelete="CASCADE"), default=None)
     gid = Column(String)
@@ -435,7 +437,7 @@ class ResultFigure(Base, Exportable):
 
     id = Column(Integer, primary_key=True)
     fk_for_user = Column(Integer, ForeignKey('USERS.id', ondelete="CASCADE"))
-    fk_in_project = Column(Integer, ForeignKey('PROJECTS.id', ondelete="CASCADE"))
+    fk_in_project = Column(Integer, ForeignKey(PROJECTS_ID_KEY, ondelete="CASCADE"))
     project = relationship(Project, backref=backref('RESULT_FIGURES', order_by=id, cascade="delete"))
     session_name = Column(String)
     name = Column(String)

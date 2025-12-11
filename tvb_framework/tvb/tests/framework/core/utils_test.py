@@ -36,6 +36,9 @@ from datetime import datetime
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.utils import path2url_part, get_unique_file_name, string2date, date2string, string2bool
 
+DATETIME_ERROR = "Did not get expected datetime from conversion object."
+STRING_ERROR = "Did not get expected string from datetime conversion object."
+
 
 class TestUtils(TransactionalTestCase):
     """
@@ -73,21 +76,17 @@ class TestUtils(TransactionalTestCase):
         """
         simple_time_string = "03-03-1999"
         simple_date = string2date(simple_time_string, complex_format=False)
-        assert simple_date == datetime(1999, 3, 3),\
-                         "Did not get expected datetime from conversion object."
+        assert simple_date == datetime(1999, 3, 3), DATETIME_ERROR
         complex_time_string = "1999-03-16,18-20-33.1"
         complex_date = string2date(complex_time_string)
-        assert complex_date == datetime(1999, 3, 16, 18, 20, 33, 100000),\
-                         "Did not get expected datetime from conversion object."
+        assert complex_date == datetime(1999, 3, 16, 18, 20, 33, 100000), DATETIME_ERROR
         complex_time_stringv1 = "1999-03-16,18-20-33"
         complexv1_date = string2date(complex_time_stringv1)
-        assert complexv1_date == datetime(1999, 3, 16, 18, 20, 33),\
-                         "Did not get expected datetime from conversion object."
+        assert complexv1_date == datetime(1999, 3, 16, 18, 20, 33), DATETIME_ERROR
         custom_format = "%Y"
         custom_time_string = "1999"
         custom_date = string2date(custom_time_string, date_format=custom_format)
-        assert custom_date == datetime(1999, 1, 1),\
-                         "Did not get expected datetime from conversion object."
+        assert custom_date == datetime(1999, 1, 1), DATETIME_ERROR
 
     def test_string2date_invalid(self):
         """
@@ -101,15 +100,10 @@ class TestUtils(TransactionalTestCase):
         Check the date2string method for various inputs.
         """
         date_input = datetime(1999, 3, 16, 18, 20, 33, 100000)
-        assert date2string(date_input, complex_format=False) == '03-16-1999',\
-                         "Did not get expected string from datetime conversion object."
+        assert date2string(date_input, complex_format=False) == '03-16-1999', STRING_ERROR
         custom_format = "%Y"
-        assert date2string(date_input, date_format=custom_format) == '1999',\
-                         "Did not get expected string from datetime conversion object."
-
-        assert date2string(date_input, complex_format=True) == '1999-03-16,18-20-33.100000',\
-                         "Did not get expected string from datetime conversion object."
-
+        assert date2string(date_input, date_format=custom_format) == '1999', STRING_ERROR
+        assert date2string(date_input, complex_format=True) == '1999-03-16,18-20-33.100000', STRING_ERROR
         assert "None" == date2string(None), "Expected to return 'None' for None input."
 
     def test_string2bool(self):
