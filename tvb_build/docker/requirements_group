@@ -1,5 +1,5 @@
 numpy
-siibra
+siibra<=1.0.1a10
 cryptography
 sqlalchemy
 pyAesCrypt
