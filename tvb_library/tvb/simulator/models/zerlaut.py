@@ -437,6 +437,10 @@ class ZerlautAdaptationFirstOrder(Model):
         derivative[3] = -W_i / self.tau_w_i + self.b_i * I + self.a_i * (mu_V - self.E_L_i) / self.tau_w_i
         derivative[4] = -ou_drift/self.tau_OU
 
+        # check each derivative for nan individually
+        for i in range(self._nvar):
+            assert not numpy.isnan(derivative[i]).any(), f"nan in derivative[{i}]"
+
         return derivative
 
     def TF_excitatory(self, fe, fi, fe_ext, fi_ext, W):
@@ -449,7 +453,9 @@ class ZerlautAdaptationFirstOrder(Model):
         :param W: level of adaptation
         :return: result of transfer function
         """
-        return self.TF(fe, fi, fe_ext, fi_ext, W, self.P_e, self.E_L_e)
+        out = self.TF(fe, fi, fe_ext, fi_ext, W, self.P_e, self.E_L_e)
+        assert not numpy.isnan(out).any(), "nan in TF_excitatory"
+        return out
 
     def TF_inhibitory(self, fe, fi, fe_ext, fi_ext, W):
         """
