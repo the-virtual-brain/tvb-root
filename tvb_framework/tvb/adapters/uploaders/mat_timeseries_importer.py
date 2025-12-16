@@ -189,6 +189,11 @@ class RegionTimeSeriesImporter(ABCUploader):
 
             ts.start_time = view_model.start_time
             ts.sample_period_unit = 's'
+            
+            # Added by Picsell Dois
+            # Fix a problem which prevents the uploader from remembering sampling rate
+            ts.sample_period = 1.0 / view_model.sampling_rate
+            # EndOf: Added by Picsell Dois
 
             ts_h5.write_time_slice(numpy.r_[:data.shape[0]] * ts.sample_period)
             # we expect empirical data shape to be time, channel.
