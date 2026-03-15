@@ -31,6 +31,7 @@ Models developed by Stefanescu-Jirsa, based on reduced-set analyses of infinite 
 import numpy
 from scipy.integrate import trapezoid as scipy_integrate_trapz
 from scipy.stats import norm as scipy_stats_norm
+from ._dfun_stefanescu_jirsa import dfun_fitzhughnaguma, dfun_fitzhughnaguma_numba, dfun_hindmarshrose, dfun_hindmarshrose_numba
 from .base import Model
 from tvb.basic.neotraits.api import NArray, Final, List, Range
 
@@ -106,6 +107,7 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
     """
 
     # Define traited attributes for this model, these represent possible kwargs.
+    use_numba = True
     tau = NArray(
         label=r":math:`\tau`",
         default=numpy.array([3.0]),
@@ -213,32 +215,14 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
                 \dot{\beta}_i    &= \frac{1}{c}\left(\alpha_i-b\beta_i+n_i\right)
 
         """
-
-        xi = state_variables[0, :]
-        eta = state_variables[1, :]
-        alpha = state_variables[2, :]
-        beta = state_variables[3, :]
-        derivative = numpy.empty_like(state_variables)
-        # sum the activity from the modes
-        c_0 = coupling[0, :].sum(axis=1)[:, numpy.newaxis]
-
-        # TODO: generalize coupling variables to a matrix form
-        # c_1 = coupling[1, :] # this cv represents alpha
-
-        derivative[0] = (self.tau * (xi - self.e_i * xi ** 3 / 3.0 - eta) +
-               self.K11 * (numpy.dot(xi, self.Aik) - xi) -
-               self.K12 * (numpy.dot(alpha, self.Bik) - xi) +
-               self.tau * (self.IE_i + c_0 + local_coupling * xi))
-
-        derivative[1] = (xi - self.b * eta + self.m_i) / self.tau
-
-        derivative[2] = (self.tau * (alpha - self.f_i * alpha ** 3 / 3.0 - beta) +
-                  self.K21 * (numpy.dot(xi, self.Cik) - alpha) +
-                  self.tau * (self.II_i + c_0 + local_coupling * xi))
-
-        derivative[3] = (alpha - self.b * beta + self.n_i) / self.tau
-
-        return derivative
+        dfun_to_use = dfun_fitzhughnaguma
+        if self.use_numba:
+            dfun_to_use = dfun_fitzhughnaguma_numba
+        return dfun_to_use(
+            state_variables, coupling, local_coupling,
+            self.tau, self.e_i, self.K11, self.Aik, self.K12, self.Bik, self.IE_i,
+            self.b, self.m_i, self.K21, self.Cik, self.II_i, self.f_i, self.n_i
+        )
 
     def update_derived_parameters(self):
         """
@@ -484,6 +468,7 @@ class ReducedSetHindmarshRose(ReducedSetBase):
     II_i = None
     m_i = None
     n_i = None
+    use_numba = True
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
@@ -509,36 +494,12 @@ class ReducedSetHindmarshRose(ReducedSetBase):
                 \dot{\gamma}_i  &= rs \alpha_i - r \gamma_i - n_i
 
         """
-
-        xi = state_variables[0, :]
-        eta = state_variables[1, :]
-        tau = state_variables[2, :]
-        alpha = state_variables[3, :]
-        beta = state_variables[4, :]
-        gamma = state_variables[5, :]
-        derivative = numpy.empty_like(state_variables)
-
-        c_0 = coupling[0, :].sum(axis=1)[:, numpy.newaxis]
-        # c_1 = coupling[1, :]
-
-        derivative[0] = (eta - self.a_i * xi ** 3 + self.b_i * xi ** 2 - tau +
-               self.K11 * (numpy.dot(xi, self.A_ik) - xi) -
-               self.K12 * (numpy.dot(alpha, self.B_ik) - xi) +
-               self.IE_i + c_0 + local_coupling * xi)
-
-        derivative[1] = self.c_i - self.d_i * xi ** 2 - eta
-
-        derivative[2] = self.r * self.s * xi - self.r * tau - self.m_i
-
-        derivative[3] = (beta - self.e_i * alpha ** 3 + self.f_i * alpha ** 2 - gamma +
-                  self.K21 * (numpy.dot(xi, self.C_ik) - alpha) +
-                  self.II_i + c_0 + local_coupling * xi)
-
-        derivative[4] = self.h_i - self.p_i * alpha ** 2 - beta
-
-        derivative[5] = self.r * self.s * alpha - self.r * gamma - self.n_i
-
-        return derivative
+        dfun_to_use = dfun_hindmarshrose
+        if self.use_numba:
+            dfun_to_use = dfun_hindmarshrose_numba
+        return dfun_to_use(
+            state_variables, coupling, local_coupling,
+            self.r, self.a_i, self.b_i, self.c_i, self.d_i, self.s, self.K11, self.A_ik, self.K12, self.B_ik, self.IE_i, self.m_i, self.K21, self.C_ik, self.II_i, self.e_i, self.f_i, self.h_i, self.p_i, self.n_i)
 
     def update_derived_parameters(self, corrected_d_p=True):
         """
