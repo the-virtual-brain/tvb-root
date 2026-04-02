@@ -132,6 +132,29 @@ class NetworkSet(t.HasTraits):
         """
         return self.States(*[_.zero_cvars() for _ in self.subnets])
 
+    def random_states(self, rng=None) -> States:
+        """Draw random initial conditions for all subnetworks from state variable ranges.
+
+        Delegates to :meth:`~tvb.simulator.hybrid.Subnetwork.random_states`
+        for each subnetwork, passing the same ``rng`` instance so a single
+        seeded generator produces a reproducible, fully-determined initial
+        condition across the whole network.
+
+        Parameters
+        ----------
+        rng : numpy.random.RandomState or None
+            Random number generator.  When *None* the module-level
+            ``numpy.random`` is used.
+
+        Returns
+        -------
+        States
+            Named tuple of per-subnetwork initial state arrays, each with
+            shape ``(nvar, nnodes, modes)`` drawn from
+            ``model.state_variable_range``.
+        """
+        return self.States(*[sn.random_states(rng) for sn in self.subnets])
+
     def observe(self, states: States, flat=False) -> np.ndarray:
         """Compute observations across all subnetworks.
 

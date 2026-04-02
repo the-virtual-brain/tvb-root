@@ -136,8 +136,12 @@ class TestStimulusIntegration:
         )
         sim_no_stim.configure()
 
+        # Zero initial conditions ensure both runs start from the same state so
+        # that any difference is due solely to the stimulus.
+        _zero_ic = [np.zeros((2, n_nodes, 1))]
+
         # Run simulation without stimulus
-        result_no_stim = sim_no_stim.run()
+        result_no_stim = sim_no_stim.run(initial_conditions=_zero_ic)
         time_no_stim, states_no_stim = result_no_stim[0]  # Extract time and states
 
         # Setup network with stimulus
@@ -178,7 +182,7 @@ class TestStimulusIntegration:
         sim_with_stim.configure()
 
         # Run simulation with stimulus
-        result_with_stim = sim_with_stim.run()
+        result_with_stim = sim_with_stim.run(initial_conditions=_zero_ic)
         time_with_stim, states_with_stim = result_with_stim[
             0
         ]  # Extract time and states
@@ -245,7 +249,7 @@ class TestStimulusIntegration:
         sim.configure()
 
         # Run simulation
-        result = sim.run()
+        result = sim.run(initial_conditions=[np.zeros((2, n_nodes, 1))])
         time, states = result[0]
 
         # Extract final states (last time point)
@@ -306,7 +310,7 @@ class TestStimulusIntegration:
         sim.configure()
 
         # Run simulation
-        result = sim.run()
+        result = sim.run(initial_conditions=[np.zeros((2, n_nodes, 1))])
         time, states = result[0]
 
         # Extract time evolution of first state variable at node 0
@@ -429,7 +433,7 @@ class TestStimulusIntegration:
         sim.configure()
 
         # Run simulation
-        result = sim.run()
+        result = sim.run(initial_conditions=[np.zeros((2, n_nodes, 1))])
         time, states = result[0]
 
         # Extract final states
@@ -503,7 +507,7 @@ class TestStimulusIntegration:
         sim.configure()
 
         # Run simulation
-        result = sim.run()
+        result = sim.run(initial_conditions=[np.zeros((2, n_nodes, 1))])
         time, states = result[0]
 
         # Extract final states
@@ -565,7 +569,8 @@ class TestStimulusIntegration:
         )
         sim_small.configure()
 
-        result_small = sim_small.run()
+        _zero_ic = [np.zeros((2, n_nodes, 1))]
+        result_small = sim_small.run(initial_conditions=_zero_ic)
         time_small, states_small = result_small[0]
         final_small = states_small[-1]  # (cvar, node, mode)
 
@@ -583,7 +588,7 @@ class TestStimulusIntegration:
         )
         sim_large.configure()
 
-        result_large = sim_large.run()
+        result_large = sim_large.run(initial_conditions=_zero_ic)
         time_large, states_large = result_large[0]
         final_large = states_large[-1]  # (cvar, node, mode)
 
