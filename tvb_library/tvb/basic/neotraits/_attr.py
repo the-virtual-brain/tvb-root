@@ -298,7 +298,23 @@ class _Number(Attr):
             # as can_cast works with dtype strings as well
             # can_cast('i8', 'i32')
             raise TraitTypeError("can't be set to {!r}. Need a number.".format(value), attr=self)
-        if not numpy.can_cast(numpy.dtype(type(value)), self.field_type, 'safe'):
+        # numpy.can_cast() no longer accepts Python scalars in NumPy 2.x.
+        # Use a round-trip check: convert to field_type and verify the value is preserved.
+        # Two traps need to be caught separately:
+        #   1. Integer overflow wraps silently: int8(102345) → -55 ≠ 102345
+        #   2. Float overflow to inf: float16(2**30) → inf, but inf==inf when
+        #      the RHS is also coerced to float16 before comparison, so the !=
+        #      check would miss it — guard explicitly.
+        try:
+            converted = self.field_type(value)
+        except (OverflowError, ValueError, TypeError):
+            raise TraitTypeError("can't be set to {!r}. No safe cast.".format(value), attr=self)
+        # Guard float overflow to infinity (original value was finite)
+        if (isinstance(converted, (float, numpy.floating))
+                and numpy.isinf(converted)
+                and not (isinstance(value, (float, numpy.floating)) and numpy.isinf(value))):
+            raise TraitTypeError("can't be set to {!r}. No safe cast.".format(value), attr=self)
+        if converted != value:
             raise TraitTypeError("can't be set to {!r}. No safe cast.".format(value), attr=self)
         if self.choices is not None:
             if value not in self.choices:
