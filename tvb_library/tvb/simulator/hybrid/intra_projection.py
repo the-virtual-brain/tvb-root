@@ -1,3 +1,46 @@
+# -*- coding: utf-8 -*-
+#
+#
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# analysers necessary to run brain-simulations. You can use it stand alone or
+# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License along with this
+# program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
+#
+#
+
+"""
+Intra-subnetwork projection for the hybrid simulator.
+
+An ``IntraProjection`` couples state variables within a single subnetwork —
+source and target are the same set of nodes.  Because source and target share
+the same mode dimension, the mode mapping is always the identity matrix,
+created lazily in ``_get_identity_mode_map()`` and cached between calls.
+
+The coupling-variable (cvar) specification may be given as integer index
+arrays or as string names taken from the model's ``cvar`` attribute.  String
+names are resolved to integer indices lazily: if the model is not yet
+available at construction time (a common pattern when projections are
+assembled before the owning ``Subnetwork`` is fully configured), resolution is
+deferred and completed when ``set_model_for_cvar_resolution()`` is called
+during the subnetwork's ``configure()`` phase.
+"""
+
 import numpy as np
 
 from .base_projection import BaseProjection
@@ -5,11 +48,28 @@ from .cvar_utils import resolve_cvar_names, validate_cvar_indices
 
 
 class IntraProjection(BaseProjection):
-    """
-    Defines internal coupling within a Subnetwork using the BaseProjection mechanism.
+    """Intra-subnetwork coupling: nodes coupled to themselves within one subnetwork.
 
-    Inherits time delay handling and sparse weight requirements from BaseProjection.
-    Assumes source and target modes are the same, using an identity mode map.
+    Wraps ``BaseProjection`` for the case where the source and target are the
+    same set of nodes in a single ``Subnetwork``.  Because source and target
+    share the same mode dimension, ``mode_map`` is always the identity matrix,
+    created lazily by ``_get_identity_mode_map()`` and cached between calls.
+
+    Coupling-variable (cvar) indices may be passed as integer arrays or as
+    string names matching entries in the model's ``cvar`` list.  String names
+    are resolved lazily: if the model is not available at construction time,
+    resolution is deferred until ``set_model_for_cvar_resolution()`` is
+    called by the owning ``Subnetwork`` during its ``configure()`` phase.
+
+    Attributes
+    ----------
+    (all inherited from BaseProjection)
+
+    See Also
+    --------
+    BaseProjection : Parent class providing the buffer and delay logic.
+    InterProjection : Coupling between different subnetworks with an
+        explicit mode map.
     """
 
     # Inherits source_cvar, target_cvar, scale, weights, lengths, cv, dt, etc.
@@ -21,6 +81,20 @@ class IntraProjection(BaseProjection):
     # _identity_mode_map is initialized in __init__ as an internal cache
 
     def __init__(self, **kwargs):
+        """Initialise and attempt eager cvar name resolution.
+
+        Calls ``BaseProjection.__init__`` for weight/length validation and
+        delay computation, then attempts to resolve any string cvar names
+        immediately.  If ``_source_model`` / ``_target_model`` attributes are
+        not yet available (the typical case when projections are created before
+        ``Subnetwork.configure()`` runs), resolution is deferred and flagged
+        via ``_source_cvar_resolved`` / ``_target_cvar_resolved``.
+
+        Parameters
+        ----------
+        **kwargs
+            Passed directly to ``BaseProjection.__init__``.
+        """
         # BaseProjection.__init__ handles validation (CSR format), epsilon, delays etc.
         super().__init__(**kwargs)
 
@@ -120,19 +194,23 @@ class IntraProjection(BaseProjection):
         return self._identity_mode_map
 
     def apply(self, tgt: np.ndarray, t: int, n_modes: int):
-        """Apply the internal projection using the base class logic.
+        """Apply the intra-subnetwork projection using an identity mode map.
 
-        Uses an identity matrix for mode mapping. Requires configure_buffer and
-        update_buffer to have been called appropriately before this method.
+        Constructs (or retrieves from cache) an ``n_modes × n_modes`` identity
+        matrix and delegates to ``BaseProjection.apply()``.  Both
+        ``configure_buffer()`` and at least one prior call to
+        ``update_buffer()`` must have been made before this method is invoked.
 
         Parameters
         ----------
-        tgt : ndarray
-            Target state array (internal coupling) to modify.
+        tgt : ndarray, shape (n_vars, n_nodes, n_modes)
+            Target coupling-variable array.  The slices indexed by
+            ``target_cvar`` are incremented in-place.
         t : int
             Current time step index.
         n_modes : int
-            Number of modes in the subnetwork.
+            Number of modes in the subnetwork, used to build the identity
+            mode map.
         """
         identity_map = self._get_identity_mode_map(n_modes)
         # Call BaseProjection.apply with the identity map

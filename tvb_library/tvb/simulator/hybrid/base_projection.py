@@ -1,34 +1,120 @@
+# -*- coding: utf-8 -*-
+#
+#
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# analysers necessary to run brain-simulations. You can use it stand alone or
+# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License along with this
+# program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
+#
+#
+
+"""
+Base projection infrastructure for the hybrid simulator.
+
+A projection couples state variables from a source set of nodes to coupling
+variables of a target set of nodes, with optional conduction-velocity delays
+and a coupling function.  The core mechanism is a circular history buffer
+that stores source states and is indexed with per-connection delay offsets.
+
+Mathematical Framework
+-----------------------
+At each simulation step *t*, the delayed afferent signal contributed by
+source node *j* to target node *i* through coupling variable *k* is::
+
+    x_j^k(t - tau_ij)    where tau_ij = round(L_ij / cv / dt)
+
+The total weighted coupling at target node *i* is:
+
+.. math::
+
+    C_i = s \\cdot \\mathrm{post}\\!\\left(
+          \\sum_{j} w_{ij}\\,\\mathrm{pre}\\!\\bigl(x_j(t - \\tau_{ij})\\bigr)
+          \\right)
+
+where *s* is ``scale``, *w_ij* are the sparse weights, and ``pre`` / ``post``
+are optional coupling transformations from the attached ``cfun``.
+
+Delays are resolved once at construction time from the sparse ``lengths``
+matrix, the conduction velocity ``cv``, and the time step ``dt``.  A small
+epsilon is temporarily added to the weight and length matrices to guarantee
+a uniform CSR sparsity structure (required for ``np.add.reduceat``), then
+removed once the structure is established.
+"""
+
 import numpy as np
 from scipy import sparse as sp
 import tvb.basic.neotraits.api as t
 
 
 class BaseProjection(t.HasTraits):
-    """Base class for projections defining coupling.
+    """Base class for delayed sparse coupling between node sets.
 
-    Handles common attributes and the core logic for applying coupling,
-    including time delays and sparse weights. Assumes weights and lengths
-    are provided in CSR sparse format.
+    Encapsulates the core coupling logic shared by both intra- and
+    inter-subnetwork projections: CSR-format weight/length validation,
+    integer delay computation, a circular history buffer for delayed state
+    access, and the weighted-sum-plus-coupling-function pipeline.
+
+    Subclasses supply a ``mode_map`` matrix and optionally store references
+    to source/target ``Subnetwork`` objects; this class only manages the
+    buffer and the numerical computation.
 
     Attributes
     ----------
-    source_cvar : ndarray
-        Array of coupling variable indices in source.
-    target_cvar : ndarray
-        Array of coupling variable indices in target.
-    scale : float, default=1.0
-        Scaling factor for the projection.
+    source_cvar : ndarray of int
+        Indices of the coupling variable(s) read from the source state.
+    target_cvar : ndarray of int
+        Indices of the coupling variable(s) written into the target
+        coupling array.
+    scale : float, default 1.0
+        Global scaling factor applied after the weighted sum.
     weights : scipy.sparse.csr_matrix
-        Connectivity weights matrix in CSR sparse format.
-    lengths : scipy.sparse.csr_matrix, optional
-        Connection lengths matrix in CSR sparse format, corresponding to non-zero weights.
-        Required if delays are needed. Shape must match weights.
+        Connectivity weight matrix.  Rows correspond to target nodes,
+        columns to source nodes.
+    lengths : scipy.sparse.csr_matrix
+        Connection-length matrix with the same sparsity structure as
+        ``weights``.  Required when delays are desired.
     cv : float, optional
-        Conduction velocity. Required if lengths are provided.
+        Conduction velocity (same units as ``lengths``).  Must be
+        provided together with ``dt`` when ``lengths`` is non-zero.
     dt : float, optional
-        Simulation time step. Required if lengths are provided.
+        Integration time step.  Must be provided together with ``cv``
+        when ``lengths`` is non-zero.
     cfun : Coupling, optional
-        Coupling function to transform afferent activity. If None, uses identity (no transformation).
+        Coupling function whose ``pre()`` and ``post()`` methods bracket
+        the weighted sum.  When *None* the identity transformation is
+        used.
+
+    Notes
+    -----
+    **Epsilon trick for CSR consistency** — To guarantee that every row
+    of the weight matrix has at least one explicit entry (required so
+    that ``np.add.reduceat`` with ``weights.indptr[:-1]`` covers all
+    target nodes), ``2 * eps`` is temporarily added to column 0 of every
+    row.  The matching structural entry is added to ``lengths`` to keep
+    their sparsity patterns identical.  Once the sparsity structure is
+    established and ``idelays`` has been computed, these epsilon values
+    in ``weights.data`` are zeroed, leaving structural zeros in place.
+
+    See Also
+    --------
+    IntraProjection : Intra-subnetwork projection (identity mode map).
+    InterProjection : Inter-subnetwork projection (explicit mode map).
     """
 
     source_cvar = t.NArray(dtype=np.int_)
@@ -49,6 +135,32 @@ class BaseProjection(t.HasTraits):
     _horizon: int = 0
 
     def __init__(self, **kwargs):
+        """Validate inputs, compute integer delays, and prime the sparsity structure.
+
+        Checks that ``weights`` (and ``lengths``, if given) are CSR matrices
+        with matching shapes, then applies the epsilon trick to guarantee
+        uniform row coverage, harmonises the sparsity patterns, computes
+        ``idelays`` from ``lengths / cv / dt``, and finally zeroes the
+        epsilon sentinel values in ``weights.data``.
+
+        Parameters
+        ----------
+        **kwargs
+            Trait values forwarded to ``HasTraits.__init__``.  Expected keys
+            include ``weights``, ``lengths``, ``source_cvar``,
+            ``target_cvar``, and optionally ``scale``, ``cv``, ``dt``,
+            ``cfun``.
+
+        Raises
+        ------
+        TypeError
+            If ``weights`` or ``lengths`` is not a
+            ``scipy.sparse.csr_matrix``.
+        ValueError
+            If ``lengths.shape != weights.shape``, or if ``lengths``
+            contains non-zero entries but ``cv`` or ``dt`` is not
+            provided.
+        """
         super().__init__(**kwargs)
         # Initialize buffer attributes
         self._history_buffer = None
@@ -95,6 +207,16 @@ class BaseProjection(t.HasTraits):
                     shape=self.weights.shape,
                 )
 
+        # Harmonize sparsity patterns: reconstruct lengths to match weights' pattern
+        if self.weights.nnz != self.lengths.nnz:
+            w_coo = self.weights.tocoo()
+            lengths_full = self.lengths.toarray()
+            new_data = lengths_full[w_coo.row, w_coo.col].astype(self.lengths.dtype)
+            self.lengths = sp.csr_matrix(
+                (new_data, (w_coo.row, w_coo.col)),
+                shape=self.weights.shape,
+            )
+
         assert self.weights.nnz == self.lengths.nnz, (
             f"Mismatch nnz: weights {self.weights.nnz}, lengths {self.lengths.nnz}"
         )
@@ -128,9 +250,25 @@ class BaseProjection(t.HasTraits):
         self.target_cvar = np.atleast_1d(self.target_cvar)
 
     def configure_buffer(self, n_vars_src: int, n_nodes_src: int, n_modes_src: int):
-        """Configure and initialize the internal history buffer."""
-        # Horizon matches original TVB n_time = max_delay + 1
-        # (or at least 1 if max_delay is 0, to store current state)
+        """Allocate and zero-initialise the circular history buffer.
+
+        The buffer shape is
+        ``(n_vars_src, n_nodes_src, n_modes_src, horizon)`` where
+        ``horizon = max_delay + 1``.  A horizon of at least 1 is
+        guaranteed so that even a zero-delay projection can store the
+        previous step's state.
+
+        Parameters
+        ----------
+        n_vars_src : int
+            Number of state variables in the source (``model.nvar``).
+        n_nodes_src : int
+            Number of nodes in the source subnetwork.
+        n_modes_src : int
+            Number of modes in the source model
+            (``model.number_of_modes``).
+        """
+        # Horizon = max_delay + 1, matching classic TVB n_time
         self._horizon = self.max_delay + 1
         if (
             self._horizon == 0
@@ -141,32 +279,61 @@ class BaseProjection(t.HasTraits):
         self._history_buffer = np.zeros(buffer_shape, "f")
 
     def update_buffer(self, current_src_state: np.ndarray, t: int):
-        """Update the history buffer with the current source state."""
+        """Write the current source state into the circular history buffer.
+
+        The slot written is ``t % horizon``, overwriting the state that is
+        exactly ``horizon`` steps old.
+
+        Parameters
+        ----------
+        current_src_state : ndarray, shape (n_vars_src, n_nodes_src, n_modes_src)
+            Full source state at the current time step.
+        t : int
+            Current time step index (used to select the buffer slot).
+        """
         buffer_idx = t % self._horizon
         # Store the full state, not just the source_cvar subset
         # Extraction happens in apply() when reading from buffer
         self._history_buffer[..., buffer_idx] = current_src_state
 
     def apply(self, tgt: np.ndarray, t: int, mode_map: np.ndarray):
-        """Apply the projection to compute coupling using its internal history buffer.
+        """Compute delayed weighted coupling and accumulate into the target array.
 
-        Handles explicitly delayed connections via a unified mechanism.
-        Assumes minimal delay (2 steps) if lengths/cv/dt are not provided.
+        Reads delayed source states from the internal history buffer,
+        applies the sparse weights and optional coupling function, then
+        adds the result to the appropriate coupling variables of ``tgt``.
+
+        For each non-zero weight entry *k* connecting source node *j* to
+        target node *i*, the delayed state is read from buffer slot
+        ``(t - 1 - idelays[k] + horizon) % horizon``.  Using ``t - 1``
+        ensures that coupling at step *t* uses the state from step
+        ``t - 1 - idelays``, matching the classic TVB delay convention.
+
         Parameters
         ----------
-        tgt : ndarray
-            Target state array to modify (shape [n_vars_tgt, n_nodes_tgt, n_modes_tgt]).
+        tgt : ndarray, shape (n_vars_tgt, n_nodes_tgt, n_modes_tgt)
+            Target coupling-variable array.  The slices indexed by
+            ``target_cvar`` are incremented in-place.
         t : int
-            Current time step index relative to the start of the simulation.
-        mode_map : ndarray
-             Mode mapping matrix (source_modes x target_modes).
+            Current time step index.
+        mode_map : ndarray, shape (n_modes_src, n_modes_tgt)
+            Linear map from source modes to target modes applied after
+            the weighted sum.  For intra-subnetwork coupling this is the
+            identity matrix; for inter-subnetwork coupling it may
+            re-weight or collapse mode contributions.
 
+        Raises
+        ------
+        ValueError
+            If ``source_cvar.size`` and ``target_cvar.size`` are both
+            greater than 1 and unequal (ambiguous cvar mapping).
         """
 
         # Calculate time indices into the circular history buffer
         # Shape: (nnz,) where nnz is number of non-zero weights/lengths
-        # Here, t is the 0-indexed current step.
-        time_indices = (t - self.idelays + self._horizon) % self._horizon
+        # Use t - 1 to match classic TVB simulator delay model:
+        # coupling at step t uses state from step t-1-idelays
+        time_indices = (t - 1 - self.idelays + self._horizon) % self._horizon
 
         # Gather delayed states from the internal history buffer
         # Indexing: [source_cvar_indices, node_indices, mode_indices, time_indices]

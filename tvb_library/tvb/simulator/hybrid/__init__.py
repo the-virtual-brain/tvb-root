@@ -1,3 +1,29 @@
+# -*- coding: utf-8 -*-
+#
+#
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# analysers necessary to run brain-simulations. You can use it stand alone or
+# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License along with this
+# program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
+#
+#
+
 """
 Hybrid model simulation framework for The Virtual Brain.
 
@@ -19,6 +45,11 @@ variables. This makes your code more readable and self-documenting.
 
 Example: Hybrid Simulation with Stimulus
 ----------------------------------------
+>>> import numpy as np
+>>> import scipy.sparse as sp
+>>> from tvb.simulator.hybrid import (
+...     Subnetwork, NetworkSet, InterProjection, Simulator
+... )
 >>> from tvb.simulator.models import JansenRit, ReducedSetFitzHughNagumo
 >>> from tvb.simulator.integrators import HeunDeterministic
 >>> from tvb.simulator.monitors import TemporalAverage
@@ -47,7 +78,7 @@ Example: Hybrid Simulation with Stimulus
 ...             source=cortex, target=thalamus,
 ...             source_cvar='y0',
 ...             target_cvar='V1',
-...             weights=np.random.randn(76, 76) * 0.1
+...             weights=sp.csr_matrix(np.random.randn(76, 76) * 0.1)
 ...         ),
 ...     ]
 ... )
@@ -63,7 +94,7 @@ Example: Hybrid Simulation with Stimulus
 >>>
 >>> stimulus = patterns.StimuliRegion(
 ...     temporal=temporal,
-...     connectivity=cortex.connectivity,
+...     connectivity=connectivity,   # a tvb.datatypes.Connectivity instance
 ...     weight=stim_weights
 ... )
 >>>

@@ -1,5 +1,44 @@
+# -*- coding: utf-8 -*-
+#
+#
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# analysers necessary to run brain-simulations. You can use it stand alone or
+# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License along with this
+# program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
+#
+#
+
 """
-Tests for the Subnetwork and Stim classes.
+Unit tests for :class:`tvb.simulator.hybrid.Subnetwork` and
+:class:`tvb.simulator.hybrid.Stim`.
+
+Each ``Subnetwork`` test exercises a particular family of TVB integrators to
+verify that the sub-network stepping loop produces finite, non-trivial output
+regardless of the numerical scheme.  Covered integrators:
+
+* Deterministic: ``EulerDeterministic``, ``HeunDeterministic``,
+  ``RungeKutta4thOrderDeterministic``
+* Stochastic: ``EulerStochastic``, ``HeunStochastic``
+
+An additional test verifies that an intra-subnet
+:class:`~tvb.simulator.hybrid.IntraProjection` modifies the coupling term seen
+by the integrator on each step.
 """
 
 import numpy as np
@@ -19,17 +58,52 @@ from .test_base import BaseHybridTest
 
 
 class TestSubnetwork(BaseHybridTest):
-    """Tests for the Subnetwork class."""
+    """
+    Tests for :class:`~tvb.simulator.hybrid.Subnetwork`.
+
+    Each test builds a standalone subnetwork (independent of the
+    cortex-thalamus fixture) and verifies a specific property of the
+    stepping loop or the initial-state factory methods.
+    """
 
     def test_subnetwork_shapes(self):
-        """Test subnetwork state and coupling variable shapes"""
+        """
+        ``zero_states`` and ``zero_cvars`` return arrays with the correct shapes.
+
+        Expected shapes (from the cortex-thalamus fixture):
+
+        * ``cortex.zero_states()`` — ``(6, n_cortex, 1)``
+          (JansenRit: 6 state vars, 1 mode)
+        * ``cortex.zero_cvars()``  — ``(2, n_cortex, 1)``
+          (JansenRit: 2 coupling vars, 1 mode)
+        * ``thalamus.zero_states()`` — ``(4, n_thalamus, 3)``
+          (ReducedSetFitzHughNagumo: 4 state vars, 3 modes)
+        """
         conn, ix, c, t, a, nets = self.setup()
         self.assert_equal((6, (ix == a.CORTEX).sum(), 1), c.zero_states().shape)
         self.assert_equal((2, (ix == a.CORTEX).sum(), 1), c.zero_cvars().shape)
         self.assert_equal((4, (ix == a.THALAMUS).sum(), 3), t.zero_states().shape)
 
     def _test_subnetwork_with_integrator(self, integrator_cls, **integrator_kwargs):
-        """Helper method to test a subnetwork with a given integrator."""
+        """
+        Shared helper: create a 10-node JansenRit subnetwork, advance one step,
+        and assert the result is finite and non-trivial.
+
+        The test passes when all of these hold after one call to
+        :meth:`~tvb.simulator.hybrid.Subnetwork.step`:
+
+        * Output shape equals input shape.
+        * At least one element changed (state is not all-zero after a step
+          through the JansenRit RHS).
+        * All elements are finite (no NaN or Inf).
+
+        Parameters
+        ----------
+        integrator_cls : type
+            A TVB integrator class to instantiate with ``dt=0.1``.
+        **integrator_kwargs
+            Additional keyword arguments forwarded to *integrator_cls*.
+        """
         nnodes = 10  # Use a smaller number of nodes for efficiency
         
         # Instantiate first
@@ -69,27 +143,53 @@ class TestSubnetwork(BaseHybridTest):
         assert np.all(np.isfinite(nx)), "Non-finite values in output state"
 
     def test_euler_deterministic(self):
-        """Test subnetwork stepping with EulerDeterministic."""
+        """
+        A single Euler step produces finite, non-trivial output.
+
+        ``EulerDeterministic`` is the simplest first-order scheme; this test
+        is the baseline sanity check for subnetwork stepping.
+        """
         self._test_subnetwork_with_integrator(EulerDeterministic)
 
     def test_heun_deterministic(self):
-        """Test subnetwork stepping with HeunDeterministic."""
+        """
+        The second-order Heun predictor-corrector scheme advances the state
+        correctly without producing non-finite values.
+        """
         self._test_subnetwork_with_integrator(HeunDeterministic)
 
     def test_rk4_deterministic(self):
-        """Test subnetwork stepping with RungeKutta4thOrderDeterministic."""
+        """
+        The classic fourth-order Runge-Kutta scheme advances the state
+        correctly without producing non-finite values.
+        """
         self._test_subnetwork_with_integrator(RungeKutta4thOrderDeterministic)
 
     def test_euler_stochastic(self):
-        """Test subnetwork stepping with EulerStochastic."""
+        """
+        Euler-Maruyama (Euler + additive Wiener term) advances the state
+        correctly.  The stochastic noise object's ``dt`` must be synchronised
+        with the integrator's ``dt`` before the subnetwork is configured.
+        """
         self._test_subnetwork_with_integrator(EulerStochastic)
 
     def test_heun_stochastic(self):
-        """Test subnetwork stepping with HeunStochastic."""
+        """
+        The stochastic Heun scheme (predictor-corrector with Wiener increments)
+        advances the state correctly without producing non-finite values.
+        """
         self._test_subnetwork_with_integrator(HeunStochastic)
 
     def test_subnetwork_internal_projection(self):
-        """Test subnetwork stepping with an internal projection."""
+        """
+        An :class:`~tvb.simulator.hybrid.IntraProjection` modifies the
+        effective coupling term seen during a single step.
+
+        A 5-node identity-weight intra-projection is attached to the subnetwork
+        and the first state variable is initialised to a non-zero value.  After
+        one step the state must change (the coupling contribution is non-zero)
+        and all values must remain finite.
+        """
         nnodes = 5
         model = JansenRit()
         scheme = EulerDeterministic(dt=0.1)
@@ -131,10 +231,19 @@ class TestSubnetwork(BaseHybridTest):
 
 
 class TestStim(BaseHybridTest):
-    """Tests for the Stim class."""
+    """
+    Smoke tests for :class:`~tvb.simulator.hybrid.Stim` integration.
+    """
 
     def test_stim(self):
-        """Test stimulus application to network"""
+        """
+        A custom ``StimuliRegion`` subclass returns an array of the correct
+        length (one value per region) when called with a time argument.
+
+        This is a basic shape check that confirms the stimulus callable
+        protocol is respected; detailed validation of stimulus waveforms is
+        covered by dedicated stimulus integration tests.
+        """
         conn = Connectivity.from_file()
         nn = conn.weights.shape[0]
         conn.configure()

@@ -1,3 +1,48 @@
+# -*- coding: utf-8 -*-
+#
+#
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# analysers necessary to run brain-simulations. You can use it stand alone or
+# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License along with this
+# program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
+#
+#
+
+"""
+Top-level simulator for hybrid network models
+
+``Simulator`` owns a ``NetworkSet`` and a list of TVB ``Monitor`` objects.  It
+validates that all subnetworks share the same integration time step, wires up
+the monitors, and drives the time loop that calls ``NetworkSet.step`` at every
+iteration.
+
+Typical usage::
+
+    sim = Simulator(nets=my_nets, monitors=[Raw()], simulation_length=1000.0)
+    sim.configure()
+    [(times, data)] = sim.run()
+
+See Also
+--------
+tvb.simulator.simulator : Classic TVB simulator for comparison
+"""
+
 import math
 import numpy as np
 from typing import List
@@ -33,7 +78,15 @@ class Simulator(t.HasTraits):
         self.validate_vois()
 
     def validate_vois(self):
-        """Validate variables of interest across subnetworks."""
+        """Configure monitor stock buffers based on total variables of interest.
+
+        Counts the combined number of variables of interest across all
+        subnetworks and the total node count, then calls ``_config_stock`` on
+        any monitor that exposes it so the monitor allocates a correctly-sized
+        internal ring buffer before the simulation starts.
+
+        This method is called automatically during ``__init__``.
+        """
         if len(self.monitors) == 0:
             return
         total_vois = sum([len(sn.model.variables_of_interest) for sn in self.nets.subnets])
@@ -43,7 +96,24 @@ class Simulator(t.HasTraits):
                 monitor._config_stock(total_vois, num_nodes, 1)
 
     def validate_dts(self):
-        """Validate integration time steps across subnetworks."""
+        """Assert uniform integration time step and configure monitors.
+
+        Reads the time step ``dt`` from the first subnetwork's integration
+        scheme and asserts that every other subnetwork uses the same value.
+        All monitors are then configured with this shared ``dt`` and their
+        ``voi`` attribute is set to ``slice(None)`` so they record all
+        variables of interest.
+
+        Raises
+        ------
+        AssertionError
+            If any subnetwork has a different ``dt`` from the first.
+
+        Notes
+        -----
+        Called automatically during ``__init__``; the validated step size is
+        stored as ``self._dt0`` for use by ``configure`` and ``run``.
+        """
         self._dt0 = self.nets.subnets[0].scheme.dt
         for sn in self.nets.subnets[1:]:
             assert self._dt0 == sn.scheme.dt
@@ -69,18 +139,34 @@ class Simulator(t.HasTraits):
             stim.configure(self.simulation_length)
 
     def run(self, **kwargs):
-        """Run the simulation.
+        """Run the simulation and return recorded monitor data.
+
+        If the simulator has not yet been configured (i.e. ``configure`` has
+        not been called), it is configured automatically before the time loop
+        begins.
 
         Parameters
         ----------
-        initial_conditions : list[np.ndarray], optional
-            A list of initial state arrays, one for each subnetwork.
-            If None, zero states are used.
+        initial_conditions : list of ndarray, optional
+            One state array per subnetwork, each with shape
+            ``(nvar, nnodes, modes)``.  When provided, projection history
+            buffers are pre-filled with these values so that delay lookups
+            before the first integration step return the initial conditions
+            rather than zeros.  If omitted, the simulation starts from all
+            zeros.
 
         Returns
         -------
-        list
-            List of (time, data) tuples for each monitor, if any
+        list of tuple
+            One ``(times, data)`` tuple per monitor, where ``times`` is a
+            1-D ``ndarray`` of recording time points and ``data`` is an
+            ``ndarray`` of the corresponding monitor output.  Returns an
+            empty list when no monitors are attached.
+
+        Examples
+        --------
+        >>> [(t, d)] = sim.run()
+        >>> [(t, d)] = sim.run(initial_conditions=[ic_cortex, ic_thalamus])
         """
         # Configure if not already done
         if not hasattr(self, "_dt0"):
@@ -96,8 +182,13 @@ class Simulator(t.HasTraits):
             x = self.nets.zero_states(initial_states=initial_conditions)
         else:
             x = self.nets.zero_states()
+
+        # Initialize projection history buffers with initial state
+        # to match classic TVB simulator behavior (history filled with ICs)
+        self.nets.init_projection_buffers(x)
+
         stop = int(math.ceil(self.simulation_length / self._dt0))
-        for step in range(0, stop):
+        for step in range(1, stop + 1):
             x = self.nets.step(step, x)
             if self.monitors:
                 ox = self.nets.observe(x, flat=True)

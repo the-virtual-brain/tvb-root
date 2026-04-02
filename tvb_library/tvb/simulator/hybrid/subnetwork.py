@@ -1,9 +1,57 @@
+# -*- coding: utf-8 -*-
+#
+#
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# analysers necessary to run brain-simulations. You can use it stand alone or
+# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License along with this
+# program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
+#
+#
+
+"""
+Subnetwork building block for hybrid models
+
+A ``Subnetwork`` groups a set of brain regions that share the same dynamical
+``Model`` and integration ``Integrator`` (scheme).  Subnetworks are the
+primary reusable unit in the hybrid framework: the same subnetwork definition
+can be embedded in different ``NetworkSet`` configurations.
+
+Intra-subnetwork connectivity is expressed as ``IntraProjection`` objects
+attached to the subnetwork.  Inter-subnetwork coupling is injected by the
+parent ``NetworkSet`` via the ``c`` argument of ``step``.
+
+See Also
+--------
+tvb.simulator.hybrid.network : NetworkSet container
+tvb.simulator.hybrid.intra_projection : IntraProjection
+"""
+
 import numpy as np
 from typing import List
 import tvb.basic.neotraits.api as t
 from tvb.simulator.models import Model
 from tvb.simulator.integrators import Integrator
-from tvb.simulator.monitors import Monitor, AfferentCoupling, AfferentCouplingTemporalAverage
+from tvb.simulator.monitors import (
+    Monitor,
+    AfferentCoupling,
+    AfferentCouplingTemporalAverage,
+)
 
 from .recorder import Recorder
 from .intra_projection import IntraProjection
@@ -38,12 +86,16 @@ class Subnetwork(t.HasTraits):
     nnodes: int = t.Int()
 
     def configure(self):
-        """Configure the subnetwork's model and history buffer.
+        """Configure the subnetwork's model and intra-projection buffers.
+
+        Calls ``model.configure()`` and then configures the history buffer of
+        every ``IntraProjection`` attached to this subnetwork.  Must be called
+        before the first integration step.
 
         Returns
         -------
-        self
-            The configured subnetwork
+        Subnetwork
+            ``self``, to allow chained calls.
         """
         self.model.configure()
         for p in self.projections:
@@ -51,18 +103,25 @@ class Subnetwork(t.HasTraits):
             # Set model reference for cvar name resolution (if using named cvars)
             if hasattr(p, "set_model_for_cvar_resolution"):
                 p.set_model_for_cvar_resolution(self.model)
-            p.configure_buffer(
-                self.model.cvar.size, self.nnodes, self.model.number_of_modes
-            )
+            p.configure_buffer(self.model.nvar, self.nnodes, self.model.number_of_modes)
         return self
 
     def add_monitor(self, monitor: Monitor):
-        """Add a monitor to record simulation data.
+        """Attach a monitor and configure it for this subnetwork.
+
+        Converts the ``monitors`` tuple to a list on first call, configures
+        the monitor's time step and stock buffer size, and wraps it in a
+        ``Recorder`` before appending.
+
+        ``AfferentCoupling`` and ``AfferentCouplingTemporalAverage`` monitors
+        are sized according to ``len(model.cvar)`` (coupling variables)
+        rather than ``len(model.variables_of_interest)``.
 
         Parameters
         ----------
         monitor : Monitor
-            The monitor to add
+            A TVB ``Monitor`` instance to attach.  It must not yet have been
+            configured for a different subnetwork.
         """
         # NOTE default for list is a tuple
         if isinstance(self.monitors, tuple):
@@ -83,32 +142,39 @@ class Subnetwork(t.HasTraits):
 
     @property
     def var_shape(self) -> tuple[int]:
-        """Shape of the state variables.
+        """Shape of a single state or coupling array (excluding the variable axis).
 
         Returns
         -------
-        tuple
-            (number of nodes, number of modes)
+        tuple of int
+            ``(nnodes, number_of_modes)`` — the trailing dimensions of arrays
+            with shape ``(nvar, nnodes, modes)``.
+
+        Examples
+        --------
+        >>> sn = Subnetwork(name='ctx', model=Generic2dOscillator(), ..., nnodes=76)
+        >>> sn.var_shape
+        (76, 1)
         """
         return self.nnodes, self.model.number_of_modes
 
     def zero_states(self) -> np.ndarray:
-        """Create an array of zeros for the state variables.
+        """Allocate a zeroed state array for this subnetwork.
 
         Returns
         -------
         ndarray
-            Array of zeros with shape (nvar, nnodes, modes)
+            Zero array with shape ``(nvar, nnodes, modes)``.
         """
         return np.zeros((self.model.nvar,) + self.var_shape)
 
     def zero_cvars(self) -> np.ndarray:
-        """Create an array of zeros for the coupling variables.
+        """Allocate a zeroed coupling-variable array for this subnetwork.
 
         Returns
         -------
         ndarray
-            Array of zeros with shape (ncvar, nnodes, modes)
+            Zero array with shape ``(ncvar, nnodes, modes)``.
         """
         return np.zeros((self.model.cvar.size,) + self.var_shape)
 
@@ -132,31 +198,43 @@ class Subnetwork(t.HasTraits):
         if not self.projections:
             return internal_c  # No internal projections to apply
 
-        # Update history buffers for all internal projections first
-        for p in self.projections:
-            p.update_buffer(x, step)
-
-        # Apply internal projections using their own buffers
+        # Apply projections using buffers from previous state.
+        # Buffer updates happen AFTER integration in NetworkSet.step()
+        # to match classic TVB which stores post-integration state.
         for p in self.projections:
             p.apply(internal_c, step, self.model.number_of_modes)
 
         return internal_c
 
     def step(self, step, x, c):
-        """Take a single integration step.
+        """Advance the subnetwork by one integration time step.
+
+        Computes intra-subnetwork coupling from the projection history buffers
+        (``cfun``), adds the externally supplied inter-subnetwork coupling
+        ``c``, invokes the integration scheme, notifies all attached monitors,
+        and returns the new state.
+
         Parameters
         ----------
         step : int
-            Current simulation step
+            Current simulation step index.  Passed to projection buffers for
+            delay lookups and to monitors for time-stamping.
         x : ndarray
-            Current state
+            Current state array, shape ``(nvar, nnodes, modes)``.
         c : ndarray
-            Current coupling variables
+            External (inter-subnetwork) coupling array supplied by
+            ``NetworkSet.cfun``, shape ``(ncvar, nnodes, modes)``.
 
         Returns
         -------
         ndarray
-            Next state after integration
+            Next state array with the same shape as ``x``.
+
+        Notes
+        -----
+        History buffer updates are performed by ``NetworkSet._update_projection_buffers``
+        *after* this method returns, so intra-projection buffers still hold
+        the pre-integration state during the ``cfun`` call inside this method.
         """
         # Calculate internal coupling first, passing the current step
         internal_c = self.cfun(step, x)
@@ -166,7 +244,9 @@ class Subnetwork(t.HasTraits):
         # Record monitored variables
         for monitor in self.monitors:
             # AfferentCoupling monitors need coupling data, not state
-            if isinstance(monitor.monitor, (AfferentCoupling, AfferentCouplingTemporalAverage)):
+            if isinstance(
+                monitor.monitor, (AfferentCoupling, AfferentCouplingTemporalAverage)
+            ):
                 # Use coupling variables for AfferentCoupling monitors
                 # total_c is (ncvar, nnodes, modes), matching node_coupling shape
                 monitor.record(step, total_c)

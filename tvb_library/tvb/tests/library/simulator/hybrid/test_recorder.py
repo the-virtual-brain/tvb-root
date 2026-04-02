@@ -1,5 +1,48 @@
+# -*- coding: utf-8 -*-
+#
+#
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# analysers necessary to run brain-simulations. You can use it stand alone or
+# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License along with this
+# program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
+#
+#
+
 """
-Tests for the Recorder class.
+Unit tests for :class:`tvb.simulator.hybrid.Recorder`.
+
+The :class:`~tvb.simulator.hybrid.Recorder` wraps a standard TVB
+:class:`~tvb.simulator.monitors.Monitor` and accumulates its output into
+pre-allocated NumPy arrays during a simulation run.  These tests verify:
+
+* **Lazy allocation** — the output arrays are created on the first recorded
+  sample, not at configure time.
+* **Shape correctness** — allocated array dimensions match ``(num_samples,
+  nvars, nnodes, nmodes)``.
+* **Sequential recording** — samples are stored in order and can be retrieved
+  via :meth:`~tvb.simulator.hybrid.Recorder.to_arrays`.
+* **Monitor compatibility** — the recorder works with
+  :class:`~tvb.simulator.monitors.TemporalAverage` and other standard TVB
+  monitors when manually configured for a subnetwork context.
+
+:class:`MockMonitor` is a minimal concrete ``Monitor`` subclass used to drive
+the recorder tests without requiring a full TVB connectivity setup.
 """
 
 import numpy as np
@@ -19,7 +62,26 @@ from .test_base import BaseHybridTest
 
 
 class MockMonitor(Monitor):
-    """Mock monitor for testing recorder."""
+    """
+    Minimal concrete ``Monitor`` subclass used to drive ``Recorder`` unit tests.
+
+    Behaviour
+    ---------
+    * Samples only on even-numbered steps (``step % 2 == 0``), returning a
+      constant array of shape ``sample_shape`` whose value equals the internal
+      call counter.  Odd steps return ``None``.
+    * The internal counter increments by 1 for every emitted sample, so the
+      sequence of returned arrays has values 0, 1, 2, …
+    * Time is computed as ``step * 0.1`` for the emitted entries.
+
+    Parameters
+    ----------
+    period : float, default=1.0
+        Nominal sampling period forwarded to the base ``Monitor``.
+    sample_shape : tuple of int, default=(4, 10, 1)
+        Shape of each mock data array, representing
+        ``(nvars, nnodes, nmodes)``.
+    """
 
     def __init__(self, period=1.0, sample_shape=(4, 10, 1)):
         super().__init__(period=period)
@@ -27,11 +89,27 @@ class MockMonitor(Monitor):
         self._step_count = 0
 
     def sample(self, step, state):
-        """Required abstract method implementation."""
+        """Implement the ``Monitor`` abstract ``sample`` method via ``record``."""
         return self.record(step, state)
 
     def record(self, step, state):
-        """Return mock data every other step."""
+        """
+        Return a ``(time, data)`` tuple on even steps; ``None`` on odd steps.
+
+        Parameters
+        ----------
+        step : int or None
+            Current simulation step counter.
+        state : ndarray or None
+            Current state (ignored; mock data is synthetic).
+
+        Returns
+        -------
+        (float, ndarray) or None
+            ``(t, y)`` where *t* is ``step * 0.1`` and *y* is a constant
+            array equal to the current sample counter, or ``None`` if the
+            step is odd.
+        """
         if step is not None and step % 2 == 0:
             t = step * 0.1  # arbitrary time step
             y = np.ones(self._sample_shape) * self._step_count
@@ -41,10 +119,20 @@ class MockMonitor(Monitor):
 
 
 class TestRecorder(BaseHybridTest):
-    """Tests for the Recorder class."""
+    """
+    Tests for :class:`~tvb.simulator.hybrid.Recorder`.
+    """
 
     def test_lazy_allocation(self):
-        """Test that arrays are allocated only after first sample."""
+        """
+        Output arrays are not allocated until the first sample arrives.
+
+        After :meth:`~tvb.simulator.hybrid.Recorder.configure` the
+        ``samples`` and ``times`` attributes must be ``None``; they should
+        be initialised by the first call to
+        :meth:`~tvb.simulator.hybrid.Recorder.record`, at which point
+        ``shape`` reflects ``(num_samples, *sample_shape)``.
+        """
         monitor = MockMonitor()
         recorder = Recorder(monitor=monitor)
 
@@ -61,7 +149,13 @@ class TestRecorder(BaseHybridTest):
         assert recorder.shape == (10, 4, 10, 1)
 
     def test_recording(self):
-        """Test recording of samples."""
+        """
+        Successive calls to ``record`` fill the pre-allocated arrays in order.
+
+        ``MockMonitor`` emits one sample for every two steps; after 8 steps the
+        recorder should hold 4 samples.  The values stored must match the
+        mock counter sequence (0, 1, 2, 3).
+        """
         monitor = MockMonitor(sample_shape=(2, 5, 1))
         recorder = Recorder(monitor=monitor)
         recorder.configure(simulation_length=4.0)
@@ -80,7 +174,15 @@ class TestRecorder(BaseHybridTest):
             assert np.all(samples[i, 0, 0, 0] == i)
 
     def test_temporal_average_monitor(self):
-        """Test recorder with actual TemporalAverage monitor."""
+        """
+        A manually configured ``TemporalAverage`` monitor integrates correctly
+        with the ``Recorder``.
+
+        Because hybrid simulations do not call ``config_for_sim``, the monitor
+        must be configured by hand (dt, stock, voi) before being passed to
+        the recorder.  This test verifies that 10 samples of shape
+        ``(10, 4, 10, 1)`` are collected over a 10-unit simulation.
+        """
         tavg = TemporalAverage(period=1.0)
         recorder = Recorder(monitor=tavg)
         recorder.configure(simulation_length=10.0)
@@ -106,7 +208,13 @@ class TestRecorder(BaseHybridTest):
         assert samples.shape == (10, 4, 10, 1)
 
     def test_shape_property(self):
-        """Test the shape property."""
+        """
+        ``Recorder.shape`` returns ``None`` until the first sample is stored.
+
+        Verifies the three-phase lifecycle: (1) before ``configure`` — ``None``;
+        (2) after ``configure`` but before the first ``record`` call — still
+        ``None`` (lazy); (3) after the first sample — the full output shape.
+        """
         monitor = MockMonitor()
         recorder = Recorder(monitor=monitor)
 
@@ -122,7 +230,14 @@ class TestRecorder(BaseHybridTest):
         assert recorder.shape == (5, 4, 10, 1)
 
     def _create_hybrid_simulator(self):
-        """Create a basic hybrid simulator for testing."""
+        """
+        Build a minimal single-subnetwork hybrid simulator for recorder tests.
+
+        Returns a configured :class:`~tvb.simulator.hybrid.Simulator` with one
+        :class:`~tvb.simulator.hybrid.Subnetwork` running
+        :class:`~tvb.simulator.models.Generic2dOscillator` on 4 nodes and no
+        inter-subnet projections.
+        """
         # Create a simple model with 4 nodes
         model = Generic2dOscillator()
         scheme = HeunDeterministic(dt=0.1)  # Add integrator scheme
@@ -148,7 +263,32 @@ class TestRecorder(BaseHybridTest):
 
     def _test_with_monitor(self, monitor_class=None, monitor_instance=None,
                            period=1.0, simulation_length=5., expected_samples=None):
-        """Test recorder with a given monitor."""
+        """
+        Run a short simulation with the given monitor attached to the first subnetwork.
+
+        Because the hybrid :class:`~tvb.simulator.hybrid.Simulator` does not
+        call ``config_for_sim`` on monitors automatically, this helper manually
+        configures each monitor's ``dt``, ``voi``, stock buffer, and any
+        class-specific internals (BOLD HRF, spatial mean, Projection gain)
+        before wrapping it in a :class:`~tvb.simulator.hybrid.Recorder` and
+        attaching it to the subnetwork.
+
+        Parameters
+        ----------
+        monitor_class : type, optional
+            A ``Monitor`` subclass to instantiate with *period*.
+        monitor_instance : Monitor, optional
+            A pre-built monitor instance.  Takes precedence over
+            *monitor_class* when both are supplied.
+        period : float, default=1.0
+            Sampling period (seconds) used when instantiating from
+            *monitor_class*.
+        simulation_length : float, default=5.0
+            Duration of the test simulation (seconds).
+        expected_samples : int, optional
+            If given, asserted against the number of recorded samples (not
+            currently checked in the body; reserved for subclass use).
+        """
         sim = self._create_hybrid_simulator()
 
         # Use provided monitor instance or create one from class

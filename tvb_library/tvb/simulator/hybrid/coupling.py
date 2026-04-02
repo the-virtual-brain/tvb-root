@@ -30,27 +30,31 @@ Coupling functions for hybrid model
 Coupling functions transform the afferent activity that has been propagated
 over connectivity before it enters the local dynamics equations.
 
-In the hybrid model framework, coupling functions operate on the summed
-afferent activity computed by projections. The coupling transformation
-can be applied before summation (pre-synaptic) or after summation
-(post-synaptic), similar to the classic TVB coupling framework.
+In the hybrid model framework, coupling functions operate on the weighted
+afferent activity computed by projections.  Both hooks are applied *after*
+the weighted sum over source nodes has been formed.
 
 Mathematical Framework
 -----------------------
 
-For a projection from source subnetwork to target subnetwork, the coupling
-process is:
+For a projection from source subnetwork to target subnetwork, the
+``BaseProjection.apply()`` pipeline is:
 
 1. Extract delayed states from source: x_j(t - τ_ij)
-2. Apply pre-synaptic coupling: pre(x_j) [optional]
-3. Sum weighted afferents: Σ w_ij * pre(x_j)
-4. Apply post-synaptic coupling: post(Σ w_ij * pre(x_j)) [optional]
-5. Scale projection: scale * post(Σ w_ij * pre(x_j))
+2. Multiply by sparse weights: w_ij * x_j
+3. Sum afferents per target node: s_i = Σ_j w_ij * x_j
+4. Apply pre-scaling coupling:  s_i ← cfun.pre(s_i)   [optional]
+5. Apply projection scale:      s_i ← scale * s_i
+6. Apply post-scaling coupling: s_i ← cfun.post(s_i)  [optional]
+
+The labels ``pre`` and ``post`` therefore refer to whether the
+transformation is applied *before* or *after* the scalar ``scale``
+factor, not relative to the weighted summation.  All coupling classes
+currently implement their main logic in ``post()``; ``pre()`` is the
+identity in every concrete subclass and is provided as an extension point.
 
 The base Coupling class provides pre() and post() methods that can be
 overridden to implement specific coupling behaviors.
-
-.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 
@@ -61,13 +65,18 @@ import tvb.basic.neotraits.api as t
 class Coupling(t.HasTraits):
     """Base class for coupling functions in hybrid model.
 
-    Coupling functions transform afferent activity in projections.
-    The coupling can be applied before summation (pre-synaptic) or after
-    summation (post-synaptic) over weighted afferent connections.
+    Coupling functions transform afferent activity in projections via two
+    hooks that ``BaseProjection.apply()`` calls around the scalar ``scale``
+    factor:
 
-    The default implementation applies no transformation (identity coupling).
-    Subclasses should override pre() and/or post() methods to implement
-    specific coupling behaviors.
+    * ``pre(x)``  — called on the *already-summed* weighted afferent, before
+      multiplication by ``scale``.
+    * ``post(x)`` — called on the scaled afferent, immediately before the
+      result is accumulated into the target coupling array.
+
+    The default implementation returns the input unchanged (identity) for both
+    hooks.  Subclasses should override ``post()`` (and optionally ``pre()``) to
+    implement specific behaviours.
 
     Methods
     -------
@@ -205,14 +214,13 @@ class Linear(Coupling):
 
     def __init__(self, a=None, b=None, **kwargs):
         """Initialize Linear coupling with scalar or array parameters."""
-        # Convert scalar parameters to arrays
-        if a is not None and not isinstance(a, np.ndarray):
-            a = np.array([float(a)])
-        if b is not None and not isinstance(b, np.ndarray):
-            b = np.array([float(b)])
-        
-        # Call superclass init with potentially converted parameters
-        super().__init__(a=a, b=b, **kwargs)
+        converted = {}
+        for name, val in [('a', a), ('b', b)]:
+            if val is not None:
+                if not isinstance(val, np.ndarray):
+                    val = np.array([float(val)])
+                converted[name] = val
+        super().__init__(**converted, **kwargs)
 
     def post(self, x):
         """Apply linear transformation: a * x + b.
@@ -286,12 +294,12 @@ class Scaling(Coupling):
 
     def __init__(self, a=None, **kwargs):
         """Initialize Scaling coupling with scalar or array parameter."""
-        # Convert scalar parameter to array
-        if a is not None and not isinstance(a, np.ndarray):
-            a = np.array([float(a)])
-        
-        # Call superclass init with potentially converted parameter
-        super().__init__(a=a, **kwargs)
+        converted = {}
+        if a is not None:
+            if not isinstance(a, np.ndarray):
+                a = np.array([float(a)])
+            converted['a'] = a
+        super().__init__(**converted, **kwargs)
 
     def post(self, x):
         """Apply scaling transformation: a * x.
@@ -408,20 +416,16 @@ class Sigmoidal(Coupling):
 
     def __init__(self, cmin=None, cmax=None, midpoint=None, a=None, sigma=None, **kwargs):
         """Initialize Sigmoidal coupling with scalar or array parameters."""
-        # Convert scalar parameters to arrays
-        if cmin is not None and not isinstance(cmin, np.ndarray):
-            cmin = np.array([float(cmin)])
-        if cmax is not None and not isinstance(cmax, np.ndarray):
-            cmax = np.array([float(cmax)])
-        if midpoint is not None and not isinstance(midpoint, np.ndarray):
-            midpoint = np.array([float(midpoint)])
-        if a is not None and not isinstance(a, np.ndarray):
-            a = np.array([float(a)])
-        if sigma is not None and not isinstance(sigma, np.ndarray):
-            sigma = np.array([float(sigma)])
-        
-        # Call superclass init with potentially converted parameters
-        super().__init__(cmin=cmin, cmax=cmax, midpoint=midpoint, a=a, sigma=sigma, **kwargs)
+        # Convert scalar parameters to arrays, only pass if explicitly provided
+        # so neotraits defaults are used when args are omitted
+        converted = {}
+        for name, val in [('cmin', cmin), ('cmax', cmax), ('midpoint', midpoint),
+                          ('a', a), ('sigma', sigma)]:
+            if val is not None:
+                if not isinstance(val, np.ndarray):
+                    val = np.array([float(val)])
+                converted[name] = val
+        super().__init__(**converted, **kwargs)
 
     def post(self, x):
         """Apply sigmoidal transformation.
