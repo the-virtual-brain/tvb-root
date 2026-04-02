@@ -149,11 +149,19 @@ class Simulator(t.HasTraits):
         ----------
         initial_conditions : list of ndarray, optional
             One state array per subnetwork, each with shape
-            ``(nvar, nnodes, modes)``.  When provided, projection history
-            buffers are pre-filled with these values so that delay lookups
-            before the first integration step return the initial conditions
-            rather than zeros.  If omitted, the simulation starts from all
-            zeros.
+            ``(nvar, nnodes, modes)``.  When provided, these arrays are used
+            directly as the initial state and to pre-fill projection history
+            buffers.  Takes precedence over ``random_state``.
+        random_state : None, int, or numpy.random.RandomState, optional
+            Seed or generator used to draw random initial conditions from each
+            model's ``state_variable_range`` (matching classic TVB default
+            behaviour).  Ignored when ``initial_conditions`` is supplied.
+
+            * ``None`` (default) — use the global ``numpy.random`` module.
+            * ``int`` — create a ``numpy.random.RandomState`` seeded with
+              this value, so results are reproducible.
+            * ``numpy.random.RandomState`` — use the provided instance
+              directly.
 
         Returns
         -------
@@ -166,14 +174,16 @@ class Simulator(t.HasTraits):
         Examples
         --------
         >>> [(t, d)] = sim.run()
-        >>> [(t, d)] = sim.run(initial_conditions=[ic_cortex, ic_thalamus])
+        >>> [(t, d)] = sim.run(random_state=42)          # reproducible ICs
+        >>> [(t, d)] = sim.run(initial_conditions=[ic])  # explicit ICs
         """
         # Configure if not already done
         if not hasattr(self, "_dt0"):
             self.configure()
 
-        # Accept initial_conditions as a parameter to run()
+        # Accept initial_conditions and random_state as parameters to run()
         initial_conditions = kwargs.pop("initial_conditions", None)
+        random_state = kwargs.pop("random_state", None)
 
         mts = [[] for _ in self.monitors]
         mxs = [[] for _ in self.monitors]
@@ -181,7 +191,15 @@ class Simulator(t.HasTraits):
         if initial_conditions is not None:
             x = self.nets.zero_states(initial_states=initial_conditions)
         else:
-            x = self.nets.zero_states()
+            # Default: draw ICs from state variable ranges, matching classic TVB.
+            # Resolve the random number generator from random_state.
+            if random_state is None:
+                rng = np.random
+            elif isinstance(random_state, int):
+                rng = np.random.RandomState(random_state)
+            else:
+                rng = random_state
+            x = self.nets.random_states(rng)
 
         # Initialize projection history buffers with initial state
         # to match classic TVB simulator behavior (history filled with ICs)

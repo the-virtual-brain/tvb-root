@@ -168,6 +168,30 @@ class Subnetwork(t.HasTraits):
         """
         return np.zeros((self.model.nvar,) + self.var_shape)
 
+    def random_states(self, rng=None) -> np.ndarray:
+        """Draw random initial conditions from each state variable's range.
+
+        Calls :meth:`~tvb.simulator.models.base.Model.initial` with the
+        subnetwork's integration time step and uses ``rng`` as the random
+        source, matching the classic TVB simulator's default initialisation.
+
+        Parameters
+        ----------
+        rng : numpy.random.RandomState or None
+            Random number generator.  When *None* the module-level
+            ``numpy.random`` is used.
+
+        Returns
+        -------
+        ndarray
+            Array with shape ``(nvar, nnodes, modes)``, each state variable
+            drawn uniformly from ``model.state_variable_range``.
+        """
+        if rng is None:
+            rng = np.random
+        history_shape = (1, self.model.nvar) + self.var_shape
+        return self.model.initial(self.scheme.dt, history_shape, rng)[0]
+
     def zero_cvars(self) -> np.ndarray:
         """Allocate a zeroed coupling-variable array for this subnetwork.
 

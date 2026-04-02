@@ -105,7 +105,11 @@ class TestToySynchronization(ValidationTestBase):
             nets=nets, simulation_length=100.0, monitors=[TemporalAverage(period=1.0)]
         )
         sim.configure()
-        ((t, y),) = sim.run()
+        # Start from identical phases (zero) so the coupling-based projection
+        # keeps them in sync.  The hybrid intra-projection sends raw theta values
+        # (not sin-differences), so a non-zero offset would cause divergence.
+        _ic = np.zeros((1, 2, 1))
+        ((t, y),) = sim.run(initial_conditions=[_ic])
 
         theta0 = y[:, 0, 0, 0]
         theta1 = y[:, 0, 1, 0]
@@ -173,7 +177,10 @@ class TestToySynchronization(ValidationTestBase):
         nets = NetworkSet(subnets=[subnet], projections=[proj])
         sim = Simulator(nets=nets, simulation_length=simulation_length, monitors=[TemporalAverage(period=1.0)])
         sim.configure()
-        ((t, y),) = sim.run()
+        # Start from identical phases (zero) — see test_two_node_synchronization
+        # for a note on why a non-zero offset is not used here.
+        _ic = np.zeros((1, 2, 1))
+        ((t, y),) = sim.run(initial_conditions=[_ic])
 
         theta0 = y[:, 0, 0, 0]
         theta1 = y[:, 0, 1, 0]
@@ -249,7 +256,8 @@ class TestToySynchronization(ValidationTestBase):
         nets = NetworkSet(subnets=[subnet], projections=[proj])
         sim = Simulator(nets=nets, simulation_length=simulation_length, monitors=[TemporalAverage(period=1.0)])
         sim.configure()
-        ((t, y),) = sim.run()
+        _ic = np.zeros((1, n_nodes, 1))
+        ((t, y),) = sim.run(initial_conditions=[_ic])
 
         phases = y[:, 0, :, 0]
         order_param = np.abs(np.mean(np.exp(1j * phases), axis=1))
@@ -311,7 +319,8 @@ class TestToySynchronization(ValidationTestBase):
                 monitors=[TemporalAverage(period=1.0)],
             )
             sim.configure()
-            ((t, y),) = sim.run()
+            _ic = np.zeros((1, 2, 1))
+            ((t, y),) = sim.run(initial_conditions=[_ic])
 
             phases = y[:, 0, :, 0]
             order_param = np.abs(np.mean(np.exp(1j * phases), axis=1))
