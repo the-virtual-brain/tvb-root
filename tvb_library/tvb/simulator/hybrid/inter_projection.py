@@ -1,0 +1,103 @@
+import numpy as np
+import tvb.basic.neotraits.api as t
+
+from .base_projection import BaseProjection
+from .subnetwork import Subnetwork
+from .cvar_utils import resolve_cvar_names, validate_cvar_indices
+
+
+class InterProjection(BaseProjection):
+    """A projection from one subnetwork to another (inter-subnetwork).
+
+    Extends BaseProjection by adding source/target subnetwork references
+    and mode mapping capabilities.
+
+    Attributes
+    ----------
+    source : Subnetwork
+        Source subnetwork instance.
+    target : Subnetwork
+        Target subnetwork instance.
+    mode_map : ndarray, optional
+        Mapping between source and target modes (source_modes x target_modes).
+        Defaults to uniform mapping if not provided.
+    """
+
+    source: Subnetwork = t.Attr(Subnetwork)
+    target: Subnetwork = t.Attr(Subnetwork)
+    mode_map = t.NArray(dtype=np.int_, required=False, default=None)
+
+    def __init__(self, **kwargs):
+        # Resolve cvar names to indices BEFORE calling super().__init__()
+        # to avoid trait validation errors with string cvar specs
+        source_cvar = kwargs.pop('source_cvar', None)
+        target_cvar = kwargs.pop('target_cvar', None)
+
+        # Resolve source cvar names if source model is available
+        if source_cvar is not None and 'source' in kwargs and hasattr(kwargs['source'], 'model'):
+            source_cvar = resolve_cvar_names(kwargs['source'].model, source_cvar)
+            validate_cvar_indices(kwargs['source'].model, source_cvar)
+
+        # Resolve target cvar names if target model is available
+        if target_cvar is not None and 'target' in kwargs and hasattr(kwargs['target'], 'model'):
+            target_cvar = resolve_cvar_names(kwargs['target'].model, target_cvar)
+            validate_cvar_indices(kwargs['target'].model, target_cvar)
+
+        # Pass resolved cvars to parent
+        if source_cvar is not None:
+            kwargs['source_cvar'] = source_cvar
+        if target_cvar is not None:
+            kwargs['target_cvar'] = target_cvar
+
+        super().__init__(**kwargs)
+
+        # Default mode map if not provided
+        if self.mode_map is None:
+            self.mode_map = np.ones(
+                (self.source.model.number_of_modes, self.target.model.number_of_modes),
+                dtype=np.int_,
+            )
+        elif self.mode_map.shape != (
+            self.source.model.number_of_modes,
+            self.target.model.number_of_modes,
+        ):
+            raise ValueError(
+                f"Provided mode_map shape {self.mode_map.shape} does not match "
+                f"source modes ({self.source.model.number_of_modes}) x "
+                f"target modes ({self.target.model.number_of_modes})"
+            )
+
+    def configure(self):
+        """Configure the projection's internal buffer using its source subnetwork."""
+        if not self.source:
+            raise ValueError(
+                "Source subnetwork must be set before configuring InterProjection."
+            )
+        if not self.source.model:
+            # This check might be redundant if Subnetwork.configure ensures model is configured
+            raise ValueError(
+                "Source subnetwork's model must be configured before configuring InterProjection."
+            )
+
+        n_vars_src = self.source.model.nvar
+        n_nodes_src = self.source.nnodes
+        n_modes_src = self.source.model.number_of_modes
+        self.configure_buffer(n_vars_src, n_nodes_src, n_modes_src)
+        return self
+
+    def apply(self, tgt: np.ndarray, step: int):
+        """Apply the inter-subnetwork projection.
+
+        Uses the mode_map defined for this projection and the internal history buffer.
+        Requires configure_buffer and update_buffer to have been called appropriately.
+
+        Parameters
+        ----------
+        tgt : ndarray
+            Target state array to modify.
+        step : int
+            Current time step index.
+        """
+        # Call the base class apply method, passing the specific mode_map
+        # BaseProjection.apply now uses its internal buffer
+        super().apply(tgt, step, self.mode_map)

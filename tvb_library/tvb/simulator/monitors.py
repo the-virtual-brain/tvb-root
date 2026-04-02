@@ -101,7 +101,10 @@ class Monitor(HasTraits):
             self.voi = numpy.r_[:len(simulator.model.variables_of_interest)]
 
     def _config_time(self, simulator):
-        self.dt = simulator.integrator.dt
+        self._config_dt(simulator.integrator.dt)
+
+    def _config_dt(self, dt):
+        self.dt = dt
         self.istep = ReferenceBackend.iround(self.period / self.dt)
 
     def config_for_sim(self, simulator):
@@ -371,9 +374,12 @@ class TemporalAverage(Monitor):
 
     def _config_time(self, simulator):
         super(TemporalAverage, self)._config_time(simulator)
-        stock_size = (self.istep, self.voi.shape[0],
-                      simulator.number_of_nodes,
-                      simulator.model.number_of_modes)
+        self._config_stock(self.voi.shape[0],
+                           simulator.number_of_nodes,
+                           simulator.model.number_of_modes)
+
+    def _config_stock(self, num_vars, num_nodes, num_modes):
+        stock_size = self.istep, num_vars, num_nodes, num_modes
         self.log.debug("Temporal average stock_size is %s" % (str(stock_size),))
         self._stock = numpy.zeros(stock_size)
 
@@ -925,18 +931,24 @@ class Bold(Monitor):
         self.log.debug('Bold HRF shape %s, interim period & istep %d & %d',
                        self.hemodynamic_response_function.shape, self._interim_period, self._interim_istep)
 
-    def _config_time(self, simulator):
-        super(Bold, self)._config_time(simulator)
-        self.compute_hrf()
-        sample_shape = self.voi.shape[0], simulator.number_of_nodes, simulator.model.number_of_modes
+    def _config_stock(self, num_vars, num_nodes, num_modes):
+        """Configure the stock arrays based on state dimensions."""
+        sample_shape = (num_vars, num_nodes, num_modes)
         self._interim_stock = numpy.zeros((self._interim_istep,) + sample_shape)
+        self._stock = numpy.zeros((self._stock_steps,) + sample_shape)
         self.log.debug("BOLD inner buffer %s %.2f MB" % (
             self._interim_stock.shape, self._interim_stock.nbytes / 2 ** 20))
-        self._stock = numpy.zeros((self._stock_steps,) + sample_shape)
         self.log.debug("BOLD outer buffer %s %.2f MB" % (
             self._stock.shape, self._stock.nbytes / 2 ** 20))
 
+    def _config_time(self, simulator):
+        """Configure time step and stock arrays."""
+        super(Bold, self)._config_time(simulator)
+        self.compute_hrf()
+        self._config_stock(len(self.voi), simulator.number_of_nodes, simulator.model.number_of_modes)
+
     def config_for_sim(self, simulator):
+        """Configure monitor for given simulator."""
         super(Bold, self).config_for_sim(simulator)
 
     def sample(self, step, state):
