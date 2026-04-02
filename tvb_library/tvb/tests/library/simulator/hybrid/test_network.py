@@ -1,5 +1,43 @@
+# -*- coding: utf-8 -*-
+#
+#
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# analysers necessary to run brain-simulations. You can use it stand alone or
+# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License along with this
+# program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
+#
+#
+
 """
-Tests for the NetworkSet class.
+Tests for :class:`~tvb.simulator.hybrid.NetworkSet`.
+
+The primary test (``test_networkset``) validates the coupling computation
+produced by :meth:`~tvb.simulator.hybrid.NetworkSet.cfun` against a manually
+replicated implementation of :meth:`~tvb.simulator.hybrid.BaseProjection.apply`.
+The approach is:
+
+1. Pre-populate each projection's history buffer with known random states.
+2. Call :meth:`~tvb.simulator.hybrid.NetworkSet.cfun`.
+3. Independently reconstruct the expected coupling by following the same
+   CSR-based gather → weight → reduce → scale → mode-map pipeline.
+4. Assert element-wise equality for every supported cvar-mapping topology
+   (many-to-one reduction, one-to-many broadcast, element-wise M→M).
 """
 
 import numpy as np
@@ -7,10 +45,31 @@ from .test_base import BaseHybridTest
 
 
 class TestNetwork(BaseHybridTest):
-    """Tests for the NetworkSet class."""
+    """Unit and integration tests for :class:`~tvb.simulator.hybrid.NetworkSet`.
+
+    ``test_networkset`` is the primary white-box test: it manually replicates
+    the logic of :meth:`~tvb.simulator.hybrid.BaseProjection.apply` and
+    asserts that :meth:`~tvb.simulator.hybrid.NetworkSet.cfun` returns the
+    same values.  This makes the test sensitive to changes in the
+    buffer-indexing formula and the CSR reduction scheme.
+    """
 
     def test_networkset(self):
-        """Test network coupling computation"""
+        """Validate cfun() output by manually replicating BaseProjection.apply().
+
+        Procedure
+        ---------
+        1. Pre-populate every slot of each projection's history buffer with
+           distinct random states via ``update_buffer()``.
+        2. Call :meth:`~tvb.simulator.hybrid.NetworkSet.cfun` at ``t=0``.
+        3. For each projection, independently reconstruct the expected coupling:
+           gather delayed states using the ``(t-1-idelays+horizon) % horizon``
+           index formula, apply CSR weights, reduce per target node, scale,
+           and mode-map.
+        4. Compare actual vs expected with ``np.testing.assert_allclose``
+           for all supported cvar-mapping topologies (many-to-one, one-to-many,
+           element-wise M→M).
+        """
         # Setup with zero lengths for projections to ensure minimal delay (idelays=2)
         # This makes assertions simpler as 'delayed' state is the current state.
         conn, ix, cortex, thalamus, a, nets = self.setup()
@@ -26,21 +85,20 @@ class TestNetwork(BaseHybridTest):
         for proj_idx, proj in enumerate(nets.projections):
             # For each projection, fill its history buffer with distinct "past" states.
             # These steps are relative to the buffer's circular indexing.
-            for s_buffer_idx in range(1, proj._horizon): # Iterate through all "past" buffer slots
+            for s_buffer_idx in range(proj._horizon): # Fill ALL buffer slots
                 # Create a distinct random state for this projection's source type at this "past" slot
                 past_state_shape = (
                     proj.source.model.nvar,
                     proj.source.nnodes,
                     proj.source.model.number_of_modes
                 )
-                mock_state_for_past_slot = np.random.randn(*past_state_shape)
-                mock_past_source_states_for_projections[proj_idx][s_buffer_idx] = mock_state_for_past_slot
-                proj.update_buffer(mock_state_for_past_slot, s_buffer_idx) # Use s_buffer_idx as step to fill specific slot
+                mock_state_for_slot = np.random.randn(*past_state_shape)
+                mock_past_source_states_for_projections[proj_idx][s_buffer_idx] = mock_state_for_slot
+                proj.update_buffer(mock_state_for_slot, s_buffer_idx)
 
         # Test coupling computation, using current_step_idx=0
+        # cfun only calls apply (buffer updates happen post-integration in step())
         current_step_idx = 0
-        # NetworkSet.cfun will call proj.update_buffer(src_state_current, current_step_idx)
-        # then proj.apply(tgt, current_step_idx)
         c_new = nets.cfun(current_step_idx, x)
         
         # Verify coupling for each projection
@@ -49,8 +107,8 @@ class TestNetwork(BaseHybridTest):
             tgt_coupling_actual = getattr(c_new, proj.target.name) # Actual coupling calculated by cfun
 
             # --- Replicate BaseProjection.apply logic to calculate expected coupling ---
-            # Calculate time_indices based on delays, specific to this projection
-            time_indices_for_proj_connections = (current_step_idx - proj.idelays + proj._horizon) % proj._horizon
+            # Calculate time_indices using t-1 formula matching updated apply() method
+            time_indices_for_proj_connections = (current_step_idx - 1 - proj.idelays + proj._horizon) % proj._horizon
 
             # Construct the 'delayed_states' array that BaseProjection.apply would gather.
             # Shape: (n_source_cvar_proj, nnz_proj_weights, n_source_modes)
@@ -67,17 +125,10 @@ class TestNetwork(BaseHybridTest):
                     src_node_for_conn = proj.weights.indices[k_conn] 
                     buffer_idx_for_conn = time_indices_for_proj_connections[k_conn]
 
-                    if buffer_idx_for_conn == (current_step_idx % proj._horizon): # Should be 0
-                        # Value comes from the current state 'x' which was put into buffer at current_step_idx
-                        delayed_input_values[i_scv_proj, k_conn, :] = \
-                            src_state_current[scv_model_idx, src_node_for_conn, :]
-                    else:
-                        # Value comes from the mock past states we pre-filled into the buffer
-                        # The mock_history_for_this_proj stores the full state array for the source subnetwork
-                        # for that buffer_idx_for_conn.
-                        past_source_state_array = mock_history_for_this_proj[buffer_idx_for_conn]
-                        delayed_input_values[i_scv_proj, k_conn, :] = \
-                            past_source_state_array[scv_model_idx, src_node_for_conn, :]
+                    # Read from the mock state pre-filled into the buffer at this slot
+                    past_source_state_array = mock_history_for_this_proj[buffer_idx_for_conn]
+                    delayed_input_values[i_scv_proj, k_conn, :] = \
+                        past_source_state_array[scv_model_idx, src_node_for_conn, :]
             
             # Apply weights (element-wise to the gathered delayed_input_values)
             # proj.weights.data has shape (nnz,)
@@ -138,7 +189,12 @@ class TestNetwork(BaseHybridTest):
                 )
 
     def test_netset_step(self):
-        """Test network time stepping"""
+        """Smoke test for a single :meth:`~tvb.simulator.hybrid.NetworkSet.step` call.
+
+        Asserts that the returned state object has per-subnetwork shapes
+        matching the expected ``(nvar, nnodes, modes)`` tuples
+        ``[(6, 37, 1), (4, 39, 3)]``.
+        """
         conn, ix, cortex, thalamus, a, nets = self.setup()
         x = nets.zero_states()
         nx = nets.step(0, x)

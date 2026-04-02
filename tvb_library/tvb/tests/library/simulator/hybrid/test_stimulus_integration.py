@@ -1,10 +1,44 @@
+# -*- coding: utf-8 -*-
+#
+#
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# analysers necessary to run brain-simulations. You can use it stand alone or
+# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License along with this
+# program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
+#
+#
+
 """
-Integration tests for stimulus functionality.
+Integration tests for stimulus functionality in the hybrid simulator.
 
-These tests demonstrate that external stimuli have measurable impact on
-hybrid network simulations by comparing with and without stimulation.
+Validates that external stimuli routed through
+:func:`~tvb.simulator.hybrid.stimulus_utils.create_stimulus` have a
+measurable impact on simulation output, compared with unstimulated baseline
+runs.  Three scenarios are covered:
 
-.. moduleauthor:: Stimulus Implementation
+- **Direct impact** (``test_stimulus_impact_on_simulation``) – the stimulated
+  node diverges from its baseline trajectory and has higher mean activity.
+- **Spatial selectivity** (``test_stimulus_impact_decreases_with_distance``) –
+  only the directly stimulated node has elevated final state; non-stimulated
+  nodes remain at baseline because no inter-node coupling is present.
+- **Time-varying stimulus** (``test_time_varying_stimulus``) – a
+  cosine-modulated stimulus produces plausible time-dependent dynamics.
 """
 
 import numpy as np
@@ -67,10 +101,23 @@ def setup_linear_network(n_nodes=3, dt=0.1):
 
 
 class TestStimulusIntegration:
-    """Integration tests for stimulus functionality."""
+    """Integration tests for :func:`~tvb.simulator.hybrid.stimulus_utils.create_stimulus`.
+
+    Each test builds a minimal isolated network (no inter-node projections)
+    via :func:`setup_linear_network`, applies a stimulus through a
+    :class:`~tvb.simulator.hybrid.Stim` object, and compares the resulting
+    trajectory against a no-stimulus baseline.  The absence of coupling
+    ensures that any observed differences are caused solely by the stimulus.
+    """
 
     def test_stimulus_impact_on_simulation(self):
-        """Test that stimulation causes measurable difference in simulation output."""
+        """Stimulated node must diverge from its no-stimulus baseline trajectory.
+
+        A constant-amplitude (``b=0.5``) stimulus is applied to node 0 only.
+        After 20 ms the stimulated node's first state variable must (a) differ
+        from its no-stimulus trajectory and (b) have a higher time-averaged
+        value (margin 1e-4).
+        """
         simulation_length = 20.0  # Short simulation
         n_nodes = 3
         dt = 0.1
@@ -151,7 +198,12 @@ class TestStimulusIntegration:
         ), "Stimulus should increase activity at stimulated node"
 
     def test_stimulus_impact_decreases_with_distance(self):
-        """Test that stimulus impact decreases with distance from stimulated node."""
+        """Directly stimulated node must have higher final activity than non-stimulated nodes.
+
+        Node 0 receives direct drive; nodes 1 and 2 do not.  With no inter-node
+        coupling the final state of node 0's first state variable must exceed
+        those of nodes 1 and 2.
+        """
         simulation_length = 20.0
         n_nodes = 3
         dt = 0.1
@@ -209,7 +261,12 @@ class TestStimulusIntegration:
         )
 
     def test_time_varying_stimulus(self):
-        """Test that time-varying stimulus creates time-dependent effects."""
+        """A cosine-modulated stimulus produces a time-varying trajectory.
+
+        A low-frequency (0.1 Hz) cosine stimulus with amplitude 0.5 is applied
+        to all nodes.  The test verifies that the simulation completes without
+        error.
+        """
         simulation_length = 30.0
         n_nodes = 2
         dt = 0.1

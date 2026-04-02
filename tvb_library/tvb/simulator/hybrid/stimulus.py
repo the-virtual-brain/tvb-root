@@ -1,3 +1,37 @@
+# -*- coding: utf-8 -*-
+#
+#
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# analysers necessary to run brain-simulations. You can use it stand alone or
+# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License along with this
+# program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
+#
+#
+
+"""
+External stimulus for hybrid subnetworks.
+
+Provides :class:`Stim`, which wraps a :class:`~tvb.datatypes.patterns.SpatioTemporalPattern`
+and injects it into a target :class:`~tvb.simulator.hybrid.subnetwork.Subnetwork` at each
+simulation step via the same coupling interface used by projections.
+"""
+
 import numpy as np
 from scipy import sparse as sp
 import tvb.basic.neotraits.api as t
@@ -11,34 +45,36 @@ import tvb.simulator.hybrid.subnetwork as sn_module
 
 
 class Stim(t.HasTraits):
-    """External stimulus for hybrid networks.
+    """External stimulus injected into a hybrid subnetwork.
 
-    Stim provides external input to a target subnetwork, similar to projections
-    but with a fixed spatiotemporal pattern rather than coupling from another subnetwork.
+    :class:`Stim` wraps a :class:`~tvb.datatypes.patterns.SpatioTemporalPattern` and
+    delivers it to a target subnetwork through the same interface used by projections.
+    It must be configured before use by calling :meth:`configure`.
 
     Attributes
     ----------
     stimulus : SpatioTemporalPattern
-        Spatiotemporal pattern defining the stimulus (e.g., StimuliRegion)
+        Spatiotemporal pattern defining the waveform (e.g., ``StimuliRegion``).
     target : Subnetwork
-        Target subnetwork that receives the stimulus
-    target_cvar : str or ndarray of int
-        Name of target state variable that receives stimulus (uses cvar resolution)
+        Target subnetwork that receives the stimulus.
+    target_cvar : ndarray of int
+        Integer indices of the target coupling variables that receive the
+        stimulus.  String names are resolved to indices in ``__init__``.
     projection_scale : float
-        Scaling factor for the stimulus
-    weights : scipy.sparse.csr_matrix
-        Spatial weights matrix in CSR sparse format. Default: all-to-all identity.
+        Global scaling factor applied to the stimulus signal.
+    weights : scipy.sparse.csr_matrix or None
+        Spatial weights matrix of shape ``(n_nodes, n_nodes)``.  When
+        ``None`` the raw stimulus output is used without spatial weighting.
+        Default: ``None`` (``StimuliRegion`` carries its own spatial pattern).
     dt : float
-        Time step for temporal evaluation (set from target's scheme.dt during configure)
+        Integration time step in milliseconds.  Set from ``target.scheme.dt``
+        during :meth:`configure`.
     time : ndarray
-        Configured time vector for temporal evaluation
+        Time vector used by the stimulus pattern; populated by :meth:`configure`.
 
-    Methods
-    -------
-    configure(simulation_length)
-        Configure stimulus with time vector and spatial pattern
-    get_coupling(step)
-        Return coupling contribution at given step
+    See Also
+    --------
+    stimulus_utils.create_stimulus : Convenience factory for building a :class:`Stim`.
     """
 
     stimulus = t.Attr(field_type=SpatioTemporalPattern)
@@ -103,12 +139,17 @@ class Stim(t.HasTraits):
             )
 
     def configure(self, simulation_length: float):
-        """Configure stimulus with time vector and spatial pattern.
+        """Configure the time vector and spatial pattern for the given simulation length.
+
+        Sets ``self.dt`` from the target subnetwork's integrator, builds the
+        time vector ``self.time``, and calls ``configure_time`` (and, when
+        present, ``configure_space``) on the underlying :attr:`stimulus` pattern
+        so it is ready for evaluation.
 
         Parameters
         ----------
         simulation_length : float
-            Total simulation length in milliseconds
+            Total simulation duration in milliseconds.
         """
         # Set dt from target's scheme
         self.dt = self.target.scheme.dt
@@ -126,17 +167,23 @@ class Stim(t.HasTraits):
             self.stimulus.configure_space()
 
     def get_coupling(self, step: int) -> np.ndarray:
-        """Return coupling contribution at given step.
+        """Evaluate the stimulus at the given step and return the coupling contribution.
+
+        Calls ``stimulus(temporal_indices=step)`` to obtain the spatial pattern
+        at the current simulation step, optionally applies the sparse
+        :attr:`weights` matrix, scales by :attr:`projection_scale`, and
+        broadcasts the result to the expected coupling shape.
 
         Parameters
         ----------
         step : int
-            Current simulation step index
+            Current simulation step index (0-based).
 
         Returns
         -------
-        ndarray
-            Coupling contribution array with shape (n_cvar, n_nodes, n_modes)
+        ndarray of shape (n_cvar, n_nodes, n_modes)
+            Coupling contribution to add to the target subnetwork's coupling
+            buffer.  ``n_cvar`` equals ``len(self.target_cvar)``.
         """
         # Get current time
         t = step * self.dt

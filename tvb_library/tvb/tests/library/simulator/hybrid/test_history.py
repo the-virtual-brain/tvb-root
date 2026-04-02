@@ -25,7 +25,20 @@
 #
 
 """
-Test history in hybrid simulator, analogous to tvb_library/tvb/tests/library/simulator/history_test.py
+Test history-buffer propagation in the hybrid simulator.
+
+This module is the hybrid-simulator analogue of
+:mod:`tvb.tests.library.simulator.history_test`.  It re-uses
+:class:`~tvb.tests.library.simulator.history_test.TestsExactPropagation`
+(the ``IdCoupling`` / ``Sum`` / identity-integrator fixture from that module)
+and adapts the exact-propagation test to run through
+:class:`~tvb.simulator.hybrid.Simulator` with a single
+:class:`~tvb.simulator.hybrid.Subnetwork` and an
+:class:`~tvb.simulator.hybrid.IntraProjection`.
+
+The test verifies that the hybrid delay buffer faithfully reproduces the
+analytical propagation sequence expected for a small 4-node network with
+known connection delays.
 """
 
 import numpy as np
@@ -44,11 +57,39 @@ from tvb.tests.library.simulator.history_test import (
 
 class TestHybridHistory(TestsExactPropagation):
     """
-    This class tests the history of a hybrid simulator.
-    It is based on tvb/tests/library/simulator/history_test.py::TestsExactPropagation, but adapted to use the new hybrid simulator.
+    Hybrid-simulator equivalent of
+    :class:`~tvb.tests.library.simulator.history_test.TestsExactPropagation`.
+
+    :meth:`build_simulator` first calls the parent implementation to create a
+    classic TVB simulator (``self.sim``) so that its model, integrator, and
+    connectivity parameters are reused.  It then wraps the same components in
+    a :class:`~tvb.simulator.hybrid.NetworkSet` / :class:`~tvb.simulator.hybrid.Simulator`
+    and stores the result in ``self.hsim``.
+
+    :meth:`test_propagation` checks that the hybrid output matches the
+    hard-coded analytical solution from the parent class, step by step.
     """
 
     def build_simulator(self, n=4):
+        """
+        Build both a classic and a hybrid simulator sharing the same parameters.
+
+        Calls ``super().build_simulator(n)`` to populate ``self.sim`` with the
+        classic TVB simulator (model, integrator, connectivity).  Then mirrors
+        that configuration in a hybrid
+        :class:`~tvb.simulator.hybrid.Subnetwork` + 
+        :class:`~tvb.simulator.hybrid.IntraProjection` topology stored in
+        ``self.hsim``.
+
+        The intra-projection uses sparse CSR representations of the classic
+        simulator's weight and tract-length matrices, so the delay buffers
+        are initialised with the same conduction speed and time step.
+
+        Parameters
+        ----------
+        n : int, default=4
+            Number of nodes in the test network.
+        """
         super().build_simulator(n)
 
         model = self.sim.model
@@ -97,8 +138,19 @@ class TestHybridHistory(TestsExactPropagation):
         self.hsim.configure()
 
     def test_propagation(self):
-        nnodes = 4
-        self.build_simulator(nnodes)
+        """
+        The hybrid delay buffer propagates values according to the analytical
+        solution derived in the parent class.
+
+        Sets up a 4-node network, initialises the history buffer with all-ones,
+        advances ten steps, and compares the output node-by-node against the
+        hard-coded ``xs_expected`` matrix from
+        :class:`~tvb.tests.library.simulator.history_test.TestsExactPropagation`.
+        Each row of ``xs_expected`` represents the expected state of the 4 nodes
+        at one time step; the comparison uses
+        :func:`numpy.testing.assert_allclose` with default tolerances.
+        """
+        self.build_simulator(4)
         # Expected results (from TestsExactPropagation)
         xs_expected = np.array(
             [
@@ -116,7 +168,7 @@ class TestHybridHistory(TestsExactPropagation):
         )
 
         model = self.hsim.nets.subnets[0].model
-        init = np.ones((model.nvar, nnodes, model.number_of_modes))
+        init = np.ones((model.nvar, 4, model.number_of_modes))
         p: IntraProjection = self.hsim.nets.subnets[0].projections[0]
 
         # Initialize the history buffer with the initial state

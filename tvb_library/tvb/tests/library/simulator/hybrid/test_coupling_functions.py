@@ -25,7 +25,15 @@
 #
 
 """
-Tests for coupling functions in hybrid model.
+Tests for coupling functions in the hybrid simulator.
+
+Covers the base pass-through :class:`~tvb.simulator.hybrid.coupling.Coupling`,
+:class:`~tvb.simulator.hybrid.coupling.Linear` (affine: ``a*x + b``),
+:class:`~tvb.simulator.hybrid.coupling.Scaling` (pure scale: ``a*x``), and
+:class:`~tvb.simulator.hybrid.coupling.Sigmoidal` (smooth nonlinearity).
+The integration class ``TestCouplingIntegration`` verifies that these
+functions can be attached to projections created with
+:func:`~tvb.simulator.hybrid.projection_utils.create_intra_projection`.
 """
 
 import numpy as np
@@ -42,7 +50,11 @@ from tvb.datatypes.connectivity import Connectivity
 
 
 class TestCouplingBase:
-    """Test base Coupling class."""
+    """Tests for the pass-through behaviour of the base :class:`~tvb.simulator.hybrid.coupling.Coupling` class.
+
+    Verifies that the unspecialised base class returns its input unchanged
+    from both ``pre()`` and ``post()``, for 1-D and multi-dimensional arrays.
+    """
 
     def test_coupling_base_identity_pre(self):
         """Test that base Coupling applies identity in pre()."""
@@ -67,7 +79,11 @@ class TestCouplingBase:
 
 
 class TestLinearCoupling:
-    """Test Linear coupling function."""
+    """Tests for :class:`~tvb.simulator.hybrid.coupling.Linear` (affine: ``a*x + b``).
+
+    Verifies scaling, offset, sign handling, and that ``pre()`` is always
+    the identity (transformation is applied only in ``post()``).
+    """
 
     def test_linear_default_parameters(self):
         """Test Linear with default parameters (identity: a=1, b=0)."""
@@ -117,7 +133,11 @@ class TestLinearCoupling:
 
 
 class TestScalingCoupling:
-    """Test Scaling coupling function."""
+    """Tests for :class:`~tvb.simulator.hybrid.coupling.Scaling` (pure scale: ``a*x``).
+
+    Verifies scale-up, scale-down, zero, and negative scale factors, and
+    that ``pre()`` is the identity.
+    """
 
     def test_scaling_default_parameters(self):
         """Test Scaling with default parameters (identity: a=1)."""
@@ -175,7 +195,11 @@ class TestScalingCoupling:
 
 
 class TestSigmoidalCoupling:
-    """Test Sigmoidal coupling function."""
+    """Tests for :class:`~tvb.simulator.hybrid.coupling.Sigmoidal` (smooth nonlinearity).
+
+    Verifies boundary values, custom midpoint/steepness/width parameters,
+    anti-symmetry around the midpoint, and that ``pre()`` is the identity.
+    """
 
     def test_sigmoidal_default_parameters(self):
         """Test Sigmoidal with default parameters."""
@@ -252,7 +276,14 @@ class TestSigmoidalCoupling:
 
 
 class TestCouplingIntegration:
-    """Test coupling functions integrated with projections."""
+    """Tests that coupling functions can be attached to intra-projections.
+
+    Verifies that :func:`~tvb.simulator.hybrid.projection_utils.create_intra_projection`
+    correctly stores ``None``, :class:`~tvb.simulator.hybrid.coupling.Linear`,
+    :class:`~tvb.simulator.hybrid.coupling.Scaling`, and
+    :class:`~tvb.simulator.hybrid.coupling.Sigmoidal` instances on the
+    ``cfun`` attribute of the created projection.
+    """
 
     @pytest.fixture
     def simple_connectivity(self):

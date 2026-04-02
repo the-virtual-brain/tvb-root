@@ -25,7 +25,17 @@
 #
 
 """
-Tests for additional coupling functions in hybrid model.
+Tests for extended coupling functions in the hybrid simulator.
+
+Covers :class:`~tvb.simulator.hybrid.coupling.Kuramoto` (sinusoidal
+phase-difference coupling: ``(a/N)*sin(x)``),
+:class:`~tvb.simulator.hybrid.coupling.Difference` (diffusive: ``a*x``),
+:class:`~tvb.simulator.hybrid.coupling.HyperbolicTangent`
+(``a*(1+tanh((x-midpoint)/sigma))``),
+:class:`~tvb.simulator.hybrid.coupling.SigmoidalJansenRit`
+(Jansen–Rit sigmoid: ``a*(2*e0)/(1+exp(r*(v0-x)))``), and
+:class:`~tvb.simulator.hybrid.coupling.PreSigmoidal`
+(``H*(Q+tanh(G*(P*x-theta)))``).
 """
 
 import numpy as np
@@ -45,7 +55,12 @@ from tvb.datatypes.connectivity import Connectivity
 
 
 class TestKuramotoCoupling:
-    """Test Kuramoto coupling function."""
+    """Tests for :class:`~tvb.simulator.hybrid.coupling.Kuramoto` (sinusoidal phase coupling: ``(a/N)*sin(x)``).
+
+    Verifies sine-function behaviour, amplitude scaling, per-mode
+    normalisation (``1/N`` factor), 2π periodicity, and that ``pre()`` is
+    the identity.
+    """
 
     def test_kuramoto_default_parameters(self):
         """Test Kuramoto with default parameters."""
@@ -123,7 +138,11 @@ class TestKuramotoCoupling:
 
 
 class TestDifferenceCoupling:
-    """Test Difference (diffusive) coupling function."""
+    """Tests for :class:`~tvb.simulator.hybrid.coupling.Difference` (diffusive coupling: ``a*x``).
+
+    Verifies various coupling strengths including zero and negative values,
+    and that ``pre()`` is the identity.
+    """
 
     def test_difference_default_parameters(self):
         """Test Difference with default parameters (identity)."""
@@ -185,7 +204,12 @@ class TestDifferenceCoupling:
 
 
 class TestHyperbolicTangentCoupling:
-    """Test HyperbolicTangent coupling function."""
+    """Tests for :class:`~tvb.simulator.hybrid.coupling.HyperbolicTangent` (``a*(1+tanh((x-m)/σ))``).
+
+    Verifies saturation at large positive/negative inputs, custom midpoint,
+    amplitude and width parameters, output range [0, 2a], and that ``post()``
+    is the identity.
+    """
 
     def test_hyperbolic_tangent_default_parameters(self):
         """Test HyperbolicTangent with default parameters."""
@@ -290,7 +314,13 @@ class TestHyperbolicTangentCoupling:
 
 
 class TestSigmoidalJansenRitCoupling:
-    """Test SigmoidalJansenRit coupling function."""
+    """Tests for :class:`~tvb.simulator.hybrid.coupling.SigmoidalJansenRit` (Jansen–Rit sigmoid).
+
+    Verifies that output equals ``e0`` at the threshold ``x=v0``, saturates
+    near ``2*e0`` for large inputs, and that the ``a``, ``e0``, ``r``, and
+    ``v0`` parameters control amplitude, maximum firing rate, slope, and
+    threshold respectively.  ``post()`` must be the identity.
+    """
 
     def test_jansen_rit_default_parameters(self):
         """Test SigmoidalJansenRit with default parameters."""
@@ -386,7 +416,12 @@ class TestSigmoidalJansenRitCoupling:
 
 
 class TestPreSigmoidalCoupling:
-    """Test PreSigmoidal coupling function."""
+    """Tests for :class:`~tvb.simulator.hybrid.coupling.PreSigmoidal` (``H*(Q+tanh(G*(P*x-θ)))``).
+
+    Verifies boundary values at large inputs, the zero-crossing at the
+    threshold ``x=θ/P``, and each of the five parameters (``H``, ``Q``,
+    ``G``, ``P``, ``theta``).  ``post()`` must be the identity.
+    """
 
     def test_pre_sigmoidal_default_parameters(self):
         """Test PreSigmoidal with default parameters."""

@@ -1,5 +1,42 @@
+# -*- coding: utf-8 -*-
+#
+#
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# analysers necessary to run brain-simulations. You can use it stand alone or
+# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License along with this
+# program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
+#
+#
+
 """
-Base test utilities for hybrid module tests.
+Shared fixtures and helper utilities for the hybrid-simulator test suite.
+
+This module provides :class:`BaseHybridTest`, which every hybrid test class
+inherits from.  It wires up a realistic two-subnetwork topology:
+
+* **cortex** — `JansenRit` model, nodes assigned by random partition of the
+  default 76-region TVB connectivity.
+* **thalamus** — `ReducedSetFitzHughNagumo` (FHN) model, remaining nodes.
+
+The two subnetworks are coupled via three :class:`InterProjection` edges that
+cover both cross-model cvar combinations (JR→FHN and FHN→JR), using sparse
+weight and length matrices extracted from the global connectivity.
 """
 
 import numpy as np
@@ -12,24 +49,62 @@ from tvb.datatypes.connectivity import Connectivity
 
 
 class BaseHybridTest(BaseTestCase):
-    """Base class for hybrid module tests with common setup and utilities."""
+    """
+    Base class for hybrid module tests.
+
+    Provides a realistic two-subnetwork topology wired from the default TVB
+    connectivity and helper methods for generating random state/cvar arrays of
+    the correct shape.
+
+    Subnetwork convention
+    ---------------------
+    * **cortex** — :class:`~tvb.simulator.models.JansenRit` (6 state vars,
+      2 coupling vars), nodes where ``ix == AtlasPart.CORTEX``.
+    * **thalamus** — :class:`~tvb.simulator.models.ReducedSetFitzHughNagumo`
+      (4 state vars, 2 coupling vars, 3 modes), nodes where
+      ``ix == AtlasPart.THALAMUS``.
+
+    The random node-to-subnetwork assignment is seeded (``np.random.seed(42)``)
+    so results are reproducible across test runs.
+    """
     
     def setup(self, nvois=None, jrmon=None):
-        """Setup test environment with cortex-thalamus network.
-        
+        """
+        Build and return the canonical cortex-thalamus hybrid network.
+
+        Constructs two configured :class:`~tvb.simulator.hybrid.Subnetwork`
+        objects and three :class:`~tvb.simulator.hybrid.InterProjection` edges
+        (cortex→thalamus  × 2, thalamus→cortex × 1) assembled into a
+        :class:`~tvb.simulator.hybrid.NetworkSet`.  Projection buffers are
+        fully configured on return.
+
         Parameters
         ----------
         nvois : int, optional
-            Number of variables of interest to use
+            When given, restricts both models to their first *nvois* variables
+            of interest.  Useful for tests that check monitor output shapes.
         jrmon : Monitor, optional
-            Monitor to attach to Jansen-Rit model
-        use_zero_lengths : bool, optional
-            If True, set up projections with zero lengths for minimal delay.
-            
+            If provided, the monitor is added to the cortex subnetwork via
+            :meth:`~tvb.simulator.hybrid.Subnetwork.add_monitor` before the
+            :class:`~tvb.simulator.hybrid.NetworkSet` is assembled.
+
         Returns
         -------
-        tuple
-            (conn, ix, cortex, thalamus, AtlasPart, nets)
+        conn : Connectivity
+            The full 76-region TVB connectivity used to derive weights.
+        ix : ndarray of int, shape (n_regions,)
+            Random 0/1 partition assigning each region to cortex (0) or
+            thalamus (1).
+        cortex : Subnetwork
+            Configured JansenRit subnetwork.
+        thalamus : Subnetwork
+            Configured ReducedSetFitzHughNagumo subnetwork.
+        AtlasPart : type
+            Simple namespace with ``CORTEX = 0`` and ``THALAMUS = 1``
+            constants used to index into *ix*.
+        nets : NetworkSet
+            Fully assembled and buffer-configured network with all three
+            inter-subnet projections.
         """
         conn = Connectivity.from_file()
         conn.configure()
@@ -138,31 +213,42 @@ class BaseHybridTest(BaseTestCase):
         return conn, ix, cortex, thalamus, AtlasPart, nets
 
     def _randn_like_states(self, states):
-        """Generate random states with same structure as input states.
-        
+        """
+        Return a new state container filled with independent standard normals.
+
+        The returned object has the same type and per-array shapes as *states*,
+        making it suitable as a randomised initial condition or perturbation
+        when the exact values are not under test.
+
         Parameters
         ----------
-        states : NetworkSet.States
-            Template states to match structure of
-            
+        states : namedtuple or similar container of ndarray
+            Template container whose element shapes are replicated.  Typically
+            obtained from :meth:`~tvb.simulator.hybrid.NetworkSet.zero_states`.
+
         Returns
         -------
-        NetworkSet.States
-            New states filled with random numbers
+        same type as states
+            Container of i.i.d. ``N(0, 1)`` arrays with identical shapes.
         """
         return states.__class__(*(np.random.randn(*x.shape) for x in states))
 
     def _randn_like_cvars(self, cvars):
-        """Generate random coupling variables with same structure as input cvars.
-        
+        """
+        Return a new cvar container filled with independent standard normals.
+
+        Mirrors :meth:`_randn_like_states` but operates on coupling-variable
+        containers of shape ``(ncvars, nnodes, nmodes)`` per subnetwork.
+
         Parameters
         ----------
-        cvars : NetworkSet.States
-            Template coupling variables to match structure of
-            
+        cvars : namedtuple or similar container of ndarray
+            Template container whose element shapes are replicated.  Typically
+            obtained from :meth:`~tvb.simulator.hybrid.NetworkSet.zero_cvars`.
+
         Returns
         -------
-        NetworkSet.States
-            New coupling variables filled with random numbers
+        same type as cvars
+            Container of i.i.d. ``N(0, 1)`` arrays with identical shapes.
         """
         return cvars.__class__(*(np.random.randn(*x.shape) for x in cvars)) 

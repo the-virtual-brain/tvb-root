@@ -1,9 +1,47 @@
+# -*- coding: utf-8 -*-
+#
+#
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# analysers necessary to run brain-simulations. You can use it stand alone or
+# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License along with this
+# program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
+#
+#
+
 """
-Tests for the InterProjection class.
+Tests for :class:`~tvb.simulator.hybrid.InterProjection`.
+
+Exercises :meth:`~tvb.simulator.hybrid.InterProjection.apply` under four
+distinct source-cvar / target-cvar mapping topologies:
+
+1. **Many-to-one** – multiple source cvars summed onto a single target cvar.
+2. **One-to-many** – a single source cvar broadcast to multiple target cvars.
+3. **M-to-M (repeated source)** – the same source cvar repeated drives
+   multiple target cvars, producing identical values on each.
+4. **Named cvars** – string names are resolved to integer indices during
+   :meth:`~tvb.simulator.hybrid.InterProjection.configure`, and the
+   projection then executes without error.
 """
 
 import numpy as np
 import pytest
+
 # Import the specific projection class being tested from its new file
 from tvb.simulator.hybrid.inter_projection import InterProjection
 from .test_base import BaseHybridTest
@@ -11,11 +49,36 @@ from .test_base import BaseHybridTest
 
 import scipy.sparse
 
-class TestInterProjection(BaseHybridTest): # Keep class name as it tests InterProjection
-    """Tests for the InterProjection class."""
+
+class TestInterProjection(
+    BaseHybridTest
+):  # Keep class name as it tests InterProjection
+    """Tests for :class:`~tvb.simulator.hybrid.InterProjection`.
+
+    Each test case pre-populates the projection's history buffer with known
+    states, calls :meth:`~tvb.simulator.hybrid.InterProjection.apply`, and
+    asserts that only the intended target cvars are non-zero while all others
+    remain at zero.  The ``cortex`` coupling array must never be touched when
+    the target subnetwork is ``thalamus``.
+    """
 
     def test_interprojection_apply(self):
-        """Test InterProjection.apply method with delays."""
+        """Verify apply() for all four supported cvar-mapping topologies.
+
+        Four sub-cases share the ``setup()`` scaffolding:
+
+        - **Case 1** ``source_cvar=[0,1]`` → ``target_cvar=[1]``: many-to-one
+          reduction — only target cvar index 1 may be non-zero.
+        - **Case 2** ``source_cvar=[0]`` → ``target_cvar=[0,1]``: one-to-many
+          broadcast — both target cvars must be non-zero.
+        - **Case 3** ``source_cvar=[0,0]`` → ``target_cvar=[0,1]``: repeated
+          source — both target cvars must carry the same numerical values.
+        - **Case 4** string names ``["y0","y0"]`` → ``[0,1]``: verifies that
+          :meth:`~tvb.simulator.hybrid.InterProjection.configure` resolves
+          cvar names before running.
+
+        In all cases the ``cortex`` coupling array must remain all-zero.
+        """
         _, _, cortex_subn, thalamus_subn, _, nets = self.setup()
 
         # --- Setup ---
@@ -32,7 +95,7 @@ class TestInterProjection(BaseHybridTest): # Keep class name as it tests InterPr
         # Define source state and history buffer parameters
         # Use a time step >= max_delay to ensure history buffer indexing is valid
         t = proj_c_t.max_delay + 5
-        horizon = proj_c_t.max_delay + 10 # Buffer size must accommodate max_delay
+        horizon = proj_c_t.max_delay + 10  # Buffer size must accommodate max_delay
 
         # Create a realistic history buffer
         # Shape: (n_vars_src, n_nodes_src, n_modes_src, horizon)
@@ -44,63 +107,65 @@ class TestInterProjection(BaseHybridTest): # Keep class name as it tests InterPr
         current_src_state_shape = (n_vars_src, n_nodes_src, n_modes_src)
         current_src_state = np.random.randn(*current_src_state_shape) * 0.1
 
-
         # --- Test Case 1: Multiple source cvars to single target cvar ---
         proj_multi_source = InterProjection(
             source=cortex_subn,
             target=thalamus_subn,
-            source_cvar=np.r_[0, 1],    # Two source cvars
-            target_cvar=np.r_[1],      # Single target cvar
+            source_cvar=np.r_[0, 1],  # Two source cvars
+            target_cvar=np.r_[1],  # Single target cvar
             weights=proj_c_t.weights,  # Reuse weights from setup proj
             lengths=proj_c_t.lengths,  # Reuse lengths
-            cv=proj_c_t.cv,            # Reuse cv
-            dt=proj_c_t.dt,            # Reuse dt
-            scale=1.0
+            cv=proj_c_t.cv,  # Reuse cv
+            dt=proj_c_t.dt,  # Reuse dt
+            scale=1.0,
         )
         # Configure the projection
         proj_multi_source.configure()
         # Update the buffer with the current state before applying
         # (Simulate multiple updates for a more realistic buffer state)
         for i in range(t + 1):
-             # Use slightly different states for each step for testing
-             proj_multi_source.update_buffer(current_src_state + i*0.01, i)
-
+            # Use slightly different states for each step for testing
+            proj_multi_source.update_buffer(current_src_state + i * 0.01, i)
 
         # Target array to modify (using thalamus part of zero_cvars)
         # Shape: (n_vars_tgt, n_nodes_tgt, n_modes_tgt)
         c_target_1 = nets.zero_cvars()
-        target_thalamus_1 = c_target_1.thalamus # Get the relevant part
+        target_thalamus_1 = c_target_1.thalamus  # Get the relevant part
 
         # Apply the projection (uses internal buffer now)
         proj_multi_source.apply(target_thalamus_1, t)
 
         # Assertions based on target_cvar=[1]
-        assert np.any(target_thalamus_1[1, :, :] != 0), "Target cvar [1] should have received input"
-        assert np.all(target_thalamus_1[0, :, :] == 0), "Target cvar [0] should NOT have received input"
+        assert np.any(target_thalamus_1[1, :, :] != 0), (
+            "Target cvar [1] should have received input"
+        )
+        assert np.all(target_thalamus_1[0, :, :] == 0), (
+            "Target cvar [0] should NOT have received input"
+        )
         # Check remaining cvars if they exist
         if target_thalamus_1.shape[0] > 2:
-             assert np.all(target_thalamus_1[2:, :, :] == 0), "Target cvars [2:] should NOT have received input"
+            assert np.all(target_thalamus_1[2:, :, :] == 0), (
+                "Target cvars [2:] should NOT have received input"
+            )
         # Ensure other subnetworks weren't touched
         assert np.all(c_target_1.cortex == 0)
-
 
         # --- Test Case 2: Single source cvar to multiple target cvars ---
         proj_one_to_many = InterProjection(
             source=cortex_subn,
             target=thalamus_subn,
-            source_cvar=np.r_[0],      # Single source cvar index
-            target_cvar=np.r_[0, 1],   # Multiple target cvar indices
+            source_cvar=np.r_[0],  # Single source cvar index
+            target_cvar=np.r_[0, 1],  # Multiple target cvar indices
             weights=proj_c_t.weights,  # Reuse weights from setup proj
             lengths=proj_c_t.lengths,  # Reuse lengths
-            cv=proj_c_t.cv,            # Reuse cv
-            dt=proj_c_t.dt,            # Reuse dt
-            scale=0.5
+            cv=proj_c_t.cv,  # Reuse cv
+            dt=proj_c_t.dt,  # Reuse dt
+            scale=0.5,
         )
         # Configure and update buffer for the second test projection
         proj_one_to_many.configure()
         for i in range(t + 1):
-             proj_one_to_many.update_buffer(current_src_state + i*0.01, i)
-
+            proj_one_to_many.update_buffer(current_src_state + i * 0.01, i)
 
         # Target array to modify
         c_target_2 = nets.zero_cvars()
@@ -110,31 +175,37 @@ class TestInterProjection(BaseHybridTest): # Keep class name as it tests InterPr
         proj_one_to_many.apply(target_thalamus_2, t)
 
         # Assertions based on target_cvar=[0, 1]
-        assert np.any(target_thalamus_2[0, :, :] != 0), "Target cvar [0] should have received input"
-        assert np.any(target_thalamus_2[1, :, :] != 0), "Target cvar [1] should have received input"
+        assert np.any(target_thalamus_2[0, :, :] != 0), (
+            "Target cvar [0] should have received input"
+        )
+        assert np.any(target_thalamus_2[1, :, :] != 0), (
+            "Target cvar [1] should have received input"
+        )
         # Check remaining cvars if they exist
         if target_thalamus_2.shape[0] > 2:
-            assert np.all(target_thalamus_2[2:, :, :] == 0), "Target cvars [2:] should NOT have received input"
+            assert np.all(target_thalamus_2[2:, :, :] == 0), (
+                "Target cvars [2:] should NOT have received input"
+            )
         # Ensure other subnetworks weren't touched
         assert np.all(c_target_2.cortex == 0)
 
-
         # --- Test Case 3: Repeated source cvars (M=N mapping) ---
-        # source_cvar=[0,0,0] means same source projects to multiple targets
+        # source_cvar=[0,0] means same source projects to multiple targets
+        # Note: ReducedSetFitzHughNagumo has 2 cvars (indices 0,1)
         proj_repeated_source = InterProjection(
             source=cortex_subn,
             target=thalamus_subn,
-            source_cvar=np.r_[0, 0, 0],  # Same source repeated
-            target_cvar=np.r_[0, 1, 2],  # Different targets
+            source_cvar=np.r_[0, 0],  # Same source repeated
+            target_cvar=np.r_[0, 1],  # Distinct target cvars
             weights=proj_c_t.weights,
             lengths=proj_c_t.lengths,
             cv=proj_c_t.cv,
             dt=proj_c_t.dt,
-            scale=0.5
+            scale=0.5,
         )
         proj_repeated_source.configure()
         for i in range(t + 1):
-            proj_repeated_source.update_buffer(current_src_state + i*0.01, i)
+            proj_repeated_source.update_buffer(current_src_state + i * 0.01, i)
 
         # Target array to modify
         c_target_3 = nets.zero_cvars()
@@ -143,48 +214,44 @@ class TestInterProjection(BaseHybridTest): # Keep class name as it tests InterPr
         # Apply the projection
         proj_repeated_source.apply(target_thalamus_3, t)
 
-        # Assertions: same source should project to all three targets
-        assert np.any(target_thalamus_3[0, :, :] != 0), "Target cvar [0] should have received input"
-        assert np.any(target_thalamus_3[1, :, :] != 0), "Target cvar [1] should have received input"
-        assert np.any(target_thalamus_3[2, :, :] != 0), "Target cvar [2] should have received input"
-        # Check that they all get the same value (scaled)
+        # Assertions: same source should project to both targets
+        assert np.any(target_thalamus_3[0, :, :] != 0), (
+            "Target cvar [0] should have received input"
+        )
+        assert np.any(target_thalamus_3[1, :, :] != 0), (
+            "Target cvar [1] should have received input"
+        )
+        # Check that they get the same value (since same source, weights, etc.)
         np.testing.assert_allclose(
             target_thalamus_3[0, :, :],
             target_thalamus_3[1, :, :],
             rtol=1e-10,
-            err_msg="Repeated source should produce same values on different targets"
-        )
-        np.testing.assert_allclose(
-            target_thalamus_3[1, :, :],
-            target_thalamus_3[2, :, :],
-            rtol=1e-10,
-            err_msg="Repeated source should produce same values on different targets"
+            err_msg="Repeated source should produce same values on different targets",
         )
         # Ensure other subnetworks weren't touched
         assert np.all(c_target_3.cortex == 0)
-
 
         # --- Test Case 4: Repeated source cvars with named strings ---
         # Test using string names for repeated cvars
         proj_repeated_names = InterProjection(
             source=cortex_subn,
             target=thalamus_subn,
-            source_cvar=["y0", "y0", "y0"],  # Repeated named cvars
-            target_cvar=[0, 1, 2],  # Integer target indices
+            source_cvar=["y0", "y0"],  # Repeated named cvars
+            target_cvar=[0, 1],  # Integer target indices
             weights=proj_c_t.weights,
             lengths=proj_c_t.lengths,
             cv=proj_c_t.cv,
             dt=proj_c_t.dt,
-            scale=0.5
+            scale=0.5,
         )
         proj_repeated_names.configure()
         # Verify cvar names were resolved to indices
-        np.testing.assert_array_equal(proj_repeated_names.source_cvar, np.array([0, 0, 0]))
-        np.testing.assert_array_equal(proj_repeated_names.target_cvar, np.array([0, 1, 2]))
+        np.testing.assert_array_equal(proj_repeated_names.source_cvar, np.array([0, 0]))
+        np.testing.assert_array_equal(proj_repeated_names.target_cvar, np.array([0, 1]))
 
         # Test that it runs without error
         for i in range(t + 1):
-            proj_repeated_names.update_buffer(current_src_state + i*0.01, i)
+            proj_repeated_names.update_buffer(current_src_state + i * 0.01, i)
         c_target_4 = nets.zero_cvars()
         proj_repeated_names.apply(c_target_4.thalamus, t)
         assert np.any(c_target_4.thalamus != 0), "Should have received input"

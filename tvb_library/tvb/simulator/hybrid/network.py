@@ -1,8 +1,52 @@
+# -*- coding: utf-8 -*-
+#
+#
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# analysers necessary to run brain-simulations. You can use it stand alone or
+# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License along with this
+# program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as explained here:
+# https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
+#
+#
+
+"""
+Network container for hybrid model
+
+A ``NetworkSet`` collects subnetworks and the projections that couple them,
+forming a complete hybrid model.  At each simulation step the network:
+
+1. Reads delayed afferent states from projection history buffers (``cfun``).
+2. Applies external stimuli to coupling variables.
+3. Delegates integration to each subnetwork (``Subnetwork.step``).
+4. Writes the post-integration states back to the projection buffers.
+
+The ``States`` namedtuple provides attribute-style access to per-subnetwork
+state arrays so that code such as ``xs.cortex`` is readable throughout the
+framework.
+"""
+
 import collections
 import numpy as np
 import tvb.basic.neotraits.api as t
 from .subnetwork import Subnetwork
 from .inter_projection import InterProjection
+from .intra_projection import IntraProjection
+from .base_projection import BaseProjection
 from .stimulus import Stim
 from . import projection_utils
 from . import stimulus_utils
@@ -27,7 +71,7 @@ class NetworkSet(t.HasTraits):
     """
 
     subnets: [Subnetwork] = t.List(of=Subnetwork)
-    projections: [Subnetwork] = t.List(of=InterProjection)
+    projections: [BaseProjection] = t.List(of=BaseProjection)
     stimuli: [Stim] = t.List(of=Stim)
     # NOTE dynamically generated namedtuple based on subnetworks
     States: collections.namedtuple = None
@@ -111,7 +155,9 @@ class NetworkSet(t.HasTraits):
             ]
         )
         if flat:
-            total_vois = sum([len(sn.model.variables_of_interest) for sn in self.subnets])
+            total_vois = sum(
+                [len(sn.model.variables_of_interest) for sn in self.subnets]
+            )
             total_nodes = sum([sn.nnodes for sn in self.subnets])
             total_modes = self.subnets[0].model.number_of_modes
             result = np.zeros((total_vois, total_nodes, total_modes))
@@ -121,34 +167,77 @@ class NetworkSet(t.HasTraits):
                 n_vois = ob.shape[0]
                 n_nodes = ob.shape[1]
                 n_modes = ob.shape[2]
-                result[voi_offset:voi_offset+n_vois, node_offset:node_offset+n_nodes, :n_modes] = ob
+                result[
+                    voi_offset : voi_offset + n_vois,
+                    node_offset : node_offset + n_nodes,
+                    :n_modes,
+                ] = ob
                 voi_offset += n_vois
                 node_offset += n_nodes
             obs = result
         return obs
 
+    def init_projection_buffers(self, xs: States):
+        """Initialize all projection history buffers with initial state.
+
+        Fills the history buffers so that early delay lookups return the
+        initial state rather than zeros, matching classic TVB behavior.
+
+        Parameters
+        ----------
+        xs : States
+            Initial states of all subnetworks.
+        """
+        # Initialize inter-projection buffers
+        for p in self.projections:
+            if isinstance(p, IntraProjection):
+                continue
+            src = getattr(xs, p.source.name)
+            for t in range(p._horizon):
+                p.update_buffer(src, t)
+
+        # Initialize intra-projection buffers
+        for sn, x in zip(self.subnets, xs):
+            for p in sn.projections:
+                for t in range(p._horizon):
+                    p.update_buffer(x, t)
+
     def cfun(self, step: int, eff: States) -> States:
-        """Compute coupling between subnetworks and apply external stimuli.
+        """Compute coupling inputs for all subnetworks from projection buffers.
+
+        Reads delayed afferent states from each inter-projection's history
+        buffer and accumulates them into per-subnetwork coupling arrays.  Any
+        external stimuli registered with this network are added on top.
+
+        Note that ``eff`` (the current states) is accepted for API symmetry but
+        is not used here: coupling is read exclusively from the pre-filled
+        history buffers so that delays are honoured correctly.
 
         Parameters
         ----------
         step : int
-            Current simulation step index.
+            Current simulation step index.  Used to look up the correct
+            position in each projection's delay buffer.
         eff : States
-            Current states of all subnetworks
+            Current states of all subnetworks.  Not used directly; coupling
+            comes from the buffered history rather than the instantaneous state.
 
         Returns
         -------
         States
-            Coupling variables for each subnetwork (including stimulus contributions)
+            Named tuple of coupling variable arrays, one per subnetwork.
+            Each array has shape ``(ncvar, nnodes, modes)`` and includes
+            contributions from inter-projections and stimuli.
         """
         aff = self.zero_cvars()
 
-        # Process inter-projections
+        # Process inter-projections (skip intra-projections)
+        # Apply projections using buffers from previous state.
+        # Buffer updates happen AFTER integration in step() to match classic TVB.
         for p in self.projections:
+            if isinstance(p, IntraProjection):
+                continue
             tgt = getattr(aff, p.target.name)
-            src = getattr(eff, p.source.name)
-            p.update_buffer(src, step)
             p.apply(tgt, step)
 
         # Process stimuli
@@ -160,25 +249,52 @@ class NetworkSet(t.HasTraits):
         return aff
 
     def step(self, step, xs: States) -> States:
-        """Take a single integration step for all subnetworks.
+        """Advance the entire network by one integration time step.
+
+        Computes inter-subnetwork coupling via ``cfun``, delegates integration
+        to each ``Subnetwork.step``, and then updates all projection history
+        buffers with the freshly computed states so that subsequent delay
+        lookups return correct values.
 
         Parameters
         ----------
         step : int
-            Current simulation step
+            Current simulation step index (1-based, as passed by
+            ``Simulator.run``).
         xs : States
-            Current states of all subnetworks
+            Named tuple of current state arrays, one per subnetwork.
+            Each array has shape ``(nvar, nnodes, modes)``.
 
         Returns
         -------
         States
-            Next states after integration
+            Named tuple of next-step state arrays with the same structure
+            as ``xs``.
         """
         cs = self.cfun(step, xs)
         nxs = self.zero_states()
         for sn, nx, x, c in zip(self.subnets, nxs, xs, cs):
             nx[:] = sn.step(step, x, c)
+
+        # Update all projection buffers with the NEW (post-integration) states,
+        # matching classic TVB which stores state after integration.
+        self._update_projection_buffers(step, nxs)
+
         return nxs
+
+    def _update_projection_buffers(self, step: int, nxs: States):
+        """Update all projection history buffers with post-integration states."""
+        # Update inter-projection buffers
+        for p in self.projections:
+            if isinstance(p, IntraProjection):
+                continue
+            src = getattr(nxs, p.source.name)
+            p.update_buffer(src, step)
+
+        # Update intra-projection buffers
+        for sn, nx in zip(self.subnets, nxs):
+            for p in sn.projections:
+                p.update_buffer(nx, step)
 
     def add_projection(
         self, source_name, target_name, source_cvar, target_cvar, **kwargs
