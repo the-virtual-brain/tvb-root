@@ -56,14 +56,21 @@ def run_sim(sim, nstep=None, sim_time=None):
     nnode = sim.connectivity.weights.shape[0]
     nsvar = len(sim.model.state_variables)
     # arrays
-    parmat = sim.model.spatial_parameter_matrix.T.astype(np.float32)
+    _spat_names = sim.model.spatial_parameter_names
+    if len(_spat_names) > 0:
+        parmat = sim.model.spatial_parameter_matrix.T.astype(np.float32)
+    else:
+        parmat = np.zeros((nnode, 0), np.float32)
     weights = sim.connectivity.weights.astype(np.float32)
     idelays = sim.connectivity.idelays.astype(np.uint32)
     # allocate buffers
     state = np.zeros((nsvar, nnode, horizon + nstep), np.float32)
     assert sim.current_step == 0, 'requires an un-run simulator'
-    state[:,:,:horizon-1] = np.transpose(sim.history.buffer[1:,:,:,0], (1,2,0))
-    state[:,:, horizon-1] = sim.history.buffer[0,:,:,0]
+    # Initialize all state variables at the current (most recent) time from current_state
+    state[:, :, horizon-1] = sim.current_state[:, :, 0]
+    # Overwrite coupling variables with their history (needed for delayed connections)
+    for _k, _cv in enumerate(sim.model.cvar):
+        state[_cv, :, :horizon-1] = sim.history.buffer[1:, _k, :, 0].T
 % if stochastic:
     nsig = sim.integrator.noise.nsig
     # TODO use newer RNG infra in NumPy

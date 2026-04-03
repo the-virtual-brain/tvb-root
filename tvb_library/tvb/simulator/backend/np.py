@@ -112,7 +112,7 @@ class NpBackend(MakoUtilMix):
         if sim.model.number_of_modes > 1:
             # this is a limitation e.g. by how nsig is now handled
             raise NotImplementedError("Only models with 1 mode are supported")
-        self._check_choices(sim.model, models.MontbrioPazoRoxin) 
+        self._check_choices(sim.model, (models.MontbrioPazoRoxin, models.KIonEx)) 
         # coupling
         self._check_choices(sim.coupling, 
                 (coupling.Linear, coupling.Sigmoidal))
