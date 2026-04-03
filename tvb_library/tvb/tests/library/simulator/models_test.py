@@ -342,3 +342,41 @@ class TestModels(BaseTestCase):
 
         model = models.DumontGutkin()
         self._validate_initialization(model, 8)
+
+    def test_kionex_numpy_numba_equivalence(self):
+        """
+        Verify that KIonEx._numpy_dfun and KIonEx.dfun (numba backend) produce
+        identical derivatives for the same inputs, covering both branches of the
+        piecewise V <= Vstar / V > Vstar conditional.
+        """
+        from tvb.simulator.models.k_ion_exchange import KIonEx
+
+        model = KIonEx()
+        model.configure()
+
+        # 4 nodes: first two have V below Vstar (default -31 mV), last two above.
+        # DKi and Kg are kept small so K_o = K_o0 - beta*DKi + Kg stays positive,
+        # avoiding log-domain errors (K_o0 = 4.8, beta = 3).
+        n_nodes = 4
+        rng = numpy.random.default_rng(42)
+        sv = numpy.array([
+            rng.uniform(0.01, 0.8, n_nodes),           # x  (must be > 0)
+            numpy.array([-50.0, -40.0, -25.0, -20.0]), # V  (straddles Vstar=-31)
+            rng.uniform(0.1, 0.9, n_nodes),            # n
+            rng.uniform(-1.0, -0.01, n_nodes),         # DKi  (small so K_o stays > 0)
+            rng.uniform(-0.5, 0.5, n_nodes),           # Kg
+        ])  # shape (5, n_nodes)
+
+        coupling = rng.uniform(0.0, 2.0, (1, n_nodes))  # shape (1, n_nodes)
+
+        numpy_result = model._numpy_dfun(sv, coupling)  # shape (5, n_nodes)
+
+        x_full = sv[:, :, numpy.newaxis]        # shape (5, n_nodes, 1)
+        c_full = coupling[:, :, numpy.newaxis]  # shape (1, n_nodes, 1)
+        numba_result = model.dfun(x_full, c_full)  # shape (5, n_nodes, 1)
+
+        numpy.testing.assert_allclose(
+            numpy_result, numba_result[:, :, 0],
+            rtol=1e-10, atol=1e-12,
+            err_msg="numpy and numba dfun disagree — check piecewise branches and coupling term"
+        )

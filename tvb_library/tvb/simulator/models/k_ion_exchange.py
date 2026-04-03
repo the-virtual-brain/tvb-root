@@ -470,7 +470,7 @@ def _numba_dfun(state_variables, coupling, E, K_bath, J, eta, Delta, c_minus, R_
         R, c = R_plus[0], c_plus[0]
 
     dx[0] = Delta[0] + 2 * R * (V - c) * x - J[0] * r * x
-    dx[1] = Vdot - R * x ** 2 + eta[0] + (R_minus[0] * numpy.pi) * Coupling_Term * (E[0] - V)
+    dx[1] = Vdot - R * x ** 2 + eta[0] + (R_minus[0] / numpy.pi) * Coupling_Term * (E[0] - V)
     dx[2] = (ninf - n) / tau_n[0]
     dx[3] = -(gamma[0] / w_i) * (I_K - 2.0 * I_pump)
     dx[4] = epsilon[0] * (K_bath[0] - K_o)
