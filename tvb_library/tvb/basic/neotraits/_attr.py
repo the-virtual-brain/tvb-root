@@ -80,13 +80,20 @@ class Attr(_Attr):
         self.choices = choices
 
     def __validate(self, value):
-        """ check field_type and choices """
+        """check field_type and choices"""
         if not isinstance(value, self.field_type) and not (
-                inspect.isclass(self.default) and issubclass(value, self.field_type)):
-            raise TraitTypeError("Attribute can't be set to an instance of {}".format(type(value)), attr=self)
+            inspect.isclass(self.default) and issubclass(value, self.field_type)
+        ):
+            raise TraitTypeError(
+                "Attribute can't be set to an instance of {}".format(type(value)),
+                attr=self,
+            )
         if self.choices is not None:
             if value not in self.choices and not (value is None and not self.required):
-                raise TraitValueError("Value {!r} must be one of {}".format(value, self.choices), attr=self)
+                raise TraitValueError(
+                    "Value {!r} must be one of {}".format(value, self.choices),
+                    attr=self,
+                )
 
     # subclass api
 
@@ -99,12 +106,14 @@ class Attr(_Attr):
         Attr should be considered initialized only after this has run
         """
         if not isinstance(self.field_type, type):
-            msg = 'Field_type must be a type not {!r}. Did you mean to declare a default?'.format(
+            msg = "Field_type must be a type not {!r}. Did you mean to declare a default?".format(
                 self.field_type
             )
             raise TraitTypeError(msg, attr=self)
 
-        skip_default_checks = self.default is None or isinstance(self.default, types.FunctionType)
+        skip_default_checks = self.default is None or isinstance(
+            self.default, types.FunctionType
+        )
 
         if not skip_default_checks:
             self.__validate(self.default)
@@ -113,8 +122,12 @@ class Attr(_Attr):
         try:
             hash(self.default)
         except TypeError:
-            log.warning('Field seems mutable and has a default value. '
-                        'Consider using a lambda as a value factory \n   attribute {}'.format(self))
+            log.warning(
+                "Field seems mutable and has a default value. "
+                "Consider using a lambda as a value factory \n   attribute {}".format(
+                    self
+                )
+            )
         # we do not check here if we have a value for a required field
         # it is too early for that, owner.__init__ has not run yet
 
@@ -129,7 +142,9 @@ class Attr(_Attr):
         """
         if value is None:
             if self.required:
-                raise TraitValueError("Attribute is required. Can't set to None", attr=self)
+                raise TraitValueError(
+                    "Attribute is required. Can't set to None", attr=self
+                )
             else:
                 return value
 
@@ -148,8 +163,12 @@ class Attr(_Attr):
         # (this attr instance is a class field, so the default is for the class)
         # This is consistent with how class fields work before they are assigned and become instance bound
         if self.field_name not in instance.__dict__:
-            if (self.field_type != types.FunctionType and isinstance(self.default, types.FunctionType)
-                    or inspect.isclass(self.default) and issubclass(self.default, self.field_type)):
+            if (
+                self.field_type != types.FunctionType
+                and isinstance(self.default, types.FunctionType)
+                or inspect.isclass(self.default)
+                and issubclass(self.default, self.field_type)
+            ):
                 default = self.default()
             else:
                 default = self.default
@@ -161,8 +180,11 @@ class Attr(_Attr):
 
         value = instance.__dict__[self.field_name]
         if self.required and value is None:
-            raise TraitAttributeError('required attribute referenced before assignment. '
-                                      'Use a default or assign a value before reading it', attr=self)
+            raise TraitAttributeError(
+                "required attribute referenced before assignment. "
+                "Use a default or assign a value before reading it",
+                attr=self,
+            )
         return value
 
     def __set__(self, instance, value):
@@ -185,17 +207,17 @@ class Attr(_Attr):
 
     def _defined_on_str_helper(self):
         if self.owner is not None:
-            return '{}.{}.{} = {}'.format(
+            return "{}.{}.{} = {}".format(
                 self.owner.__module__,
                 self.owner.__name__,
                 self.field_name,
-                type(self).__name__
+                type(self).__name__,
             )
         else:
-            return '{}'.format(type(self).__name__)
+            return "{}".format(type(self).__name__)
 
     def __str__(self):
-        return '{}(field_type={}, default={!r}, required={})'.format(
+        return "{}(field_type={}, default={!r}, required={})".format(
             self._defined_on_str_helper(), self.field_type, self.default, self.required
         )
 
@@ -284,20 +306,32 @@ class List(Attr):
         super(List, self).__set__(instance, value)
 
     def __str__(self):
-        return '{}(of={}, default={!r}, required={})'.format(
-            self._defined_on_str_helper(), self.element_type, self.default, self.required
+        return "{}(of={}, default={!r}, required={})".format(
+            self._defined_on_str_helper(),
+            self.element_type,
+            self.default,
+            self.required,
         )
 
 
 class _Number(Attr):
+    @staticmethod
+    def _scalarize(value):
+        """Extract a Python/numpy scalar from 0-d or single-element 1-d arrays."""
+        if isinstance(value, numpy.ndarray) and value.ndim <= 1 and value.size == 1:
+            return value.item()
+        return value
 
     def __validate(self, value):
-        """ value should be safely cast to field type and choices must be enforced """
+        """value should be safely cast to field type and choices must be enforced"""
+        value = _Number._scalarize(value)
         if not isinstance(value, (int, float, complex, numpy.number)):
             # we have to check that the value is numeric before the can_cast check
             # as can_cast works with dtype strings as well
             # can_cast('i8', 'i32')
-            raise TraitTypeError("can't be set to {!r}. Need a number.".format(value), attr=self)
+            raise TraitTypeError(
+                "can't be set to {!r}. Need a number.".format(value), attr=self
+            )
         # numpy.can_cast() no longer accepts Python scalars in NumPy 2.x.
         # Use a round-trip check: convert to field_type and verify the value is preserved.
         # Two traps need to be caught separately:
@@ -308,17 +342,28 @@ class _Number(Attr):
         try:
             converted = self.field_type(value)
         except (OverflowError, ValueError, TypeError):
-            raise TraitTypeError("can't be set to {!r}. No safe cast.".format(value), attr=self)
+            raise TraitTypeError(
+                "can't be set to {!r}. No safe cast.".format(value), attr=self
+            )
         # Guard float overflow to infinity (original value was finite)
-        if (isinstance(converted, (float, numpy.floating))
-                and numpy.isinf(converted)
-                and not (isinstance(value, (float, numpy.floating)) and numpy.isinf(value))):
-            raise TraitTypeError("can't be set to {!r}. No safe cast.".format(value), attr=self)
+        if (
+            isinstance(converted, (float, numpy.floating))
+            and numpy.isinf(converted)
+            and not (isinstance(value, (float, numpy.floating)) and numpy.isinf(value))
+        ):
+            raise TraitTypeError(
+                "can't be set to {!r}. No safe cast.".format(value), attr=self
+            )
         if converted != value:
-            raise TraitTypeError("can't be set to {!r}. No safe cast.".format(value), attr=self)
+            raise TraitTypeError(
+                "can't be set to {!r}. No safe cast.".format(value), attr=self
+            )
         if self.choices is not None:
             if value not in self.choices:
-                raise TraitValueError("value {!r} must be one of {}".format(value, self.choices), attr=self)
+                raise TraitValueError(
+                    "value {!r} must be one of {}".format(value, self.choices),
+                    attr=self,
+                )
 
     def _post_bind_validate(self):
         if self.default is not None:
@@ -331,6 +376,7 @@ class _Number(Attr):
             else:
                 return value
 
+        value = _Number._scalarize(value)
         self.__validate(value)
         return self.field_type(value)
 
