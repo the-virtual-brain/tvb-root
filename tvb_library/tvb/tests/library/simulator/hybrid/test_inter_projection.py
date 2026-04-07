@@ -73,7 +73,7 @@ class TestInterProjection(
           broadcast — both target cvars must be non-zero.
         - **Case 3** ``source_cvar=[0,0]`` → ``target_cvar=[0,1]``: repeated
           source — both target cvars must carry the same numerical values.
-        - **Case 4** string names ``["y0","y0"]`` → ``[0,1]``: verifies that
+        - **Case 4** string names ``["y1","y1"]`` → ``[0,1]``: verifies that
           :meth:`~tvb.simulator.hybrid.InterProjection.configure` resolves
           cvar names before running.
 
@@ -236,7 +236,7 @@ class TestInterProjection(
         proj_repeated_names = InterProjection(
             source=cortex_subn,
             target=thalamus_subn,
-            source_cvar=["y0", "y0"],  # Repeated named cvars
+            source_cvar=["y1", "y1"],  # Repeated named cvars (y1 is a coupling var of JansenRit)
             target_cvar=[0, 1],  # Integer target indices
             weights=proj_c_t.weights,
             lengths=proj_c_t.lengths,
@@ -246,7 +246,7 @@ class TestInterProjection(
         )
         proj_repeated_names.configure()
         # Verify cvar names were resolved to indices
-        np.testing.assert_array_equal(proj_repeated_names.source_cvar, np.array([0, 0]))
+        np.testing.assert_array_equal(proj_repeated_names.source_cvar, np.array([1, 1]))
         np.testing.assert_array_equal(proj_repeated_names.target_cvar, np.array([0, 1]))
 
         # Test that it runs without error

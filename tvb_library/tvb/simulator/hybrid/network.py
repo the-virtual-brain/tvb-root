@@ -90,6 +90,19 @@ class NetworkSet(t.HasTraits):
             p.configure()
         return self
 
+    def _is_merged_mode(self) -> bool:
+        """Return True when global monitor output should use connectome ordering.
+
+        Merged mode is active when every subnetwork has ``node_indices`` set
+        *and* all subnetworks expose the same number of variables of interest.
+        In this mode ``observe(flat=True)`` places each subnetwork's output at
+        its original connectome positions instead of concatenating.
+        """
+        if not all(sn.node_indices is not None for sn in self.subnets):
+            return False
+        voi_counts = [len(sn.model.variables_of_interest) for sn in self.subnets]
+        return len(set(voi_counts)) == 1
+
     def zero_states(self, initial_states: list[np.ndarray] = None) -> States:
         """Create zero states or use provided initial states for all subnetworks.
 
@@ -178,25 +191,43 @@ class NetworkSet(t.HasTraits):
             ]
         )
         if flat:
-            total_vois = sum(
-                [len(sn.model.variables_of_interest) for sn in self.subnets]
-            )
-            total_nodes = sum([sn.nnodes for sn in self.subnets])
             total_modes = self.subnets[0].model.number_of_modes
-            result = np.zeros((total_vois, total_nodes, total_modes))
-            voi_offset = 0
-            node_offset = 0
-            for sn, ob in zip(self.subnets, obs):
-                n_vois = ob.shape[0]
-                n_nodes = ob.shape[1]
-                n_modes = ob.shape[2]
-                result[
-                    voi_offset : voi_offset + n_vois,
-                    node_offset : node_offset + n_nodes,
-                    :n_modes,
-                ] = ob
-                voi_offset += n_vois
-                node_offset += n_nodes
+            if self._is_merged_mode():
+                # All subnets carry node_indices and share the same VOI count:
+                # place each subnet's observations at its original connectome
+                # positions rather than concatenating.
+                n_vois = len(self.subnets[0].model.variables_of_interest)
+                total_nodes = (
+                    max(
+                        int(ix)
+                        for sn in self.subnets
+                        for ix in sn.node_indices
+                    )
+                    + 1
+                )
+                result = np.zeros((n_vois, total_nodes, total_modes))
+                for sn, ob in zip(self.subnets, obs):
+                    result[:, sn.node_indices, :] = ob
+            else:
+                # Legacy path: stack VOIs and concatenate nodes in subnetwork order.
+                total_vois = sum(
+                    [len(sn.model.variables_of_interest) for sn in self.subnets]
+                )
+                total_nodes = sum([sn.nnodes for sn in self.subnets])
+                result = np.zeros((total_vois, total_nodes, total_modes))
+                voi_offset = 0
+                node_offset = 0
+                for sn, ob in zip(self.subnets, obs):
+                    n_vois = ob.shape[0]
+                    n_nodes = ob.shape[1]
+                    n_modes = ob.shape[2]
+                    result[
+                        voi_offset : voi_offset + n_vois,
+                        node_offset : node_offset + n_nodes,
+                        :n_modes,
+                    ] = ob
+                    voi_offset += n_vois
+                    node_offset += n_nodes
             obs = result
         return obs
 

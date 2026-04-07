@@ -153,10 +153,13 @@ class TestProjectionUtils:
         """
         ``create_inter_projection`` resolves string cvar names to integer indices.
 
-        Passing ``source_cvar="y0"`` and ``target_cvar="y1"`` for JansenRit
+        Passing ``source_cvar="y1"`` and ``target_cvar="y2"`` for JansenRit
         subnetworks should produce a projection with
-        ``source_cvar == [0]`` and ``target_cvar == [1]``.  The weight matrix
+        ``source_cvar == [1]`` and ``target_cvar == [1]``.  The weight matrix
         is preserved exactly through the factory.
+
+        JansenRit has ``cvar=[1,2]`` (state vars y1 and y2), so ``"y1"`` and
+        ``"y2"`` are the valid coupling-variable names.
         """
         # Create subnetworks
         source = Subnetwork(
@@ -174,14 +177,16 @@ class TestProjectionUtils:
         proj = create_inter_projection(
             source_subnet=source,
             target_subnet=target,
-            source_cvar="y0",  # Named cvar!
-            target_cvar="y1",  # Named cvar!
+            source_cvar="y1",  # Named cvar! (y1 is coupling slot 0 of JansenRit)
+            target_cvar="y2",  # Named cvar! (y2 is coupling slot 1 of JansenRit)
             weights=weights_sparse,
             scale=1.0,
         )
 
         # Verify cvars were resolved to indices
-        np.testing.assert_array_equal(proj.source_cvar, np.array([0]))
+        # source_cvar="y1" -> state-var index 1 (model.cvar[0]=1)
+        # target_cvar="y2" -> coupling-slot index 1 (y2 is at position 1 in model.cvar)
+        np.testing.assert_array_equal(proj.source_cvar, np.array([1]))
         np.testing.assert_array_equal(proj.target_cvar, np.array([1]))
 
         # Verify weights are correct (allow for floating point precision)
@@ -213,8 +218,8 @@ class TestProjectionUtils:
         proj = create_inter_projection(
             source_subnet=source,
             target_subnet=target,
-            source_cvar="y0",
-            target_cvar="y1",
+            source_cvar="y1",  # y1 is coupling slot 0 of JansenRit
+            target_cvar="y2",  # y2 is coupling slot 1 of JansenRit
             connectivity=connectivity,
             source_indices=[0, 1, 2],
             target_indices=[3, 4],
@@ -235,10 +240,13 @@ class TestProjectionUtils:
         """
         Multiple source cvars can be mapped to a single target cvar.
 
-        Passing ``source_cvar=["y0", "y1"]`` and ``target_cvar="y0"`` creates
-        a projection with ``source_cvar == [0, 1]`` and ``target_cvar == [0]``.
+        Passing ``source_cvar=["y1", "y2"]`` and ``target_cvar="y1"`` creates
+        a projection with ``source_cvar == [1, 2]`` and ``target_cvar == [0]``.
         This pattern is used when several source variables jointly drive one
         target coupling channel.
+
+        JansenRit has ``cvar=[1,2]`` so ``y1`` (slot 0) and ``y2`` (slot 1) are
+        the valid coupling-variable names.
         """
         source = Subnetwork(
             name="source", model=JansenRit(), scheme=HeunDeterministic(dt=0.1), nnodes=3
@@ -255,13 +263,15 @@ class TestProjectionUtils:
         proj = create_inter_projection(
             source_subnet=source,
             target_subnet=target,
-            source_cvar=["y0", "y1"],  # Multiple source!
-            target_cvar="y0",  # Single target!
+            source_cvar=["y1", "y2"],  # Multiple source! (coupling vars of JansenRit)
+            target_cvar="y1",  # Single target! (coupling slot 0)
             weights=weights_sparse,
             scale=1.0,
         )
 
-        np.testing.assert_array_equal(proj.source_cvar, np.array([0, 1]))
+        # source: y1->state-var 1, y2->state-var 2
+        # target: y1->coupling-slot 0
+        np.testing.assert_array_equal(proj.source_cvar, np.array([1, 2]))
         np.testing.assert_array_equal(proj.target_cvar, np.array([0]))
 
     def test_create_inter_projection_repeated_cvars(self):
@@ -269,9 +279,11 @@ class TestProjectionUtils:
         The same source cvar may be repeated to drive multiple distinct target
         cvars.
 
-        ``source_cvar=["y0", "y0", "y0"]`` with ``target_cvar=[0, 1, 2]``
-        (mixed string/int) should resolve without error, yielding
-        ``source_cvar == [0, 0, 0]`` and ``target_cvar == [1, 2, 3]``.
+        ``source_cvar=["y1", "y1", "y1"]`` with ``target_cvar=[0, 1, 2]``
+        should resolve without error, yielding
+        ``source_cvar == [1, 1, 1]`` and ``target_cvar == [0, 1, 2]``.
+
+        Integer target_cvar values pass through unchanged (no name resolution).
         """
         source = Subnetwork(
             name="source", model=JansenRit(), scheme=HeunDeterministic(dt=0.1), nnodes=3
@@ -288,14 +300,15 @@ class TestProjectionUtils:
         proj = create_inter_projection(
             source_subnet=source,
             target_subnet=target,
-            source_cvar=["y0", "y0", "y0"],  # Same source repeated
-            target_cvar=[0, 1, 2],  # Different targets
+            source_cvar=["y1", "y1", "y1"],  # Same coupling var repeated (y1 is coupling slot 0)
+            target_cvar=[0, 1, 2],  # Different integer targets (pass through unchanged)
             weights=weights_sparse,
             scale=1.0,
         )
 
         # Verify cvars were correctly resolved
-        np.testing.assert_array_equal(proj.source_cvar, np.array([0, 0, 0]))
+        # y1 -> state-var index 1 (model.cvar[0]=1)
+        np.testing.assert_array_equal(proj.source_cvar, np.array([1, 1, 1]))
         np.testing.assert_array_equal(proj.target_cvar, np.array([0, 1, 2]))
 
     def test_create_inter_projection_repeated_cvars_with_names(self):
@@ -311,19 +324,21 @@ class TestProjectionUtils:
         weights = np.eye(3)
         weights_sparse = sp.csr_matrix(weights)
 
-        # Repeated source cvars with string names, mixed target cvars
+        # Repeated source cvars with string names, named target cvars
+        # JansenRit has cvar=[1,2]: only y1 (slot 0) and y2 (slot 1) are valid coupling vars
         proj = create_inter_projection(
             source_subnet=source,
             target_subnet=target,
-            source_cvar=["y0", "y0", "y0"],  # Repeated named source
-            target_cvar=["y1", "y2", "y3"],  # Named targets
+            source_cvar=["y1", "y1"],  # Repeated named source (y1 is coupling slot 0)
+            target_cvar=["y1", "y2"],  # Named targets (slots 0 and 1)
             weights=weights_sparse,
             scale=1.0,
         )
 
         # Verify cvars were correctly resolved
-        np.testing.assert_array_equal(proj.source_cvar, np.array([0, 0, 0]))
-        np.testing.assert_array_equal(proj.target_cvar, np.array([1, 2, 3]))
+        # y1 as source -> state-var index 1; y1 as target -> slot 0; y2 as target -> slot 1
+        np.testing.assert_array_equal(proj.source_cvar, np.array([1, 1]))
+        np.testing.assert_array_equal(proj.target_cvar, np.array([0, 1]))
 
     def test_create_intra_projection(self):
         """
@@ -344,8 +359,8 @@ class TestProjectionUtils:
 
         proj = create_intra_projection(
             subnet=subnet,
-            source_cvar="y0",
-            target_cvar="y1",
+            source_cvar="y1",  # y1 is coupling slot 0 of JansenRit (state-var index 1)
+            target_cvar="y2",  # y2 is coupling slot 1 of JansenRit
             weights=weights_sparse,
             scale=1.0,
         )
@@ -353,7 +368,8 @@ class TestProjectionUtils:
         assert (
             proj.weights.nnz == 5
         )  # 3 diagonal + 2 epsilon additions (first column, excluding overlap at (0,0))
-        np.testing.assert_array_equal(proj.source_cvar, np.array([0]))
+        # source_cvar="y1" -> state-var index 1; target_cvar="y2" -> coupling-slot index 1
+        np.testing.assert_array_equal(proj.source_cvar, np.array([1]))
         np.testing.assert_array_equal(proj.target_cvar, np.array([1]))
 
 
@@ -371,7 +387,11 @@ class TestNetworkSetHelpers:
 
         After the call the ``NetworkSet.projections`` list should contain
         exactly one entry, the returned projection object, with
-        ``source_cvar == [0]`` and ``target_cvar == [1]``.
+        ``source_cvar == [1]`` and ``target_cvar == [1]``.
+
+        JansenRit has ``cvar=[1,2]``: ``"y1"`` maps to state-var index 1
+        (source) and coupling-slot 0 is not used here; ``"y2"`` maps to
+        coupling-slot index 1 (target).
         """
         # Create two subnetworks
         source = Subnetwork(
@@ -394,8 +414,8 @@ class TestNetworkSetHelpers:
         proj = nets.add_projection(
             source_name="cortex",
             target_name="thalamus",
-            source_cvar="y0",  # Named cvar!
-            target_cvar="y1",  # Named cvar!
+            source_cvar="y1",  # Named cvar! (coupling slot 0 of JansenRit -> state-var 1)
+            target_cvar="y2",  # Named cvar! (coupling slot 1 of JansenRit)
             weights=weights_sparse,
             scale=1e-4,
         )
@@ -405,7 +425,8 @@ class TestNetworkSetHelpers:
         assert nets.projections[0] is proj
 
         # Verify cvars were resolved
-        np.testing.assert_array_equal(proj.source_cvar, np.array([0]))
+        # source_cvar="y1" -> state-var index 1; target_cvar="y2" -> coupling-slot index 1
+        np.testing.assert_array_equal(proj.source_cvar, np.array([1]))
         np.testing.assert_array_equal(proj.target_cvar, np.array([1]))
 
     def test_add_projection_from_connectivity(self):
@@ -441,8 +462,8 @@ class TestNetworkSetHelpers:
             connectivity=connectivity,
             source_indices=[0, 1, 2],
             target_indices=[3, 4],
-            source_cvar="y0",  # Named cvar!
-            target_cvar="y1",  # Named cvar!
+            source_cvar="y1",  # Named cvar! (coupling slot 0 of JansenRit -> state-var 1)
+            target_cvar="y2",  # Named cvar! (coupling slot 1 of JansenRit)
             scale=1e-4,
             cv=3.0,
             dt=0.1,

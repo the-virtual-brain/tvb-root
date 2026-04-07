@@ -50,6 +50,11 @@ The total weighted coupling at target node *i* is:
 where *s* is ``scale``, *w_ij* are the sparse weights, and ``pre`` / ``post``
 are optional coupling transformations from the attached ``cfun``.
 
+When ``target_scales`` is provided it is applied **after** mode-mapping,
+multiplicatively on top of the global ``scale``.  Effective per-target weight
+is ``scale * target_scales[i]``.  ``target_scales`` must have the same length
+as ``target_cvar``.
+
 Delays are resolved once at construction time from the sparse ``lengths``
 matrix, the conduction velocity ``cv``, and the time step ``dt``.  A small
 epsilon is temporarily added to the weight and length matrices to guarantee
@@ -120,6 +125,14 @@ class BaseProjection(t.HasTraits):
     source_cvar = t.NArray(dtype=np.int_)
     target_cvar = t.NArray(dtype=np.int_)
     scale: float = t.Float(default=1.0)
+    target_scales = t.NArray(
+        required=False,
+        label="Per-target-cvar scaling",
+        doc="""Optional per-target-cvar scale factors.  When set, element *i*
+        multiplies the contribution delivered to ``target_cvar[i]`` after mode
+        mapping, on top of the global ``scale``.  Must have the same length as
+        ``target_cvar``.  When *None* the global ``scale`` alone is used.""",
+    )
     weights = t.Attr(sp.csr_matrix)
     lengths = t.Attr(sp.csr_matrix)
     cv = t.Float(required=False, default=None)
@@ -268,6 +281,14 @@ class BaseProjection(t.HasTraits):
             Number of modes in the source model
             (``model.number_of_modes``).
         """
+        # Validate target_scales length when provided
+        if self.target_scales is not None:
+            if len(self.target_scales) != len(self.target_cvar):
+                raise ValueError(
+                    f"target_scales length ({len(self.target_scales)}) must equal "
+                    f"target_cvar length ({len(self.target_cvar)})."
+                )
+
         # Horizon = max_delay + 1, matching classic TVB n_time
         self._horizon = self.max_delay + 1
         if (
@@ -390,6 +411,8 @@ class BaseProjection(t.HasTraits):
             # Sum along axis 0 (source_cvar dimension)
             # Result shape: (n_target_nodes, n_target_modes)
             summed_aff = aff.sum(axis=0)
+            if self.target_scales is not None:
+                summed_aff = summed_aff * self.target_scales[0]
             # Add to the single target cvar across all nodes/modes
             tgt[self.target_cvar[0], :, :] += summed_aff
         elif self.source_cvar.size == 1:
@@ -397,12 +420,17 @@ class BaseProjection(t.HasTraits):
             # aff has shape (1, n_target_nodes, n_target_modes)
             # Squeeze axis 0 to get shape (n_target_nodes, n_target_modes)
             squeezed_aff = aff.squeeze(axis=0)
+            if self.target_scales is not None:
+                # target_scales shape (n_target_cvar,) → broadcast over nodes and modes
+                squeezed_aff = squeezed_aff * self.target_scales[:, None, None]
             # Add to all target cvars
             tgt[self.target_cvar, :, :] += squeezed_aff
         elif self.source_cvar.size == self.target_cvar.size:
             # If source and target cvars match in number, apply element-wise mapping
             # aff shape: (n_cvar, n_target_nodes, n_target_modes)
             # tgt[target_cvar] shape: (n_cvar, n_target_nodes, n_target_modes)
+            if self.target_scales is not None:
+                aff = aff * self.target_scales[:, None, None]
             tgt[self.target_cvar, :, :] += aff
         else:
             # Ambiguous case: M source cvars to N target cvars (M != N, M!=1, N!=1)

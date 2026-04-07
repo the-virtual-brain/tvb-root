@@ -124,6 +124,7 @@ def create_inter_projection(
     cv=None,
     dt=None,
     scale=1.0,
+    target_scales=None,
     mode_map=None,
     coupling=None,
 ):
@@ -161,6 +162,10 @@ def create_inter_projection(
         Time step. Defaults to source subnet's scheme.dt.
     scale : float, default=1.0
         Scaling factor for projection.
+    target_scales : ndarray, optional
+        Per-target-cvar scaling factors.  When provided, element *i* multiplies
+        the contribution to ``target_cvar[i]`` after mode mapping, on top of
+        the global ``scale``.  Must have the same length as ``target_cvar``.
     mode_map : ndarray, optional
         Mode mapping matrix. Defaults to uniform mapping.
     coupling : Coupling, optional
@@ -249,10 +254,10 @@ def create_inter_projection(
         lengths = sp.csr_matrix((r, c), dtype=np.float64)
 
     # Resolve cvar names to indices
-    from .cvar_utils import resolve_cvar_names
+    from .cvar_utils import resolve_source_cvar, resolve_target_cvar
 
-    source_cvar_indices = resolve_cvar_names(source_subnet.model, source_cvar)
-    target_cvar_indices = resolve_cvar_names(target_subnet.model, target_cvar)
+    source_cvar_indices = resolve_source_cvar(source_subnet.model, source_cvar)
+    target_cvar_indices = resolve_target_cvar(target_subnet.model, target_cvar)
 
     # Create projection
     proj = InterProjection(
@@ -265,6 +270,7 @@ def create_inter_projection(
         cv=cv,
         dt=dt,
         scale=scale,
+        target_scales=target_scales,
         mode_map=mode_map,
         cfun=coupling,
     )
@@ -282,6 +288,7 @@ def create_intra_projection(
     cv=None,
     dt=None,
     scale=1.0,
+    target_scales=None,
     coupling=None,
 ):
     """Factory function to create an IntraProjection.
@@ -310,6 +317,10 @@ def create_intra_projection(
         Time step. Defaults to subnet's scheme.dt.
     scale : float, default=1.0
         Scaling factor for projection.
+    target_scales : ndarray, optional
+        Per-target-cvar scaling factors.  When provided, element *i* multiplies
+        the contribution to ``target_cvar[i]`` after mode mapping, on top of
+        the global ``scale``.  Must have the same length as ``target_cvar``.
     coupling : Coupling, optional
         Coupling function to transform afferent activity. If None, uses identity.
 
@@ -341,10 +352,10 @@ def create_intra_projection(
         lengths = sp.csr_matrix((r, c), dtype=np.float64)
 
     # Resolve cvar names to indices
-    from .cvar_utils import resolve_cvar_names
+    from .cvar_utils import resolve_source_cvar, resolve_target_cvar
 
-    source_cvar_indices = resolve_cvar_names(subnet.model, source_cvar)
-    target_cvar_indices = resolve_cvar_names(subnet.model, target_cvar)
+    source_cvar_indices = resolve_source_cvar(subnet.model, source_cvar)
+    target_cvar_indices = resolve_target_cvar(subnet.model, target_cvar)
 
     # Create projection
     proj = IntraProjection(
@@ -355,6 +366,7 @@ def create_intra_projection(
         cv=cv,
         dt=dt,
         scale=scale,
+        target_scales=target_scales,
         cfun=coupling,
     )
 
