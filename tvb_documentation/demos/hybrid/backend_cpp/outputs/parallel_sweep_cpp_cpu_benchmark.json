@@ -1,0 +1,281 @@
+{
+  "repo_root": "/home/ziaee/git/tvb-root-hybrid-cpp",
+  "build_root": "/home/ziaee/git/tvb-root-hybrid-cpp/tvb_documentation/demos/hybrid/backend_cpp/.build",
+  "cpu_count": 20,
+  "nstep": 5000,
+  "sweeps": 50,
+  "tavg_period": 1.0,
+  "sweep_start": 0.002,
+  "sweep_stop": 0.1,
+  "rows": [
+    {
+      "workers": 1,
+      "backend": "cpp-seq",
+      "wall_s": 8.251081194728613,
+      "backend_elapsed_s": 8.122366258874536,
+      "speedup_vs_1_worker": 1.0,
+      "sweep_points_per_s": 6.059811898584105,
+      "ksteps_per_s": 30.299059492920524,
+      "correctness": {
+        "ok": true,
+        "by_output": {}
+      }
+    },
+    {
+      "workers": 2,
+      "backend": "cpp-par-2",
+      "wall_s": 4.287266029044986,
+      "backend_elapsed_s": 4.1480646170675755,
+      "speedup_vs_1_worker": 1.9245554483509835,
+      "sweep_points_per_s": 11.662444005402156,
+      "ksteps_per_s": 58.31222002701078,
+      "correctness": {
+        "ok": true,
+        "max_abs_diff": 0.0,
+        "max_rel_diff": 0.0,
+        "by_output": {
+          "cortex": {
+            "ok": true,
+            "max_abs_diff": 0.0,
+            "max_rel_diff": 0.0,
+            "shape": [
+              50,
+              500,
+              4,
+              68,
+              1
+            ]
+          },
+          "thalamus": {
+            "ok": true,
+            "max_abs_diff": 0.0,
+            "max_rel_diff": 0.0,
+            "shape": [
+              50,
+              500,
+              4,
+              8,
+              1
+            ]
+          },
+          "merged_tavg": {
+            "ok": true,
+            "max_abs_diff": 0.0,
+            "shape": [
+              50,
+              500,
+              4,
+              76,
+              1
+            ]
+          }
+        }
+      }
+    },
+    {
+      "workers": 4,
+      "backend": "cpp-par-4",
+      "wall_s": 2.3005894157104194,
+      "backend_elapsed_s": 2.1716066151857376,
+      "speedup_vs_1_worker": 3.5865075003749367,
+      "sweep_points_per_s": 21.73356082513318,
+      "ksteps_per_s": 108.6678041256659,
+      "correctness": {
+        "ok": true,
+        "max_abs_diff": 0.0,
+        "max_rel_diff": 0.0,
+        "by_output": {
+          "cortex": {
+            "ok": true,
+            "max_abs_diff": 0.0,
+            "max_rel_diff": 0.0,
+            "shape": [
+              50,
+              500,
+              4,
+              68,
+              1
+            ]
+          },
+          "thalamus": {
+            "ok": true,
+            "max_abs_diff": 0.0,
+            "max_rel_diff": 0.0,
+            "shape": [
+              50,
+              500,
+              4,
+              8,
+              1
+            ]
+          },
+          "merged_tavg": {
+            "ok": true,
+            "max_abs_diff": 0.0,
+            "shape": [
+              50,
+              500,
+              4,
+              76,
+              1
+            ]
+          }
+        }
+      }
+    },
+    {
+      "workers": 8,
+      "backend": "cpp-par-8",
+      "wall_s": 1.359507225919515,
+      "backend_elapsed_s": 1.217176642268896,
+      "speedup_vs_1_worker": 6.069170532836205,
+      "sweep_points_per_s": 36.778031809416866,
+      "ksteps_per_s": 183.89015904708432,
+      "correctness": {
+        "ok": true,
+        "max_abs_diff": 0.0,
+        "max_rel_diff": 0.0,
+        "by_output": {
+          "cortex": {
+            "ok": true,
+            "max_abs_diff": 0.0,
+            "max_rel_diff": 0.0,
+            "shape": [
+              50,
+              500,
+              4,
+              68,
+              1
+            ]
+          },
+          "thalamus": {
+            "ok": true,
+            "max_abs_diff": 0.0,
+            "max_rel_diff": 0.0,
+            "shape": [
+              50,
+              500,
+              4,
+              8,
+              1
+            ]
+          },
+          "merged_tavg": {
+            "ok": true,
+            "max_abs_diff": 0.0,
+            "shape": [
+              50,
+              500,
+              4,
+              76,
+              1
+            ]
+          }
+        }
+      }
+    },
+    {
+      "workers": 16,
+      "backend": "cpp-par-16",
+      "wall_s": 1.0980588183738291,
+      "backend_elapsed_s": 0.9671107856556773,
+      "speedup_vs_1_worker": 7.514243368991887,
+      "sweep_points_per_s": 45.53490137627375,
+      "ksteps_per_s": 227.67450688136876,
+      "correctness": {
+        "ok": true,
+        "max_abs_diff": 0.0,
+        "max_rel_diff": 0.0,
+        "by_output": {
+          "cortex": {
+            "ok": true,
+            "max_abs_diff": 0.0,
+            "max_rel_diff": 0.0,
+            "shape": [
+              50,
+              500,
+              4,
+              68,
+              1
+            ]
+          },
+          "thalamus": {
+            "ok": true,
+            "max_abs_diff": 0.0,
+            "max_rel_diff": 0.0,
+            "shape": [
+              50,
+              500,
+              4,
+              8,
+              1
+            ]
+          },
+          "merged_tavg": {
+            "ok": true,
+            "max_abs_diff": 0.0,
+            "shape": [
+              50,
+              500,
+              4,
+              76,
+              1
+            ]
+          }
+        }
+      }
+    },
+    {
+      "workers": 20,
+      "backend": "cpp-par-20",
+      "wall_s": 1.117519224062562,
+      "backend_elapsed_s": 0.9802619996480644,
+      "speedup_vs_1_worker": 7.383390833075005,
+      "sweep_points_per_s": 44.74195962216472,
+      "ksteps_per_s": 223.7097981108236,
+      "correctness": {
+        "ok": true,
+        "max_abs_diff": 0.0,
+        "max_rel_diff": 0.0,
+        "by_output": {
+          "cortex": {
+            "ok": true,
+            "max_abs_diff": 0.0,
+            "max_rel_diff": 0.0,
+            "shape": [
+              50,
+              500,
+              4,
+              68,
+              1
+            ]
+          },
+          "thalamus": {
+            "ok": true,
+            "max_abs_diff": 0.0,
+            "max_rel_diff": 0.0,
+            "shape": [
+              50,
+              500,
+              4,
+              8,
+              1
+            ]
+          },
+          "merged_tavg": {
+            "ok": true,
+            "max_abs_diff": 0.0,
+            "shape": [
+              50,
+              500,
+              4,
+              76,
+              1
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "all_correct": true
+}
