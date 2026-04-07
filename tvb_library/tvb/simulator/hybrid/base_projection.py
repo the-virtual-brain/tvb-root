@@ -55,6 +55,11 @@ or ``Kuramoto``), the current target state *x_i* at the coupling
 variables is provided as the second argument so that expressions like
 ``x_j - x_i`` or ``sin(x_j - x_i)`` can be evaluated accurately.
 
+When ``target_scales`` is provided it is applied **after** mode-mapping,
+multiplicatively on top of the global ``scale``.  Effective per-target weight
+is ``scale * target_scales[i]``.  ``target_scales`` must have the same length
+as ``target_cvar``.
+
 Delays are resolved once at construction time from the sparse ``lengths``
 matrix, the conduction velocity ``cv``, and the time step ``dt``.  A small
 epsilon is temporarily added to the weight and length matrices to guarantee
