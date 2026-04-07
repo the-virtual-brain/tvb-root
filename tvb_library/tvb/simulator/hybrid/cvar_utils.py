@@ -117,6 +117,167 @@ def resolve_cvar_names(model, cvar_spec):
     return np.array(indices, dtype=np.int_)
 
 
+def _cvar_names(model):
+    """Return the list of coupling variable names for *model*.
+
+    These are the entries of ``model.state_variables`` at positions given by
+    ``model.cvar`` — i.e. the state variables that participate in coupling.
+    """
+    return [model.state_variables[int(i)] for i in model.cvar]
+
+
+def _normalize_to_list(cvar_spec):
+    """Coerce *cvar_spec* to a flat Python list (strings or ints)."""
+    if isinstance(cvar_spec, str):
+        return [cvar_spec]
+    if isinstance(cvar_spec, (list, tuple)):
+        return list(cvar_spec)
+    if isinstance(cvar_spec, np.ndarray):
+        return list(cvar_spec)
+    raise TypeError(
+        f"cvar_spec must be str, list, tuple, or ndarray, got {type(cvar_spec)}"
+    )
+
+
+def resolve_source_cvar(model, cvar_spec):
+    """Resolve a coupling-variable specification to state-variable indices.
+
+    Source cvars index the history buffer, which stores all state variables.
+    When strings are given they must name a coupling variable of the model
+    (i.e. a name reachable via ``model.cvar``); any other state variable is
+    rejected.  Integer inputs are passed through unchanged.
+
+    Parameters
+    ----------
+    model : Model
+        The model whose ``cvar`` and ``state_variables`` define valid names.
+    cvar_spec : str, list of str, int, list of int, or ndarray
+        Coupling variable specification.
+
+    Returns
+    -------
+    ndarray of int
+        State-variable indices (``model.cvar[slot]`` values) suitable for
+        indexing the history buffer.
+
+    Raises
+    ------
+    ValueError
+        If a string name is not a coupling variable of the model.
+    """
+    # Integer fast-path
+    if isinstance(cvar_spec, (int, np.integer)):
+        return np.atleast_1d(np.array([int(cvar_spec)], dtype=np.int_))
+    if isinstance(cvar_spec, (np.ndarray, list, tuple)):
+        flat = _normalize_to_list(cvar_spec)
+        if all(isinstance(x, (int, np.integer)) for x in flat):
+            return np.atleast_1d(np.array(flat, dtype=np.int_))
+
+    names = _cvar_names(model)
+    flat = _normalize_to_list(cvar_spec)
+    indices = []
+    for item in flat:
+        if isinstance(item, (int, np.integer)):
+            indices.append(int(item))
+        elif isinstance(item, str):
+            if item not in names:
+                raise ValueError(
+                    f"'{item}' is not a coupling variable of "
+                    f"{model.__class__.__name__}. "
+                    f"Coupling variables are: {names}. "
+                    f"(All state variables: {list(model.state_variables)})"
+                )
+            slot = names.index(item)
+            indices.append(int(model.cvar[slot]))
+        else:
+            raise TypeError(
+                f"cvar element must be str or int, got {type(item)}"
+            )
+    return np.array(indices, dtype=np.int_)
+
+
+def resolve_target_cvar(model, cvar_spec):
+    """Resolve a coupling-variable specification to coupling-slot indices.
+
+    Target cvars index the coupling array, which has shape
+    ``(len(model.cvar), nnodes, modes)``.  Slot 0 corresponds to
+    ``model.cvar[0]``, slot 1 to ``model.cvar[1]``, etc.  When strings are
+    given they must name a coupling variable of the model; any other state
+    variable is rejected.  Integer inputs are passed through unchanged.
+
+    Parameters
+    ----------
+    model : Model
+        The model whose ``cvar`` and ``state_variables`` define valid names.
+    cvar_spec : str, list of str, int, list of int, or ndarray
+        Coupling variable specification.
+
+    Returns
+    -------
+    ndarray of int
+        Coupling-slot indices (0-based position in ``model.cvar``) suitable
+        for indexing the coupling array.
+
+    Raises
+    ------
+    ValueError
+        If a string name is not a coupling variable of the model.
+    """
+    # Integer fast-path
+    if isinstance(cvar_spec, (int, np.integer)):
+        return np.atleast_1d(np.array([int(cvar_spec)], dtype=np.int_))
+    if isinstance(cvar_spec, (np.ndarray, list, tuple)):
+        flat = _normalize_to_list(cvar_spec)
+        if all(isinstance(x, (int, np.integer)) for x in flat):
+            return np.atleast_1d(np.array(flat, dtype=np.int_))
+
+    names = _cvar_names(model)
+    flat = _normalize_to_list(cvar_spec)
+    indices = []
+    for item in flat:
+        if isinstance(item, (int, np.integer)):
+            indices.append(int(item))
+        elif isinstance(item, str):
+            if item not in names:
+                raise ValueError(
+                    f"'{item}' is not a coupling variable of "
+                    f"{model.__class__.__name__}. "
+                    f"Coupling variables are: {names}. "
+                    f"(All state variables: {list(model.state_variables)})"
+                )
+            indices.append(names.index(item))
+        else:
+            raise TypeError(
+                f"cvar element must be str or int, got {type(item)}"
+            )
+    return np.array(indices, dtype=np.int_)
+
+
+def validate_target_cvar_indices(model, cvar_indices):
+    """Validate that *cvar_indices* are valid coupling-slot indices.
+
+    Parameters
+    ----------
+    model : Model
+    cvar_indices : ndarray of int
+        Must satisfy ``0 <= idx < len(model.cvar)`` for every element.
+
+    Raises
+    ------
+    ValueError
+        If any index is out of range.
+    """
+    n_slots = len(model.cvar)
+    if np.any(cvar_indices < 0) or np.any(cvar_indices >= n_slots):
+        invalid = cvar_indices[(cvar_indices < 0) | (cvar_indices >= n_slots)]
+        raise ValueError(
+            f"Invalid target cvar indices {invalid} for model "
+            f"{model.__class__.__name__}. Model has {n_slots} coupling "
+            f"variable(s) (slots 0-{n_slots - 1})."
+        )
+    return True
+
+
 def validate_cvar_indices(model, cvar_indices):
     """Validate that cvar indices are within model's range.
 

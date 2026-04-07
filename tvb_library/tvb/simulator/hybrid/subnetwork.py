@@ -84,6 +84,15 @@ class Subnetwork(t.HasTraits):
     monitors: List[Recorder] = t.List(of=Recorder)
     projections: List[IntraProjection] = t.List(of=IntraProjection)
     nnodes: int = t.Int()
+    node_indices = t.NArray(
+        dtype=int,
+        required=False,
+        label="Node indices",
+        doc="""Indices of this subnetwork's nodes in the global connectome ordering.
+        When set on every subnetwork in a NetworkSet, global monitors will emit
+        output in original connectome order rather than concatenated subnetwork
+        order.  Must satisfy ``len(node_indices) == nnodes``.""",
+    )
 
     def configure(self):
         """Configure the subnetwork's model and intra-projection buffers.
@@ -97,7 +106,17 @@ class Subnetwork(t.HasTraits):
         Subnetwork
             ``self``, to allow chained calls.
         """
+        if self.node_indices is not None and len(self.node_indices) != self.nnodes:
+            raise ValueError(
+                f"Subnetwork '{self.name}': node_indices length "
+                f"{len(self.node_indices)} does not match nnodes={self.nnodes}."
+            )
         self.model.configure()
+        self.scheme.configure_boundaries(self.model)
+        if self.model.has_nonint_vars:
+            self.scheme.reconfigure_boundaries_and_clamping_for_integration_state_variables(
+                self.model
+            )
         for p in self.projections:
             p: IntraProjection
             # Set model reference for cvar name resolution (if using named cvars)
@@ -265,6 +284,7 @@ class Subnetwork(t.HasTraits):
         # Add internal coupling to external coupling
         total_c = c + internal_c
         nx = self.scheme.scheme(x, self.model.dfun, total_c, 0.0, 0.0)
+        self.scheme.bound_and_clamp(nx)
         # Record monitored variables
         for monitor in self.monitors:
             # AfferentCoupling monitors need coupling data, not state

@@ -44,7 +44,7 @@ during the subnetwork's ``configure()`` phase.
 import numpy as np
 
 from .base_projection import BaseProjection
-from .cvar_utils import resolve_cvar_names, validate_cvar_indices
+from .cvar_utils import resolve_cvar_names, resolve_source_cvar, resolve_target_cvar, validate_cvar_indices
 
 
 class IntraProjection(BaseProjection):
@@ -150,15 +150,14 @@ class IntraProjection(BaseProjection):
         if not self._source_cvar_resolved:
             cvar_source = getattr(self, "source_cvar", None)
             if cvar_source is not None:
-                self.source_cvar = resolve_cvar_names(model, cvar_source)
+                self.source_cvar = resolve_source_cvar(model, cvar_source)
                 validate_cvar_indices(model, self.source_cvar)
                 self._source_cvar_resolved = True
 
         if not self._target_cvar_resolved:
             cvar_target = getattr(self, "target_cvar", None)
             if cvar_target is not None:
-                self.target_cvar = resolve_cvar_names(model, cvar_target)
-                validate_cvar_indices(model, self.target_cvar)
+                self.target_cvar = resolve_target_cvar(model, cvar_target)
                 self._target_cvar_resolved = True
 
     def initialize_history_buffer(self, initial_state: np.ndarray):

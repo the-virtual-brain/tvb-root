@@ -44,6 +44,7 @@ tvb.simulator.simulator : Classic TVB simulator for comparison
 """
 
 import math
+import warnings
 import numpy as np
 from typing import List
 
@@ -89,9 +90,22 @@ class Simulator(t.HasTraits):
         """
         if len(self.monitors) == 0:
             return
-        total_vois = sum([len(sn.model.variables_of_interest) for sn in self.nets.subnets])
-        for monitor in self.monitors:
+        if self.nets._is_merged_mode():
+            total_vois = len(self.nets.subnets[0].model.variables_of_interest)
+            num_nodes = (
+                max(
+                    int(ix)
+                    for sn in self.nets.subnets
+                    for ix in sn.node_indices
+                )
+                + 1
+            )
+        else:
+            total_vois = sum(
+                [len(sn.model.variables_of_interest) for sn in self.nets.subnets]
+            )
             num_nodes = sum([sn.nnodes for sn in self.nets.subnets])
+        for monitor in self.monitors:
             if hasattr(monitor, "_config_stock"):
                 monitor._config_stock(total_vois, num_nodes, 1)
 
@@ -124,6 +138,20 @@ class Simulator(t.HasTraits):
 
     def configure(self):
         """Configure the simulator and its monitors."""
+        if self.monitors:
+            missing = [
+                sn.name for sn in self.nets.subnets if sn.node_indices is None
+            ]
+            if missing:
+                warnings.warn(
+                    f"Global monitors are attached but subnetwork(s) {missing} do not "
+                    f"have node_indices set. Monitor output will be in concatenated "
+                    f"subnetwork order, not original connectome order. Set node_indices "
+                    f"on each Subnetwork to obtain connectome-ordered output.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+
         for subnet in self.nets.subnets:
             # Subnetwork.configure() also configures its IntraProjections
             subnet.configure()
