@@ -93,12 +93,7 @@ class Simulator(t.HasTraits):
         if self.nets._is_merged_mode():
             total_vois = len(self.nets.subnets[0].model.variables_of_interest)
             num_nodes = (
-                max(
-                    int(ix)
-                    for sn in self.nets.subnets
-                    for ix in sn.node_indices
-                )
-                + 1
+                max(int(ix) for sn in self.nets.subnets for ix in sn.node_indices) + 1
             )
         else:
             total_vois = sum(
@@ -107,6 +102,8 @@ class Simulator(t.HasTraits):
             num_nodes = sum([sn.nnodes for sn in self.nets.subnets])
         for monitor in self.monitors:
             if hasattr(monitor, "_config_stock"):
+                if hasattr(monitor, "compute_hrf") and monitor._interim_istep is None:
+                    monitor.compute_hrf()
                 monitor._config_stock(total_vois, num_nodes, 1)
 
     def validate_dts(self):
@@ -139,9 +136,7 @@ class Simulator(t.HasTraits):
     def configure(self):
         """Configure the simulator and its monitors."""
         if self.monitors:
-            missing = [
-                sn.name for sn in self.nets.subnets if sn.node_indices is None
-            ]
+            missing = [sn.name for sn in self.nets.subnets if sn.node_indices is None]
             if missing:
                 warnings.warn(
                     f"Global monitors are attached but subnetwork(s) {missing} do not "

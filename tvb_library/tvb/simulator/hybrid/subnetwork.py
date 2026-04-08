@@ -46,7 +46,7 @@ import numpy as np
 from typing import List
 import tvb.basic.neotraits.api as t
 from tvb.simulator.models import Model
-from tvb.simulator.integrators import Integrator
+from tvb.simulator.integrators import Integrator, IntegratorStochastic
 from tvb.simulator.monitors import (
     Monitor,
     AfferentCoupling,
@@ -117,6 +117,12 @@ class Subnetwork(t.HasTraits):
             self.scheme.reconfigure_boundaries_and_clamping_for_integration_state_variables(
                 self.model
             )
+        if isinstance(self.scheme, IntegratorStochastic):
+            noise_shape = (self.model.nintvar, self.nnodes, self.model.number_of_modes)
+            if self.scheme.noise.ntau > 0.0:
+                self.scheme.noise.configure_coloured(self.scheme.dt, noise_shape)
+            else:
+                self.scheme.noise.configure_white(self.scheme.dt, noise_shape)
         for p in self.projections:
             p: IntraProjection
             # Set model reference for cvar name resolution (if using named cvars)
@@ -147,6 +153,8 @@ class Subnetwork(t.HasTraits):
             self.monitors = []
         monitor._config_dt(self.scheme.dt)
         if hasattr(monitor, "_config_stock"):
+            if hasattr(monitor, "compute_hrf") and monitor._interim_istep is None:
+                monitor.compute_hrf()
             # AfferentCoupling monitors track coupling variables, not state variables
             if isinstance(monitor, (AfferentCoupling, AfferentCouplingTemporalAverage)):
                 num_vars = len(self.model.cvar)
