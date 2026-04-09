@@ -240,23 +240,22 @@ class KIonEx(Model):
         Kg = state_variables[4, :]
         
         #[State_variables, nodes]
-        E = self.E
+        E = self.E.reshape(-1)
+        K_bath = self.K_bath.reshape(-1)
+        J = self.J.reshape(-1)
+        eta = self.eta.reshape(-1)
+        Delta = self.Delta.reshape(-1)
 
-        K_bath = self.K_bath
-        J = self.J
-        eta = self.eta
-        Delta = self.Delta
+        c_minus = self.c_minus.reshape(-1)
+        R_minus = self.R_minus.reshape(-1)
+        c_plus = self.c_plus.reshape(-1)
+        R_plus = self.R_plus.reshape(-1)
+        Vstar = self.Vstar.reshape(-1)
 
-        c_minus = self.c_minus
-        R_minus = self.R_minus
-        c_plus = self.c_plus
-        R_plus = self.R_plus
-        Vstar = self.Vstar
-
-        Cm      = self.Cm
-        tau_n   = self.tau_n
-        gamma   = self.gamma
-        epsilon = self.epsilon
+        Cm      = self.Cm.reshape(-1)
+        tau_n   = self.tau_n.reshape(-1)
+        gamma   = self.gamma.reshape(-1)
+        epsilon = self.epsilon.reshape(-1)
      
         Coupling_Term = coupling[0, :] #This zero refers to the first element of cvar (trivial in this case)
 
@@ -352,8 +351,31 @@ class KIonEx(Model):
         x_ = x.reshape(x.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T + local_coupling * x[0]
 
-        deriv = _numba_dfun(x_, c_, self.E, self.K_bath, self.J, self.eta, self.Delta, self.c_minus, self.R_minus,
-                                 self.c_plus, self.R_plus, self.Vstar, self.Cm, self.tau_n, self.gamma, self.epsilon)
+        # Ensure per-node (spatial) parameters are squeezed to 1D so guvectorize
+        # broadcasts them correctly over the node dimension.
+        # Without this, parameters shaped (n_nodes, 1) (set by _spatialize_model_parameters)
+        # are interpreted as having leading dims (n_nodes, 1), which causes
+        # shape explosion in guvectorize's broadcast logic: output becomes
+        # (n_nodes, n_nodes, nvar) instead of (n_nodes, nvar), resulting in
+        # ValueError: operands could not be broadcast together with shapes
+        # (nvar, n_nodes, 1) (nvar, n_nodes, n_nodes, 1).
+        E = self.E.reshape(-1)
+        K_bath = self.K_bath.reshape(-1)
+        J = self.J.reshape(-1)
+        eta = self.eta.reshape(-1)
+        Delta = self.Delta.reshape(-1)
+        c_minus = self.c_minus.reshape(-1)
+        R_minus = self.R_minus.reshape(-1)
+        c_plus = self.c_plus.reshape(-1)
+        R_plus = self.R_plus.reshape(-1)
+        Vstar = self.Vstar.reshape(-1)
+        Cm = self.Cm.reshape(-1)
+        tau_n = self.tau_n.reshape(-1)
+        gamma = self.gamma.reshape(-1)
+        epsilon = self.epsilon.reshape(-1)
+
+        deriv = _numba_dfun(x_, c_, E, K_bath, J, eta, Delta, c_minus, R_minus,
+                                 c_plus, R_plus, Vstar, Cm, tau_n, gamma, epsilon)
         return deriv.T[..., numpy.newaxis]
     # helper functions
 
