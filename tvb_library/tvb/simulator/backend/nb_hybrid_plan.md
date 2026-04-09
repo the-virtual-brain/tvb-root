@@ -2,901 +2,539 @@
 
 ## Implementation Plan
 
-### Overview
-
-This document outlines the implementation of a Numba-accelerated backend for the TVB Hybrid Simulator. The Hybrid Simulator differs from the standard TVB simulator in that it manages multiple subnetworks, each with potentially different models, integrators, and internal connectivity. The key novel components requiring code generation are:
-
-1. **Inter-subnetwork projections** — delayed sparse coupling between subnetworks
-2. **NetworkSet orchestration** — coordinating all subnetworks and projections
-3. **Intra-subnetwork projections** — within-subnetwork connectivity (simpler, but still benefits from Numba)
-
-The model dfun generation can borrow from existing templates (specifically for MPR model, the only model with code-gen support at this time). Integrator schemes can similarly be reused from the existing Numba backend templates.
-
-**Constraints for initial version:**
-- **Model support**: MPR (MontbrioPazoRoxin) only — this is the only model with existing Numba dfun templates. Other models will be added as code-gen templates are developed for them.
-- **Same dt**: All subnetworks must share the same integration time step. Sub-stepping is not supported (nor is it in the pure Python hybrid).
-- **Deterministic integrators only**: Stochastic integrators are deferred.
-- **Per-projection history buffers**: Each projection owns its own circular buffer (matching the pure Python implementation). Shared-per-source buffers are a future optimisation.
+> **Status (2026-04-09):** Phases 1–7 complete. Benchmarks validated.
+> See §7 (Completed Work) for what has been built and §8 (Next Stages) for the
+> performance and functionality roadmap. Sections below this header now reflect
+> the *as-built* design rather than the original plan.
 
 ---
 
-### 1. Architecture
+### 1. Architecture (as-built)
 
-#### 1.1 New Backend Class
-
-Create `tvb/simulator/backend/nb_hybrid.py`:
-
-```python
-class NbHybridBackend(MakoUtilMix):
-    """Numba backend for hybrid simulator with multi-subnetwork support.
-
-    Inherits from MakoUtilMix (not NpBackend) following the same pattern
-    as NbMPRBackend — we need template rendering + exec but have a
-    completely different entry point (run_network taking a NetworkSet
-    instead of run_sim taking a Simulator).
-    """
-
-    def run_network(self, network_set, nstep, print_source=False):
-        """Run hybrid simulation using code generation.
-
-        Returns list of (times, data) tuples matching Simulator.run() format.
-        """
-        # 1. Analyze network topology
-        # 2. Generate code for projections and network orchestration
-        # 3. Compile and execute
-        # 4. Return (times, data) per monitor, matching Simulator.run() output
-```
-
-#### 1.2 Template Files
-
-New templates in `tvb/simulator/backend/templates/`:
-
-| Template | Purpose |
-|----------|---------|
-| `nb-hybrid-sim.py.mako` | Main simulation loop, NetworkSet orchestration |
-| `nb-hybrid-inter-coupling.py.mako` | Inter-subnetwork projection (sparse, delayed) |
-| `nb-hybrid-intra-coupling.py.mako` | Intra-subnetwork projection (sparse) |
-| `nb-hybrid-state-update.py.mako` | Model dfun + integrator step per subnetwork |
-
-Each template generates `@nb.njit` functions that are independently testable.
-Numba handles inlining of small njit functions into callers automatically,
-so separating concerns across templates does not sacrifice performance.
-
-Reusable existing templates:
-- `nb-dfuns.py.mako` → Generate MPR dfun (via wrapper)
-- `nb-integrate.py.mako` → Integration schemes (Heun, Euler, etc.)
-
----
-
-### 2. Data Flow
-
-#### 2.1 Per-Step Data Flow
-
-Each simulation step (for each timestep `t`):
-
-```
-1. INTER-PROJECTION PHASE (all InterProjections)
-   For each InterProjection:
-   a. Read delayed state from source history buffer:
-      For each non-zero weight entry k: x_src[t - 1 - idelays[k]]
-      (idelays is per-connection, not per-source-node)
-   b. Apply sparse weights: w_k * x_src
-   c. Sum per target node (CSR row reduction)
-   d. Apply cfun.pre() on summed input (AFTER weighted sum, BEFORE scale)
-   e. Apply scale factor
-   f. Apply cfun.post() (AFTER scale)
-   g. Apply mode_map transformation: result @ mode_map
-      (mode_map shape: n_src_modes × n_tgt_modes)
-   h. Apply target_scales (per-target-cvar, if provided)
-   i. Accumulate into target coupling array (3 cvar-mapping cases)
-
-2. SUBNETWORK PHASE (all Subnetworks)
-   For each Subnetwork:
-   a. Collect inter-projection coupling from (1)
-   b. Compute intra-projection coupling (same pipeline, identity mode_map)
-   c. Add stimulus (if any)
-   d. Run integrator step:
-      i.   Evaluate model dfun (MPR)
-      ii.  Apply coupling (inter + intra)
-      iii. Apply integration scheme (Heun/Euler/etc.)
-      iv.  Apply boundary conditions
-   e. Update ALL projection buffers with post-integration state
-   f. Record to monitors (temporal average accumulation)
-
-3. MONITOR PHASE (every N steps, at chunk boundary)
-   a. Extract temporal average from accumulator
-   b. Push to Python-side monitors
-```
-
-#### 2.2 Chunked Execution Model
-
-The overall execution uses a two-level loop:
-
-```
-outer Python loop (per chunk, e.g. one monitor period):
-    - pre-compute stimulus batch for this chunk (if needed)
-    - call inner @njit loop for chunk_size steps
-    - extract temporal average from accumulator
-    - update Python-side monitors
-    - yield (times, data) per monitor
-```
-
-This enables:
-- Bounded-memory temporal averaging inside the fast @njit loop
-- Periodic stimulus evaluation (batch or code-generated)
-- Standard Python monitor interface at chunk boundaries
-
----
-
-### 3. Inter-Projection: Sparse Delayed Coupling
-
-This is the primary novel component. The `BaseProjection.apply()` method in pure Python performs:
-
-```python
-# Pseudo-code matching the actual base_projection.py pipeline
-def apply_inter_projection(history_buffer, weights_csr, idelays, mode_map,
-                           source_cvar, target_cvar, scale, target_scales, cfun, horizon, t):
-    # history_buffer: (n_vars_src, n_nodes_src, n_modes_src, horizon)
-    # weights_csr: CSR (n_nodes_tgt, n_nodes_src)
-    # idelays: (nnz,) — one delay per non-zero connection entry
-    # mode_map: (n_modes_src, n_modes_tgt)
-    # scale: scalar
-    # target_scales: (n_target_cvar,) or None
-
-    # 1. Compute time indices for each non-zero weight entry
-    #    Uses t-1 to match classic TVB: coupling at step t uses state from t-1-delay
-    time_indices = (t - 1 - idelays + horizon) % horizon  # shape (nnz,)
-
-    # 2. Gather delayed states from buffer
-    #    delayed_states[ic, k, m] = buffer[source_cvar[ic], src_node_k, m, time_k]
-    delayed_states = history_buffer[
-        source_cvar[:, None],     # (n_src_cvar, 1)
-        weights.indices,           # (nnz,) source node per entry
-        :,                         # all source modes
-        time_indices,              # (nnz,) per-entry time index
-    ]
-    # Result: (n_src_cvar, nnz, n_src_modes)
-
-    # 3. Apply sparse weights element-wise
-    weighted = weights.data[None, :, None] * delayed_states
-    # Result: (n_src_cvar, nnz, n_src_modes)
-
-    # 4. Sum per target node (CSR row reduction)
-    summed = np.add.reduceat(weighted, weights.indptr[:-1], axis=1)
-    # Result: (n_src_cvar, n_target_nodes, n_src_modes)
-
-    # 5. Apply cfun.pre() — AFTER weighted sum, BEFORE scale
-    if cfun is not None:
-        summed = cfun.pre(summed)
-
-    # 6. Apply scale
-    scaled = scale * summed
-
-    # 7. Apply cfun.post() — AFTER scale
-    if cfun is not None:
-        scaled = cfun.post(scaled)
-
-    # 8. Apply mode mapping
-    #    mode_map shape: (n_src_modes, n_tgt_modes)
-    aff = scaled @ mode_map
-    # Result: (n_src_cvar, n_target_nodes, n_tgt_modes)
-
-    # 9. Accumulate into target with cvar mapping (3 cases):
-    if target_cvar.size == 1:
-        # Many source cvars → one target cvar: sum along axis 0
-        summed_aff = aff.sum(axis=0)
-        if target_scales is not None:
-            summed_aff *= target_scales[0]
-        tgt[target_cvar[0], :, :] += summed_aff
-
-    elif source_cvar.size == 1:
-        # One source cvar → many target cvars: broadcast
-        squeezed_aff = aff[0]
-        if target_scales is not None:
-            squeezed_aff = squeezed_aff * target_scales[:, None, None]
-        tgt[target_cvar, :, :] += squeezed_aff
-
-    elif source_cvar.size == target_cvar.size:
-        # N-to-N element-wise mapping
-        if target_scales is not None:
-            aff *= target_scales[:, None, None]
-        tgt[target_cvar, :, :] += aff
-
-    else:
-        raise ValueError("Unsupported cvar mapping")
-```
-
-#### 3.1 Numba Template for Inter-Coupling
-
-The Numba version replaces vectorized NumPy ops with explicit loops suitable for `@nb.njit`:
-
-```python
-# nb-hybrid-inter-coupling.py.mako
-
-@nb.njit(inline="always")
-def compute_inter_coupling_${proj_name}(
-    history_buffer,      # (n_vars_src, n_nodes_src, n_modes_src, horizon)
-    weights_data,        # (nnz,) CSR data
-    weights_indices,     # (nnz,) CSR column indices
-    weights_indptr,      # (n_tgt_nodes + 1,) CSR row pointers
-    idelays,             # (nnz,) integer delay per non-zero entry
-    mode_map,            # (n_modes_src, n_modes_tgt)
-    source_cvar,         # (n_src_cvar,) indices into source state vars
-    target_cvar,         # (n_tgt_cvar,) indices into target coupling vars
-    scale,               # float
-    target_scales,       # (n_tgt_cvar,) or empty array if not used
-    cfun_a, cfun_b,      # coupling function params (Linear: a*x+b)
-    horizon,             # int
-    t,                   # int, current step
-    target,              # (n_cvar_tgt, n_nodes_tgt, n_modes_tgt) — INPLACE
-):
-    n_src_cvar = source_cvar.shape[0]
-    n_tgt_cvar = target_cvar.shape[0]
-    n_tgt_nodes = weights_indptr.shape[0] - 1
-    n_modes_src = mode_map.shape[0]
-    n_modes_tgt = mode_map.shape[1]
-    has_target_scales = target_scales.shape[0] > 0
-
-    # Allocate work buffers
-    # summed_input: per target node, per source cvar, per source mode
-    for j in range(n_tgt_nodes):
-        row_start = weights_indptr[j]
-        row_end = weights_indptr[j + 1]
-
-        for ic in range(n_src_cvar):
-            cv = source_cvar[ic]
-
-            # Weighted sum over source nodes (CSR row)
-            for m_src in range(n_modes_src):
-                wsum = 0.0
-                for ptr in range(row_start, row_end):
-                    src_node = weights_indices[ptr]
-                    w = weights_data[ptr]
-                    delay = idelays[ptr]
-                    buf_idx = (t - 1 - delay + horizon) % horizon
-                    wsum += w * history_buffer[cv, src_node, m_src, buf_idx]
-
-                # Apply cfun.pre (Linear: identity by default, or a*x+b)
-                # cfun.post applied after scale
-                ## pre (before scale):
-                # wsum = wsum  (identity for Linear pre)
-
-                # Apply scale
-                wsum = scale * wsum
-
-                # Apply cfun.post (Linear: a*x+b)
-                wsum = cfun_a * wsum + cfun_b
-
-                # Apply mode_map and accumulate into target modes
-                for m_tgt in range(n_modes_tgt):
-                    contrib = wsum * mode_map[m_src, m_tgt]
-
-                    # Cvar mapping + target_scales
-                    ## (template generates the appropriate branch based on
-                    ##  n_src_cvar vs n_tgt_cvar relationship at code-gen time)
-    % if cvar_mapping == '1_to_1' or cvar_mapping == 'n_to_n':
-                    ts = target_scales[ic] if has_target_scales else 1.0
-                    target[target_cvar[ic], j, m_tgt] += ts * contrib
-    % elif cvar_mapping == 'many_to_1':
-                    ts = target_scales[0] if has_target_scales else 1.0
-                    target[target_cvar[0], j, m_tgt] += ts * contrib
-    % elif cvar_mapping == '1_to_many':
-                    for itc in range(n_tgt_cvar):
-                        ts = target_scales[itc] if has_target_scales else 1.0
-                        target[target_cvar[itc], j, m_tgt] += ts * contrib
-    % endif
-```
-
-**Note on epsilon trick**: The CSR matrices will contain structural zeros from the epsilon trick
-used in `BaseProjection.__init__()`. In the Numba loops these contribute zero to the weighted
-sum and do not need to be stripped. This preserves identical CSR structure between the Python
-and Numba paths, enabling direct numerical comparison for testing.
-
----
-
-### 4. Intra-Projection: Within-Subnetwork Coupling
-
-Intra-projection uses the same `BaseProjection.apply()` pipeline but with:
-- Identity mode_map (source and target share the same subnetwork)
-- Same delay mechanism (idelays per connection, circular buffer)
-- Its own history buffer per projection
-
-The template is structurally identical to the inter-projection template.
-At code generation time, the cvar mapping mode and coupling function are
-resolved statically, so the same template can serve both with appropriate
-parameters.
-
-```python
-# nb-hybrid-intra-coupling.py.mako — same structure as inter, with identity mode_map
-
-@nb.njit(inline="always")
-def compute_intra_coupling_${proj_name}(
-    history_buffer,      # (n_vars, n_nodes, n_modes, horizon)
-    weights_data,        # (nnz,) CSR data
-    weights_indices,     # (nnz,) CSR column indices
-    weights_indptr,      # (n_nodes + 1,) CSR row pointers
-    idelays,             # (nnz,) integer delay per non-zero entry
-    source_cvar,         # (n_src_cvar,)
-    target_cvar,         # (n_tgt_cvar,)
-    scale,               # float
-    target_scales,       # (n_tgt_cvar,) or empty
-    cfun_a, cfun_b,      # coupling function params
-    horizon,             # int
-    t,                   # int, current step
-    target,              # (n_cvar, n_nodes, n_modes) — INPLACE
-):
-    """Intra-subnetwork coupling. Same pipeline as inter but mode_map=identity."""
-    n_nodes = weights_indptr.shape[0] - 1
-    n_modes = history_buffer.shape[2]
-    n_src_cvar = source_cvar.shape[0]
-
-    for j in range(n_nodes):
-        row_start = weights_indptr[j]
-        row_end = weights_indptr[j + 1]
-
-        for ic in range(n_src_cvar):
-            cv = source_cvar[ic]
-
-            for m in range(n_modes):
-                wsum = 0.0
-                for ptr in range(row_start, row_end):
-                    src_node = weights_indices[ptr]
-                    w = weights_data[ptr]
-                    delay = idelays[ptr]
-                    buf_idx = (t - 1 - delay + horizon) % horizon
-                    wsum += w * history_buffer[cv, src_node, m, buf_idx]
-
-                # cfun.pre (identity for Linear)
-                wsum = scale * wsum
-                wsum = cfun_a * wsum + cfun_b
-                # cfun.post
-
-                # Identity mode_map: m_src == m_tgt, so accumulate directly
-                ## cvar mapping branch (generated at code-gen time)
-    % if cvar_mapping == '1_to_1' or cvar_mapping == 'n_to_n':
-                ts = target_scales[ic] if has_target_scales else 1.0
-                target[target_cvar[ic], j, m] += ts * wsum
-    % elif cvar_mapping == 'many_to_1':
-                ts = target_scales[0] if has_target_scales else 1.0
-                target[target_cvar[0], j, m] += ts * wsum
-    % elif cvar_mapping == '1_to_many':
-                for itc in range(n_tgt_cvar):
-                    ts = target_scales[itc] if has_target_scales else 1.0
-                    target[target_cvar[itc], j, m] += ts * wsum
-    % endif
-```
-
-**Note**: Since both inter and intra projections follow the same pipeline, a single
-parameterised template could serve both, with `mode_map` passed as identity for intra.
-Whether to merge or keep separate is an implementation-time decision — separate templates
-are easier to read; a merged template avoids duplication.
-
----
-
-### 5. NetworkSet Orchestration Template
-
-The main simulation uses a two-level loop: an outer Python loop per chunk and
-an inner `@nb.njit` loop for the fast time-stepping.
-
-```python
-# nb-hybrid-sim.py.mako — inner @njit kernel
-
-<%include file="nb-hybrid-inter-coupling.py.mako" />
-<%include file="nb-hybrid-intra-coupling.py.mako" />
-<%include file="nb-dfuns.py.mako" />
-<%include file="nb-integrate.py.mako" />
-
-@nb.njit(inline="always")
-def update_buffer(buffer, state, t, horizon):
-    """Write current state into circular buffer slot."""
-    buf_idx = t % horizon
-    buffer[..., buf_idx] = state
-
-@nb.njit
-def network_chunk(
-    nstep,               # steps in this chunk
-    t_start,             # global step offset
-    dt,                  # shared dt
-
-    # Per-subnetwork state arrays
-    % for sn in subnets:
-    ${sn.name}_state,    # (n_vars, n_nodes, n_modes) float32
-    ${sn.name}_parmat,   # model parameter matrix
-    % endfor
-
-    # Per-projection data (inter + intra)
-    % for p in all_projections:
-    ${p.name}_buffer,    # (n_vars_src, n_nodes_src, n_modes_src, horizon)
-    ${p.name}_w_data, ${p.name}_w_indices, ${p.name}_w_indptr,
-    ${p.name}_idelays,
-    ${p.name}_mode_map,
-    ${p.name}_source_cvar, ${p.name}_target_cvar,
-    ${p.name}_scale,
-    ${p.name}_target_scales,
-    ${p.name}_cfun_a, ${p.name}_cfun_b,
-    ${p.name}_horizon,
-    % endfor
-
-    # Stimulus arrays (pre-computed for this chunk)
-    % for stim in stimuli:
-    ${stim.name}_data,   # (n_cvar, n_nodes, n_modes, chunk_size) or empty
-    % endfor
-
-    # Temporal average accumulators
-    % for sn in subnets:
-    ${sn.name}_tavg_acc, # (n_voi, n_nodes, n_modes) running sum
-    % endfor
-    tavg_count,          # number of steps accumulated
-):
-    """Inner fast loop for one chunk of simulation steps."""
-
-    for t_local in range(nstep):
-        t = t_start + t_local
-
-        # ==================================================
-        # STEP 1: Zero coupling arrays
-        # ==================================================
-        % for sn in subnets:
-        ${sn.name}_coupling = np.zeros((...))  # (n_cvar, n_nodes, n_modes)
-        % endfor
-
-        # ==================================================
-        # STEP 2: Compute all inter-projection couplings
-        # ==================================================
-        % for p in inter_projections:
-        compute_inter_coupling_${p.name}(
-            ${p.source}_buffer,
-            ${p.name}_w_data, ${p.name}_w_indices, ${p.name}_w_indptr,
-            ${p.name}_idelays,
-            ${p.name}_mode_map,
-            ${p.name}_source_cvar, ${p.name}_target_cvar,
-            ${p.name}_scale, ${p.name}_target_scales,
-            ${p.name}_cfun_a, ${p.name}_cfun_b,
-            ${p.name}_horizon, t,
-            ${p.target}_coupling,
-        )
-        % endfor
-
-        # ==================================================
-        # STEP 3: Compute intra-projection couplings
-        # ==================================================
-        % for p in intra_projections:
-        compute_intra_coupling_${p.name}(
-            ${p.name}_buffer,
-            ${p.name}_w_data, ${p.name}_w_indices, ${p.name}_w_indptr,
-            ${p.name}_idelays,
-            ${p.name}_source_cvar, ${p.name}_target_cvar,
-            ${p.name}_scale, ${p.name}_target_scales,
-            ${p.name}_cfun_a, ${p.name}_cfun_b,
-            ${p.name}_horizon, t,
-            ${p.target}_coupling,
-        )
-        % endfor
-
-        # ==================================================
-        # STEP 4: Add stimulus (if any)
-        # ==================================================
-        % for stim in stimuli:
-        ${stim.target}_coupling += ${stim.name}_data[..., t_local]
-        % endfor
-
-        # ==================================================
-        # STEP 5: Integrate each subnetwork
-        # ==================================================
-        % for sn in subnets:
-        ${sn.name}_state = integrate_${sn.integrator}_${sn.model}(
-            ${sn.name}_state,
-            ${sn.name}_coupling,
-            ${sn.name}_parmat,
-            dt,
-        )
-        ## Apply boundary conditions
-        bound_state(${sn.name}_state, ...)
-        % endfor
-
-        # ==================================================
-        # STEP 6: Update ALL projection buffers
-        # ==================================================
-        % for p in inter_projections:
-        update_buffer(${p.name}_buffer, ${p.source}_state, t, ${p.name}_horizon)
-        % endfor
-        % for p in intra_projections:
-        update_buffer(${p.name}_buffer, ${p.target}_state, t, ${p.name}_horizon)
-        % endfor
-
-        # ==================================================
-        # STEP 7: Accumulate temporal average
-        # ==================================================
-        % for sn in subnets:
-        ## observe() extracts VOI from state
-        ${sn.name}_tavg_acc += observe_${sn.name}(${sn.name}_state)
-        % endfor
-        tavg_count[0] += 1
-```
-
-#### 5.1 Outer Python Loop
-
-```python
-# In NbHybridBackend.run_network():
-def run_network(self, network_set, nstep, print_source=False):
-    # ... code generation and compilation ...
-
-    chunk_size = monitor_period  # or configurable
-    results = {sn.name: [] for sn in network_set.subnets}
-
-    for chunk_start in range(0, nstep, chunk_size):
-        chunk_steps = min(chunk_size, nstep - chunk_start)
-
-        # Pre-compute stimulus for this chunk (if needed)
-        stim_data = precompute_stimuli(network_set, chunk_start, chunk_steps)
-
-        # Zero temporal average accumulators
-        reset_tavg_accumulators(...)
-
-        # Call inner @njit kernel
-        network_chunk(chunk_steps, chunk_start, dt, ...)
-
-        # Extract temporal average and push to monitors
-        for sn in network_set.subnets:
-            tavg = tavg_acc[sn.name] / tavg_count
-            for mon in sn.monitors:
-                mon.record(chunk_start + chunk_steps, tavg)
-            results[sn.name].append((times, tavg.copy()))
-
-    # Return in Simulator.run() format: list of (times, data) tuples
-    return format_output(results, network_set)
-```
-
----
-
-### 6. History Buffer Management
-
-Each projection owns a circular history buffer, matching the pure Python implementation.
-The buffer stores the **full source state** (not just coupling variables) so that
-different projections from the same source can read different cvars.
-
-**Buffer shape**: `(n_vars_src, n_nodes_src, n_modes_src, horizon)`
-where `horizon = max_delay + 1` (minimum 1).
-
-**Circular indexing**:
-```python
-# Write current state at step t:
-buffer[..., t % horizon] = current_state
-
-# Read delayed state for connection k at step t:
-# Uses t-1 convention: coupling at step t uses state from step t-1-delay
-buf_idx = (t - 1 - idelays[k] + horizon) % horizon
-delayed_val = buffer[cvar, src_node, mode, buf_idx]
-```
-
-**Pre-fill**: Before simulation starts, all buffer slots are filled with the
-initial state (matching `NetworkSet.init_projection_buffers()`):
-```python
-for slot in range(horizon):
-    buffer[..., slot] = initial_state
-```
-
-**Design note**: The existing `nb-sim.py.mako` uses a *linear* (non-circular)
-buffer of shape `(nsvar, nnode, horizon + nstep)` — no modulo needed but memory
-grows with simulation length. We choose circular buffers for the hybrid backend
-because hybrid simulations may be long-running and memory-bounded is preferred.
-The trade-off is slightly more complex indexing (one modulo per delay lookup)
-which Numba handles efficiently.
-
-**Future optimisation**: Multiple projections from the same source subnetwork
-currently each maintain a separate buffer. A shared-per-source buffer (sized to
-the max horizon across all outgoing projections) would save memory and redundant
-writes. Deferred because it adds complexity in managing different cvar subsets
-across projections.
-
----
-
-### 7. Implementation Phases
-
-#### Phase 1: Infrastructure
-
-- [ ] Create `NbHybridBackend(MakoUtilMix)` class with `run_network()` entry point
-- [ ] Add template file structure
-- [ ] Implement `NetworkAnalysis` — inspect NetworkSet and extract all metadata needed for code generation
-- [ ] Set up code generation pipeline: template rendering → autopep8 → exec/module import
-- [ ] Enforce same-dt constraint: validate all subnetworks share `scheme.dt`
-
-#### Phase 2: Inter-Projection Templates (Priority: HIGHEST)
-
-- [ ] `nb-hybrid-inter-coupling.py.mako` — sparse delayed coupling with circular buffer
-- [ ] CSR iteration with per-connection delays (`idelays[ptr]`)
-- [ ] Mode_map transformation (shape: `n_src_modes × n_tgt_modes`)
-- [ ] Coupling function pipeline: `pre()` → `scale` → `post()` (correct ordering)
-- [ ] Three-way cvar mapping: 1-to-1/N-to-N, many-to-1, 1-to-many (static branch at codegen time)
-- [ ] `target_scales` support (per-target-cvar scaling)
-- [ ] Coupling functions: Linear (`a*x+b`), Scaling (`a*x`), identity (no cfun)
-
-#### Phase 3: Intra-Projection Templates (Priority: HIGH)
-
-- [ ] `nb-hybrid-intra-coupling.py.mako` — same pipeline as inter, identity mode_map
-- [ ] Decide: shared template with inter or separate (implementation-time decision)
-
-#### Phase 4: NetworkSet Loop (Priority: HIGHEST)
-
-- [ ] `nb-hybrid-sim.py.mako` — inner `@njit` kernel for chunk of steps
-- [ ] Wire all inter + intra projections
-- [ ] Circular buffer update after integration
-- [ ] Temporal average accumulation inside fast loop
-- [ ] Outer Python loop: chunk iteration, stimulus batch, monitor update
-
-#### Phase 5: Model & Integrator Integration (Priority: HIGH)
-
-- [ ] Reuse existing `nb-dfuns.py.mako` for MPR dfun
-- [ ] Reuse existing `nb-integrate.py.mako` for Heun/Euler
-- [ ] Per-subnetwork state arrays and parameter matrices
-- [ ] Boundary condition application after integration
-
-#### Phase 6: Stimulus Support (Priority: MEDIUM)
-
-- [ ] Option A: Code-generate simple stimulus patterns (e.g., pulse train) as `@njit` functions
-- [ ] Option B: Pre-compute stimulus array in Python, pass batch to `@njit` kernel
-- [ ] Both options should coexist; choice per-stimulus at code-gen time
-
-#### Phase 7: Testing & Validation (Priority: HIGH)
-
-- [ ] Create MPR-only test fixtures (two subnetworks, inter + intra projections)
-- [ ] Verify Numba output matches pure Python `NetworkSet` simulation within tolerance
-- [ ] Test all three cvar mapping modes
-- [ ] Test with/without delays, with/without coupling functions
-- [ ] Benchmark: Numba vs pure Python speedup
-- [ ] Output format: verify matches `Simulator.run()` return format
-
----
-
-### 8. Key Technical Decisions
-
-#### Decision 8.1: Sparse Matrix Format
-
-**Choice: CSR (Compressed Sparse Row)**
-
-- CSR is already used by TVB (via `scipy.sparse.csr_matrix`) for connectivity matrices
-- Efficient for row-wise iteration (what Numba needs for per-target-node coupling)
-- Numba receives the three CSR arrays (`data`, `indices`, `indptr`) as separate arguments
-
-```python
-# CSR format iteration pattern in Numba
-for i in range(n_target_nodes):
-    for ptr in range(indptr[i], indptr[i + 1]):
-        j = indices[ptr]  # source node
-        w = data[ptr]     # weight
-        d = idelays[ptr]  # delay for this specific connection
-        # ... computation
-```
-
-**Note on epsilon zeros**: The CSR matrices contain structural zeros from the
-epsilon trick in `BaseProjection.__init__()`. These are preserved (not stripped)
-to keep identical sparsity structure for testing against the Python implementation.
-They contribute zero to the weighted sum.
-
-#### Decision 8.2: Memory Layout — Separate Arrays Per Subnetwork
-
-Each subnetwork gets its own state array:
-
-```python
-cortex_state = np.zeros((n_vars_cortex, n_nodes_cortex, n_modes_cortex), dtype=np.float32)
-thalamus_state = np.zeros((n_vars_thalamus, n_nodes_thalamus, n_modes_thalamus), dtype=np.float32)
-```
-
-This is simpler than a single contiguous array and matches the hybrid framework's design.
-
-#### Decision 8.3: Coupling Function Support
-
-Start with **Linear**, **Scaling**, and **identity** (no cfun):
-
-- Identity (cfun=None): `y = x` — no transformation
-- Linear: `post(x) = a * x + b`, `pre(x) = x` (identity pre)
-- Scaling: `post(x) = a * x`, `pre(x) = x`
-
-These are the most common coupling functions. The pipeline order is:
-1. Weighted sum (CSR reduction)
-2. `cfun.pre()` — applied AFTER sum, BEFORE scale
-3. Multiply by `scale`
-4. `cfun.post()` — applied AFTER scale
-
-Others (Sigmoidal, SigmoidalJansenRit from `hybrid/coupling.py`) can be added later
-by extending the template with additional coupling function branches.
-
-#### Decision 8.4: History Buffer — Circular
-
-**Choice: Circular buffer with modular indexing**
-
-- Shape: `(n_vars, n_nodes, n_modes, horizon)` where `horizon = max_delay + 1`
-- Write: `buffer[..., t % horizon] = state`
-- Read: `buffer[cv, node, mode, (t - 1 - delay + horizon) % horizon]`
-- Bounded memory regardless of simulation length
-- Trade-off: one modulo per delay lookup (negligible in Numba)
-
-Alternative considered: linear buffer (as in `nb-sim.py.mako`) with shape
-`(nsvar, nnode, horizon + nstep)` — simpler indexing but memory grows with
-simulation length. Rejected for hybrid because simulations may be long-running.
-
-#### Decision 8.5: Same dt Across All Subnetworks
-
-**Enforced constraint**: All subnetworks must share identical `scheme.dt`.
-Validated at code-generation time. Sub-stepping (different dt per subnetwork)
-is not supported and is also not supported by the pure Python hybrid implementation.
-
-#### Decision 8.6: Chunked Execution with Temporal Averaging
-
-**Choice: Two-level loop**
-
-- Inner `@njit` kernel runs `chunk_size` steps (defaults to monitor period)
-- Accumulates temporal average inside the fast loop
-- Outer Python loop handles: stimulus batch eval, monitor update, output formatting
-- Enables bounded-memory operation and periodic Python-side callbacks
-
-#### Decision 8.7: Output Format
-
-**Choice: Match `Simulator.run()` format**
-
-`run_network()` returns a list of `(times, data)` tuples, one per monitor,
-matching the standard TVB `Simulator.run()` return format. This enables
-drop-in replacement for testing and user code.
-
----
-
-### 9. Code Generation Input Specification
-
-To generate code, the backend needs to inspect the NetworkSet and extract:
-
-```python
-class NetworkAnalysis:
-    """Analysis result used for code generation."""
-
-    # List of subnetworks
-    subnetworks: List[SubnetworkInfo]
-
-    # List of inter-projections
-    inter_projections: List[ProjectionInfo]
-
-    # List of intra-projections (per subnetwork)
-    intra_projections: Dict[subnetwork_name, List[ProjectionInfo]]
-
-    # Global parameters
-    dt: float                  # shared integration time step
-
-
-class SubnetworkInfo:
-    name: str                  # e.g., "cortex"
-    n_vars: int                # number of state variables
-    n_nodes: int               # number of nodes
-    n_modes: int               # number of modes
-    model_class: str           # "MPR" (only supported model for now)
-    model_params: Dict         # specific model parameters
-    integrator: str            # "HeunDeterministic", "EulerDeterministic", etc.
-    cvar: List[int]            # coupling variable indices
-    voi: List[int]             # variables of interest (for monitors)
-    stimulus: Optional[...]    # stimulus info for code-gen or batch eval
-
-
-class ProjectionInfo:
-    """Shared info for both inter and intra projections."""
-    name: str                  # e.g., "cortex_to_thalamus" or "cortex_local_0"
-    source_subnet: str         # source subnetwork name
-    target_subnet: str         # target subnetwork name
-    source_cvar: ndarray       # (n_src_cvar,) source coupling variable indices
-    target_cvar: ndarray       # (n_tgt_cvar,) target coupling variable indices
-    cvar_mapping: str          # "1_to_1", "n_to_n", "many_to_1", or "1_to_many"
-    weights_data: ndarray      # (nnz,) CSR data array
-    weights_indices: ndarray   # (nnz,) CSR column indices
-    weights_indptr: ndarray    # (n_tgt_nodes + 1,) CSR row pointers
-    idelays: ndarray           # (nnz,) integer delay per non-zero connection
-    mode_map: ndarray          # (n_modes_src, n_modes_tgt) — identity for intra
-    horizon: int               # max_delay + 1
-    scale: float               # global projection scale
-    target_scales: ndarray     # (n_tgt_cvar,) per-cvar scale, or empty array
-    cfun_type: str             # "none", "linear", "scaling"
-    cfun_a: float              # coupling param a (1.0 if no cfun)
-    cfun_b: float              # coupling param b (0.0 if no cfun)
-```
-
----
-
-### 10. Testing Strategy
-
-#### 10.1 Reference Implementation
-
-The pure Python `NetworkSet` simulation serves as the ground truth. Since the
-Numba backend only supports MPR for code generation, test fixtures must use
-MPR models in all subnetworks (unlike the existing hybrid tests which use
-JansenRit, FHN, etc.). Dedicated MPR-only test cases will be created.
-
-#### 10.2 Test Levels
-
-1. **Unit tests per projection function**: Generate and call a single
-   `compute_inter_coupling_*` or `compute_intra_coupling_*` function,
-   compare output against `BaseProjection.apply()` on the same inputs.
-
-2. **Unit tests per dfun/integrator**: Verify generated MPR dfun and
-   Heun/Euler integrators match `model.dfun()` and `scheme.scheme()`.
-
-3. **Integration test — full NetworkSet**: Run identical configuration
-   through both `NetworkSet.step()` loop and `NbHybridBackend.run_network()`,
-   compare state arrays within tolerance (`atol=1e-5`, `rtol=1e-5`).
-
-4. **Output format test**: Verify `run_network()` returns the same
-   `(times, data)` structure as `Simulator.run()`.
-
-#### 10.3 Test Configurations
-
-- Two MPR subnetworks (e.g., "cortex" + "thalamus")
-- Inter-projections covering:
-  - 1-to-1 cvar mapping
-  - Many-to-1 cvar mapping
-  - 1-to-many cvar mapping
-- With and without delays (zero-length vs non-zero)
-- With and without coupling functions (identity, Linear, Scaling)
-- With and without `target_scales`
-- Intra-projections (within one subnetwork)
-- HeunDeterministic and EulerDeterministic integrators
-
-#### 10.4 Benchmark Tests
-
-- Compare wall-clock time: pure Python vs Numba for identical configuration
-- Scaling: vary node count, connection density, number of subnetworks
-
----
-
-### 11. Files to Create/Modify
-
-#### New Files
+#### 1.1 Files
 
 | File | Purpose |
 |------|---------|
-| `tvb/simulator/backend/nb_hybrid.py` | `NbHybridBackend(MakoUtilMix)` — main backend class |
-| `tvb/simulator/backend/templates/nb-hybrid-sim.py.mako` | Network loop template (inner @njit + outer Python) |
-| `tvb/simulator/backend/templates/nb-hybrid-inter-coupling.py.mako` | Inter-projection template |
-| `tvb/simulator/backend/templates/nb-hybrid-intra-coupling.py.mako` | Intra-projection template (may share with inter) |
-| `tvb/simulator/backend/templates/nb-hybrid-state-update.py.mako` | Model dfun + integrator step per subnetwork |
-| `tvb/tests/library/simulator/backend/test_nb_hybrid.py` | Tests for Numba hybrid backend |
+| `tvb/simulator/backend/nb_hybrid.py` | Backend class, dataclasses, cache |
+| `tvb/simulator/backend/templates/nb-hybrid-sim.py.mako` | Full kernel template |
+| `tvb/tests/library/simulator/backend/test_nb_hybrid.py` | 25 tests |
 
-#### Files to Modify
+The original plan proposed four separate template files. The final design uses a
+**single template** (`nb-hybrid-sim.py.mako`) that generates all functions
+(coupling, dfun, integrator, inner `@njit` loop, outer Python loop) in one
+render pass. This is simpler and avoids inter-template dependency management.
 
-| File | Changes |
-|------|---------|
-| `tvb/simulator/backend/__init__.py` | Export `NbHybridBackend` |
+#### 1.2 Class hierarchy
+
+```
+NbHybridBackend(MakoUtilMix)
+    .compile(network_set, print_source=False) -> CompiledNetworkFn
+    .run_network(network_set, nstep, ...)     -> list[(times, data)]  [one-liner]
+    ._run_compiled(fn, analysis, ...)         -> list[(times, data)]
+    ._build(template, content, ...)           -> run_network callable (cached)
+    ._analyse(network_set)                    -> NetworkAnalysis
+    ._check_compatibility(network_set)        -> None | raises
+    ._build_projection_info(p, is_inter)      -> ProjectionInfo
+    ._make_projection_buffer(p, ...)          -> np.ndarray
+
+CompiledNetworkFn                             # dataclass
+    ._backend, ._analysis, ._run_network_fn, ._network_set
+    .run(nstep, chunk_size, initial_states)   -> list[(times, data)]
+
+NetworkAnalysis                               # dataclass
+    .subnetworks: List[SubnetworkInfo]
+    .inter_projections: List[ProjectionInfo]
+    .intra_projections: List[ProjectionInfo]
+    .stimuli_by_subnet: dict
+    .all_projections (property)
+
+SubnetworkInfo                                # dataclass
+    name, model, integrator, n_nodes, n_modes
+    is_stochastic, noise_nsig, has_stimulus
+
+ProjectionInfo                                # dataclass
+    name, source_subnet, target_subnet
+    source_cvar, target_cvar                  # (n,) int32
+    weights_data, weights_indices, weights_indptr  # CSR
+    idelays, horizon, scale, target_scales, cfun
+    is_inter, mode_map
+    n_tgt_nodes, n_src_modes, n_tgt_modes     # properties
+```
+
+#### 1.3 In-process compilation cache
+
+```python
+_COMPILED_FN_CACHE: dict = {}   # module-level, process-lifetime
+# key: SHA-256 of rendered Mako source
+# value: exec()'d run_network callable
+```
+
+- Same topology → same SHA-256 → instant cache hit (no re-exec, no re-JIT)
+- `cache=True` on `@nb.njit` was attempted and **reverted**: Numba's file-based
+  locator fails for exec()-generated code (`co_filename='<string>'`). The
+  process-lifetime dict is the practical alternative.
+- `autopep8` is only called when `print_source=True` (removed from hot path).
 
 ---
 
-### 12. Open Questions / Future Work
+### 2. Data Flow (as-built)
 
-1. **More models**: MPR only for now; extend as code-gen templates are developed for other models
-2. **Stochastic integrators**: Require noise handling (pre-drawn samples); add after deterministic works
-3. **Shared-per-source history buffers**: Single buffer per source subnetwork instead of per-projection — saves memory and writes, but adds cvar-management complexity
-4. **Sub-stepping (different dt per subnetwork)**: Not supported in pure Python either; requires significant loop restructuring
-5. **Adaptive integrators**: Not supported in initial version
-6. **More coupling functions**: Sigmoidal, SigmoidalJansenRit from `hybrid/coupling.py`
-7. **`AfferentCoupling` monitors**: Record coupling instead of state — requires passing coupling data to monitor accumulator
-8. **Performance tuning**: Investigate `nb.prange` for outer node loop parallelisation, loop fusion opportunities
-9. **Code-generated stimuli**: For simple patterns (pulse train, sinusoidal), generate `@njit` functions; for complex stimuli, batch-evaluate in Python between chunks
-10. **Merged observation mode**: When all subnetworks carry `node_indices`, place outputs in global connectome ordering
+#### 2.1 Per-step kernel
+
+```
+for t_local in range(chunk_size):
+    t = t_start + t_local
+
+    1. Zero coupling arrays per subnetwork
+    2. For each inter-projection  → compute_coupling_*(buf, CSR, idelays, …, t, tgt_c)
+    3. For each intra-projection  → compute_coupling_*(buf, CSR, idelays, …, t, tgt_c)
+    4. Add pre-computed stimulus  → tgt_c += stim[…, t-1]
+    5. integrate_*(state, coupling [, noise, t-1])
+    6. buf[:,:,:, t % horizon] = source_state   (per projection)
+    7. tavg[:] += state[voi]
+    tavg_count[0] += 1
+```
+
+#### 2.2 Outer Python loop
+
+```python
+while t_global <= nstep:
+    this_chunk = min(chunk_size, remaining)
+    reset_tavg()
+    network_chunk(this_chunk, t_global, states, bufs, ..., tavg, tavg_count, noise, stim)
+    outputs.append(tavg / tavg_count)
+    t_global += this_chunk
+return list_of(times_arr, data_arr) per subnetwork
+```
+
+Stimulus is pre-computed for the **full** `nstep` range before the loop (not
+per-chunk), then passed as an `(n_cvar, n_nodes, n_modes, nstep)` array.
 
 ---
 
-### 13. Summary
+### 3. Generated Code (as-built)
 
-The key insight is that the **inter-subnetwork projection** is the novel component requiring new code generation. The inter-projection involves:
+#### 3.1 Coupling function — `compute_coupling_<proj>(...)`
 
-1. **Sparse CSR iteration** — iterate over non-zero weights per target node
-2. **Per-connection delayed state access** — circular buffer indexing with `idelays[ptr]`
-3. **Coupling function pipeline** — `pre()` → `scale` → `post()` (correct order)
-4. **Mode map transformation** — `(n_src_modes, n_tgt_modes)` matrix multiply after coupling
-5. **Three-way cvar mapping** — 1-to-1, many-to-1, 1-to-many (resolved statically at code-gen)
-6. **`target_scales`** — optional per-target-cvar scaling on top of global `scale`
+Single unified function for both inter and intra projections, decorated
+`@nb.njit(inline="always")`.  Mako specialises it at code-gen time:
 
-The execution model is a **two-level loop**:
-- Outer Python loop per chunk: stimulus batching, monitor update, output I/O
-- Inner `@njit` loop per chunk: coupling → integration → buffer update → tavg accumulation
+| Condition | Generated code |
+|-----------|---------------|
+| `n_modes == 1` (mono_src) | scalar `wsum = nb.float32(0.0)`, no inner mode loop |
+| `n_modes > 1` | `wsum = np.zeros(n_modes)`, explicit `for m` loop |
+| `is_inter` | mode_map arg present; explicit `m_src × m_tgt` accumulation |
+| `is_intra` | no mode_map arg; identity `m_src == m_tgt` |
+| `cfun == "linear"` | `wsum = cfun_a * wsum + cfun_b` |
+| `cfun == "scaling"` | `wsum = cfun_a * wsum` |
+| `cfun == "none"` | no post-processing |
+| cvar mapping | static branch: `1_to_1`, `n_to_n`, `many_to_1`, `1_to_many` |
 
-Individual `@njit` functions (per-projection coupling, per-subnetwork dfun/integrator)
-are kept separate for unit testability. Numba's inlining handles fusion automatically
-when they are called from the main `@njit` kernel.
+#### 3.2 Integration — `integrate_<subnet>(state, coupling [, noise, t_abs])`
 
-This follows the same pattern as the existing Numba backend (`NbMPRBackend` with
-`MakoUtilMix` templates) but adapted for the multi-subnetwork hybrid architecture
-with circular buffers and the `Simulator.run()`-compatible output format.
+Decorated `@nb.njit(inline="always")`. Mako specialises at code-gen time:
+
+| Condition | Generated code |
+|-----------|---------------|
+| `n_modes == 1` | mode loop elided, all indices hardcoded to `0` |
+| `n_modes > 1` | explicit `for m in range(n_modes)` |
+| HeunDeterministic | Heun predictor-corrector, two dfun evaluations |
+| EulerDeterministic | forward Euler, one dfun evaluation |
+| HeunStochastic | `i1svar = svar + dt*d0 + noise[k,i,0,t_abs]`, Heun average |
+| EulerStochastic | `nsvar = svar + dt*d0 + noise[k,i,0,t_abs]` |
+
+Boundary conditions are applied inline after each integration step.
+MPR boundaries: `r ∈ [0, ∞)`, `V` unbounded.
+
+#### 3.3 Inner kernel — `network_chunk(...)`
+
+`@nb.njit` (not `inline="always"`).  Receives all arrays as arguments; all
+subnetwork states and history buffers are updated **in-place**.
+
+#### 3.4 Outer loop — `run_network(...)`
+
+Plain Python function. Calls `network_chunk` in a `while` loop (chunked).
+Returns `list[(times_arr, data_arr)]` matching `Simulator.run()` format:
+- `times_arr`: `(n_chunks,)` float64, mid-chunk time in ms
+- `data_arr`: `(n_chunks, n_voi, n_nodes, n_modes)` float32
+
+---
+
+### 4. History Buffers (as-built)
+
+**Shape**: `(n_vars, n_nodes, n_modes, horizon)` where `horizon = max_delay + 1`.
+
+**Write**: `buf[:, :, :, t % horizon] = source_state`
+
+**Read** (inside coupling): `buf[cv, src_node, m, (t - 1 - idelays[ptr] + horizon) % horizon]`
+
+**Pre-fill**: All `horizon` slots initialised to `initial_state` (matching
+`NetworkSet.init_projection_buffers()`).
+
+One buffer per projection (not per source subnet). Shared-per-source buffers
+are a future optimisation (§9.1).
+
+---
+
+### 5. Stimulus Handling (as-built)
+
+Pre-computation approach:
+1. Python calls `stim.get_coupling(step)` for all steps `1..nstep`
+2. Results accumulated into `(n_cvar, n_nodes, n_modes, nstep)` float32 array
+3. Array passed to `network_chunk`; kernel reads `stim[..., t - 1]` each step
+
+This is the simplest correct approach. Code-generated stimulus functions
+(§9.3) remain a future optimisation for long simulations.
+
+---
+
+### 6. Supported Configurations (as-built)
+
+| Feature | Status |
+|---------|--------|
+| MPR model | ✅ |
+| HeunDeterministic | ✅ |
+| EulerDeterministic | ✅ |
+| HeunStochastic | ✅ |
+| EulerStochastic | ✅ |
+| Inter-projections (delayed, sparse) | ✅ |
+| Intra-projections (delayed, sparse) | ✅ |
+| Linear coupling function | ✅ |
+| Scaling coupling function | ✅ |
+| No coupling function (identity) | ✅ |
+| target_scales | ✅ |
+| mode_map (inter) | ✅ |
+| Stimulus (pre-computed batch) | ✅ |
+| Multiple subnetworks | ✅ |
+| n_modes == 1 (elided loops) | ✅ |
+| n_modes > 1 (general) | ✅ |
+| Same-dt constraint enforced | ✅ |
+| In-process JIT cache | ✅ |
+| compile() / CompiledNetworkFn API | ✅ |
+| Sigmoidal / SigmoidalJansenRit cfun | ❌ (future) |
+| Sub-stepping (different dt) | ❌ (out of scope) |
+| Disk-persistent JIT cache | ❌ (future) |
+| nb.prange parallelism | ❌ (future) |
+| Other models (JansenRit, FHN, …) | ❌ (future) |
+
+---
+
+### 7. Completed Work — Phase Summary
+
+#### Phase 1: Infrastructure ✅
+- `NbHybridBackend(MakoUtilMix)` with `_check_compatibility`, `_analyse`,
+  `_build_projection_info`, `_make_projection_buffer`, `_build`
+- `NetworkAnalysis`, `SubnetworkInfo`, `ProjectionInfo` dataclasses
+- SHA-256 keyed `_COMPILED_FN_CACHE` (module-level, process-lifetime)
+- `compile()` / `CompiledNetworkFn` public API
+- `run_network()` as one-liner delegation
+
+#### Phase 2: Inter-Projection ✅
+- Sparse CSR per-connection delay access inside `@nb.njit(inline="always")`
+- Per-connection `idelays[ptr]`, circular buffer modulo indexing
+- mode_map transformation (`n_src_modes × n_tgt_modes`)
+- cfun pipeline: weighted sum → scale → cfun.pre (identity) → scale → cfun.post
+- All four cvar-mapping modes (static branch at code-gen time)
+- target_scales support
+
+#### Phase 3: Intra-Projection ✅
+- Same template path as inter; `is_inter=False` → no mode_map arg, identity mapping
+
+#### Phase 4: NetworkSet Orchestration ✅
+- `network_chunk` `@nb.njit` kernel: coupling → integrate → buf-write → tavg
+- Outer Python `run_network` loop: chunked, accumulate, format output
+
+#### Phase 5: Model & Integrator ✅
+- MPR dfun generated inline with all global params baked in as `nb.float32`
+- HeunDeterministic and EulerDeterministic with in-line boundary conditions
+- n_modes==1 mode loop elision (both dfun/integrate paths)
+
+#### Phase 6: Stochastic Integrators ✅
+- HeunStochastic and EulerStochastic
+- Noise pre-drawn in Python (`(n_vars, n_nodes, n_modes, nstep)` float32)
+- Passed to kernel; each step reads `noise[k, i, m, t_abs]`
+
+#### Phase 6b: Stimulus ✅
+- Pre-computed batch stimulus array
+- Works for both deterministic and stochastic subnetworks
+
+#### Phase 7: Tests & Benchmark ✅
+- 25 tests passing: intra, inter (all cvar modes), delays, cfuns, stochastic,
+  stimulus, end-to-end multi-subnetwork, compatibility checks
+- Benchmark: N=100 nodes × 2 subnets, 1000 steps, cv=10 m/s, 20% density
+  → **~6× speedup** over pure Python NetworkSet
+
+#### Performance results (N=20, 1000 steps, cv=10, 20% density)
+| N | Speedup | Numba steps/s |
+|--:|--------:|--------------:|
+| 10 | 21× | 73 000 |
+| 20 | 16× | 54 568 |
+| 50 | 8× | 20 800 |
+| 100 | 6× | 15 392 |
+| 200 | 3× | 1 672 |
+
+The declining speedup at large N reflects the coupling kernel being O(nnz) per
+step, where Numba's scalar loops compete with Python's NumPy CSR matmul which
+benefits from BLAS vectorisation at large N.
+
+---
+
+### 8. Next Stages
+
+#### 8.1 Performance — Coupling Kernel (HIGH PRIORITY)
+
+**Problem**: At N=100+ with realistic density, the coupling inner loop is the
+bottleneck.  The current scalar Numba loop is slower than NumPy's BLAS-backed
+CSR matmul at large N.
+
+**Option A — `nb.prange` on node loop (easiest)**
+
+Replace `for j in range(n_tgt_nodes)` with `nb.prange` and add `parallel=True`
+to the coupling `@nb.njit` decorator.  This parallelises across target nodes.
+
+```python
+# In template: compute_coupling_<proj>
+@nb.njit(parallel=True, inline="never")   # no inline when parallel
+def compute_coupling_<proj>(...):
+    for j in nb.prange(n_tgt_nodes):      # parallelised
+        ...
+```
+
+Requirements:
+- `network_chunk` must be `@nb.njit(parallel=False)` — Numba does not support
+  nested parallel regions; the caller must not be `parallel`.
+- Remove `inline="always"` from coupling functions (incompatible with `parallel=True`).
+- This requires `no-GIL` process threads; safe because all arrays are disjoint
+  per target node (no write conflict across `j` iterations).
+
+Expected gain: linear in number of CPU cores for the coupling step.
+
+**Option B — Strip epsilon structural zeros before Numba**
+
+The CSR matrices contain structural zeros from the epsilon trick in
+`BaseProjection.__init__()`. These contribute `w * val = 0.0 * val = 0` to
+the sum but still cost a multiply-add and a buffer read (cache miss).
+
+Strip at `_build_projection_info` time:
+
+```python
+# Remove exact structural zeros
+mask = p.weights.data != 0.0
+pi.weights_data    = p.weights.data[mask]
+pi.weights_indices = p.weights.indices[mask]
+# Recompute indptr from the pruned COO
+```
+
+This reduces `nnz` by the density of structural zeros, directly reducing inner
+loop iterations. Important note: this means the Numba and Python paths will have
+different sparsity structure, so comparison tests need a tolerance that accounts
+for the epsilon contributions being dropped.
+
+**Option C — Float32 buffer reads (already done, confirm)**
+
+History buffers and all state arrays are already `float32`.  Confirm that all
+reads inside the coupling loop (`buf[cv, src_node, m, buf_idx]`) are typed
+`float32` to avoid any implicit upcasting inside Numba.
+
+#### 8.2 Performance — Disk-Persistent JIT Cache (MEDIUM PRIORITY)
+
+**Problem**: First run after process restart pays full JIT cost (~5s for the
+current MPR 2-subnet case). The in-process `_COMPILED_FN_CACHE` does not
+survive across Python processes.
+
+**Why `cache=True` failed**: Numba's `NumpyCacheLocator.from_function()` looks
+up `inspect.getfile(py_func)`. For `exec()`-generated functions,
+`co_filename == '<string>'` → no locator matches → `RuntimeError`.
+
+**Solution: write source to a temp `.py` file, import as a module**
+
+```python
+import tempfile, importlib.util, sys
+
+def _build_as_module(source: str, cache_key: str):
+    # Write to a stable path keyed by SHA-256
+    cache_dir = Path(tempfile.gettempdir()) / "tvb_nb_hybrid_cache"
+    cache_dir.mkdir(exist_ok=True)
+    mod_path = cache_dir / f"nbhybrid_{cache_key[:16]}.py"
+    if not mod_path.exists():
+        mod_path.write_text(source)
+    # Import as a real module — Numba can now find the file
+    spec = importlib.util.spec_from_file_location(f"nbhybrid_{cache_key[:16]}", mod_path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.run_network
+```
+
+With `cache=True` on `@nb.njit`, Numba writes a `.nbi`/`.nbc` pair next to the
+`.py` file. Subsequent imports in new processes load the compiled native code
+directly, skipping JIT (`<50 ms` instead of `~5s`).
+
+Implementation checklist:
+- [ ] Add `_build_as_module` path alongside `_build` (switchable via env var)
+- [ ] Add `cache=True` to all four `@nb.njit` decorators in the template
+- [ ] Add `cache_dir` cleanup utility (prune old SHA256 files)
+- [ ] Test: run, kill process, re-run — verify no JIT delay on second run
+- [ ] Confirm thread-safety of concurrent writes to cache dir
+
+#### 8.3 Performance — Shared-Per-Source History Buffers (MEDIUM PRIORITY)
+
+**Problem**: When multiple projections share the same source subnetwork, each
+projection maintains a separate `(n_vars, n_nodes, n_modes, horizon)` buffer
+and writes `src_state` into it every step. For `P` inter-projections from the
+same source, that's `P` redundant copies and `P × n_vars × n_nodes × n_modes`
+bytes of extra memory.
+
+**Solution**: One buffer per source subnetwork, sized to the maximum horizon
+across all outgoing projections from that source.
+
+```python
+# Shared buffer shape: (n_vars_src, n_nodes_src, n_modes_src, max_horizon)
+# Each projection reads its own idelays against this shared buffer
+```
+
+Implementation changes:
+- `_run_compiled`: allocate one buffer per source subnet, not one per projection
+- `network_chunk` signature: pass source-subnet buffers, not per-projection buffers
+- Template: `buf_write` step emits one write per source subnet
+- Template: `compute_coupling_*` receives the source subnet's shared buffer
+
+Tradeoff: slightly more complex naming in the template; significant memory savings
+for heavily-connected networks (`P > 2` projections from one source).
+
+#### 8.4 Performance — Stimulus Code Generation (LOW PRIORITY)
+
+**Problem**: Pre-computing stimulus for all `nstep` steps in Python allocates an
+`(n_cvar, n_nodes, n_modes, nstep)` array and iterates `nstep` times in Python.
+For a 1 000 000-step simulation at N=100, this is 400 MB and ~10 s overhead.
+
+**Solution**: For simple stimulus patterns, generate a `@nb.njit` function that
+computes the coupling value for step `t` on demand.
+
+```python
+# Generated for a sinusoidal stimulus:
+@nb.njit(inline="always")
+def stim_src_sin(t, dt):
+    # amplitude * sin(2*pi*t*dt / period)
+    return nb.float32(0.1) * math.sin(2.0 * math.pi * nb.float32(t) * nb.float32(dt) / nb.float32(100.0))
+```
+
+The inner kernel calls this instead of indexing the pre-computed array. Only
+applies to analytically-describable stimuli (pulse trains, sinusoids). Complex
+stimulus arrays remain on the batch-precompute path.
+
+#### 8.5 Functionality — Sigmoidal Coupling Functions (HIGH PRIORITY)
+
+The existing `hybrid/coupling.py` includes `Sigmoidal` and `SigmoidalJansenRit`
+which are used in standard TVB simulations. These must be added to the template
+cfun dispatch.
+
+Pipeline position is unchanged: `pre` (identity for all current cfuns) → scale
+→ `post` (cfun-specific).
+
+```python
+# Sigmoidal.post: 1 / (1 + exp(-a*(x - midpoint)))
+# SigmoidalJansenRit.post: e0 / (1 + exp(r*(v0 - x)))
+```
+
+Template changes:
+- Add `"sigmoidal"` and `"sigmoidal_jr"` branches in cfun dispatch
+- Extract parameters (`a`, `midpoint`, `e0`, `r`, `v0`) as `nb.float32` scalars
+- Add corresponding `elif ct == "sigmoidal":` in `_cfun_type` and `_cfun_params`
+
+#### 8.6 Functionality — Additional Models (MEDIUM PRIORITY)
+
+The MPR-only constraint simplifies code generation (all params baked as scalars)
+but limits the backend's usefulness for multi-model hybrid networks. Adding
+JansenRit and FitzHugh-Nagumo would cover the most common use cases.
+
+Approach: parameterised model template, same as the existing `nb-dfuns.py.mako`
+pattern. Each model contributes a `dfun_<sn_name>(state_vars, coupling_terms)`
+section — architecture is already correct, just need the model-specific dfun
+expressions.
+
+Implementation checklist per new model:
+- [ ] Add model-specific dfun expression strings to the model class
+  (following `MontbrioPazoRoxin.state_variable_dfuns` pattern)
+- [ ] Add to `_check_compatibility` allowed model list
+- [ ] Add to `_analyse` SubnetworkInfo construction (parameter extraction)
+- [ ] Add template branch in `dfun_<sn.name>` section of the Mako template
+- [ ] Write tests: dfun correctness, end-to-end match Python backend
+
+#### 8.7 Functionality — AfferentCoupling Monitor (MEDIUM PRIORITY)
+
+Currently only `TemporalAverage` (i.e., state variables) is recorded inside the
+kernel. The `AfferentCoupling` monitor records the coupling input rather than
+the state — useful for diagnosing inter-subnetwork dynamics.
+
+Changes required:
+- Add a second accumulator `<sn>_c_tavg` for coupling arrays
+- Accumulate after zeroing but after all coupling contributions are added
+- Return as a second `(times, data)` tuple in `run_network` output
+
+#### 8.8 Functionality — Disk-Checkpointing and Resumable Runs (LOW PRIORITY)
+
+Long hybrid simulations (millions of steps) need to be restartable. The public
+`CompiledNetworkFn.run()` already returns `initial_states` as a parameter, so
+the caller can pickle the final state and restart. What is missing:
+
+- A public API to extract current buffer state from a completed run
+- A `resume()` method on `CompiledNetworkFn` that accepts state + buffer snapshot
+- Integration with TVB's existing `SimulationContinuation` mechanism
+
+#### 8.9 Testing — Extend Coverage
+
+| Gap | Test to add |
+|-----|------------|
+| Sigmoidal cfun | Compare Numba vs Python for `Sigmoidal` coupling |
+| mode_map ≠ identity | Verify multi-mode inter-projection output |
+| n_modes > 1 general path | Currently only n_modes=1 is exercised |
+| Shared-per-source buffers | Numerical equivalence after buffer refactor |
+| Disk cache persistence | Run → kill → rerun, assert JIT skipped |
+| prange parallel coupling | Numerical equivalence with parallel=True |
+| Large N scaling | Automated speedup regression at N=500 |
+
+#### 8.10 Code Quality
+
+- [ ] Add `__all__` to `nb_hybrid.py`
+- [ ] Export `NbHybridBackend` and `CompiledNetworkFn` from `backend/__init__.py`
+- [ ] Add type annotations to `_run_compiled` and `_analyse` signatures
+- [ ] Add `debug_nojit=True` path to integration tests (faster CI, no JIT overhead)
+- [ ] Add `nb_hybrid_plan.md` reference in docstring of `nb_hybrid.py`
+
+---
+
+### 9. Open Questions
+
+1. **`nb.prange` + `inline="always"` incompatibility**: `parallel=True` requires
+   `inline="never"` on coupling functions. Need to measure whether inlining by
+   the non-parallel fallback matters for correctness or speed after adding prange.
+
+2. **Epsilon structural zeros**: The CSR epsilon trick was deliberately preserved
+   to allow direct Python ↔ Numba numerical comparison in tests. Stripping zeros
+   (§8.1.B) breaks that property — tests will need tolerance adjustment.
+
+3. **Pre-computed vs code-generated stimulus**: Currently all stimulus is
+   pre-computed (good for correctness, bad for memory). The threshold for when
+   code-generation pays off depends on the stimulus pattern. A good heuristic:
+   if `nstep × n_cvar × n_nodes × n_modes × 4 bytes > 100 MB`, use code-gen.
+
+4. **Shared-per-source buffers + different cvars**: If projection A reads
+   `source_cvar=[0]` and projection B reads `source_cvar=[0,1]` from the same
+   source, the shared buffer still stores all `n_vars` — no problem. But the
+   naming logic in the template needs care to avoid accessing stale data from the
+   wrong buffer slot.
+
+5. **Multi-process safety for disk cache (§8.2)**: Two processes compiling the
+   same topology concurrently could clobber each other's `.py` file. Use atomic
+   write (`os.replace`) and file-level locking (`fcntl.flock` on Linux).
+
+---
+
+### 10. Files Summary
+
+| File | Role |
+|------|------|
+| `tvb/simulator/backend/nb_hybrid.py` | Backend, dataclasses, cache |
+| `tvb/simulator/backend/templates/nb-hybrid-sim.py.mako` | Single Mako kernel template |
+| `tvb/tests/library/simulator/backend/test_nb_hybrid.py` | 25 tests + benchmark |
+| `tvb/simulator/backend/nb_hybrid_plan.md` | This document |
