@@ -14,6 +14,7 @@
 import math
 import numpy as np
 import numba as nb
+sin, cos, exp, log = math.sin, math.cos, math.exp, math.log
 
 <%
 from tvb.simulator.backend.nb_hybrid import NetworkAnalysis, _cfun_type, _cvar_mapping_mode
@@ -215,13 +216,34 @@ def compute_coupling_${p.name}(
     cterms_str = ', '.join(cterms)
     i1svars_str = ', '.join(['i1' + s for s in svars])
     n_svars = len(svars)
+    _intermediates = list(getattr(sn.model, 'dfun_intermediates', None) or [])
 %>
 
+## emit physical constants if model provides them (e.g. KIonEx-style)
+% if hasattr(sn.model, 'dfun_constants') and sn.model.dfun_constants:
+% for _cname, _cval in sn.model.dfun_constants.items():
+${_cname} = ${_cval}
+% endfor
+
+% endif
+## emit helper functions if model provides them (e.g. KIonEx-style)
+% if hasattr(sn.model, 'dfun_helpers') and sn.model.dfun_helpers:
+% for _fname, _fargs, _fexpr in sn.model.dfun_helpers:
+${'' if debug_nojit else '@nb.njit(inline="always")'}
+def ${_fname}(${_fargs}):
+    return ${_fexpr}
+
+% endfor
+% endif
 ${'' if debug_nojit else '@nb.njit(inline="always")'}
 def dfun_${sn.name}(${svars_str}, ${cterms_str}):
     pi = math.pi
     % for name, val in gparams.items():
     ${name} = nb.float32(${val})
+    % endfor
+    ## emit shared intermediate computations if model provides them (e.g. KIonEx-style)
+    % for _iname, _iexpr in _intermediates:
+    ${_iname} = ${_iexpr}
     % endfor
     % for svar in svars:
     d_${svar} = nb.float32(${dfuns[svar]})
