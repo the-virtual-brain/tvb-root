@@ -40,6 +40,8 @@ Usage::
     # results: list of (times, data) tuples, one per subnetwork
 
 .. moduleauthor:: TVB contributors
+
+Design and implementation plan: ``nb_hybrid_plan.md`` (same directory).
 """
 
 from __future__ import annotations
@@ -216,6 +218,16 @@ class NetworkAnalysis:
     def all_projections(self) -> List[ProjectionInfo]:
         return self.inter_projections + self.intra_projections
 
+
+# ---------------------------------------------------------------------------
+# Stimulus lazy-evaluation threshold
+# ---------------------------------------------------------------------------
+
+# When the pre-computed stimulus array would exceed this many megabytes,
+# a lazy chunk-by-chunk path should be used instead of pre-allocating the
+# full (n_cvar, n_nodes, n_modes, nstep) array.
+# Override at runtime via the TVB_HYBRID_LAZY_STIM_MB environment variable.
+_STIM_LAZY_THRESHOLD_MB: int = 64
 
 # ---------------------------------------------------------------------------
 # Module-level compiled-function cache
@@ -401,6 +413,7 @@ class NbHybridBackend(MakoUtilMix):
         self,
         network_set: NetworkSet,
         print_source: bool = False,
+        debug_nojit: bool = False,
     ) -> "CompiledNetworkFn":
         """Compile the simulation kernel for *network_set* and return it.
 
@@ -421,11 +434,15 @@ class NbHybridBackend(MakoUtilMix):
             Callable object whose :meth:`~CompiledNetworkFn.run` method
             executes the simulation without recompiling.
         """
+        import os
+        _use_nojit = debug_nojit or (
+            os.environ.get("TVB_HYBRID_NO_JIT", "0") not in ("", "0", "false", "False", "no")
+        )
         self._check_compatibility(network_set)
         analysis = self._analyse(network_set)
         run_network_fn = self._build(
             '<%include file="nb-hybrid-sim.py.mako"/>',
-            dict(analysis=analysis, np=np, debug_nojit=False),
+            dict(analysis=analysis, np=np, debug_nojit=_use_nojit),
             print_source=print_source,
         )
         return CompiledNetworkFn(
@@ -442,6 +459,7 @@ class NbHybridBackend(MakoUtilMix):
         chunk_size: int = 1,
         print_source: bool = False,
         initial_states: Optional[list] = None,
+        debug_nojit: bool = False,
     ):
         """Run a hybrid simulation using the Numba code-generation path.
 
@@ -470,7 +488,7 @@ class NbHybridBackend(MakoUtilMix):
             ``(n_chunks, n_cvar, n_nodes, n_modes)`` holding the
             temporally-averaged afferent coupling input to each node.
         """
-        return self.compile(network_set, print_source).run(
+        return self.compile(network_set, print_source, debug_nojit=debug_nojit).run(
             nstep, chunk_size, initial_states
         )
 
@@ -481,7 +499,7 @@ class NbHybridBackend(MakoUtilMix):
     def _run_compiled(
         self,
         run_network_fn,
-        analysis: "NetworkAnalysis",
+        analysis: NetworkAnalysis,
         network_set: NetworkSet,
         nstep: int,
         chunk_size: int,
@@ -550,6 +568,9 @@ class NbHybridBackend(MakoUtilMix):
                 args.append(dw)
 
         # Per-subnetwork stimulus arrays (pre-computed batch)
+        # TODO §8.4: use lazy chunk-by-chunk path when estimated stim_arr_mb
+        #   exceeds _STIM_LAZY_THRESHOLD_MB (or TVB_HYBRID_LAZY_STIM_MB env var).
+        #   See _compute_stimulus_lazy() for the planned implementation.
         for sn_info in analysis.subnetworks:
             if sn_info.has_stimulus:
                 n_cvar = len(sn_info.model.coupling_terms)
@@ -575,11 +596,67 @@ class NbHybridBackend(MakoUtilMix):
         outputs = run_network_fn(*args)
         return outputs, sn_states, src_bufs
 
+    @staticmethod
+    def _compute_stimulus_lazy(
+        analysis: "NetworkAnalysis",
+        sn_info: "SubnetworkInfo",
+        step_start: int,
+        step_end: int,
+    ) -> np.ndarray:
+        """Compute stimulus for steps *step_start*..*step_end* (inclusive).
+
+        Returns a ``(n_cvar, n_nodes, n_modes, window_size)`` float32 array
+        whose last axis spans the requested step range.
+
+        This is a stub for the planned lazy chunk-by-chunk stimulus path
+        (§8.4).  The intent is that ``_run_compiled`` will call this per
+        chunk instead of pre-allocating the full ``(…, nstep)`` array, so
+        that peak RSS stays bounded by ``chunk_size`` rather than ``nstep``.
+
+        TODO §8.4: Wire this into ``_run_compiled``:
+          - Check ``_stim_estimate_mb(analysis, sn_info, nstep) > threshold``
+          - If so, expose ``network_chunk`` from the generated module, replicate
+            the ``run_network`` outer loop in Python, and call this method
+            per chunk to build a ``(…, this_chunk)`` stim window.
+          - Requires template change: stim indexing in ``network_chunk`` must
+            use the local offset ``t_local`` rather than the global ``t - 1``
+            so that chunk-sized stim views can be passed without out-of-bounds
+            access on the second and subsequent chunks.
+        """
+        n_cvar = len(sn_info.model.coupling_terms)
+        window_size = step_end - step_start + 1
+        stim_arr = np.zeros(
+            (n_cvar, sn_info.n_nodes, sn_info.n_modes, window_size),
+            dtype=np.float32,
+        )
+        for stim in analysis.stimuli_by_subnet[sn_info.name]:
+            for local_idx, step_idx in enumerate(range(step_start, step_end + 1)):
+                sc = np.asarray(stim.get_coupling(step_idx), dtype=np.float32)
+                if sc.ndim == 2:
+                    sc = sc[:, :, np.newaxis]
+                if sc.shape[2] == 1 and sn_info.n_modes > 1:
+                    sc = np.broadcast_to(
+                        sc, (sc.shape[0], sn_info.n_nodes, sn_info.n_modes)
+                    ).copy()
+                stim_arr[:, :, :, local_idx] += sc
+        return stim_arr
+
+    @staticmethod
+    def _stim_estimate_mb(
+        sn_info: "SubnetworkInfo",
+        nstep: int,
+    ) -> float:
+        """Estimate the memory (in MiB) that the pre-computed stim array would use."""
+        import os
+        n_cvar = len(sn_info.model.coupling_terms)
+        n_bytes = n_cvar * sn_info.n_nodes * sn_info.n_modes * nstep * 4  # float32
+        return n_bytes / (1024 * 1024)
+
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
 
-    def _check_compatibility(self, network_set: NetworkSet):
+    def _check_compatibility(self, network_set: NetworkSet) -> None:
         from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
         from tvb.simulator.models.k_ion_exchange import KIonEx
         from tvb.simulator.models.jansen_rit import JansenRit
@@ -621,7 +698,7 @@ class NbHybridBackend(MakoUtilMix):
                         "Use the default shift_sigmoid=True."
                     )
 
-    def _analyse(self, network_set: NetworkSet) -> NetworkAnalysis:
+    def _analyse(self, network_set: NetworkSet) -> "NetworkAnalysis":
         from tvb.simulator.noise import Additive
 
         # Build stimulus lookup: subnet name -> list of Stim objects
@@ -698,7 +775,7 @@ class NbHybridBackend(MakoUtilMix):
             source_horizons=source_horizons,
         )
 
-    def _build_projection_info(self, p, is_inter: bool) -> ProjectionInfo:
+    def _build_projection_info(self, p, is_inter: bool) -> "ProjectionInfo":
         ts = p.target_scales if p.target_scales is not None else np.zeros(0, dtype=np.float64)
 
         if is_inter:

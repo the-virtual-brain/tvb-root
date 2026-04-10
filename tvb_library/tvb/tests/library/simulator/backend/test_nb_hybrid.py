@@ -52,7 +52,7 @@ from tvb.datatypes.patterns import StimuliRegion
 from tvb.datatypes import equations as eqs
 from tvb.datatypes.connectivity import Connectivity
 from tvb.simulator.hybrid.stimulus import Stim
-
+from tvb.simulator.backend.nb_hybrid import _STIM_LAZY_THRESHOLD_MB
 
 # ---------------------------------------------------------------------------
 # Fixture helpers
@@ -2063,6 +2063,123 @@ class TestNbHybridLargeNScaling:
             f"Numba kernel should not be more than 5× slower than Python "
             f"(got speedup={speedup:.2f}×, t_py={t_py*1e3:.1f}ms, "
             f"t_nb={t_nb*1e3:.1f}ms)"
+        )
+
+
+class TestNbHybridDebugNojit:
+    """Tests for the debug_nojit=True fast path (no Numba JIT)."""
+
+    def _build_net(self, n: int = 5):
+        """Two MPR subnets with an inter-projection (no delays)."""
+        sn_a = _mpr_subnetwork("nojit_a", n)
+        sn_b = _mpr_subnetwork("nojit_b", n)
+        sn_a.configure()
+        sn_b.configure()
+        w = _sparse_weights(n, n, seed=7, density=1.0)
+        inter = InterProjection(
+            source=sn_a, target=sn_b,
+            source_cvar=np.array([0], dtype=np.int32),
+            target_cvar=np.array([0], dtype=np.int32),
+            weights=w,
+            lengths=_zero_lengths(n, n),
+            cv=1.0, dt=DT, scale=1e-3,
+        )
+        ns = NetworkSet(subnets=[sn_a, sn_b], projections=[inter], stimuli=[])
+        ns.configure()
+        return ns
+
+    def _init_states(self, ns, seed: int = 0):
+        rng = np.random.RandomState(seed)
+        return [
+            rng.uniform(0.1, 0.3, (sn.model.nvar, sn.nnodes, 1)).astype(np.float64)
+            for sn in ns.subnets
+        ]
+
+    def test_debug_nojit_runs(self):
+        """debug_nojit=True produces output without JIT compilation."""
+        ns = self._build_net(n=5)
+        x0 = self._init_states(ns)
+        backend = NbHybridBackend()
+        results = backend.run_network(
+            ns, nstep=10, chunk_size=1, initial_states=x0, debug_nojit=True
+        )
+        assert isinstance(results, list), "run_network must return a list"
+        for times, data, ctavg in results:
+            assert np.all(np.isfinite(data)), "output data must be finite"
+
+    def test_debug_nojit_matches_jit(self):
+        """debug_nojit=True produces the same output as the JIT path."""
+        ns = self._build_net(n=5)
+        x0 = self._init_states(ns)
+        backend = NbHybridBackend()
+
+        results_jit = backend.run_network(
+            ns, nstep=10, chunk_size=1, initial_states=x0, debug_nojit=False
+        )
+        results_nojit = backend.run_network(
+            ns, nstep=10, chunk_size=1, initial_states=x0, debug_nojit=True
+        )
+
+        for (_, data_jit, _), (_, data_nojit, _) in zip(results_jit, results_nojit):
+            np.testing.assert_allclose(
+                data_nojit, data_jit,
+                atol=1e-5,
+                err_msg="debug_nojit=True must match JIT output within atol=1e-5",
+            )
+
+
+class TestStimulusMemoryEstimate(unittest.TestCase):
+    """Verify the stim-array size estimation helper used by the lazy path."""
+
+    def test_stimulus_memory_estimate_small(self):
+        """A tiny stim array (N=5, nstep=10) is well below the threshold."""
+        from tvb.simulator.backend.nb_hybrid import NbHybridBackend, SubnetworkInfo
+        from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
+
+        model = MontbrioPazoRoxin()
+        model.configure()
+        sn_info = SubnetworkInfo(
+            name="test_sn",
+            model=model,
+            integrator=None,
+            n_nodes=5,
+            n_modes=1,
+            has_stimulus=True,
+        )
+        nstep = 10
+        estimated_mb = NbHybridBackend._stim_estimate_mb(sn_info, nstep)
+        # n_cvar=1, nodes=5, modes=1, steps=10 → 200 bytes → ≈1.9e-4 MiB
+        self.assertLess(
+            estimated_mb,
+            _STIM_LAZY_THRESHOLD_MB,
+            f"Tiny stim array ({estimated_mb:.4f} MiB) should be below the "
+            f"lazy threshold ({_STIM_LAZY_THRESHOLD_MB} MiB)",
+        )
+        self.assertGreater(estimated_mb, 0.0)
+
+    def test_stimulus_memory_estimate_large(self):
+        """A large stim array (N=100, nstep=1_000_000) exceeds the threshold."""
+        from tvb.simulator.backend.nb_hybrid import NbHybridBackend, SubnetworkInfo
+        from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
+
+        model = MontbrioPazoRoxin()
+        model.configure()
+        sn_info = SubnetworkInfo(
+            name="test_sn",
+            model=model,
+            integrator=None,
+            n_nodes=100,
+            n_modes=1,
+            has_stimulus=True,
+        )
+        nstep = 1_000_000
+        estimated_mb = NbHybridBackend._stim_estimate_mb(sn_info, nstep)
+        # n_cvar=1, nodes=100, modes=1, steps=1e6 → 400 MB → 381.5 MiB
+        self.assertGreater(
+            estimated_mb,
+            _STIM_LAZY_THRESHOLD_MB,
+            f"Large stim array ({estimated_mb:.1f} MiB) should exceed the "
+            f"lazy threshold ({_STIM_LAZY_THRESHOLD_MB} MiB)",
         )
 
 

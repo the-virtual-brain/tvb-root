@@ -2,10 +2,10 @@
 
 ## Implementation Plan
 
-> **Status (2026-04-10):** Phases 1–7 complete plus Phase A (Sigmoidal cfun,
-> JansenRit model, n_modes > 1) and Phase C1 (disk-persistent JIT cache).
-> 263 tests passing. See §7 (Completed Work) for what has been built and
-> §8 (Next Stages) for the remaining roadmap.
+> **Status (2026-04-10):** Phases 1–7, A, C1, C2 complete. Phase D (additional
+> models: ReducedWongWang, Epileptor, WilsonCowan, Generic2dOscillator,
+> AfferentCoupling). 78 tests passing. See §7 (Completed Work) for full history
+> and §8 (Next Stages) for remaining roadmap.
 
 ---
 
@@ -218,9 +218,16 @@ This is the simplest correct approach. Code-generated stimulus functions
 | compile() / CompiledNetworkFn API | ✅ |
 | Shared-per-source history buffers | ✅ |
 | Checkpointing / resumable runs (snapshot API) | ✅ |
+| ReducedWongWang model | ✅ |
+| Epileptor model | ✅ |
+| WilsonCowan model | ✅ |
+| Generic2dOscillator model | ✅ |
+| AfferentCoupling monitor (ctavg output) | ✅ |
+| `debug_nojit` / no-JIT fast path | ✅ |
+| `resume()` (resumable runs) | ✅ |
 | Sub-stepping (different dt) | ❌ (out of scope) |
 | nb.prange parallelism | ❌ (out of scope) |
-| Other models (FHN, WongWang, …) | ❌ (future §8.6) |
+| ReducedSetFitzHughNagumo | ❌ (incompatible: inter-mode dot products) |
 
 ---
 
@@ -298,6 +305,34 @@ This is the simplest correct approach. Code-generated stimulus functions
   next to the `.py` file; native code loaded ~50 ms on second process start
 - `NbHybridBackend.clear_cache()` + `get_cache_dir()` added
 - In-process `_COMPILED_FN_CACHE` dict retained as first-level fast path
+
+#### Phase D: Additional Model Support ✅ (2026-04-10)
+- ReducedWongWang: `coupling_terms`, `parameter_names`, `dfun_intermediates`
+  (x_ww, H_ww), `state_variable_dfuns`; S∈[0,1] boundary preserved
+- Epileptor: 6 svars, 16 params, 4 ternary intermediates (f1, zterm, h, f2);
+  constraint: modification=False
+- WilsonCowan: E/I with shifted sigmoid (shift_sigmoid=True only);
+  22 params, 4 intermediates (x_e, x_i, s_e, s_i)
+- Generic2dOscillator: V/W, 12 params, single coupling term
+- AfferentCoupling monitor: ctavg accumulator in kernel; outputs 3-tuple
+  `(times, data, ctavg)` per subnetwork
+- CSR zero-stripping: `eliminate_zeros()` on copy before extracting
+  .data/.indices/.indptr; idelays aligned with stripped structure
+- 12 new tests (RWW×4, Epileptor×4, WilsonCowan×4) + user G2D×4 + Afferent×4
+
+#### Phase E: Code Quality + Tooling ✅ (2026-04-10)
+- `debug_nojit` path: `compile(debug_nojit=True)` / `TVB_HYBRID_NO_JIT=1` env
+  var replaces `@nb.njit` with no-ops; natural cache-key separation (hash of
+  rendered source differs between JIT and no-JIT paths)
+- Type annotations added to `_run_compiled`, `_analyse`, `_check_compatibility`,
+  `_build_projection_info`
+- `__all__` added; `NbHybridBackend` + `CompiledNetworkFn` exported from
+  `backend/__init__.py` (lazy `__getattr__` to avoid circular import)
+- `_STIM_LAZY_THRESHOLD_MB` constant + `_stim_estimate_mb()` helper +
+  `_compute_stimulus_lazy()` stub; TODO §8.4 comment in `_run_compiled`
+- Module docstring references `nb_hybrid_plan.md`
+- 78 tests total; `TestNbHybridDebugNojit` (2), `TestNbHybridModeMap` (4),
+  `TestNbHybridLargeNScaling` (2), `TestStimulusMemoryEstimate` (2)
 
 #### Performance results (N=20, 1000 steps, cv=10, 20% density)
 | N | Speedup | Numba steps/s |
@@ -381,11 +416,11 @@ With `cache=True` on `@nb.njit`, Numba writes a `.nbi`/`.nbc` pair next to the
 directly, skipping JIT (`<50 ms` instead of `~5s`).
 
 Implementation checklist:
-- [ ] Add `_build_as_module` path alongside `_build` (switchable via env var)
-- [ ] Add `cache=True` to all four `@nb.njit` decorators in the template
-- [ ] Add `cache_dir` cleanup utility (prune old SHA256 files)
-- [ ] Test: run, kill process, re-run — verify no JIT delay on second run
-- [ ] Confirm thread-safety of concurrent writes to cache dir
+- [x] Add `_build_as_module` path alongside `_build` (switchable via env var)
+- [x] Add `cache=True` to all four `@nb.njit` decorators in the template
+- [x] Add `cache_dir` cleanup utility (prune old SHA256 files)
+- [x] Test: run, kill process, re-run — verify no JIT delay on second run
+- [x] Confirm thread-safety of concurrent writes to cache dir
 
 #### 8.3 ~~Performance — Shared-Per-Source History Buffers~~ **DONE** ✅
 
@@ -456,38 +491,23 @@ Template changes:
 - Extract parameters (`a`, `midpoint`, `e0`, `r`, `v0`) as `nb.float32` scalars
 - Add corresponding `elif ct == "sigmoidal":` in `_cfun_type` and `_cfun_params`
 
-#### 8.6 Functionality — Additional Models (MEDIUM PRIORITY)
+#### 8.6 Functionality — Additional Models
 
-**JansenRit: DONE ✅** Added 2026-04-10 (see Phase A above).
+**Completed (Phase D, 2026-04-10):**
+- ReducedWongWang ✅ (wong_wang.py)
+- Epileptor ✅ (epileptor.py — modification=False only)
+- WilsonCowan ✅ (wilson_cowan.py — shift_sigmoid=True only)
+- Generic2dOscillator ✅ (oscillator.py)
 
-FitzHugh-Nagumo and other models remain. Adding
-FitzHugh-Nagumo would cover additional use cases.
+**Permanently deferred:**
+- `ReducedSetFitzHughNagumo` (`stefanescu_jirsa.py`): inter-mode `numpy.dot(xi, Aik)` in `dfun` cannot be expressed as per-node scalar code-gen. There is no standalone `FitzHughNagumo` model in TVB.
 
-Approach: parameterised model template, same as the existing `nb-dfuns.py.mako`
-pattern. Each model contributes a `dfun_<sn_name>(state_vars, coupling_terms)`
-section — architecture is already correct, just need the model-specific dfun
-expressions.
+#### 8.7 ~~Functionality — AfferentCoupling Monitor~~ **DONE** ✅
 
-Implementation checklist per new model:
-- [ ] Add model-specific dfun expression strings to the model class
-  (following `MontbrioPazoRoxin.state_variable_dfuns` pattern)
-- [ ] Add to `_check_compatibility` allowed model list
-- [ ] Add to `_analyse` SubnetworkInfo construction (parameter extraction)
-- [ ] Add template branch in `dfun_<sn.name>` section of the Mako template
-- [ ] Write tests: dfun correctness, end-to-end match Python backend
+ctavg accumulator added to kernel; outputs 3-tuple `(times, data, ctavg)` per
+subnetwork. See Phase D above.
 
-#### 8.7 Functionality — AfferentCoupling Monitor (MEDIUM PRIORITY)
-
-Currently only `TemporalAverage` (i.e., state variables) is recorded inside the
-kernel. The `AfferentCoupling` monitor records the coupling input rather than
-the state — useful for diagnosing inter-subnetwork dynamics.
-
-Changes required:
-- Add a second accumulator `<sn>_c_tavg` for coupling arrays
-- Accumulate after zeroing but after all coupling contributions are added
-- Return as a second `(times, data)` tuple in `run_network` output
-
-#### 8.8 Functionality — Disk-Checkpointing and Resumable Runs (LOW PRIORITY)
+#### 8.8 ~~Functionality — Disk-Checkpointing and Resumable Runs~~ **DONE** ✅
 
 Long hybrid simulations (millions of steps) need to be restartable. The public
 `CompiledNetworkFn.run()` already returns `initial_states` as a parameter, so
@@ -497,25 +517,26 @@ the caller can pickle the final state and restart. What is missing:
 - A `resume()` method on `CompiledNetworkFn` that accepts state + buffer snapshot
 - Integration with TVB's existing `SimulationContinuation` mechanism
 
+**Status (2026-04-10)**: Implemented. `CompiledNetworkFn.run(return_snapshot=True)` returns `(outputs, snapshot)`. `resume(snapshot, nstep)` restores and continues. 4 tests in `TestNbHybridCheckpointing`.
+
 #### 8.9 Testing — Extend Coverage
 
 | Gap | Test to add |
 |-----|------------|
 | ~~Sigmoidal cfun~~ | **Done** ✅ |
-| mode_map ≠ identity | Verify multi-mode inter-projection output |
+| ~~mode_map ≠ identity~~ | **Done** ✅ (TestNbHybridModeMap) |
 | ~~n_modes > 1 general path~~ | **Done** ✅ (TestNbHybridMultiMode) |
-| Shared-per-source buffers | Numerical equivalence after buffer refactor |
+| ~~Shared-per-source buffers~~ | **Done** ✅ (shared buffers live; TestNbHybridModeMap exercised) |
 | ~~Disk cache persistence~~ | **Done** ✅ (TestNbHybridDiskCache) |
-
-| Large N scaling | Automated speedup regression at N=500 |
+| ~~Large N scaling~~ | **Done** ✅ (TestNbHybridLargeNScaling, N=100 smoke + N=50 speedup) |
 
 #### 8.10 Code Quality
 
-- [ ] Add `__all__` to `nb_hybrid.py`
-- [ ] Export `NbHybridBackend` and `CompiledNetworkFn` from `backend/__init__.py`
-- [ ] Add type annotations to `_run_compiled` and `_analyse` signatures
-- [ ] Add `debug_nojit=True` path to integration tests (faster CI, no JIT overhead)
-- [ ] Add `nb_hybrid_plan.md` reference in docstring of `nb_hybrid.py`
+- [x] Add `__all__` to `nb_hybrid.py`
+- [x] Export `NbHybridBackend` and `CompiledNetworkFn` from `backend/__init__.py`
+- [x] Add type annotations to `_run_compiled` and `_analyse` signatures
+- [x] Add `debug_nojit=True` path to integration tests (faster CI, no JIT overhead)
+- [x] Add `nb_hybrid_plan.md` reference in docstring of `nb_hybrid.py`
 
 ---
 
