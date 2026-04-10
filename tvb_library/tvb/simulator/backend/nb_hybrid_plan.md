@@ -216,6 +216,8 @@ This is the simplest correct approach. Code-generated stimulus functions
 | In-process JIT cache | ✅ |
 | Disk-persistent JIT cache | ✅ |
 | compile() / CompiledNetworkFn API | ✅ |
+| Shared-per-source history buffers | ✅ |
+| Checkpointing / resumable runs (snapshot API) | ✅ |
 | Sub-stepping (different dt) | ❌ (out of scope) |
 | nb.prange parallelism | ❌ (out of scope) |
 | Other models (FHN, WongWang, …) | ❌ (future §8.6) |
@@ -279,6 +281,15 @@ This is the simplest correct approach. Code-generated stimulus functions
 - **n_modes > 1**: exercised via MPR with `number_of_modes=2`; shape + match tests
 - 16 new tests added (TestNbHybridSigmoidalCfun × 6, TestNbHybridJansenRit × 4,
   TestNbHybridMultiMode × 3, TestNbHybridDiskCache × 3); 44 total
+
+#### Phase C2: Resumable Runs / Snapshot API ✅ (2026-04-10)
+- `CompiledNetworkFn.run(return_snapshot=True)` returns `(outputs, snapshot)`
+  where `snapshot = {'states': [...], 'buffers': {...}}` captures final
+  subnetwork states and history buffers (populated by in-place Numba writes)
+- `CompiledNetworkFn.resume(snapshot, nstep)` restores state+buffers and
+  continues the simulation — numerically identical to a single longer run
+- `_run_compiled` gains `_initial_buffers` parameter for snapshot injection
+- 4 new `TestNbHybridCheckpointing` tests added
 
 #### Phase C1: Disk-persistent JIT Cache ✅ (2026-04-10)
 - `_build_as_module()`: renders source to `$TMPDIR/tvb_nb_hybrid_cache/nbhybrid_<sha16>.py`
@@ -376,7 +387,7 @@ Implementation checklist:
 - [ ] Test: run, kill process, re-run — verify no JIT delay on second run
 - [ ] Confirm thread-safety of concurrent writes to cache dir
 
-#### 8.3 Performance — Shared-Per-Source History Buffers (MEDIUM PRIORITY)
+#### 8.3 ~~Performance — Shared-Per-Source History Buffers~~ **DONE** ✅
 
 **Problem**: When multiple projections share the same source subnetwork, each
 projection maintains a separate `(n_vars, n_nodes, n_modes, horizon)` buffer
@@ -400,6 +411,10 @@ Implementation changes:
 
 Tradeoff: slightly more complex naming in the template; significant memory savings
 for heavily-connected networks (`P > 2` projections from one source).
+
+**Status (2026-04-10)**: Implemented. One buffer per source subnet, sized to
+`source_horizons[src]`. Template writes `${sn.name}_srcbuf` once per source
+per step; all outgoing projections share it.
 
 #### 8.4 Performance — Stimulus Code Generation (LOW PRIORITY)
 

@@ -59,6 +59,14 @@ from tvb.simulator.integrators import (
     HeunStochastic, EulerStochastic,
 )
 
+__all__ = [
+    "NbHybridBackend",
+    "CompiledNetworkFn",
+    "NetworkAnalysis",
+    "SubnetworkInfo",
+    "ProjectionInfo",
+]
+
 
 # ---------------------------------------------------------------------------
 # Helpers used by both Python (NbHybridBackend) and Mako templates
@@ -272,6 +280,8 @@ class CompiledNetworkFn:
         nstep: int,
         chunk_size: int = 1,
         initial_states: Optional[list] = None,
+        return_snapshot: bool = False,
+        _initial_buffers: Optional[dict] = None,
     ) -> list:
         """Execute the pre-compiled kernel for *nstep* integration steps.
 
@@ -284,19 +294,74 @@ class CompiledNetworkFn:
         initial_states : list of ndarray, optional
             Initial states per subnetwork.  If *None* the subnetwork's
             ``zero_states()`` are used.
+        return_snapshot : bool
+            If True, also return a snapshot dict suitable for passing to
+            :meth:`resume`.  Default False (backward compatible).
+        _initial_buffers : dict, optional
+            Pre-populated source history buffers keyed by subnet name, as
+            returned in ``snapshot['buffers']`` by a prior :meth:`run` call.
+            When supplied the existing buffer is reused instead of being
+            re-initialised from the initial state.
 
         Returns
         -------
-        list of (times, data, ctavg)
-            Same format as :meth:`NbHybridBackend.run_network`.
+        list or (list, dict)
+            When *return_snapshot* is False (default): list of (times, data, ctavg),
+            one per subnetwork.
+            When *return_snapshot* is True: ``(outputs, snapshot)`` where *snapshot*
+            is a dict with keys ``'states'`` and ``'buffers'`` suitable for passing
+            to :meth:`resume`.
         """
-        return self._backend._run_compiled(
+        outputs, final_states, final_bufs = self._backend._run_compiled(
             self._run_network_fn,
             self._analysis,
             self._network_set,
             nstep,
             chunk_size,
             initial_states,
+            _initial_buffers=_initial_buffers,
+        )
+        if not return_snapshot:
+            return outputs
+        snapshot = {
+            'states': [final_states[sn.name].copy() for sn in self._analysis.subnetworks],
+            'buffers': {name: buf.copy() for name, buf in final_bufs.items()},
+        }
+        return outputs, snapshot
+
+    def resume(
+        self,
+        snapshot: dict,
+        nstep: int,
+        chunk_size: int = 1,
+        return_snapshot: bool = False,
+    ) -> list:
+        """Resume a simulation from a snapshot returned by :meth:`run`.
+
+        Parameters
+        ----------
+        snapshot : dict
+            A snapshot dict as returned by ``run(..., return_snapshot=True)``.
+            Must contain keys ``'states'`` (list of ndarray per subnetwork) and
+            ``'buffers'`` (dict of ndarray per source subnet name).
+        nstep : int
+            Number of additional integration steps to run.
+        chunk_size : int
+            Steps per temporal-average chunk.
+        return_snapshot : bool
+            If True, also return a new snapshot of the final state.
+
+        Returns
+        -------
+        list or (list, dict)
+            Same format as :meth:`run`.
+        """
+        return self.run(
+            nstep,
+            chunk_size,
+            initial_states=snapshot['states'],
+            return_snapshot=return_snapshot,
+            _initial_buffers=snapshot['buffers'],
         )
 
 
@@ -421,6 +486,7 @@ class NbHybridBackend(MakoUtilMix):
         nstep: int,
         chunk_size: int,
         initial_states: Optional[list],
+        _initial_buffers: Optional[dict] = None,
     ) -> list:
         """Build the argument list and call the pre-compiled kernel."""
         # Build argument list matching the generated run_network() signature
@@ -440,11 +506,14 @@ class NbHybridBackend(MakoUtilMix):
         # Per-source-subnet shared history buffers (one buffer per source subnet)
         src_bufs = {}
         for sn_info in analysis.subnetworks:
-            horizon = analysis.source_horizons.get(sn_info.name, 1)
-            state = sn_states[sn_info.name]
-            n_vars, n_nodes, n_modes = state.shape
-            buf = np.empty((n_vars, n_nodes, n_modes, horizon), dtype=np.float32)
-            buf[:] = state[:, :, :, np.newaxis]  # broadcast ICs across all horizon slots
+            if _initial_buffers is not None and sn_info.name in _initial_buffers:
+                buf = _initial_buffers[sn_info.name].astype(np.float32)
+            else:
+                horizon = analysis.source_horizons.get(sn_info.name, 1)
+                state = sn_states[sn_info.name]
+                n_vars, n_nodes, n_modes = state.shape
+                buf = np.empty((n_vars, n_nodes, n_modes, horizon), dtype=np.float32)
+                buf[:] = state[:, :, :, np.newaxis]  # broadcast ICs across all horizon slots
             src_bufs[sn_info.name] = buf
         for sn_info in analysis.subnetworks:
             args.append(src_bufs[sn_info.name])
@@ -503,7 +572,8 @@ class NbHybridBackend(MakoUtilMix):
 
         args.append(chunk_size)
 
-        return run_network_fn(*args)
+        outputs = run_network_fn(*args)
+        return outputs, sn_states, src_bufs
 
     # ------------------------------------------------------------------
     # Internal helpers
