@@ -201,6 +201,8 @@ class NetworkAnalysis:
     intra_projections: List[ProjectionInfo]
     # stimuli_by_subnet: dict mapping subnet name -> list of Stim objects
     stimuli_by_subnet: dict = dataclasses.field(default_factory=dict)
+    # source_horizons: dict mapping source subnet name -> max horizon across outgoing projections
+    source_horizons: dict = dataclasses.field(default_factory=dict)
 
     @property
     def all_projections(self) -> List[ProjectionInfo]:
@@ -285,7 +287,7 @@ class CompiledNetworkFn:
 
         Returns
         -------
-        list of (times, data)
+        list of (times, data, ctavg)
             Same format as :meth:`NbHybridBackend.run_network`.
         """
         return self._backend._run_compiled(
@@ -395,10 +397,13 @@ class NbHybridBackend(MakoUtilMix):
 
         Returns
         -------
-        list of (times, data)
+        list of (times, data, ctavg)
             One tuple per subnetwork in ``network_set.subnets``, where
-            ``times`` is a 1-D float64 array of mid-chunk time points and
-            ``data`` is a float32 array of shape ``(n_chunks, n_voi, n_nodes, n_modes)``.
+            ``times`` is a 1-D float64 array of mid-chunk time points,
+            ``data`` is a float32 array of shape ``(n_chunks, n_voi, n_nodes, n_modes)``,
+            and ``ctavg`` is a float32 array of shape
+            ``(n_chunks, n_cvar, n_nodes, n_modes)`` holding the
+            temporally-averaged afferent coupling input to each node.
         """
         return self.compile(network_set, print_source).run(
             nstep, chunk_size, initial_states
@@ -432,10 +437,20 @@ class NbHybridBackend(MakoUtilMix):
             sn_states[sn_info.name] = state
             args.append(state)
 
+        # Per-source-subnet shared history buffers (one buffer per source subnet)
+        src_bufs = {}
+        for sn_info in analysis.subnetworks:
+            horizon = analysis.source_horizons.get(sn_info.name, 1)
+            state = sn_states[sn_info.name]
+            n_vars, n_nodes, n_modes = state.shape
+            buf = np.empty((n_vars, n_nodes, n_modes, horizon), dtype=np.float32)
+            buf[:] = state[:, :, :, np.newaxis]  # broadcast ICs across all horizon slots
+            src_bufs[sn_info.name] = buf
+        for sn_info in analysis.subnetworks:
+            args.append(src_bufs[sn_info.name])
+
         # Per-projection arrays
         for p in analysis.all_projections:
-            buf = self._make_projection_buffer(p, sn_states, network_set)
-            args.append(buf)
             args.append(p.weights_data.astype(np.float32))
             args.append(p.weights_indices.astype(np.int32))
             args.append(p.weights_indptr.astype(np.int32))
@@ -449,7 +464,6 @@ class NbHybridBackend(MakoUtilMix):
             args.append(ts)
             cfun_params = _cfun_params(p)
             args.append(cfun_params)
-            args.append(np.int32(p.horizon))
 
         # Per-subnetwork noise arrays (stochastic integrators)
         for sn_info in analysis.subnetworks:
@@ -499,13 +513,19 @@ class NbHybridBackend(MakoUtilMix):
         from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
         from tvb.simulator.models.k_ion_exchange import KIonEx
         from tvb.simulator.models.jansen_rit import JansenRit
-        _supported_models = (MontbrioPazoRoxin, KIonEx, JansenRit)
+        from tvb.simulator.models.oscillator import Generic2dOscillator
+        from tvb.simulator.models.wong_wang import ReducedWongWang
+        from tvb.simulator.models.epileptor import Epileptor
+        from tvb.simulator.models.wilson_cowan import WilsonCowan
+        _supported_models = (MontbrioPazoRoxin, KIonEx, JansenRit, Generic2dOscillator,
+                             ReducedWongWang, Epileptor, WilsonCowan)
         _allowed_integrators = (HeunDeterministic, EulerDeterministic, HeunStochastic, EulerStochastic)
         dt0 = network_set.subnets[0].scheme.dt
         for sn in network_set.subnets:
             if not isinstance(sn.model, _supported_models):
                 raise NotImplementedError(
-                    f"NbHybridBackend supports MontbrioPazoRoxin, KIonEx, and JansenRit; "
+                    f"NbHybridBackend supports MontbrioPazoRoxin, KIonEx, JansenRit, Generic2dOscillator, "
+                    f"ReducedWongWang, Epileptor, and WilsonCowan; "
                     f"subnetwork '{sn.name}' uses {type(sn.model).__name__}"
                 )
             if not isinstance(sn.scheme, _allowed_integrators):
@@ -518,6 +538,18 @@ class NbHybridBackend(MakoUtilMix):
                     "All subnetworks must share the same dt. "
                     f"Expected {dt0}, got {sn.scheme.dt} in '{sn.name}'"
                 )
+            if isinstance(sn.model, Epileptor):
+                if sn.model.modification[0]:
+                    raise NotImplementedError(
+                        "NbHybridBackend: Epileptor with modification=True is not supported. "
+                        "Set model.modification = numpy.array([False])."
+                    )
+            if isinstance(sn.model, WilsonCowan):
+                if not sn.model.shift_sigmoid[0]:
+                    raise NotImplementedError(
+                        "NbHybridBackend: WilsonCowan with shift_sigmoid=False is not supported. "
+                        "Use the default shift_sigmoid=True."
+                    )
 
     def _analyse(self, network_set: NetworkSet) -> NetworkAnalysis:
         from tvb.simulator.noise import Additive
@@ -577,11 +609,23 @@ class NbHybridBackend(MakoUtilMix):
             else:
                 all_names[base] = 0
 
+        # Compute per-source-subnet max horizon for shared history buffers
+        _all_projs = inter_projs + intra_projs
+        source_horizons: dict = {}
+        for _p in _all_projs:
+            src = _p.source_subnet
+            source_horizons[src] = max(source_horizons.get(src, 1), _p.horizon)
+        # Ensure every subnetwork has an entry (default 1 for subnets with no outgoing projections)
+        for sn in subnets:
+            if sn.name not in source_horizons:
+                source_horizons[sn.name] = 1
+
         return NetworkAnalysis(
             subnetworks=subnets,
             inter_projections=inter_projs,
             intra_projections=intra_projs,
             stimuli_by_subnet=stims_by_subnet,
+            source_horizons=source_horizons,
         )
 
     def _build_projection_info(self, p, is_inter: bool) -> ProjectionInfo:
@@ -604,16 +648,23 @@ class NbHybridBackend(MakoUtilMix):
             mode_map = None
             proj_name = getattr(p, "name", None) or "intra"
 
+        # Strip structural zeros from a copy so the original projection is not mutated.
+        # p.idelays is positionally aligned with p.weights.data, so we apply the same mask.
+        weights_csr = p.weights.copy()
+        idelays_raw = np.atleast_1d(p.idelays)
+        nz_mask = weights_csr.data != 0
+        weights_csr.eliminate_zeros()
+        idelays_stripped = idelays_raw[nz_mask].astype(np.int32)
         pi = ProjectionInfo(
             name=proj_name,
             source_subnet=src_name,
             target_subnet=tgt_name,
             source_cvar=np.atleast_1d(p.source_cvar).astype(np.int32),
             target_cvar=np.atleast_1d(p.target_cvar).astype(np.int32),
-            weights_data=p.weights.data.astype(np.float32),
-            weights_indices=p.weights.indices.astype(np.int32),
-            weights_indptr=p.weights.indptr.astype(np.int32),
-            idelays=np.atleast_1d(p.idelays).astype(np.int32),
+            weights_data=weights_csr.data.astype(np.float32),
+            weights_indices=weights_csr.indices.astype(np.int32),
+            weights_indptr=weights_csr.indptr.astype(np.int32),
+            idelays=idelays_stripped,
             horizon=int(p._horizon),
             scale=float(p.scale),
             target_scales=np.atleast_1d(ts).astype(np.float32) if ts.size > 0 else np.zeros(0, dtype=np.float32),

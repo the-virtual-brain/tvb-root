@@ -183,9 +183,22 @@ def _run_nb(network_set: NetworkSet, nstep: int, x0_list: list,
         print_source=print_source,
         initial_states=x0_list,
     )
-    # results: list of (times, data) where data is (nstep, n_voi, n_nodes, n_modes)
-    # Return only the data arrays
-    return [data for _, data in results]
+    # results: list of (times, data, ctavg) where data is (nstep, n_voi, n_nodes, n_modes)
+    # Return only the state data arrays
+    return [data for _, data, _ in results]
+
+
+def _run_nb_full(network_set: NetworkSet, nstep: int, x0_list: list,
+                 print_source: bool = False) -> list:
+    """Run NbHybridBackend and return full (times, state, ctavg) 3-tuples per subnetwork."""
+    backend = NbHybridBackend()
+    return backend.run_network(
+        network_set,
+        nstep=nstep,
+        chunk_size=1,
+        print_source=print_source,
+        initial_states=x0_list,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -392,10 +405,10 @@ class TestNbHybridCompatibilityCheck(unittest.TestCase):
     """Verify that incompatible models/integrators are rejected cleanly."""
 
     def test_rejects_unsupported_model(self):
-        from tvb.simulator.models import Generic2dOscillator
+        from tvb.simulator.models.oscillator import SupHopf
         from tvb.simulator.integrators import HeunDeterministic as HD
 
-        model = Generic2dOscillator()
+        model = SupHopf()
         model.configure()
         scheme = HD(dt=DT)
         sn = Subnetwork(name="sn", model=model, scheme=scheme, nnodes=3)
@@ -925,7 +938,7 @@ class TestNbHybridBenchmark(unittest.TestCase):
 
         # Verify result validity
         self.assertEqual(len(result), 2, "Expected 2 subnetwork results")
-        for times, data in result:
+        for times, data, _ in result:
             self.assertEqual(data.shape[0], self.NSTEP)
             self.assertFalse(np.any(np.isnan(data)), "NaN in Numba output")
 
@@ -1063,10 +1076,10 @@ class TestNbHybridMprKIonEx(unittest.TestCase):
         self.assertEqual(len(results), 2, "Expected 2 subnetwork results")
         mpr_nvoi = len(MontbrioPazoRoxin.variables_of_interest.default)
         kionex_nvoi = len(KIonEx.variables_of_interest.default)
-        times_a, data_a = results[0]
+        times_a, data_a, _ = results[0]
         self.assertEqual(data_a.shape, (self.NSTEP, mpr_nvoi, self.N, 1),
                          f"MPR subnet shape mismatch: {data_a.shape}")
-        times_b, data_b = results[1]
+        times_b, data_b, _ = results[1]
         self.assertEqual(data_b.shape, (self.NSTEP, kionex_nvoi, self.N, 1),
                          f"KIonEx subnet shape mismatch: {data_b.shape}")
 
@@ -1377,6 +1390,393 @@ class TestNbHybridDiskCache:
         assert cache_dir.exists()
         NbHybridBackend.clear_cache()
         assert not cache_dir.exists(), "Cache dir should be removed by clear_cache()"
+
+
+class TestNbHybridGeneric2dOscillator:
+    """Generic2dOscillator (generalised FitzHugh-Nagumo) model in numba backend."""
+
+    def _build_g2d_network(self, n=6):
+        """Two G2dOsc subnets with one inter-projection (V → V)."""
+        from tvb.simulator.models.oscillator import Generic2dOscillator
+
+        m1 = Generic2dOscillator()
+        m1.configure()
+        m2 = Generic2dOscillator()
+        m2.configure()
+
+        sn1 = Subnetwork(name='g2d1', model=m1, scheme=HeunDeterministic(dt=DT), nnodes=n)
+        sn2 = Subnetwork(name='g2d2', model=m2, scheme=HeunDeterministic(dt=DT), nnodes=n)
+        sn1.configure()
+        sn2.configure()
+
+        w = _sparse_weights(n, n, seed=11, density=0.4)
+        l = _zero_lengths(n, n)
+        inter = InterProjection(
+            source=sn1,
+            target=sn2,
+            source_cvar=np.array([0], dtype=np.int_),
+            target_cvar=np.array([0], dtype=np.int_),
+            weights=w,
+            lengths=l,
+            cv=1.0,
+            dt=DT,
+            scale=1e-2,
+        )
+
+        ns = NetworkSet(subnets=[sn1, sn2], projections=[inter], stimuli=[])
+        ns.configure()
+        return ns
+
+    def test_g2d_accepted_by_backend(self):
+        """Generic2dOscillator is accepted by _check_compatibility."""
+        ns = self._build_g2d_network()
+        NbHybridBackend()._check_compatibility(ns)  # should not raise
+
+    def test_g2d_output_shape(self):
+        """G2dOsc numba output has correct shape."""
+        ns = self._build_g2d_network(n=5)
+        nstep = 10
+        x0 = np.zeros((2, 5, 1), dtype=np.float32)
+        results = _run_nb_full(ns, nstep, [x0.copy(), x0.copy()])
+        assert len(results) == 2
+        for t_arr, d_arr, _ in results:
+            assert d_arr.ndim == 4
+            assert d_arr.shape[1] == 1  # 1 VOI (V only — default variables_of_interest)
+            assert d_arr.shape[2] == 5  # n_nodes
+            assert d_arr.shape[3] == 1  # n_modes
+
+    def test_g2d_output_finite(self):
+        """G2dOsc numba output is finite."""
+        ns = self._build_g2d_network(n=5)
+        nstep = 15
+        x0 = np.zeros((2, 5, 1), dtype=np.float32)
+        results = _run_nb_full(ns, nstep, [x0.copy(), x0.copy()])
+        for t_arr, d_arr, _ in results:
+            assert np.all(np.isfinite(d_arr)), "NaN/Inf in G2dOsc output"
+
+    def test_g2d_matches_python(self):
+        """G2dOsc numba output matches Python loop backend."""
+        ns = self._build_g2d_network(n=5)
+        nstep = 15
+        x0 = np.zeros((2, 5, 1), dtype=np.float32)
+        x0_list = [x0.copy(), x0.copy()]
+        py_results = _run_python_loop(ns, nstep, x0_list)
+        nb_results = _run_nb_full(ns, nstep, x0_list)
+        # _run_python_loop returns (T, n_vars, N, M); nb returns (T, n_voi, N, M).
+        # G2dOscillator defaults to VOI=("V",) so extract only VOI rows from python result.
+        svars = list(ns.subnets[0].model.state_variables)
+        voi = list(ns.subnets[0].model.variables_of_interest)
+        voi_idx = [svars.index(v) for v in voi]
+        for py_d, (_, nb_d, _) in zip(py_results, nb_results):
+            np.testing.assert_allclose(nb_d, py_d[:, voi_idx, :, :].astype(np.float32),
+                                       rtol=1e-3, atol=1e-3)
+
+
+class TestNbHybridAfferentCoupling:
+    """AfferentCoupling output (ctavg) from the numba backend."""
+
+    def _build_coupled_network(self, n=6):
+        """Two MPR subnets with inter-projection for afferent coupling tests."""
+        sn1 = _mpr_subnetwork("sn_ac1", n, HeunDeterministic)
+        sn2 = _mpr_subnetwork("sn_ac2", n, HeunDeterministic)
+        sn1.configure()
+        sn2.configure()
+
+        w = _sparse_weights(n, n, seed=99, density=0.5)
+        l = _zero_lengths(n, n)
+        inter = InterProjection(
+            source=sn1,
+            target=sn2,
+            source_cvar=np.array([0], dtype=np.int_),
+            target_cvar=np.array([0], dtype=np.int_),
+            weights=w,
+            lengths=l,
+            cv=1.0,
+            dt=DT,
+            scale=1e-2,
+        )
+
+        ns = NetworkSet(subnets=[sn1, sn2], projections=[inter], stimuli=[])
+        ns.configure()
+        return ns
+
+    def test_afferent_coupling_shape(self):
+        """ctavg (afferent coupling) output has correct shape."""
+        ns = self._build_coupled_network(n=6)
+        nstep = 20
+        x0 = np.zeros((2, 6, 1), dtype=np.float32)
+        results = _run_nb_full(ns, nstep, [x0.copy(), x0.copy()])
+        assert len(results) == 2
+        for t_arr, d_arr, c_arr in results:
+            assert c_arr.ndim == 4  # (n_chunks, n_cvar, n_nodes, n_modes)
+            n_chunks = d_arr.shape[0]
+            assert c_arr.shape[0] == n_chunks
+            assert c_arr.shape[1] == 2   # n_cvar for MPR (Coupling_Term_r, Coupling_Term_V)
+            assert c_arr.shape[2] == 6   # n_nodes
+            assert c_arr.shape[3] == 1   # n_modes
+
+    def test_afferent_coupling_zero_when_uncoupled(self):
+        """ctavg is zero for isolated subnets (no incoming projections)."""
+        sn1 = _mpr_subnetwork("isolated_ac", 4, HeunDeterministic)
+        sn1.configure()
+        ns = NetworkSet(subnets=[sn1], projections=[], stimuli=[])
+        ns.configure()
+        x0 = np.zeros((2, 4, 1), dtype=np.float32)
+        results = _run_nb_full(ns, 10, [x0])
+        _, _, c_arr = results[0]
+        np.testing.assert_array_equal(c_arr, 0.0,
+            err_msg="Afferent coupling should be zero for isolated subnet")
+
+    def test_afferent_coupling_nonzero_when_coupled(self):
+        """ctavg is non-zero for target subnet with active projections."""
+        ns = self._build_coupled_network(n=6)
+        nstep = 20
+        x0 = np.zeros((2, 6, 1), dtype=np.float32)
+        x0[0] = 0.1  # non-zero r → generates non-zero afferent coupling on sn2
+        results = _run_nb_full(ns, nstep, [x0.copy(), x0.copy()])
+        # sn2 (index 1) should receive non-zero coupling from sn1 via cvar[0]
+        _, _, c_arr_sn2 = results[1]
+        assert np.any(c_arr_sn2 != 0.0), "Expected non-zero afferent coupling on target subnet"
+
+    def test_afferent_coupling_finite(self):
+        """ctavg output is always finite."""
+        ns = self._build_coupled_network(n=6)
+        nstep = 20
+        x0 = np.zeros((2, 6, 1), dtype=np.float32)
+        results = _run_nb_full(ns, nstep, [x0.copy(), x0.copy()])
+        for _, _, c_arr in results:
+            assert np.all(np.isfinite(c_arr)), "NaN/Inf in afferent coupling output"
+
+
+class TestNbHybridReducedWongWang:
+    """ReducedWongWang model in the numba hybrid backend."""
+
+    N = 6
+    NSTEP = 20
+
+    def _build_network(self):
+        from tvb.simulator.models.wong_wang import ReducedWongWang
+        n = self.N
+        m1 = ReducedWongWang()
+        m1.configure()
+        m2 = ReducedWongWang()
+        m2.configure()
+        sn1 = Subnetwork(name='rww1', model=m1, scheme=HeunDeterministic(dt=DT), nnodes=n)
+        sn1.configure()
+        sn2 = Subnetwork(name='rww2', model=m2, scheme=HeunDeterministic(dt=DT), nnodes=n)
+        sn2.configure()
+        w = _sparse_weights(n, n, seed=3, density=0.4)
+        l = _zero_lengths(n, n)
+        inter = InterProjection(
+            source=sn1, target=sn2,
+            source_cvar=np.array([0], dtype=np.int32),
+            target_cvar=np.array([0], dtype=np.int32),
+            weights=w, lengths=l,
+            cv=1.0, dt=DT, scale=1e-4,
+        )
+        ns = NetworkSet(subnets=[sn1, sn2], projections=[inter], stimuli=[])
+        ns.configure()
+        return ns
+
+    def _make_ic(self):
+        x0 = np.zeros((1, self.N, 1), dtype=np.float64)
+        x0[0, :, 0] = 0.15
+        return x0
+
+    def test_rww_accepted_by_backend(self):
+        ns = self._build_network()
+        NbHybridBackend()._check_compatibility(ns)
+
+    def test_rww_output_shape(self):
+        from tvb.simulator.models.wong_wang import ReducedWongWang
+        ns = self._build_network()
+        x0 = self._make_ic()
+        results = _run_nb(ns, self.NSTEP, [x0.copy(), x0.copy()])
+        assert len(results) == 2
+        n_voi = len(ReducedWongWang.variables_of_interest.default)
+        for d in results:
+            assert d.ndim == 4
+            assert d.shape[0] == self.NSTEP
+            assert d.shape[1] == n_voi
+            assert d.shape[2] == self.N
+            assert d.shape[3] == 1
+
+    def test_rww_output_finite(self):
+        ns = self._build_network()
+        x0 = self._make_ic()
+        results = _run_nb(ns, self.NSTEP, [x0.copy(), x0.copy()])
+        for d in results:
+            assert np.all(np.isfinite(d)), "NaN/Inf in ReducedWongWang numba output"
+
+    def test_rww_matches_python(self):
+        from tvb.simulator.models.wong_wang import ReducedWongWang
+        n_voi = len(ReducedWongWang.variables_of_interest.default)
+        x0 = self._make_ic()
+        ns_py = self._build_network()
+        ns_nb = self._build_network()
+        py = _run_python_loop(ns_py, self.NSTEP, [x0.copy(), x0.copy()])
+        nb = _run_nb(ns_nb, self.NSTEP, [x0.copy(), x0.copy()])
+        for py_d, nb_d in zip(py, nb):
+            np.testing.assert_allclose(nb_d, py_d[:, :n_voi, :, :].astype(np.float32),
+                                       rtol=1e-3, atol=1e-3)
+
+
+class TestNbHybridEpileptor:
+    """Epileptor model in the numba hybrid backend."""
+
+    N = 4
+    NSTEP = 15
+
+    def _build_network(self):
+        from tvb.simulator.models.epileptor import Epileptor
+        n = self.N
+        m1 = Epileptor()
+        m1.configure()
+        m2 = Epileptor()
+        m2.configure()
+        sn1 = Subnetwork(name='ep1', model=m1, scheme=HeunDeterministic(dt=DT), nnodes=n)
+        sn1.configure()
+        sn2 = Subnetwork(name='ep2', model=m2, scheme=HeunDeterministic(dt=DT), nnodes=n)
+        sn2.configure()
+        w = _sparse_weights(n, n, seed=11, density=0.4)
+        l = _zero_lengths(n, n)
+        # Epileptor cvar=[0,3] (x1, x2); coupling_terms=['Coupling_Term_pop1', 'Coupling_Term_pop2']
+        inter = InterProjection(
+            source=sn1, target=sn2,
+            source_cvar=np.array([0, 3], dtype=np.int32),
+            target_cvar=np.array([0, 1], dtype=np.int32),
+            weights=w, lengths=l,
+            cv=1.0, dt=DT, scale=1e-4,
+        )
+        ns = NetworkSet(subnets=[sn1, sn2], projections=[inter], stimuli=[])
+        ns.configure()
+        return ns
+
+    def _make_ic(self):
+        """Epileptor IC near the interictal fixed point."""
+        x0 = np.zeros((6, self.N, 1), dtype=np.float64)
+        x0[0, :, 0] = -1.6    # x1
+        x0[1, :, 0] = -15.0   # y1
+        x0[2, :, 0] = 3.5     # z
+        x0[3, :, 0] = -0.2    # x2
+        x0[4, :, 0] = 0.0     # y2
+        x0[5, :, 0] = -0.05   # g
+        return x0
+
+    def test_epileptor_accepted_by_backend(self):
+        ns = self._build_network()
+        NbHybridBackend()._check_compatibility(ns)
+
+    def test_epileptor_output_shape(self):
+        from tvb.simulator.models.epileptor import Epileptor
+        ns = self._build_network()
+        x0 = self._make_ic()
+        results = _run_nb(ns, self.NSTEP, [x0.copy(), x0.copy()])
+        assert len(results) == 2
+        n_voi = len(Epileptor.variables_of_interest.default)
+        for d in results:
+            assert d.ndim == 4
+            assert d.shape[0] == self.NSTEP
+            assert d.shape[1] == n_voi
+            assert d.shape[2] == self.N
+            assert d.shape[3] == 1
+
+    def test_epileptor_output_finite(self):
+        ns = self._build_network()
+        x0 = self._make_ic()
+        results = _run_nb(ns, self.NSTEP, [x0.copy(), x0.copy()])
+        for d in results:
+            assert np.all(np.isfinite(d)), "NaN/Inf in Epileptor numba output"
+
+    def test_epileptor_matches_python(self):
+        from tvb.simulator.models.epileptor import Epileptor
+        # The template extracts state[vi] for vi in range(n_voi), so the first
+        # n_voi state variables are compared (x1, y1 for default Epileptor n_voi=2).
+        n_voi = len(Epileptor.variables_of_interest.default)
+        x0 = self._make_ic()
+        ns_py = self._build_network()
+        ns_nb = self._build_network()
+        py = _run_python_loop(ns_py, self.NSTEP, [x0.copy(), x0.copy()])
+        nb = _run_nb(ns_nb, self.NSTEP, [x0.copy(), x0.copy()])
+        for py_d, nb_d in zip(py, nb):
+            np.testing.assert_allclose(nb_d, py_d[:, :n_voi, :, :].astype(np.float32),
+                                       rtol=1e-2, atol=1e-2)
+
+
+class TestNbHybridWilsonCowan:
+    """WilsonCowan model in the numba hybrid backend."""
+
+    N = 6
+    NSTEP = 20
+
+    def _build_network(self):
+        from tvb.simulator.models.wilson_cowan import WilsonCowan
+        n = self.N
+        m1 = WilsonCowan()
+        m1.configure()
+        m2 = WilsonCowan()
+        m2.configure()
+        sn1 = Subnetwork(name='wc1', model=m1, scheme=HeunDeterministic(dt=DT), nnodes=n)
+        sn1.configure()
+        sn2 = Subnetwork(name='wc2', model=m2, scheme=HeunDeterministic(dt=DT), nnodes=n)
+        sn2.configure()
+        w = _sparse_weights(n, n, seed=5, density=0.4)
+        l = _zero_lengths(n, n)
+        # WC cvar=[0,1] (E, I); coupling_terms=['Coupling_Term_E'] (only 1).
+        # Use only E (cvar=0) from source for 1-to-1 mapping.
+        inter = InterProjection(
+            source=sn1, target=sn2,
+            source_cvar=np.array([0], dtype=np.int32),
+            target_cvar=np.array([0], dtype=np.int32),
+            weights=w, lengths=l,
+            cv=1.0, dt=DT, scale=1e-3,
+        )
+        ns = NetworkSet(subnets=[sn1, sn2], projections=[inter], stimuli=[])
+        ns.configure()
+        return ns
+
+    def _make_ic(self):
+        x0 = np.zeros((2, self.N, 1), dtype=np.float64)
+        x0[0, :, 0] = 0.2   # E
+        x0[1, :, 0] = 0.15  # I
+        return x0
+
+    def test_wc_accepted_by_backend(self):
+        ns = self._build_network()
+        NbHybridBackend()._check_compatibility(ns)
+
+    def test_wc_output_shape(self):
+        from tvb.simulator.models.wilson_cowan import WilsonCowan
+        ns = self._build_network()
+        x0 = self._make_ic()
+        results = _run_nb(ns, self.NSTEP, [x0.copy(), x0.copy()])
+        assert len(results) == 2
+        n_voi = len(WilsonCowan.variables_of_interest.default)
+        for d in results:
+            assert d.ndim == 4
+            assert d.shape[0] == self.NSTEP
+            assert d.shape[1] == n_voi
+            assert d.shape[2] == self.N
+            assert d.shape[3] == 1
+
+    def test_wc_output_finite(self):
+        ns = self._build_network()
+        x0 = self._make_ic()
+        results = _run_nb(ns, self.NSTEP, [x0.copy(), x0.copy()])
+        for d in results:
+            assert np.all(np.isfinite(d)), "NaN/Inf in WilsonCowan numba output"
+
+    def test_wc_matches_python(self):
+        from tvb.simulator.models.wilson_cowan import WilsonCowan
+        n_voi = len(WilsonCowan.variables_of_interest.default)
+        x0 = self._make_ic()
+        ns_py = self._build_network()
+        ns_nb = self._build_network()
+        py = _run_python_loop(ns_py, self.NSTEP, [x0.copy(), x0.copy()])
+        nb = _run_nb(ns_nb, self.NSTEP, [x0.copy(), x0.copy()])
+        for py_d, nb_d in zip(py, nb):
+            np.testing.assert_allclose(nb_d, py_d[:, :n_voi, :, :].astype(np.float32),
+                                       rtol=1e-2, atol=1e-2)
 
 
 if __name__ == "__main__":
