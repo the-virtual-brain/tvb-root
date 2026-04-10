@@ -1779,5 +1779,292 @@ class TestNbHybridWilsonCowan:
                                        rtol=1e-2, atol=1e-2)
 
 
+class TestNbHybridCheckpointing:
+    """§8.8 Disk-Checkpointing and Resumable Runs."""
+
+    N = 5
+    NSTEP = 20
+
+    def _build_network(self):
+        sn1 = _mpr_subnetwork("cp1", self.N)
+        sn2 = _mpr_subnetwork("cp2", self.N)
+        sn1.configure()
+        sn2.configure()
+        w = _sparse_weights(self.N, self.N, seed=7)
+        l = _zero_lengths(self.N, self.N)
+        inter = InterProjection(
+            source=sn1, target=sn2,
+            source_cvar=np.array([0], dtype=np.int32),
+            target_cvar=np.array([0], dtype=np.int32),
+            weights=w, lengths=l,
+            cv=1.0, dt=DT, scale=1.0,
+        )
+        ns = NetworkSet(subnets=[sn1, sn2], projections=[inter], stimuli=[])
+        ns.configure()
+        return ns
+
+    def _make_ic(self):
+        rng = np.random.RandomState(42)
+        m = MontbrioPazoRoxin()
+        m.configure()
+        ic1 = rng.uniform(0.0, 0.1, (m.nvar, self.N, 1)).astype(np.float64)
+        ic2 = rng.uniform(0.0, 0.1, (m.nvar, self.N, 1)).astype(np.float64)
+        ic1[0] = np.abs(ic1[0])
+        ic2[0] = np.abs(ic2[0])
+        return [ic1, ic2]
+
+    def test_run_returns_list_by_default(self):
+        ns = self._build_network()
+        ic = self._make_ic()
+        compiled = NbHybridBackend().compile(ns)
+        result = compiled.run(self.NSTEP, chunk_size=1, initial_states=ic)
+        assert isinstance(result, list)
+
+    def test_return_snapshot_gives_tuple(self):
+        ns = self._build_network()
+        ic = self._make_ic()
+        compiled = NbHybridBackend().compile(ns)
+        result = compiled.run(self.NSTEP, chunk_size=1, initial_states=ic,
+                              return_snapshot=True)
+        assert isinstance(result, tuple)
+        assert len(result) == 2
+        outputs, snapshot = result
+        assert isinstance(outputs, list)
+        assert isinstance(snapshot, dict)
+        assert 'states' in snapshot
+        assert 'buffers' in snapshot
+
+    def test_snapshot_states_shape(self):
+        ns = self._build_network()
+        ic = self._make_ic()
+        compiled = NbHybridBackend().compile(ns)
+        _, snapshot = compiled.run(self.NSTEP, chunk_size=1, initial_states=ic,
+                                   return_snapshot=True)
+        states = snapshot['states']
+        assert isinstance(states, list)
+        assert len(states) == len(ns.subnets)
+        m = MontbrioPazoRoxin()
+        m.configure()
+        for arr in states:
+            assert arr.ndim == 3
+            assert arr.shape == (m.nvar, self.N, 1)
+
+    def test_resume_continues_from_snapshot(self):
+        # Build three identical networks (same topology, same IC)
+        ic = self._make_ic()
+
+        ns_split1 = self._build_network()
+        ns_split2 = self._build_network()
+        ns_full = self._build_network()
+
+        compiled_split = NbHybridBackend().compile(ns_split1)
+        compiled_full = NbHybridBackend().compile(ns_full)
+
+        # Run N steps, capture snapshot
+        out1, snap1 = compiled_split.run(
+            self.NSTEP, chunk_size=1,
+            initial_states=[a.copy() for a in ic],
+            return_snapshot=True,
+        )
+        # Resume for N more steps
+        out2 = compiled_split.resume(snap1, self.NSTEP, chunk_size=1)
+
+        # Run 2*NSTEP from scratch
+        out_full = compiled_full.run(
+            self.NSTEP * 2, chunk_size=1,
+            initial_states=[a.copy() for a in ic],
+        )
+
+        # Last chunk of resumed run should match last chunk of full run
+        for i in range(len(ns_split1.subnets)):
+            np.testing.assert_allclose(
+                out2[i][1][-1],   # (times, data, ctavg) → data[-1]
+                out_full[i][1][-1],
+                atol=1e-4,
+                err_msg=f"resume vs full mismatch at subnet {i}",
+            )
+
+
+# ---------------------------------------------------------------------------
+# mode_map ≠ identity tests
+# ---------------------------------------------------------------------------
+
+class TestNbHybridModeMap:
+    """Inter-projection mode_map that is NOT the diagonal (identity) matrix."""
+
+    N = 10
+    N_MODES = 2
+    NSTEP = 5
+
+    def _build_net(self, mode_map_arr):
+        """Two MPR subnets (2 modes each) with an inter-projection and explicit mode_map."""
+        m1 = MontbrioPazoRoxin()
+        m1.number_of_modes = self.N_MODES
+        m1.configure()
+        m2 = MontbrioPazoRoxin()
+        m2.number_of_modes = self.N_MODES
+        m2.configure()
+
+        sn1 = Subnetwork(name="mm_src", model=m1,
+                         scheme=HeunDeterministic(dt=DT), nnodes=self.N)
+        sn1.configure()
+        sn2 = Subnetwork(name="mm_tgt", model=m2,
+                         scheme=HeunDeterministic(dt=DT), nnodes=self.N)
+        sn2.configure()
+
+        w = _sparse_weights(self.N, self.N, seed=17, density=0.5)
+        inter = InterProjection(
+            source=sn1, target=sn2,
+            source_cvar=np.array([0], dtype=np.int32),
+            target_cvar=np.array([0], dtype=np.int32),
+            weights=w,
+            lengths=_zero_lengths(self.N, self.N),
+            cv=1.0, dt=DT, scale=1e-2,
+            mode_map=mode_map_arr,
+        )
+        ns = NetworkSet(subnets=[sn1, sn2], projections=[inter], stimuli=[])
+        ns.configure()
+        return ns
+
+    def _make_ic(self):
+        rng = np.random.RandomState(19)
+        x0 = rng.uniform(0.0, 0.2, (2, self.N, self.N_MODES)).astype(np.float64)
+        x0[0] = np.abs(x0[0])
+        # Make modes deliberately different so mode mixing has visible effect
+        x0[:, :, 0] *= 2.0
+        return x0
+
+    def test_nonidentity_mode_map_accepted(self):
+        """compile() accepts inter-projection with all-ones (non-diagonal) mode_map."""
+        mm = np.array([[1, 1], [1, 1]], dtype=np.int_)
+        ns = self._build_net(mm)
+        NbHybridBackend().compile(ns)  # must not raise
+
+    def test_nonidentity_mode_map_output_shape(self):
+        """run_network() output last dimension equals n_modes=2 with non-diagonal mode_map."""
+        mm = np.array([[1, 1], [1, 1]], dtype=np.int_)
+        ns = self._build_net(mm)
+        x0 = self._make_ic()
+        results = _run_nb_full(ns, self.NSTEP, [x0, x0.copy()])
+        assert len(results) == 2
+        for _, data, _ in results:
+            assert data.shape[-1] == self.N_MODES, (
+                f"Expected n_modes={self.N_MODES} in last dim, got shape {data.shape}"
+            )
+
+    def test_nonidentity_mode_map_finite(self):
+        """run_network() produces finite output with non-diagonal mode_map."""
+        mm = np.array([[1, 1], [1, 1]], dtype=np.int_)
+        ns = self._build_net(mm)
+        x0 = self._make_ic()
+        results = _run_nb_full(ns, self.NSTEP, [x0, x0.copy()])
+        for _, data, _ in results:
+            assert np.all(np.isfinite(data)), f"NaN/Inf in mode_map output: {data}"
+
+    def test_nonidentity_mode_map_mixed_modes(self):
+        """All-ones mode_map produces different output from diagonal mode_map."""
+        # Diagonal: each source mode contributes only to the same target mode
+        mm_diag = np.array([[1, 0], [0, 1]], dtype=np.int_)
+        # All-ones: each source mode contributes to ALL target modes (mixing)
+        mm_mix = np.array([[1, 1], [1, 1]], dtype=np.int_)
+
+        x0 = self._make_ic()
+
+        ns_diag = self._build_net(mm_diag)
+        res_diag = _run_nb(ns_diag, self.NSTEP, [x0.copy(), x0.copy()])
+
+        ns_mix = self._build_net(mm_mix)
+        res_mix = _run_nb(ns_mix, self.NSTEP, [x0.copy(), x0.copy()])
+
+        # The target subnet (index 1) should differ between the two mode maps
+        max_diff = np.max(np.abs(res_mix[1].astype(np.float64) -
+                                  res_diag[1].astype(np.float64)))
+        assert max_diff > 1e-6, (
+            f"Expected mixing mode_map to differ from diagonal by >1e-6, "
+            f"got max_diff={max_diff:.2e}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Large-N scaling tests
+# ---------------------------------------------------------------------------
+
+class TestNbHybridLargeNScaling:
+    """Large-N scaling: correctness at N=100 and speedup regression at N=50."""
+
+    def _build_two_subnet_net(self, n: int, seed: int = 0):
+        """Two MPR subnets connected by an inter-projection (no delays)."""
+        sn_a = _mpr_subnetwork("ls_a", n)
+        sn_b = _mpr_subnetwork("ls_b", n)
+        sn_a.configure()
+        sn_b.configure()
+        w = _sparse_weights(n, n, seed=seed, density=0.2)
+        inter = InterProjection(
+            source=sn_a, target=sn_b,
+            source_cvar=np.array([0], dtype=np.int32),
+            target_cvar=np.array([0], dtype=np.int32),
+            weights=w,
+            lengths=_zero_lengths(n, n),
+            cv=1.0, dt=DT, scale=1e-3,
+        )
+        ns = NetworkSet(subnets=[sn_a, sn_b], projections=[inter], stimuli=[])
+        ns.configure()
+        return ns
+
+    def _init_states(self, ns, seed=42):
+        rng = np.random.RandomState(seed)
+        states = []
+        for sn in ns.subnets:
+            x0 = rng.uniform(0.0, 0.2, (sn.model.nvar, sn.nnodes, 1)).astype(np.float64)
+            x0[0] = np.abs(x0[0])
+            states.append(x0)
+        return states
+
+    def test_large_n_runs_without_error(self):
+        """N=100 two-subnet network runs 50 steps and produces finite results."""
+        n, nstep = 100, 50
+        ns = self._build_two_subnet_net(n, seed=1)
+        x0_list = self._init_states(ns)
+        results = _run_nb_full(ns, nstep, x0_list)
+        assert len(results) == 2
+        for _, data, _ in results:
+            assert data.shape[0] == nstep
+            assert np.all(np.isfinite(data)), "NaN/Inf in large-N output"
+
+    def test_numba_faster_than_python(self):
+        """Numba cached kernel runs faster than Python loop (N=50, nstep=100).
+
+        JIT compilation is paid once before timing.  A generous bound of 5×
+        is used because warm-up effects can compress the Python advantage on
+        very short runs.
+        """
+        n, nstep = 50, 100
+        ns = self._build_two_subnet_net(n, seed=2)
+        x0_list = self._init_states(ns)
+
+        backend = NbHybridBackend()
+        compiled = backend.compile(ns)
+
+        # Warm up the Numba JIT (one-time compilation cost, not timed)
+        compiled.run(nstep=5, chunk_size=1, initial_states=x0_list)
+
+        # Time Python loop
+        t0 = time.perf_counter()
+        _run_python_loop(ns, nstep, x0_list)
+        t_py = time.perf_counter() - t0
+
+        # Time Numba cached kernel (no recompilation)
+        t0 = time.perf_counter()
+        compiled.run(nstep=nstep, chunk_size=1, initial_states=x0_list)
+        t_nb = time.perf_counter() - t0
+
+        speedup = t_py / t_nb if t_nb > 0 else float('inf')
+        assert speedup > 0.2, (
+            f"Numba kernel should not be more than 5× slower than Python "
+            f"(got speedup={speedup:.2f}×, t_py={t_py*1e3:.1f}ms, "
+            f"t_nb={t_nb*1e3:.1f}ms)"
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

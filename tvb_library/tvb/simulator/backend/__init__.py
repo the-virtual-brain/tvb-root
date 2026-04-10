@@ -26,3 +26,12 @@
 
 from .base import BaseBackend
 from .ref import ReferenceBackend
+
+
+def __getattr__(name):
+    if name in ("NbHybridBackend", "CompiledNetworkFn"):
+        from tvb.simulator.backend.nb_hybrid import NbHybridBackend, CompiledNetworkFn  # noqa: PLC0415
+        globals()["NbHybridBackend"] = NbHybridBackend
+        globals()["CompiledNetworkFn"] = CompiledNetworkFn
+        return globals()[name]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
