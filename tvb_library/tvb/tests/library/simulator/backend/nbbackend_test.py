@@ -342,7 +342,9 @@ def kernel(dx, state, cx, parmat):
         dX = np.zeros_like(state)
         kernel(dX, state, cx, parmat)
 
-        ref = model_.dfun(state, cx)
+        # KIonEx.dfun uses guvectorize which expects 3D (nvar, nnode, nmode)
+        # inputs, so add a trailing dimension and squeeze the result.
+        ref = model_.dfun(state[..., np.newaxis], cx[..., np.newaxis]).squeeze(-1)
         for k, svar in enumerate(model_.state_variables):
             np.testing.assert_allclose(
                 dX[k], ref[k], rtol=1e-5, atol=1e-6,
