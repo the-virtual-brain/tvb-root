@@ -1047,7 +1047,13 @@ class TestNbHybridMprKIonEx(unittest.TestCase):
                             initial_states=[ic_a, ic_b])
 
     def test_output_shapes(self):
-        """Numba backend produces correctly-shaped output for MPR+KIonEx."""
+        """Numba backend produces correctly-shaped output for MPR+KIonEx.
+
+        NOTE: KIonEx's ionic-current helpers use log() applied to concentrations
+        that can go negative in float32 (the hybrid numba backend's precision),
+        so NaN-freedom is only asserted for the Python (float64) path in
+        test_mpr_kionex.py.  Here we validate shapes and that the backend runs.
+        """
         from tvb.simulator.models.k_ion_exchange import KIonEx
         nets, ic_a, ic_b = self._build_network()
         results = NbHybridBackend().run_network(
