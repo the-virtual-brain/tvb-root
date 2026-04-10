@@ -217,7 +217,7 @@ This is the simplest correct approach. Code-generated stimulus functions
 | Disk-persistent JIT cache | ✅ |
 | compile() / CompiledNetworkFn API | ✅ |
 | Sub-stepping (different dt) | ❌ (out of scope) |
-| nb.prange parallelism | ❌ (future §8.1) |
+| nb.prange parallelism | ❌ (out of scope) |
 | Other models (FHN, WongWang, …) | ❌ (future §8.6) |
 
 ---
@@ -305,35 +305,11 @@ benefits from BLAS vectorisation at large N.
 
 ### 8. Next Stages
 
-#### 8.1 Performance — Coupling Kernel (HIGH PRIORITY)
+#### 8.1 Performance — Coupling Kernel
 
-**Problem**: At N=100+ with realistic density, the coupling inner loop is the
-bottleneck.  The current scalar Numba loop is slower than NumPy's BLAS-backed
-CSR matmul at large N.
+**`nb.prange` parallelism is out of scope** (removed from roadmap).
 
-**Option A — `nb.prange` on node loop (easiest)**
-
-Replace `for j in range(n_tgt_nodes)` with `nb.prange` and add `parallel=True`
-to the coupling `@nb.njit` decorator.  This parallelises across target nodes.
-
-```python
-# In template: compute_coupling_<proj>
-@nb.njit(parallel=True, inline="never")   # no inline when parallel
-def compute_coupling_<proj>(...):
-    for j in nb.prange(n_tgt_nodes):      # parallelised
-        ...
-```
-
-Requirements:
-- `network_chunk` must be `@nb.njit(parallel=False)` — Numba does not support
-  nested parallel regions; the caller must not be `parallel`.
-- Remove `inline="always"` from coupling functions (incompatible with `parallel=True`).
-- This requires `no-GIL` process threads; safe because all arrays are disjoint
-  per target node (no write conflict across `j` iterations).
-
-Expected gain: linear in number of CPU cores for the coupling step.
-
-**Option B — Strip epsilon structural zeros before Numba**
+**Option — Strip epsilon structural zeros before Numba**
 
 The CSR matrices contain structural zeros from the epsilon trick in
 `BaseProjection.__init__()`. These contribute `w * val = 0.0 * val = 0` to
@@ -515,7 +491,7 @@ the caller can pickle the final state and restart. What is missing:
 | ~~n_modes > 1 general path~~ | **Done** ✅ (TestNbHybridMultiMode) |
 | Shared-per-source buffers | Numerical equivalence after buffer refactor |
 | ~~Disk cache persistence~~ | **Done** ✅ (TestNbHybridDiskCache) |
-| prange parallel coupling | Numerical equivalence with parallel=True |
+
 | Large N scaling | Automated speedup regression at N=500 |
 
 #### 8.10 Code Quality
@@ -530,11 +506,7 @@ the caller can pickle the final state and restart. What is missing:
 
 ### 9. Open Questions
 
-1. **`nb.prange` + `inline="always"` incompatibility**: `parallel=True` requires
-   `inline="never"` on coupling functions. Need to measure whether inlining by
-   the non-parallel fallback matters for correctness or speed after adding prange.
-
-2. **Epsilon structural zeros**: The CSR epsilon trick was deliberately preserved
+1. **Epsilon structural zeros**: The CSR epsilon trick was deliberately preserved
    to allow direct Python ↔ Numba numerical comparison in tests. Stripping zeros
    (§8.1.B) breaks that property — tests will need tolerance adjustment.
 
