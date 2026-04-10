@@ -2,10 +2,10 @@
 
 ## Implementation Plan
 
-> **Status (2026-04-09):** Phases 1–7 complete. Benchmarks validated.
-> See §7 (Completed Work) for what has been built and §8 (Next Stages) for the
-> performance and functionality roadmap. Sections below this header now reflect
-> the *as-built* design rather than the original plan.
+> **Status (2026-04-10):** Phases 1–7 complete plus Phase A (Sigmoidal cfun,
+> JansenRit model, n_modes > 1) and Phase C1 (disk-persistent JIT cache).
+> 263 tests passing. See §7 (Completed Work) for what has been built and
+> §8 (Next Stages) for the remaining roadmap.
 
 ---
 
@@ -17,7 +17,7 @@
 |------|---------|
 | `tvb/simulator/backend/nb_hybrid.py` | Backend class, dataclasses, cache |
 | `tvb/simulator/backend/templates/nb-hybrid-sim.py.mako` | Full kernel template |
-| `tvb/tests/library/simulator/backend/test_nb_hybrid.py` | 25 tests |
+| `tvb/tests/library/simulator/backend/test_nb_hybrid.py` | 44 tests |
 
 The original plan proposed four separate template files. The final design uses a
 **single template** (`nb-hybrid-sim.py.mako`) that generates all functions
@@ -193,6 +193,8 @@ This is the simplest correct approach. Code-generated stimulus functions
 | Feature | Status |
 |---------|--------|
 | MPR model | ✅ |
+| KIonEx model | ✅ |
+| JansenRit model | ✅ |
 | HeunDeterministic | ✅ |
 | EulerDeterministic | ✅ |
 | HeunStochastic | ✅ |
@@ -201,6 +203,8 @@ This is the simplest correct approach. Code-generated stimulus functions
 | Intra-projections (delayed, sparse) | ✅ |
 | Linear coupling function | ✅ |
 | Scaling coupling function | ✅ |
+| Sigmoidal coupling function | ✅ |
+| SigmoidalJansenRit coupling function | ✅ |
 | No coupling function (identity) | ✅ |
 | target_scales | ✅ |
 | mode_map (inter) | ✅ |
@@ -210,12 +214,11 @@ This is the simplest correct approach. Code-generated stimulus functions
 | n_modes > 1 (general) | ✅ |
 | Same-dt constraint enforced | ✅ |
 | In-process JIT cache | ✅ |
+| Disk-persistent JIT cache | ✅ |
 | compile() / CompiledNetworkFn API | ✅ |
-| Sigmoidal / SigmoidalJansenRit cfun | ❌ (future) |
 | Sub-stepping (different dt) | ❌ (out of scope) |
-| Disk-persistent JIT cache | ❌ (future) |
-| nb.prange parallelism | ❌ (future) |
-| Other models (JansenRit, FHN, …) | ❌ (future) |
+| nb.prange parallelism | ❌ (future §8.1) |
+| Other models (FHN, WongWang, …) | ❌ (future §8.6) |
 
 ---
 
@@ -259,10 +262,31 @@ This is the simplest correct approach. Code-generated stimulus functions
 - Works for both deterministic and stochastic subnetworks
 
 #### Phase 7: Tests & Benchmark ✅
-- 25 tests passing: intra, inter (all cvar modes), delays, cfuns, stochastic,
+- 28 tests (original): intra, inter (all cvar modes), delays, cfuns, stochastic,
   stimulus, end-to-end multi-subnetwork, compatibility checks
 - Benchmark: N=100 nodes × 2 subnets, 1000 steps, cv=10 m/s, 20% density
   → **~6× speedup** over pure Python NetworkSet
+
+#### Phase A: Functional Parity — cfun + models ✅ (2026-04-10)
+- **Sigmoidal cfun**: `"sigmoidal"` post-hook branch added to cfun dispatch
+- **SigmoidalJansenRit cfun**: `"sigmoidal_jr"` pre-hook applied to source state
+  inside CSR inner loop before weighted-sum accumulation
+- **cfun_params refactor**: `cfun_a, cfun_b` scalars replaced by a single
+  `float32[5]` array per projection; layout differs per cfun type
+- **JansenRit model**: added `coupling_terms`, `parameter_names`, `dfun_helpers`
+  (`sigm_jr`), `dfun_intermediates`, `state_variable_dfuns` to `jansen_rit.py`;
+  wired into `_check_compatibility` and template codegen
+- **n_modes > 1**: exercised via MPR with `number_of_modes=2`; shape + match tests
+- 16 new tests added (TestNbHybridSigmoidalCfun × 6, TestNbHybridJansenRit × 4,
+  TestNbHybridMultiMode × 3, TestNbHybridDiskCache × 3); 44 total
+
+#### Phase C1: Disk-persistent JIT Cache ✅ (2026-04-10)
+- `_build_as_module()`: renders source to `$TMPDIR/tvb_nb_hybrid_cache/nbhybrid_<sha16>.py`
+  atomically, registers in `sys.modules`, imports as real module
+- Numba `cache=True` on all `@nb.njit` decorators: writes `.nbi`/`.nbc` pairs
+  next to the `.py` file; native code loaded ~50 ms on second process start
+- `NbHybridBackend.clear_cache()` + `get_cache_dir()` added
+- In-process `_COMPILED_FN_CACHE` dict retained as first-level fast path
 
 #### Performance results (N=20, 1000 steps, cv=10, 20% density)
 | N | Speedup | Numba steps/s |
@@ -336,7 +360,7 @@ History buffers and all state arrays are already `float32`.  Confirm that all
 reads inside the coupling loop (`buf[cv, src_node, m, buf_idx]`) are typed
 `float32` to avoid any implicit upcasting inside Numba.
 
-#### 8.2 Performance — Disk-Persistent JIT Cache (MEDIUM PRIORITY)
+#### 8.2 ~~Performance — Disk-Persistent JIT Cache~~ **DONE** ✅
 
 **Problem**: First run after process restart pays full JIT cost (~5s for the
 current MPR 2-subnet case). The in-process `_COMPILED_FN_CACHE` does not
@@ -422,7 +446,7 @@ The inner kernel calls this instead of indexing the pre-computed array. Only
 applies to analytically-describable stimuli (pulse trains, sinusoids). Complex
 stimulus arrays remain on the batch-precompute path.
 
-#### 8.5 Functionality — Sigmoidal Coupling Functions (HIGH PRIORITY)
+#### 8.5 ~~Functionality — Sigmoidal Coupling Functions~~ **DONE** ✅
 
 The existing `hybrid/coupling.py` includes `Sigmoidal` and `SigmoidalJansenRit`
 which are used in standard TVB simulations. These must be added to the template
@@ -443,9 +467,10 @@ Template changes:
 
 #### 8.6 Functionality — Additional Models (MEDIUM PRIORITY)
 
-The MPR-only constraint simplifies code generation (all params baked as scalars)
-but limits the backend's usefulness for multi-model hybrid networks. Adding
-JansenRit and FitzHugh-Nagumo would cover the most common use cases.
+**JansenRit: DONE ✅** Added 2026-04-10 (see Phase A above).
+
+FitzHugh-Nagumo and other models remain. Adding
+FitzHugh-Nagumo would cover additional use cases.
 
 Approach: parameterised model template, same as the existing `nb-dfuns.py.mako`
 pattern. Each model contributes a `dfun_<sn_name>(state_vars, coupling_terms)`
@@ -485,11 +510,11 @@ the caller can pickle the final state and restart. What is missing:
 
 | Gap | Test to add |
 |-----|------------|
-| Sigmoidal cfun | Compare Numba vs Python for `Sigmoidal` coupling |
+| ~~Sigmoidal cfun~~ | **Done** ✅ |
 | mode_map ≠ identity | Verify multi-mode inter-projection output |
-| n_modes > 1 general path | Currently only n_modes=1 is exercised |
+| ~~n_modes > 1 general path~~ | **Done** ✅ (TestNbHybridMultiMode) |
 | Shared-per-source buffers | Numerical equivalence after buffer refactor |
-| Disk cache persistence | Run → kill → rerun, assert JIT skipped |
+| ~~Disk cache persistence~~ | **Done** ✅ (TestNbHybridDiskCache) |
 | prange parallel coupling | Numerical equivalence with parallel=True |
 | Large N scaling | Automated speedup regression at N=500 |
 
