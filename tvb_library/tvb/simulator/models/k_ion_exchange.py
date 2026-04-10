@@ -291,9 +291,9 @@ class KIonEx(Model):
             'x':   ('(Delta + 2*R_minus*(V-c_minus)*x - J*r*x)'
                     ' if V <= Vstar else'
                     ' (Delta + 2*R_plus*(V-c_plus)*x - J*r*x)'),
-            'V':   ('(Vdot - R_minus*x**2 + eta + J*r*(E-V) + (R_minus/pi)*Coupling_Term*(E-V))'
+            'V':   ('(Vdot - R_minus*x**2 + eta + (R_minus/pi)*Coupling_Term*(E-V))'
                     ' if V <= Vstar else'
-                    ' (Vdot - R_plus*x**2 + eta + J*r*(E-V) + (R_minus/pi)*Coupling_Term*(E-V))'),
+                    ' (Vdot - R_plus*x**2 + eta + (R_minus/pi)*Coupling_Term*(E-V))'),
             'n':   '(ninf - n) / tau_n',
             'DKi': '-(gamma / w_i) * (I_K - 2.0 * I_pump)',
             'Kg':  'epsilon * (K_bath - K_o)',
@@ -440,8 +440,8 @@ class KIonEx(Model):
         else_xdot = Delta+2*R_plus*(V-c_plus)*x-J*r*x
         derivative[0] = numpy.where(V <= Vstar, if_xdot, else_xdot)
 
-        if_Vdot = Vdot - R_minus*x**2 + eta + J*r*(E-V) + (R_minus/numpy.pi)*Coupling_Term*(E-V)
-        else_Vdot = Vdot - R_plus*x**2 + eta + J*r*(E-V) + (R_minus/numpy.pi)*Coupling_Term*(E-V)
+        if_Vdot = Vdot - R_minus*x**2 + eta + (R_minus/numpy.pi)*Coupling_Term*(E-V)
+        else_Vdot = Vdot - R_plus*x**2 + eta + (R_minus/numpy.pi)*Coupling_Term*(E-V)
         derivative[1] = numpy.where(V <= Vstar, if_Vdot, else_Vdot)
 
         derivative[2] = (ninf - n) / tau_n
@@ -662,7 +662,7 @@ def _numba_dfun(state_variables, coupling, E, K_bath, J, eta, Delta, c_minus, R_
         R, c = R_plus[0], c_plus[0]
 
     dx[0] = Delta[0] + 2 * R * (V - c) * x - J[0] * r * x
-    dx[1] = Vdot - R * x ** 2 + eta[0] + J[0] * r * (E[0] - V) + (R_minus[0] / numpy.pi) * Coupling_Term * (E[0] - V)
+    dx[1] = Vdot - R * x ** 2 + eta[0] + (R_minus[0] / numpy.pi) * Coupling_Term * (E[0] - V)
     dx[2] = (ninf - n) / tau_n[0]
     dx[3] = -(gamma[0] / w_i) * (I_K - 2.0 * I_pump)
     dx[4] = epsilon[0] * (K_bath[0] - K_o)
