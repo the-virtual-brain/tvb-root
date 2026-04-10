@@ -2,10 +2,10 @@
 
 ## Implementation Plan
 
-> **Status (2026-04-10):** Phases 1–7, A, C1, C2 complete. Phase D (additional
-> models: ReducedWongWang, Epileptor, WilsonCowan, Generic2dOscillator,
-> AfferentCoupling). 78 tests passing. See §7 (Completed Work) for full history
-> and §8 (Next Stages) for remaining roadmap.
+> **Status (2026-04-10):** Phases 1–7, A, C1, C2, D, E complete. 78 tests
+> passing across 8 supported models. See §7 (Completed Work) for full history,
+> §8 (Next Stages) for remaining roadmap, and `nb_hybrid_next.md` for the
+> next-phase plan (bulk model codegen, monitor support, combined-mode dfun).
 
 ---
 
@@ -499,8 +499,12 @@ Template changes:
 - WilsonCowan ✅ (wilson_cowan.py — shift_sigmoid=True only)
 - Generic2dOscillator ✅ (oscillator.py)
 
-**Permanently deferred:**
-- `ReducedSetFitzHughNagumo` (`stefanescu_jirsa.py`): inter-mode `numpy.dot(xi, Aik)` in `dfun` cannot be expressed as per-node scalar code-gen. There is no standalone `FitzHughNagumo` model in TVB.
+**Deferred to next phase (combined-mode dfun generation):**
+- `ReducedSetFitzHughNagumo` (`stefanescu_jirsa.py`): inter-mode `numpy.dot(xi, Aik)` requires
+  "combined mode" template branch that receives all modes at once. n_modes is
+  fixed at 3; matrix products can be unrolled at code-gen time.
+- `ReducedSetHindmarshRose` (`stefanescu_jirsa.py`): same pattern.
+- See `nb_hybrid_next.md` §3 for implementation plan.
 
 #### 8.7 ~~Functionality — AfferentCoupling Monitor~~ **DONE** ✅
 
@@ -569,5 +573,7 @@ the caller can pickle the final state and restart. What is missing:
 |------|------|
 | `tvb/simulator/backend/nb_hybrid.py` | Backend, dataclasses, cache |
 | `tvb/simulator/backend/templates/nb-hybrid-sim.py.mako` | Single Mako kernel template |
-| `tvb/tests/library/simulator/backend/test_nb_hybrid.py` | 25 tests + benchmark |
+| `tvb/tests/library/simulator/backend/test_nb_hybrid.py` | 78 tests |
 | `tvb/simulator/backend/nb_hybrid_plan.md` | This document |
+| `tvb/simulator/backend/nb_hybrid_next.md` | Next-phase plan (models, monitors, combined-mode) |
+| `tvb/simulator/backend/ralph_add_model_codegen.sh` | Ralph loop: AI-assisted bulk model codegen |
