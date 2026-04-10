@@ -42,7 +42,7 @@ all_projs = analysis.all_projections
     post_ct = ct if ct != 'sigmoidal_jr' else 'none'
 %>
 
-${'' if debug_nojit else '@nb.njit(inline="always")'}
+${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
 def compute_coupling_${p.name}(
     buf,
     w_data, w_indices, w_indptr,
@@ -248,13 +248,13 @@ ${_cname} = ${_cval}
 ## emit helper functions if model provides them (e.g. KIonEx-style)
 % if hasattr(sn.model, 'dfun_helpers') and sn.model.dfun_helpers:
 % for _fname, _fargs, _fexpr in sn.model.dfun_helpers:
-${'' if debug_nojit else '@nb.njit(inline="always")'}
+${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
 def ${_fname}(${_fargs}):
     return ${_fexpr}
 
 % endfor
 % endif
-${'' if debug_nojit else '@nb.njit(inline="always")'}
+${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
 def dfun_${sn.name}(${svars_str}, ${cterms_str}):
     pi = math.pi
     % for name, val in gparams.items():
@@ -270,7 +270,7 @@ def dfun_${sn.name}(${svars_str}, ${cterms_str}):
     return (${', '.join(['d_' + s for s in svars])},)
 
 
-${'' if debug_nojit else '@nb.njit(inline="always")'}
+${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
 def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'noise, t_abs' if sn.is_stochastic else ''}):
     """Integrate subnetwork ${sn.name} one step in-place."""
     dt = nb.float32(${dt_val})
@@ -395,7 +395,7 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'no
 ## Inner @njit time-stepping loop
 ## ============================================================
 
-${'' if debug_nojit else '@nb.njit'}
+${'' if debug_nojit else '@nb.njit(cache=True)'}
 def network_chunk(
     nstep,
     t_start,

@@ -218,6 +218,37 @@ class NetworkAnalysis:
 _COMPILED_FN_CACHE: dict = {}
 
 
+def _build_as_module(source: str, cache_key: str):
+    """Write *source* to a real .py file so Numba's file-based cache works.
+
+    Numba's ``cache=True`` requires a real ``co_filename`` on the compiled
+    function.  By writing the generated source to a file and importing it
+    as a proper Python module we give Numba that filename, allowing it to
+    persist ``.nbi``/``.nbc`` files in ``__pycache__/`` next to the ``.py``.
+    """
+    import importlib.util
+    import os
+    import sys
+    import tempfile
+    from pathlib import Path
+
+    cache_dir = Path(tempfile.gettempdir()) / "tvb_nb_hybrid_cache"
+    cache_dir.mkdir(exist_ok=True)
+    mod_name = f"nbhybrid_{cache_key[:16]}"
+    mod_path = cache_dir / f"{mod_name}.py"
+    if not mod_path.exists():
+        # Atomic write: write to .tmp then os.replace to avoid partial reads.
+        tmp_path = mod_path.with_suffix(".tmp")
+        tmp_path.write_text(source, encoding="utf-8")
+        os.replace(tmp_path, mod_path)
+    spec = importlib.util.spec_from_file_location(mod_name, mod_path)
+    mod = importlib.util.module_from_spec(spec)
+    # Register in sys.modules so Numba can find it for cache lookup.
+    sys.modules[mod_name] = mod
+    spec.loader.exec_module(mod)
+    return mod.run_network
+
+
 # ---------------------------------------------------------------------------
 # CompiledNetworkFn — holds a compiled kernel + helper to run it
 # ---------------------------------------------------------------------------
@@ -282,6 +313,22 @@ class NbHybridBackend(MakoUtilMix):
     ``global_parameter_names``).  Integrators: Heun/Euler deterministic or
     stochastic.
     """
+
+    @staticmethod
+    def get_cache_dir():
+        """Return the directory where disk cache files are written."""
+        import tempfile
+        from pathlib import Path
+        return Path(tempfile.gettempdir()) / "tvb_nb_hybrid_cache"
+
+    @classmethod
+    def clear_cache(cls):
+        """Clear the in-process compiled function cache and the disk cache."""
+        import shutil
+        _COMPILED_FN_CACHE.clear()
+        cache_dir = cls.get_cache_dir()
+        if cache_dir.exists():
+            shutil.rmtree(cache_dir)
 
     def compile(
         self,
@@ -617,12 +664,10 @@ class NbHybridBackend(MakoUtilMix):
             formatted = autopep8.fix_code(source)
             print(self.insert_line_numbers(formatted))
 
-        globals_ = {}
         try:
-            exec(source, globals_)
+            fn = _build_as_module(source, cache_key)
         except Exception as exc:
             print(self.insert_line_numbers(autopep8.fix_code(source)))
             raise exc
-        fn = globals_["run_network"]
         _COMPILED_FN_CACHE[cache_key] = fn
         return fn

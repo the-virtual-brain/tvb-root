@@ -1330,5 +1330,54 @@ class TestNbHybridMultiMode:
                                    rtol=1e-3, atol=1e-4)
 
 
+class TestNbHybridDiskCache:
+    """Disk-persistent JIT cache (§8.2)."""
+
+    def _simple_network(self):
+        """Minimal single-subnet network for cache tests."""
+        from tvb.simulator.hybrid import NetworkSet
+        from tvb.simulator.integrators import HeunDeterministic
+        sn = _mpr_subnetwork("sn0", 4, HeunDeterministic)
+        ns = NetworkSet(subnets=[sn])
+        ns.configure()
+        return ns
+
+    def test_cache_dir_created_after_compile(self):
+        """Disk cache directory is created after compile()."""
+        from tvb.simulator.backend.nb_hybrid import NbHybridBackend
+        NbHybridBackend.clear_cache()
+        ns = self._simple_network()
+        backend = NbHybridBackend()
+        backend.compile(ns)
+        cache_dir = NbHybridBackend.get_cache_dir()
+        assert cache_dir.exists(), f"Cache dir not created: {cache_dir}"
+        py_files = list(cache_dir.glob("nbhybrid_*.py"))
+        assert len(py_files) >= 1, "No .py files in disk cache"
+
+    def test_in_process_cache_hit(self):
+        """Second compile() call with same topology returns cached function."""
+        from tvb.simulator.backend.nb_hybrid import NbHybridBackend, _COMPILED_FN_CACHE
+        NbHybridBackend.clear_cache()
+        ns = self._simple_network()
+        backend = NbHybridBackend()
+        fn1 = backend.compile(ns)
+        fn2 = backend.compile(ns)
+        assert len(_COMPILED_FN_CACHE) >= 1
+        # Same topology -> same cache entry -> same underlying function
+        assert fn1._run_network_fn is fn2._run_network_fn
+
+    def test_clear_cache_removes_files(self):
+        """clear_cache() removes disk cache directory."""
+        from tvb.simulator.backend.nb_hybrid import NbHybridBackend
+        NbHybridBackend.clear_cache()
+        ns = self._simple_network()
+        backend = NbHybridBackend()
+        backend.compile(ns)
+        cache_dir = NbHybridBackend.get_cache_dir()
+        assert cache_dir.exists()
+        NbHybridBackend.clear_cache()
+        assert not cache_dir.exists(), "Cache dir should be removed by clear_cache()"
+
+
 if __name__ == "__main__":
     unittest.main()
