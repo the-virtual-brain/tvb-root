@@ -29,7 +29,6 @@
 """
 
 import pickle
-
 from tvb.adapters.uploaders.networkx_connectivity.parser import NetworkxParser
 from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.exceptions import ParseException, LaunchException
