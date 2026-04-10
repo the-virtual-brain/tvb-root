@@ -284,3 +284,117 @@ class TestNbSim(BaseTestSim):
 
     def test_drk4(self): self._test_integrator(RungeKutta4thOrderDeterministic,
                                                delays=True)
+
+
+class TestNbKIonExDfun(BaseTestDfun):
+    """Unit tests for KIonEx dfun code generation (both strategies)."""
+
+    _DFUN_TEMPLATE_A = '''\
+import numpy as np
+<%
+    svars = ', '.join(sim.model.state_variables)
+    cvars = ', '.join(sim.model.coupling_terms)
+%>
+<%include file="nb-dfuns.py.mako"/>
+def kernel(dx, state, cx, parmat):
+    for i in range(state.shape[1]):
+        ${svars} = state[:, i]
+% for cterm in sim.model.coupling_terms:
+        ${cterm} = cx[${loop.index}, i]
+% endfor
+% for svar in sim.model.state_variables:
+        dx[${loop.index}, i] = dx_${svar}(${svars}, ${cvars},
+            parmat[:, i] if parmat.size else None)
+% endfor
+'''
+
+    _DFUN_TEMPLATE_B = '''\
+import numpy as np
+<%
+    svars = ', '.join(sim.model.state_variables)
+    cvars = ', '.join(sim.model.coupling_terms)
+    dx_unpack = ', '.join([f"dx[{k},i]" for k in range(len(sim.model.state_variables))])
+%>
+<%include file="nb-dfuns.py.mako"/>
+def kernel(dx, state, cx, parmat):
+    for i in range(state.shape[1]):
+        ${svars} = state[:, i]
+% for cterm in sim.model.coupling_terms:
+        ${cterm} = cx[${loop.index}, i]
+% endfor
+        ${dx_unpack} = dfun(${svars}, ${cvars},
+            parmat[:, i] if parmat.size else None)
+'''
+
+    def _test_kionex_dfun(self, dfun_combined=False):
+        model_ = self._prep_kionex_model()
+
+        class sim_:
+            model = model_
+
+        template = self._DFUN_TEMPLATE_B if dfun_combined else self._DFUN_TEMPLATE_A
+        content = dict(sim=sim_(), np=np, debug_nojit=True,
+                       dfun_combined=dfun_combined)
+        kernel = NbBackend().build_py_func(template, content, print_source=True)
+
+        state, cx = self._make_kionex_valid_state()
+        parmat = model_.spatial_parameter_matrix
+        dX = np.zeros_like(state)
+        kernel(dX, state, cx, parmat)
+
+        # KIonEx.dfun uses guvectorize which expects 3D (nvar, nnode, nmode)
+        # inputs, so add a trailing dimension and squeeze the result.
+        ref = model_.dfun(state[..., np.newaxis], cx[..., np.newaxis]).squeeze(-1)
+        for k, svar in enumerate(model_.state_variables):
+            np.testing.assert_allclose(
+                dX[k], ref[k], rtol=1e-5, atol=1e-6,
+                err_msg=f'd{svar} mismatch (dfun_combined={dfun_combined})')
+
+    def test_kionex_separate(self):
+        "Strategy A: per-svar functions."
+        self._test_kionex_dfun(dfun_combined=False)
+
+    def test_kionex_combined(self):
+        "Strategy B: combined dfun returning tuple."
+        self._test_kionex_dfun(dfun_combined=True)
+
+
+class TestNbKIonExSim(BaseTestSim):
+    """Integration tests for KIonEx full simulation (both strategies)."""
+
+    def _test_kionex(self, Integrator, dfun_combined=False, delays=False):
+        dt = 0.01
+        if issubclass(Integrator, IntegratorStochastic):
+            integrator = Integrator(dt=dt, noise=Additive(nsig=np.r_[dt]))
+            integrator.noise.dt = integrator.dt
+        else:
+            integrator = Integrator(dt=dt)
+
+        sim = self._create_sim_kionex(integrator, delays=delays, run_sim=False)
+        template = '<%include file="nb-sim.py.mako"/>'
+        content = dict(sim=sim, np=np, debug_nojit=True,
+                       dfun_combined=dfun_combined)
+        kernel = NbBackend().build_py_func(
+            template, content, print_source=True, name='run_sim')
+        np.random.seed(42)
+        state = kernel(sim)  # (nsvar, nnode, horizon + nstep)
+        yh = np.transpose(state[:, :, sim.connectivity.horizon:], (2, 0, 1))
+        (_, y), = sim.run()
+        self._check_match(y, yh)
+
+    def test_euler_separate(self):
+        "Strategy A Euler."
+        self._test_kionex(EulerDeterministic, dfun_combined=False)
+
+    def test_euler_combined(self):
+        "Strategy B Euler."
+        self._test_kionex(EulerDeterministic, dfun_combined=True)
+
+    def test_heun_separate(self):
+        "Strategy A Heun."
+        self._test_kionex(HeunDeterministic, dfun_combined=False)
+
+    def test_heun_combined(self):
+        "Strategy B Heun."
+        self._test_kionex(HeunDeterministic, dfun_combined=True)
+

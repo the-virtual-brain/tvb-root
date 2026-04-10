@@ -36,6 +36,7 @@ import numpy as np
 
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
 from tvb.simulator.models.linear import Linear as LinearModel
+from tvb.simulator.models.k_ion_exchange import KIonEx
 from tvb.datatypes.connectivity import Connectivity
 from tvb.simulator.integrators import (EulerDeterministic, IntegratorStochastic,
     Identity)
@@ -45,6 +46,22 @@ from tvb.simulator.simulator import Simulator
 
 class BaseTestSim(unittest.TestCase):
     "Integration tests of ODE cases against TVB builtins."
+
+    # ------------------------------------------------------------------
+    # KIonEx-specific valid initial condition (scalar per state variable).
+    # Chosen so that K_o = K_o0 - beta*DKi + Kg > 0 (required for log).
+    # beta = w_i/w_o = 3.0, K_o = 4.8 - 3*(-2) + 0.5 = 11.3 > 0
+    # Na_i = 16 + 2 = 18 > 0,  Na_o = 138 - 3*2 = 132 > 0
+    _KIONEX_IC = np.array([0.3, -55.0, 0.4, -2.0, 0.5])  # x, V, n, DKi, Kg
+
+    def _set_kionex_valid_ic(self, sim):
+        """Overwrite sim history buffer with a physically valid KIonEx state."""
+        ic = self._KIONEX_IC
+        # history buffer stores only coupling variables: shape (horizon, n_cvar, nnode, nmode)
+        for k, cv in enumerate(sim.model.cvar):
+            sim.history.buffer[:, k, :, :] = ic[cv]
+        # current_state stores all state variables: shape (nsvar, nnode, nmode)
+        sim.current_state[:] = ic[:, None, None]
 
 
     def _create_sim(self, integrator=None, inhom_mmpr=False, delays=False,
@@ -77,6 +94,31 @@ class BaseTestSim(unittest.TestCase):
         if run_sim:
             (t,y), = sim.run()
             return sim, state, t, y
+        else:
+            return sim
+
+    def _create_sim_kionex(self, integrator=None, delays=False, run_sim=True):
+        """Create a KIonEx simulator with a physically valid initial condition."""
+        conn = Connectivity.from_file()
+        conn.speed = np.r_[3.0 if delays else np.inf]
+        if integrator is None:
+            integrator = EulerDeterministic(dt=0.01)
+        sim = Simulator(
+            connectivity=conn,
+            model=KIonEx(),
+            integrator=integrator,
+            monitors=[Raw()],
+            simulation_length=0.1,  # 10 steps
+        )
+        sim.configure()
+        self._set_kionex_valid_ic(sim)
+        if not delays:
+            self.assertTrue((conn.idelays == 0).all())
+        if isinstance(sim.integrator, IntegratorStochastic):
+            sim.integrator.noise.reset_random_stream()
+        if run_sim:
+            (t, y), = sim.run()
+            return sim, t, y
         else:
             return sim
 
@@ -136,6 +178,30 @@ class BaseTestDfun(unittest.TestCase):
             raise NotImplemented
         self.assertEqual(len(model.spatial_parameter_matrix), n_spatial)
         return model
+
+    def _prep_kionex_model(self):
+        return KIonEx()
+
+    def _make_kionex_valid_state(self, nnode=128, seed=42):
+        """Return (state, cx) with physically valid KIonEx values.
+
+        Constraints for log-safety:
+          K_i = K_i0 + DKi > 0  →  DKi > -130  (always satisfied)
+          K_o = K_o0 - beta*DKi + Kg > 0  →  Kg > 3*DKi - 4.8
+          Na_i = Na_i0 + (-DKi) > 0  →  DKi < 130  (always satisfied)
+          Na_o = Na_o0 + beta*DKi > 0  →  DKi > -46  (satisfied for DKi in [-3,0])
+        With DKi in [-3, 0] and Kg in [0, 1]: K_o in [4.8, 13.8] > 0.
+        """
+        rng = np.random.default_rng(seed)
+        n = nnode
+        state = np.zeros((5, n))
+        state[0] = rng.uniform(0.05, 1.0, n)        # x  >= 0
+        state[1] = rng.uniform(-75.0, -30.0, n)     # V  (mV)
+        state[2] = rng.uniform(0.05, 0.90, n)       # n  in [0,1]
+        state[3] = rng.uniform(-3.0, -0.1, n)       # DKi
+        state[4] = rng.uniform(0.0, 1.0, n)         # Kg  (ensures K_o > 0)
+        cx = rng.uniform(0.0, 0.5, (1, n))          # Coupling_Term
+        return state, cx
 
 
 class BaseTestIntegrate(unittest.TestCase):

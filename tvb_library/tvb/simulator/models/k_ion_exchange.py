@@ -42,7 +42,6 @@ from tvb.simulator.models.base import Model
 from tvb.basic.neotraits.api import NArray, List, Range, Final
 
 import numpy
-
 from numba import guvectorize, float64, njit
 
 class KIonEx(Model):
@@ -196,6 +195,111 @@ class KIonEx(Model):
         default=["Coupling_Term"]
     )
 
+    parameter_names = List(
+        of=str,
+        label="List of parameters for this model",
+        default='E K_bath J eta Delta c_minus R_minus c_plus R_plus Vstar Cm tau_n gamma epsilon'.split())
+
+    # Physical constants used in the ionic current expressions.
+    # Emitted as module-level assignments in the generated Numba code.
+    dfun_constants = Final(
+        label="Physical constants for dfun code generation",
+        default={
+            'Cnap':  21.0,   # mol.m**-3
+            'DCnap':  2.0,   # mol.m**-3
+            'Ckp':    5.5,   # mol.m**-3
+            'DCkp':   1.0,   # mol.m**-3
+            'Cmna':  -24.0,  # mV
+            'DCmna': 12.0,   # mV
+            'Chn':    0.4,   # dimensionless
+            'DChn':  -8.0,   # dimensionless
+            'Cnk':  -19.0,   # mV
+            'DCnk':  18.0,   # mV
+            'g_Cl':   7.5,   # nS
+            'g_Na':  40.0,   # nS
+            'g_K':   22.0,   # nS
+            'g_Nal':  0.02,  # nS
+            'g_Kl':   0.12,  # nS
+            'rho':  250.0,   # pA
+            'w_i': 2160.0,   # umeter**3
+            'w_o':  720.0,   # umeter**3
+            'Na_i0':  16.0,  # mMol/m**3
+            'Na_o0': 138.0,  # mMol/m**3
+            'K_i0':  130.0,  # mMol/m**3
+            'K_o0':    4.8,  # mMol/m**3
+            'Cl_i0':   5.0,  # mMol/m**3
+            'Cl_o0': 112.0,  # mMol/m**3
+        }
+    )
+
+    # Helper functions emitted as @nb.njit(inline="always") before the dfun(s).
+    # Each entry: (function_name, args_string, return_expression).
+    # Constants referenced here must appear in dfun_constants.
+    # Order matters: helpers must be defined before they are called.
+    dfun_helpers = Final(
+        label="Helper functions for dfun code generation",
+        default=[
+            ('m_inf',     'V',
+             '1.0/(1.0+exp((Cmna-V)/DCmna))'),
+            ('n_inf',     'V',
+             '1.0/(1.0+exp((Cnk-V)/DCnk))'),
+            ('h_gate',    'n',
+             '1.1 - 1.0 / (1.0 + exp(-8.0 * (n - 0.4)))'),
+            ('I_K_form',  'V, n, K_o, K_i',
+             '(g_Kl+g_K*n)*(V - 26.64*log(K_o/K_i))'),
+            ('I_Na_form', 'V, Na_o, Na_i, n',
+             '(g_Nal+g_Na*m_inf(V)*h_gate(n))*(V - 26.64*log(Na_o/Na_i))'),
+            ('I_Cl_form', 'V',
+             'g_Cl*(V + 26.64*log(Cl_o0/Cl_i0))'),
+            ('I_pump_form', 'Na_i, K_o',
+             'rho*(1.0/(1.0+exp((Cnap-Na_i)/DCnap))*(1.0/(1.0+exp((Ckp-K_o)/DCkp))))'),
+        ]
+    )
+
+    # Ordered intermediate computations shared across state variable derivatives.
+    # Each entry: (variable_name, expression).
+    # Expressions may reference state variables, model parameters, dfun_constants,
+    # and dfun_helpers.  Emitted in order inside each generated derivative function.
+    dfun_intermediates = Final(
+        label="Shared intermediates for dfun code generation",
+        default=[
+            ('beta',   'w_i / w_o'),
+            ('DNa_i',  '-DKi'),
+            ('DNa_o',  '-beta * DNa_i'),
+            ('DK_o',   '-beta * DKi'),
+            ('K_i',    'K_i0 + DKi'),
+            ('Na_i',   'Na_i0 + DNa_i'),
+            ('Na_o',   'Na_o0 + DNa_o'),
+            ('K_o',    'K_o0 + DK_o + Kg'),
+            ('ninf',   'n_inf(V)'),
+            ('I_K',    'I_K_form(V, n, K_o, K_i)'),
+            ('I_Na',   'I_Na_form(V, Na_o, Na_i, n)'),
+            ('I_Cl',   'I_Cl_form(V)'),
+            ('I_pump', 'I_pump_form(Na_i, K_o)'),
+            ('r',      'R_minus * x / pi'),
+            ('Vdot',   '(-1.0/Cm) * (I_Na + I_K + I_Cl + I_pump)'),
+        ]
+    )
+
+    # Per-state-variable derivative expressions used by the Numba code generator.
+    # References may use state variables, model parameters, dfun_constants, and
+    # any names defined in dfun_intermediates.
+    # Conditional branching uses Python ternary (scalar context in generated code).
+    state_variable_dfuns = Final(
+        label="Drift functions",
+        default={
+            'x':   ('(Delta + 2*R_minus*(V-c_minus)*x - J*r*x)'
+                    ' if V <= Vstar else'
+                    ' (Delta + 2*R_plus*(V-c_plus)*x - J*r*x)'),
+            'V':   ('(Vdot - R_minus*x**2 + eta + (R_minus/pi)*Coupling_Term*(E-V))'
+                    ' if V <= Vstar else'
+                    ' (Vdot - R_plus*x**2 + eta + (R_minus/pi)*Coupling_Term*(E-V))'),
+            'n':   '(ninf - n) / tau_n',
+            'DKi': '-(gamma / w_i) * (I_K - 2.0 * I_pump)',
+            'Kg':  'epsilon * (K_bath - K_o)',
+        }
+    )
+
     variables_of_interest = List(
         of=str,
         label="Variables or quantities available to Monitors",
@@ -347,7 +451,6 @@ class KIonEx(Model):
         return derivative
 
     def dfun(self, x, c, local_coupling=0.0):
-
         x_ = x.reshape(x.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T + local_coupling * x[0]
 
@@ -429,6 +532,56 @@ def I_pump_form(Na_i, K_o):
 #     return (-1.0 / Cm) * (I_Na + I_K + I_Cl + I_pump)
 
 
+@njit
+def m_inf(V):
+    Cmna = -24.0  # mV
+    DCmna = 12.0  # mV
+    return 1.0 / (1.0 + numpy.exp((Cmna - V) / DCmna))
+
+@njit
+def n_inf(V):
+    Cnk = -19.0  # mV
+    DCnk = 18.0  # mV #Ok in the paper
+    return 1.0 / (1.0 + numpy.exp((Cnk - V) / DCnk))
+
+@njit
+def h(n):
+    return 1.1 - 1.0 / (1.0 + numpy.exp(-8.0 * (n - 0.4)))
+
+@njit
+def I_K_form(V, n, K_o, K_i):
+    g_K = 22.0  # nS  # maximal potassium conductance
+    g_Kl = 0.12  # nS  # potassium leak conductance
+    return (g_Kl + g_K * n) * (V - 26.64 * numpy.log(K_o / K_i))
+
+@njit
+def I_Na_form(V, Na_o, Na_i, n):
+    g_Na = 40.0  # nS   # maximal sodiumconductance
+    g_Nal = 0.02  # nS  # sodium leak conductance
+    return (g_Nal + g_Na * m_inf(V) * h(n)) * (V - 26.64 * numpy.log(Na_o / Na_i))
+
+@njit
+def I_Cl_form(V):
+    g_Cl = 7.5  # nS #Ok in the paper   # chloride conductance
+    Cl_i0 = 5.0  # mMol/m**3 # initial concentration of intracellular Cl
+    Cl_o0 = 112.0  # mMol/m**3 # initial concentration of extracellular Cl
+    return g_Cl * (V + 26.64 * numpy.log(Cl_o0 / Cl_i0))
+
+@njit
+def I_pump_form(Na_i, K_o):
+    rho = 250.  # 250.,#pA # maximal Na/K pump current
+    Cnap = 21.0  # mol.m**-3
+    DCnap = 2.0  # mol.m**-3
+    Ckp = 5.5  # mol.m**-3
+    DCkp = 1.0  # mol.m**-3
+    return rho * (
+            1.0 / (1.0 + numpy.exp((Cnap - Na_i) / DCnap)) * (1.0 / (1.0 + numpy.exp((Ckp - K_o) / DCkp))))
+
+# @njit
+# def V_dot_form(Cm, I_Na, I_K, I_Cl, I_pump):
+#     return (-1.0 / Cm) * (I_Na + I_K + I_Cl + I_pump)
+
+
 @guvectorize([(float64[:],) * 17], '(n),(m)' + ',()' * 14 + '->(n)', target='parallel', nopython=True)
 def _numba_dfun(state_variables, coupling, E, K_bath, J, eta, Delta, c_minus, R_minus, c_plus, R_plus, Vstar, Cm,
                 tau_n, gamma, epsilon, dx):
@@ -454,18 +607,35 @@ def _numba_dfun(state_variables, coupling, E, K_bath, J, eta, Delta, c_minus, R_
     """
 
     x, V, n, DKi, Kg = state_variables
-
     Coupling_Term = coupling[0]  # This zero refers to the first element of cvar (trivial in this case)
 
     # Constants
     # Chn = 0.4  # dimensionless
     # DChn = -8.0  # dimensionless
+    Cnap = 21.0  # mol.m**-3
+    DCnap = 2.0  # mol.m**-3
+    Ckp = 5.5  # mol.m**-3
+    DCkp = 1.0  # mol.m**-3
+    Cmna = -24.0  # mV
+    DCmna = 12.0  # mV
+    Chn = 0.4  # dimensionless
+    DChn = -8.0  # dimensionless
+    Cnk = -19.0  # mV
+    DCnk = 18.0  # mV #Ok in the paper
+    g_Cl = 7.5  # nS #Ok in the paper   # chloride conductance
+    g_Na = 40.0  # nS   # maximal sodiumconductance
+    g_K = 22.0  # nS  # maximal potassium conductance
+    g_Nal = 0.02  # nS  # sodium leak conductance
+    g_Kl = 0.12  # nS  # potassium leak conductance
+    rho = 250.  # 250.,#pA # maximal Na/K pump current
     w_i = 2160.0  # umeter**3  # intracellular volume
     w_o = 720.0  # umeter**3 # extracellular volume
     Na_i0 = 16.0  # mMol/m**3 # initial concentration of intracellular Na
     Na_o0 = 138.0  # mMol/m**3 # initial concentration of extracellular Na
     K_i0 = 130.0  # mMol/m**3 # initial concentration of intracellular K
     K_o0 = 4.80  # mMol/m**3 # initial concentration of extracellular K
+    Cl_i0 = 5.0  # mMol/m**3 # initial concentration of intracellular Cl
+    Cl_o0 = 112.0  # mMol/m**3 # initial concentration of extracellular Cl
 
 
     beta = w_i / w_o
