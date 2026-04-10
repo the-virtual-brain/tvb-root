@@ -305,6 +305,24 @@ class Generic2dOscillator(ModelNumbaDfun):
                excitatory input currents are negative.
                It scales both I and the long range coupling term.""")
 
+    coupling_terms = Final(
+        label="Coupling terms",
+        default=["Coupling_Term"])
+
+    parameter_names = List(
+        of=str,
+        label="List of parameters for this model",
+        default='tau I a b c d e f g alpha beta gamma'.split()
+    )
+
+    state_variable_dfuns = Final(
+        label="Drift functions for numba codegen",
+        default={
+            'V': 'd * tau * (alpha * W - f * V**3 + e * V**2 + g * V + gamma * I + gamma * Coupling_Term)',
+            'W': 'd * (a + b * V + c * V**2 - beta * W) / tau',
+        }
+    )
+
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
         default={"V": numpy.array([-2.0, 4.0]),

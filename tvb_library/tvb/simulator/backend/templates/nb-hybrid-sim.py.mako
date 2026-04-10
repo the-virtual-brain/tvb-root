@@ -23,6 +23,7 @@ subnets = analysis.subnetworks
 inter_projs = analysis.inter_projections
 intra_projs = analysis.intra_projections
 all_projs = analysis.all_projections
+source_horizons_map = analysis.source_horizons
 %>
 
 ## ============================================================
@@ -44,7 +45,7 @@ all_projs = analysis.all_projections
 
 ${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
 def compute_coupling_${p.name}(
-    buf,
+    srcbuf,
     w_data, w_indices, w_indptr,
     idelays,
     % if is_inter:
@@ -55,7 +56,6 @@ def compute_coupling_${p.name}(
     scale,
     target_scales,
     cfun_params,
-    horizon,
     t,
     tgt,
 ):
@@ -75,13 +75,13 @@ def compute_coupling_${p.name}(
             for ptr in range(row_start, row_end):
                 w = w_data[ptr]
                 src_node = w_indices[ptr]
-                buf_idx = (t - 1 - idelays[ptr] + horizon) % horizon
+                buf_idx = (t - 1 - idelays[ptr] + ${source_horizons_map[p.source_subnet]}) % ${source_horizons_map[p.source_subnet]}
             % if pre_ct == 'sigmoidal_jr':
-                _sv = buf[cv, src_node, 0, buf_idx]
+                _sv = srcbuf[cv, src_node, 0, buf_idx]
                 _sv = cfun_params[0] * nb.float32(2.0) * cfun_params[1] / (nb.float32(1.0) + exp(cfun_params[2] * (cfun_params[3] - _sv)))
                 wsum += w * _sv
             % else:
-                wsum += w * buf[cv, src_node, 0, buf_idx]
+                wsum += w * srcbuf[cv, src_node, 0, buf_idx]
             % endif
             wsum *= scale
             % if post_ct == "linear":
@@ -144,15 +144,15 @@ def compute_coupling_${p.name}(
             for ptr in range(row_start, row_end):
                 w = w_data[ptr]
                 src_node = w_indices[ptr]
-                buf_idx = (t - 1 - idelays[ptr] + horizon) % horizon
+                buf_idx = (t - 1 - idelays[ptr] + ${source_horizons_map[p.source_subnet]}) % ${source_horizons_map[p.source_subnet]}
             % if pre_ct == 'sigmoidal_jr':
                 for m in range(${nsrc_m}):
-                    _sv = buf[cv, src_node, m, buf_idx]
+                    _sv = srcbuf[cv, src_node, m, buf_idx]
                     _sv = cfun_params[0] * nb.float32(2.0) * cfun_params[1] / (nb.float32(1.0) + exp(cfun_params[2] * (cfun_params[3] - _sv)))
                     wsum[m] += w * _sv
             % else:
                 for m in range(${nsrc_m}):
-                    wsum[m] += w * buf[cv, src_node, m, buf_idx]
+                    wsum[m] += w * srcbuf[cv, src_node, m, buf_idx]
             % endif
             for m in range(${nsrc_m}):
                 wsum[m] *= scale
@@ -403,9 +403,12 @@ def network_chunk(
     % for sn in subnets:
     ${sn.name}_state,   # (n_svars, n_nodes, n_modes) float32 — updated in-place
     % endfor
+    ## per-subnet shared source history buffers
+    % for sn in subnets:
+    ${sn.name}_srcbuf,  # (n_vars, n_nodes, n_modes, max_horizon) float32
+    % endfor
     ## per-projection arrays
     % for p in all_projs:
-    ${p.name}_buf,
     ${p.name}_w_data, ${p.name}_w_indices, ${p.name}_w_indptr,
     ${p.name}_idelays,
     % if p.is_inter:
@@ -414,13 +417,16 @@ def network_chunk(
     ${p.name}_source_cvar, ${p.name}_target_cvar,
     ${p.name}_scale, ${p.name}_target_scales,
     ${p.name}_cfun_params,
-    ${p.name}_horizon,
     % endfor
     ## temporal-average accumulators
     % for sn in subnets:
     ${sn.name}_tavg,  # (n_voi, n_nodes, n_modes) — updated in-place
     % endfor
     tavg_count,  # (1,) int32 — updated in-place
+    ## coupling temporal-average accumulators (AfferentCoupling monitor)
+    % for sn in subnets:
+    ${sn.name}_ctavg,  # (n_cvar, n_nodes, n_modes) — updated in-place
+    % endfor
     ## per-subnetwork noise arrays (stochastic only)
     % for sn in subnets:
     % if sn.is_stochastic:
@@ -459,14 +465,14 @@ def network_chunk(
         ## inter-projection coupling
         % for p in inter_projs:
         compute_coupling_${p.name}(
-            ${p.name}_buf,
+            ${p.source_subnet}_srcbuf,
             ${p.name}_w_data, ${p.name}_w_indices, ${p.name}_w_indptr,
             ${p.name}_idelays,
             ${p.name}_mode_map,
             ${p.name}_source_cvar, ${p.name}_target_cvar,
             ${p.name}_scale, ${p.name}_target_scales,
             ${p.name}_cfun_params,
-            ${p.name}_horizon, t,
+            t,
             ${p.target_subnet}_c,
         )
         % endfor
@@ -474,13 +480,13 @@ def network_chunk(
         ## intra-projection coupling
         % for p in intra_projs:
         compute_coupling_${p.name}(
-            ${p.name}_buf,
+            ${p.source_subnet}_srcbuf,
             ${p.name}_w_data, ${p.name}_w_indices, ${p.name}_w_indptr,
             ${p.name}_idelays,
             ${p.name}_source_cvar, ${p.name}_target_cvar,
             ${p.name}_scale, ${p.name}_target_scales,
             ${p.name}_cfun_params,
-            ${p.name}_horizon, t,
+            t,
             ${p.target_subnet}_c,
         )
         % endfor
@@ -501,20 +507,28 @@ def network_chunk(
         % endif
         % endfor
 
+        ## accumulate coupling temporal average (AfferentCoupling monitor)
+        % for sn in subnets:
+        % if sn_nmodes_dict[sn.name] == 1:
+        for ci in range(${sn_ncvar_dict[sn.name]}):
+            for ni in range(${sn_nnodes_dict[sn.name]}):
+                ${sn.name}_ctavg[ci, ni, 0] += ${sn.name}_c[ci, ni, 0]
+        % else:
+        for ci in range(${sn_ncvar_dict[sn.name]}):
+            for ni in range(${sn_nnodes_dict[sn.name]}):
+                for mi in range(${sn_nmodes_dict[sn.name]}):
+                    ${sn.name}_ctavg[ci, ni, mi] += ${sn.name}_c[ci, ni, mi]
+        % endif
+        % endfor
+
         ## integrate each subnetwork in-place
         % for sn in subnets:
         integrate_${sn.name}(${sn.name}_state, ${sn.name}_c${',' if sn.is_stochastic else ''} ${'%s_noise, t - 1' % sn.name if sn.is_stochastic else ''})
         % endfor
 
-        ## update projection history buffers
-        % for p in inter_projs:
-        buf_idx_${p.name} = t % ${p.name}_horizon
-        ${p.name}_buf[:, :, :, buf_idx_${p.name}] = ${p.source_subnet}_state
-        % endfor
-
-        % for p in intra_projs:
-        buf_idx_${p.name} = t % ${p.name}_horizon
-        ${p.name}_buf[:, :, :, buf_idx_${p.name}] = ${p.target_subnet}_state
+        ## update shared source buffers (one write per source subnet)
+        % for sn in subnets:
+        ${sn.name}_srcbuf[:, :, :, t % ${source_horizons_map[sn.name]}] = ${sn.name}_state
         % endfor
 
         ## accumulate temporal average
@@ -542,8 +556,10 @@ def run_network(
     % for sn in subnets:
     ${sn.name}_state,
     % endfor
+    % for sn in subnets:
+    ${sn.name}_srcbuf,
+    % endfor
     % for p in all_projs:
-    ${p.name}_buf,
     ${p.name}_w_data, ${p.name}_w_indices, ${p.name}_w_indptr,
     ${p.name}_idelays,
     % if p.is_inter:
@@ -552,7 +568,6 @@ def run_network(
     ${p.name}_source_cvar, ${p.name}_target_cvar,
     ${p.name}_scale, ${p.name}_target_scales,
     ${p.name}_cfun_params,
-    ${p.name}_horizon,
     % endfor
     ## noise arrays (stochastic subnetworks only)
     % for sn in subnets:
@@ -577,10 +592,15 @@ def run_network(
     ${sn.name}_tavg = np.zeros((${sn_nvoi_dict[sn.name]}, ${sn_nnodes_dict[sn.name]}, ${sn_nmodes_dict[sn.name]}), dtype=np.float32)
     % endfor
     tavg_count = np.zeros(1, dtype=np.int32)
+    ## allocate coupling temporal average accumulators (AfferentCoupling monitor)
+    % for sn in subnets:
+    ${sn.name}_ctavg = np.zeros((${sn_ncvar_dict[sn.name]}, ${sn_nnodes_dict[sn.name]}, ${sn_nmodes_dict[sn.name]}), dtype=np.float32)
+    % endfor
 
     ## storage for raw outputs per subnetwork
     % for sn in subnets:
     ${sn.name}_outputs = []
+    ${sn.name}_ctavg_outputs = []
     ${sn.name}_times   = []
     % endfor
     time_step = np.float32(${subnets[0].integrator.dt})
@@ -592,6 +612,7 @@ def run_network(
         ## reset accumulators
         % for sn in subnets:
         ${sn.name}_tavg[:] = np.float32(0.0)
+        ${sn.name}_ctavg[:] = np.float32(0.0)
         % endfor
         tavg_count[0] = 0
 
@@ -601,8 +622,10 @@ def run_network(
             % for sn in subnets:
             ${sn.name}_state,
             % endfor
+            % for sn in subnets:
+            ${sn.name}_srcbuf,
+            % endfor
             % for p in all_projs:
-            ${p.name}_buf,
             ${p.name}_w_data, ${p.name}_w_indices, ${p.name}_w_indptr,
             ${p.name}_idelays,
             % if p.is_inter:
@@ -611,12 +634,14 @@ def run_network(
             ${p.name}_source_cvar, ${p.name}_target_cvar,
             ${p.name}_scale, ${p.name}_target_scales,
             ${p.name}_cfun_params,
-            ${p.name}_horizon,
             % endfor
             % for sn in subnets:
             ${sn.name}_tavg,
             % endfor
             tavg_count,
+            % for sn in subnets:
+            ${sn.name}_ctavg,
+            % endfor
             % for sn in subnets:
             % if sn.is_stochastic:
             ${sn.name}_noise,
@@ -634,6 +659,7 @@ def run_network(
         % for sn in subnets:
         ${sn.name}_times.append(mid_t)
         ${sn.name}_outputs.append(${sn.name}_tavg / np.float32(n))
+        ${sn.name}_ctavg_outputs.append(${sn.name}_ctavg / np.float32(n))
         % endfor
 
         t_global += this_chunk
@@ -644,6 +670,8 @@ def run_network(
     times_arr = np.array(${sn.name}_times, dtype=np.float64)
     ## stack outputs: each entry is (n_voi, n_nodes, n_modes) → (T, n_voi, n_nodes, n_modes)
     data_arr = np.stack(${sn.name}_outputs, axis=0)
-    results.append((times_arr, data_arr))
+    ## stack coupling outputs: each entry is (n_cvar, n_nodes, n_modes) → (T, n_cvar, n_nodes, n_modes)
+    ctavg_arr = np.stack(${sn.name}_ctavg_outputs, axis=0)
+    results.append((times_arr, data_arr, ctavg_arr))
     % endfor
     return results

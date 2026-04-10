@@ -349,6 +349,37 @@ class WilsonCowan(ModelNumbaDfun):
         the logistic curve are translated downward S(0)=0""",
         )
 
+    coupling_terms = Final(
+        label="Coupling terms",
+        default=["Coupling_Term_E"])
+
+    parameter_names = List(
+        of=str,
+        label="List of parameters for this model",
+        default=(
+            'c_ee c_ei c_ie c_ii tau_e tau_i a_e b_e c_e theta_e '
+            'a_i b_i c_i theta_i r_e r_i k_e k_i P Q alpha_e alpha_i'
+        ).split()
+    )
+
+    dfun_intermediates = Final(
+        label="Intermediate computations for numba codegen",
+        default=[
+            ('x_e', 'alpha_e * (c_ee * E - c_ei * I + P - theta_e + Coupling_Term_E)'),
+            ('x_i', 'alpha_i * (c_ie * E - c_ii * I + Q - theta_i)'),
+            ('s_e', 'c_e * (nb.float32(1.0)/(nb.float32(1.0)+exp(-a_e*(x_e - b_e))) - nb.float32(1.0)/(nb.float32(1.0)+exp(a_e * b_e)))'),
+            ('s_i', 'c_i * (nb.float32(1.0)/(nb.float32(1.0)+exp(-a_i*(x_i - b_i))) - nb.float32(1.0)/(nb.float32(1.0)+exp(a_i * b_i)))'),
+        ]
+    )
+
+    state_variable_dfuns = Final(
+        label="Drift functions for numba codegen",
+        default={
+            'E': '(-E + (k_e - r_e * E) * s_e) / tau_e',
+            'I': '(-I + (k_i - r_i * I) * s_i) / tau_i',
+        }
+    )
+
     # Used for phase-plane axis ranges and to bound random initial() conditions.
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",

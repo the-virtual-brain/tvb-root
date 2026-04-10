@@ -267,6 +267,38 @@ class Epileptor(ModelNumbaDfun):
         doc="Quantities of the Epileptor available to monitor.",
     )
 
+    coupling_terms = Final(
+        label="Coupling terms",
+        default=["Coupling_Term_pop1", "Coupling_Term_pop2"])
+
+    parameter_names = List(
+        of=str,
+        label="List of parameters for this model",
+        default='a b c d r x0 Iext slope Iext2 tau aa bb Kvf Kf Ks tt'.split()
+    )
+
+    dfun_intermediates = Final(
+        label="Intermediate computations for numba codegen",
+        default=[
+            ('f1',    '(-a * x1**2 + b * x1) if x1 < nb.float32(0.0) else (slope - x2 + nb.float32(0.6) * (z - nb.float32(4.0))**2)'),
+            ('zterm', '(nb.float32(-0.1) * z**7) if z < nb.float32(0.0) else nb.float32(0.0)'),
+            ('h',     'nb.float32(4.0) * (x1 - x0) + zterm'),
+            ('f2',    'nb.float32(0.0) if x2 < nb.float32(-0.25) else aa * (x2 + nb.float32(0.25))'),
+        ]
+    )
+
+    state_variable_dfuns = Final(
+        label="Drift functions for numba codegen",
+        default={
+            'x1': 'tt * (y1 - z + Iext + Kvf * Coupling_Term_pop1 + f1 * x1)',
+            'y1': 'tt * (c - d * x1**2 - y1)',
+            'z':  'tt * (r * (h - z + Ks * Coupling_Term_pop1))',
+            'x2': 'tt * (-y2 + x2 - x2**3 + Iext2 + bb * g - nb.float32(0.3) * (z - nb.float32(3.5)) + Kf * Coupling_Term_pop2)',
+            'y2': 'tt * ((-y2 + f2) / tau)',
+            'g':  'tt * (nb.float32(-0.01) * (g - nb.float32(0.1) * x1))',
+        }
+    )
+
     state_variables = ('x1', 'y1', 'z', 'x2', 'y2', 'g')
 
     _nvar = 6
