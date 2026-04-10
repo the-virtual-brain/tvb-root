@@ -247,8 +247,10 @@ class NbHybridBackend(MakoUtilMix):
     Call ``run_network(network_set, nstep)`` to compile and run.  The
     network_set must already be configured (``configure()`` called).
 
-    Only MontbrioPazoRoxin models with HeunDeterministic or EulerDeterministic
-    integrators are supported in this initial version.
+    Supported models: ``MontbrioPazoRoxin``, ``KIonEx`` (and any model that
+    provides ``state_variable_dfuns``, ``coupling_terms``, and
+    ``global_parameter_names``).  Integrators: Heun/Euler deterministic or
+    stochastic.
     """
 
     def compile(
@@ -419,12 +421,14 @@ class NbHybridBackend(MakoUtilMix):
 
     def _check_compatibility(self, network_set: NetworkSet):
         from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
+        from tvb.simulator.models.k_ion_exchange import KIonEx
+        _supported_models = (MontbrioPazoRoxin, KIonEx)
         _allowed_integrators = (HeunDeterministic, EulerDeterministic, HeunStochastic, EulerStochastic)
         dt0 = network_set.subnets[0].scheme.dt
         for sn in network_set.subnets:
-            if not isinstance(sn.model, MontbrioPazoRoxin):
+            if not isinstance(sn.model, _supported_models):
                 raise NotImplementedError(
-                    f"NbHybridBackend only supports MontbrioPazoRoxin; "
+                    f"NbHybridBackend supports MontbrioPazoRoxin and KIonEx; "
                     f"subnetwork '{sn.name}' uses {type(sn.model).__name__}"
                 )
             if not isinstance(sn.scheme, _allowed_integrators):

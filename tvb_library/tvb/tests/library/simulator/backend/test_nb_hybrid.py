@@ -391,10 +391,9 @@ class TestNbHybridInterProjection(unittest.TestCase):
 class TestNbHybridCompatibilityCheck(unittest.TestCase):
     """Verify that incompatible models/integrators are rejected cleanly."""
 
-    def test_rejects_non_mpr_model(self):
+    def test_rejects_unsupported_model(self):
         from tvb.simulator.models import Generic2dOscillator
         from tvb.simulator.integrators import HeunDeterministic as HD
-        from scipy import sparse as sp2
 
         model = Generic2dOscillator()
         model.configure()
@@ -935,6 +934,152 @@ class TestNbHybridBenchmark(unittest.TestCase):
             speedup, 2.0,
             f"Expected Numba cached kernel ≥ 2× faster than Python, got {speedup:.2f}×"
         )
+
+
+class TestNbHybridMprKIonEx(unittest.TestCase):
+    """NbHybridBackend with a mixed MPR + KIonEx two-subnet configuration.
+
+    Validates that:
+    1. The backend accepts KIonEx without raising NotImplementedError.
+    2. The compiled kernel runs without NaN/Inf.
+    3. Pure-Python and Numba outputs agree within float32 tolerance.
+    """
+
+    N = 6    # nodes per subnet
+    NSTEP = 20
+
+    def _build_network(self):
+        from tvb.simulator.models.k_ion_exchange import KIonEx
+
+        mpr_model = MontbrioPazoRoxin()
+        mpr_model.configure()
+        kionex_model = KIonEx()
+        kionex_model.configure()
+
+        sn_a = Subnetwork(name="mpr", model=mpr_model,
+                          scheme=HeunDeterministic(dt=DT), nnodes=self.N)
+        sn_b = Subnetwork(name="kionex", model=kionex_model,
+                          scheme=HeunDeterministic(dt=DT), nnodes=self.N)
+
+        rng = np.random.RandomState(7)
+
+        def _w(n_tgt, n_src, seed):
+            r = np.random.RandomState(seed)
+            w = r.uniform(0.0, 0.05, (n_tgt, n_src)).astype(np.float64)
+            np.fill_diagonal(w, 0.0)
+            return sp.csr_matrix(w)
+
+        def _l(n_tgt, n_src):
+            return sp.csr_matrix(np.zeros((n_tgt, n_src), dtype=np.float64))
+
+        # Intra A
+        intra_a = IntraProjection(
+            source_cvar=np.array([0], dtype=np.int32),
+            target_cvar=np.array([0], dtype=np.int32),
+            weights=_w(self.N, self.N, 10),
+            lengths=_l(self.N, self.N),
+            cv=1.0, dt=DT, scale=1e-4,
+        )
+        sn_a.projections = [intra_a]
+        sn_a.configure()
+
+        # Intra B
+        intra_b = IntraProjection(
+            source_cvar=np.array([0], dtype=np.int32),
+            target_cvar=np.array([0], dtype=np.int32),
+            weights=_w(self.N, self.N, 11),
+            lengths=_l(self.N, self.N),
+            cv=1.0, dt=DT, scale=1e-4,
+        )
+        sn_b.projections = [intra_b]
+        sn_b.configure()
+
+        # Inter A→B (MPR r → KIonEx Coupling_Term)
+        inter_ab = InterProjection(
+            source=sn_a, target=sn_b,
+            source_cvar=np.array([0], dtype=np.int32),
+            target_cvar=np.array([0], dtype=np.int32),
+            weights=_w(self.N, self.N, 12),
+            lengths=_l(self.N, self.N),
+            cv=1.0, dt=DT, scale=1e-4,
+        )
+
+        # Inter B→A (KIonEx x → MPR Coupling_Term_r)
+        inter_ba = InterProjection(
+            source=sn_b, target=sn_a,
+            source_cvar=np.array([0], dtype=np.int32),
+            target_cvar=np.array([0], dtype=np.int32),
+            weights=_w(self.N, self.N, 13),
+            lengths=_l(self.N, self.N),
+            cv=1.0, dt=DT, scale=1e-4,
+        )
+
+        nets = NetworkSet(subnets=[sn_a, sn_b], projections=[inter_ab, inter_ba], stimuli=[])
+        nets.configure()
+
+        # Initial conditions
+        rng = np.random.RandomState(42)
+        ic_a = rng.uniform(0.0, 0.1, (mpr_model.nvar, self.N, 1)).astype(np.float64)
+        ic_a[0] = np.abs(ic_a[0])   # r ≥ 0
+
+        # KIonEx: keep DKi in [-8, -2] and Kg in [-15, -8] so that
+        # K_o = K_o0 − 3·DKi + Kg > 0, avoiding log(negative) NaN.
+        ic_b = np.zeros((kionex_model.nvar, self.N, 1), dtype=np.float64)
+        safe_ic = {
+            'x':   (0.0, 0.3),
+            'V':   (-70.0, -50.0),
+            'n':   (0.2, 0.5),
+            'DKi': (-8.0, -2.0),
+            'Kg':  (-15.0, -8.0),
+        }
+        for idx, svar in enumerate(kionex_model.state_variables):
+            lo, hi = safe_ic[svar]
+            ic_b[idx, :, 0] = rng.uniform(lo, hi, self.N)
+
+        return nets, ic_a, ic_b
+
+    def test_kionex_accepted(self):
+        """NbHybridBackend does not reject KIonEx."""
+        nets, ic_a, ic_b = self._build_network()
+        backend = NbHybridBackend()
+        # Should not raise
+        backend.run_network(nets, nstep=self.NSTEP, chunk_size=1,
+                            initial_states=[ic_a, ic_b])
+
+    def test_output_shapes(self):
+        """Numba backend produces correctly-shaped output for MPR+KIonEx."""
+        from tvb.simulator.models.k_ion_exchange import KIonEx
+        nets, ic_a, ic_b = self._build_network()
+        results = NbHybridBackend().run_network(
+            nets, nstep=self.NSTEP, chunk_size=1,
+            initial_states=[ic_a, ic_b],
+        )
+        self.assertEqual(len(results), 2, "Expected 2 subnetwork results")
+        mpr_nvoi = len(MontbrioPazoRoxin.variables_of_interest.default)
+        kionex_nvoi = len(KIonEx.variables_of_interest.default)
+        times_a, data_a = results[0]
+        self.assertEqual(data_a.shape, (self.NSTEP, mpr_nvoi, self.N, 1),
+                         f"MPR subnet shape mismatch: {data_a.shape}")
+        times_b, data_b = results[1]
+        self.assertEqual(data_b.shape, (self.NSTEP, kionex_nvoi, self.N, 1),
+                         f"KIonEx subnet shape mismatch: {data_b.shape}")
+
+    def test_numba_matches_python(self):
+        """Numba and pure-Python outputs agree within float32 tolerance."""
+        nets, ic_a, ic_b = self._build_network()
+
+        py_out = _run_python_loop(nets, self.NSTEP, [ic_a, ic_b])
+
+        nets2, ic_a2, ic_b2 = self._build_network()
+        nb_out = _run_nb(nets2, self.NSTEP, [ic_a2, ic_b2])
+
+        for i, (py_i, nb_i) in enumerate(zip(py_out, nb_out)):
+            self.assertEqual(py_i.shape, nb_i.shape,
+                             f"Shape mismatch at subnetwork {i}")
+            np.testing.assert_allclose(
+                nb_i, py_i, rtol=1e-3, atol=1e-3,
+                err_msg=f"Numba vs Python mismatch at subnetwork {i}",
+            )
 
 
 if __name__ == "__main__":
