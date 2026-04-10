@@ -66,26 +66,56 @@ from tvb.simulator.integrators import (
 
 def _cfun_type(p: "ProjectionInfo") -> str:
     """Return the string coupling-function type for a ProjectionInfo."""
-    from tvb.simulator.hybrid.coupling import Linear, Scaling
+    from tvb.simulator.hybrid.coupling import Linear, Scaling, Sigmoidal, SigmoidalJansenRit
     if p.cfun is None:
         return "none"
     if isinstance(p.cfun, Linear):
         return "linear"
     if isinstance(p.cfun, Scaling):
         return "scaling"
+    if isinstance(p.cfun, Sigmoidal):
+        return "sigmoidal"
+    if isinstance(p.cfun, SigmoidalJansenRit):
+        return "sigmoidal_jr"
     return "none"
 
 
-def _cfun_params(p: "ProjectionInfo"):
-    """Return (cfun_a, cfun_b) floats for a ProjectionInfo."""
-    from tvb.simulator.hybrid.coupling import Linear, Scaling
+def _cfun_params(p: "ProjectionInfo") -> "np.ndarray":
+    """Return a float32 array of length 5 with cfun parameters for a ProjectionInfo.
+
+    Layout by cfun type:
+      none:          [1.0, 0.0, 0.0, 0.0, 0.0]
+      linear:        [a, b, 0.0, 0.0, 0.0]
+      scaling:       [a, 0.0, 0.0, 0.0, 0.0]
+      sigmoidal:     [a, sigma, midpoint, cmin, cmax]
+      sigmoidal_jr:  [a, e0, r, v0, 0.0]
+    """
+    from tvb.simulator.hybrid.coupling import Linear, Scaling, Sigmoidal, SigmoidalJansenRit
+    arr = np.zeros(5, dtype=np.float32)
+    arr[0] = 1.0  # default: identity scale
     if p.cfun is None:
-        return 1.0, 0.0
+        return arr
     if isinstance(p.cfun, Linear):
-        return float(p.cfun.a[0]), float(p.cfun.b[0])
+        arr[0] = float(p.cfun.a[0])
+        arr[1] = float(p.cfun.b[0])
+        return arr
     if isinstance(p.cfun, Scaling):
-        return float(p.cfun.a[0]), 0.0
-    return 1.0, 0.0
+        arr[0] = float(p.cfun.a[0])
+        return arr
+    if isinstance(p.cfun, Sigmoidal):
+        arr[0] = float(p.cfun.a[0])
+        arr[1] = float(p.cfun.sigma[0])
+        arr[2] = float(p.cfun.midpoint[0])
+        arr[3] = float(p.cfun.cmin[0])
+        arr[4] = float(p.cfun.cmax[0])
+        return arr
+    if isinstance(p.cfun, SigmoidalJansenRit):
+        arr[0] = float(p.cfun.a[0])
+        arr[1] = float(p.cfun.e0[0])
+        arr[2] = float(p.cfun.r[0])
+        arr[3] = float(p.cfun.v0[0])
+        return arr
+    return arr
 
 
 def _cvar_mapping_mode(p: "ProjectionInfo") -> str:
@@ -370,9 +400,8 @@ class NbHybridBackend(MakoUtilMix):
             args.append(np.float32(p.scale))
             ts = p.target_scales.astype(np.float32) if p.target_scales.size > 0 else np.zeros(0, dtype=np.float32)
             args.append(ts)
-            cfun_a, cfun_b = _cfun_params(p)
-            args.append(np.float32(cfun_a))
-            args.append(np.float32(cfun_b))
+            cfun_params = _cfun_params(p)
+            args.append(cfun_params)
             args.append(np.int32(p.horizon))
 
         # Per-subnetwork noise arrays (stochastic integrators)
@@ -422,13 +451,14 @@ class NbHybridBackend(MakoUtilMix):
     def _check_compatibility(self, network_set: NetworkSet):
         from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
         from tvb.simulator.models.k_ion_exchange import KIonEx
-        _supported_models = (MontbrioPazoRoxin, KIonEx)
+        from tvb.simulator.models.jansen_rit import JansenRit
+        _supported_models = (MontbrioPazoRoxin, KIonEx, JansenRit)
         _allowed_integrators = (HeunDeterministic, EulerDeterministic, HeunStochastic, EulerStochastic)
         dt0 = network_set.subnets[0].scheme.dt
         for sn in network_set.subnets:
             if not isinstance(sn.model, _supported_models):
                 raise NotImplementedError(
-                    f"NbHybridBackend supports MontbrioPazoRoxin and KIonEx; "
+                    f"NbHybridBackend supports MontbrioPazoRoxin, KIonEx, and JansenRit; "
                     f"subnetwork '{sn.name}' uses {type(sn.model).__name__}"
                 )
             if not isinstance(sn.scheme, _allowed_integrators):

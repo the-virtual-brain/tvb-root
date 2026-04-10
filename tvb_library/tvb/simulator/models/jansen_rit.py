@@ -171,6 +171,45 @@ class JansenRit(ModelNumbaDfun):
         domain=Range(lo=0.0, hi=0.22, step=0.01),
         doc="""Mean input firing rate""")
 
+    coupling_terms = Final(
+        label="Coupling terms",
+        default=["Coupling_Term"])
+
+    parameter_names = List(
+        of=str,
+        label="List of parameters for this model",
+        default='A B a b v0 nu_max r J a_1 a_2 a_3 a_4 mu'.split()
+    )
+
+    dfun_helpers = Final(
+        label="Helper functions for numba codegen",
+        default=[
+            ('sigm_jr', 'x, nu_max, r, v0',
+             '2.0 * nu_max / (1.0 + exp(r * (v0 - x)))')
+        ]
+    )
+
+    dfun_intermediates = Final(
+        label="Intermediate computations for numba codegen",
+        default=[
+            ('sigm_y1_y2', 'sigm_jr(y1 - y2, nu_max, r, v0)'),
+            ('sigm_y0_1',  'sigm_jr(a_1 * J * y0, nu_max, r, v0)'),
+            ('sigm_y0_3',  'sigm_jr(a_3 * J * y0, nu_max, r, v0)'),
+        ]
+    )
+
+    state_variable_dfuns = Final(
+        label="Drift functions for numba codegen",
+        default={
+            'y0': 'y3',
+            'y1': 'y4',
+            'y2': 'y5',
+            'y3': 'A * a * sigm_y1_y2 - 2.0 * a * y3 - a**2 * y0',
+            'y4': 'A * a * (mu + a_2 * J * sigm_y0_1 + Coupling_Term) - 2.0 * a * y4 - a**2 * y1',
+            'y5': 'B * b * (a_4 * J * sigm_y0_3) - 2.0 * b * y5 - b**2 * y2',
+        }
+    )
+
     # Used for phase-plane axis ranges and to bound random initial() conditions.
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",

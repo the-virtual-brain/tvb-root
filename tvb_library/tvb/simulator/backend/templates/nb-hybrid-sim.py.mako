@@ -38,6 +38,8 @@ all_projs = analysis.all_projections
     is_inter = p.is_inter
     mono_src = (nsrc_m == 1)
     mono_tgt = (ntgt_m == 1)
+    pre_ct = ct if ct == 'sigmoidal_jr' else 'none'
+    post_ct = ct if ct != 'sigmoidal_jr' else 'none'
 %>
 
 ${'' if debug_nojit else '@nb.njit(inline="always")'}
@@ -52,8 +54,7 @@ def compute_coupling_${p.name}(
     target_cvar,
     scale,
     target_scales,
-    cfun_a,
-    cfun_b,
+    cfun_params,
     horizon,
     t,
     tgt,
@@ -75,12 +76,20 @@ def compute_coupling_${p.name}(
                 w = w_data[ptr]
                 src_node = w_indices[ptr]
                 buf_idx = (t - 1 - idelays[ptr] + horizon) % horizon
+            % if pre_ct == 'sigmoidal_jr':
+                _sv = buf[cv, src_node, 0, buf_idx]
+                _sv = cfun_params[0] * nb.float32(2.0) * cfun_params[1] / (nb.float32(1.0) + exp(cfun_params[2] * (cfun_params[3] - _sv)))
+                wsum += w * _sv
+            % else:
                 wsum += w * buf[cv, src_node, 0, buf_idx]
+            % endif
             wsum *= scale
-            % if ct == "linear":
-            wsum = cfun_a * wsum + cfun_b
-            % elif ct == "scaling":
-            wsum = cfun_a * wsum
+            % if post_ct == "linear":
+            wsum = cfun_params[0] * wsum + cfun_params[1]
+            % elif post_ct == "scaling":
+            wsum = cfun_params[0] * wsum
+            % elif post_ct == "sigmoidal":
+            wsum = cfun_params[3] + (cfun_params[4] - cfun_params[3]) / (nb.float32(1.0) + exp(-cfun_params[0] * ((wsum - cfun_params[2]) / cfun_params[1])))
             % endif
 
             ## accumulate into target (mono_src)
@@ -136,16 +145,26 @@ def compute_coupling_${p.name}(
                 w = w_data[ptr]
                 src_node = w_indices[ptr]
                 buf_idx = (t - 1 - idelays[ptr] + horizon) % horizon
+            % if pre_ct == 'sigmoidal_jr':
+                for m in range(${nsrc_m}):
+                    _sv = buf[cv, src_node, m, buf_idx]
+                    _sv = cfun_params[0] * nb.float32(2.0) * cfun_params[1] / (nb.float32(1.0) + exp(cfun_params[2] * (cfun_params[3] - _sv)))
+                    wsum[m] += w * _sv
+            % else:
                 for m in range(${nsrc_m}):
                     wsum[m] += w * buf[cv, src_node, m, buf_idx]
+            % endif
             for m in range(${nsrc_m}):
                 wsum[m] *= scale
-            % if ct == "linear":
+            % if post_ct == "linear":
             for m in range(${nsrc_m}):
-                wsum[m] = cfun_a * wsum[m] + cfun_b
-            % elif ct == "scaling":
+                wsum[m] = cfun_params[0] * wsum[m] + cfun_params[1]
+            % elif post_ct == "scaling":
             for m in range(${nsrc_m}):
-                wsum[m] = cfun_a * wsum[m]
+                wsum[m] = cfun_params[0] * wsum[m]
+            % elif post_ct == "sigmoidal":
+            for m in range(${nsrc_m}):
+                wsum[m] = cfun_params[3] + (cfun_params[4] - cfun_params[3]) / (nb.float32(1.0) + exp(-cfun_params[0] * ((wsum[m] - cfun_params[2]) / cfun_params[1])))
             % endif
 
             ## accumulate into target (general)
@@ -394,7 +413,7 @@ def network_chunk(
     % endif
     ${p.name}_source_cvar, ${p.name}_target_cvar,
     ${p.name}_scale, ${p.name}_target_scales,
-    ${p.name}_cfun_a, ${p.name}_cfun_b,
+    ${p.name}_cfun_params,
     ${p.name}_horizon,
     % endfor
     ## temporal-average accumulators
@@ -446,7 +465,7 @@ def network_chunk(
             ${p.name}_mode_map,
             ${p.name}_source_cvar, ${p.name}_target_cvar,
             ${p.name}_scale, ${p.name}_target_scales,
-            ${p.name}_cfun_a, ${p.name}_cfun_b,
+            ${p.name}_cfun_params,
             ${p.name}_horizon, t,
             ${p.target_subnet}_c,
         )
@@ -460,7 +479,7 @@ def network_chunk(
             ${p.name}_idelays,
             ${p.name}_source_cvar, ${p.name}_target_cvar,
             ${p.name}_scale, ${p.name}_target_scales,
-            ${p.name}_cfun_a, ${p.name}_cfun_b,
+            ${p.name}_cfun_params,
             ${p.name}_horizon, t,
             ${p.target_subnet}_c,
         )
@@ -532,7 +551,7 @@ def run_network(
     % endif
     ${p.name}_source_cvar, ${p.name}_target_cvar,
     ${p.name}_scale, ${p.name}_target_scales,
-    ${p.name}_cfun_a, ${p.name}_cfun_b,
+    ${p.name}_cfun_params,
     ${p.name}_horizon,
     % endfor
     ## noise arrays (stochastic subnetworks only)
@@ -591,7 +610,7 @@ def run_network(
             % endif
             ${p.name}_source_cvar, ${p.name}_target_cvar,
             ${p.name}_scale, ${p.name}_target_scales,
-            ${p.name}_cfun_a, ${p.name}_cfun_b,
+            ${p.name}_cfun_params,
             ${p.name}_horizon,
             % endfor
             % for sn in subnets:

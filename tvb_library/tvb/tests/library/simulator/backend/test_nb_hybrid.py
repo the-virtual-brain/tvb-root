@@ -1088,5 +1088,247 @@ class TestNbHybridMprKIonEx(unittest.TestCase):
             )
 
 
+# ---------------------------------------------------------------------------
+# Sigmoidal coupling function tests
+# ---------------------------------------------------------------------------
+
+class TestNbHybridSigmoidalCfun:
+    """Sigmoidal and SigmoidalJansenRit coupling function tests (inter-projection)."""
+
+    def _build_net(self, cfun, n=6, seed=42):
+        """Two MPR subnets connected by an inter-projection with the given cfun."""
+        sn1 = _mpr_subnetwork("mpr1", n)
+        sn1.configure()
+        sn2 = _mpr_subnetwork("mpr2", n)
+        sn2.configure()
+        w = _sparse_weights(n, n, seed=seed, density=0.5)
+        inter = InterProjection(
+            source=sn1, target=sn2,
+            source_cvar=np.array([0], dtype=np.int32),
+            target_cvar=np.array([0], dtype=np.int32),
+            weights=w, lengths=_zero_lengths(n, n),
+            cv=1.0, dt=DT, scale=1e-2,
+            cfun=cfun,
+        )
+        nets = NetworkSet(subnets=[sn1, sn2], projections=[inter], stimuli=[])
+        nets.configure()
+        return nets
+
+    def _make_ic(self, n=6):
+        rng = np.random.RandomState(42)
+        m = MontbrioPazoRoxin()
+        m.configure()
+        x0 = rng.uniform(0.0, 0.2, (m.nvar, n, 1)).astype(np.float64)
+        x0[0] = np.abs(x0[0])
+        return x0
+
+    def test_sigmoidal_cfun_accepts(self):
+        """NbHybridBackend accepts Sigmoidal cfun without raising."""
+        from tvb.simulator.hybrid.coupling import Sigmoidal
+        nets = self._build_net(cfun=Sigmoidal())
+        NbHybridBackend()._check_compatibility(nets)
+
+    def test_sigmoidal_cfun_finite(self):
+        """Numba backend produces finite output with Sigmoidal cfun."""
+        from tvb.simulator.hybrid.coupling import Sigmoidal
+        nets = self._build_net(cfun=Sigmoidal())
+        x0 = self._make_ic()
+        results = _run_nb(nets, 15, [x0, x0.copy()])
+        assert len(results) == 2
+        for d in results:
+            assert np.all(np.isfinite(d)), "NaN/Inf in Sigmoidal cfun output"
+
+    def test_sigmoidal_cfun_matches_python(self):
+        """Numba Sigmoidal cfun output matches Python backend."""
+        from tvb.simulator.hybrid.coupling import Sigmoidal
+        n, nstep = 6, 15
+        nets_py = self._build_net(cfun=Sigmoidal(), n=n, seed=42)
+        nets_nb = self._build_net(cfun=Sigmoidal(), n=n, seed=42)
+        x0 = self._make_ic(n)
+        py = _run_python_loop(nets_py, nstep, [x0, x0.copy()])
+        nb = _run_nb(nets_nb, nstep, [x0, x0.copy()])
+        for py_d, nb_d in zip(py, nb):
+            np.testing.assert_allclose(nb_d, py_d.astype(np.float32),
+                                       rtol=1e-3, atol=1e-3)
+
+    def test_sigmoidal_jr_cfun_accepts(self):
+        """NbHybridBackend accepts SigmoidalJansenRit cfun without raising."""
+        from tvb.simulator.hybrid.coupling import SigmoidalJansenRit
+        nets = self._build_net(cfun=SigmoidalJansenRit())
+        NbHybridBackend()._check_compatibility(nets)
+
+    def test_sigmoidal_jr_cfun_finite(self):
+        """Numba backend produces finite output with SigmoidalJansenRit cfun."""
+        from tvb.simulator.hybrid.coupling import SigmoidalJansenRit
+        nets = self._build_net(cfun=SigmoidalJansenRit())
+        x0 = self._make_ic()
+        results = _run_nb(nets, 15, [x0, x0.copy()])
+        assert len(results) == 2
+        for d in results:
+            assert np.all(np.isfinite(d)), "NaN/Inf in SigmoidalJansenRit cfun output"
+
+    def test_sigmoidal_jr_cfun_matches_python(self):
+        """Numba SigmoidalJansenRit cfun output matches Python backend."""
+        from tvb.simulator.hybrid.coupling import SigmoidalJansenRit
+        n, nstep = 6, 15
+        nets_py = self._build_net(cfun=SigmoidalJansenRit(), n=n, seed=42)
+        nets_nb = self._build_net(cfun=SigmoidalJansenRit(), n=n, seed=42)
+        x0 = self._make_ic(n)
+        py = _run_python_loop(nets_py, nstep, [x0, x0.copy()])
+        nb = _run_nb(nets_nb, nstep, [x0, x0.copy()])
+        for py_d, nb_d in zip(py, nb):
+            np.testing.assert_allclose(nb_d, py_d.astype(np.float32),
+                                       rtol=1e-3, atol=1e-3)
+
+
+# ---------------------------------------------------------------------------
+# JansenRit model tests
+# ---------------------------------------------------------------------------
+
+class TestNbHybridJansenRit:
+    """JansenRit model support in the numba hybrid backend."""
+
+    N = 6
+    NSTEP = 15
+
+    def _build_net(self):
+        """Two JR subnets connected by an inter-projection (y0 → Coupling_Term)."""
+        from tvb.simulator.models.jansen_rit import JansenRit
+        n = self.N
+        m1 = JansenRit()
+        m2 = JansenRit()
+        sn1 = Subnetwork(name="jr1", model=m1,
+                         scheme=HeunDeterministic(dt=DT), nnodes=n)
+        sn1.configure()
+        sn2 = Subnetwork(name="jr2", model=m2,
+                         scheme=HeunDeterministic(dt=DT), nnodes=n)
+        sn2.configure()
+        w = _sparse_weights(n, n, seed=7, density=0.4)
+        inter = InterProjection(
+            source=sn1, target=sn2,
+            source_cvar=np.array([0], dtype=np.int32),
+            target_cvar=np.array([0], dtype=np.int32),
+            weights=w, lengths=_zero_lengths(n, n),
+            cv=1.0, dt=DT, scale=1e-3,
+        )
+        nets = NetworkSet(subnets=[sn1, sn2], projections=[inter], stimuli=[])
+        nets.configure()
+        return nets
+
+    def _make_ic(self):
+        """Safe initial conditions for JansenRit."""
+        x0 = np.zeros((6, self.N, 1), dtype=np.float64)
+        x0[0, :, 0] = 0.08   # y0
+        x0[1, :, 0] = 13.0   # y1
+        x0[2, :, 0] = 5.0    # y2
+        return x0
+
+    def test_jr_accepted_by_backend(self):
+        """JansenRit is accepted by NbHybridBackend._check_compatibility."""
+        nets = self._build_net()
+        NbHybridBackend()._check_compatibility(nets)
+
+    def test_jr_output_shape(self):
+        """JR numba backend produces correct output shape."""
+        from tvb.simulator.models.jansen_rit import JansenRit
+        nets = self._build_net()
+        x0 = self._make_ic()
+        results = _run_nb(nets, self.NSTEP, [x0, x0.copy()])
+        assert len(results) == 2
+        n_voi = len(JansenRit.variables_of_interest.default)
+        for d in results:
+            assert d.ndim == 4
+            assert d.shape[0] == self.NSTEP
+            assert d.shape[1] == n_voi
+            assert d.shape[2] == self.N
+            assert d.shape[3] == 1
+
+    def test_jr_output_finite(self):
+        """JR numba backend produces finite output."""
+        nets = self._build_net()
+        x0 = self._make_ic()
+        results = _run_nb(nets, self.NSTEP, [x0, x0.copy()])
+        for d in results:
+            assert np.all(np.isfinite(d)), "NaN/Inf in JansenRit numba output"
+
+    def test_jr_matches_python(self):
+        """JR numba backend output matches Python loop backend."""
+        from tvb.simulator.models.jansen_rit import JansenRit
+        # JR has 4 VoI (y0..y3) but 6 state vars;  Python loop returns all 6,
+        # NB returns only VoI.  Extract VoI indices for comparison.
+        voi_names = JansenRit.variables_of_interest.default
+        sv_names = list(JansenRit.state_variables)
+        voi_idx = [sv_names.index(v) for v in voi_names]
+
+        x0 = self._make_ic()
+        nets_py = self._build_net()
+        nets_nb = self._build_net()
+        py = _run_python_loop(nets_py, self.NSTEP, [x0, x0.copy()])
+        nb = _run_nb(nets_nb, self.NSTEP, [x0, x0.copy()])
+
+        for py_d, nb_d in zip(py, nb):
+            py_voi = py_d[:, voi_idx, :, :].astype(np.float32)
+            np.testing.assert_allclose(nb_d, py_voi, rtol=1e-2, atol=1e-2)
+
+
+# ---------------------------------------------------------------------------
+# n_modes > 1 tests
+# ---------------------------------------------------------------------------
+
+class TestNbHybridMultiMode:
+    """n_modes > 1 code path in the numba hybrid backend."""
+
+    N = 4
+    N_MODES = 2
+    NSTEP = 10
+
+    def _build_net(self):
+        """Single MPR subnet with number_of_modes=2 and no projections."""
+        m = MontbrioPazoRoxin()
+        m.number_of_modes = self.N_MODES
+        m.configure()
+        sn = Subnetwork(name="ctx", model=m,
+                        scheme=HeunDeterministic(dt=DT), nnodes=self.N)
+        sn.configure()
+        nets = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        nets.configure()
+        return nets
+
+    def _make_ic(self):
+        rng = np.random.RandomState(77)
+        x0 = rng.uniform(0.0, 0.2, (2, self.N, self.N_MODES)).astype(np.float64)
+        x0[0] = np.abs(x0[0])
+        return x0
+
+    def test_multi_mode_shape(self):
+        """Output shape contains n_modes > 1 in last dimension."""
+        nets = self._build_net()
+        x0 = self._make_ic()
+        results = _run_nb(nets, self.NSTEP, [x0])
+        assert len(results) == 1
+        d = results[0]
+        assert d.ndim == 4
+        assert d.shape[0] == self.NSTEP
+        assert d.shape[2] == self.N
+        assert d.shape[3] == self.N_MODES, f"Expected n_modes={self.N_MODES}, got {d.shape[3]}"
+
+    def test_multi_mode_finite(self):
+        """n_modes=2 output is finite."""
+        nets = self._build_net()
+        x0 = self._make_ic()
+        results = _run_nb(nets, self.NSTEP, [x0])
+        assert np.all(np.isfinite(results[0])), "NaN/Inf in multi-mode output"
+
+    def test_multi_mode_matches_python(self):
+        """n_modes=2 Numba output matches Python loop."""
+        nets_py = self._build_net()
+        nets_nb = self._build_net()
+        x0 = self._make_ic()
+        py = _run_python_loop(nets_py, self.NSTEP, [x0])
+        nb = _run_nb(nets_nb, self.NSTEP, [x0])
+        np.testing.assert_allclose(nb[0], py[0].astype(np.float32),
+                                   rtol=1e-3, atol=1e-4)
+
+
 if __name__ == "__main__":
     unittest.main()
