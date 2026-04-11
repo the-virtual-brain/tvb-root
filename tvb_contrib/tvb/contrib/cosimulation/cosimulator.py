@@ -99,11 +99,12 @@ class CoSimulator(Simulator):
 
     def compute_min_delay(self):
         idelays = self.connectivity.idelays[self.compute_existing_connections()]
-        self._min_idelay = 1
         if idelays.size:
             self._min_idelay = idelays.min()
-        self.log.warning("There are no existing connections (i.e., with nonzero weights)!\n"
-                         "Setting minimum delay to 1 integrator time step = %g!." % self.integrator.dt)
+        else:
+            self._min_idelay = 1
+            self.log.warning("There are no existing connections (i.e., with nonzero weights)!\n"
+                             "Setting minimum delay to 1 integrator time step = %g!." % self.integrator.dt)
         self._min_delay = self._min_idelay * self.integrator.dt
         return self._min_delay, self._min_idelay
 
