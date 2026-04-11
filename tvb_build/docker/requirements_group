@@ -2,6 +2,7 @@ numpy
 siibra<=1.0.1a10
 cryptography
 sqlalchemy
+psycopg2
 pyAesCrypt
 Deprecated
 lockfile

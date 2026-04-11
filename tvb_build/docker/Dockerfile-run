@@ -41,8 +41,16 @@ WORKDIR $USER_HOME
 COPY requirements_group requirements.txt
 RUN $PIP install -r requirements.txt
 
+ARG BRANCH_NAME
+RUN echo "Current branch for the build: $BRANCH_NAME"
 # make sure a copy of tvb-root exists inside, for users without Github clone
-RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git
+RUN if [ -n "$BRANCH_NAME" ]; then \
+      echo "Cloning branch: $BRANCH_NAME"; \
+      git clone --depth 1 --branch "$BRANCH_NAME" https://github.com/the-virtual-brain/tvb-root.git; \
+    else \
+      echo "BRANCH_NAME is null/empty. Cloning default branch."; \
+      git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git; \
+    fi
 ARG LAST_SHA=LATEST
 ENV LAST_SHA_ENV=${LAST_SHA}
 

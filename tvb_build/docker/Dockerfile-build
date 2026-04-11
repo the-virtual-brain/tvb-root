@@ -54,7 +54,14 @@ RUN chown $TVB_USER:$TVB_USER $USER_HOME
 
 USER $TVB_USER
 # make sure a copy of tvb-root exists inside, for users without Github clone
-RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git
+RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git \
+    && cd tvb-root \
+    && if [ -n "$BRANCH_NAME" ]; then \
+         echo "Checking out branch: $BRANCH_NAME"; \
+         git checkout "$BRANCH_NAME"; \
+       else \
+         echo "BRANCH_NAME is null/empty. Skipping checkout."; \
+       fi
 ARG LAST_SHA=LATEST
 ENV LAST_SHA_ENV=${LAST_SHA}
 RUN cd tvb-root; \
