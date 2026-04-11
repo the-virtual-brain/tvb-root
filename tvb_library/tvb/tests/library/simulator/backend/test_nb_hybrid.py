@@ -35,6 +35,7 @@ the output trajectories agree within floating-point tolerance.
 import unittest
 import math
 import time
+import pytest
 import numpy as np
 import scipy.sparse as sp
 
@@ -61,7 +62,9 @@ from tvb.simulator.backend.nb_hybrid import _STIM_LAZY_THRESHOLD_MB
 DT = 0.01
 
 
-def _mpr_subnetwork(name: str, n_nodes: int, integrator_cls=HeunDeterministic) -> Subnetwork:
+def _mpr_subnetwork(
+    name: str, n_nodes: int, integrator_cls=HeunDeterministic
+) -> Subnetwork:
     model = MontbrioPazoRoxin()
     model.configure()
     scheme = integrator_cls(dt=DT)
@@ -84,7 +87,9 @@ def _mpr_stochastic_subnetwork(
     """Create an MPR subnetwork with a stochastic integrator and fixed noise seed."""
     model = MontbrioPazoRoxin()
     model.configure()
-    noise = Additive(nsig=np.array([nsig]))  # scalar nsig → correct broadcast for 3D state
+    noise = Additive(
+        nsig=np.array([nsig])
+    )  # scalar nsig → correct broadcast for 3D state
     noise.noise_seed = seed
     noise.random_stream = np.random.RandomState(seed)
     noise.configure_white(DT)  # required for generate() to work in Python path
@@ -118,8 +123,8 @@ def _make_stim(subnetwork: Subnetwork, amplitude: float = 0.05) -> Stim:
     n = subnetwork.nnodes
     conn = _make_minimal_connectivity(n)
     temporal = eqs.Sinusoid()
-    temporal.parameters['amp'] = np.float64(amplitude)
-    temporal.parameters['frequency'] = np.float64(0.1)
+    temporal.parameters["amp"] = np.float64(amplitude)
+    temporal.parameters["frequency"] = np.float64(0.1)
     weight = np.zeros(n)
     weight[0] = 1.0  # Only stimulate node 0
     stim_pattern = StimuliRegion(
@@ -138,7 +143,9 @@ def _make_stim(subnetwork: Subnetwork, amplitude: float = 0.05) -> Stim:
     return stim
 
 
-def _sparse_weights(n_tgt: int, n_src: int, seed: int = 0, density: float = 1.0) -> sp.csr_matrix:
+def _sparse_weights(
+    n_tgt: int, n_src: int, seed: int = 0, density: float = 1.0
+) -> sp.csr_matrix:
     """Random weight matrix with configurable density (default fully dense)."""
     rng = np.random.RandomState(seed)
     w = rng.uniform(0.0, 0.5, (n_tgt, n_src)).astype(np.float64)
@@ -169,8 +176,9 @@ def _run_python_loop(network_set: NetworkSet, nstep: int, x0_list: list) -> list
     return [np.stack(o, axis=0) for o in outputs]
 
 
-def _run_nb(network_set: NetworkSet, nstep: int, x0_list: list,
-            print_source: bool = False) -> list:
+def _run_nb(
+    network_set: NetworkSet, nstep: int, x0_list: list, print_source: bool = False
+) -> list:
     """Run NbHybridBackend and return per-step states (one per subnetwork).
 
     chunk_size=1 gives temporal average of 1 step = raw output.
@@ -188,8 +196,9 @@ def _run_nb(network_set: NetworkSet, nstep: int, x0_list: list,
     return [data for _, data, _ in results]
 
 
-def _run_nb_full(network_set: NetworkSet, nstep: int, x0_list: list,
-                 print_source: bool = False) -> list:
+def _run_nb_full(
+    network_set: NetworkSet, nstep: int, x0_list: list, print_source: bool = False
+) -> list:
     """Run NbHybridBackend and return full (times, state, ctavg) 3-tuples per subnetwork."""
     backend = NbHybridBackend()
     return backend.run_network(
@@ -204,6 +213,7 @@ def _run_nb_full(network_set: NetworkSet, nstep: int, x0_list: list,
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
 
 class TestNbHybridSingleSubnet(unittest.TestCase):
     """Single MPR subnetwork, no projections — validates integrator code-gen."""
@@ -236,19 +246,26 @@ class TestNbHybridSingleSubnet(unittest.TestCase):
         # py shape: (nstep, n_vars, n_nodes, n_modes)
         # nb shape: (nstep, n_voi, n_nodes, n_modes)
         # For MPR, n_voi == n_vars == 2, so shapes match
-        self.assertEqual(py.shape, nb.shape,
-                         f"Shape mismatch: python {py.shape} vs nb {nb.shape}")
+        self.assertEqual(
+            py.shape, nb.shape, f"Shape mismatch: python {py.shape} vs nb {nb.shape}"
+        )
         np.testing.assert_allclose(
-            nb, py, rtol=1e-3, atol=1e-4,
-            err_msg="Heun single-subnet: Numba output differs from Python"
+            nb,
+            py,
+            rtol=1e-3,
+            atol=1e-4,
+            err_msg="Heun single-subnet: Numba output differs from Python",
         )
 
     def test_euler_no_projection(self):
         py, nb = self._run_both(EulerDeterministic, nstep=10)
         self.assertEqual(py.shape, nb.shape)
         np.testing.assert_allclose(
-            nb, py, rtol=1e-3, atol=1e-4,
-            err_msg="Euler single-subnet: Numba output differs from Python"
+            nb,
+            py,
+            rtol=1e-3,
+            atol=1e-4,
+            err_msg="Euler single-subnet: Numba output differs from Python",
         )
 
 
@@ -258,9 +275,7 @@ class TestNbHybridIntraProjection(unittest.TestCase):
     def _make_net(self, n=5, delay=False):
         sn = _mpr_subnetwork("ctx", n)
         w = _sparse_weights(n, n, seed=1)
-        lengths = sp.csr_matrix(
-            w.toarray() * (10.0 if delay else 0.0)
-        )
+        lengths = sp.csr_matrix(w.toarray() * (10.0 if delay else 0.0))
         intra = IntraProjection(
             source_cvar=np.array([0], dtype=np.int_),
             target_cvar=np.array([0], dtype=np.int_),
@@ -291,16 +306,22 @@ class TestNbHybridIntraProjection(unittest.TestCase):
         py, nb = self._run_both(delay=False)
         self.assertEqual(py.shape, nb.shape)
         np.testing.assert_allclose(
-            nb, py, rtol=1e-3, atol=1e-4,
-            err_msg="Intra no-delay: Numba differs from Python"
+            nb,
+            py,
+            rtol=1e-3,
+            atol=1e-4,
+            err_msg="Intra no-delay: Numba differs from Python",
         )
 
     def test_intra_with_delay(self):
         py, nb = self._run_both(delay=True)
         self.assertEqual(py.shape, nb.shape)
         np.testing.assert_allclose(
-            nb, py, rtol=1e-3, atol=1e-4,
-            err_msg="Intra with-delay: Numba differs from Python"
+            nb,
+            py,
+            rtol=1e-3,
+            atol=1e-4,
+            err_msg="Intra with-delay: Numba differs from Python",
         )
 
 
@@ -314,9 +335,7 @@ class TestNbHybridInterProjection(unittest.TestCase):
         sn_tgt.configure()
 
         w = _sparse_weights(n_tgt, n_src, seed=3)
-        lengths = sp.csr_matrix(
-            w.toarray() * (15.0 if delay else 0.0)
-        )
+        lengths = sp.csr_matrix(w.toarray() * (15.0 if delay else 0.0))
 
         if cvar_mapping == "1_to_1":
             sc = np.array([0], dtype=np.int_)
@@ -369,8 +388,11 @@ class TestNbHybridInterProjection(unittest.TestCase):
         for i, (p_i, n_i) in enumerate(zip(py, nb)):
             self.assertEqual(p_i.shape, n_i.shape)
             np.testing.assert_allclose(
-                n_i, p_i, rtol=1e-3, atol=1e-4,
-                err_msg=f"Inter 1-to-1 no-delay subnetwork {i}: Numba differs"
+                n_i,
+                p_i,
+                rtol=1e-3,
+                atol=1e-4,
+                err_msg=f"Inter 1-to-1 no-delay subnetwork {i}: Numba differs",
             )
 
     def test_inter_with_delay_1_to_1(self):
@@ -378,8 +400,11 @@ class TestNbHybridInterProjection(unittest.TestCase):
         for i, (p_i, n_i) in enumerate(zip(py, nb)):
             self.assertEqual(p_i.shape, n_i.shape)
             np.testing.assert_allclose(
-                n_i, p_i, rtol=1e-3, atol=1e-4,
-                err_msg=f"Inter 1-to-1 with-delay subnetwork {i}: Numba differs"
+                n_i,
+                p_i,
+                rtol=1e-3,
+                atol=1e-4,
+                err_msg=f"Inter 1-to-1 with-delay subnetwork {i}: Numba differs",
             )
 
     def test_inter_cvar_1_to_many(self):
@@ -387,8 +412,11 @@ class TestNbHybridInterProjection(unittest.TestCase):
         for i, (p_i, n_i) in enumerate(zip(py, nb)):
             self.assertEqual(p_i.shape, n_i.shape)
             np.testing.assert_allclose(
-                n_i, p_i, rtol=1e-3, atol=1e-4,
-                err_msg=f"Inter 1-to-many subnetwork {i}: Numba differs"
+                n_i,
+                p_i,
+                rtol=1e-3,
+                atol=1e-4,
+                err_msg=f"Inter 1-to-many subnetwork {i}: Numba differs",
             )
 
     def test_inter_cvar_many_to_1(self):
@@ -396,8 +424,11 @@ class TestNbHybridInterProjection(unittest.TestCase):
         for i, (p_i, n_i) in enumerate(zip(py, nb)):
             self.assertEqual(p_i.shape, n_i.shape)
             np.testing.assert_allclose(
-                n_i, p_i, rtol=1e-3, atol=1e-4,
-                err_msg=f"Inter many-to-1 subnetwork {i}: Numba differs"
+                n_i,
+                p_i,
+                rtol=1e-3,
+                atol=1e-4,
+                err_msg=f"Inter many-to-1 subnetwork {i}: Numba differs",
             )
 
 
@@ -405,17 +436,35 @@ class TestNbHybridCompatibilityCheck(unittest.TestCase):
     """Verify that incompatible models/integrators are rejected cleanly."""
 
     def test_rejects_unsupported_model(self):
-        from tvb.simulator.models.oscillator import SupHopf
+        from tvb.simulator.models.stefanescu_jirsa import ReducedSetFitzHughNagumo
         from tvb.simulator.integrators import HeunDeterministic as HD
 
-        model = SupHopf()
+        model = ReducedSetFitzHughNagumo()
         model.configure()
+        model.dfun_mode = "not_combined"
         scheme = HD(dt=DT)
         sn = Subnetwork(name="sn", model=model, scheme=scheme, nnodes=3)
         sn.configure()
         nets = NetworkSet(subnets=[sn], projections=[], stimuli=[])
         nets.configure()
 
+        with self.assertRaises(NotImplementedError):
+            NbHybridBackend()._check_compatibility(nets)
+
+    def test_rejects_multiplicative_noise(self):
+        from tvb.simulator.noise import Multiplicative
+        from tvb.simulator.integrators import HeunStochastic
+        from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
+        from tvb.simulator.hybrid import Subnetwork, NetworkSet
+
+        m = MontbrioPazoRoxin()
+        m.configure()
+        integ = HeunStochastic(noise=Multiplicative(), dt=0.1)
+        integ.configure()
+        sn = Subnetwork(name="sn", model=m, scheme=integ, nnodes=3)
+        sn.configure()
+        nets = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        nets.configure()
         with self.assertRaises(NotImplementedError):
             NbHybridBackend().run_network(nets, nstep=5)
 
@@ -432,10 +481,37 @@ class TestNbHybridCompatibilityCheck(unittest.TestCase):
         with self.assertRaises(ValueError):
             NbHybridBackend().run_network(nets, nstep=5)
 
+    def test_rejects_chunk_size_gt_horizon(self):
+        m = MontbrioPazoRoxin()
+        m.configure()
+        integ = HeunDeterministic(dt=0.1)
+        sn = Subnetwork(name="sn", model=m, scheme=integ, nnodes=3)
+        sn.configure()
+        # tract_length=0.2 mm, cv=1 mm/ms → delay=0.2 ms → horizon=ceil(0.2/0.1)+1=3 steps
+        W = sp.csr_matrix(np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]], dtype=np.float32))
+        L = sp.csr_matrix(np.full((3, 3), 0.2))
+        proj = IntraProjection(
+            source_cvar=np.array([0], dtype=np.int_),
+            target_cvar=np.array([0], dtype=np.int_),
+            weights=W,
+            lengths=L,
+            cv=1.0,
+            dt=0.1,
+            scale=1.0,
+            cfun=Linear(),
+        )
+        sn.projections = [proj]
+        sn.configure()
+        nets = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        nets.configure()
+        with self.assertRaises(ValueError):
+            NbHybridBackend().run_network(nets, nstep=100, chunk_size=10)
+
 
 # ---------------------------------------------------------------------------
 # Coupling function tests
 # ---------------------------------------------------------------------------
+
 
 class TestNbHybridCfun(unittest.TestCase):
     """Test Linear and Scaling coupling functions match between Python and Numba."""
@@ -475,20 +551,31 @@ class TestNbHybridCfun(unittest.TestCase):
         cfun = Linear(a=np.array([0.5]), b=np.array([0.1]))
         py, nb = self._run_both(cfun)
         self.assertEqual(py.shape, nb.shape)
-        np.testing.assert_allclose(nb, py, rtol=1e-3, atol=1e-4,
-                                   err_msg="Linear cfun: Numba differs from Python")
+        np.testing.assert_allclose(
+            nb,
+            py,
+            rtol=1e-3,
+            atol=1e-4,
+            err_msg="Linear cfun: Numba differs from Python",
+        )
 
     def test_scaling_cfun(self):
         cfun = Scaling(a=np.array([2.0]))
         py, nb = self._run_both(cfun)
         self.assertEqual(py.shape, nb.shape)
-        np.testing.assert_allclose(nb, py, rtol=1e-3, atol=1e-4,
-                                   err_msg="Scaling cfun: Numba differs from Python")
+        np.testing.assert_allclose(
+            nb,
+            py,
+            rtol=1e-3,
+            atol=1e-4,
+            err_msg="Scaling cfun: Numba differs from Python",
+        )
 
 
 # ---------------------------------------------------------------------------
 # Target-scales tests
 # ---------------------------------------------------------------------------
+
 
 class TestNbHybridTargetScales(unittest.TestCase):
     """Test that target_scales are applied correctly by the Numba backend."""
@@ -534,13 +621,19 @@ class TestNbHybridTargetScales(unittest.TestCase):
         nb = _run_nb(network_set, 8, [x0_src, x0_tgt])
 
         for i, (p, n_) in enumerate(zip(py, nb)):
-            np.testing.assert_allclose(n_, p, rtol=1e-3, atol=1e-4,
-                                       err_msg=f"target_scales subnetwork {i}: mismatch")
+            np.testing.assert_allclose(
+                n_,
+                p,
+                rtol=1e-3,
+                atol=1e-4,
+                err_msg=f"target_scales subnetwork {i}: mismatch",
+            )
 
 
 # ---------------------------------------------------------------------------
 # Stochastic integrator tests
 # ---------------------------------------------------------------------------
+
 
 class TestNbHybridStochastic(unittest.TestCase):
     """Test EulerStochastic and HeunStochastic integrators."""
@@ -550,9 +643,9 @@ class TestNbHybridStochastic(unittest.TestCase):
     NSIG = 1e-4  # small noise for near-deterministic comparison
 
     def _make_stochastic_net(self, integrator_cls, seed=42):
-        sn = _mpr_stochastic_subnetwork("ctx", self.N,
-                                        integrator_cls=integrator_cls,
-                                        nsig=self.NSIG, seed=seed)
+        sn = _mpr_stochastic_subnetwork(
+            "ctx", self.N, integrator_cls=integrator_cls, nsig=self.NSIG, seed=seed
+        )
         network_set = NetworkSet(subnets=[sn], projections=[], stimuli=[])
         network_set.configure()
         return network_set
@@ -584,7 +677,11 @@ class TestNbHybridStochastic(unittest.TestCase):
         """Output shape is correct for EulerStochastic."""
         network_set = self._make_stochastic_net(EulerStochastic)
         m = network_set.subnets[0].model
-        x0 = np.random.RandomState(77).uniform(0.1, 0.3, (m.nvar, self.N, 1)).astype(np.float64)
+        x0 = (
+            np.random.RandomState(77)
+            .uniform(0.1, 0.3, (m.nvar, self.N, 1))
+            .astype(np.float64)
+        )
         nb = _run_nb(network_set, self.NSTEP, [x0])[0]
         self.assertEqual(nb.shape, (self.NSTEP, m.nvar, self.N, 1))
 
@@ -592,7 +689,11 @@ class TestNbHybridStochastic(unittest.TestCase):
         """Output shape is correct for HeunStochastic."""
         network_set = self._make_stochastic_net(HeunStochastic)
         m = network_set.subnets[0].model
-        x0 = np.random.RandomState(77).uniform(0.1, 0.3, (m.nvar, self.N, 1)).astype(np.float64)
+        x0 = (
+            np.random.RandomState(77)
+            .uniform(0.1, 0.3, (m.nvar, self.N, 1))
+            .astype(np.float64)
+        )
         nb = _run_nb(network_set, self.NSTEP, [x0])[0]
         self.assertEqual(nb.shape, (self.NSTEP, m.nvar, self.N, 1))
 
@@ -600,23 +701,34 @@ class TestNbHybridStochastic(unittest.TestCase):
         """EulerStochastic Numba output matches Python with same RNG seed."""
         py, nb = self._run_both_same_seed(EulerStochastic)
         self.assertEqual(py.shape, nb.shape)
-        np.testing.assert_allclose(nb, py, rtol=1e-2, atol=1e-3,
-                                   err_msg="EulerStochastic: Numba differs from Python")
+        np.testing.assert_allclose(
+            nb,
+            py,
+            rtol=1e-2,
+            atol=1e-3,
+            err_msg="EulerStochastic: Numba differs from Python",
+        )
 
     def test_heun_stochastic_matches_python(self):
         """HeunStochastic Numba output matches Python with same RNG seed."""
         py, nb = self._run_both_same_seed(HeunStochastic)
         self.assertEqual(py.shape, nb.shape)
-        np.testing.assert_allclose(nb, py, rtol=1e-2, atol=1e-3,
-                                   err_msg="HeunStochastic: Numba differs from Python")
+        np.testing.assert_allclose(
+            nb,
+            py,
+            rtol=1e-2,
+            atol=1e-3,
+            err_msg="HeunStochastic: Numba differs from Python",
+        )
 
     def test_noise_has_effect(self):
         """Stochastic output must differ from deterministic (noise is applied)."""
         n = self.N
         model_d = MontbrioPazoRoxin()
         model_d.configure()
-        sn_det = Subnetwork(name="ctx", model=model_d,
-                            scheme=EulerDeterministic(dt=DT), nnodes=n)
+        sn_det = Subnetwork(
+            name="ctx", model=model_d, scheme=EulerDeterministic(dt=DT), nnodes=n
+        )
         sn_det.configure()
         nets_det = NetworkSet(subnets=[sn_det], projections=[], stimuli=[])
         nets_det.configure()
@@ -632,13 +744,15 @@ class TestNbHybridStochastic(unittest.TestCase):
 
         # With large nsig, trajectories should diverge
         max_diff = np.max(np.abs(nb_stoch - nb_det))
-        self.assertGreater(max_diff, 1e-4,
-                           "Stochastic output should differ from deterministic")
+        self.assertGreater(
+            max_diff, 1e-4, "Stochastic output should differ from deterministic"
+        )
 
 
 # ---------------------------------------------------------------------------
 # Stimulus tests
 # ---------------------------------------------------------------------------
+
 
 class TestNbHybridStimulus(unittest.TestCase):
     """Test that stimulus is correctly applied by the Numba backend."""
@@ -659,7 +773,11 @@ class TestNbHybridStimulus(unittest.TestCase):
         """Should complete without exceptions."""
         network_set, n = self._make_net_with_stim()
         model = network_set.subnets[0].model
-        x0 = np.random.RandomState(5).uniform(0.1, 0.3, (model.nvar, n, 1)).astype(np.float64)
+        x0 = (
+            np.random.RandomState(5)
+            .uniform(0.1, 0.3, (model.nvar, n, 1))
+            .astype(np.float64)
+        )
         nb = _run_nb(network_set, self.NSTEP, [x0])
         self.assertEqual(len(nb), 1)
         self.assertEqual(nb[0].shape[0], self.NSTEP)
@@ -668,14 +786,19 @@ class TestNbHybridStimulus(unittest.TestCase):
         """Numba stimulus output must match Python loop within tolerance."""
         network_set, n = self._make_net_with_stim()
         model = network_set.subnets[0].model
-        x0 = np.random.RandomState(9).uniform(0.1, 0.3, (model.nvar, n, 1)).astype(np.float64)
+        x0 = (
+            np.random.RandomState(9)
+            .uniform(0.1, 0.3, (model.nvar, n, 1))
+            .astype(np.float64)
+        )
 
         py = _run_python_loop(network_set, self.NSTEP, [x0])[0]
         nb = _run_nb(network_set, self.NSTEP, [x0])[0]
 
         self.assertEqual(py.shape, nb.shape)
-        np.testing.assert_allclose(nb, py, rtol=1e-3, atol=1e-4,
-                                   err_msg="Stimulus: Numba differs from Python")
+        np.testing.assert_allclose(
+            nb, py, rtol=1e-3, atol=1e-4, err_msg="Stimulus: Numba differs from Python"
+        )
 
     def test_stimulus_has_effect(self):
         """Stimulated output must differ from unstimulated baseline."""
@@ -696,13 +819,15 @@ class TestNbHybridStimulus(unittest.TestCase):
         nb_stim = _run_nb(nets_stim, self.NSTEP, [x0])[0]
 
         max_diff = np.max(np.abs(nb_stim - nb_base))
-        self.assertGreater(max_diff, 1e-5,
-                           "Stimulated output should differ from baseline")
+        self.assertGreater(
+            max_diff, 1e-5, "Stimulated output should differ from baseline"
+        )
 
 
 # ---------------------------------------------------------------------------
 # End-to-end tests
 # ---------------------------------------------------------------------------
+
 
 class TestNbHybridEndToEnd(unittest.TestCase):
     """Full pipeline end-to-end tests: multi-subnet with delays, cfun, stimulus.
@@ -723,11 +848,15 @@ class TestNbHybridEndToEnd(unittest.TestCase):
         w = _sparse_weights(n_tgt, n_src, seed=21)
         lengths = sp.csr_matrix(w.toarray() * 20.0)
         inter = InterProjection(
-            source=sn_src, target=sn_tgt,
+            source=sn_src,
+            target=sn_tgt,
             source_cvar=np.array([0], dtype=np.int_),
             target_cvar=np.array([0], dtype=np.int_),
-            weights=w, lengths=lengths,
-            cv=1.0, dt=DT, scale=0.5,
+            weights=w,
+            lengths=lengths,
+            cv=1.0,
+            dt=DT,
+            scale=0.5,
             cfun=Linear(a=np.array([2.0]), b=np.array([0.0])),
         )
         network_set = NetworkSet(
@@ -747,8 +876,13 @@ class TestNbHybridEndToEnd(unittest.TestCase):
         nb = _run_nb(network_set, self.NSTEP, [x0_src, x0_tgt])
 
         for i, (p_i, n_i) in enumerate(zip(py, nb)):
-            np.testing.assert_allclose(n_i, p_i, rtol=1e-3, atol=1e-4,
-                                       err_msg=f"E2E 2-subnet delayed cfun subnet {i}")
+            np.testing.assert_allclose(
+                n_i,
+                p_i,
+                rtol=1e-3,
+                atol=1e-4,
+                err_msg=f"E2E 2-subnet delayed cfun subnet {i}",
+            )
 
     def test_two_subnets_intra_and_inter(self):
         """2-subnet network with both intra and inter projections."""
@@ -763,7 +897,9 @@ class TestNbHybridEndToEnd(unittest.TestCase):
             target_cvar=np.array([0], dtype=np.int_),
             weights=w_intra,
             lengths=_zero_lengths(n_src, n_src),
-            cv=1.0, dt=DT, scale=0.3,
+            cv=1.0,
+            dt=DT,
+            scale=0.3,
         )
         sn_src.projections = [intra]
         sn_src.configure()
@@ -772,12 +908,15 @@ class TestNbHybridEndToEnd(unittest.TestCase):
         # Inter projection
         w_inter = _sparse_weights(n_tgt, n_src, seed=37)
         inter = InterProjection(
-            source=sn_src, target=sn_tgt,
+            source=sn_src,
+            target=sn_tgt,
             source_cvar=np.array([0], dtype=np.int_),
             target_cvar=np.array([0], dtype=np.int_),
             weights=w_inter,
             lengths=_zero_lengths(n_tgt, n_src),
-            cv=1.0, dt=DT, scale=1.0,
+            cv=1.0,
+            dt=DT,
+            scale=1.0,
         )
 
         network_set = NetworkSet(
@@ -797,8 +936,9 @@ class TestNbHybridEndToEnd(unittest.TestCase):
         nb = _run_nb(network_set, self.NSTEP, [x0_src, x0_tgt])
 
         for i, (p_i, n_i) in enumerate(zip(py, nb)):
-            np.testing.assert_allclose(n_i, p_i, rtol=1e-3, atol=1e-4,
-                                       err_msg=f"E2E intra+inter subnet {i}")
+            np.testing.assert_allclose(
+                n_i, p_i, rtol=1e-3, atol=1e-4, err_msg=f"E2E intra+inter subnet {i}"
+            )
 
     def test_full_featured_network(self):
         """Single-subnet network with intra-projection, cfun, and stimulus."""
@@ -809,8 +949,11 @@ class TestNbHybridEndToEnd(unittest.TestCase):
         intra = IntraProjection(
             source_cvar=np.array([0], dtype=np.int_),
             target_cvar=np.array([0], dtype=np.int_),
-            weights=w, lengths=lengths,
-            cv=1.0, dt=DT, scale=0.5,
+            weights=w,
+            lengths=lengths,
+            cv=1.0,
+            dt=DT,
+            scale=0.5,
             cfun=Scaling(a=np.array([1.5])),
         )
         sn.projections = [intra]
@@ -827,13 +970,19 @@ class TestNbHybridEndToEnd(unittest.TestCase):
         py = _run_python_loop(network_set, self.NSTEP, [x0])[0]
         nb = _run_nb(network_set, self.NSTEP, [x0])[0]
 
-        np.testing.assert_allclose(nb, py, rtol=1e-3, atol=1e-4,
-                                   err_msg="E2E full-featured: Numba differs from Python")
+        np.testing.assert_allclose(
+            nb,
+            py,
+            rtol=1e-3,
+            atol=1e-4,
+            err_msg="E2E full-featured: Numba differs from Python",
+        )
 
 
 # ---------------------------------------------------------------------------
 # Benchmark tests
 # ---------------------------------------------------------------------------
+
 
 class TestNbHybridBenchmark(unittest.TestCase):
     """Wall-clock timing benchmarks to assess Numba speedup over pure Python.
@@ -865,7 +1014,9 @@ class TestNbHybridBenchmark(unittest.TestCase):
             target_cvar=np.array([0], dtype=np.int_),
             weights=w_intra,
             lengths=lengths_intra,
-            cv=10.0, dt=DT, scale=0.5,
+            cv=10.0,
+            dt=DT,
+            scale=0.5,
         )
         sn_src.projections = [intra]
         sn_src.configure()
@@ -873,12 +1024,15 @@ class TestNbHybridBenchmark(unittest.TestCase):
         w_inter = _sparse_weights(n_tgt, n_src, seed=73, density=0.2)
         lengths_inter = sp.csr_matrix(rng.uniform(0.0, 50.0, (n_tgt, n_src)))
         inter = InterProjection(
-            source=sn_src, target=sn_tgt,
+            source=sn_src,
+            target=sn_tgt,
             source_cvar=np.array([0], dtype=np.int_),
             target_cvar=np.array([0], dtype=np.int_),
             weights=w_inter,
             lengths=lengths_inter,
-            cv=10.0, dt=DT, scale=1.0,
+            cv=10.0,
+            dt=DT,
+            scale=1.0,
         )
         return NetworkSet(
             subnets=[sn_src, sn_tgt],
@@ -926,13 +1080,13 @@ class TestNbHybridBenchmark(unittest.TestCase):
 
         py_sps = self.NSTEP / t_py
         nb_sps = self.NSTEP / t_nb
-        speedup = t_py / t_nb if t_nb > 0 else float('inf')
+        speedup = t_py / t_nb if t_nb > 0 else float("inf")
 
         print(
             f"\n[Benchmark] N={self.N_NODES} nodes x 2 subnets, {self.NSTEP} steps, cv=10 m/s delays, 20% density\n"
-            f"  Compile (one-time): {t_compile*1e3:.1f} ms\n"
-            f"  Python: {t_py*1e3:.1f} ms  ({py_sps:.0f} steps/s)\n"
-            f"  Numba (cached kernel): {t_nb*1e3:.1f} ms  ({nb_sps:.0f} steps/s)\n"
+            f"  Compile (one-time): {t_compile * 1e3:.1f} ms\n"
+            f"  Python: {t_py * 1e3:.1f} ms  ({py_sps:.0f} steps/s)\n"
+            f"  Numba (cached kernel): {t_nb * 1e3:.1f} ms  ({nb_sps:.0f} steps/s)\n"
             f"  Speedup (cached): {speedup:.2f}x\n"
         )
 
@@ -944,8 +1098,9 @@ class TestNbHybridBenchmark(unittest.TestCase):
 
         # Assert meaningful speedup now that caching works
         self.assertGreater(
-            speedup, 2.0,
-            f"Expected Numba cached kernel ≥ 2× faster than Python, got {speedup:.2f}×"
+            speedup,
+            2.0,
+            f"Expected Numba cached kernel ≥ 2× faster than Python, got {speedup:.2f}×",
         )
 
 
@@ -958,7 +1113,7 @@ class TestNbHybridMprKIonEx(unittest.TestCase):
     3. Pure-Python and Numba outputs agree within float32 tolerance.
     """
 
-    N = 6    # nodes per subnet
+    N = 6  # nodes per subnet
     NSTEP = 20
 
     def _build_network(self):
@@ -969,10 +1124,15 @@ class TestNbHybridMprKIonEx(unittest.TestCase):
         kionex_model = KIonEx()
         kionex_model.configure()
 
-        sn_a = Subnetwork(name="mpr", model=mpr_model,
-                          scheme=HeunDeterministic(dt=DT), nnodes=self.N)
-        sn_b = Subnetwork(name="kionex", model=kionex_model,
-                          scheme=HeunDeterministic(dt=DT), nnodes=self.N)
+        sn_a = Subnetwork(
+            name="mpr", model=mpr_model, scheme=HeunDeterministic(dt=DT), nnodes=self.N
+        )
+        sn_b = Subnetwork(
+            name="kionex",
+            model=kionex_model,
+            scheme=HeunDeterministic(dt=DT),
+            nnodes=self.N,
+        )
 
         rng = np.random.RandomState(7)
 
@@ -991,7 +1151,9 @@ class TestNbHybridMprKIonEx(unittest.TestCase):
             target_cvar=np.array([0], dtype=np.int32),
             weights=_w(self.N, self.N, 10),
             lengths=_l(self.N, self.N),
-            cv=1.0, dt=DT, scale=1e-4,
+            cv=1.0,
+            dt=DT,
+            scale=1e-4,
         )
         sn_a.projections = [intra_a]
         sn_a.configure()
@@ -1002,48 +1164,58 @@ class TestNbHybridMprKIonEx(unittest.TestCase):
             target_cvar=np.array([0], dtype=np.int32),
             weights=_w(self.N, self.N, 11),
             lengths=_l(self.N, self.N),
-            cv=1.0, dt=DT, scale=1e-4,
+            cv=1.0,
+            dt=DT,
+            scale=1e-4,
         )
         sn_b.projections = [intra_b]
         sn_b.configure()
 
         # Inter A→B (MPR r → KIonEx Coupling_Term)
         inter_ab = InterProjection(
-            source=sn_a, target=sn_b,
+            source=sn_a,
+            target=sn_b,
             source_cvar=np.array([0], dtype=np.int32),
             target_cvar=np.array([0], dtype=np.int32),
             weights=_w(self.N, self.N, 12),
             lengths=_l(self.N, self.N),
-            cv=1.0, dt=DT, scale=1e-4,
+            cv=1.0,
+            dt=DT,
+            scale=1e-4,
         )
 
         # Inter B→A (KIonEx x → MPR Coupling_Term_r)
         inter_ba = InterProjection(
-            source=sn_b, target=sn_a,
+            source=sn_b,
+            target=sn_a,
             source_cvar=np.array([0], dtype=np.int32),
             target_cvar=np.array([0], dtype=np.int32),
             weights=_w(self.N, self.N, 13),
             lengths=_l(self.N, self.N),
-            cv=1.0, dt=DT, scale=1e-4,
+            cv=1.0,
+            dt=DT,
+            scale=1e-4,
         )
 
-        nets = NetworkSet(subnets=[sn_a, sn_b], projections=[inter_ab, inter_ba], stimuli=[])
+        nets = NetworkSet(
+            subnets=[sn_a, sn_b], projections=[inter_ab, inter_ba], stimuli=[]
+        )
         nets.configure()
 
         # Initial conditions
         rng = np.random.RandomState(42)
         ic_a = rng.uniform(0.0, 0.1, (mpr_model.nvar, self.N, 1)).astype(np.float64)
-        ic_a[0] = np.abs(ic_a[0])   # r ≥ 0
+        ic_a[0] = np.abs(ic_a[0])  # r ≥ 0
 
         # KIonEx: keep DKi in [-8, -2] and Kg in [-15, -8] so that
         # K_o = K_o0 − 3·DKi + Kg > 0, avoiding log(negative) NaN.
         ic_b = np.zeros((kionex_model.nvar, self.N, 1), dtype=np.float64)
         safe_ic = {
-            'x':   (0.0, 0.3),
-            'V':   (-70.0, -50.0),
-            'n':   (0.2, 0.5),
-            'DKi': (-8.0, -2.0),
-            'Kg':  (-15.0, -8.0),
+            "x": (0.0, 0.3),
+            "V": (-70.0, -50.0),
+            "n": (0.2, 0.5),
+            "DKi": (-8.0, -2.0),
+            "Kg": (-15.0, -8.0),
         }
         for idx, svar in enumerate(kionex_model.state_variables):
             lo, hi = safe_ic[svar]
@@ -1056,8 +1228,9 @@ class TestNbHybridMprKIonEx(unittest.TestCase):
         nets, ic_a, ic_b = self._build_network()
         backend = NbHybridBackend()
         # Should not raise
-        backend.run_network(nets, nstep=self.NSTEP, chunk_size=1,
-                            initial_states=[ic_a, ic_b])
+        backend.run_network(
+            nets, nstep=self.NSTEP, chunk_size=1, initial_states=[ic_a, ic_b]
+        )
 
     def test_output_shapes(self):
         """Numba backend produces correctly-shaped output for MPR+KIonEx.
@@ -1068,20 +1241,29 @@ class TestNbHybridMprKIonEx(unittest.TestCase):
         test_mpr_kionex.py.  Here we validate shapes and that the backend runs.
         """
         from tvb.simulator.models.k_ion_exchange import KIonEx
+
         nets, ic_a, ic_b = self._build_network()
         results = NbHybridBackend().run_network(
-            nets, nstep=self.NSTEP, chunk_size=1,
+            nets,
+            nstep=self.NSTEP,
+            chunk_size=1,
             initial_states=[ic_a, ic_b],
         )
         self.assertEqual(len(results), 2, "Expected 2 subnetwork results")
         mpr_nvoi = len(MontbrioPazoRoxin.variables_of_interest.default)
         kionex_nvoi = len(KIonEx.variables_of_interest.default)
         times_a, data_a, _ = results[0]
-        self.assertEqual(data_a.shape, (self.NSTEP, mpr_nvoi, self.N, 1),
-                         f"MPR subnet shape mismatch: {data_a.shape}")
+        self.assertEqual(
+            data_a.shape,
+            (self.NSTEP, mpr_nvoi, self.N, 1),
+            f"MPR subnet shape mismatch: {data_a.shape}",
+        )
         times_b, data_b, _ = results[1]
-        self.assertEqual(data_b.shape, (self.NSTEP, kionex_nvoi, self.N, 1),
-                         f"KIonEx subnet shape mismatch: {data_b.shape}")
+        self.assertEqual(
+            data_b.shape,
+            (self.NSTEP, kionex_nvoi, self.N, 1),
+            f"KIonEx subnet shape mismatch: {data_b.shape}",
+        )
 
     def test_numba_matches_python(self):
         """Numba and pure-Python outputs agree within float32 tolerance."""
@@ -1093,10 +1275,14 @@ class TestNbHybridMprKIonEx(unittest.TestCase):
         nb_out = _run_nb(nets2, self.NSTEP, [ic_a2, ic_b2])
 
         for i, (py_i, nb_i) in enumerate(zip(py_out, nb_out)):
-            self.assertEqual(py_i.shape, nb_i.shape,
-                             f"Shape mismatch at subnetwork {i}")
+            self.assertEqual(
+                py_i.shape, nb_i.shape, f"Shape mismatch at subnetwork {i}"
+            )
             np.testing.assert_allclose(
-                nb_i, py_i, rtol=1e-3, atol=1e-3,
+                nb_i,
+                py_i,
+                rtol=1e-3,
+                atol=1e-3,
                 err_msg=f"Numba vs Python mismatch at subnetwork {i}",
             )
 
@@ -1104,6 +1290,7 @@ class TestNbHybridMprKIonEx(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Sigmoidal coupling function tests
 # ---------------------------------------------------------------------------
+
 
 class TestNbHybridSigmoidalCfun:
     """Sigmoidal and SigmoidalJansenRit coupling function tests (inter-projection)."""
@@ -1116,11 +1303,15 @@ class TestNbHybridSigmoidalCfun:
         sn2.configure()
         w = _sparse_weights(n, n, seed=seed, density=0.5)
         inter = InterProjection(
-            source=sn1, target=sn2,
+            source=sn1,
+            target=sn2,
             source_cvar=np.array([0], dtype=np.int32),
             target_cvar=np.array([0], dtype=np.int32),
-            weights=w, lengths=_zero_lengths(n, n),
-            cv=1.0, dt=DT, scale=1e-2,
+            weights=w,
+            lengths=_zero_lengths(n, n),
+            cv=1.0,
+            dt=DT,
+            scale=1e-2,
             cfun=cfun,
         )
         nets = NetworkSet(subnets=[sn1, sn2], projections=[inter], stimuli=[])
@@ -1138,12 +1329,14 @@ class TestNbHybridSigmoidalCfun:
     def test_sigmoidal_cfun_accepts(self):
         """NbHybridBackend accepts Sigmoidal cfun without raising."""
         from tvb.simulator.hybrid.coupling import Sigmoidal
+
         nets = self._build_net(cfun=Sigmoidal())
         NbHybridBackend()._check_compatibility(nets)
 
     def test_sigmoidal_cfun_finite(self):
         """Numba backend produces finite output with Sigmoidal cfun."""
         from tvb.simulator.hybrid.coupling import Sigmoidal
+
         nets = self._build_net(cfun=Sigmoidal())
         x0 = self._make_ic()
         results = _run_nb(nets, 15, [x0, x0.copy()])
@@ -1154,6 +1347,7 @@ class TestNbHybridSigmoidalCfun:
     def test_sigmoidal_cfun_matches_python(self):
         """Numba Sigmoidal cfun output matches Python backend."""
         from tvb.simulator.hybrid.coupling import Sigmoidal
+
         n, nstep = 6, 15
         nets_py = self._build_net(cfun=Sigmoidal(), n=n, seed=42)
         nets_nb = self._build_net(cfun=Sigmoidal(), n=n, seed=42)
@@ -1161,18 +1355,21 @@ class TestNbHybridSigmoidalCfun:
         py = _run_python_loop(nets_py, nstep, [x0, x0.copy()])
         nb = _run_nb(nets_nb, nstep, [x0, x0.copy()])
         for py_d, nb_d in zip(py, nb):
-            np.testing.assert_allclose(nb_d, py_d.astype(np.float32),
-                                       rtol=1e-3, atol=1e-3)
+            np.testing.assert_allclose(
+                nb_d, py_d.astype(np.float32), rtol=1e-3, atol=1e-3
+            )
 
     def test_sigmoidal_jr_cfun_accepts(self):
         """NbHybridBackend accepts SigmoidalJansenRit cfun without raising."""
         from tvb.simulator.hybrid.coupling import SigmoidalJansenRit
+
         nets = self._build_net(cfun=SigmoidalJansenRit())
         NbHybridBackend()._check_compatibility(nets)
 
     def test_sigmoidal_jr_cfun_finite(self):
         """Numba backend produces finite output with SigmoidalJansenRit cfun."""
         from tvb.simulator.hybrid.coupling import SigmoidalJansenRit
+
         nets = self._build_net(cfun=SigmoidalJansenRit())
         x0 = self._make_ic()
         results = _run_nb(nets, 15, [x0, x0.copy()])
@@ -1183,6 +1380,7 @@ class TestNbHybridSigmoidalCfun:
     def test_sigmoidal_jr_cfun_matches_python(self):
         """Numba SigmoidalJansenRit cfun output matches Python backend."""
         from tvb.simulator.hybrid.coupling import SigmoidalJansenRit
+
         n, nstep = 6, 15
         nets_py = self._build_net(cfun=SigmoidalJansenRit(), n=n, seed=42)
         nets_nb = self._build_net(cfun=SigmoidalJansenRit(), n=n, seed=42)
@@ -1190,13 +1388,15 @@ class TestNbHybridSigmoidalCfun:
         py = _run_python_loop(nets_py, nstep, [x0, x0.copy()])
         nb = _run_nb(nets_nb, nstep, [x0, x0.copy()])
         for py_d, nb_d in zip(py, nb):
-            np.testing.assert_allclose(nb_d, py_d.astype(np.float32),
-                                       rtol=1e-3, atol=1e-3)
+            np.testing.assert_allclose(
+                nb_d, py_d.astype(np.float32), rtol=1e-3, atol=1e-3
+            )
 
 
 # ---------------------------------------------------------------------------
 # JansenRit model tests
 # ---------------------------------------------------------------------------
+
 
 class TestNbHybridJansenRit:
     """JansenRit model support in the numba hybrid backend."""
@@ -1207,22 +1407,29 @@ class TestNbHybridJansenRit:
     def _build_net(self):
         """Two JR subnets connected by an inter-projection (y0 → Coupling_Term)."""
         from tvb.simulator.models.jansen_rit import JansenRit
+
         n = self.N
         m1 = JansenRit()
         m2 = JansenRit()
-        sn1 = Subnetwork(name="jr1", model=m1,
-                         scheme=HeunDeterministic(dt=DT), nnodes=n)
+        sn1 = Subnetwork(
+            name="jr1", model=m1, scheme=HeunDeterministic(dt=DT), nnodes=n
+        )
         sn1.configure()
-        sn2 = Subnetwork(name="jr2", model=m2,
-                         scheme=HeunDeterministic(dt=DT), nnodes=n)
+        sn2 = Subnetwork(
+            name="jr2", model=m2, scheme=HeunDeterministic(dt=DT), nnodes=n
+        )
         sn2.configure()
         w = _sparse_weights(n, n, seed=7, density=0.4)
         inter = InterProjection(
-            source=sn1, target=sn2,
+            source=sn1,
+            target=sn2,
             source_cvar=np.array([0], dtype=np.int32),
             target_cvar=np.array([0], dtype=np.int32),
-            weights=w, lengths=_zero_lengths(n, n),
-            cv=1.0, dt=DT, scale=1e-3,
+            weights=w,
+            lengths=_zero_lengths(n, n),
+            cv=1.0,
+            dt=DT,
+            scale=1e-3,
         )
         nets = NetworkSet(subnets=[sn1, sn2], projections=[inter], stimuli=[])
         nets.configure()
@@ -1231,9 +1438,9 @@ class TestNbHybridJansenRit:
     def _make_ic(self):
         """Safe initial conditions for JansenRit."""
         x0 = np.zeros((6, self.N, 1), dtype=np.float64)
-        x0[0, :, 0] = 0.08   # y0
-        x0[1, :, 0] = 13.0   # y1
-        x0[2, :, 0] = 5.0    # y2
+        x0[0, :, 0] = 0.08  # y0
+        x0[1, :, 0] = 13.0  # y1
+        x0[2, :, 0] = 5.0  # y2
         return x0
 
     def test_jr_accepted_by_backend(self):
@@ -1244,6 +1451,7 @@ class TestNbHybridJansenRit:
     def test_jr_output_shape(self):
         """JR numba backend produces correct output shape."""
         from tvb.simulator.models.jansen_rit import JansenRit
+
         nets = self._build_net()
         x0 = self._make_ic()
         results = _run_nb(nets, self.NSTEP, [x0, x0.copy()])
@@ -1267,6 +1475,7 @@ class TestNbHybridJansenRit:
     def test_jr_matches_python(self):
         """JR numba backend output matches Python loop backend."""
         from tvb.simulator.models.jansen_rit import JansenRit
+
         # JR has 4 VoI (y0..y3) but 6 state vars;  Python loop returns all 6,
         # NB returns only VoI.  Extract VoI indices for comparison.
         voi_names = JansenRit.variables_of_interest.default
@@ -1288,6 +1497,7 @@ class TestNbHybridJansenRit:
 # n_modes > 1 tests
 # ---------------------------------------------------------------------------
 
+
 class TestNbHybridMultiMode:
     """n_modes > 1 code path in the numba hybrid backend."""
 
@@ -1300,8 +1510,9 @@ class TestNbHybridMultiMode:
         m = MontbrioPazoRoxin()
         m.number_of_modes = self.N_MODES
         m.configure()
-        sn = Subnetwork(name="ctx", model=m,
-                        scheme=HeunDeterministic(dt=DT), nnodes=self.N)
+        sn = Subnetwork(
+            name="ctx", model=m, scheme=HeunDeterministic(dt=DT), nnodes=self.N
+        )
         sn.configure()
         nets = NetworkSet(subnets=[sn], projections=[], stimuli=[])
         nets.configure()
@@ -1323,7 +1534,9 @@ class TestNbHybridMultiMode:
         assert d.ndim == 4
         assert d.shape[0] == self.NSTEP
         assert d.shape[2] == self.N
-        assert d.shape[3] == self.N_MODES, f"Expected n_modes={self.N_MODES}, got {d.shape[3]}"
+        assert d.shape[3] == self.N_MODES, (
+            f"Expected n_modes={self.N_MODES}, got {d.shape[3]}"
+        )
 
     def test_multi_mode_finite(self):
         """n_modes=2 output is finite."""
@@ -1339,8 +1552,9 @@ class TestNbHybridMultiMode:
         x0 = self._make_ic()
         py = _run_python_loop(nets_py, self.NSTEP, [x0])
         nb = _run_nb(nets_nb, self.NSTEP, [x0])
-        np.testing.assert_allclose(nb[0], py[0].astype(np.float32),
-                                   rtol=1e-3, atol=1e-4)
+        np.testing.assert_allclose(
+            nb[0], py[0].astype(np.float32), rtol=1e-3, atol=1e-4
+        )
 
 
 class TestNbHybridDiskCache:
@@ -1350,6 +1564,7 @@ class TestNbHybridDiskCache:
         """Minimal single-subnet network for cache tests."""
         from tvb.simulator.hybrid import NetworkSet
         from tvb.simulator.integrators import HeunDeterministic
+
         sn = _mpr_subnetwork("sn0", 4, HeunDeterministic)
         ns = NetworkSet(subnets=[sn])
         ns.configure()
@@ -1358,6 +1573,7 @@ class TestNbHybridDiskCache:
     def test_cache_dir_created_after_compile(self):
         """Disk cache directory is created after compile()."""
         from tvb.simulator.backend.nb_hybrid import NbHybridBackend
+
         NbHybridBackend.clear_cache()
         ns = self._simple_network()
         backend = NbHybridBackend()
@@ -1370,6 +1586,7 @@ class TestNbHybridDiskCache:
     def test_in_process_cache_hit(self):
         """Second compile() call with same topology returns cached function."""
         from tvb.simulator.backend.nb_hybrid import NbHybridBackend, _COMPILED_FN_CACHE
+
         NbHybridBackend.clear_cache()
         ns = self._simple_network()
         backend = NbHybridBackend()
@@ -1382,6 +1599,7 @@ class TestNbHybridDiskCache:
     def test_clear_cache_removes_files(self):
         """clear_cache() removes disk cache directory."""
         from tvb.simulator.backend.nb_hybrid import NbHybridBackend
+
         NbHybridBackend.clear_cache()
         ns = self._simple_network()
         backend = NbHybridBackend()
@@ -1404,8 +1622,12 @@ class TestNbHybridGeneric2dOscillator:
         m2 = Generic2dOscillator()
         m2.configure()
 
-        sn1 = Subnetwork(name='g2d1', model=m1, scheme=HeunDeterministic(dt=DT), nnodes=n)
-        sn2 = Subnetwork(name='g2d2', model=m2, scheme=HeunDeterministic(dt=DT), nnodes=n)
+        sn1 = Subnetwork(
+            name="g2d1", model=m1, scheme=HeunDeterministic(dt=DT), nnodes=n
+        )
+        sn2 = Subnetwork(
+            name="g2d2", model=m2, scheme=HeunDeterministic(dt=DT), nnodes=n
+        )
         sn1.configure()
         sn2.configure()
 
@@ -1468,8 +1690,9 @@ class TestNbHybridGeneric2dOscillator:
         voi = list(ns.subnets[0].model.variables_of_interest)
         voi_idx = [svars.index(v) for v in voi]
         for py_d, (_, nb_d, _) in zip(py_results, nb_results):
-            np.testing.assert_allclose(nb_d, py_d[:, voi_idx, :, :].astype(np.float32),
-                                       rtol=1e-3, atol=1e-3)
+            np.testing.assert_allclose(
+                nb_d, py_d[:, voi_idx, :, :].astype(np.float32), rtol=1e-3, atol=1e-3
+            )
 
 
 class TestNbHybridAfferentCoupling:
@@ -1511,9 +1734,11 @@ class TestNbHybridAfferentCoupling:
             assert c_arr.ndim == 4  # (n_chunks, n_cvar, n_nodes, n_modes)
             n_chunks = d_arr.shape[0]
             assert c_arr.shape[0] == n_chunks
-            assert c_arr.shape[1] == 2   # n_cvar for MPR (Coupling_Term_r, Coupling_Term_V)
-            assert c_arr.shape[2] == 6   # n_nodes
-            assert c_arr.shape[3] == 1   # n_modes
+            assert (
+                c_arr.shape[1] == 2
+            )  # n_cvar for MPR (Coupling_Term_r, Coupling_Term_V)
+            assert c_arr.shape[2] == 6  # n_nodes
+            assert c_arr.shape[3] == 1  # n_modes
 
     def test_afferent_coupling_zero_when_uncoupled(self):
         """ctavg is zero for isolated subnets (no incoming projections)."""
@@ -1524,8 +1749,9 @@ class TestNbHybridAfferentCoupling:
         x0 = np.zeros((2, 4, 1), dtype=np.float32)
         results = _run_nb_full(ns, 10, [x0])
         _, _, c_arr = results[0]
-        np.testing.assert_array_equal(c_arr, 0.0,
-            err_msg="Afferent coupling should be zero for isolated subnet")
+        np.testing.assert_array_equal(
+            c_arr, 0.0, err_msg="Afferent coupling should be zero for isolated subnet"
+        )
 
     def test_afferent_coupling_nonzero_when_coupled(self):
         """ctavg is non-zero for target subnet with active projections."""
@@ -1536,7 +1762,9 @@ class TestNbHybridAfferentCoupling:
         results = _run_nb_full(ns, nstep, [x0.copy(), x0.copy()])
         # sn2 (index 1) should receive non-zero coupling from sn1 via cvar[0]
         _, _, c_arr_sn2 = results[1]
-        assert np.any(c_arr_sn2 != 0.0), "Expected non-zero afferent coupling on target subnet"
+        assert np.any(c_arr_sn2 != 0.0), (
+            "Expected non-zero afferent coupling on target subnet"
+        )
 
     def test_afferent_coupling_finite(self):
         """ctavg output is always finite."""
@@ -1556,23 +1784,32 @@ class TestNbHybridReducedWongWang:
 
     def _build_network(self):
         from tvb.simulator.models.wong_wang import ReducedWongWang
+
         n = self.N
         m1 = ReducedWongWang()
         m1.configure()
         m2 = ReducedWongWang()
         m2.configure()
-        sn1 = Subnetwork(name='rww1', model=m1, scheme=HeunDeterministic(dt=DT), nnodes=n)
+        sn1 = Subnetwork(
+            name="rww1", model=m1, scheme=HeunDeterministic(dt=DT), nnodes=n
+        )
         sn1.configure()
-        sn2 = Subnetwork(name='rww2', model=m2, scheme=HeunDeterministic(dt=DT), nnodes=n)
+        sn2 = Subnetwork(
+            name="rww2", model=m2, scheme=HeunDeterministic(dt=DT), nnodes=n
+        )
         sn2.configure()
         w = _sparse_weights(n, n, seed=3, density=0.4)
         l = _zero_lengths(n, n)
         inter = InterProjection(
-            source=sn1, target=sn2,
+            source=sn1,
+            target=sn2,
             source_cvar=np.array([0], dtype=np.int32),
             target_cvar=np.array([0], dtype=np.int32),
-            weights=w, lengths=l,
-            cv=1.0, dt=DT, scale=1e-4,
+            weights=w,
+            lengths=l,
+            cv=1.0,
+            dt=DT,
+            scale=1e-4,
         )
         ns = NetworkSet(subnets=[sn1, sn2], projections=[inter], stimuli=[])
         ns.configure()
@@ -1589,6 +1826,7 @@ class TestNbHybridReducedWongWang:
 
     def test_rww_output_shape(self):
         from tvb.simulator.models.wong_wang import ReducedWongWang
+
         ns = self._build_network()
         x0 = self._make_ic()
         results = _run_nb(ns, self.NSTEP, [x0.copy(), x0.copy()])
@@ -1610,6 +1848,7 @@ class TestNbHybridReducedWongWang:
 
     def test_rww_matches_python(self):
         from tvb.simulator.models.wong_wang import ReducedWongWang
+
         n_voi = len(ReducedWongWang.variables_of_interest.default)
         x0 = self._make_ic()
         ns_py = self._build_network()
@@ -1617,8 +1856,9 @@ class TestNbHybridReducedWongWang:
         py = _run_python_loop(ns_py, self.NSTEP, [x0.copy(), x0.copy()])
         nb = _run_nb(ns_nb, self.NSTEP, [x0.copy(), x0.copy()])
         for py_d, nb_d in zip(py, nb):
-            np.testing.assert_allclose(nb_d, py_d[:, :n_voi, :, :].astype(np.float32),
-                                       rtol=1e-3, atol=1e-3)
+            np.testing.assert_allclose(
+                nb_d, py_d[:, :n_voi, :, :].astype(np.float32), rtol=1e-3, atol=1e-3
+            )
 
 
 class TestNbHybridEpileptor:
@@ -1629,24 +1869,33 @@ class TestNbHybridEpileptor:
 
     def _build_network(self):
         from tvb.simulator.models.epileptor import Epileptor
+
         n = self.N
         m1 = Epileptor()
         m1.configure()
         m2 = Epileptor()
         m2.configure()
-        sn1 = Subnetwork(name='ep1', model=m1, scheme=HeunDeterministic(dt=DT), nnodes=n)
+        sn1 = Subnetwork(
+            name="ep1", model=m1, scheme=HeunDeterministic(dt=DT), nnodes=n
+        )
         sn1.configure()
-        sn2 = Subnetwork(name='ep2', model=m2, scheme=HeunDeterministic(dt=DT), nnodes=n)
+        sn2 = Subnetwork(
+            name="ep2", model=m2, scheme=HeunDeterministic(dt=DT), nnodes=n
+        )
         sn2.configure()
         w = _sparse_weights(n, n, seed=11, density=0.4)
         l = _zero_lengths(n, n)
         # Epileptor cvar=[0,3] (x1, x2); coupling_terms=['Coupling_Term_pop1', 'Coupling_Term_pop2']
         inter = InterProjection(
-            source=sn1, target=sn2,
+            source=sn1,
+            target=sn2,
             source_cvar=np.array([0, 3], dtype=np.int32),
             target_cvar=np.array([0, 1], dtype=np.int32),
-            weights=w, lengths=l,
-            cv=1.0, dt=DT, scale=1e-4,
+            weights=w,
+            lengths=l,
+            cv=1.0,
+            dt=DT,
+            scale=1e-4,
         )
         ns = NetworkSet(subnets=[sn1, sn2], projections=[inter], stimuli=[])
         ns.configure()
@@ -1655,12 +1904,12 @@ class TestNbHybridEpileptor:
     def _make_ic(self):
         """Epileptor IC near the interictal fixed point."""
         x0 = np.zeros((6, self.N, 1), dtype=np.float64)
-        x0[0, :, 0] = -1.6    # x1
-        x0[1, :, 0] = -15.0   # y1
-        x0[2, :, 0] = 3.5     # z
-        x0[3, :, 0] = -0.2    # x2
-        x0[4, :, 0] = 0.0     # y2
-        x0[5, :, 0] = -0.05   # g
+        x0[0, :, 0] = -1.6  # x1
+        x0[1, :, 0] = -15.0  # y1
+        x0[2, :, 0] = 3.5  # z
+        x0[3, :, 0] = -0.2  # x2
+        x0[4, :, 0] = 0.0  # y2
+        x0[5, :, 0] = -0.05  # g
         return x0
 
     def test_epileptor_accepted_by_backend(self):
@@ -1669,6 +1918,7 @@ class TestNbHybridEpileptor:
 
     def test_epileptor_output_shape(self):
         from tvb.simulator.models.epileptor import Epileptor
+
         ns = self._build_network()
         x0 = self._make_ic()
         results = _run_nb(ns, self.NSTEP, [x0.copy(), x0.copy()])
@@ -1690,6 +1940,7 @@ class TestNbHybridEpileptor:
 
     def test_epileptor_matches_python(self):
         from tvb.simulator.models.epileptor import Epileptor
+
         # The template extracts state[vi] for vi in range(n_voi), so the first
         # n_voi state variables are compared (x1, y1 for default Epileptor n_voi=2).
         n_voi = len(Epileptor.variables_of_interest.default)
@@ -1699,8 +1950,9 @@ class TestNbHybridEpileptor:
         py = _run_python_loop(ns_py, self.NSTEP, [x0.copy(), x0.copy()])
         nb = _run_nb(ns_nb, self.NSTEP, [x0.copy(), x0.copy()])
         for py_d, nb_d in zip(py, nb):
-            np.testing.assert_allclose(nb_d, py_d[:, :n_voi, :, :].astype(np.float32),
-                                       rtol=1e-2, atol=1e-2)
+            np.testing.assert_allclose(
+                nb_d, py_d[:, :n_voi, :, :].astype(np.float32), rtol=1e-2, atol=1e-2
+            )
 
 
 class TestNbHybridWilsonCowan:
@@ -1711,25 +1963,34 @@ class TestNbHybridWilsonCowan:
 
     def _build_network(self):
         from tvb.simulator.models.wilson_cowan import WilsonCowan
+
         n = self.N
         m1 = WilsonCowan()
         m1.configure()
         m2 = WilsonCowan()
         m2.configure()
-        sn1 = Subnetwork(name='wc1', model=m1, scheme=HeunDeterministic(dt=DT), nnodes=n)
+        sn1 = Subnetwork(
+            name="wc1", model=m1, scheme=HeunDeterministic(dt=DT), nnodes=n
+        )
         sn1.configure()
-        sn2 = Subnetwork(name='wc2', model=m2, scheme=HeunDeterministic(dt=DT), nnodes=n)
+        sn2 = Subnetwork(
+            name="wc2", model=m2, scheme=HeunDeterministic(dt=DT), nnodes=n
+        )
         sn2.configure()
         w = _sparse_weights(n, n, seed=5, density=0.4)
         l = _zero_lengths(n, n)
         # WC cvar=[0,1] (E, I); coupling_terms=['Coupling_Term_E'] (only 1).
         # Use only E (cvar=0) from source for 1-to-1 mapping.
         inter = InterProjection(
-            source=sn1, target=sn2,
+            source=sn1,
+            target=sn2,
             source_cvar=np.array([0], dtype=np.int32),
             target_cvar=np.array([0], dtype=np.int32),
-            weights=w, lengths=l,
-            cv=1.0, dt=DT, scale=1e-3,
+            weights=w,
+            lengths=l,
+            cv=1.0,
+            dt=DT,
+            scale=1e-3,
         )
         ns = NetworkSet(subnets=[sn1, sn2], projections=[inter], stimuli=[])
         ns.configure()
@@ -1737,7 +1998,7 @@ class TestNbHybridWilsonCowan:
 
     def _make_ic(self):
         x0 = np.zeros((2, self.N, 1), dtype=np.float64)
-        x0[0, :, 0] = 0.2   # E
+        x0[0, :, 0] = 0.2  # E
         x0[1, :, 0] = 0.15  # I
         return x0
 
@@ -1747,6 +2008,7 @@ class TestNbHybridWilsonCowan:
 
     def test_wc_output_shape(self):
         from tvb.simulator.models.wilson_cowan import WilsonCowan
+
         ns = self._build_network()
         x0 = self._make_ic()
         results = _run_nb(ns, self.NSTEP, [x0.copy(), x0.copy()])
@@ -1768,6 +2030,7 @@ class TestNbHybridWilsonCowan:
 
     def test_wc_matches_python(self):
         from tvb.simulator.models.wilson_cowan import WilsonCowan
+
         n_voi = len(WilsonCowan.variables_of_interest.default)
         x0 = self._make_ic()
         ns_py = self._build_network()
@@ -1775,8 +2038,9 @@ class TestNbHybridWilsonCowan:
         py = _run_python_loop(ns_py, self.NSTEP, [x0.copy(), x0.copy()])
         nb = _run_nb(ns_nb, self.NSTEP, [x0.copy(), x0.copy()])
         for py_d, nb_d in zip(py, nb):
-            np.testing.assert_allclose(nb_d, py_d[:, :n_voi, :, :].astype(np.float32),
-                                       rtol=1e-2, atol=1e-2)
+            np.testing.assert_allclose(
+                nb_d, py_d[:, :n_voi, :, :].astype(np.float32), rtol=1e-2, atol=1e-2
+            )
 
 
 class TestNbHybridCheckpointing:
@@ -1793,11 +2057,15 @@ class TestNbHybridCheckpointing:
         w = _sparse_weights(self.N, self.N, seed=7)
         l = _zero_lengths(self.N, self.N)
         inter = InterProjection(
-            source=sn1, target=sn2,
+            source=sn1,
+            target=sn2,
             source_cvar=np.array([0], dtype=np.int32),
             target_cvar=np.array([0], dtype=np.int32),
-            weights=w, lengths=l,
-            cv=1.0, dt=DT, scale=1.0,
+            weights=w,
+            lengths=l,
+            cv=1.0,
+            dt=DT,
+            scale=1.0,
         )
         ns = NetworkSet(subnets=[sn1, sn2], projections=[inter], stimuli=[])
         ns.configure()
@@ -1824,23 +2092,25 @@ class TestNbHybridCheckpointing:
         ns = self._build_network()
         ic = self._make_ic()
         compiled = NbHybridBackend().compile(ns)
-        result = compiled.run(self.NSTEP, chunk_size=1, initial_states=ic,
-                              return_snapshot=True)
+        result = compiled.run(
+            self.NSTEP, chunk_size=1, initial_states=ic, return_snapshot=True
+        )
         assert isinstance(result, tuple)
         assert len(result) == 2
         outputs, snapshot = result
         assert isinstance(outputs, list)
         assert isinstance(snapshot, dict)
-        assert 'states' in snapshot
-        assert 'buffers' in snapshot
+        assert "states" in snapshot
+        assert "buffers" in snapshot
 
     def test_snapshot_states_shape(self):
         ns = self._build_network()
         ic = self._make_ic()
         compiled = NbHybridBackend().compile(ns)
-        _, snapshot = compiled.run(self.NSTEP, chunk_size=1, initial_states=ic,
-                                   return_snapshot=True)
-        states = snapshot['states']
+        _, snapshot = compiled.run(
+            self.NSTEP, chunk_size=1, initial_states=ic, return_snapshot=True
+        )
+        states = snapshot["states"]
         assert isinstance(states, list)
         assert len(states) == len(ns.subnets)
         m = MontbrioPazoRoxin()
@@ -1862,7 +2132,8 @@ class TestNbHybridCheckpointing:
 
         # Run N steps, capture snapshot
         out1, snap1 = compiled_split.run(
-            self.NSTEP, chunk_size=1,
+            self.NSTEP,
+            chunk_size=1,
             initial_states=[a.copy() for a in ic],
             return_snapshot=True,
         )
@@ -1871,14 +2142,15 @@ class TestNbHybridCheckpointing:
 
         # Run 2*NSTEP from scratch
         out_full = compiled_full.run(
-            self.NSTEP * 2, chunk_size=1,
+            self.NSTEP * 2,
+            chunk_size=1,
             initial_states=[a.copy() for a in ic],
         )
 
         # Last chunk of resumed run should match last chunk of full run
         for i in range(len(ns_split1.subnets)):
             np.testing.assert_allclose(
-                out2[i][1][-1],   # (times, data, ctavg) → data[-1]
+                out2[i][1][-1],  # (times, data, ctavg) → data[-1]
                 out_full[i][1][-1],
                 atol=1e-4,
                 err_msg=f"resume vs full mismatch at subnet {i}",
@@ -1888,6 +2160,7 @@ class TestNbHybridCheckpointing:
 # ---------------------------------------------------------------------------
 # mode_map ≠ identity tests
 # ---------------------------------------------------------------------------
+
 
 class TestNbHybridModeMap:
     """Inter-projection mode_map that is NOT the diagonal (identity) matrix."""
@@ -1905,21 +2178,26 @@ class TestNbHybridModeMap:
         m2.number_of_modes = self.N_MODES
         m2.configure()
 
-        sn1 = Subnetwork(name="mm_src", model=m1,
-                         scheme=HeunDeterministic(dt=DT), nnodes=self.N)
+        sn1 = Subnetwork(
+            name="mm_src", model=m1, scheme=HeunDeterministic(dt=DT), nnodes=self.N
+        )
         sn1.configure()
-        sn2 = Subnetwork(name="mm_tgt", model=m2,
-                         scheme=HeunDeterministic(dt=DT), nnodes=self.N)
+        sn2 = Subnetwork(
+            name="mm_tgt", model=m2, scheme=HeunDeterministic(dt=DT), nnodes=self.N
+        )
         sn2.configure()
 
         w = _sparse_weights(self.N, self.N, seed=17, density=0.5)
         inter = InterProjection(
-            source=sn1, target=sn2,
+            source=sn1,
+            target=sn2,
             source_cvar=np.array([0], dtype=np.int32),
             target_cvar=np.array([0], dtype=np.int32),
             weights=w,
             lengths=_zero_lengths(self.N, self.N),
-            cv=1.0, dt=DT, scale=1e-2,
+            cv=1.0,
+            dt=DT,
+            scale=1e-2,
             mode_map=mode_map_arr,
         )
         ns = NetworkSet(subnets=[sn1, sn2], projections=[inter], stimuli=[])
@@ -1977,8 +2255,9 @@ class TestNbHybridModeMap:
         res_mix = _run_nb(ns_mix, self.NSTEP, [x0.copy(), x0.copy()])
 
         # The target subnet (index 1) should differ between the two mode maps
-        max_diff = np.max(np.abs(res_mix[1].astype(np.float64) -
-                                  res_diag[1].astype(np.float64)))
+        max_diff = np.max(
+            np.abs(res_mix[1].astype(np.float64) - res_diag[1].astype(np.float64))
+        )
         assert max_diff > 1e-6, (
             f"Expected mixing mode_map to differ from diagonal by >1e-6, "
             f"got max_diff={max_diff:.2e}"
@@ -1988,6 +2267,7 @@ class TestNbHybridModeMap:
 # ---------------------------------------------------------------------------
 # Large-N scaling tests
 # ---------------------------------------------------------------------------
+
 
 class TestNbHybridLargeNScaling:
     """Large-N scaling: correctness at N=100 and speedup regression at N=50."""
@@ -2000,12 +2280,15 @@ class TestNbHybridLargeNScaling:
         sn_b.configure()
         w = _sparse_weights(n, n, seed=seed, density=0.2)
         inter = InterProjection(
-            source=sn_a, target=sn_b,
+            source=sn_a,
+            target=sn_b,
             source_cvar=np.array([0], dtype=np.int32),
             target_cvar=np.array([0], dtype=np.int32),
             weights=w,
             lengths=_zero_lengths(n, n),
-            cv=1.0, dt=DT, scale=1e-3,
+            cv=1.0,
+            dt=DT,
+            scale=1e-3,
         )
         ns = NetworkSet(subnets=[sn_a, sn_b], projections=[inter], stimuli=[])
         ns.configure()
@@ -2058,11 +2341,11 @@ class TestNbHybridLargeNScaling:
         compiled.run(nstep=nstep, chunk_size=1, initial_states=x0_list)
         t_nb = time.perf_counter() - t0
 
-        speedup = t_py / t_nb if t_nb > 0 else float('inf')
+        speedup = t_py / t_nb if t_nb > 0 else float("inf")
         assert speedup > 0.2, (
             f"Numba kernel should not be more than 5× slower than Python "
-            f"(got speedup={speedup:.2f}×, t_py={t_py*1e3:.1f}ms, "
-            f"t_nb={t_nb*1e3:.1f}ms)"
+            f"(got speedup={speedup:.2f}×, t_py={t_py * 1e3:.1f}ms, "
+            f"t_nb={t_nb * 1e3:.1f}ms)"
         )
 
 
@@ -2077,12 +2360,15 @@ class TestNbHybridDebugNojit:
         sn_b.configure()
         w = _sparse_weights(n, n, seed=7, density=1.0)
         inter = InterProjection(
-            source=sn_a, target=sn_b,
+            source=sn_a,
+            target=sn_b,
             source_cvar=np.array([0], dtype=np.int32),
             target_cvar=np.array([0], dtype=np.int32),
             weights=w,
             lengths=_zero_lengths(n, n),
-            cv=1.0, dt=DT, scale=1e-3,
+            cv=1.0,
+            dt=DT,
+            scale=1e-3,
         )
         ns = NetworkSet(subnets=[sn_a, sn_b], projections=[inter], stimuli=[])
         ns.configure()
@@ -2122,7 +2408,8 @@ class TestNbHybridDebugNojit:
 
         for (_, data_jit, _), (_, data_nojit, _) in zip(results_jit, results_nojit):
             np.testing.assert_allclose(
-                data_nojit, data_jit,
+                data_nojit,
+                data_jit,
                 atol=1e-5,
                 err_msg="debug_nojit=True must match JIT output within atol=1e-5",
             )
@@ -2181,6 +2468,410 @@ class TestStimulusMemoryEstimate(unittest.TestCase):
             f"Large stim array ({estimated_mb:.1f} MiB) should exceed the "
             f"lazy threshold ({_STIM_LAZY_THRESHOLD_MB} MiB)",
         )
+
+
+# ---------------------------------------------------------------------------
+# Zerlaut models — custom Mako template tests
+# ---------------------------------------------------------------------------
+
+
+class TestNbHybridZerlautFirstOrder:
+    """ZerlautAdaptationFirstOrder with custom nb-zerlaut-dfun template."""
+
+    N = 4
+    NSTEP = 20
+
+    def _build_network(self):
+        from tvb.simulator.models.zerlaut import ZerlautAdaptationFirstOrder
+
+        n = self.N
+        m1 = ZerlautAdaptationFirstOrder()
+        m1.configure()
+        m2 = ZerlautAdaptationFirstOrder()
+        m2.configure()
+        sn1 = Subnetwork(name="z1", model=m1, scheme=HeunDeterministic(dt=DT), nnodes=n)
+        sn1.configure()
+        sn2 = Subnetwork(name="z2", model=m2, scheme=HeunDeterministic(dt=DT), nnodes=n)
+        sn2.configure()
+        w = _sparse_weights(n, n, seed=7, density=0.5)
+        l = _zero_lengths(n, n)
+        inter = InterProjection(
+            source=sn1,
+            target=sn2,
+            source_cvar=np.array([0], dtype=np.int32),
+            target_cvar=np.array([0], dtype=np.int32),
+            weights=w,
+            lengths=l,
+            cv=1.0,
+            dt=DT,
+            scale=1e-4,
+        )
+        ns = NetworkSet(subnets=[sn1, sn2], projections=[inter], stimuli=[])
+        ns.configure()
+        return ns
+
+    def _make_ic(self):
+        x0 = np.zeros((5, self.N, 1), dtype=np.float64)
+        x0[0, :, 0] = 0.01  # E
+        x0[1, :, 0] = 0.01  # I
+        x0[2, :, 0] = 50.0  # W_e
+        x0[3, :, 0] = 0.0  # W_i
+        x0[4, :, 0] = 0.0  # ou_drift
+        return x0
+
+    def test_zerlaut1_accepted_by_backend(self):
+        ns = self._build_network()
+        NbHybridBackend()._check_compatibility(ns)
+
+    def test_zerlaut1_output_shape(self):
+        from tvb.simulator.models.zerlaut import ZerlautAdaptationFirstOrder
+
+        ns = self._build_network()
+        x0 = self._make_ic()
+        results = _run_nb(ns, self.NSTEP, [x0.copy(), x0.copy()])
+        assert len(results) == 2
+        n_voi = len(ZerlautAdaptationFirstOrder.variables_of_interest.default)
+        for d in results:
+            assert d.ndim == 4
+            assert d.shape[0] == self.NSTEP
+            assert d.shape[1] == n_voi
+            assert d.shape[2] == self.N
+            assert d.shape[3] == 1
+
+    def test_zerlaut1_output_finite(self):
+        ns = self._build_network()
+        x0 = self._make_ic()
+        results = _run_nb(ns, self.NSTEP, [x0.copy(), x0.copy()])
+        for d in results:
+            assert np.all(np.isfinite(d)), "NaN/Inf in ZerlautFirstOrder numba output"
+
+    def test_zerlaut1_matches_python(self):
+        from tvb.simulator.models.zerlaut import ZerlautAdaptationFirstOrder
+
+        n_voi = len(ZerlautAdaptationFirstOrder.variables_of_interest.default)
+        x0 = self._make_ic()
+        ns_py = self._build_network()
+        ns_nb = self._build_network()
+        py = _run_python_loop(ns_py, self.NSTEP, [x0.copy(), x0.copy()])
+        nb = _run_nb(ns_nb, self.NSTEP, [x0.copy(), x0.copy()])
+        for py_d, nb_d in zip(py, nb):
+            np.testing.assert_allclose(
+                nb_d, py_d[:, :n_voi, :, :].astype(np.float32), rtol=1e-2, atol=1e-4
+            )
+
+
+class TestNbHybridZerlautSecondOrder:
+    """ZerlautAdaptationSecondOrder with custom nb-zerlaut-dfun template."""
+
+    N = 4
+    NSTEP = 20
+
+    def _build_network(self):
+        from tvb.simulator.models.zerlaut import ZerlautAdaptationSecondOrder
+
+        n = self.N
+        m1 = ZerlautAdaptationSecondOrder()
+        m1.configure()
+        m2 = ZerlautAdaptationSecondOrder()
+        m2.configure()
+        sn1 = Subnetwork(
+            name="z2o_1", model=m1, scheme=HeunDeterministic(dt=DT), nnodes=n
+        )
+        sn1.configure()
+        sn2 = Subnetwork(
+            name="z2o_2", model=m2, scheme=HeunDeterministic(dt=DT), nnodes=n
+        )
+        sn2.configure()
+        w = _sparse_weights(n, n, seed=8, density=0.5)
+        l = _zero_lengths(n, n)
+        inter = InterProjection(
+            source=sn1,
+            target=sn2,
+            source_cvar=np.array([0], dtype=np.int32),
+            target_cvar=np.array([0], dtype=np.int32),
+            weights=w,
+            lengths=l,
+            cv=1.0,
+            dt=DT,
+            scale=1e-4,
+        )
+        ns = NetworkSet(subnets=[sn1, sn2], projections=[inter], stimuli=[])
+        ns.configure()
+        return ns
+
+    def _make_ic(self):
+        x0 = np.zeros((8, self.N, 1), dtype=np.float64)
+        x0[0, :, 0] = 0.01  # E
+        x0[1, :, 0] = 0.01  # I
+        x0[2, :, 0] = 0.001  # C_ee
+        x0[3, :, 0] = 0.0  # C_ei
+        x0[4, :, 0] = 0.001  # C_ii
+        x0[5, :, 0] = 50.0  # W_e
+        x0[6, :, 0] = 0.0  # W_i
+        x0[7, :, 0] = 0.0  # ou_drift
+        return x0
+
+    def test_zerlaut2_accepted_by_backend(self):
+        ns = self._build_network()
+        NbHybridBackend()._check_compatibility(ns)
+
+    def test_zerlaut2_output_shape(self):
+        from tvb.simulator.models.zerlaut import ZerlautAdaptationSecondOrder
+
+        ns = self._build_network()
+        x0 = self._make_ic()
+        results = _run_nb(ns, self.NSTEP, [x0.copy(), x0.copy()])
+        assert len(results) == 2
+        n_voi = len(ZerlautAdaptationSecondOrder.variables_of_interest.default)
+        for d in results:
+            assert d.ndim == 4
+            assert d.shape[0] == self.NSTEP
+            assert d.shape[1] == n_voi
+            assert d.shape[2] == self.N
+            assert d.shape[3] == 1
+
+    def test_zerlaut2_output_finite(self):
+        ns = self._build_network()
+        x0 = self._make_ic()
+        results = _run_nb(ns, self.NSTEP, [x0.copy(), x0.copy()])
+        for d in results:
+            assert np.all(np.isfinite(d)), "NaN/Inf in ZerlautSecondOrder numba output"
+
+    def test_zerlaut2_matches_python(self):
+        from tvb.simulator.models.zerlaut import ZerlautAdaptationSecondOrder
+
+        n_voi = len(ZerlautAdaptationSecondOrder.variables_of_interest.default)
+        x0 = self._make_ic()
+        ns_py = self._build_network()
+        ns_nb = self._build_network()
+        py = _run_python_loop(ns_py, self.NSTEP, [x0.copy(), x0.copy()])
+        nb = _run_nb(ns_nb, self.NSTEP, [x0.copy(), x0.copy()])
+        for py_d, nb_d in zip(py, nb):
+            np.testing.assert_allclose(
+                nb_d, py_d[:, :n_voi, :, :].astype(np.float32), rtol=1e-2, atol=1e-4
+            )
+
+
+# ---------------------------------------------------------------------------
+# Parametrized smoke tests for Ralph-completed models
+# ---------------------------------------------------------------------------
+
+
+def _ic_from_range(model, n):
+    """Initial conditions at the midpoint of each state variable's default range."""
+    sv_range = model.state_variable_range  # plain dict after configure()
+    svars = list(model.state_variables)
+    x0 = np.zeros((len(svars), n, 1), dtype=np.float64)
+    for i, sv in enumerate(svars):
+        if sv in sv_range:
+            lo, hi = float(sv_range[sv][0]), float(sv_range[sv][1])
+            if np.isfinite(lo) and np.isfinite(hi):
+                x0[i, :, 0] = (lo + hi) / 2.0
+    return x0
+
+
+_RALPH_MODELS = [
+    ("tvb.simulator.models.oscillator", "SupHopf"),
+    ("tvb.simulator.models.oscillator", "Kuramoto"),
+    ("tvb.simulator.models.epileptor", "Epileptor2D"),
+    ("tvb.simulator.models.hopfield", "Hopfield"),
+    ("tvb.simulator.models.infinite_theta", "CoombesByrne2D"),
+    ("tvb.simulator.models.larter_breakspear", "LarterBreakspear"),
+    ("tvb.simulator.models.infinite_theta", "CoombesByrne"),
+    ("tvb.simulator.models.infinite_theta", "GastSchmidtKnosche_SD"),
+    ("tvb.simulator.models.infinite_theta", "GastSchmidtKnosche_SF"),
+    ("tvb.simulator.models.epileptorcodim3", "EpileptorCodim3"),
+    ("tvb.simulator.models.epileptorcodim3", "EpileptorCodim3SlowMod"),
+    ("tvb.simulator.models.wong_wang_exc_inh", "ReducedWongWangExcInh"),
+    ("tvb.simulator.models.epileptor_rs", "EpileptorRestingState"),
+    ("tvb.simulator.models.infinite_theta", "DumontGutkin"),
+    ("tvb.simulator.models.jansen_rit", "ZetterbergJansen"),
+    ("tvb.simulator.models.stefanescu_jirsa", "ReducedSetFitzHughNagumo"),
+    ("tvb.simulator.models.stefanescu_jirsa", "ReducedSetHindmarshRose"),
+]
+_RALPH_IDS = [cls for _, cls in _RALPH_MODELS]
+
+
+def _build_single_subnet(mod_path, cls_name, n=4):
+    """Build a single-subnet NetworkSet with no projections for smoke testing."""
+    import importlib
+
+    cls = getattr(importlib.import_module(mod_path), cls_name)
+    model = cls()
+    model.configure()
+    sn = Subnetwork(name="sn", model=model, scheme=HeunDeterministic(dt=DT), nnodes=n)
+    sn.configure()
+    ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+    ns.configure()
+    return ns
+
+
+@pytest.mark.parametrize("mod_path,cls_name", _RALPH_MODELS, ids=_RALPH_IDS)
+def test_ralph_model_accepted(mod_path, cls_name):
+    """Ralph-completed model is accepted by NbHybridBackend._check_compatibility."""
+    ns = _build_single_subnet(mod_path, cls_name)
+    NbHybridBackend()._check_compatibility(ns)
+
+
+@pytest.mark.parametrize("mod_path,cls_name", _RALPH_MODELS, ids=_RALPH_IDS)
+def test_ralph_model_output_shape(mod_path, cls_name):
+    """Ralph-completed model produces correctly-shaped output."""
+    import importlib
+
+    cls = getattr(importlib.import_module(mod_path), cls_name)
+    n, nstep = 4, 10
+    ns = _build_single_subnet(mod_path, cls_name, n=n)
+    model = ns.subnets[0].model
+    x0 = _ic_from_range(model, n)
+    results = _run_nb(ns, nstep, [x0])
+    assert len(results) == 1
+    d = results[0]
+    assert d.ndim == 4
+    assert d.shape[0] == nstep
+    assert d.shape[2] == n
+    assert d.shape[3] == model.number_of_modes
+
+
+@pytest.mark.parametrize("mod_path,cls_name", _RALPH_MODELS, ids=_RALPH_IDS)
+def test_ralph_model_output_finite(mod_path, cls_name):
+    """Ralph-completed model produces finite (non-NaN/Inf) output."""
+    n, nstep = 4, 10
+    ns = _build_single_subnet(mod_path, cls_name, n=n)
+    model = ns.subnets[0].model
+    x0 = _ic_from_range(model, n)
+    results = _run_nb(ns, nstep, [x0])
+    assert np.all(np.isfinite(results[0])), f"{cls_name}: NaN/Inf in Numba output"
+
+
+# ---------------------------------------------------------------------------
+# Monitor dispatch tests (G3)
+# ---------------------------------------------------------------------------
+
+
+class TestNbHybridMonitors(unittest.TestCase):
+    """Python-side monitor dispatch via the monitors= kwarg (G3)."""
+
+    def _make_net(self, n=4):
+        sn = _mpr_subnetwork("mon_sn", n)
+        sn.configure()
+        network_set = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        network_set.configure()
+        return network_set, n
+
+    def _make_ic(self, n):
+        rng = np.random.RandomState(55)
+        m = MontbrioPazoRoxin()
+        m.configure()
+        x0 = rng.uniform(0.0, 0.2, (m.nvar, n, 1)).astype(np.float64)
+        x0[0] = np.abs(x0[0])
+        return [x0]
+
+    def test_no_monitors_backward_compat(self):
+        """monitors=None returns (times, data, ctavg) as before."""
+        from tvb.simulator.backend.nb_hybrid import NbHybridBackend
+
+        nets, n = self._make_net()
+        ic = self._make_ic(n)
+        backend = NbHybridBackend()
+        results = backend.run_network(nets, nstep=10, chunk_size=1, initial_states=ic)
+        assert isinstance(results, list)
+        assert len(results) == 1
+        times, data, ctavg = results[0]
+        assert times.ndim == 1
+        assert data.ndim == 4
+        assert ctavg.ndim == 4
+
+    def test_temporal_average_shape(self):
+        """TemporalAverage with period=0.5ms at dt=0.01ms -> chunk of 50 -> 2 chunks per 100 steps."""
+        from tvb.simulator.monitors import TemporalAverage
+        from tvb.simulator.backend.nb_hybrid import NbHybridBackend
+
+        nets, n = self._make_net()
+        ic = self._make_ic(n)
+        backend = NbHybridBackend()
+        ta = TemporalAverage(period=0.5)
+        chunk_size = int(round(ta.period / DT))
+        results = backend.run_network(
+            nets,
+            nstep=100,
+            chunk_size=chunk_size,
+            monitors=[ta],
+            initial_states=ic,
+        )
+        assert len(results) == 1
+        times, data = results[0][0]
+        assert data.shape[0] == 100 // chunk_size
+
+    def test_raw_shape(self):
+        """Raw with chunk_size=1 -> one row per step."""
+        from tvb.simulator.monitors import Raw
+        from tvb.simulator.backend.nb_hybrid import NbHybridBackend
+
+        nets, n = self._make_net()
+        ic = self._make_ic(n)
+        backend = NbHybridBackend()
+        results = backend.run_network(
+            nets,
+            nstep=50,
+            chunk_size=1,
+            monitors=[Raw()],
+            initial_states=ic,
+        )
+        assert len(results) == 1
+        times, data = results[0][0]
+        assert data.shape[0] == 50
+
+    def test_raw_rejects_chunk_size_gt_1(self):
+        """Raw monitor raises ValueError when chunk_size != 1."""
+        from tvb.simulator.monitors import Raw
+        from tvb.simulator.backend.nb_hybrid import NbHybridBackend
+
+        nets, n = self._make_net()
+        ic = self._make_ic(n)
+        backend = NbHybridBackend()
+        with self.assertRaises(ValueError):
+            backend.run_network(
+                nets,
+                nstep=10,
+                chunk_size=5,
+                monitors=[Raw()],
+                initial_states=ic,
+            )
+
+    def test_global_average_shape(self):
+        """GlobalAverage collapses node axis."""
+        from tvb.simulator.monitors import GlobalAverage
+        from tvb.simulator.backend.nb_hybrid import NbHybridBackend
+
+        nets, n = self._make_net()
+        ic = self._make_ic(n)
+        backend = NbHybridBackend()
+        results = backend.run_network(
+            nets,
+            nstep=20,
+            chunk_size=1,
+            monitors=[GlobalAverage()],
+            initial_states=ic,
+        )
+        assert len(results) == 1
+        times, data = results[0][0]
+        assert data.shape[2] == 1  # node axis collapsed to 1
+
+    def test_unsupported_monitor_raises(self):
+        """BOLD monitor raises NotImplementedError."""
+        from tvb.simulator.monitors import Bold
+        from tvb.simulator.backend.nb_hybrid import NbHybridBackend
+
+        nets, n = self._make_net()
+        ic = self._make_ic(n)
+        backend = NbHybridBackend()
+        with self.assertRaises(NotImplementedError):
+            backend.run_network(
+                nets,
+                nstep=10,
+                monitors=[Bold()],
+                initial_states=ic,
+            )
 
 
 if __name__ == "__main__":

@@ -214,9 +214,19 @@ def compute_coupling_${p.name}(
                "euler_stochastic" if isinstance(sn.integrator, EulerStochastic) else \
                "heun" if isinstance(sn.integrator, HeunDeterministic) else "euler"
     svars = list(sn.model.state_variables)
-    cterms = list(sn.model.coupling_terms)
-    dfuns = sn.model.state_variable_dfuns
-    gparams = {n: float(getattr(sn.model, n)[0]) for n in sn.model.global_parameter_names}
+
+    # Zerlaut models use a custom template for dfun generation;
+    # they don't have coupling_terms / state_variable_dfuns / global_parameter_names.
+    _has_custom_template = hasattr(sn.model, '_nb_hybrid_custom_template')
+    if _has_custom_template:
+        cterms = ['Coupling_Term']  # Zerlaut: single cvar=[0]
+        dfuns = None
+        gparams = {}
+    else:
+        cterms = list(sn.model.coupling_terms)
+        dfuns = sn.model.state_variable_dfuns
+        gparams = {n: float(getattr(sn.model, n)[0]) for n in sn.model.global_parameter_names}
+
     dt_val = sn.integrator.dt
     n_nodes = sn.n_nodes
     n_modes = sn.n_modes
@@ -236,8 +246,58 @@ def compute_coupling_${p.name}(
     i1svars_str = ', '.join(['i1' + s for s in svars])
     n_svars = len(svars)
     _intermediates = list(getattr(sn.model, 'dfun_intermediates', None) or [])
+    _is_combined = getattr(sn.model, 'dfun_mode', None) == 'combined'
+    if _is_combined:
+        import re as _re
+        _sv_ct = set(svars) | set(cterms)
+        _dm_names = list(getattr(sn.model, 'derived_matrix_names', []))
+        _dm_name_set = set(_dm_names)
+        _dm_data = {}
+        for _dn in _dm_names:
+            _da = getattr(sn.model, _dn, None)
+            if _da is not None:
+                _arr = _np.asarray(_da, dtype=_np.float32)
+                if _arr.ndim > 1 and 1 in _arr.shape:
+                    _arr = _arr.ravel()
+                _dm_data[_dn] = _arr
+        _dm_ops = list(getattr(sn.model, 'derived_matrix_ops', []))
+        def _repl_m(mo):
+            nm = mo.group(1)
+            if nm in _sv_ct:
+                return nm
+            if nm in _dm_name_set:
+                return f'_{sn.name}_{nm}[_m]'
+            return f'_{nm}[_m]'
+        _cdfuns = {sv: _re.sub(r'(\w+)_\{m\}', _repl_m, dfuns[sv]) for sv in svars}
+    else:
+        _cdfuns = None
+        _dm_names = []
+        _dm_data = {}
+        _dm_ops = []
 %>
 
+% if _has_custom_template:
+## ---- Custom dfun generation for ${type(sn.model).__name__} ----
+<%include file="${sn.model._nb_hybrid_custom_template}" args="sn=sn, debug_nojit=debug_nojit, svars=svars, cterms=cterms, svars_str=svars_str, cterms_str=cterms_str, n_svars=n_svars, dt_val=dt_val, n_nodes=n_nodes, n_modes=n_modes, int_type=int_type, lo_map=lo_map, hi_map=hi_map, i1svars_str=i1svars_str"/>
+% else:
+% if _is_combined:
+## Derived parameter arrays for combined-mode ${type(sn.model).__name__}
+% for _dn, _da in _dm_data.items():
+_${sn.name}_${_dn} = np.array(${repr(_da.tolist())}, dtype=np.float32)
+% endfor
+
+${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
+def dfun_${sn.name}(${svars_str}, ${cterms_str}, _m, ${', '.join(['_' + sn.name + '_' + dn for dn in _dm_names])}, ${', '.join(['_' + op[0] for op in _dm_ops])}):
+    pi = math.pi
+    % for name, val in gparams.items():
+    ${name} = nb.float32(${val})
+    % endfor
+    % for svar in svars:
+    d_${svar} = nb.float32(${_cdfuns[svar]})
+    % endfor
+    return (${', '.join(['d_' + s for s in svars])},)
+
+% else:
 ## emit physical constants if model provides them (e.g. KIonEx-style)
 % if hasattr(sn.model, 'dfun_constants') and sn.model.dfun_constants:
 % for _cname, _cval in sn.model.dfun_constants.items():
@@ -269,7 +329,150 @@ def dfun_${sn.name}(${svars_str}, ${cterms_str}):
     % endfor
     return (${', '.join(['d_' + s for s in svars])},)
 
+% endif  ## _is_combined
+% endif  ## end _has_custom_template else
 
+% if _is_combined:
+${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
+def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'noise, t_abs' if sn.is_stochastic else ''}):
+    """Integrate subnetwork ${sn.name} one step in-place (combined-mode)."""
+    dt = nb.float32(${dt_val})
+
+    for i in range(${n_nodes}):
+        ## Compute cross-mode intermediates from current state
+        % for _op_name, _op_mat, _op_svar in _dm_ops:
+        _${_op_name} = np.zeros(${n_modes}, dtype=np.float32)
+        for _mi in range(${n_modes}):
+            for _mk in range(${n_modes}):
+                _${_op_name}[_mi] += _${sn.name}_${_op_mat}[_mi, _mk] * state[${svars.index(_op_svar)}, i, _mk]
+        % endfor
+
+        % if int_type in ("euler", "euler_stochastic"):
+        ## Euler single-pass
+        for m in range(${n_modes}):
+            % for k, svar in enumerate(svars):
+            ${svar} = state[${k}, i, m]
+            % endfor
+            % for k, ct in enumerate(cterms):
+            ${ct} = coupling[${k}, i, m]
+            % endfor
+            (${', '.join(['d0_' + s for s in svars])},) = dfun_${sn.name}(
+                ${svars_str}, ${cterms_str}, m,
+                ${', '.join(['_' + sn.name + '_' + dn for dn in _dm_names])},
+                ${', '.join(['_' + op[0] for op in _dm_ops])}
+            )
+            % for svar in svars:
+            n${svar} = ${svar} + dt * d0_${svar}
+            % endfor
+            % if int_type == "euler_stochastic":
+            % for k2, svar in enumerate(svars):
+            n${svar} = n${svar} + noise[${k2}, i, m, t_abs]
+            % endfor
+            % endif
+            % for k, svar in enumerate(svars):
+            <%
+                lo = lo_map.get(svar)
+                hi = hi_map.get(svar)
+            %>
+            % if lo is not None:
+            if n${svar} < nb.float32(${lo}):
+                n${svar} = nb.float32(${lo})
+            % endif
+            % if hi is not None:
+            if n${svar} > nb.float32(${hi}):
+                n${svar} = nb.float32(${hi})
+            % endif
+            % endfor
+            % for k, svar in enumerate(svars):
+            state[${k}, i, m] = n${svar}
+            % endfor
+
+        % elif int_type in ("heun", "heun_stochastic"):
+        ## Heun two-pass for cross-mode coupling
+        ## Pass 1: compute k1 for all modes
+        % for svar in svars:
+        _k1_${svar} = np.zeros(${n_modes}, dtype=np.float32)
+        % endfor
+        for m in range(${n_modes}):
+            % for k, svar in enumerate(svars):
+            ${svar} = state[${k}, i, m]
+            % endfor
+            % for k, ct in enumerate(cterms):
+            ${ct} = coupling[${k}, i, m]
+            % endfor
+            (${', '.join(['d0_' + s for s in svars])},) = dfun_${sn.name}(
+                ${svars_str}, ${cterms_str}, m,
+                ${', '.join(['_' + sn.name + '_' + dn for dn in _dm_names])},
+                ${', '.join(['_' + op[0] for op in _dm_ops])}
+            )
+            % for svar in svars:
+            _k1_${svar}[m] = d0_${svar}
+            % endfor
+
+        ## Compute i1 intermediate states for all modes
+        % for svar in svars:
+        _i1_${svar} = np.zeros(${n_modes}, dtype=np.float32)
+        % endfor
+        for m in range(${n_modes}):
+            % for k, svar in enumerate(svars):
+            _i1_${svar}[m] = state[${k}, i, m] + dt * _k1_${svar}[m]
+            % endfor
+            % if int_type == "heun_stochastic":
+            % for k2, svar in enumerate(svars):
+            _i1_${svar}[m] = _i1_${svar}[m] + noise[${k2}, i, m, t_abs]
+            % endfor
+            % endif
+
+        ## Recompute cross-mode intermediates from i1 states
+        % for _op_name, _op_mat, _op_svar in _dm_ops:
+        _${_op_name}_i1 = np.zeros(${n_modes}, dtype=np.float32)
+        for _mi in range(${n_modes}):
+            for _mk in range(${n_modes}):
+                _${_op_name}_i1[_mi] += _${sn.name}_${_op_mat}[_mi, _mk] * _i1_${_op_svar}[_mk]
+        % endfor
+
+        ## Pass 2: compute k2 and update state
+        for m in range(${n_modes}):
+            % for k, ct in enumerate(cterms):
+            ${ct} = coupling[${k}, i, m]
+            % endfor
+            % for k, svar in enumerate(svars):
+            ${svar} = state[${k}, i, m]
+            i1${svar} = _i1_${svar}[m]
+            % endfor
+            (${', '.join(['d1_' + s for s in svars])},) = dfun_${sn.name}(
+                ${i1svars_str}, ${cterms_str}, m,
+                ${', '.join(['_' + sn.name + '_' + dn for dn in _dm_names])},
+                ${', '.join(['_' + op[0] + '_i1' for op in _dm_ops])}
+            )
+            % for svar in svars:
+            n${svar} = ${svar} + dt * nb.float32(0.5) * (_k1_${svar}[m] + d1_${svar})
+            % endfor
+            % if int_type == "heun_stochastic":
+            % for k2, svar in enumerate(svars):
+            n${svar} = n${svar} + noise[${k2}, i, m, t_abs]
+            % endfor
+            % endif
+            % for k, svar in enumerate(svars):
+            <%
+                lo = lo_map.get(svar)
+                hi = hi_map.get(svar)
+            %>
+            % if lo is not None:
+            if n${svar} < nb.float32(${lo}):
+                n${svar} = nb.float32(${lo})
+            % endif
+            % if hi is not None:
+            if n${svar} > nb.float32(${hi}):
+                n${svar} = nb.float32(${hi})
+            % endif
+            % endfor
+            % for k, svar in enumerate(svars):
+            state[${k}, i, m] = n${svar}
+            % endfor
+        % endif  ## euler vs heun
+
+% else:
 ${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
 def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'noise, t_abs' if sn.is_stochastic else ''}):
     """Integrate subnetwork ${sn.name} one step in-place."""
@@ -388,6 +591,8 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'no
             state[${k}, i, m] = n${svar}
             % endfor
     % endif
+
+% endif  ## _is_combined integration
 
 % endfor
 

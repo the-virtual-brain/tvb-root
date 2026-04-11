@@ -99,53 +99,50 @@ class MontbrioPazoRoxin(Model):
 
     Gamma = NArray(
         label=r":math:`\Gamma`",
-        default=numpy.array([0.]),
-        domain=Range(lo=0., hi=10.0, step=0.01),
+        default=numpy.array([0.0]),
+        domain=Range(lo=0.0, hi=10.0, step=0.01),
         doc="""Half-width of synaptic weight distribution""",
     )
 
     cr = NArray(
         label=":math:`cr`",
-        default=numpy.array([1.]),
-        domain=Range(lo=0., hi=1, step=0.1),
+        default=numpy.array([1.0]),
+        domain=Range(lo=0.0, hi=1, step=0.1),
         doc="""It is the weight on Coupling through variable r.""",
     )
 
     cv = NArray(
         label=":math:`cv`",
-        default=numpy.array([0.]),
-        domain=Range(lo=0., hi=1, step=0.1),
+        default=numpy.array([0.0]),
+        domain=Range(lo=0.0, hi=1, step=0.1),
         doc="""It is the weight on Coupling through variable V.""",
     )
 
     # Informational attribute, used for phase-plane and initial()
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"r": numpy.array([0., 2.0]),
-                 "V": numpy.array([-2.0, 1.5])},
+        default={"r": numpy.array([0.0, 2.0]), "V": numpy.array([-2.0, 1.5])},
         doc="""Expected ranges of the state variables for initial condition generation and phase plane setup.""",
     )
 
     state_variable_boundaries = Final(
         label="State Variable boundaries [lo, hi]",
-        default={
-            "r": numpy.array([0.0, numpy.inf])
-        },
+        default={"r": numpy.array([0.0, numpy.inf])},
     )
 
     # TODO should match cvars below..
     coupling_terms = Final(
         label="Coupling terms",
         # how to unpack coupling array
-        default=["Coupling_Term_r", "Coupling_Term_V"]
+        default=["Coupling_Term_r", "Coupling_Term_V"],
     )
 
     state_variable_dfuns = Final(
         label="Drift functions",
         default={
             "r": "1/tau * ( Delta / (pi * tau) + 2 * V * r)",
-            "V": "1/tau * ( V*V - pi*pi*tau*tau*r*r + eta + J * tau * r + I + cr * Coupling_Term_r + cv * Coupling_Term_V)"
-        }
+            "V": "1/tau * ( V*V - pi*pi*tau*tau*r*r + eta + J * tau * r + I + cr * Coupling_Term_r + cv * Coupling_Term_V)",
+        },
     )
 
     variables_of_interest = List(
@@ -159,11 +156,12 @@ class MontbrioPazoRoxin(Model):
     parameter_names = List(
         of=str,
         label="List of parameters for this model",
-        default='tau Delta eta J I cr cv'.split())
+        default="tau Delta eta J I cr cv".split(),
+    )
 
-    state_variables = ('r', 'V')
+    state_variables = ("r", "V")
     _nvar = 2
-    # Cvar is the coupling variable. 
+    # Cvar is the coupling variable.
     cvar = numpy.array([0, 1], dtype=numpy.int32)
     # Stvar is the variable where stimulus is applied.
     stvar = numpy.array([1], dtype=numpy.int32)
@@ -195,14 +193,29 @@ class MontbrioPazoRoxin(Model):
         cr = self.cr
         cv = self.cv
 
-        Coupling_Term_r = coupling[0, :]  # This zero refers to the first element of cvar (r in this case)
-        Coupling_Term_V = coupling[1, :]  # This zero refers to the second element of cvar (V in this case)
+        Coupling_Term_r = coupling[
+            0, :
+        ]  # This zero refers to the first element of cvar (r in this case)
+        Coupling_Term_V = coupling[
+            1, :
+        ]  # This zero refers to the second element of cvar (V in this case)
 
         derivative = numpy.empty_like(state_variables)
 
         derivative[0] = 1 / tau * (Delta / (numpy.pi * tau) + 2 * V * r)
-        derivative[1] = 1 / tau * (
-                    V ** 2 - numpy.pi ** 2 * tau ** 2 * r ** 2 + eta + J * tau * r + I + cr * Coupling_Term_r + cv * Coupling_Term_V)
+        derivative[1] = (
+            1
+            / tau
+            * (
+                V**2
+                - numpy.pi**2 * tau**2 * r**2
+                + eta
+                + J * tau * r
+                + I
+                + cr * Coupling_Term_r
+                + cv * Coupling_Term_V
+            )
+        )
 
         return derivative
 
@@ -257,8 +270,8 @@ class CoombesByrne(Model):
 
     k = NArray(
         label=":math:`k`",
-        default=numpy.array([1.]),
-        domain=Range(lo=0., hi=5.0, step=0.01),
+        default=numpy.array([1.0]),
+        domain=Range(lo=0.0, hi=5.0, step=0.01),
         doc="""Local coupling strength""",
     )
 
@@ -270,23 +283,42 @@ class CoombesByrne(Model):
             firing rate variable to itself""",
     )
 
+    coupling_terms = Final(
+        label="Coupling terms",
+        default=["Coupling_Term_r"],
+    )
+
+    parameter_names = List(
+        of=str,
+        label="List of parameters for this model",
+        default="Delta alpha v_syn k eta".split(),
+    )
+
+    state_variable_dfuns = Final(
+        label="Drift functions for numba codegen",
+        default={
+            "r": "Delta / math.pi + 2 * V * r - g * r",
+            "V": "V**2 - math.pi**2 * r**2 + eta + (v_syn - V) * g + Coupling_Term_r",
+            "g": "alpha * q",
+            "q": "alpha * (k * math.pi * r - g - 2 * q)",
+        },
+    )
+
     # Informational attribute, used for phase-plane and initial()
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
         default={
-            "r": numpy.array([0., 6.]),
-            "V": numpy.array([-10., 10.]),
-            "g": numpy.array([1., 2.]),
-            "q": numpy.array([-0.5, 0.7])
+            "r": numpy.array([0.0, 6.0]),
+            "V": numpy.array([-10.0, 10.0]),
+            "g": numpy.array([1.0, 2.0]),
+            "q": numpy.array([-0.5, 0.7]),
         },
         doc="""Expected ranges of the state variables for initial condition generation and phase plane setup.""",
     )
 
     state_variable_boundaries = Final(
         label="State Variable boundaries [lo, hi]",
-        default={
-            "r": numpy.array([0.0, numpy.inf])
-        },
+        default={"r": numpy.array([0.0, numpy.inf])},
     )
 
     variables_of_interest = List(
@@ -297,9 +329,9 @@ class CoombesByrne(Model):
         doc="The quantities of interest for monitoring for the Infinite QIF 2D oscillator.",
     )
 
-    state_variables = ('r', 'V', 'g', 'q')
+    state_variables = ("r", "V", "g", "q")
     _nvar = 4
-    # Cvar is the coupling variable. 
+    # Cvar is the coupling variable.
     cvar = numpy.array([0, 1, 2, 3], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
@@ -324,12 +356,16 @@ class CoombesByrne(Model):
         eta = self.eta
         alpha = self.alpha
 
-        Coupling_Term_r = coupling[0, :]  # This zero refers to the first element of cvar (r in this case)
+        Coupling_Term_r = coupling[
+            0, :
+        ]  # This zero refers to the first element of cvar (r in this case)
 
         derivative = numpy.empty_like(state_variables)
 
         derivative[0] = Delta / numpy.pi + 2 * V * r - g * r
-        derivative[1] = V ** 2 - numpy.pi ** 2 * r ** 2 + eta + (v_syn - V) * g + Coupling_Term_r
+        derivative[1] = (
+            V**2 - numpy.pi**2 * r**2 + eta + (v_syn - V) * g + Coupling_Term_r
+        )
         derivative[2] = alpha * (q)
         derivative[3] = alpha * (k * numpy.pi * r - g - 2 * q)
 
@@ -359,7 +395,7 @@ class CoombesByrne2D(Model):
 
     Delta = NArray(
         label=r":math:`\Delta`",
-        default=numpy.array([1.]),
+        default=numpy.array([1.0]),
         domain=Range(lo=0.0, hi=10.0, step=0.01),
         doc="""Half-width of heterogeneous noise distribution""",
     )
@@ -373,8 +409,8 @@ class CoombesByrne2D(Model):
 
     k = NArray(
         label=":math:`k`",
-        default=numpy.array([1.]),
-        domain=Range(lo=0., hi=5.0, step=0.01),
+        default=numpy.array([1.0]),
+        domain=Range(lo=0.0, hi=5.0, step=0.01),
         doc="""Local coupling strength""",
     )
 
@@ -389,15 +425,35 @@ class CoombesByrne2D(Model):
     # Informational attribute, used for phase-plane and initial()
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"r": numpy.array([0., 2.0]),
-                 "V": numpy.array([-2.0, 1.5])},
+        default={"r": numpy.array([0.0, 2.0]), "V": numpy.array([-2.0, 1.5])},
         doc="""Expected ranges of the state variables for initial condition generation and phase plane setup.""",
     )
 
     state_variable_boundaries = Final(
         label="State Variable boundaries [lo, hi]",
+        default={"r": numpy.array([0.0, numpy.inf])},
+    )
+
+    coupling_terms = Final(label="Coupling terms", default=["Coupling_Term_r"])
+
+    parameter_names = List(
+        of=str,
+        label="List of parameters for this model",
+        default="Delta k v_syn eta".split(),
+    )
+
+    dfun_intermediates = Final(
+        label="Shared intermediates for dfun code generation",
+        default=[
+            ("g", "k * math.pi * r"),
+        ],
+    )
+
+    state_variable_dfuns = Final(
+        label="Drift functions for numba codegen",
         default={
-            "r": numpy.array([0.0, numpy.inf])
+            "r": "Delta / math.pi + 2 * V * r - g * r",
+            "V": "V**2 - math.pi**2 * r**2 + eta + (v_syn - V) * g + Coupling_Term_r",
         },
     )
 
@@ -409,9 +465,9 @@ class CoombesByrne2D(Model):
         doc="The quantities of interest for monitoring for the Infinite QIF 2D oscillator.",
     )
 
-    state_variables = ('r', 'V')
+    state_variables = ("r", "V")
     _nvar = 2
-    # Cvar is the coupling variable. 
+    # Cvar is the coupling variable.
     cvar = numpy.array([0, 1], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
@@ -438,12 +494,20 @@ class CoombesByrne2D(Model):
         v_syn = self.v_syn
         eta = self.eta
 
-        Coupling_Term_r = coupling[0, :]  # This zero refers to the first element of cvar (r in this case)
+        Coupling_Term_r = coupling[
+            0, :
+        ]  # This zero refers to the first element of cvar (r in this case)
 
         derivative = numpy.empty_like(state_variables)
 
-        derivative[0] = Delta / numpy.pi + 2 * V * r - k * numpy.pi * r ** 2
-        derivative[1] = V ** 2 - numpy.pi ** 2 * r ** 2 + eta + (v_syn - V) * k * numpy.pi * r + Coupling_Term_r
+        derivative[0] = Delta / numpy.pi + 2 * V * r - k * numpy.pi * r**2
+        derivative[1] = (
+            V**2
+            - numpy.pi**2 * r**2
+            + eta
+            + (v_syn - V) * k * numpy.pi * r
+            + Coupling_Term_r
+        )
 
         return derivative
 
@@ -474,14 +538,14 @@ class GastSchmidtKnosche_SD(Model):
     tau = NArray(
         label=r":math:`\tau`",
         default=numpy.array([1.0]),
-        domain=Range(lo=0., hi=15.0, step=0.01),
+        domain=Range(lo=0.0, hi=15.0, step=0.01),
         doc="""Characteristic time""",
     )
 
     tau_A = NArray(
         label=r":math:`\tau_A`",
         default=numpy.array([10.0]),
-        domain=Range(lo=0., hi=15.0, step=0.01),
+        domain=Range(lo=0.0, hi=15.0, step=0.01),
         doc="""Adaptation time scale""",
     )
 
@@ -515,40 +579,61 @@ class GastSchmidtKnosche_SD(Model):
 
     eta = NArray(
         label=r":math:`\eta`",
-        default=numpy.array([-6.]),
+        default=numpy.array([-6.0]),
         domain=Range(lo=-10.0, hi=10.0, step=0.0001),
         doc="""Mean of heterogeneous noise distribution""",
     )
 
     cr = NArray(
         label=":math:`cr`",
-        default=numpy.array([1.]),
-        domain=Range(lo=0., hi=1, step=0.1),
+        default=numpy.array([1.0]),
+        domain=Range(lo=0.0, hi=1, step=0.1),
         doc="""It is the weight on Coupling through variable r.""",
     )
 
     cv = NArray(
         label=":math:`cv`",
-        default=numpy.array([0.]),
-        domain=Range(lo=0., hi=1, step=0.1),
+        default=numpy.array([0.0]),
+        domain=Range(lo=0.0, hi=1, step=0.1),
         doc="""It is the weight on Coupling through variable V.""",
+    )
+
+    coupling_terms = Final(
+        label="Coupling terms",
+        default=["Coupling_Term_r", "Coupling_Term_V"],
+    )
+
+    parameter_names = List(
+        of=str,
+        label="List of parameters for this model",
+        default="tau tau_A alpha I Delta J eta cr cv".split(),
+    )
+
+    state_variable_dfuns = Final(
+        label="Drift functions for numba codegen",
+        default={
+            "r": "1 / tau * (Delta / (math.pi * tau) + 2 * V * r)",
+            "V": "1 / tau * (V**2 - math.pi**2 * tau**2 * r**2 + eta + J * tau * r * (1 - A) + I + cr * Coupling_Term_r + cv * Coupling_Term_V)",
+            "A": "1 / tau_A * B",
+            "B": "1 / tau_A * (-2 * B - A + alpha * r)",
+        },
     )
 
     # Informational attribute, used for phase-plane and initial()
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"r": numpy.array([0.0, 4]),
-                 "V": numpy.array([-3.0, 0.3]),
-                 "A": numpy.array([0.0, 0.4]),
-                 "B": numpy.array([-0.2, 0.3])},
+        default={
+            "r": numpy.array([0.0, 4]),
+            "V": numpy.array([-3.0, 0.3]),
+            "A": numpy.array([0.0, 0.4]),
+            "B": numpy.array([-0.2, 0.3]),
+        },
         doc="""Expected ranges of the state variables for initial condition generation and phase plane setup.""",
     )
 
     state_variable_boundaries = Final(
         label="State Variable boundaries [lo, hi]",
-        default={
-            "r": numpy.array([0.0, numpy.inf])
-        },
+        default={"r": numpy.array([0.0, numpy.inf])},
     )
 
     variables_of_interest = List(
@@ -559,9 +644,9 @@ class GastSchmidtKnosche_SD(Model):
         doc="The quantities of interest for monitoring for the Infinite QIF 2D oscillator.",
     )
 
-    state_variables = ('r', 'V', 'A', 'B')
+    state_variables = ("r", "V", "A", "B")
     _nvar = 4
-    # Cvar is the coupling variable. 
+    # Cvar is the coupling variable.
     cvar = numpy.array([0, 1, 2, 3], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
@@ -596,16 +681,31 @@ class GastSchmidtKnosche_SD(Model):
         tau_A = self.tau_A
         tau = self.tau
 
-        Coupling_Term_r = coupling[0, :]  # This zero refers to the first element of cvar (r in this case)
-        Coupling_Term_V = coupling[1, :]  # This one refers to the second element of cvar (V in this case)
+        Coupling_Term_r = coupling[
+            0, :
+        ]  # This zero refers to the first element of cvar (r in this case)
+        Coupling_Term_V = coupling[
+            1, :
+        ]  # This one refers to the second element of cvar (V in this case)
 
         derivative = numpy.empty_like(state_variables)
 
         derivative[0] = 1 / tau * (Delta / (numpy.pi * tau) + 2 * V * r)
-        derivative[1] = 1 / tau * (V ** 2 - numpy.pi ** 2 * tau ** 2 * r ** 2 + eta + J * tau * r * (
-                    1 - A) + I + cr * Coupling_Term_r + cv * Coupling_Term_V)
+        derivative[1] = (
+            1
+            / tau
+            * (
+                V**2
+                - numpy.pi**2 * tau**2 * r**2
+                + eta
+                + J * tau * r * (1 - A)
+                + I
+                + cr * Coupling_Term_r
+                + cv * Coupling_Term_V
+            )
+        )
         derivative[2] = 1 / tau_A * (B)
-        derivative[3] = 1 / tau_A * (- 2 * B - A + alpha * r)
+        derivative[3] = 1 / tau_A * (-2 * B - A + alpha * r)
 
         return derivative
 
@@ -633,20 +733,20 @@ class GastSchmidtKnosche_SF(Model):
     tau = NArray(
         label=r":math:`\tau`",
         default=numpy.array([1.0]),
-        domain=Range(lo=0., hi=15.0, step=0.01),
+        domain=Range(lo=0.0, hi=15.0, step=0.01),
         doc="""Characteristic time""",
     )
 
     tau_A = NArray(
         label=r":math:`\tau_A`",
         default=numpy.array([10.0]),
-        domain=Range(lo=0., hi=15.0, step=0.01),
+        domain=Range(lo=0.0, hi=15.0, step=0.01),
         doc="""Adaptation time scale""",
     )
 
     alpha = NArray(
         label=r":math:`\alpha`",
-        default=numpy.array([10.]),
+        default=numpy.array([10.0]),
         domain=Range(lo=0.0, hi=1.0, step=0.1),
         doc="""adaptation rate""",
     )
@@ -674,40 +774,61 @@ class GastSchmidtKnosche_SF(Model):
 
     eta = NArray(
         label=r":math:`\eta`",
-        default=numpy.array([1.]),
+        default=numpy.array([1.0]),
         domain=Range(lo=-10.0, hi=10.0, step=0.0001),
         doc="""Mean of heterogeneous noise distribution""",
     )
 
     cr = NArray(
         label=":math:`cr`",
-        default=numpy.array([1.]),
-        domain=Range(lo=0., hi=1, step=0.1),
+        default=numpy.array([1.0]),
+        domain=Range(lo=0.0, hi=1, step=0.1),
         doc="""It is the weight on Coupling through variable r.""",
     )
 
     cv = NArray(
         label=":math:`cv`",
-        default=numpy.array([0.]),
-        domain=Range(lo=0., hi=1, step=0.1),
+        default=numpy.array([0.0]),
+        domain=Range(lo=0.0, hi=1, step=0.1),
         doc="""It is the weight on Coupling through variable V.""",
+    )
+
+    coupling_terms = Final(
+        label="Coupling terms",
+        default=["Coupling_Term_r", "Coupling_Term_V"],
+    )
+
+    parameter_names = List(
+        of=str,
+        label="List of parameters for this model",
+        default="tau tau_A alpha I Delta J eta cr cv".split(),
+    )
+
+    state_variable_dfuns = Final(
+        label="Drift functions for numba codegen",
+        default={
+            "r": "1 / tau * (Delta / (math.pi * tau) + 2 * V * r)",
+            "V": "1 / tau * (V**2 - math.pi**2 * tau**2 * r**2 + eta + J * tau * r + I - A + cr * Coupling_Term_r + cv * Coupling_Term_V)",
+            "A": "1 / tau_A * B",
+            "B": "1 / tau_A * (-2 * B - A + alpha * r)",
+        },
     )
 
     # Informational attribute, used for phase-plane and initial()
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"r": numpy.array([0., 2.0]),
-                 "V": numpy.array([-2.0, 1.5]),
-                 "A": numpy.array([-1., 1.0]),
-                 "B": numpy.array([-1.0, 1.0])},
+        default={
+            "r": numpy.array([0.0, 2.0]),
+            "V": numpy.array([-2.0, 1.5]),
+            "A": numpy.array([-1.0, 1.0]),
+            "B": numpy.array([-1.0, 1.0]),
+        },
         doc="""Expected ranges of the state variables for initial condition generation and phase plane setup.""",
     )
 
     state_variable_boundaries = Final(
         label="State Variable boundaries [lo, hi]",
-        default={
-            "r": numpy.array([0.0, numpy.inf])
-        },
+        default={"r": numpy.array([0.0, numpy.inf])},
     )
 
     variables_of_interest = List(
@@ -718,9 +839,9 @@ class GastSchmidtKnosche_SF(Model):
         doc="The quantities of interest for monitoring for the Infinite QIF 2D oscillator.",
     )
 
-    state_variables = ('r', 'V', 'A', 'B')
+    state_variables = ("r", "V", "A", "B")
     _nvar = 4
-    # Cvar is the coupling variable. 
+    # Cvar is the coupling variable.
     cvar = numpy.array([0, 1, 2, 3], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
@@ -753,16 +874,32 @@ class GastSchmidtKnosche_SF(Model):
         tau_A = self.tau_A
         tau = self.tau
 
-        Coupling_Term_r = coupling[0, :]  # This zero refers to the first element of cvar (r in this case)
-        Coupling_Term_V = coupling[1, :]  # This one refers to the second element of cvar (V in this case)
+        Coupling_Term_r = coupling[
+            0, :
+        ]  # This zero refers to the first element of cvar (r in this case)
+        Coupling_Term_V = coupling[
+            1, :
+        ]  # This one refers to the second element of cvar (V in this case)
 
         derivative = numpy.empty_like(state_variables)
 
         derivative[0] = 1 / tau * (Delta / (numpy.pi * tau) + 2 * V * r)
-        derivative[1] = 1 / tau * (
-                    V ** 2 - numpy.pi ** 2 * tau ** 2 * r ** 2 + eta + J * tau * r + I - A + cr * Coupling_Term_r + cv * Coupling_Term_V)
+        derivative[1] = (
+            1
+            / tau
+            * (
+                V**2
+                - numpy.pi**2 * tau**2 * r**2
+                + eta
+                + J * tau * r
+                + I
+                - A
+                + cr * Coupling_Term_r
+                + cv * Coupling_Term_V
+            )
+        )
         derivative[2] = 1 / tau_A * (B)
-        derivative[3] = 1 / tau_A * (- 2 * B - A + alpha * r)
+        derivative[3] = 1 / tau_A * (-2 * B - A + alpha * r)
 
         return derivative
 
@@ -813,7 +950,7 @@ class DumontGutkin(Model):
     tau_e = NArray(
         label=r":math:`\tau_e`",
         default=numpy.array([10.0]),
-        domain=Range(lo=0., hi=15.0, step=0.01),
+        domain=Range(lo=0.0, hi=15.0, step=0.01),
         doc="""Characteristic time of excitatory population""",
     )
 
@@ -840,7 +977,7 @@ class DumontGutkin(Model):
     tau_i = NArray(
         label=r":math:`\tau_i`",
         default=numpy.array([10.0]),
-        domain=Range(lo=0., hi=15.0, step=0.01),
+        domain=Range(lo=0.0, hi=15.0, step=0.01),
         doc="""Characteristic time of inhibitory population""",
     )
 
@@ -882,21 +1019,48 @@ class DumontGutkin(Model):
     Gamma = NArray(
         label=r":math:`\Gamma`",
         default=numpy.array([5.0]),
-        domain=Range(lo=0., hi=10., step=0.1),
+        domain=Range(lo=0.0, hi=10.0, step=0.1),
         doc="""Ratio of excitatory VS inhibitory global couplings G_ie/G_ee .""",
+    )
+
+    coupling_terms = Final(
+        label="Coupling terms",
+        default=["Coupling_Term"],
+    )
+
+    parameter_names = List(
+        of=str,
+        label="List of parameters for this model",
+        default="I_e Delta_e eta_e tau_e I_i Delta_i eta_i tau_i tau_s J_ee J_ei J_ie J_ii Gamma".split(),
+    )
+
+    state_variable_dfuns = Final(
+        label="Drift functions for numba codegen",
+        default={
+            "r_e": "1 / tau_e * (Delta_e / (math.pi * tau_e) + 2 * V_e * r_e)",
+            "V_e": "1 / tau_e * (V_e**2 + eta_e - tau_e**2 * math.pi**2 * r_e**2 + tau_e * s_ee - tau_e * s_ei + I_e)",
+            "s_ee": "1 / tau_s * (-s_ee + J_ee * r_e + Coupling_Term)",
+            "s_ei": "1 / tau_s * (-s_ei + J_ei * r_i)",
+            "r_i": "1 / tau_i * (Delta_i / (math.pi * tau_i) + 2 * V_i * r_i)",
+            "V_i": "1 / tau_i * (V_i**2 + eta_i - tau_i**2 * math.pi**2 * r_i**2 + tau_i * s_ie - tau_i * s_ii + I_i)",
+            "s_ie": "1 / tau_s * (-s_ie + J_ie * r_e + Gamma * Coupling_Term)",
+            "s_ii": "1 / tau_s * (-s_ii + J_ii * r_i)",
+        },
     )
 
     # Informational attribute, used for phase-plane and initial()
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"r_e": numpy.array([0., 2.0]),
-                 "V_e": numpy.array([-2.0, 1.5]),
-                 "s_ee": numpy.array([-1.0, 1.0]),
-                 "s_ei": numpy.array([-1.0, 1.0]),
-                 "r_i": numpy.array([0., 2.0]),
-                 "V_i": numpy.array([-2.0, 1.5]),
-                 "s_ie": numpy.array([-1.0, 1.0]),
-                 "s_ii": numpy.array([-1.0, 1.0])},
+        default={
+            "r_e": numpy.array([0.0, 2.0]),
+            "V_e": numpy.array([-2.0, 1.5]),
+            "s_ee": numpy.array([-1.0, 1.0]),
+            "s_ei": numpy.array([-1.0, 1.0]),
+            "r_i": numpy.array([0.0, 2.0]),
+            "V_i": numpy.array([-2.0, 1.5]),
+            "s_ie": numpy.array([-1.0, 1.0]),
+            "s_ii": numpy.array([-1.0, 1.0]),
+        },
         doc="""Expected ranges of the state variables for initial condition generation and phase plane setup.""",
     )
 
@@ -904,7 +1068,7 @@ class DumontGutkin(Model):
         label="State Variable boundaries [lo, hi]",
         default={
             "r_e": numpy.array([0.0, numpy.inf]),
-            "r_i": numpy.array([0.0, numpy.inf])
+            "r_i": numpy.array([0.0, numpy.inf]),
         },
     )
 
@@ -916,9 +1080,9 @@ class DumontGutkin(Model):
         doc="The quantities of interest for monitoring for the Infinite QIF 2D oscillator.",
     )
 
-    state_variables = ('r_e', 'V_e', 's_ee', 's_ei', 'r_i', 'V_i', 's_ie', 's_ii')
+    state_variables = ("r_e", "V_e", "s_ee", "s_ei", "r_i", "V_i", "s_ie", "s_ii")
     _nvar = 8
-    # Cvar is the coupling variable. 
+    # Cvar is the coupling variable.
     cvar = numpy.array([0, 1, 4, 5], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
@@ -957,19 +1121,41 @@ class DumontGutkin(Model):
         I_i = self.I_i
         Gamma = self.Gamma
 
-        Coupling_Term = coupling[0, :]  # This zero refers to the first element of cvar (r_e in this case)
+        Coupling_Term = coupling[
+            0, :
+        ]  # This zero refers to the first element of cvar (r_e in this case)
 
         derivative = numpy.empty_like(state_variables)
 
         derivative[0] = 1 / tau_e * (Delta_e / (numpy.pi * tau_e) + 2 * V_e * r_e)
-        derivative[1] = 1 / tau_e * (
-                    V_e ** 2 + eta_e - tau_e ** 2 * numpy.pi ** 2 * r_e ** 2 + tau_e * s_ee - tau_e * s_ei + I_e)
-        derivative[2] = 1 / tau_s * (- s_ee + J_ee * r_e + Coupling_Term)
-        derivative[3] = 1 / tau_s * (- s_ei + J_ei * r_i)
+        derivative[1] = (
+            1
+            / tau_e
+            * (
+                V_e**2
+                + eta_e
+                - tau_e**2 * numpy.pi**2 * r_e**2
+                + tau_e * s_ee
+                - tau_e * s_ei
+                + I_e
+            )
+        )
+        derivative[2] = 1 / tau_s * (-s_ee + J_ee * r_e + Coupling_Term)
+        derivative[3] = 1 / tau_s * (-s_ei + J_ei * r_i)
         derivative[4] = 1 / tau_i * (Delta_i / (numpy.pi * tau_i) + 2 * V_i * r_i)
-        derivative[5] = 1 / tau_i * (
-                    V_i ** 2 + eta_i - tau_i ** 2 * numpy.pi ** 2 * r_i ** 2 + tau_i * s_ie - tau_i * s_ii + I_i)
-        derivative[6] = 1 / tau_s * (- s_ie + J_ie * r_e + Gamma * Coupling_Term)
-        derivative[7] = 1 / tau_s * (- s_ii + J_ii * r_i)
+        derivative[5] = (
+            1
+            / tau_i
+            * (
+                V_i**2
+                + eta_i
+                - tau_i**2 * numpy.pi**2 * r_i**2
+                + tau_i * s_ie
+                - tau_i * s_ii
+                + I_i
+            )
+        )
+        derivative[6] = 1 / tau_s * (-s_ie + J_ie * r_e + Gamma * Coupling_Term)
+        derivative[7] = 1 / tau_s * (-s_ii + J_ii * r_i)
 
         return derivative

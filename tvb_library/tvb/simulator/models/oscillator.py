@@ -231,70 +231,81 @@ class Generic2dOscillator(ModelNumbaDfun):
         domain=Range(lo=1.0, hi=5.0, step=0.01),
         doc="""A time-scale hierarchy can be introduced for the state
         variables :math:`V` and :math:`W`. Default parameter is 1, which means
-        no time-scale hierarchy.""")
+        no time-scale hierarchy.""",
+    )
 
     I = NArray(
         label=":math:`I_{ext}`",
         default=numpy.array([0.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.01),
-        doc="""Baseline shift of the cubic nullcline""")
+        doc="""Baseline shift of the cubic nullcline""",
+    )
 
     a = NArray(
         label=":math:`a`",
         default=numpy.array([-2.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.01),
-        doc="""Vertical shift of the configurable nullcline""")
+        doc="""Vertical shift of the configurable nullcline""",
+    )
 
     b = NArray(
         label=":math:`b`",
         default=numpy.array([-10.0]),
         domain=Range(lo=-20.0, hi=15.0, step=0.01),
-        doc="""Linear slope of the configurable nullcline""")
+        doc="""Linear slope of the configurable nullcline""",
+    )
 
     c = NArray(
         label=":math:`c`",
         default=numpy.array([0.0]),
         domain=Range(lo=-10.0, hi=10.0, step=0.01),
-        doc="""Parabolic term of the configurable nullcline""")
+        doc="""Parabolic term of the configurable nullcline""",
+    )
 
     d = NArray(
         label=":math:`d`",
         default=numpy.array([0.02]),
         domain=Range(lo=0.0001, hi=1.0, step=0.0001),
         doc="""Temporal scale factor. Warning: do not use it unless
-        you know what you are doing and know about time tides.""")
+        you know what you are doing and know about time tides.""",
+    )
 
     e = NArray(
         label=":math:`e`",
         default=numpy.array([3.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.0001),
-        doc="""Coefficient of the quadratic term of the cubic nullcline.""")
+        doc="""Coefficient of the quadratic term of the cubic nullcline.""",
+    )
 
     f = NArray(
         label=":math:`f`",
         default=numpy.array([1.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.0001),
-        doc="""Coefficient of the cubic term of the cubic nullcline.""")
+        doc="""Coefficient of the cubic term of the cubic nullcline.""",
+    )
 
     g = NArray(
         label=":math:`g`",
         default=numpy.array([0.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.5),
-        doc="""Coefficient of the linear term of the cubic nullcline.""")
+        doc="""Coefficient of the linear term of the cubic nullcline.""",
+    )
 
     alpha = NArray(
         label=r":math:`\alpha`",
         default=numpy.array([1.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.0001),
         doc="""Constant parameter to scale the rate of feedback from the
-            slow variable to the fast variable.""")
+            slow variable to the fast variable.""",
+    )
 
     beta = NArray(
         label=r":math:`\beta`",
         default=numpy.array([1.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.0001),
         doc="""Constant parameter to scale the rate of feedback from the
-            slow variable to itself""")
+            slow variable to itself""",
+    )
 
     # This parameter is basically a hack to avoid having a negative lower boundary in the global coupling strength.
     gamma = NArray(
@@ -303,44 +314,44 @@ class Generic2dOscillator(ModelNumbaDfun):
         domain=Range(lo=-1.0, hi=1.0, step=0.1),
         doc="""Constant parameter to reproduce FHN dynamics where
                excitatory input currents are negative.
-               It scales both I and the long range coupling term.""")
+               It scales both I and the long range coupling term.""",
+    )
 
-    coupling_terms = Final(
-        label="Coupling terms",
-        default=["Coupling_Term"])
+    coupling_terms = Final(label="Coupling terms", default=["Coupling_Term"])
 
     parameter_names = List(
         of=str,
         label="List of parameters for this model",
-        default='tau I a b c d e f g alpha beta gamma'.split()
+        default="tau I a b c d e f g alpha beta gamma".split(),
     )
 
     state_variable_dfuns = Final(
         label="Drift functions for numba codegen",
         default={
-            'V': 'd * tau * (alpha * W - f * V**3 + e * V**2 + g * V + gamma * I + gamma * Coupling_Term)',
-            'W': 'd * (a + b * V + c * V**2 - beta * W) / tau',
-        }
+            "V": "d * tau * (alpha * W - f * V**3 + e * V**2 + g * V + gamma * I + gamma * Coupling_Term)",
+            "W": "d * (a + b * V + c * V**2 - beta * W) / tau",
+        },
     )
 
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"V": numpy.array([-2.0, 4.0]),
-                 "W": numpy.array([-6.0, 6.0])},
+        default={"V": numpy.array([-2.0, 4.0]), "W": numpy.array([-6.0, 6.0])},
         doc="""The values for each state-variable should be set to encompass
             the expected dynamic range of that state-variable for the current
             parameters, it is used as a mechanism for bounding random initial
             conditions when the simulation isn't started from an explicit
-            history, it is also provides the default range of phase-plane plots.""")
+            history, it is also provides the default range of phase-plane plots.""",
+    )
 
     variables_of_interest = List(
         of=str,
         label="Variables or quantities available to Monitors",
         choices=("V", "W", "V + W", "V - W"),
         default=("V",),
-        doc="The quantities of interest for monitoring for the generic 2D oscillator.")
+        doc="The quantities of interest for monitoring for the generic 2D oscillator.",
+    )
 
-    state_variables = ('V', 'W')
+    state_variables = ("V", "W")
     _nvar = 2
     cvar = numpy.array([0], dtype=numpy.int32)
 
@@ -371,8 +382,11 @@ class Generic2dOscillator(ModelNumbaDfun):
         derivative = numpy.empty_like(state_variables)
 
         ev = RefBase.evaluate
-        ev('d * tau * (alpha * W - f * V**3 + e * V**2 + g * V + gamma * I + gamma *c_0 + lc_0)', out=derivative[0])
-        ev('d * (a + b * V + c * V**2 - beta * W) / tau', out=derivative[1])
+        ev(
+            "d * tau * (alpha * W - f * V**3 + e * V**2 + g * V + gamma * I + gamma *c_0 + lc_0)",
+            out=derivative[0],
+        )
+        ev("d * (a + b * V + c * V**2 - beta * W) / tau", out=derivative[1])
 
         return derivative
 
@@ -397,19 +411,45 @@ class Generic2dOscillator(ModelNumbaDfun):
         lc_0 = local_coupling * vw[0, :, 0]
         vw_ = vw.reshape(vw.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
-        deriv = _numba_dfun_g2d(vw_, c_, self.tau, self.I, self.a, self.b, self.c, self.d, self.e, self.f, self.g,
-                                self.beta, self.alpha, self.gamma, lc_0)
+        deriv = _numba_dfun_g2d(
+            vw_,
+            c_,
+            self.tau,
+            self.I,
+            self.a,
+            self.b,
+            self.c,
+            self.d,
+            self.e,
+            self.f,
+            self.g,
+            self.beta,
+            self.alpha,
+            self.gamma,
+            lc_0,
+        )
         return deriv.T[..., numpy.newaxis]
 
 
-@guvectorize([(float64[:],) * 16], '(n),(m)' + ',()' * 13 + '->(n)', nopython=True)
+@guvectorize([(float64[:],) * 16], "(n),(m)" + ",()" * 13 + "->(n)", nopython=True)
 def _numba_dfun_g2d(vw, c_0, tau, I, a, b, c, d, e, f, g, beta, alpha, gamma, lc_0, dx):
     "Gufunc for Generic2dOscillator model equations."
     V = vw[0]
     V2 = V * V
     W = vw[1]
-    dx[0] = d[0] * tau[0] * (
-                alpha[0] * W - f[0] * V2 * V + e[0] * V2 + g[0] * V + gamma[0] * I[0] + gamma[0] * c_0[0] + lc_0[0])
+    dx[0] = (
+        d[0]
+        * tau[0]
+        * (
+            alpha[0] * W
+            - f[0] * V2 * V
+            + e[0] * V2
+            + g[0] * V
+            + gamma[0] * I[0]
+            + gamma[0] * c_0[0]
+            + lc_0[0]
+        )
+    )
     dx[1] = d[0] * (a[0] + b[0] * V + c[0] * V2 - beta[0] * W) / tau[0]
 
 
@@ -448,16 +488,35 @@ class Kuramoto(Model):
         default=numpy.array([1.0]),
         domain=Range(lo=0.01, hi=200.0, step=0.1),
         doc=r""":math:`\omega` sets the base line frequency for the
-            Kuramoto oscillator in [rad/ms]""")
+            Kuramoto oscillator in [rad/ms]""",
+    )
+
+    coupling_terms = Final(label="Coupling terms", default=["Coupling_Term"])
+
+    parameter_names = List(
+        of=str,
+        label="List of parameters for this model",
+        default=["omega"],
+    )
+
+    state_variable_dfuns = Final(
+        label="Drift functions for numba codegen",
+        default={
+            "theta": "omega + Coupling_Term",
+        },
+    )
 
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"theta": numpy.array([0.0, numpy.pi * 2.0]), },
+        default={
+            "theta": numpy.array([0.0, numpy.pi * 2.0]),
+        },
         doc="""The values for each state-variable should be set to encompass
             the expected dynamic range of that state-variable for the current
             parameters, it is used as a mechanism for bounding random initial
             conditions when the simulation isn't started from an explicit
-            history, it is also provides the default range of phase-plane plots.""")
+            history, it is also provides the default range of phase-plane plots.""",
+    )
 
     variables_of_interest = List(
         of=str,
@@ -467,14 +526,22 @@ class Kuramoto(Model):
         doc="""This represents the default state-variables of this Model to be
                             monitored. It can be overridden for each Monitor if desired. The Kuramoto
                             model, however, only has one state variable with and index of 0, so it
-                            is not necessary to change the default here.""")
+                            is not necessary to change the default here.""",
+    )
 
-    state_variables = ['theta']
+    state_variables = ["theta"]
     _nvar = 1
     cvar = numpy.array([0], dtype=numpy.int32)
 
-    def dfun(self, state_variables, coupling, local_coupling=0.0,
-             ev=RefBase.evaluate, sin=numpy.sin, pi2=numpy.pi * 2):
+    def dfun(
+        self,
+        state_variables,
+        coupling,
+        local_coupling=0.0,
+        ev=RefBase.evaluate,
+        sin=numpy.sin,
+        pi2=numpy.pi * 2,
+    ):
         r"""
         The :math:`\theta` variable is the phase angle of the oscillation.
 
@@ -498,7 +565,7 @@ class Kuramoto(Model):
 
         I = coupling[0, :] + local_range_coupling
 
-        if not hasattr(self, 'derivative'):
+        if not hasattr(self, "derivative"):
             self.derivative = numpy.empty((1,) + theta.shape)
 
         # phase update
@@ -537,39 +604,73 @@ class SupHopf(ModelNumbaDfun):
         label=r":math:`a`",
         default=numpy.array([-0.5]),
         domain=Range(lo=-10.0, hi=10.0, step=0.01),
-        doc="""Local bifurcation parameter.""")
+        doc="""Local bifurcation parameter.""",
+    )
 
     omega = NArray(
         label=r":math:`\omega`",
-        default=numpy.array([1.]),
+        default=numpy.array([1.0]),
         domain=Range(lo=0.05, hi=630.0, step=0.01),
-        doc="""Angular frequency.""")
+        doc="""Angular frequency.""",
+    )
+
+    coupling_terms = Final(
+        label="Coupling terms", default=["Coupling_Term_x", "Coupling_Term_y"]
+    )
+
+    parameter_names = List(
+        of=str, label="List of parameters for this model", default=["a", "omega"]
+    )
+
+    dfun_intermediates = Final(
+        label="Shared intermediates for dfun code generation",
+        default=[
+            ("rad_sq", "x * x + y * y"),
+            ("amp", "a - rad_sq"),
+        ],
+    )
+
+    state_variable_dfuns = Final(
+        label="Drift functions for numba codegen",
+        default={
+            "x": "amp * x - omega * y + Coupling_Term_x",
+            "y": "amp * y + omega * x + Coupling_Term_y",
+        },
+    )
 
     # Initialization.
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"x": numpy.array([-5.0, 5.0]),
-                 "y": numpy.array([-5.0, 5.0])},
+        default={"x": numpy.array([-5.0, 5.0]), "y": numpy.array([-5.0, 5.0])},
         doc="""The values for each state-variable should be set to encompass
                the expected dynamic range of that state-variable for the current
                parameters, it is used as a mechanism for bounding random initial
                conditions when the simulation isn't started from an explicit
-               history, it is also provides the default range of phase-plane plots.""")
+               history, it is also provides the default range of phase-plane plots.""",
+    )
 
     variables_of_interest = List(
         of=str,
         label="Variables watched by Monitors",
         choices=("x", "y"),
         default=("x",),
-        doc="Quantities of supHopf available to monitor.")
+        doc="Quantities of supHopf available to monitor.",
+    )
 
     state_variables = ["x", "y"]
 
     _nvar = 2  # number of state-variables
     cvar = numpy.array([0, 1], dtype=numpy.int32)  # coupling variables
 
-    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0,
-                    array=numpy.array, where=numpy.where, concat=numpy.concatenate):
+    def _numpy_dfun(
+        self,
+        state_variables,
+        coupling,
+        local_coupling=0.0,
+        array=numpy.array,
+        where=numpy.where,
+        concat=numpy.concatenate,
+    ):
         y = state_variables
         ydot = numpy.empty_like(state_variables)
 
@@ -581,7 +682,9 @@ class SupHopf(ModelNumbaDfun):
         lc_0 = local_coupling * y[0]
 
         # supHopf's equations in Cartesian coordinates:
-        ydot[0] = (self.a - y[0] ** 2 - y[1] ** 2) * y[0] - self.omega * y[1] + c_0 + lc_0
+        ydot[0] = (
+            (self.a - y[0] ** 2 - y[1] ** 2) * y[0] - self.omega * y[1] + c_0 + lc_0
+        )
         ydot[1] = (self.a - y[0] ** 2 - y[1] ** 2) * y[1] + self.omega * y[0] + c_1
 
         return ydot
@@ -607,7 +710,7 @@ class SupHopf(ModelNumbaDfun):
         return deriv.T[..., numpy.newaxis]
 
 
-@guvectorize([(float64[:],) * 6], '(n),(m)' + ',()' * 3 + '->(n)', nopython=True)
+@guvectorize([(float64[:],) * 6], "(n),(m)" + ",()" * 3 + "->(n)", nopython=True)
 def _numba_dfun_supHopf(y, c, a, omega, lc_0, ydot):
     "Gufunc for supHopf model equations."
 
