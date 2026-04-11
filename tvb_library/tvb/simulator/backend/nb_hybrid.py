@@ -57,8 +57,10 @@ from tvb.simulator.hybrid.network import NetworkSet
 from tvb.simulator.hybrid.inter_projection import InterProjection
 from tvb.simulator.hybrid.intra_projection import IntraProjection
 from tvb.simulator.integrators import (
-    HeunDeterministic, EulerDeterministic,
-    HeunStochastic, EulerStochastic,
+    HeunDeterministic,
+    EulerDeterministic,
+    HeunStochastic,
+    EulerStochastic,
 )
 
 __all__ = [
@@ -74,9 +76,80 @@ __all__ = [
 # Helpers used by both Python (NbHybridBackend) and Mako templates
 # ---------------------------------------------------------------------------
 
+
+def _apply_monitors(
+    raw_outputs: list,
+    monitors: list,
+    dt: float,
+) -> list:
+    """Transform per-subnet (times, data, ctavg) tuples into monitor-dispatched output.
+
+    Parameters
+    ----------
+    raw_outputs : list of (times, data, ctavg)
+        One tuple per subnetwork, as returned by the compiled kernel.
+    monitors : list of Monitor instances
+        Each monitor determines which view / transform of the raw data to return.
+    dt : float
+        Integration time step (ms).
+
+    Returns
+    -------
+    list[list[tuple[ndarray, ndarray]]]
+        Outer list indexed by monitor, inner list by subnetwork.
+        Each element is (times, data).
+    """
+    from tvb.simulator.monitors import (
+        TemporalAverage,
+        Raw,
+        SubSample,
+        GlobalAverage,
+        AfferentCoupling,
+    )
+
+    for m in monitors:
+        if isinstance(m, Raw):
+            pass
+        elif isinstance(
+            m, (TemporalAverage, SubSample, GlobalAverage, AfferentCoupling)
+        ):
+            pass
+        else:
+            raise NotImplementedError(
+                f"Monitor {type(m).__name__} is not yet supported by the Numba backend. "
+                "Supported: TemporalAverage, Raw, SubSample, GlobalAverage, AfferentCoupling."
+            )
+
+    results: list = []
+    for m in monitors:
+        per_subnet: list = []
+        for times, data, ctavg in raw_outputs:
+            if isinstance(m, AfferentCoupling):
+                per_subnet.append((times, ctavg))
+            elif isinstance(m, GlobalAverage):
+                per_subnet.append((times, data.mean(axis=-2, keepdims=True)))
+            elif isinstance(m, (TemporalAverage, SubSample)):
+                per_subnet.append((times, data))
+            elif isinstance(m, Raw):
+                per_subnet.append((times, data))
+            else:
+                raise NotImplementedError(
+                    f"Monitor {type(m).__name__} is not yet supported by the Numba backend. "
+                    "Supported: TemporalAverage, Raw, SubSample, GlobalAverage, AfferentCoupling."
+                )
+        results.append(per_subnet)
+    return results
+
+
 def _cfun_type(p: "ProjectionInfo") -> str:
     """Return the string coupling-function type for a ProjectionInfo."""
-    from tvb.simulator.hybrid.coupling import Linear, Scaling, Sigmoidal, SigmoidalJansenRit
+    from tvb.simulator.hybrid.coupling import (
+        Linear,
+        Scaling,
+        Sigmoidal,
+        SigmoidalJansenRit,
+    )
+
     if p.cfun is None:
         return "none"
     if isinstance(p.cfun, Linear):
@@ -100,7 +173,13 @@ def _cfun_params(p: "ProjectionInfo") -> "np.ndarray":
       sigmoidal:     [a, sigma, midpoint, cmin, cmax]
       sigmoidal_jr:  [a, e0, r, v0, 0.0]
     """
-    from tvb.simulator.hybrid.coupling import Linear, Scaling, Sigmoidal, SigmoidalJansenRit
+    from tvb.simulator.hybrid.coupling import (
+        Linear,
+        Scaling,
+        Sigmoidal,
+        SigmoidalJansenRit,
+    )
+
     arr = np.zeros(5, dtype=np.float32)
     arr[0] = 1.0  # default: identity scale
     if p.cfun is None:
@@ -141,8 +220,7 @@ def _cvar_mapping_mode(p: "ProjectionInfo") -> str:
     if ns == nt:
         return "n_to_n"
     raise ValueError(
-        f"Projection '{p.name}': unsupported cvar mapping "
-        f"({ns} source → {nt} target)"
+        f"Projection '{p.name}': unsupported cvar mapping ({ns} source → {nt} target)"
     )
 
 
@@ -150,11 +228,12 @@ def _cvar_mapping_mode(p: "ProjectionInfo") -> str:
 # Data classes for code-generation analysis
 # ---------------------------------------------------------------------------
 
+
 @dataclasses.dataclass
 class SubnetworkInfo:
     name: str
-    model: object          # Model instance
-    integrator: object     # Integrator instance
+    model: object  # Model instance
+    integrator: object  # Integrator instance
     n_nodes: int
     n_modes: int
     is_stochastic: bool = False
@@ -167,16 +246,16 @@ class ProjectionInfo:
     name: str
     source_subnet: str
     target_subnet: str
-    source_cvar: np.ndarray   # (n_src_cvar,)
-    target_cvar: np.ndarray   # (n_tgt_cvar,)
+    source_cvar: np.ndarray  # (n_src_cvar,)
+    target_cvar: np.ndarray  # (n_tgt_cvar,)
     weights_data: np.ndarray  # (nnz,) float32
     weights_indices: np.ndarray  # (nnz,) int
-    weights_indptr: np.ndarray   # (n_tgt+1,) int
-    idelays: np.ndarray       # (nnz,) int
+    weights_indptr: np.ndarray  # (n_tgt+1,) int
+    idelays: np.ndarray  # (nnz,) int
     horizon: int
     scale: float
     target_scales: np.ndarray  # (n_tgt_cvar,) or empty
-    cfun: object              # coupling function or None
+    cfun: object  # coupling function or None
     is_inter: bool
     # mode_map only for inter projections
     mode_map: Optional[np.ndarray] = None  # (n_src_modes, n_tgt_modes)
@@ -275,6 +354,7 @@ def _build_as_module(source: str, cache_key: str):
 # CompiledNetworkFn — holds a compiled kernel + helper to run it
 # ---------------------------------------------------------------------------
 
+
 @dataclasses.dataclass
 class CompiledNetworkFn:
     """A compiled Numba simulation kernel bound to a specific network topology.
@@ -282,6 +362,7 @@ class CompiledNetworkFn:
     Obtain via :meth:`NbHybridBackend.compile`.
     Call :meth:`run` to execute the simulation without re-compiling.
     """
+
     _backend: "NbHybridBackend"
     _analysis: "NetworkAnalysis"
     _run_network_fn: object  # the exec'd Python callable
@@ -294,6 +375,7 @@ class CompiledNetworkFn:
         initial_states: Optional[list] = None,
         return_snapshot: bool = False,
         _initial_buffers: Optional[dict] = None,
+        monitors: Optional[list] = None,
     ) -> list:
         """Execute the pre-compiled kernel for *nstep* integration steps.
 
@@ -314,16 +396,32 @@ class CompiledNetworkFn:
             returned in ``snapshot['buffers']`` by a prior :meth:`run` call.
             When supplied the existing buffer is reused instead of being
             re-initialised from the initial state.
+        monitors : list of Monitor, optional
+            If provided, raw outputs are post-processed per monitor type and
+            the return format changes to ``list[list[tuple[times, data]]]``
+            (outer list by monitor, inner list by subnetwork).  If *None*
+            (default), the original ``(times, data, ctavg)`` format is used.
 
         Returns
         -------
         list or (list, dict)
-            When *return_snapshot* is False (default): list of (times, data, ctavg),
-            one per subnetwork.
+            When *return_snapshot* is False (default):
+              - If *monitors* is None: list of (times, data, ctavg) per subnetwork.
+              - If *monitors* is provided: list per monitor of list per subnetwork
+                of (times, data).
             When *return_snapshot* is True: ``(outputs, snapshot)`` where *snapshot*
             is a dict with keys ``'states'`` and ``'buffers'`` suitable for passing
             to :meth:`resume`.
         """
+        if monitors is not None:
+            from tvb.simulator.monitors import Raw
+
+            for m in monitors:
+                if isinstance(m, Raw) and chunk_size != 1:
+                    raise ValueError(
+                        "Raw monitor requires chunk_size=1; "
+                        "pass chunk_size=1 to run_network()"
+                    )
         outputs, final_states, final_bufs = self._backend._run_compiled(
             self._run_network_fn,
             self._analysis,
@@ -333,11 +431,16 @@ class CompiledNetworkFn:
             initial_states,
             _initial_buffers=_initial_buffers,
         )
+        if monitors is not None:
+            dt = self._network_set.subnets[0].scheme.dt
+            outputs = _apply_monitors(outputs, monitors, dt)
         if not return_snapshot:
             return outputs
         snapshot = {
-            'states': [final_states[sn.name].copy() for sn in self._analysis.subnetworks],
-            'buffers': {name: buf.copy() for name, buf in final_bufs.items()},
+            "states": [
+                final_states[sn.name].copy() for sn in self._analysis.subnetworks
+            ],
+            "buffers": {name: buf.copy() for name, buf in final_bufs.items()},
         }
         return outputs, snapshot
 
@@ -371,15 +474,16 @@ class CompiledNetworkFn:
         return self.run(
             nstep,
             chunk_size,
-            initial_states=snapshot['states'],
+            initial_states=snapshot["states"],
             return_snapshot=return_snapshot,
-            _initial_buffers=snapshot['buffers'],
+            _initial_buffers=snapshot["buffers"],
         )
 
 
 # ---------------------------------------------------------------------------
 # Backend
 # ---------------------------------------------------------------------------
+
 
 class NbHybridBackend(MakoUtilMix):
     """Numba backend for hybrid simulator with multi-subnetwork support.
@@ -398,12 +502,14 @@ class NbHybridBackend(MakoUtilMix):
         """Return the directory where disk cache files are written."""
         import tempfile
         from pathlib import Path
+
         return Path(tempfile.gettempdir()) / "tvb_nb_hybrid_cache"
 
     @classmethod
     def clear_cache(cls):
         """Clear the in-process compiled function cache and the disk cache."""
         import shutil
+
         _COMPILED_FN_CACHE.clear()
         cache_dir = cls.get_cache_dir()
         if cache_dir.exists():
@@ -435,8 +541,10 @@ class NbHybridBackend(MakoUtilMix):
             executes the simulation without recompiling.
         """
         import os
+
         _use_nojit = debug_nojit or (
-            os.environ.get("TVB_HYBRID_NO_JIT", "0") not in ("", "0", "false", "False", "no")
+            os.environ.get("TVB_HYBRID_NO_JIT", "0")
+            not in ("", "0", "false", "False", "no")
         )
         self._check_compatibility(network_set)
         analysis = self._analyse(network_set)
@@ -460,6 +568,7 @@ class NbHybridBackend(MakoUtilMix):
         print_source: bool = False,
         initial_states: Optional[list] = None,
         debug_nojit: bool = False,
+        monitors: Optional[list] = None,
     ):
         """Run a hybrid simulation using the Numba code-generation path.
 
@@ -477,19 +586,28 @@ class NbHybridBackend(MakoUtilMix):
             Number of steps per temporal-average chunk (default 1 = raw output).
         print_source : bool
             If True, print the generated source code with line numbers.
+        monitors : list of Monitor, optional
+            If provided, raw outputs are post-processed per monitor type and
+            the return format changes to ``list[list[tuple[times, data]]]``
+            (outer list by monitor, inner list by subnetwork).  If *None*
+            (default), the original ``(times, data, ctavg)`` format is used.
 
         Returns
         -------
-        list of (times, data, ctavg)
+        list of (times, data, ctavg) or list[list[tuple[times, data]]]
             One tuple per subnetwork in ``network_set.subnets``, where
             ``times`` is a 1-D float64 array of mid-chunk time points,
             ``data`` is a float32 array of shape ``(n_chunks, n_voi, n_nodes, n_modes)``,
             and ``ctavg`` is a float32 array of shape
             ``(n_chunks, n_cvar, n_nodes, n_modes)`` holding the
             temporally-averaged afferent coupling input to each node.
+
+            When *monitors* is provided the format is instead
+            ``list[list[tuple[times, data]]]`` — outer list indexed by monitor,
+            inner list by subnetwork.
         """
         return self.compile(network_set, print_source, debug_nojit=debug_nojit).run(
-            nstep, chunk_size, initial_states
+            nstep, chunk_size, initial_states, monitors=monitors
         )
 
     # ------------------------------------------------------------------
@@ -507,6 +625,16 @@ class NbHybridBackend(MakoUtilMix):
         _initial_buffers: Optional[dict] = None,
     ) -> list:
         """Build the argument list and call the pre-compiled kernel."""
+        # Guard: chunk_size must not exceed the minimum horizon
+        if analysis.all_projections:
+            min_horizon = min(p.horizon for p in analysis.all_projections)
+            if chunk_size > min_horizon:
+                raise ValueError(
+                    f"chunk_size={chunk_size} exceeds the minimum projection horizon "
+                    f"({min_horizon} steps = min_delay / dt). "
+                    f"Reduce chunk_size to at most {min_horizon}, or increase tract "
+                    "lengths / reduce dt."
+                )
         # Build argument list matching the generated run_network() signature
         args = [nstep]
 
@@ -531,7 +659,9 @@ class NbHybridBackend(MakoUtilMix):
                 state = sn_states[sn_info.name]
                 n_vars, n_nodes, n_modes = state.shape
                 buf = np.empty((n_vars, n_nodes, n_modes, horizon), dtype=np.float32)
-                buf[:] = state[:, :, :, np.newaxis]  # broadcast ICs across all horizon slots
+                buf[:] = state[
+                    :, :, :, np.newaxis
+                ]  # broadcast ICs across all horizon slots
             src_bufs[sn_info.name] = buf
         for sn_info in analysis.subnetworks:
             args.append(src_bufs[sn_info.name])
@@ -547,7 +677,11 @@ class NbHybridBackend(MakoUtilMix):
             args.append(p.source_cvar.astype(np.int32))
             args.append(p.target_cvar.astype(np.int32))
             args.append(np.float32(p.scale))
-            ts = p.target_scales.astype(np.float32) if p.target_scales.size > 0 else np.zeros(0, dtype=np.float32)
+            ts = (
+                p.target_scales.astype(np.float32)
+                if p.target_scales.size > 0
+                else np.zeros(0, dtype=np.float32)
+            )
             args.append(ts)
             cfun_params = _cfun_params(p)
             args.append(cfun_params)
@@ -560,11 +694,15 @@ class NbHybridBackend(MakoUtilMix):
                 rng = sn_obj.scheme.noise.random_stream
                 # Draw in (nstep, n_vars, n_nodes, n_modes) order so that
                 # transposed [:, :, :, t] == t-th sequential randn(n_vars, n_nodes, n_modes) call
-                dw = rng.randn(nstep, sn_info.model.nvar, sn_info.n_nodes, sn_info.n_modes)
+                dw = rng.randn(
+                    nstep, sn_info.model.nvar, sn_info.n_nodes, sn_info.n_modes
+                )
                 noise_std = np.sqrt(2.0 * sn_info.noise_nsig * dt)  # (n_vars,)
                 dw *= noise_std[np.newaxis, :, np.newaxis, np.newaxis]
                 # Transpose to (n_vars, n_nodes, n_modes, nstep)
-                dw = np.ascontiguousarray(np.transpose(dw, (1, 2, 3, 0))).astype(np.float32)
+                dw = np.ascontiguousarray(np.transpose(dw, (1, 2, 3, 0))).astype(
+                    np.float32
+                )
                 args.append(dw)
 
         # Per-subnetwork stimulus arrays (pre-computed batch)
@@ -648,6 +786,7 @@ class NbHybridBackend(MakoUtilMix):
     ) -> float:
         """Estimate the memory (in MiB) that the pre-computed stim array would use."""
         import os
+
         n_cvar = len(sn_info.model.coupling_terms)
         n_bytes = n_cvar * sn_info.n_nodes * sn_info.n_modes * nstep * 4  # float32
         return n_bytes / (1024 * 1024)
@@ -657,23 +796,83 @@ class NbHybridBackend(MakoUtilMix):
     # ------------------------------------------------------------------
 
     def _check_compatibility(self, network_set: NetworkSet) -> None:
-        from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
+        from tvb.simulator.models.infinite_theta import (
+            MontbrioPazoRoxin,
+            CoombesByrne2D,
+            CoombesByrne,
+            GastSchmidtKnosche_SD,
+            GastSchmidtKnosche_SF,
+            DumontGutkin,
+        )
         from tvb.simulator.models.k_ion_exchange import KIonEx
-        from tvb.simulator.models.jansen_rit import JansenRit
-        from tvb.simulator.models.oscillator import Generic2dOscillator
+        from tvb.simulator.models.jansen_rit import JansenRit, ZetterbergJansen
+        from tvb.simulator.models.oscillator import (
+            Generic2dOscillator,
+            SupHopf,
+            Kuramoto,
+        )
         from tvb.simulator.models.wong_wang import ReducedWongWang
-        from tvb.simulator.models.epileptor import Epileptor
+        from tvb.simulator.models.wong_wang_exc_inh import ReducedWongWangExcInh
+        from tvb.simulator.models.epileptor import Epileptor, Epileptor2D
+        from tvb.simulator.models.epileptorcodim3 import (
+            EpileptorCodim3,
+            EpileptorCodim3SlowMod,
+        )
+        from tvb.simulator.models.epileptor_rs import EpileptorRestingState
+        from tvb.simulator.models.hopfield import Hopfield
+        from tvb.simulator.models.larter_breakspear import LarterBreakspear
         from tvb.simulator.models.wilson_cowan import WilsonCowan
-        _supported_models = (MontbrioPazoRoxin, KIonEx, JansenRit, Generic2dOscillator,
-                             ReducedWongWang, Epileptor, WilsonCowan)
-        _allowed_integrators = (HeunDeterministic, EulerDeterministic, HeunStochastic, EulerStochastic)
+        from tvb.simulator.models.zerlaut import ZerlautAdaptationFirstOrder
+        from tvb.simulator.models.stefanescu_jirsa import (
+            ReducedSetFitzHughNagumo,
+            ReducedSetHindmarshRose,
+        )
+
+        _supported_models = (
+            MontbrioPazoRoxin,
+            KIonEx,
+            JansenRit,
+            Generic2dOscillator,
+            ReducedWongWang,
+            ReducedWongWangExcInh,
+            Epileptor,
+            Epileptor2D,
+            EpileptorCodim3,
+            EpileptorCodim3SlowMod,
+            EpileptorRestingState,
+            WilsonCowan,
+            ZerlautAdaptationFirstOrder,  # ZerlautSecondOrder is a subclass
+            SupHopf,
+            Kuramoto,
+            Hopfield,
+            LarterBreakspear,
+            CoombesByrne2D,
+            CoombesByrne,
+            GastSchmidtKnosche_SD,
+            GastSchmidtKnosche_SF,
+            DumontGutkin,
+            ZetterbergJansen,
+            ReducedSetFitzHughNagumo,
+            ReducedSetHindmarshRose,
+        )
+        _allowed_integrators = (
+            HeunDeterministic,
+            EulerDeterministic,
+            HeunStochastic,
+            EulerStochastic,
+        )
         dt0 = network_set.subnets[0].scheme.dt
         for sn in network_set.subnets:
             if not isinstance(sn.model, _supported_models):
                 raise NotImplementedError(
-                    f"NbHybridBackend supports MontbrioPazoRoxin, KIonEx, JansenRit, Generic2dOscillator, "
-                    f"ReducedWongWang, Epileptor, and WilsonCowan; "
-                    f"subnetwork '{sn.name}' uses {type(sn.model).__name__}"
+                    f"NbHybridBackend does not support {type(sn.model).__name__}. "
+                    f"Supported: MontbrioPazoRoxin, KIonEx, JansenRit, ZetterbergJansen, "
+                    f"Generic2dOscillator, SupHopf, Kuramoto, Hopfield, LarterBreakspear, "
+                    f"ReducedWongWang, ReducedWongWangExcInh, "
+                    f"Epileptor, Epileptor2D, EpileptorCodim3, EpileptorCodim3SlowMod, EpileptorRestingState, "
+                    f"WilsonCowan, ZerlautAdaptation*, "
+                    f"CoombesByrne2D, CoombesByrne, GastSchmidtKnosche_SD/SF, DumontGutkin, "
+                    f"ReducedSetFitzHughNagumo, ReducedSetHindmarshRose."
                 )
             if not isinstance(sn.scheme, _allowed_integrators):
                 raise NotImplementedError(
@@ -697,13 +896,25 @@ class NbHybridBackend(MakoUtilMix):
                         "NbHybridBackend: WilsonCowan with shift_sigmoid=False is not supported. "
                         "Use the default shift_sigmoid=True."
                     )
+        from tvb.simulator.models.stefanescu_jirsa import ReducedSetBase
+
+        for sn in network_set.subnets:
+            if isinstance(sn.model, ReducedSetBase):
+                if (
+                    not hasattr(sn.model, "dfun_mode")
+                    or sn.model.dfun_mode != "combined"
+                ):
+                    raise NotImplementedError(
+                        f"{type(sn.model).__name__} requires dfun_mode='combined' attribute. "
+                        "Run update_derived_parameters() / configure() before using the backend."
+                    )
 
     def _analyse(self, network_set: NetworkSet) -> "NetworkAnalysis":
         from tvb.simulator.noise import Additive
 
         # Build stimulus lookup: subnet name -> list of Stim objects
         stims_by_subnet: dict = {sn.name: [] for sn in network_set.subnets}
-        for stim in (network_set.stimuli or []):
+        for stim in network_set.stimuli or []:
             stims_by_subnet[stim.target.name].append(stim)
 
         subnets = []
@@ -715,21 +926,33 @@ class NbHybridBackend(MakoUtilMix):
                 if isinstance(noise_obj, Additive):
                     nsig = noise_obj.nsig
                     if nsig.ndim == 0:
-                        noise_nsig = np.full(sn.model.nvar, float(nsig), dtype=np.float64)
+                        noise_nsig = np.full(
+                            sn.model.nvar, float(nsig), dtype=np.float64
+                        )
                     else:
-                        noise_nsig = np.broadcast_to(nsig, (sn.model.nvar,)).copy().astype(np.float64)
+                        noise_nsig = (
+                            np.broadcast_to(nsig, (sn.model.nvar,))
+                            .copy()
+                            .astype(np.float64)
+                        )
                 else:
-                    noise_nsig = np.ones(sn.model.nvar, dtype=np.float64)
-            subnets.append(SubnetworkInfo(
-                name=sn.name,
-                model=sn.model,
-                integrator=sn.scheme,
-                n_nodes=sn.nnodes,
-                n_modes=sn.model.number_of_modes,
-                is_stochastic=is_stoch,
-                noise_nsig=noise_nsig,
-                has_stimulus=bool(stims_by_subnet[sn.name]),
-            ))
+                    raise NotImplementedError(
+                        f"Subnetwork '{sn.name}': only tvb.simulator.noise.Additive is supported "
+                        f"by the Numba backend; got {type(noise_obj).__name__}. "
+                        "Use HeunDeterministic or EulerDeterministic for deterministic integration."
+                    )
+            subnets.append(
+                SubnetworkInfo(
+                    name=sn.name,
+                    model=sn.model,
+                    integrator=sn.scheme,
+                    n_nodes=sn.nnodes,
+                    n_modes=sn.model.number_of_modes,
+                    is_stochastic=is_stoch,
+                    noise_nsig=noise_nsig,
+                    has_stimulus=bool(stims_by_subnet[sn.name]),
+                )
+            )
 
         inter_projs = []
         for p in network_set.projections:
@@ -776,7 +999,11 @@ class NbHybridBackend(MakoUtilMix):
         )
 
     def _build_projection_info(self, p, is_inter: bool) -> "ProjectionInfo":
-        ts = p.target_scales if p.target_scales is not None else np.zeros(0, dtype=np.float64)
+        ts = (
+            p.target_scales
+            if p.target_scales is not None
+            else np.zeros(0, dtype=np.float64)
+        )
 
         if is_inter:
             src_name = p.source.name
@@ -789,7 +1016,7 @@ class NbHybridBackend(MakoUtilMix):
                 mode_map = np.ones((n_src_modes, n_tgt_modes), dtype=np.float32)
             proj_name = f"{src_name}_to_{tgt_name}"
         else:
-            src_name = ""   # filled by caller
+            src_name = ""  # filled by caller
             tgt_name = ""
             n_src_modes = 1  # will be filled
             mode_map = None
@@ -814,7 +1041,9 @@ class NbHybridBackend(MakoUtilMix):
             idelays=idelays_stripped,
             horizon=int(p._horizon),
             scale=float(p.scale),
-            target_scales=np.atleast_1d(ts).astype(np.float32) if ts.size > 0 else np.zeros(0, dtype=np.float32),
+            target_scales=np.atleast_1d(ts).astype(np.float32)
+            if ts.size > 0
+            else np.zeros(0, dtype=np.float32),
             cfun=p.cfun,
             is_inter=is_inter,
             mode_map=mode_map,
