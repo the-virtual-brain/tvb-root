@@ -37,6 +37,15 @@ from numba import jit
 
 class ZerlautAdaptationFirstOrder(Model):
     r"""
+    .. note::
+        **nb-hybrid Numba backend**: This model uses a custom Mako template
+        (``nb-zerlaut-dfun.py.mako``) instead of the generic ``state_variable_dfuns``
+        codegen path.  The transfer function pipeline (``get_fluct_regime_vars`` →
+        ``threshold_func`` → ``erfc``) is emitted as composed ``@njit`` helper
+        functions at codegen time.  Do NOT add ``state_variable_dfuns`` /
+        ``parameter_names`` / ``dfun_intermediates`` metadata to this class;
+        the Ralph loop should skip it entirely.
+
     **References**:
     .. [ZD_2018]  Zerlaut, Y., Chemla, S., Chavane, F. et al. *Modeling mesoscopic cortical dynamics using a mean-field
     model of conductance-based networks of adaptive
@@ -379,6 +388,11 @@ class ZerlautAdaptationFirstOrder(Model):
     _nvar = 5
     cvar = numpy.array([0], dtype=numpy.int32)
 
+    # nb-hybrid: use custom Zerlaut Mako template — do NOT add state_variable_dfuns
+    _nb_hybrid_custom_template = "nb-zerlaut-dfun.py.mako"
+    # nb-hybrid: coupling_terms needed by backend infrastructure for array sizing
+    coupling_terms = ['Coupling_Term']
+
     def dfun(self, state_variables, coupling, local_coupling=0.00):
         r"""
         .. math::
@@ -578,6 +592,14 @@ class ZerlautAdaptationFirstOrder(Model):
 
 class ZerlautAdaptationSecondOrder(ZerlautAdaptationFirstOrder):
     r"""
+    .. note::
+        **nb-hybrid Numba backend**: This model uses a custom Mako template
+        (``nb-zerlaut-dfun.py.mako``, inherited via ``_nb_hybrid_custom_template``).
+        The second-order model additionally emits numerical-derivative helpers
+        (finite differences of the transfer function) as ``@njit`` functions.
+        Do NOT add ``state_variable_dfuns`` / ``parameter_names`` /
+        ``dfun_intermediates`` metadata; the Ralph loop should skip it entirely.
+
     **References**:
     .. [ZD_2018]  Zerlaut, Y., Chemla, S., Chavane, F. et al. *Modeling mesoscopic cortical dynamics using a mean-field
     model of conductance-based networks of adaptive

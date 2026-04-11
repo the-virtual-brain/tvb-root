@@ -28,6 +28,7 @@
 Jansen-Rit and derivative models.
 
 """
+
 import math
 import numpy
 from .base import ModelNumbaDfun, Model
@@ -76,13 +77,15 @@ class JansenRit(ModelNumbaDfun):
         label=":math:`A`",
         default=numpy.array([3.25]),
         domain=Range(lo=2.6, hi=9.75, step=0.05),
-        doc="""Maximum amplitude of EPSP [mV]. Also called average synaptic gain.""")
+        doc="""Maximum amplitude of EPSP [mV]. Also called average synaptic gain.""",
+    )
 
     B = NArray(
         label=":math:`B`",
         default=numpy.array([22.0]),
         domain=Range(lo=17.6, hi=110.0, step=0.2),
-        doc="""Maximum amplitude of IPSP [mV]. Also called average synaptic gain.""")
+        doc="""Maximum amplitude of IPSP [mV]. Also called average synaptic gain.""",
+    )
 
     a = NArray(
         label=":math:`a`",
@@ -90,7 +93,8 @@ class JansenRit(ModelNumbaDfun):
         domain=Range(lo=0.05, hi=0.15, step=0.01),
         doc="""Reciprocal of the time constant of passive membrane and all
         other spatially distributed delays in the dendritic network [ms^-1].
-        Also called average synaptic time constant.""")
+        Also called average synaptic time constant.""",
+    )
 
     b = NArray(
         label=":math:`b`",
@@ -98,7 +102,8 @@ class JansenRit(ModelNumbaDfun):
         domain=Range(lo=0.025, hi=0.075, step=0.005),
         doc="""Reciprocal of the time constant of passive membrane and all
         other spatially distributed delays in the dendritic network [ms^-1].
-        Also called average synaptic time constant.""")
+        Also called average synaptic time constant.""",
+    )
 
     v0 = NArray(
         label=":math:`v_0`",
@@ -108,122 +113,133 @@ class JansenRit(ModelNumbaDfun):
         In other words, it is the value of the average membrane potential
         corresponding to the inflection point of the sigmoid [mV].
 
-        The usual value for this parameter is 6.0.""")
+        The usual value for this parameter is 6.0.""",
+    )
 
     nu_max = NArray(
         label=r":math:`\nu_{max}`",
         default=numpy.array([0.0025]),
         domain=Range(lo=0.00125, hi=0.00375, step=0.00001),
         doc="""Determines the maximum firing rate of the neural population
-        [ms^-1].""")
+        [ms^-1].""",
+    )
 
     r = NArray(
         label=":math:`r`",
         default=numpy.array([0.56]),
         domain=Range(lo=0.28, hi=0.84, step=0.01),
-        doc="""Steepness of the sigmoidal transformation [mV^-1].""")
+        doc="""Steepness of the sigmoidal transformation [mV^-1].""",
+    )
 
     J = NArray(
         label=":math:`J`",
         default=numpy.array([135.0]),
-        domain=Range(lo=65.0, hi=1350.0, step=1.),
-        doc="""Average number of synapses between populations.""")
+        domain=Range(lo=65.0, hi=1350.0, step=1.0),
+        doc="""Average number of synapses between populations.""",
+    )
 
     a_1 = NArray(
         label=r":math:`\alpha_1`",
         default=numpy.array([1.0]),
         domain=Range(lo=0.5, hi=1.5, step=0.1),
-        doc="""Average probability of synaptic contacts in the feedback excitatory loop.""")
+        doc="""Average probability of synaptic contacts in the feedback excitatory loop.""",
+    )
 
     a_2 = NArray(
         label=r":math:`\alpha_2`",
         default=numpy.array([0.8]),
         domain=Range(lo=0.4, hi=1.2, step=0.1),
-        doc="""Average probability of synaptic contacts in the slow feedback excitatory loop.""")
+        doc="""Average probability of synaptic contacts in the slow feedback excitatory loop.""",
+    )
 
     a_3 = NArray(
         label=r":math:`\alpha_3`",
         default=numpy.array([0.25]),
         domain=Range(lo=0.125, hi=0.375, step=0.005),
-        doc="""Average probability of synaptic contacts in the feedback inhibitory loop.""")
+        doc="""Average probability of synaptic contacts in the feedback inhibitory loop.""",
+    )
 
     a_4 = NArray(
         label=r":math:`\alpha_4`",
         default=numpy.array([0.25]),
         domain=Range(lo=0.125, hi=0.375, step=0.005),
-        doc="""Average probability of synaptic contacts in the slow feedback inhibitory loop.""")
+        doc="""Average probability of synaptic contacts in the slow feedback inhibitory loop.""",
+    )
 
     p_min = NArray(
         label=":math:`p_{min}`",
         default=numpy.array([0.12]),
         domain=Range(lo=0.0, hi=0.12, step=0.01),
-        doc="""Minimum input firing rate.""")
+        doc="""Minimum input firing rate.""",
+    )
 
     p_max = NArray(
         label=":math:`p_{max}`",
         default=numpy.array([0.32]),
         domain=Range(lo=0.0, hi=0.32, step=0.01),
-        doc="""Maximum input firing rate.""")
+        doc="""Maximum input firing rate.""",
+    )
 
     mu = NArray(
         label=r":math:`\mu_{max}`",
         default=numpy.array([0.22]),
         domain=Range(lo=0.0, hi=0.22, step=0.01),
-        doc="""Mean input firing rate""")
+        doc="""Mean input firing rate""",
+    )
 
-    coupling_terms = Final(
-        label="Coupling terms",
-        default=["Coupling_Term"])
+    coupling_terms = Final(label="Coupling terms", default=["Coupling_Term"])
 
     parameter_names = List(
         of=str,
         label="List of parameters for this model",
-        default='A B a b v0 nu_max r J a_1 a_2 a_3 a_4 mu'.split()
+        default="A B a b v0 nu_max r J a_1 a_2 a_3 a_4 mu".split(),
     )
 
     dfun_helpers = Final(
         label="Helper functions for numba codegen",
         default=[
-            ('sigm_jr', 'x, nu_max, r, v0',
-             '2.0 * nu_max / (1.0 + exp(r * (v0 - x)))')
-        ]
+            ("sigm_jr", "x, nu_max, r, v0", "2.0 * nu_max / (1.0 + exp(r * (v0 - x)))")
+        ],
     )
 
     dfun_intermediates = Final(
         label="Intermediate computations for numba codegen",
         default=[
-            ('sigm_y1_y2', 'sigm_jr(y1 - y2, nu_max, r, v0)'),
-            ('sigm_y0_1',  'sigm_jr(a_1 * J * y0, nu_max, r, v0)'),
-            ('sigm_y0_3',  'sigm_jr(a_3 * J * y0, nu_max, r, v0)'),
-        ]
+            ("sigm_y1_y2", "sigm_jr(y1 - y2, nu_max, r, v0)"),
+            ("sigm_y0_1", "sigm_jr(a_1 * J * y0, nu_max, r, v0)"),
+            ("sigm_y0_3", "sigm_jr(a_3 * J * y0, nu_max, r, v0)"),
+        ],
     )
 
     state_variable_dfuns = Final(
         label="Drift functions for numba codegen",
         default={
-            'y0': 'y3',
-            'y1': 'y4',
-            'y2': 'y5',
-            'y3': 'A * a * sigm_y1_y2 - 2.0 * a * y3 - a**2 * y0',
-            'y4': 'A * a * (mu + a_2 * J * sigm_y0_1 + Coupling_Term) - 2.0 * a * y4 - a**2 * y1',
-            'y5': 'B * b * (a_4 * J * sigm_y0_3) - 2.0 * b * y5 - b**2 * y2',
-        }
+            "y0": "y3",
+            "y1": "y4",
+            "y2": "y5",
+            "y3": "A * a * sigm_y1_y2 - 2.0 * a * y3 - a**2 * y0",
+            "y4": "A * a * (mu + a_2 * J * sigm_y0_1 + Coupling_Term) - 2.0 * a * y4 - a**2 * y1",
+            "y5": "B * b * (a_4 * J * sigm_y0_3) - 2.0 * b * y5 - b**2 * y2",
+        },
     )
 
     # Used for phase-plane axis ranges and to bound random initial() conditions.
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"y0": numpy.array([-1.0, 1.0]),
-                 "y1": numpy.array([-500.0, 500.0]),
-                 "y2": numpy.array([-50.0, 50.0]),
-                 "y3": numpy.array([-6.0, 6.0]),
-                 "y4": numpy.array([-20.0, 20.0]),
-                 "y5": numpy.array([-500.0, 500.0])},
+        default={
+            "y0": numpy.array([-1.0, 1.0]),
+            "y1": numpy.array([-500.0, 500.0]),
+            "y2": numpy.array([-50.0, 50.0]),
+            "y3": numpy.array([-6.0, 6.0]),
+            "y4": numpy.array([-20.0, 20.0]),
+            "y5": numpy.array([-500.0, 500.0]),
+        },
         doc="""The values for each state-variable should be set to encompass
         the expected dynamic range of that state-variable for the current
         parameters, it is used as a mechanism for bounding random inital
         conditions when the simulation isn't started from an explicit history,
-        it is also provides the default range of phase-plane plots.""")
+        it is also provides the default range of phase-plane plots.""",
+    )
 
     variables_of_interest = List(
         of=str,
@@ -234,9 +250,10 @@ class JansenRit(ModelNumbaDfun):
                                     monitored. It can be overridden for each Monitor if desired. The
                                     corresponding state-variable indices for this model are :math:`y0 = 0`,
                                     :math:`y1 = 1`, :math:`y2 = 2`, :math:`y3 = 3`, :math:`y4 = 4`, and
-                                    :math:`y5 = 5`""")
+                                    :math:`y5 = 5`""",
+    )
 
-    state_variables = tuple('y0 y1 y2 y3 y4 y5'.split())
+    state_variables = tuple("y0 y1 y2 y3 y4 y5".split())
     _nvar = 6
     cvar = numpy.array([1, 2], dtype=numpy.int32)
 
@@ -245,7 +262,7 @@ class JansenRit(ModelNumbaDfun):
 
         # NOTE: This is assumed to be \sum_j u_kj * S[y_{1_j} - y_{2_j}]
         lrc = coupling[0, :]
-        short_range_coupling = local_coupling*(y1 - y2)
+        short_range_coupling = local_coupling * (y1 - y2)
 
         # NOTE: for local couplings
         # 0: pyramidal cells
@@ -258,18 +275,33 @@ class JansenRit(ModelNumbaDfun):
 
         exp = numpy.exp
         sigm_y1_y2 = 2.0 * self.nu_max / (1.0 + exp(self.r * (self.v0 - (y1 - y2))))
-        sigm_y0_1  = 2.0 * self.nu_max / (1.0 + exp(self.r * (self.v0 - (self.a_1 * self.J * y0))))
-        sigm_y0_3  = 2.0 * self.nu_max / (1.0 + exp(self.r * (self.v0 - (self.a_3 * self.J * y0))))
+        sigm_y0_1 = (
+            2.0
+            * self.nu_max
+            / (1.0 + exp(self.r * (self.v0 - (self.a_1 * self.J * y0))))
+        )
+        sigm_y0_3 = (
+            2.0
+            * self.nu_max
+            / (1.0 + exp(self.r * (self.v0 - (self.a_3 * self.J * y0))))
+        )
 
-        return numpy.array([
-            y3,
-            y4,
-            y5,
-            self.A * self.a * sigm_y1_y2 - 2.0 * self.a * y3 - self.a ** 2 * y0,
-            self.A * self.a * (self.mu + self.a_2 * self.J * sigm_y0_1 + lrc + short_range_coupling)
-                - 2.0 * self.a * y4 - self.a ** 2 * y1,
-            self.B * self.b * (self.a_4 * self.J * sigm_y0_3) - 2.0 * self.b * y5 - self.b ** 2 * y2,
-        ])
+        return numpy.array(
+            [
+                y3,
+                y4,
+                y5,
+                self.A * self.a * sigm_y1_y2 - 2.0 * self.a * y3 - self.a**2 * y0,
+                self.A
+                * self.a
+                * (self.mu + self.a_2 * self.J * sigm_y0_1 + lrc + short_range_coupling)
+                - 2.0 * self.a * y4
+                - self.a**2 * y1,
+                self.B * self.b * (self.a_4 * self.J * sigm_y0_3)
+                - 2.0 * self.b * y5
+                - self.b**2 * y2,
+            ]
+        )
 
     def dfun(self, y, c, local_coupling=0.0):
         r"""
@@ -302,30 +334,51 @@ class JansenRit(ModelNumbaDfun):
             w = 0.005 [s]
 
         """
-        src =  local_coupling*(y[1] - y[2])[:, 0]
+        src = local_coupling * (y[1] - y[2])[:, 0]
         y_ = y.reshape(y.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
-        deriv = _numba_dfun_jr(y_, c_, src,
-                               self.nu_max, self.r, self.v0, self.a, self.a_1, self.a_2, self.a_3, self.a_4,
-                               self.A, self.b, self.B, self.J, self.mu
-                               )
+        deriv = _numba_dfun_jr(
+            y_,
+            c_,
+            src,
+            self.nu_max,
+            self.r,
+            self.v0,
+            self.a,
+            self.a_1,
+            self.a_2,
+            self.a_3,
+            self.a_4,
+            self.A,
+            self.b,
+            self.B,
+            self.J,
+            self.mu,
+        )
         return deriv.T[..., numpy.newaxis]
 
 
-@guvectorize([(float64[:],) * 17], '(n),(m)' + ',()'*14 + '->(n)', nopython=True)
-def _numba_dfun_jr(y, c,
-                   src,
-                   nu_max, r, v0, a, a_1, a_2, a_3, a_4, A, b, B, J, mu,
-                   dx):
+@guvectorize([(float64[:],) * 17], "(n),(m)" + ",()" * 14 + "->(n)", nopython=True)
+def _numba_dfun_jr(y, c, src, nu_max, r, v0, a, a_1, a_2, a_3, a_4, A, b, B, J, mu, dx):
     sigm_y1_y2 = 2.0 * nu_max[0] / (1.0 + math.exp(r[0] * (v0[0] - (y[1] - y[2]))))
-    sigm_y0_1 = 2.0 * nu_max[0] / (1.0 + math.exp(r[0] * (v0[0] - (a_1[0] * J[0] * y[0]))))
-    sigm_y0_3 = 2.0 * nu_max[0] / (1.0 + math.exp(r[0] * (v0[0] - (a_3[0] * J[0] * y[0]))))
+    sigm_y0_1 = (
+        2.0 * nu_max[0] / (1.0 + math.exp(r[0] * (v0[0] - (a_1[0] * J[0] * y[0]))))
+    )
+    sigm_y0_3 = (
+        2.0 * nu_max[0] / (1.0 + math.exp(r[0] * (v0[0] - (a_3[0] * J[0] * y[0]))))
+    )
     dx[0] = y[3]
     dx[1] = y[4]
     dx[2] = y[5]
     dx[3] = A[0] * a[0] * sigm_y1_y2 - 2.0 * a[0] * y[3] - a[0] ** 2 * y[0]
-    dx[4] = A[0] * a[0] * (mu[0] + a_2[0] * J[0] * sigm_y0_1 + c[0] + src[0]) - 2.0 * a[0] * y[4] - a[0] ** 2 * y[1]
-    dx[5] = B[0] * b[0] * (a_4[0] * J[0] * sigm_y0_3) - 2.0 * b[0] * y[5] - b[0] ** 2 * y[2]
+    dx[4] = (
+        A[0] * a[0] * (mu[0] + a_2[0] * J[0] * sigm_y0_1 + c[0] + src[0])
+        - 2.0 * a[0] * y[4]
+        - a[0] ** 2 * y[1]
+    )
+    dx[5] = (
+        B[0] * b[0] * (a_4[0] * J[0] * sigm_y0_3) - 2.0 * b[0] * y[5] - b[0] ** 2 * y[2]
+    )
 
 
 class ZetterbergJansen(Model):
@@ -360,13 +413,15 @@ class ZetterbergJansen(Model):
         label=":math:`H_e`",
         default=numpy.array([3.25]),
         domain=Range(lo=2.6, hi=9.75, step=0.05),
-        doc="""Maximum amplitude of EPSP [mV]. Also called average synaptic gain.""")
+        doc="""Maximum amplitude of EPSP [mV]. Also called average synaptic gain.""",
+    )
 
     Hi = NArray(
         label=":math:`H_i`",
         default=numpy.array([22.0]),
         domain=Range(lo=17.6, hi=110.0, step=0.2),
-        doc="""Maximum amplitude of IPSP [mV]. Also called average synaptic gain.""")
+        doc="""Maximum amplitude of IPSP [mV]. Also called average synaptic gain.""",
+    )
 
     ke = NArray(
         label=r":math:`\kappa_e`",
@@ -374,7 +429,8 @@ class ZetterbergJansen(Model):
         domain=Range(lo=0.05, hi=0.15, step=0.01),
         doc="""Reciprocal of the time constant of passive membrane and all
         other spatially distributed delays in the dendritic network [ms^-1].
-        Also called average synaptic time constant.""")
+        Also called average synaptic time constant.""",
+    )
 
     ki = NArray(
         label=r":math:`\kappa_i`",
@@ -382,13 +438,15 @@ class ZetterbergJansen(Model):
         domain=Range(lo=0.025, hi=0.075, step=0.005),
         doc="""Reciprocal of the time constant of passive membrane and all
         other spatially distributed delays in the dendritic network [ms^-1].
-        Also called average synaptic time constant.""")
+        Also called average synaptic time constant.""",
+    )
 
     e0 = NArray(
         label=r":math:`e_0`",
         default=numpy.array([0.0025]),
         domain=Range(lo=0.00125, hi=0.00375, step=0.00001),
-        doc="""Half of the maximum population mean firing rate [ms^-1].""")
+        doc="""Half of the maximum population mean firing rate [ms^-1].""",
+    )
 
     rho_2 = NArray(
         label=r":math:`\rho_2`",
@@ -396,116 +454,199 @@ class ZetterbergJansen(Model):
         domain=Range(lo=3.12, hi=10.0, step=0.02),
         doc="""Firing threshold (PSP) for which a 50% firing rate is achieved.
         In other words, it is the value of the average membrane potential
-        corresponding to the inflection point of the sigmoid [mV]. Population mean firing threshold.""")
+        corresponding to the inflection point of the sigmoid [mV]. Population mean firing threshold.""",
+    )
 
     rho_1 = NArray(
         label=r":math:`\rho_1`",
         default=numpy.array([0.56]),
         domain=Range(lo=0.28, hi=0.84, step=0.01),
-        doc="""Steepness of the sigmoidal transformation [mV^-1].""")
+        doc="""Steepness of the sigmoidal transformation [mV^-1].""",
+    )
 
     gamma_1 = NArray(
         label=r":math:`\gamma_1`",
         default=numpy.array([135.0]),
-        domain=Range(lo=65.0, hi=1350.0, step=5.),
-        doc="""Average number of synapses between populations (pyramidal to stellate).""")
+        domain=Range(lo=65.0, hi=1350.0, step=5.0),
+        doc="""Average number of synapses between populations (pyramidal to stellate).""",
+    )
 
     gamma_2 = NArray(
         label=r":math:`\gamma_2`",
-        default=numpy.array([108.]),
+        default=numpy.array([108.0]),
         domain=Range(lo=0.0, hi=200, step=10.0),
-        doc="""Average number of synapses between populations (stellate to pyramidal).""")
+        doc="""Average number of synapses between populations (stellate to pyramidal).""",
+    )
 
     gamma_3 = NArray(
         label=r":math:`\gamma_3`",
         default=numpy.array([33.75]),
         domain=Range(lo=0.0, hi=200, step=10.0),
-        doc="""Connectivity constant (pyramidal to interneurons)""")
+        doc="""Connectivity constant (pyramidal to interneurons)""",
+    )
 
     gamma_4 = NArray(
         label=r":math:`\gamma_4`",
         default=numpy.array([33.75]),
         domain=Range(lo=0.0, hi=200, step=10.0),
-        doc="""Connectivity constant (interneurons to pyramidal)""")
+        doc="""Connectivity constant (interneurons to pyramidal)""",
+    )
 
     gamma_5 = NArray(
         label=r":math:`\gamma_5`",
         default=numpy.array([15.0]),
         domain=Range(lo=0.0, hi=100, step=10.0),
-        doc="""Connectivity constant (interneurons to interneurons)""")
+        doc="""Connectivity constant (interneurons to interneurons)""",
+    )
 
     gamma_1T = NArray(
         label=r":math:`\gamma_{1T}`",
         default=numpy.array([1.0]),
-        domain=Range(lo=0.0, hi=1000.0, step=5.),
-        doc="""Coupling factor from the extrinisic input to the spiny stellate population.""")
+        domain=Range(lo=0.0, hi=1000.0, step=5.0),
+        doc="""Coupling factor from the extrinisic input to the spiny stellate population.""",
+    )
 
     gamma_2T = NArray(
         label=r":math:`\gamma_{2T}`",
         default=numpy.array([1.0]),
-        domain=Range(lo=0.0, hi=1000.0, step=5.),
-        doc="""Coupling factor from the extrinisic input to the pyramidal population.""")
+        domain=Range(lo=0.0, hi=1000.0, step=5.0),
+        doc="""Coupling factor from the extrinisic input to the pyramidal population.""",
+    )
 
     gamma_3T = NArray(
         label=r":math:`\gamma_{3T}`",
         default=numpy.array([1.0]),
-        domain=Range(lo=0.0, hi=1000.0, step=5.),
-        doc="""Coupling factor from the extrinisic input to the inhibitory population.""")
+        domain=Range(lo=0.0, hi=1000.0, step=5.0),
+        doc="""Coupling factor from the extrinisic input to the inhibitory population.""",
+    )
 
     P = NArray(
         label=":math:`P`",
         default=numpy.array([0.12]),
         domain=Range(lo=0.0, hi=0.350, step=0.01),
         doc="""Maximum firing rate to the pyramidal population [ms^-1].
-        (External stimulus. Constant intensity.Entry point for coupling.)""")
+        (External stimulus. Constant intensity.Entry point for coupling.)""",
+    )
 
     U = NArray(
         label=":math:`U`",
         default=numpy.array([0.12]),
         domain=Range(lo=0.0, hi=0.350, step=0.01),
         doc="""Maximum firing rate to the stellate population [ms^-1].
-        (External stimulus. Constant intensity.Entry point for coupling.)""")
+        (External stimulus. Constant intensity.Entry point for coupling.)""",
+    )
 
     Q = NArray(
         label=":math:`Q`",
         default=numpy.array([0.12]),
         domain=Range(lo=0.0, hi=0.350, step=0.01),
         doc="""Maximum firing rate to the interneurons population [ms^-1].
-        (External stimulus. Constant intensity.Entry point for coupling.)""")
+        (External stimulus. Constant intensity.Entry point for coupling.)""",
+    )
+
+    coupling_terms = Final(label="Coupling terms", default=["Coupling_Term"])
+
+    parameter_names = List(
+        of=str,
+        label="List of parameters for this model",
+        default="He Hi ke ki e0 rho_1 rho_2 gamma_1 gamma_2 gamma_3 gamma_4 gamma_5 gamma_1T gamma_2T gamma_3T P U Q".split(),
+    )
+
+    dfun_helpers = Final(
+        label="Helper functions for numba codegen",
+        default=[
+            (
+                "sigm_zj",
+                "sv, e0, rho_1, rho_2",
+                "(2.0 * e0) / (1.0 + exp(rho_1 * (rho_2 - sv)))",
+            )
+        ],
+    )
+
+    dfun_intermediates = Final(
+        label="Intermediate computations for numba codegen",
+        default=[
+            ("Heke", "He * ke"),
+            ("Hiki", "Hi * ki"),
+            ("ke_2", "2.0 * ke"),
+            ("ki_2", "2.0 * ki"),
+            ("keke", "ke * ke"),
+            ("kiki", "ki * ki"),
+            ("sigm_v2_v3", "sigm_zj(v2 - v3, e0, rho_1, rho_2)"),
+            ("sigm_v1", "sigm_zj(v1, e0, rho_1, rho_2)"),
+            ("sigm_v4_v5", "sigm_zj(v4 - v5, e0, rho_1, rho_2)"),
+            ("coupled_input", "sigm_zj(Coupling_Term, e0, rho_1, rho_2)"),
+        ],
+    )
+
+    state_variable_dfuns = Final(
+        label="Drift functions for numba codegen",
+        default={
+            "v1": "y1",
+            "y1": "Heke * (gamma_1 * sigm_v2_v3 + gamma_1T * (U + coupled_input)) - ke_2 * y1 - keke * v1",
+            "v2": "y2",
+            "y2": "Heke * (gamma_2 * sigm_v1 + gamma_2T * (P + coupled_input)) - ke_2 * y2 - keke * v2",
+            "v3": "y3",
+            "y3": "Hiki * (gamma_4 * sigm_v4_v5) - ki_2 * y3 - kiki * v3",
+            "v4": "y4",
+            "y4": "Heke * (gamma_3 * sigm_v2_v3 + gamma_3T * (Q + coupled_input)) - ke_2 * y4 - keke * v4",
+            "v5": "y5",
+            "y5": "Hiki * (gamma_5 * sigm_v4_v5) - ki_2 * y5 - keke * v5",
+            "v6": "y2 - y3",
+            "v7": "y4 - y5",
+        },
+    )
 
     # Used for phase-plane axis ranges and to bound random initial() conditions.
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"v1": numpy.array([-100.0, 100.0]),
-                 "y1": numpy.array([-500.0, 500.0]),
-                 "v2": numpy.array([-100.0, 50.0]),
-                 "y2": numpy.array([-100.0, 6.0]),
-                 "v3": numpy.array([-100.0, 6.0]),
-                 "y3": numpy.array([-100.0, 6.0]),
-                 "v4": numpy.array([-100.0, 20.0]),
-                 "y4": numpy.array([-100.0, 20.0]),
-                 "v5": numpy.array([-100.0, 20.0]),
-                 "y5": numpy.array([-500.0, 500.0]),
-                 "v6": numpy.array([-100.0, 20.0]),
-                 "v7": numpy.array([-100.0, 20.0]),},
+        default={
+            "v1": numpy.array([-100.0, 100.0]),
+            "y1": numpy.array([-500.0, 500.0]),
+            "v2": numpy.array([-100.0, 50.0]),
+            "y2": numpy.array([-100.0, 6.0]),
+            "v3": numpy.array([-100.0, 6.0]),
+            "y3": numpy.array([-100.0, 6.0]),
+            "v4": numpy.array([-100.0, 20.0]),
+            "y4": numpy.array([-100.0, 20.0]),
+            "v5": numpy.array([-100.0, 20.0]),
+            "y5": numpy.array([-500.0, 500.0]),
+            "v6": numpy.array([-100.0, 20.0]),
+            "v7": numpy.array([-100.0, 20.0]),
+        },
         doc="""The values for each state-variable should be set to encompass
         the expected dynamic range of that state-variable for the current
         parameters, it is used as a mechanism for bounding random inital
         conditions when the simulation isn't started from an explicit history,
-        it is also provides the default range of phase-plane plots.""")
+        it is also provides the default range of phase-plane plots.""",
+    )
 
     variables_of_interest = List(
         of=str,
         label="Variables watched by Monitors",
-        choices=("v1", "y1", "v2", "y2", "v3", "y3", "v4", "y4", "v5", "y5", "v6", "v7"),
+        choices=(
+            "v1",
+            "y1",
+            "v2",
+            "y2",
+            "v3",
+            "y3",
+            "v4",
+            "y4",
+            "v5",
+            "y5",
+            "v6",
+            "v7",
+        ),
         default=("v6", "v7", "v2", "v3", "v4", "v5"),
         doc="""This represents the default state-variables of this Model to be
                                     monitored. It can be overridden for each Monitor if desired. The
                                     corresponding state-variable indices for this model are :math:`v_6 = 0`,
                                     :math:`v_7 = 1`, :math:`v_2 = 2`, :math:`v_3 = 3`, :math:`v_4 = 4`, and
-                                    :math:`v_5 = 5`""")
+                                    :math:`v_5 = 5`""",
+    )
 
-    state_variables = tuple('v1 y1 v2 y2 v3 y3 v4 y4 v5 y5 v6 v7'.split())
+    state_variables = tuple("v1 y1 v2 y2 v3 y3 v4 y4 v5 y5 v6 v7".split())
     _nvar = 12
     cvar = numpy.array([10], dtype=numpy.int32)
     Heke = None  # self.He * self.ke
@@ -541,23 +682,55 @@ class ZetterbergJansen(Model):
         #       terms considered as extrinsic input (P, Q, U) (long range coupling) (local coupling)
         #       and noise.
 
-        coupled_input =  self.sigma_fun(coupling[0, :] + local_coupling * v6)
+        coupled_input = self.sigma_fun(coupling[0, :] + local_coupling * v6)
 
         # exc input to the excitatory interneurons
         derivative[0] = y1
-        derivative[1] = self.Heke * (self.gamma_1 * self.sigma_fun(v2 - v3) + self.gamma_1T * (self.U + coupled_input )) - self.ke_2 * y1 - self.keke * v1
+        derivative[1] = (
+            self.Heke
+            * (
+                self.gamma_1 * self.sigma_fun(v2 - v3)
+                + self.gamma_1T * (self.U + coupled_input)
+            )
+            - self.ke_2 * y1
+            - self.keke * v1
+        )
         # exc input to the pyramidal cells
         derivative[2] = y2
-        derivative[3] = self.Heke * (self.gamma_2 * self.sigma_fun(v1)      + self.gamma_2T * (self.P + coupled_input )) - self.ke_2 * y2 - self.keke * v2
+        derivative[3] = (
+            self.Heke
+            * (
+                self.gamma_2 * self.sigma_fun(v1)
+                + self.gamma_2T * (self.P + coupled_input)
+            )
+            - self.ke_2 * y2
+            - self.keke * v2
+        )
         # inh input to the pyramidal cells
         derivative[4] = y3
-        derivative[5] = self.Hiki * (self.gamma_4 * self.sigma_fun(v4 - v5)) - self.ki_2 * y3 - self.kiki * v3
+        derivative[5] = (
+            self.Hiki * (self.gamma_4 * self.sigma_fun(v4 - v5))
+            - self.ki_2 * y3
+            - self.kiki * v3
+        )
         derivative[6] = y4
         # exc input to the inhibitory interneurons
-        derivative[7] = self.Heke * (self.gamma_3 * self.sigma_fun(v2 - v3) + self.gamma_3T * (self.Q + coupled_input)) - self.ke_2 * y4 - self.keke * v4
+        derivative[7] = (
+            self.Heke
+            * (
+                self.gamma_3 * self.sigma_fun(v2 - v3)
+                + self.gamma_3T * (self.Q + coupled_input)
+            )
+            - self.ke_2 * y4
+            - self.keke * v4
+        )
         derivative[8] = y5
         # inh input to the inhibitory interneurons
-        derivative[9] = self.Hiki * (self.gamma_5 * self.sigma_fun(v4 - v5)) - self.ki_2 * y5 - self.keke * v5
+        derivative[9] = (
+            self.Hiki * (self.gamma_5 * self.sigma_fun(v4 - v5))
+            - self.ki_2 * y5
+            - self.keke * v5
+        )
         # aux variables (the sum gathering the postsynaptic inh & exc potentials)
         # pyramidal cells
         derivative[10] = y2 - y3
@@ -577,7 +750,7 @@ class ZetterbergJansen(Model):
         magic_exp_number = 709
         temp = self.rho_1 * (self.rho_2 - sv)
         temp = numpy.where(temp > magic_exp_number, numpy.inf, temp)
-        sigma_v = (2* self.e0) / (1 + numpy.exp(temp))
+        sigma_v = (2 * self.e0) / (1 + numpy.exp(temp))
         return sigma_v
 
     def update_derived_parameters(self):
@@ -587,4 +760,3 @@ class ZetterbergJansen(Model):
         self.ki_2 = 2 * self.ki
         self.keke = self.ke**2
         self.kiki = self.ki**2
-

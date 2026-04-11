@@ -28,6 +28,7 @@
 Hopfield model with modifications following Golos & Daucé.
 
 """
+
 import numpy
 from .base import Model
 from tvb.basic.neotraits.api import NArray, List, Range, Final
@@ -92,32 +93,52 @@ class Hopfield(Model):
     # Define traited attributes for this model, these represent possible kwargs.
     taux = NArray(
         label=r":math:`\tau_{x}`",
-        default=numpy.array([1.]),
-        domain=Range(lo=0.01, hi=100., step=0.01),
-        doc="""The fast time-scale for potential calculus :math:`x`, state-variable of the model.""")
+        default=numpy.array([1.0]),
+        domain=Range(lo=0.01, hi=100.0, step=0.01),
+        doc="""The fast time-scale for potential calculus :math:`x`, state-variable of the model.""",
+    )
 
     tauT = NArray(
         label=r":math:`\tau_{\theta}`",
-        default=numpy.array([5.]),
-        domain=Range(lo = 0.01, hi = 100., step = 0.01),
-        doc="""The slow time-scale for threshold calculus :math:`\\theta`, state-variable of the model.""")
+        default=numpy.array([5.0]),
+        domain=Range(lo=0.01, hi=100.0, step=0.01),
+        doc="""The slow time-scale for threshold calculus :math:`\\theta`, state-variable of the model.""",
+    )
 
     dynamic = NArray(
         dtype=int,
         label="Dynamic",
         default=numpy.array([0]),
-        domain=Range(lo=0, hi=1., step=1),
-        doc="""Boolean value for static/dynamic threshold theta for (0/1).""")
+        domain=Range(lo=0, hi=1.0, step=1),
+        doc="""Boolean value for static/dynamic threshold theta for (0/1).""",
+    )
+
+    coupling_terms = Final(label="Coupling terms", default=["Coupling_Term"])
+
+    parameter_names = List(
+        of=str,
+        label="List of parameters for this model",
+        default=["taux"],
+    )
+
+    state_variable_dfuns = Final(
+        label="Drift functions for numba codegen",
+        default={
+            "x": "(-x + Coupling_Term) / taux",
+            "theta": "(-x + Coupling_Term) / taux",
+        },
+    )
 
     # Used for phase-plane axis ranges and to bound random initial() conditions.
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"x": numpy.array([-1., 2.]), "theta": numpy.array([0., 1.])},
+        default={"x": numpy.array([-1.0, 2.0]), "theta": numpy.array([0.0, 1.0])},
         doc="""The values for each state-variable should be set to encompass
             the expected dynamic range of that state-variable for the current
             parameters, it is used as a mechanism for bounding random inital
             conditions when the simulation isn't started from an explicit
-            history, it is also provides the default range of phase-plane plots.""")
+            history, it is also provides the default range of phase-plane plots.""",
+    )
 
     variables_of_interest = List(
         of=str,
@@ -128,9 +149,10 @@ class Hopfield(Model):
             the expected dynamic range of that state-variable for the current
             parameters, it is used as a mechanism for bounding random initial
             conditions when the simulation isn't started from an explicit
-            history, it is also provides the default range of phase-plane plots.""")
+            history, it is also provides the default range of phase-plane plots.""",
+    )
 
-    state_variables = ('x', 'theta')
+    state_variables = ("x", "theta")
 
     _nvar = 2
     cvar = numpy.array([0], dtype=numpy.int32)
@@ -155,7 +177,7 @@ class Hopfield(Model):
                 \dot{x_{i}} &= 1 / \tau_{x} (-x_{i} + c_0) \\
         """
         x = state_variables[0, :]
-        dx = (- x + coupling[0]) / self.taux
+        dx = (-x + coupling[0]) / self.taux
 
         # todo: display dependent hack. It returns dx twice to be compatible with dfunDyn
         # We return 2 arrays here, because we have 2 possible state Variable, even if not dynamic
@@ -179,8 +201,8 @@ class Hopfield(Model):
 
         x = state_variables[0, :]
         theta = state_variables[1, :]
-        dx = (- x + coupling[0]) / self.taux
-        dtheta = (- theta + coupling[1]) / self.tauT
+        dx = (-x + coupling[0]) / self.taux
+        dtheta = (-theta + coupling[1]) / self.tauT
 
         derivative = numpy.array([dx, dtheta])
         return derivative

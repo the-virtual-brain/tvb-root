@@ -65,100 +65,152 @@ class EpileptorCodim3(ModelNumbaDfun):
         default=numpy.array([-0.02285]),
         domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation parameter mu1 at the offset point for the given class, default for class c2s "
-            "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
+        "(Saddle-Node at onset and Saddle-Homoclinic at offset)",
+    )
 
     mu2_start = NArray(
         label=":math:`mu_2 start`",
         default=numpy.array([0.3448]),
         domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation mu2 parameter at the offset point for the given class, default for class c2s "
-            "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
+        "(Saddle-Node at onset and Saddle-Homoclinic at offset)",
+    )
 
     nu_start = NArray(
         label=":math:`nu start`",
         default=numpy.array([0.2014]),
         domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation nu parameter at the offset point for the given class, default for class c2s "
-            "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
+        "(Saddle-Node at onset and Saddle-Homoclinic at offset)",
+    )
 
     mu1_stop = NArray(
         label=":math:`mu_1 stop`",
         default=numpy.array([-0.07465]),
         domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation mu1 parameter at the onset point for the given class, default for class c2s "
-            "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
+        "(Saddle-Node at onset and Saddle-Homoclinic at offset)",
+    )
 
     mu2_stop = NArray(
         label=":math:`mu_2 stop`",
         default=numpy.array([0.3351]),
         domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation mu2 parameter at the onset point for the given class, default for class c2s "
-            "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
+        "(Saddle-Node at onset and Saddle-Homoclinic at offset)",
+    )
 
     nu_stop = NArray(
         label=":math:`nu stop`",
         default=numpy.array([0.2053]),
         domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation nu parameter at the onset point for the given class, default for class c2s "
-            "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
+        "(Saddle-Node at onset and Saddle-Homoclinic at offset)",
+    )
 
     b = NArray(
         label=":math:`b`",
         default=numpy.array([1.0]),
-        doc="Unfolding type of the degenerate Takens-Bogdanov bifurcation, default is a focus type")
+        doc="Unfolding type of the degenerate Takens-Bogdanov bifurcation, default is a focus type",
+    )
 
     R = NArray(
         label=":math:`R`",
         default=numpy.array([0.4]),
         domain=Range(lo=0.0, hi=2.5),
-        doc="Radius in unfolding")
+        doc="Radius in unfolding",
+    )
 
     c = NArray(
         label=":math:`c`",
         default=numpy.array([0.001]),
         domain=Range(lo=0.0, hi=0.01),
-        doc="Speed of the slow variable")
+        doc="Speed of the slow variable",
+    )
 
     dstar = NArray(
         label=":math:`d^*`",
         default=numpy.array([0.3]),
         domain=Range(lo=-0.1, hi=0.5),
-        doc="Threshold for the inversion of the slow variable")
+        doc="Threshold for the inversion of the slow variable",
+    )
 
     Ks = NArray(
         label=":math:`K_s`",
         default=numpy.array([0.0]),
-        doc="Slow permittivity coupling strength, the default is no coupling")
+        doc="Slow permittivity coupling strength, the default is no coupling",
+    )
 
     N = NArray(
         dtype=int,
         label=":math:`N`",
         default=numpy.array([1]),
-        doc="The branch of the resting state, default is 1")
+        doc="The branch of the resting state, default is 1",
+    )
 
     modification = NArray(
         dtype=bool,
         label=":math:`modification`",
         default=numpy.array([True]),
         doc="When modification is True, then use the modification to stabilise the system for negative values of "
-            "dstar. If modification is False, then don't use the modification. The default value is True ")
+        "dstar. If modification is False, then don't use the modification. The default value is True ",
+    )
+
+    coupling_terms = Final(label="Coupling terms", default=["Coupling_Term"])
+
+    parameter_names = List(
+        of=str,
+        label="List of parameters for this model",
+        default=["b", "R", "c", "dstar", "Ks",
+                 "E0", "E1", "E2", "F0", "F1", "F2"],
+    )
+
+    dfun_intermediates = Final(
+        label="Shared intermediates for dfun code generation",
+        default=[
+            ("cos_z", "math.cos(z)"),
+            ("sin_z", "math.sin(z)"),
+            ("mu2", "R * (E0 * cos_z + F0 * sin_z)"),
+            ("mu1", "-R * (E1 * cos_z + F1 * sin_z)"),
+            ("nu", "R * (E2 * cos_z + F2 * sin_z)"),
+            ("disc", "mu1**2 / 4.0 - mu2**3 / 27.0"),
+            ("sqrt_disc", "(disc + 0j) ** 0.5"),
+            ("q1", "(mu1 / 2.0 + sqrt_disc) ** (1.0 / 3.0)"),
+            ("q2", "(mu1 / 2.0 - sqrt_disc) ** (1.0 / 3.0)"),
+            ("xs", "(q1 + q2).real"),
+            ("dist", "math.sqrt((x - xs)**2 + y**2)"),
+        ],
+    )
+
+    state_variable_dfuns = Final(
+        label="Drift functions for numba codegen",
+        default={
+            "x": "-y",
+            "y": "x**3 - mu2 * x - mu1 - y * (nu + b * x + x**2)",
+            "z": "-c * (dist - dstar + 0.1 * (z - 0.5)**7 + Ks * Coupling_Term)",
+        },
+    )
 
     state_variable_range = Final(
         label="State variable ranges [lo, hi]",
-        default={"x": numpy.array([0.4, 0.6]),
-                 "y": numpy.array([-0.1, 0.1]),
-                 "z": numpy.array([0.0, 0.15])},
-        doc="Typical bounds on state variables.")
+        default={
+            "x": numpy.array([0.4, 0.6]),
+            "y": numpy.array([-0.1, 0.1]),
+            "z": numpy.array([0.0, 0.15]),
+        },
+        doc="Typical bounds on state variables.",
+    )
 
     variables_of_interest = List(
         of=str,
         label="Variables watched by Monitors",
-        choices=('x', 'y', 'z'),
-        default=('x', 'z'),
-        doc="Quantities available to monitor.")
+        choices=("x", "y", "z"),
+        default=("x", "z"),
+        doc="Quantities available to monitor.",
+    )
 
     # state variables names
-    state_variables = ('x', 'y', 'z')
+    state_variables = ("x", "y", "z")
 
     # number of state variables
     _nvar = 3
@@ -190,13 +242,19 @@ class EpileptorCodim3(ModelNumbaDfun):
                 F &= ((A \times B) \times A)/\|(A \times B) \times A\|
         """
 
-        A = numpy.array(
-            [self.mu2_start[0], -self.mu1_start[0], self.nu_start[0]])
+        A = numpy.array([self.mu2_start[0], -self.mu1_start[0], self.nu_start[0]])
         B = numpy.array([self.mu2_stop[0], -self.mu1_stop[0], self.nu_stop[0]])
 
         self.E = A / numpy.linalg.norm(A)
         self.F = numpy.cross(numpy.cross(A, B), A)
         self.F = self.F / numpy.linalg.norm(self.F)
+        # Scalar aliases for codegen parameter baking (parameter_names uses these)
+        self.E0 = numpy.array([self.E[0]])
+        self.E1 = numpy.array([self.E[1]])
+        self.E2 = numpy.array([self.E[2]])
+        self.F0 = numpy.array([self.F[0]])
+        self.F1 = numpy.array([self.F[1]])
+        self.F2 = numpy.array([self.F[2]])
 
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
         x = state_variables[0, :]
@@ -210,31 +268,38 @@ class EpileptorCodim3(ModelNumbaDfun):
 
         # Computes x_s, which is the solution to x_s^3 - mu2*x_s - mu1 = 0
         if self.N == 1:
-            xs = (mu1 / 2.0 + numpy.sqrt(
-                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) + (mu1 / 2.0 - numpy.sqrt(
-                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0)
+            xs = (mu1 / 2.0 + numpy.sqrt(mu1**2 / 4.0 - mu2**3 / 27.0 + 0 * 1j)) ** (
+                1.0 / 3.0
+            ) + (mu1 / 2.0 - numpy.sqrt(mu1**2 / 4.0 - mu2**3 / 27.0 + 0 * 1j)) ** (
+                1.0 / 3.0
+            )
         elif self.N == 2:
-            xs = -1.0 / 2.0 * (1.0 - 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 + numpy.sqrt(
-                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) - 1.0 / 2.0 * (
-                         1.0 + 1j * 3 ** (1.0 / 2.0)) * (
-                             mu1 / 2.0 - numpy.sqrt(mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (
-                         1.0 / 3.0)
+            xs = -1.0 / 2.0 * (1.0 - 1j * 3 ** (1.0 / 2.0)) * (
+                mu1 / 2.0 + numpy.sqrt(mu1**2 / 4.0 - mu2**3 / 27.0 + 0 * 1j)
+            ) ** (1.0 / 3.0) - 1.0 / 2.0 * (1.0 + 1j * 3 ** (1.0 / 2.0)) * (
+                mu1 / 2.0 - numpy.sqrt(mu1**2 / 4.0 - mu2**3 / 27.0 + 0 * 1j)
+            ) ** (1.0 / 3.0)
         elif self.N == 3:
-            xs = -1.0 / 2.0 * (1.0 + 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 + numpy.sqrt(
-                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) - 1.0 / 2.0 * (
-                         1.0 - 1j * 3 ** (1.0 / 2.0)) * (
-                             mu1 / 2.0 - numpy.sqrt(mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (
-                         1.0 / 3.0)
+            xs = -1.0 / 2.0 * (1.0 + 1j * 3 ** (1.0 / 2.0)) * (
+                mu1 / 2.0 + numpy.sqrt(mu1**2 / 4.0 - mu2**3 / 27.0 + 0 * 1j)
+            ) ** (1.0 / 3.0) - 1.0 / 2.0 * (1.0 - 1j * 3 ** (1.0 / 2.0)) * (
+                mu1 / 2.0 - numpy.sqrt(mu1**2 / 4.0 - mu2**3 / 27.0 + 0 * 1j)
+            ) ** (1.0 / 3.0)
         xs = numpy.real(xs)
 
         xdot = -y
-        ydot = x ** 3 - mu2 * x - mu1 - y * (nu + self.b * x + x ** 2)
+        ydot = x**3 - mu2 * x - mu1 - y * (nu + self.b * x + x**2)
         if self.modification:
             zdot = -self.c * (
-                    numpy.sqrt((x - xs) ** 2 + y ** 2) - self.dstar + 0.1 * (z - 0.5) ** 7 + self.Ks * coupling[0, :])
+                numpy.sqrt((x - xs) ** 2 + y**2)
+                - self.dstar
+                + 0.1 * (z - 0.5) ** 7
+                + self.Ks * coupling[0, :]
+            )
         else:
-            zdot = -self.c * (numpy.sqrt(
-                (x - xs) ** 2 + y ** 2) - self.dstar + self.Ks * coupling[0, :])
+            zdot = -self.c * (
+                numpy.sqrt((x - xs) ** 2 + y**2) - self.dstar + self.Ks * coupling[0, :]
+            )
 
         derivative = numpy.array([xdot, ydot, zdot])
         return derivative
@@ -275,15 +340,68 @@ class EpileptorCodim3(ModelNumbaDfun):
         """
         state_variables_ = state_variables.reshape(state_variables.shape[:-1]).T
         coupling_ = coupling.reshape(coupling.shape[:-1]).T
-        derivative = _numba_dfun(state_variables_, coupling_, self.E[0], self.E[1], self.E[2], self.F[0], self.F[1],
-                                 self.F[2], self.b, self.R, self.c, self.dstar, self.Ks, self.modification, self.N)
+        derivative = _numba_dfun(
+            state_variables_,
+            coupling_,
+            self.E[0],
+            self.E[1],
+            self.E[2],
+            self.F[0],
+            self.F[1],
+            self.F[2],
+            self.b,
+            self.R,
+            self.c,
+            self.dstar,
+            self.Ks,
+            self.modification,
+            self.N,
+        )
         return derivative.T[..., numpy.newaxis]
 
 
-@guvectorize([(float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:],
-               float64[:], float64[:], float64[:], float64[:], float64[:], int64[:], int64[:], float64[:])],
-             '(n),(m)' + ',()' * 13 + '->(n)', nopython=True)
-def _numba_dfun(state_variables, coupling, E0, E1, E2, F0, F1, F2, b, R, c, dstar, Ks, modification, N, derivative):
+@guvectorize(
+    [
+        (
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            int64[:],
+            int64[:],
+            float64[:],
+        )
+    ],
+    "(n),(m)" + ",()" * 13 + "->(n)",
+    nopython=True,
+)
+def _numba_dfun(
+    state_variables,
+    coupling,
+    E0,
+    E1,
+    E2,
+    F0,
+    F1,
+    F2,
+    b,
+    R,
+    c,
+    dstar,
+    Ks,
+    modification,
+    N,
+    derivative,
+):
     """Gufunction for the Epileptor Codim 3 model"""
 
     x = state_variables[0]
@@ -297,25 +415,33 @@ def _numba_dfun(state_variables, coupling, E0, E1, E2, F0, F1, F2, b, R, c, dsta
 
     # Computes x_s, which is the solution to x_s^3 - mu2*x_s - mu1 = 0
     if N[0] == 1:
-        xs = (mu1 / 2.0 + numpy.sqrt(
-            mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) + (mu1 / 2.0 - numpy.sqrt(
-            mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0)
+        xs = (mu1 / 2.0 + numpy.sqrt(mu1**2 / 4.0 - mu2**3 / 27.0 + 0 * 1j)) ** (
+            1.0 / 3.0
+        ) + (mu1 / 2.0 - numpy.sqrt(mu1**2 / 4.0 - mu2**3 / 27.0 + 0 * 1j)) ** (
+            1.0 / 3.0
+        )
     elif N[0] == 2:
-        xs = -1.0 / 2.0 * (1.0 - 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 + numpy.sqrt(
-            mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) - 1.0 / 2.0 * (
-            1.0 + 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 - numpy.sqrt(mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (
-            1.0 / 3.0)
+        xs = -1.0 / 2.0 * (1.0 - 1j * 3 ** (1.0 / 2.0)) * (
+            mu1 / 2.0 + numpy.sqrt(mu1**2 / 4.0 - mu2**3 / 27.0 + 0 * 1j)
+        ) ** (1.0 / 3.0) - 1.0 / 2.0 * (1.0 + 1j * 3 ** (1.0 / 2.0)) * (
+            mu1 / 2.0 - numpy.sqrt(mu1**2 / 4.0 - mu2**3 / 27.0 + 0 * 1j)
+        ) ** (1.0 / 3.0)
     elif N[0] == 3:
-        xs = -1.0 / 2.0 * (1.0 + 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 + numpy.sqrt(
-            mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) - 1.0 / 2.0 * (
-            1.0 - 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 - numpy.sqrt(mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (
-            1.0 / 3.0)
+        xs = -1.0 / 2.0 * (1.0 + 1j * 3 ** (1.0 / 2.0)) * (
+            mu1 / 2.0 + numpy.sqrt(mu1**2 / 4.0 - mu2**3 / 27.0 + 0 * 1j)
+        ) ** (1.0 / 3.0) - 1.0 / 2.0 * (1.0 - 1j * 3 ** (1.0 / 2.0)) * (
+            mu1 / 2.0 - numpy.sqrt(mu1**2 / 4.0 - mu2**3 / 27.0 + 0 * 1j)
+        ) ** (1.0 / 3.0)
     xs = xs.real
 
     derivative[0] = -y
-    derivative[1] = x ** 3 - mu2 * x - mu1 - y * (nu + b[0] * x + x ** 2)
+    derivative[1] = x**3 - mu2 * x - mu1 - y * (nu + b[0] * x + x**2)
     derivative[2] = -c[0] * (
-        numpy.sqrt((x - xs) ** 2 + y ** 2) - dstar[0] + modification[0] * 0.1 * (z - 0.5) ** 7 + Ks[0] * coupling[0])
+        numpy.sqrt((x - xs) ** 2 + y**2)
+        - dstar[0]
+        + modification[0] * 0.1 * (z - 0.5) ** 7
+        + Ks[0] * coupling[0]
+    )
 
 
 class EpileptorCodim3SlowMod(ModelNumbaDfun):
@@ -345,145 +471,232 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
         label="mu1 Ain",
         default=numpy.array([0.05494]),
         domain=Range(lo=-1.0, hi=1.0),
-        doc="The bifurcation parameter mu1 at the initial point at bursting offset.")
+        doc="The bifurcation parameter mu1 at the initial point at bursting offset.",
+    )
 
     mu2_Ain = NArray(
         label="mu2 Ain",
         default=numpy.array([0.2731]),
         domain=Range(lo=-1.0, hi=1.0),
-        doc="The bifurcation parameter mu2 at the initial point at bursting offset.")
+        doc="The bifurcation parameter mu2 at the initial point at bursting offset.",
+    )
 
     nu_Ain = NArray(
         label="nu Ain",
         default=numpy.array([0.287]),
         domain=Range(lo=-1.0, hi=1.0),
-        doc="The bifurcation parameter nu at the initial point at bursting offset.")
+        doc="The bifurcation parameter nu at the initial point at bursting offset.",
+    )
 
     mu1_Bin = NArray(
         label="mu1 Bin",
         default=numpy.array([-0.0461]),
         domain=Range(lo=-1.0, hi=1.0),
-        doc="The bifurcation parameter mu1 at the initial point at bursting onset.")
+        doc="The bifurcation parameter mu1 at the initial point at bursting onset.",
+    )
 
     mu2_Bin = NArray(
         label="mu2 Bin",
         default=numpy.array([0.243]),
         domain=Range(lo=-1.0, hi=1.0),
-        doc="The bifurcation parameter mu2 at the initial point at bursting onset.")
+        doc="The bifurcation parameter mu2 at the initial point at bursting onset.",
+    )
 
     nu_Bin = NArray(
         label="nu Bin",
         default=numpy.array([0.3144]),
         domain=Range(lo=-1.0, hi=1.0),
-        doc="The bifurcation parameter nu at the initial point at bursting onset.")
+        doc="The bifurcation parameter nu at the initial point at bursting onset.",
+    )
 
     mu1_Aend = NArray(
         label="mu1 Aend",
         default=numpy.array([0.06485]),
         domain=Range(lo=-1.0, hi=1.0),
-        doc="The bifurcation parameter mu1 at the initial point at bursting offset.")
+        doc="The bifurcation parameter mu1 at the initial point at bursting offset.",
+    )
 
     mu2_Aend = NArray(
         label="mu2 Aend",
         default=numpy.array([0.07337]),
         domain=Range(lo=-1.0, hi=1.0),
-        doc="The bifurcation parameter mu2 at the initial point at bursting offset.")
+        doc="The bifurcation parameter mu2 at the initial point at bursting offset.",
+    )
 
     nu_Aend = NArray(
         label="nu Aend",
         default=numpy.array([-0.3878]),
         domain=Range(lo=-1.0, hi=1.0),
-        doc="The bifurcation parameter nu at the initial point at bursting offset.")
+        doc="The bifurcation parameter nu at the initial point at bursting offset.",
+    )
 
     mu1_Bend = NArray(
         label="mu1 Bend",
         default=numpy.array([0.03676]),
         domain=Range(lo=-1.0, hi=1.0),
-        doc="The bifurcation parameter mu1 at the initial point at bursting onset.")
+        doc="The bifurcation parameter mu1 at the initial point at bursting onset.",
+    )
 
     mu2_Bend = NArray(
         label="mu2 Bend",
         default=numpy.array([-0.02792]),
         domain=Range(lo=-1.0, hi=1.0),
-        doc="The bifurcation parameter mu2 at the initial point at bursting onset.")
+        doc="The bifurcation parameter mu2 at the initial point at bursting onset.",
+    )
 
     nu_Bend = NArray(
         label="nu Bend",
         default=numpy.array([-0.3973]),
         domain=Range(lo=-1.0, hi=1.0),
-        doc="The bifurcation parameter nu at the initial point at bursting onset.")
+        doc="The bifurcation parameter nu at the initial point at bursting onset.",
+    )
 
     b = NArray(
         label="b",
         default=numpy.array([1.0]),
-        doc="Unfolding type of the degenerate Takens-Bogdanov bifurcation, default is a focus type")
+        doc="Unfolding type of the degenerate Takens-Bogdanov bifurcation, default is a focus type",
+    )
 
     R = NArray(
         label="R",
         default=numpy.array([0.4]),
         domain=Range(lo=0.0, hi=2.5),
-        doc="Radius in unfolding")
+        doc="Radius in unfolding",
+    )
 
     c = NArray(
         label="c",
         default=numpy.array([0.002]),
         domain=Range(lo=0.0, hi=0.01),
-        doc="Speed of the slow variable")
+        doc="Speed of the slow variable",
+    )
 
     cA = NArray(
         label="cA",
         default=numpy.array([0.0001]),
         domain=Range(lo=0.0, hi=0.001),
-        doc="Speed of the ultra-slow transition of the initial point")
+        doc="Speed of the ultra-slow transition of the initial point",
+    )
 
     cB = NArray(
         label="cB",
         default=numpy.array([0.00012]),
         domain=Range(lo=0.0, hi=0.001),
-        doc="Speed of the ultra-slow transition of the final point")
+        doc="Speed of the ultra-slow transition of the final point",
+    )
 
     dstar = NArray(
         label="dstar",
         default=numpy.array([0.3]),
         domain=Range(lo=-0.1, hi=0.5),
-        doc="Threshold for the inversion of the slow variable")
+        doc="Threshold for the inversion of the slow variable",
+    )
 
     Ks = NArray(
         label="Ks",
         default=numpy.array([0.0]),
-        doc="Slow permittivity coupling strength, the default is no coupling")
+        doc="Slow permittivity coupling strength, the default is no coupling",
+    )
 
     N = NArray(
         dtype=int,
         label="N",
         default=numpy.array([1]),
-        doc="The branch of the resting state, default is 1")
+        doc="The branch of the resting state, default is 1",
+    )
 
     modification = NArray(
         dtype=bool,
         label="modification",
         default=numpy.array([True]),
         doc="When modification is True, then use the modification to stabilise the system for negative values of "
-            "dstar. If modification is False, then don't use the modification. The default value is True ")
+        "dstar. If modification is False, then don't use the modification. The default value is True ",
+    )
+
+    coupling_terms = Final(label="Coupling terms", default=["Coupling_Term"])
+
+    parameter_names = List(
+        of=str,
+        label="List of parameters for this model",
+        default=["b", "R", "c", "cA", "cB", "dstar", "Ks",
+                 "G0", "G1", "G2", "H0", "H1", "H2",
+                 "L0", "L1", "L2", "M0", "M1", "M2"],
+    )
+
+    dfun_intermediates = Final(
+        label="Shared intermediates for dfun code generation",
+        default=[
+            ("cos_uA", "math.cos(uA)"),
+            ("sin_uA", "math.sin(uA)"),
+            ("cos_uB", "math.cos(uB)"),
+            ("sin_uB", "math.sin(uB)"),
+            ("A0", "R * (G0 * cos_uA + H0 * sin_uA)"),
+            ("A1", "R * (G1 * cos_uA + H1 * sin_uA)"),
+            ("A2", "R * (G2 * cos_uA + H2 * sin_uA)"),
+            ("B0", "R * (L0 * cos_uB + M0 * sin_uB)"),
+            ("B1", "R * (L1 * cos_uB + M1 * sin_uB)"),
+            ("B2", "R * (L2 * cos_uB + M2 * sin_uB)"),
+            ("norm_A", "math.sqrt(A0 * A0 + A1 * A1 + A2 * A2)"),
+            ("E0", "A0 / norm_A"),
+            ("E1", "A1 / norm_A"),
+            ("E2", "A2 / norm_A"),
+            ("C0", "A1 * B2 - A2 * B1"),
+            ("C1", "A2 * B0 - A0 * B2"),
+            ("C2", "A0 * B1 - A1 * B0"),
+            ("Fx", "C1 * A2 - C2 * A1"),
+            ("Fy", "C2 * A0 - C0 * A2"),
+            ("Fz", "C0 * A1 - C1 * A0"),
+            ("norm_F", "math.sqrt(Fx * Fx + Fy * Fy + Fz * Fz)"),
+            ("F0", "Fx / norm_F"),
+            ("F1", "Fy / norm_F"),
+            ("F2", "Fz / norm_F"),
+            ("cos_z", "math.cos(z)"),
+            ("sin_z", "math.sin(z)"),
+            ("mu2", "R * (E0 * cos_z + F0 * sin_z)"),
+            ("mu1", "-R * (E1 * cos_z + F1 * sin_z)"),
+            ("nu", "R * (E2 * cos_z + F2 * sin_z)"),
+            ("disc", "mu1**2 / 4.0 - mu2**3 / 27.0"),
+            ("sqrt_disc", "(disc + 0j) ** 0.5"),
+            ("q1", "(mu1 / 2.0 + sqrt_disc) ** (1.0 / 3.0)"),
+            ("q2", "(mu1 / 2.0 - sqrt_disc) ** (1.0 / 3.0)"),
+            ("xs", "(q1 + q2).real"),
+            ("dist", "math.sqrt((x - xs)**2 + y**2)"),
+        ],
+    )
+
+    state_variable_dfuns = Final(
+        label="Drift functions for numba codegen",
+        default={
+            "x": "-y",
+            "y": "x**3 - mu2 * x - mu1 - y * (nu + b * x + x**2)",
+            "z": "-c * (dist - dstar + 0.1 * (z - 0.5)**7 + Ks * Coupling_Term)",
+            "uA": "cA",
+            "uB": "cB",
+        },
+    )
 
     state_variable_range = Final(
         label="State variable ranges [lo, hi]",
-        default={"x": numpy.array([0.4, 0.6]),
-                 "y": numpy.array([-0.1, 0.1]),
-                 "z": numpy.array([0.0, 0.1]),
-                 "uA": numpy.array([0.0, 0.0]),
-                 "uB": numpy.array([0.0, 0.0])},
-        doc="Typical bounds on state variables.")
+        default={
+            "x": numpy.array([0.4, 0.6]),
+            "y": numpy.array([-0.1, 0.1]),
+            "z": numpy.array([0.0, 0.1]),
+            "uA": numpy.array([0.0, 0.0]),
+            "uB": numpy.array([0.0, 0.0]),
+        },
+        doc="Typical bounds on state variables.",
+    )
 
     variables_of_interest = List(
         of=str,
         label="Variables watched by Monitors",
-        choices=('x', 'y', 'z'),
-        default=('x', 'z'),
-        doc="Quantities available to monitor.")
+        choices=("x", "y", "z"),
+        default=("x", "z"),
+        doc="Quantities available to monitor.",
+    )
 
     # state variables names
-    state_variables = ('x', 'y', 'z', 'uA', 'uB')
+    state_variables = ("x", "y", "z", "uA", "uB")
 
     # number of state variables
     _nvar = 5
@@ -519,10 +732,8 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
 
         Ain = numpy.array([self.mu2_Ain[0], -self.mu1_Ain[0], self.nu_Ain[0]])
         Bin = numpy.array([self.mu2_Bin[0], -self.mu1_Bin[0], self.nu_Bin[0]])
-        Aend = numpy.array(
-            [self.mu2_Aend[0], -self.mu1_Aend[0], self.nu_Aend[0]])
-        Bend = numpy.array(
-            [self.mu2_Bend[0], -self.mu1_Bend[0], self.nu_Bend[0]])
+        Aend = numpy.array([self.mu2_Aend[0], -self.mu1_Aend[0], self.nu_Aend[0]])
+        Bend = numpy.array([self.mu2_Bend[0], -self.mu1_Bend[0], self.nu_Bend[0]])
 
         self.G = Ain / numpy.linalg.norm(Ain)
         self.H = numpy.cross(numpy.cross(Ain, Aend), Ain)
@@ -531,6 +742,19 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
         self.L = Bin / numpy.linalg.norm(Bin)
         self.M = numpy.cross(numpy.cross(Bin, Bend), Bin)
         self.M = self.M / numpy.linalg.norm(self.M)
+        # Scalar aliases for codegen parameter baking (parameter_names uses these)
+        self.G0 = numpy.array([self.G[0]])
+        self.G1 = numpy.array([self.G[1]])
+        self.G2 = numpy.array([self.G[2]])
+        self.H0 = numpy.array([self.H[0]])
+        self.H1 = numpy.array([self.H[1]])
+        self.H2 = numpy.array([self.H[2]])
+        self.L0 = numpy.array([self.L[0]])
+        self.L1 = numpy.array([self.L[1]])
+        self.L2 = numpy.array([self.L[2]])
+        self.M0 = numpy.array([self.M[0]])
+        self.M1 = numpy.array([self.M[1]])
+        self.M2 = numpy.array([self.M[2]])
 
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
         x = state_variables[0, :]
@@ -543,45 +767,60 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
         B = self.R * (self.L * numpy.cos(uB) + self.M * numpy.sin(uB))
 
         E = A / (numpy.linalg.norm(A, axis=1)).reshape(-1, 1)
-        C = numpy.cross(A,B)
+        C = numpy.cross(A, B)
         F = numpy.cross(numpy.cross(A, B), A)
         F = F / (numpy.linalg.norm(F, axis=1)).reshape(-1, 1)
 
         # Computes the values of mu2,mu1 and nu given the great arc (E,F,R) and the value of the slow variable z
-        mu2 = self.R * (numpy.array([E[:, 0]]).T * numpy.cos(z) + numpy.array(
-            [F[:, 0]]).T * numpy.sin(z))
-        mu1 = -self.R * (numpy.array([E[:, 1]]).T * numpy.cos(z) + numpy.array(
-            [F[:, 1]]).T * numpy.sin(z))
-        nu = self.R * (numpy.array([E[:, 2]]).T * numpy.cos(z) + numpy.array(
-            [F[:, 2]]).T * numpy.sin(z))
+        mu2 = self.R * (
+            numpy.array([E[:, 0]]).T * numpy.cos(z)
+            + numpy.array([F[:, 0]]).T * numpy.sin(z)
+        )
+        mu1 = -self.R * (
+            numpy.array([E[:, 1]]).T * numpy.cos(z)
+            + numpy.array([F[:, 1]]).T * numpy.sin(z)
+        )
+        nu = self.R * (
+            numpy.array([E[:, 2]]).T * numpy.cos(z)
+            + numpy.array([F[:, 2]]).T * numpy.sin(z)
+        )
 
         # Computes x_s, which is the solution to x_s^3 - mu2*x_s - mu1 = 0
         if self.N == 1:
-            xs = (mu1 / 2.0 + numpy.sqrt(
-                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) + (mu1 / 2.0 - numpy.sqrt(
-                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0)
+            xs = (mu1 / 2.0 + numpy.sqrt(mu1**2 / 4.0 - mu2**3 / 27.0 + 0 * 1j)) ** (
+                1.0 / 3.0
+            ) + (mu1 / 2.0 - numpy.sqrt(mu1**2 / 4.0 - mu2**3 / 27.0 + 0 * 1j)) ** (
+                1.0 / 3.0
+            )
         elif self.N == 2:
-            xs = -1.0 / 2.0 * (1.0 - 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 + numpy.sqrt(
-                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) - 1.0 / 2.0 * (
-                1.0 + 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 - numpy.sqrt(mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (
-                1.0 / 3.0)
+            xs = -1.0 / 2.0 * (1.0 - 1j * 3 ** (1.0 / 2.0)) * (
+                mu1 / 2.0 + numpy.sqrt(mu1**2 / 4.0 - mu2**3 / 27.0 + 0 * 1j)
+            ) ** (1.0 / 3.0) - 1.0 / 2.0 * (1.0 + 1j * 3 ** (1.0 / 2.0)) * (
+                mu1 / 2.0 - numpy.sqrt(mu1**2 / 4.0 - mu2**3 / 27.0 + 0 * 1j)
+            ) ** (1.0 / 3.0)
         elif self.N == 3:
-            xs = -1.0 / 2.0 * (1.0 + 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 + numpy.sqrt(
-                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) - 1.0 / 2.0 * (
-                1.0 - 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 - numpy.sqrt(mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (
-                1.0 / 3.0)
+            xs = -1.0 / 2.0 * (1.0 + 1j * 3 ** (1.0 / 2.0)) * (
+                mu1 / 2.0 + numpy.sqrt(mu1**2 / 4.0 - mu2**3 / 27.0 + 0 * 1j)
+            ) ** (1.0 / 3.0) - 1.0 / 2.0 * (1.0 - 1j * 3 ** (1.0 / 2.0)) * (
+                mu1 / 2.0 - numpy.sqrt(mu1**2 / 4.0 - mu2**3 / 27.0 + 0 * 1j)
+            ) ** (1.0 / 3.0)
         xs = numpy.real(xs)
 
         # global coupling: To be implemented
 
         xdot = -y
-        ydot = x ** 3 - mu2 * x - mu1 - y * (nu + self.b * x + x ** 2)
+        ydot = x**3 - mu2 * x - mu1 - y * (nu + self.b * x + x**2)
         if self.modification:
             zdot = -self.c * (
-                numpy.sqrt((x - xs) ** 2 + y ** 2) - self.dstar + 0.1 * (
-                    z - 0.5) ** 7 + self.Ks * coupling[0, :])
+                numpy.sqrt((x - xs) ** 2 + y**2)
+                - self.dstar
+                + 0.1 * (z - 0.5) ** 7
+                + self.Ks * coupling[0, :]
+            )
         else:
-            zdot = -self.c * (numpy.sqrt((x - xs) ** 2 + y ** 2) - self.dstar + self.Ks * coupling[0, :])
+            zdot = -self.c * (
+                numpy.sqrt((x - xs) ** 2 + y**2) - self.dstar + self.Ks * coupling[0, :]
+            )
         uAdot = numpy.full_like(uA, self.cA)
         uBdot = numpy.full_like(uB, self.cB)
 
@@ -642,19 +881,92 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
         """
         state_variables_ = state_variables.reshape(state_variables.shape[:-1]).T
         coupling_ = coupling.reshape(coupling.shape[:-1]).T
-        derivative = _numba_dfun_slowmod(state_variables_, coupling_, self.G[0], self.G[1], self.G[2], self.H[0],
-                                         self.H[1], self.H[2], self.L[0], self.L[1], self.L[2], self.M[0], self.M[1],
-                                         self.M[2], self.b, self.R, self.c, self.cA, self.cB, self.dstar, self.Ks,
-                                         self.modification, self.N)
+        derivative = _numba_dfun_slowmod(
+            state_variables_,
+            coupling_,
+            self.G[0],
+            self.G[1],
+            self.G[2],
+            self.H[0],
+            self.H[1],
+            self.H[2],
+            self.L[0],
+            self.L[1],
+            self.L[2],
+            self.M[0],
+            self.M[1],
+            self.M[2],
+            self.b,
+            self.R,
+            self.c,
+            self.cA,
+            self.cB,
+            self.dstar,
+            self.Ks,
+            self.modification,
+            self.N,
+        )
         return derivative.T[..., numpy.newaxis]
 
 
-@guvectorize([(float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:],
-               float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:],
-               float64[:], float64[:], float64[:], float64[:], float64[:], int64[:], int64[:], float64[:])],
-             '(n),(m)' + ',()' * 21 + '->(n)', nopython=True)
-def _numba_dfun_slowmod(state_variables, coupling, G0, G1, G2, H0, H1, H2, L0, L1, L2, M0, M1, M2, b, R, c, cA, cB,
-                        dstar, Ks, modification, N, derivative):
+@guvectorize(
+    [
+        (
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            float64[:],
+            int64[:],
+            int64[:],
+            float64[:],
+        )
+    ],
+    "(n),(m)" + ",()" * 21 + "->(n)",
+    nopython=True,
+)
+def _numba_dfun_slowmod(
+    state_variables,
+    coupling,
+    G0,
+    G1,
+    G2,
+    H0,
+    H1,
+    H2,
+    L0,
+    L1,
+    L2,
+    M0,
+    M1,
+    M2,
+    b,
+    R,
+    c,
+    cA,
+    cB,
+    dstar,
+    Ks,
+    modification,
+    N,
+    derivative,
+):
     """Gufunction for the Epileptor Codim 3 model with ultra-slow modulation of classes"""
 
     x = state_variables[0]
@@ -663,13 +975,31 @@ def _numba_dfun_slowmod(state_variables, coupling, G0, G1, G2, H0, H1, H2, L0, L
     uA = state_variables[3]
     uB = state_variables[4]
 
-    A = R[0] * (numpy.array([G0[0], G1[0], G2[0]]) * numpy.cos(uA) + numpy.array([H0[0], H1[0], H2[0]]) * numpy.sin(uA))
-    B = R[0] * (numpy.array([L0[0], L1[0], L2[0]]) * numpy.cos(uB) + numpy.array([M0[0], M1[0], M2[0]]) * numpy.sin(uB))
+    A = R[0] * (
+        numpy.array([G0[0], G1[0], G2[0]]) * numpy.cos(uA)
+        + numpy.array([H0[0], H1[0], H2[0]]) * numpy.sin(uA)
+    )
+    B = R[0] * (
+        numpy.array([L0[0], L1[0], L2[0]]) * numpy.cos(uB)
+        + numpy.array([M0[0], M1[0], M2[0]]) * numpy.sin(uB)
+    )
 
     E = A / (numpy.linalg.norm(A))
     # Numba does not support numpy.cross so we compute the cross-product using the standard formula.
-    C = numpy.array([A[1] * B[2] - A[2] * B[1], A[2] * B[0] - A[0] * B[2], A[0] * B[1] - A[1] * B[0]])
-    F = numpy.array([C[1] * A[2] - C[2] * A[1], C[2] * A[0] - C[0] * A[2], C[0] * A[1] - C[1] * A[0]])
+    C = numpy.array(
+        [
+            A[1] * B[2] - A[2] * B[1],
+            A[2] * B[0] - A[0] * B[2],
+            A[0] * B[1] - A[1] * B[0],
+        ]
+    )
+    F = numpy.array(
+        [
+            C[1] * A[2] - C[2] * A[1],
+            C[2] * A[0] - C[0] * A[2],
+            C[0] * A[1] - C[1] * A[0],
+        ]
+    )
     F = F / (numpy.linalg.norm(F))
 
     # Computes the values of mu2,mu1 and nu given the great arc (E,F,R) and the value of the slow variable z
@@ -679,24 +1009,32 @@ def _numba_dfun_slowmod(state_variables, coupling, G0, G1, G2, H0, H1, H2, L0, L
 
     # Computes x_s, which is the solution to x_s^3 - mu2*x_s - mu1 = 0
     if N[0] == 1:
-        xs = (mu1 / 2.0 + numpy.sqrt(
-            mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) + (mu1 / 2.0 - numpy.sqrt(
-            mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0)
+        xs = (mu1 / 2.0 + numpy.sqrt(mu1**2 / 4.0 - mu2**3 / 27.0 + 0 * 1j)) ** (
+            1.0 / 3.0
+        ) + (mu1 / 2.0 - numpy.sqrt(mu1**2 / 4.0 - mu2**3 / 27.0 + 0 * 1j)) ** (
+            1.0 / 3.0
+        )
     elif N[0] == 2:
-        xs = -1.0 / 2.0 * (1.0 - 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 + numpy.sqrt(
-            mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) - 1.0 / 2.0 * (
-            1.0 + 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 - numpy.sqrt(mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (
-            1.0 / 3.0)
+        xs = -1.0 / 2.0 * (1.0 - 1j * 3 ** (1.0 / 2.0)) * (
+            mu1 / 2.0 + numpy.sqrt(mu1**2 / 4.0 - mu2**3 / 27.0 + 0 * 1j)
+        ) ** (1.0 / 3.0) - 1.0 / 2.0 * (1.0 + 1j * 3 ** (1.0 / 2.0)) * (
+            mu1 / 2.0 - numpy.sqrt(mu1**2 / 4.0 - mu2**3 / 27.0 + 0 * 1j)
+        ) ** (1.0 / 3.0)
     elif N[0] == 3:
-        xs = -1.0 / 2.0 * (1.0 + 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 + numpy.sqrt(
-            mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) - 1.0 / 2.0 * (
-            1.0 - 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 - numpy.sqrt(mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (
-            1.0 / 3.0)
+        xs = -1.0 / 2.0 * (1.0 + 1j * 3 ** (1.0 / 2.0)) * (
+            mu1 / 2.0 + numpy.sqrt(mu1**2 / 4.0 - mu2**3 / 27.0 + 0 * 1j)
+        ) ** (1.0 / 3.0) - 1.0 / 2.0 * (1.0 - 1j * 3 ** (1.0 / 2.0)) * (
+            mu1 / 2.0 - numpy.sqrt(mu1**2 / 4.0 - mu2**3 / 27.0 + 0 * 1j)
+        ) ** (1.0 / 3.0)
     xs = xs.real
 
     derivative[0] = -y
-    derivative[1] = x ** 3 - mu2 * x - mu1 - y * (nu + b[0] * x + x ** 2)
+    derivative[1] = x**3 - mu2 * x - mu1 - y * (nu + b[0] * x + x**2)
     derivative[2] = -c[0] * (
-        numpy.sqrt((x - xs) ** 2 + y ** 2) - dstar[0] + modification[0] * 0.1 * (z - 0.5) ** 7 + Ks[0] * coupling[0])
+        numpy.sqrt((x - xs) ** 2 + y**2)
+        - dstar[0]
+        + modification[0] * 0.1 * (z - 0.5) ** 7
+        + Ks[0] * coupling[0]
+    )
     derivative[3] = cA[0]
     derivative[4] = cB[0]

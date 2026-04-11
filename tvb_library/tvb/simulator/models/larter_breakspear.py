@@ -213,115 +213,134 @@ class LarterBreakspear(Model):
         label=":math:`g_{Ca}`",
         default=numpy.array([1.1]),
         domain=Range(lo=0.9, hi=1.5, step=0.1),
-        doc="""Conductance of population of Ca++ channels.""")
+        doc="""Conductance of population of Ca++ channels.""",
+    )
 
     gK = NArray(
         label=":math:`g_{K}`",
         default=numpy.array([2.0]),
-        domain=Range(lo=1.95, hi= 2.05, step=0.025),
-        doc="""Conductance of population of K channels.""")
+        domain=Range(lo=1.95, hi=2.05, step=0.025),
+        doc="""Conductance of population of K channels.""",
+    )
 
     gL = NArray(
         label=":math:`g_{L}`",
         default=numpy.array([0.5]),
-        domain=Range(lo=0.45 , hi=0.55, step=0.05),
-        doc="""Conductance of population of leak channels.""")
+        domain=Range(lo=0.45, hi=0.55, step=0.05),
+        doc="""Conductance of population of leak channels.""",
+    )
 
     phi = NArray(
         label=r":math:`\phi`",
         default=numpy.array([0.7]),
         domain=Range(lo=0.3, hi=0.9, step=0.1),
-        doc="""Temperature scaling factor.""")
+        doc="""Temperature scaling factor.""",
+    )
 
     gNa = NArray(
         label=":math:`g_{Na}`",
         default=numpy.array([6.7]),
         domain=Range(lo=0.0, hi=10.0, step=0.1),
-        doc="""Conductance of population of Na channels.""")
+        doc="""Conductance of population of Na channels.""",
+    )
 
     TK = NArray(
         label=":math:`T_{K}`",
         default=numpy.array([0.0]),
         domain=Range(lo=0.0, hi=0.0001, step=0.00001),
-        doc="""Threshold value for K channels.""")
+        doc="""Threshold value for K channels.""",
+    )
 
     TCa = NArray(
         label=":math:`T_{Ca}`",
         default=numpy.array([-0.01]),
         domain=Range(lo=-0.02, hi=-0.01, step=0.0025),
-        doc="Threshold value for Ca channels.")
+        doc="Threshold value for Ca channels.",
+    )
 
     TNa = NArray(
         label=":math:`T_{Na}`",
         default=numpy.array([0.3]),
-        domain=Range(lo=0.25, hi= 0.3, step=0.025),
-        doc="Threshold value for Na channels.")
+        domain=Range(lo=0.25, hi=0.3, step=0.025),
+        doc="Threshold value for Na channels.",
+    )
 
     VCa = NArray(
         label=":math:`V_{Ca}`",
         default=numpy.array([1.0]),
         domain=Range(lo=0.9, hi=1.1, step=0.05),
-        doc="""Ca Nernst potential.""")
+        doc="""Ca Nernst potential.""",
+    )
 
     VK = NArray(
         label=":math:`V_{K}`",
         default=numpy.array([-0.7]),
-        domain=Range(lo=-0.8, hi=1., step=0.1),
-        doc="""K Nernst potential.""")
+        domain=Range(lo=-0.8, hi=1.0, step=0.1),
+        doc="""K Nernst potential.""",
+    )
 
     VL = NArray(
         label=":math:`V_{L}`",
         default=numpy.array([-0.5]),
         domain=Range(lo=-0.7, hi=-0.4, step=0.1),
-        doc="""Nernst potential leak channels.""")
+        doc="""Nernst potential leak channels.""",
+    )
 
     VNa = NArray(
         label=":math:`V_{Na}`",
         default=numpy.array([0.53]),
         domain=Range(lo=0.51, hi=0.55, step=0.01),
-        doc="""Na Nernst potential.""")
+        doc="""Na Nernst potential.""",
+    )
 
     d_K = NArray(
         label=r":math:`\delta_{K}`",
         default=numpy.array([0.3]),
         domain=Range(lo=0.1, hi=0.4, step=0.1),
-        doc="""Variance of K channel threshold.""")
+        doc="""Variance of K channel threshold.""",
+    )
 
     tau_K = NArray(
         label=r":math:`\tau_{K}`",
         default=numpy.array([1.0]),
         domain=Range(lo=1.0, hi=10.0, step=1.0),
-        doc="""Time constant for K relaxation time (ms)""")
+        doc="""Time constant for K relaxation time (ms)""",
+    )
 
     d_Na = NArray(
         label=r":math:`\delta_{Na}`",
         default=numpy.array([0.15]),
         domain=Range(lo=0.1, hi=0.2, step=0.05),
-        doc="Variance of Na channel threshold.")
+        doc="Variance of Na channel threshold.",
+    )
 
     d_Ca = NArray(
         label=r":math:`\delta_{Ca}`",
         default=numpy.array([0.15]),
         domain=Range(lo=0.1, hi=0.2, step=0.05),
-        doc="Variance of Ca channel threshold.")
+        doc="Variance of Ca channel threshold.",
+    )
 
     aei = NArray(
         label=":math:`a_{ei}`",
         default=numpy.array([2.0]),
         domain=Range(lo=0.1, hi=2.0, step=0.1),
-        doc="""Excitatory-to-inhibitory synaptic strength.""")
+        doc="""Excitatory-to-inhibitory synaptic strength.""",
+    )
 
     aie = NArray(
         label=":math:`a_{ie}`",
         default=numpy.array([2.0]),
         domain=Range(lo=0.5, hi=2.0, step=0.1),
-        doc="""Inhibitory-to-excitatory synaptic strength.""")
+        doc="""Inhibitory-to-excitatory synaptic strength.""",
+    )
 
     b = NArray(
         label=":math:`b`",
         default=numpy.array([0.1]),
         domain=Range(lo=0.0001, hi=1.0, step=0.0001),
-        doc="""Time constant scaling factor. The original value is 0.1""")
+        doc="""Time constant scaling factor. The original value is 0.1""",
+    )
 
     C = NArray(
         label=":math:`C`",
@@ -330,83 +349,131 @@ class LarterBreakspear(Model):
         doc="""Strength of excitatory coupling. Balance between internal and
         local (and global) coupling strength. C > 0 introduces interdependences between
         consecutive columns/nodes. C=1 corresponds to maximum coupling between node and no self-coupling.
-        This strenght should be set to sensible values when a whole network is connected. """)
+        This strenght should be set to sensible values when a whole network is connected. """,
+    )
 
     ane = NArray(
         label=":math:`a_{ne}`",
         default=numpy.array([1.0]),
         domain=Range(lo=0.4, hi=1.0, step=0.05),
-        doc="""Non-specific-to-excitatory synaptic strength.""")
+        doc="""Non-specific-to-excitatory synaptic strength.""",
+    )
 
     ani = NArray(
         label=":math:`a_{ni}`",
         default=numpy.array([0.4]),
         domain=Range(lo=0.3, hi=0.5, step=0.05),
-        doc="""Non-specific-to-inhibitory synaptic strength.""")
+        doc="""Non-specific-to-inhibitory synaptic strength.""",
+    )
 
     aee = NArray(
         label=":math:`a_{ee}`",
         default=numpy.array([0.4]),
         domain=Range(lo=0.0, hi=0.6, step=0.05),
-        doc="""Excitatory-to-excitatory synaptic strength.""")
+        doc="""Excitatory-to-excitatory synaptic strength.""",
+    )
 
     Iext = NArray(
-       label=":math:`I_{ext}`",
-       default=numpy.array([0.3]),
-       domain=Range(lo=0.165, hi=0.3, step=0.005),
-       doc="""Subcortical input strength. It represents a non-specific
-       excitation or thalamic inputs.""")
+        label=":math:`I_{ext}`",
+        default=numpy.array([0.3]),
+        domain=Range(lo=0.165, hi=0.3, step=0.005),
+        doc="""Subcortical input strength. It represents a non-specific
+       excitation or thalamic inputs.""",
+    )
 
     rNMDA = NArray(
         label=":math:`r_{NMDA}`",
         default=numpy.array([0.25]),
         domain=Range(lo=0.2, hi=0.3, step=0.05),
-        doc="""Ratio of NMDA to AMPA receptors.""")
+        doc="""Ratio of NMDA to AMPA receptors.""",
+    )
 
     VT = NArray(
         label=":math:`V_{T}`",
         default=numpy.array([0.0]),
         domain=Range(lo=0.0, hi=0.7, step=0.01),
         doc="""Threshold potential (mean) for excitatory neurons.
-        In [Breaksetal_2003_b]_ this value is 0.""")
+        In [Breaksetal_2003_b]_ this value is 0.""",
+    )
 
     d_V = NArray(
         label=r":math:`\delta_{V}`",
         default=numpy.array([0.65]),
         domain=Range(lo=0.49, hi=0.7, step=0.01),
         doc="""Variance of the excitatory threshold. It is one of the main
-        parameters explored in [Breaksetal_2003_b]_.""")
+        parameters explored in [Breaksetal_2003_b]_.""",
+    )
 
     ZT = NArray(
         label=":math:`Z_{T}`",
         default=numpy.array([0.0]),
         domain=Range(lo=0.0, hi=0.1, step=0.005),
-        doc="""Threshold potential (mean) for inihibtory neurons.""")
+        doc="""Threshold potential (mean) for inihibtory neurons.""",
+    )
 
     d_Z = NArray(
         label=r":math:`\delta_{Z}`",
         default=numpy.array([0.7]),
         domain=Range(lo=0.001, hi=0.75, step=0.05),
-        doc="""Variance of the inhibitory threshold.""")
+        doc="""Variance of the inhibitory threshold.""",
+    )
 
     # NOTE: the values were not in the article.
     QV_max = NArray(
         label=":math:`QV_{max}`",
         default=numpy.array([1.0]),
-        domain=Range(lo=0.1, hi=1., step=0.001),
-        doc="""Maximal firing rate for excitatory populations (kHz)""")
+        domain=Range(lo=0.1, hi=1.0, step=0.001),
+        doc="""Maximal firing rate for excitatory populations (kHz)""",
+    )
 
     QZ_max = NArray(
         label=":math:`QZ_{max}`",
         default=numpy.array([1.0]),
-        domain=Range(lo=0.1, hi=1., step=0.001),
-        doc="""Maximal firing rate for excitatory populations (kHz)""")
+        domain=Range(lo=0.1, hi=1.0, step=0.001),
+        doc="""Maximal firing rate for excitatory populations (kHz)""",
+    )
 
     t_scale = NArray(
         label=":math:`t_{scale}`",
         default=numpy.array([1.0]),
-        domain=Range(lo=0.1, hi=1., step=0.001),
-        doc="""Time scale factor""")
+        domain=Range(lo=0.1, hi=1.0, step=0.001),
+        doc="""Time scale factor""",
+    )
+
+    coupling_terms = Final(label="Coupling terms", default=["Coupling_Term"])
+
+    parameter_names = List(
+        of=str,
+        label="List of parameters for this model",
+        default="gCa gK gL phi gNa TK TCa TNa VCa VK VL VNa d_K d_Na d_Ca tau_K aei aie b C ane ani aee Iext rNMDA VT d_V ZT d_Z QV_max QZ_max t_scale".split(),
+    )
+
+    dfun_intermediates = Final(
+        label="Shared intermediates for dfun code generation",
+        default=[
+            ("m_Ca", "0.5 * (1.0 + math.tanh((V - TCa) / d_Ca))"),
+            ("m_Na", "0.5 * (1.0 + math.tanh((V - TNa) / d_Na))"),
+            ("m_K", "0.5 * (1.0 + math.tanh((V - TK) / d_K))"),
+            ("QV", "0.5 * QV_max * (1.0 + math.tanh((V - VT) / d_V))"),
+            ("QZ", "0.5 * QZ_max * (1.0 + math.tanh((Z - ZT) / d_Z))"),
+        ],
+    )
+
+    state_variable_dfuns = Final(
+        label="Drift functions for numba codegen",
+        default={
+            "V": (
+                "t_scale * (-(gCa + (1.0 - C) * rNMDA * aee * QV + C * rNMDA * aee * Coupling_Term) * m_Ca * (V - VCa)"
+                " - gK * W * (V - VK)"
+                " - gL * (V - VL)"
+                " - (gNa * m_Na + (1.0 - C) * aee * QV + C * aee * Coupling_Term) * (V - VNa)"
+                " - aie * Z * QZ"
+                " + ane * Iext)"
+            ),
+            "W": "t_scale * phi * (m_K - W) / tau_K",
+            "Z": "t_scale * b * (ani * Iext + aei * V * QV)",
+        },
+    )
 
     variables_of_interest = List(
         of=str,
@@ -414,7 +481,8 @@ class LarterBreakspear(Model):
         choices=("V", "W", "Z"),
         default=("V",),
         doc="""This represents the default state-variables of this Model to be
-        monitored. It can be overridden for each Monitor if desired.""")
+        monitored. It can be overridden for each Monitor if desired.""",
+    )
 
     # Informational attribute, used for phase-plane and initial()
     state_variable_range = Final(
@@ -422,14 +490,16 @@ class LarterBreakspear(Model):
         default={
             "V": numpy.array([-1.5, 1.5]),
             "W": numpy.array([-1.5, 1.5]),
-            "Z": numpy.array([-1.5, 1.5])},
+            "Z": numpy.array([-1.5, 1.5]),
+        },
         doc="""The values for each state-variable should be set to encompass
             the expected dynamic range of that state-variable for the current
             parameters, it is used as a mechanism for bounding random inital
             conditions when the simulation isn't started from an explicit
-            history, it is also provides the default range of phase-plane plots.""")
+            history, it is also provides the default range of phase-plane plots.""",
+    )
 
-    state_variables = tuple('V W Z'.split())
+    state_variables = tuple("V W Z".split())
     _state_variables = ("V", "W", "Z")
     _nvar = 3
     cvar = numpy.array([0], dtype=numpy.int32)
@@ -453,21 +523,36 @@ class LarterBreakspear(Model):
         """
         V, W, Z = state_variables
         derivative = numpy.empty_like(state_variables)
-        c_0   = coupling[0, :]
+        c_0 = coupling[0, :]
         # relationship between membrane voltage and channel conductance
         m_Ca = 0.5 * (1 + numpy.tanh((V - self.TCa) / self.d_Ca))
         m_Na = 0.5 * (1 + numpy.tanh((V - self.TNa) / self.d_Na))
-        m_K  = 0.5 * (1 + numpy.tanh((V - self.TK )  / self.d_K))
+        m_K = 0.5 * (1 + numpy.tanh((V - self.TK) / self.d_K))
         # voltage to firing rate
-        QV    = 0.5 * self.QV_max * (1 + numpy.tanh((V - self.VT) / self.d_V))
-        QZ    = 0.5 * self.QZ_max * (1 + numpy.tanh((Z - self.ZT) / self.d_Z))
-        lc_0  = local_coupling * QV
-        derivative[0] = self.t_scale * (- (self.gCa + (1.0 - self.C) * (self.rNMDA * self.aee) * (QV + lc_0)+ self.C * self.rNMDA * self.aee * c_0) * m_Ca * (V - self.VCa)
-                         - self.gK * W * (V - self.VK)
-                         - self.gL * (V - self.VL)
-                         - (self.gNa * m_Na + (1.0 - self.C) * self.aee * (QV  + lc_0) + self.C * self.aee * c_0) * (V - self.VNa)
-                         - self.aie * Z * QZ
-                         + self.ane * self.Iext)
+        QV = 0.5 * self.QV_max * (1 + numpy.tanh((V - self.VT) / self.d_V))
+        QZ = 0.5 * self.QZ_max * (1 + numpy.tanh((Z - self.ZT) / self.d_Z))
+        lc_0 = local_coupling * QV
+        derivative[0] = self.t_scale * (
+            -(
+                self.gCa
+                + (1.0 - self.C) * (self.rNMDA * self.aee) * (QV + lc_0)
+                + self.C * self.rNMDA * self.aee * c_0
+            )
+            * m_Ca
+            * (V - self.VCa)
+            - self.gK * W * (V - self.VK)
+            - self.gL * (V - self.VL)
+            - (
+                self.gNa * m_Na
+                + (1.0 - self.C) * self.aee * (QV + lc_0)
+                + self.C * self.aee * c_0
+            )
+            * (V - self.VNa)
+            - self.aie * Z * QZ
+            + self.ane * self.Iext
+        )
         derivative[1] = self.t_scale * self.phi * (m_K - W) / self.tau_K
-        derivative[2] = self.t_scale * self.b * (self.ani * self.Iext + self.aei * V * QV)
+        derivative[2] = (
+            self.t_scale * self.b * (self.ani * self.Iext + self.aei * V * QV)
+        )
         return derivative
