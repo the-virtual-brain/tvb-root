@@ -77,7 +77,11 @@ __all__ = [
 # ---------------------------------------------------------------------------
 
 
-_BOLD_STATE: dict = {}
+_BOLD_BALLOON_DEFAULTS = {
+    'tau_s': 0.65, 'tau_f': 0.41, 'tau_o': 0.98,
+    'alpha': 0.32, 'te': 0.04, 'v0': 4.0, 'e0': 0.4,
+    'epsilon': 0.5, 'nu_0': 40.3, 'r_0': 25.0,
+}
 
 
 def _apply_monitors(
@@ -147,6 +151,7 @@ def _apply_monitors(
     # Extract pre-computed JIT monitor data if available
     spatial_per_sn = monitor_data.get('spatial', []) if monitor_data else []
     proj_per_sn = monitor_data.get('proj', []) if monitor_data else []
+    bold_per_sn = monitor_data.get('bold', []) if monitor_data else []
 
     results: list = []
     for m in monitors:
@@ -168,67 +173,22 @@ def _apply_monitors(
             elif isinstance(m, GlobalAverage):
                 per_subnet.append((times, data.mean(axis=-2, keepdims=True)))
             elif isinstance(m, Bold):
-                from tvb.datatypes import equations
-                hrf = m.hemodynamic_response_function  # (1, stock_steps)
-                stock_steps = hrf.shape[1]
-                interim_istep = m._interim_istep
-                n_chunks, n_voi, n_nodes, n_modes = data.shape
-                sample_shape = (n_voi, n_nodes, n_modes)
-
-                # Use (id(monitor), subnet_index) as key so each subnet
-                # gets independent state even when the same Bold monitor
-                # instance is reused across multiple subnets.
-                subnet_idx = len(per_subnet)
-                state_key = (id(m), subnet_idx)
-
-                if state_key not in _BOLD_STATE:
-                    _BOLD_STATE[state_key] = {
-                        'interim_stock': np.zeros((interim_istep,) + sample_shape, dtype=np.float32),
-                        'stock': np.zeros((stock_steps,) + sample_shape, dtype=np.float32),
-                        'offset': 0,
-                    }
-                bs = _BOLD_STATE[state_key]
-                interim_stock = bs['interim_stock']
-                stock = bs['stock']
-                offset = bs['offset']
-
-                bold_results = []
-                bold_times = []
-                for ci in range(n_chunks):
-                    step = offset + ci + 1
-                    # Update interim stock at every chunk (= integration step when chunk_size=1)
-                    interim_stock[(step - 1) % interim_istep] = data[ci]
-                    # At interim period, update main stock with temporal average
-                    if step % interim_istep == 0:
-                        avg = np.mean(interim_stock, axis=0)
-                        stock[(step // interim_istep - 1) % stock_steps] = avg
-                    # At Bold period, compute HRF convolution
-                    if step % m.istep == 0:
-                        t_bold = times[ci] if ci < len(times) else step * dt
-                        rolled_hrf = np.roll(
-                            hrf, (step // interim_istep - 1) % stock_steps, axis=1
-                        )
-                        # stock is (stock_steps, n_voi, n_nodes, n_modes)
-                        stock_t = stock.transpose((1, 2, 0, 3))  # (n_voi, n_nodes, stock_steps, n_modes)
-                        bold = np.dot(rolled_hrf, stock_t)  # (1, n_voi, n_nodes, n_modes)
-                        bold = bold.reshape(sample_shape)  # squeeze HRF dim
-                        # Apply FirstOrderVolterra scaling if applicable
-                        if isinstance(m.hrf_kernel, equations.FirstOrderVolterra):
-                            k1 = m.hrf_kernel.parameters.get('k_1', 1.0)
-                            V0 = m.hrf_kernel.parameters.get('V_0', 1.0)
-                            bold = (bold - 1.0) * k1 * V0
-                        bold_results.append(bold)
-                        bold_times.append(t_bold)
-                # Persist updated offset back into state dict
-                bs['offset'] = offset + n_chunks
-
-                if bold_results:
-                    bold_arr = np.stack(bold_results, axis=0)  # (n_bold, n_voi, n_nodes, n_modes)
-                    per_subnet.append((np.array(bold_times, dtype=np.float64), bold_arr))
+                # Use JIT-computed Balloon model BOLD signal
+                if si < len(bold_per_sn):
+                    bold_times, bold_data = bold_per_sn[si]
+                    if bold_data.ndim >= 3 and bold_data.shape[0] > 0:
+                        per_subnet.append((bold_times, bold_data))
+                    else:
+                        n_chunks, n_voi, n_nodes, n_modes = data.shape
+                        per_subnet.append((
+                            np.array([], dtype=np.float64),
+                            np.empty((0, n_voi, n_nodes, n_modes), dtype=np.float32),
+                        ))
                 else:
+                    n_chunks, n_voi, n_nodes, n_modes = data.shape
                     per_subnet.append((
                         np.array([], dtype=np.float64),
-                        np.empty((0,) + sample_shape, dtype=np.float32),
+                        np.empty((0, n_voi, n_nodes, n_modes), dtype=np.float32),
                     ))
             elif isinstance(m, SpatialAverage):
                 # Use JIT-precomputed if available
@@ -918,15 +878,18 @@ class NbHybridBackend(MakoUtilMix):
             args.append(sp_arr)
 
         # Per-subnetwork monitor config arrays (SpatialAverage / Projection)
-        from tvb.simulator.monitors import SpatialAverage as SpatialAverageMon, Projection as ProjectionMon
+        from tvb.simulator.monitors import SpatialAverage as SpatialAverageMon, Projection as ProjectionMon, Bold as BoldMon
         _spatial_mean_mon = None
         _projection_mon = None
+        _bold_mon = None
         if monitors:
             for m in monitors:
                 if isinstance(m, SpatialAverageMon) and hasattr(m, 'spatial_mean'):
                     _spatial_mean_mon = m
                 if isinstance(m, ProjectionMon):
                     _projection_mon = m
+                if isinstance(m, BoldMon):
+                    _bold_mon = m
         for sn_info in analysis.subnetworks:
             # spatial_mean: (n_areas, n_nodes) or empty (0, n_nodes)
             if _spatial_mean_mon is not None:
@@ -945,14 +908,78 @@ class NbHybridBackend(MakoUtilMix):
                 gn = np.zeros((0, sn_info.n_nodes), dtype=np.float32)
             args.append(gn)
 
+        # Per-subnetwork Bold Balloon model arrays
+        # Bold parameters: [rtau_s, rtau_f, rtau_o, ra, e0, re0, k1, k2, k3]
+        # Default values from vbjax/compute_bold_theta()
+        _bold_params = None
+        _bold_istep = 0
+        _bold_v0 = np.float32(0.0)
+        _bold_dt = np.float32(0.0)
+        if _bold_mon is not None:
+            dt = network_set.subnets[0].scheme.dt
+            _bold_dt = np.float32(dt)
+            # Extract Bold period in steps
+            bold_period = float(_bold_mon.period)  # ms
+            _bold_istep = max(1, int(round(bold_period / dt)))
+            # Compute Balloon model parameters
+            tau_s = np.float32(0.65)
+            tau_f = np.float32(0.41)
+            tau_o = np.float32(0.98)
+            alpha = np.float32(0.32)
+            te = np.float32(0.04)
+            e0 = np.float32(0.4)
+            epsilon = np.float32(0.5)
+            nu_0 = np.float32(40.3)
+            r_0 = np.float32(25.0)
+            v0 = np.float32(4.0)
+            _bold_v0 = v0
+            k1 = np.float32(4.3) * nu_0 * e0 * te
+            k2 = epsilon * r_0 * e0 * te
+            k3 = np.float32(1.0) - epsilon
+            _bold_params = np.array([
+                np.float32(1.0) / tau_s,  # rtau_s
+                np.float32(1.0) / tau_f,  # rtau_f
+                np.float32(1.0) / tau_o,  # rtau_o
+                np.float32(1.0) / alpha,  # ra
+                e0,
+                np.float32(1.0) / e0,    # re0
+                k1, k2, k3,
+            ], dtype=np.float32)
+
+        for sn_info in analysis.subnetworks:
+            n_voi = len(sn_info.model.variables_of_interest)
+            n_nodes = sn_info.n_nodes
+            svars = list(sn_info.model.state_variables)
+            voi = list(sn_info.model.variables_of_interest)
+            voi_idx = [svars.index(v) if v in svars else 0 for v in voi]
+            if _bold_mon is not None:
+                bold_state = np.zeros((n_voi, 4, n_nodes), dtype=np.float32)
+                # Initial conditions: s=0, f=1, v=1, q=1
+                bold_state[:, 1, :] = 1.0
+                bold_state[:, 2, :] = 1.0
+                bold_state[:, 3, :] = 1.0
+                bold_params = _bold_params
+                bold_voi_idx = np.array(voi_idx, dtype=np.int32)
+            else:
+                bold_state = np.zeros((0, 4, 0), dtype=np.float32)
+                bold_params = np.zeros(9, dtype=np.float32)
+                bold_voi_idx = np.zeros(0, dtype=np.int32)
+            args.append(bold_state)
+            args.append(bold_params)
+            args.append(bold_voi_idx)
+
+        args.append(_bold_dt)
+        args.append(np.int32(_bold_istep))
+        args.append(_bold_v0)
         args.append(chunk_size)
 
         outputs = run_network_fn(*args)
-        # outputs[i] = (times, data, ctavg, spatial, proj)
-        raw_outputs = [(t, d, c) for t, d, c, s, p in outputs]
+        # outputs[i] = (times, data, ctavg, spatial, proj, bold_times, bold_data)
+        raw_outputs = [(t, d, c) for t, d, c, s, p, bt, bd in outputs]
         monitor_data = {
-            'spatial': [s for t, d, c, s, p in outputs],
-            'proj': [p for t, d, c, s, p in outputs],
+            'spatial': [s for t, d, c, s, p, bt, bd in outputs],
+            'proj': [p for t, d, c, s, p, bt, bd in outputs],
+            'bold': [(bt, bd) for t, d, c, s, p, bt, bd in outputs],
         }
         return raw_outputs, sn_states, src_bufs, monitor_data
 

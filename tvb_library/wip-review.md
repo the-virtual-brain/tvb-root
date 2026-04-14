@@ -202,9 +202,28 @@
 - `_apply_monitors` uses pre-computed JIT data when available, falls back to Python einsum.
 - **Bug fix**: SpatialAverage einsum was `'ij,tklm->tkim'` (summed nodes independently) — now
   correctly `'ij,tkjm->tkim'` (shared node index `j`).
-- Bold monitor stays in Python (HRF convolution too complex for JIT benefit).
 - 4 new tests: `TestJITMonitorPrecomputation` verifying JIT output matches Python.
 - All 187 tests pass (183 previous + 4 new).
+
+### 5. Bold Balloon Model JIT Integration (DONE)
+
+**Files changed:**
+- `tvb_library/tvb/simulator/backend/templates/nb-hybrid-sim.py.mako`
+- `tvb_library/tvb/simulator/backend/nb_hybrid.py`
+- `tvb_library/tvb/tests/library/simulator/backend/test_nb_hybrid.py`
+
+**What was done:**
+- Replaced HRF-convolution-based Bold monitor with Balloon model (4 ODEs: s, f, v, q).
+- Balloon ODE integrated inside `network_chunk` JIT kernel at each step using Euler method.
+- Neural drive `x` = voi state value summed over modes, per voi per node.
+- BOLD signal sampled at monitor period in `run_network` (Python) from current (v, q) state.
+- BOLD signal = v0 * (k1*(1-q) + k2*(1-q/v) + k3*(1-v)) with standard parameters.
+- Removed module-level `_BOLD_STATE` dict (no more monkey-patching or stale state).
+- Bold state is allocated per-call, no cross-call persistence needed (Balloon ODE is causal).
+- `_apply_monitors` Bold branch simplified to passthrough of JIT-computed data.
+- Updated `test_bold_matches_python` to compare against Python Balloon reference (not HRF).
+- Added `test_bold_balloon_matches_python_reference` for tighter rtol=1e-4 verification.
+- All 188 tests pass (187 previous + 1 new).
 
 
 

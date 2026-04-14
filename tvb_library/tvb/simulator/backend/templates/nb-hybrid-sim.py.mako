@@ -671,6 +671,13 @@ def network_chunk(
     ${sn.name}_gain,  # (n_sensors, n_nodes) float32 — empty (0, n_nodes) when unused
     ${sn.name}_proj_tavg,  # (n_voi, n_sensors, 1) float32 — accumulator (modes summed)
     % endfor
+    ## Bold Balloon model arrays
+    % for sn in subnets:
+    ${sn.name}_bold_state,  # (n_voi, 4, n_nodes) float32 — [s,f,v,q] per voi per node, or empty (0,4,0)
+    ${sn.name}_bold_params,  # (9,) float32 — [rtau_s, rtau_f, rtau_o, ra, e0, re0, k1, k2, k3]
+    ${sn.name}_bold_voi_idx,  # (n_voi,) int32 — state variable index for each voi
+    % endfor
+    _bold_dt,  # float32 — integration timestep
 ):
 <%
     all_sn_names = [sn.name for sn in subnets]
@@ -811,6 +818,34 @@ def network_chunk(
         % endfor
         tavg_count[0] += 1
 
+        ## Bold Balloon model Euler step (only when bold_state has vois)
+        % for sn in subnets:
+        if ${sn.name}_bold_state.shape[0] > 0:
+            for _bvi in range(${sn.name}_bold_state.shape[0]):
+                _bsvi = ${sn.name}_bold_voi_idx[_bvi]
+                for _bni in range(${sn_nnodes_dict[sn.name]}):
+                    _bx = np.float32(0.0)
+                    % if sn_nmodes_dict[sn.name] == 1:
+                    _bx = ${sn.name}_state[_bsvi, _bni, 0]
+                    % else:
+                    for _bmi in range(${sn_nmodes_dict[sn.name]}):
+                        _bx += ${sn.name}_state[_bsvi, _bni, _bmi]
+                    % endif
+                    _bs = ${sn.name}_bold_state[_bvi, 0, _bni]
+                    _bf = ${sn.name}_bold_state[_bvi, 1, _bni]
+                    _bv = ${sn.name}_bold_state[_bvi, 2, _bni]
+                    _bq = ${sn.name}_bold_state[_bvi, 3, _bni]
+                    _bp = ${sn.name}_bold_params
+                    _bds = _bx - _bp[0] * _bs - _bp[1] * (_bf - np.float32(1.0))
+                    _bdf = _bs
+                    _bdv = _bp[2] * (_bf - _bv ** _bp[3])
+                    _bdq = _bp[2] * (_bf * (np.float32(1.0) - (np.float32(1.0) - _bp[4]) ** (np.float32(1.0) / _bf)) * _bp[5] - _bv ** _bp[3] * (_bq / _bv))
+                    ${sn.name}_bold_state[_bvi, 0, _bni] += _bold_dt * _bds
+                    ${sn.name}_bold_state[_bvi, 1, _bni] += _bold_dt * _bdf
+                    ${sn.name}_bold_state[_bvi, 2, _bni] += _bold_dt * _bdv
+                    ${sn.name}_bold_state[_bvi, 3, _bni] += _bold_dt * _bdq
+        % endfor
+
 
 def run_network(
     nstep,
@@ -851,6 +886,15 @@ def run_network(
     ${sn.name}_spatial_mean,
     ${sn.name}_gain,
     % endfor
+    ## Bold Balloon model arrays
+    % for sn in subnets:
+    ${sn.name}_bold_state,
+    ${sn.name}_bold_params,
+    ${sn.name}_bold_voi_idx,
+    % endfor
+    _bold_dt,
+    _bold_istep,
+    _bold_v0,
     chunk_size,
 ):
     """Outer Python loop that calls the @njit kernel in chunks and collects output."""
@@ -880,6 +924,8 @@ def run_network(
     ${sn.name}_spatial_outputs = []
     ${sn.name}_proj_outputs = []
     ${sn.name}_times   = []
+    ${sn.name}_bold_outputs = []
+    ${sn.name}_bold_times = []
     % endfor
     time_step = np.float32(${subnets[0].integrator.dt})
 
@@ -943,6 +989,13 @@ def run_network(
             ${sn.name}_gain,
             ${sn.name}_proj_tavg,
             % endfor
+            ## Bold Balloon model arrays
+            % for sn in subnets:
+            ${sn.name}_bold_state,
+            ${sn.name}_bold_params,
+            ${sn.name}_bold_voi_idx,
+            % endfor
+            _bold_dt,
         )
 
         n = tavg_count[0]
@@ -955,9 +1008,32 @@ def run_network(
         ${sn.name}_proj_outputs.append(${sn.name}_proj_tavg / np.float32(n))
         % endfor
 
+        ## Bold sampling: check if any step in this chunk crossed a Bold period boundary
+        if _bold_istep > 0:
+            for _bc_step in range(t_global, t_global + this_chunk):
+                if _bc_step % _bold_istep == 0:
+                    _bold_time = _bc_step * float(time_step)
+                    % for sn in subnets:
+                    if ${sn.name}_bold_state.shape[0] > 0:
+                        _b_n_voi = ${sn.name}_bold_state.shape[0]
+                        _b_n_nodes = ${sn.name}_bold_state.shape[2]
+                        _bold_sample = np.zeros((_b_n_voi, _b_n_nodes, 1), dtype=np.float32)
+                        for _bvi in range(_b_n_voi):
+                            for _bni in range(_b_n_nodes):
+                                _bv = ${sn.name}_bold_state[_bvi, 2, _bni]
+                                _bq = ${sn.name}_bold_state[_bvi, 3, _bni]
+                                _bold_sample[_bvi, _bni, 0] = _bold_v0 * (
+                                    ${sn.name}_bold_params[6] * (np.float32(1.0) - _bq)
+                                    + ${sn.name}_bold_params[7] * (np.float32(1.0) - _bq / _bv)
+                                    + ${sn.name}_bold_params[8] * (np.float32(1.0) - _bv)
+                                )
+                        ${sn.name}_bold_outputs.append(_bold_sample)
+                        ${sn.name}_bold_times.append(_bold_time)
+                    % endfor
+
         t_global += this_chunk
 
-    ## package outputs: list of (times, data, ctavg, spatial, proj) per subnetwork
+    ## package outputs: list of (times, data, ctavg, spatial, proj, bold_times, bold_data) per subnetwork
     results = []
     % for sn in subnets:
     times_arr = np.array(${sn.name}_times, dtype=np.float64)
@@ -968,6 +1044,13 @@ def run_network(
     ## stack monitor outputs (only meaningful when shape[0] > 0)
     spatial_arr = np.stack(${sn.name}_spatial_outputs, axis=0) if ${sn.name}_spatial_mean.shape[0] > 0 else np.empty((0,), dtype=np.float32)
     proj_arr = np.stack(${sn.name}_proj_outputs, axis=0) if ${sn.name}_gain.shape[0] > 0 else np.empty((0,), dtype=np.float32)
-    results.append((times_arr, data_arr, ctavg_arr, spatial_arr, proj_arr))
+    ## Bold outputs
+    if len(${sn.name}_bold_times) > 0:
+        bold_times_arr = np.array(${sn.name}_bold_times, dtype=np.float64)
+        bold_data_arr = np.stack(${sn.name}_bold_outputs, axis=0)
+    else:
+        bold_times_arr = np.array([], dtype=np.float64)
+        bold_data_arr = np.empty((0,), dtype=np.float32)
+    results.append((times_arr, data_arr, ctavg_arr, spatial_arr, proj_arr, bold_times_arr, bold_data_arr))
     % endfor
     return results

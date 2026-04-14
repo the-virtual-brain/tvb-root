@@ -3469,14 +3469,13 @@ class TestNbHybridMonitorsIntegrative(unittest.TestCase):
     # --- Bold ---
 
     def test_bold_matches_python(self):
-        """Bold from Numba matches HRF convolution of Python raw states."""
-        from tvb.datatypes import equations
+        """Bold from Numba matches Python Balloon model reference."""
         _, _, _, _, _, Bold = self._import_monitors()
         bold_period = 20.0  # ms
         istep = int(round(bold_period / DT))  # 2000 steps
 
-        # Need enough steps for at least 1 Bold sample
-        nstep = istep * 2  # 4000 steps for 2 Bold samples
+        # Need enough steps for at least 2 Bold samples
+        nstep = istep * 2  # 4000 steps
 
         ns, x0_list, model = self._build()
         py_raw = self._python_raw(ns, [x0_list[0].copy()], nstep, model)
@@ -3488,33 +3487,56 @@ class TestNbHybridMonitorsIntegrative(unittest.TestCase):
 
         nb_t, nb_d = self._numba_monitor(ns, [x0_list[0].copy()], nstep, bold)
 
-        # Python: replicate Bold.sample() logic
-        hrf = bold.hemodynamic_response_function  # (1, stock_steps)
-        stock_steps = hrf.shape[1]
-        interim_istep = bold._interim_istep
+        # Python: replicate Balloon model (Euler integration)
+        # Parameters
+        tau_s, tau_f, tau_o = 0.65, 0.41, 0.98
+        alpha = 0.32
+        te, e0 = 0.04, 0.4
+        epsilon, nu_0, r_0 = 0.5, 40.3, 25.0
+        v0 = 4.0
+        k1 = 4.3 * nu_0 * e0 * te
+        k2 = epsilon * r_0 * e0 * te
+        k3 = 1.0 - epsilon
 
-        # Use float32 to match Numba backend precision
         py_f32 = py_raw.astype(np.float32)
-        interim_stock = np.zeros((interim_istep,) + py_f32.shape[1:], dtype=np.float32)
-        stock = np.zeros((stock_steps,) + py_f32.shape[1:], dtype=np.float32)
+        nvoi, nnodes, nmodes = py_f32.shape[1:]
+
+        # Balloon state: (nvoi, 4, nnodes) = [s, f, v, q]
+        bsfq = np.zeros((nvoi, 4, nnodes), dtype=np.float32)
+        bsfq[:, 1, :] = 1.0  # f=1
+        bsfq[:, 2, :] = 1.0  # v=1
+        bsfq[:, 3, :] = 1.0  # q=1
 
         py_bold_times = []
         py_bold_data = []
         for step in range(1, nstep + 1):
-            interim_stock[(step - 1) % interim_istep] = py_f32[step - 1]
-            if step % interim_istep == 0:
-                avg = np.mean(interim_stock, axis=0)
-                stock[(step // interim_istep - 1) % stock_steps] = avg
+            # Advance Balloon ODE (Euler)
+            x = py_f32[step - 1]  # (nvoi, nnodes, nmodes)
+            for vi in range(nvoi):
+                for ni in range(nnodes):
+                    bx = float(x[vi, ni, 0])
+                    s = float(bsfq[vi, 0, ni])
+                    f = float(bsfq[vi, 1, ni])
+                    v = float(bsfq[vi, 2, ni])
+                    q = float(bsfq[vi, 3, ni])
+                    ds = bx - (1/tau_s)*s - (1/tau_f)*(f - 1)
+                    df = s
+                    dv = (1/tau_o)*(f - v**(1/alpha))
+                    dq = (1/tau_o)*(f*(1 - (1-e0)**(1/f))/e0 - v**(1/alpha)*(q/v))
+                    bsfq[vi, 0, ni] += np.float32(DT * ds)
+                    bsfq[vi, 1, ni] += np.float32(DT * df)
+                    bsfq[vi, 2, ni] += np.float32(DT * dv)
+                    bsfq[vi, 3, ni] += np.float32(DT * dq)
+
+            # Sample at Bold period
             if step % istep == 0:
                 t = step * DT
-                rolled_hrf = np.roll(hrf, (step // interim_istep - 1) % stock_steps, axis=1)
-                stock_t = stock.transpose((1, 2, 0, 3))  # (nvoi, nnodes, stock_steps, nmodes)
-                bold_val = np.dot(rolled_hrf, stock_t).reshape(py_f32.shape[1:])
-                # Apply FirstOrderVolterra scaling to match Numba backend
-                if isinstance(bold.hrf_kernel, equations.FirstOrderVolterra):
-                    k1 = bold.hrf_kernel.parameters.get('k_1', 1.0)
-                    V0 = bold.hrf_kernel.parameters.get('V_0', 1.0)
-                    bold_val = (bold_val - 1.0) * k1 * V0
+                bold_val = np.zeros((nvoi, nnodes, 1), dtype=np.float32)
+                for vi in range(nvoi):
+                    for ni in range(nnodes):
+                        bv = float(bsfq[vi, 2, ni])
+                        bq = float(bsfq[vi, 3, ni])
+                        bold_val[vi, ni, 0] = v0 * (k1*(1-bq) + k2*(1-bq/bv) + k3*(1-bv))
                 py_bold_times.append(t)
                 py_bold_data.append(bold_val)
 
@@ -3525,7 +3547,7 @@ class TestNbHybridMonitorsIntegrative(unittest.TestCase):
         )
         np.testing.assert_allclose(
             nb_d, py_bold_arr, rtol=1e-2, atol=1e-2,
-            err_msg="Bold: Numba differs from Python",
+            err_msg="Bold Balloon: Numba differs from Python",
         )
 
 
@@ -3673,6 +3695,90 @@ class TestJITMonitorPrecomputation(unittest.TestCase):
         self.assertEqual(data.shape, (20, 1, 4, 1))
         self.assertEqual(ctavg.shape, (20, 1, 4, 1))
         self.assertTrue(np.all(np.isfinite(data)))
+
+    def test_bold_balloon_matches_python_reference(self):
+        """JIT Balloon BOLD matches a pure-Python Euler integration of the same ODEs."""
+        from tvb.simulator.monitors import Bold
+
+        nets, model = self._make_net(self.N)
+        ic = self._make_ic(self.N)
+        backend = NbHybridBackend()
+
+        bold_period = 0.5  # ms — short period for testing
+        bold = Bold(period=bold_period)
+        bold.dt = self.DT
+        bold._config_dt(self.DT)
+        bold.compute_hrf()
+
+        nstep = 200  # 4 Bold samples
+
+        # Run with JIT Bold
+        results = backend.run_network(
+            nets, nstep=nstep, chunk_size=1, monitors=[bold], initial_states=ic,
+        )
+        nb_times, nb_data = results[0][0]
+
+        # Run raw to get neural states
+        raw = backend.run_network(
+            nets, nstep=nstep, chunk_size=1, initial_states=[ic[0].copy()],
+        )
+        _, raw_data, _ = raw[0]
+
+        # Python Balloon reference (matching vbjax bold_dfun)
+        tau_s, tau_f, tau_o = 0.65, 0.41, 0.98
+        alpha, te, e0 = 0.32, 0.04, 0.4
+        epsilon, nu_0, r_0 = 0.5, 40.3, 25.0
+        v0 = 4.0
+        k1 = 4.3 * nu_0 * e0 * te
+        k2 = epsilon * r_0 * e0 * te
+        k3 = 1.0 - epsilon
+
+        istep = int(round(bold_period / self.DT))
+        nvoi = raw_data.shape[1]
+        nnodes = raw_data.shape[2]
+
+        # State: (nvoi, 4, nnodes) = [s, f, v, q]
+        state = np.zeros((nvoi, 4, nnodes), dtype=np.float32)
+        state[:, 1, :] = 1.0
+        state[:, 2, :] = 1.0
+        state[:, 3, :] = 1.0
+
+        py_bold_times = []
+        py_bold_data = []
+        for step in range(1, nstep + 1):
+            x = raw_data[step - 1].astype(np.float32)  # (nvoi, nnodes, 1)
+            for vi in range(nvoi):
+                for ni in range(nnodes):
+                    bx = float(x[vi, ni, 0])
+                    s = float(state[vi, 0, ni])
+                    f = float(state[vi, 1, ni])
+                    v = float(state[vi, 2, ni])
+                    q = float(state[vi, 3, ni])
+                    ds = bx - (1/tau_s)*s - (1/tau_f)*(f - 1)
+                    df = s
+                    dv = (1/tau_o)*(f - v**(1/alpha))
+                    dq = (1/tau_o)*(f*(1 - (1-e0)**(1/f))/e0 - v**(1/alpha)*(q/v))
+                    state[vi, 0, ni] += np.float32(self.DT * ds)
+                    state[vi, 1, ni] += np.float32(self.DT * df)
+                    state[vi, 2, ni] += np.float32(self.DT * dv)
+                    state[vi, 3, ni] += np.float32(self.DT * dq)
+            if step % istep == 0:
+                bold_val = np.zeros((nvoi, nnodes, 1), dtype=np.float32)
+                for vi in range(nvoi):
+                    for ni in range(nnodes):
+                        bv = float(state[vi, 2, ni])
+                        bq = float(state[vi, 3, ni])
+                        bold_val[vi, ni, 0] = v0 * (k1*(1-bq) + k2*(1-bq/bv) + k3*(1-bv))
+                py_bold_times.append(step * self.DT)
+                py_bold_data.append(bold_val)
+
+        py_bold_arr = np.stack(py_bold_data, axis=0)
+
+        self.assertEqual(nb_data.shape, py_bold_arr.shape)
+        np.testing.assert_allclose(
+            nb_data, py_bold_arr, rtol=1e-4, atol=1e-5,
+            err_msg="JIT Balloon BOLD differs from Python reference",
+        )
 
 
 if __name__ == "__main__":
