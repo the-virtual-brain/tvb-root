@@ -220,10 +220,13 @@
 - BOLD signal = v0 * (k1*(1-q) + k2*(1-q/v) + k3*(1-v)) with standard parameters.
 - Removed module-level `_BOLD_STATE` dict (no more monkey-patching or stale state).
 - Bold state is allocated per-call, no cross-call persistence needed (Balloon ODE is causal).
++ Bold state persists across `run()` calls via `CompiledNetworkFn._bold_states` dict.
+  Reuses existing state arrays on subsequent calls (in-place mutation by JIT).
 - `_apply_monitors` Bold branch simplified to passthrough of JIT-computed data.
 - Updated `test_bold_matches_python` to compare against Python Balloon reference (not HRF).
 - Added `test_bold_balloon_matches_python_reference` for tighter rtol=1e-4 verification.
-- All 188 tests pass (187 previous + 1 new).
+- Added `test_bold_state_persists_across_calls` verifying Bold state continuity.
+- All 189 tests pass (187 previous + 2 new).
 
 
 
