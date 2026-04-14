@@ -507,6 +507,24 @@ class TestNbHybridCompatibilityCheck(unittest.TestCase):
         with self.assertRaises(ValueError):
             NbHybridBackend().run_network(nets, nstep=100, chunk_size=10)
 
+    def test_rejects_subsample_with_chunk_size_gt_1(self):
+        """SubSample monitor must not be used with chunk_size > 1."""
+        from tvb.simulator.monitors import SubSample
+
+        m = MontbrioPazoRoxin()
+        m.configure()
+        sn = Subnetwork(name="sn", model=m, scheme=HeunDeterministic(dt=0.1), nnodes=3)
+        sn.configure()
+        nets = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        nets.configure()
+        sub = SubSample(period=1.0)
+        with self.assertRaises(ValueError) as ctx:
+            NbHybridBackend().run_network(
+                nets, nstep=50, chunk_size=5, monitors=[sub]
+            )
+        self.assertIn("SubSample", str(ctx.exception))
+        self.assertIn("chunk_size=1", str(ctx.exception))
+
 
 # ---------------------------------------------------------------------------
 # Coupling function tests

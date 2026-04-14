@@ -252,7 +252,7 @@ def _zerlaut_diff2_fe_fi_correct_${sn.name}(TF_fn, fe, fi, fe_ext, fi_ext, W):
 ## ------------------------------------------------------------------
 ${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
 % if not _is_second_order:
-def dfun_${sn.name}(E, I, W_e, W_i, ou_drift, Coupling_Term):
+def dfun_${sn.name}(E, I, W_e, W_i, ou_drift, Coupling_Term, _sp, ni):
     T = _zp_${sn.name}_T
     weight_noise = _zp_${sn.name}_weight_noise
     ext_ex_ex = _zp_${sn.name}_external_input_ex_ex
@@ -293,7 +293,7 @@ def dfun_${sn.name}(E, I, W_e, W_i, ou_drift, Coupling_Term):
 
     return (d_E, d_I, d_W_e, d_W_i, d_ou_drift,)
 % else:
-def dfun_${sn.name}(E, I, C_ee, C_ei, C_ii, W_e, W_i, ou_drift, Coupling_Term):
+def dfun_${sn.name}(E, I, C_ee, C_ei, C_ii, W_e, W_i, ou_drift, Coupling_Term, _sp, ni):
     T = _zp_${sn.name}_T
     weight_noise = _zp_${sn.name}_weight_noise
     ext_ex_ex = _zp_${sn.name}_external_input_ex_ex

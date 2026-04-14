@@ -237,6 +237,7 @@ def compute_coupling_${p.name}(
         cterms = list(sn.model.coupling_terms)
         dfuns = sn.model.state_variable_dfuns
         gparams = {n: float(getattr(sn.model, n)[0]) for n in sn.model.global_parameter_names}
+        sparams_list = list(sn.model.spatial_parameter_names)
 
     dt_val = sn.integrator.dt
     n_nodes = sn.n_nodes
@@ -298,10 +299,13 @@ _${sn.name}_${_dn} = np.array(${repr(_da.tolist())}, dtype=np.float32)
 % endfor
 
 ${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
-def dfun_${sn.name}(${svars_str}, ${cterms_str}, _m, ${', '.join(['_' + sn.name + '_' + dn for dn in _dm_names])}, ${', '.join(['_' + op[0] for op in _dm_ops])}):
+def dfun_${sn.name}(${svars_str}, ${cterms_str}, _m, ${', '.join(['_' + sn.name + '_' + dn for dn in _dm_names])}, ${', '.join(['_' + op[0] for op in _dm_ops])}, _sp, ni):
     pi = math.pi
     % for name, val in gparams.items():
     ${name} = nb.float32(${val})
+    % endfor
+    % for _si, _sn in enumerate(sparams_list):
+    ${_sn} = nb.float32(_sp[${_si}, ni])
     % endfor
     % for svar in svars:
     d_${svar} = nb.float32(${_cdfuns[svar]})
@@ -326,10 +330,13 @@ def ${_fname}(${_fargs}):
 % endfor
 % endif
 ${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
-def dfun_${sn.name}(${svars_str}, ${cterms_str}):
+def dfun_${sn.name}(${svars_str}, ${cterms_str}, _sp, ni):
     pi = math.pi
     % for name, val in gparams.items():
     ${name} = nb.float32(${val})
+    % endfor
+    % for _si, _sn in enumerate(sparams_list):
+    ${_sn} = nb.float32(_sp[${_si}, ni])
     % endfor
     ## emit shared intermediate computations if model provides them (e.g. KIonEx-style)
     % for _iname, _iexpr in _intermediates:
@@ -345,8 +352,7 @@ def dfun_${sn.name}(${svars_str}, ${cterms_str}):
 
 % if _is_combined:
 ${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
-def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'noise, t_abs' if sn.is_stochastic else ''}):
-    """Integrate subnetwork ${sn.name} one step in-place (combined-mode)."""
+def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'noise, t_abs' if sn.is_stochastic else ''}, _sp):
     dt = nb.float32(${dt_val})
 
     for i in range(${n_nodes}):
@@ -370,7 +376,7 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'no
             (${', '.join(['d0_' + s for s in svars])},) = dfun_${sn.name}(
                 ${svars_str}, ${cterms_str}, m,
                 ${', '.join(['_' + sn.name + '_' + dn for dn in _dm_names])},
-                ${', '.join(['_' + op[0] for op in _dm_ops])}
+                ${', '.join(['_' + op[0] for op in _dm_ops])}, _sp, i
             )
             % for svar in svars:
             n${svar} = ${svar} + dt * d0_${svar}
@@ -414,7 +420,7 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'no
             (${', '.join(['d0_' + s for s in svars])},) = dfun_${sn.name}(
                 ${svars_str}, ${cterms_str}, m,
                 ${', '.join(['_' + sn.name + '_' + dn for dn in _dm_names])},
-                ${', '.join(['_' + op[0] for op in _dm_ops])}
+                ${', '.join(['_' + op[0] for op in _dm_ops])}, _sp, i
             )
             % for svar in svars:
             _k1_${svar}[m] = d0_${svar}
@@ -454,7 +460,7 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'no
             (${', '.join(['d1_' + s for s in svars])},) = dfun_${sn.name}(
                 ${i1svars_str}, ${cterms_str}, m,
                 ${', '.join(['_' + sn.name + '_' + dn for dn in _dm_names])},
-                ${', '.join(['_' + op[0] + '_i1' for op in _dm_ops])}
+                ${', '.join(['_' + op[0] + '_i1' for op in _dm_ops])}, _sp, i
             )
             % for svar in svars:
             n${svar} = ${svar} + dt * nb.float32(0.5) * (_k1_${svar}[m] + d1_${svar})
@@ -485,8 +491,7 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'no
 
 % else:
 ${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
-def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'noise, t_abs' if sn.is_stochastic else ''}):
-    """Integrate subnetwork ${sn.name} one step in-place."""
+def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'noise, t_abs' if sn.is_stochastic else ''}, _sp):
     dt = nb.float32(${dt_val})
 
     for i in range(${n_nodes}):
@@ -499,7 +504,7 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'no
         ${ct} = coupling[${k}, i, 0]
         % endfor
 
-        (${', '.join(['d0_' + s for s in svars])},) = dfun_${sn.name}(${svars_str}, ${cterms_str})
+        (${', '.join(['d0_' + s for s in svars])},) = dfun_${sn.name}(${svars_str}, ${cterms_str}, _sp, i)
 
         % if int_type == "euler":
         % for svar in svars:
@@ -513,7 +518,7 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'no
         % for svar in svars:
         i1${svar} = ${svar} + dt * d0_${svar}
         % endfor
-        (${', '.join(['d1_' + s for s in svars])},) = dfun_${sn.name}(${i1svars_str}, ${cterms_str})
+        (${', '.join(['d1_' + s for s in svars])},) = dfun_${sn.name}(${i1svars_str}, ${cterms_str}, _sp, i)
         % for svar in svars:
         n${svar} = ${svar} + dt * nb.float32(0.5) * (d0_${svar} + d1_${svar})
         % endfor
@@ -521,7 +526,7 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'no
         % for k2, svar in enumerate(svars):
         i1${svar} = ${svar} + dt * d0_${svar} + noise[${k2}, i, 0, t_abs]
         % endfor
-        (${', '.join(['d1_' + s for s in svars])},) = dfun_${sn.name}(${i1svars_str}, ${cterms_str})
+        (${', '.join(['d1_' + s for s in svars])},) = dfun_${sn.name}(${i1svars_str}, ${cterms_str}, _sp, i)
         % for k2, svar in enumerate(svars):
         n${svar} = ${svar} + dt * nb.float32(0.5) * (d0_${svar} + d1_${svar}) + noise[${k2}, i, 0, t_abs]
         % endfor
@@ -554,7 +559,7 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'no
             ${ct} = coupling[${k}, i, m]
             % endfor
 
-            (${', '.join(['d0_' + s for s in svars])},) = dfun_${sn.name}(${svars_str}, ${cterms_str})
+            (${', '.join(['d0_' + s for s in svars])},) = dfun_${sn.name}(${svars_str}, ${cterms_str}, _sp, i)
 
             % if int_type == "euler":
             % for svar in svars:
@@ -568,7 +573,7 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'no
             % for svar in svars:
             i1${svar} = ${svar} + dt * d0_${svar}
             % endfor
-            (${', '.join(['d1_' + s for s in svars])},) = dfun_${sn.name}(${i1svars_str}, ${cterms_str})
+            (${', '.join(['d1_' + s for s in svars])},) = dfun_${sn.name}(${i1svars_str}, ${cterms_str}, _sp, i)
             % for svar in svars:
             n${svar} = ${svar} + dt * nb.float32(0.5) * (d0_${svar} + d1_${svar})
             % endfor
@@ -576,7 +581,7 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'no
             % for k2, svar in enumerate(svars):
             i1${svar} = ${svar} + dt * d0_${svar} + noise[${k2}, i, m, t_abs]
             % endfor
-            (${', '.join(['d1_' + s for s in svars])},) = dfun_${sn.name}(${i1svars_str}, ${cterms_str})
+            (${', '.join(['d1_' + s for s in svars])},) = dfun_${sn.name}(${i1svars_str}, ${cterms_str}, _sp, i)
             % for k2, svar in enumerate(svars):
             n${svar} = ${svar} + dt * nb.float32(0.5) * (d0_${svar} + d1_${svar}) + noise[${k2}, i, m, t_abs]
             % endfor
@@ -654,6 +659,10 @@ def network_chunk(
     % if sn.has_stimulus:
     ${sn.name}_stim,  # (n_cvar, n_nodes, n_modes, nstep_total) float32
     % endif
+    % endfor
+    ## per-subnetwork spatial parameter arrays (heterogeneous parameters)
+    % for sn in subnets:
+    ${sn.name}_sp,  # (n_spatial_params, n_nodes) float32 — may be empty (0, n_nodes)
     % endfor
 ):
 <%
@@ -742,7 +751,7 @@ def network_chunk(
 
         ## integrate each subnetwork in-place
         % for sn in subnets:
-        integrate_${sn.name}(${sn.name}_state, ${sn.name}_c${',' if sn.is_stochastic else ''} ${'%s_noise, t - 1' % sn.name if sn.is_stochastic else ''})
+        integrate_${sn.name}(${sn.name}_state, ${sn.name}_c${',' if sn.is_stochastic else ''} ${'%s_noise, t - 1' % sn.name if sn.is_stochastic else ''}, ${sn.name}_sp)
         % endfor
 
         ## update shared source buffers (one write per source subnet)
@@ -816,6 +825,10 @@ def run_network(
     ${sn.name}_stim,
     % endif
     % endfor
+    ## spatial parameter arrays (heterogeneous per-node parameters)
+    % for sn in subnets:
+    ${sn.name}_sp,
+    % endfor
     chunk_size,
 ):
     """Outer Python loop that calls the @njit kernel in chunks and collects output."""
@@ -886,6 +899,10 @@ def run_network(
             % if sn.has_stimulus:
             ${sn.name}_stim,
             % endif
+            % endfor
+            ## spatial parameter arrays
+            % for sn in subnets:
+            ${sn.name}_sp,
             % endfor
         )
 

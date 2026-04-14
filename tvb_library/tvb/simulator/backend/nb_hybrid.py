@@ -77,6 +77,9 @@ __all__ = [
 # ---------------------------------------------------------------------------
 
 
+_BOLD_STATE: dict = {}
+
+
 def _apply_monitors(
     raw_outputs: list,
     monitors: list,
@@ -166,24 +169,25 @@ def _apply_monitors(
                 n_chunks, n_voi, n_nodes, n_modes = data.shape
                 sample_shape = (n_voi, n_nodes, n_modes)
 
-                # Initialise per-monitor state on first encounter (per subnet)
-                if not hasattr(m, '_nb_state'):
-                    m._nb_state = True
-                    m._nb_interim_stock = np.zeros((interim_istep,) + sample_shape, dtype=np.float32)
-                    m._nb_stock = np.zeros((stock_steps,) + sample_shape, dtype=np.float32)
-                    m._nb_step_offset = 0
-                    m._nb_subnets = []  # list of (interim, stock) per subnet index
-                # Grow per-subnet storage if needed
-                while len(m._nb_subnets) <= len(per_subnet):
-                    m._nb_subnets.append((
-                        np.zeros((interim_istep,) + sample_shape, dtype=np.float32),
-                        np.zeros((stock_steps,) + sample_shape, dtype=np.float32),
-                    ))
-                interim_stock, stock = m._nb_subnets[len(per_subnet)]
+                # Use (id(monitor), subnet_index) as key so each subnet
+                # gets independent state even when the same Bold monitor
+                # instance is reused across multiple subnets.
+                subnet_idx = len(per_subnet)
+                state_key = (id(m), subnet_idx)
+
+                if state_key not in _BOLD_STATE:
+                    _BOLD_STATE[state_key] = {
+                        'interim_stock': np.zeros((interim_istep,) + sample_shape, dtype=np.float32),
+                        'stock': np.zeros((stock_steps,) + sample_shape, dtype=np.float32),
+                        'offset': 0,
+                    }
+                bs = _BOLD_STATE[state_key]
+                interim_stock = bs['interim_stock']
+                stock = bs['stock']
+                offset = bs['offset']
 
                 bold_results = []
                 bold_times = []
-                offset = m._nb_step_offset
                 for ci in range(n_chunks):
                     step = offset + ci + 1
                     # Update interim stock at every chunk (= integration step when chunk_size=1)
@@ -209,8 +213,8 @@ def _apply_monitors(
                             bold = (bold - 1.0) * k1 * V0
                         bold_results.append(bold)
                         bold_times.append(t_bold)
-                # Store updated buffers
-                m._nb_subnets[len(per_subnet)] = (interim_stock, stock)
+                # Persist updated offset back into state dict
+                bs['offset'] = offset + n_chunks
 
                 if bold_results:
                     bold_arr = np.stack(bold_results, axis=0)  # (n_bold, n_voi, n_nodes, n_modes)
@@ -570,13 +574,20 @@ class CompiledNetworkFn:
             to :meth:`resume`.
         """
         if monitors is not None:
-            from tvb.simulator.monitors import Raw
+            from tvb.simulator.monitors import Raw, SubSample
 
             for m in monitors:
                 if isinstance(m, Raw) and chunk_size != 1:
                     raise ValueError(
                         "Raw monitor requires chunk_size=1; "
                         "pass chunk_size=1 to run_network()"
+                    )
+                if isinstance(m, SubSample) and chunk_size != 1:
+                    raise ValueError(
+                        f"SubSample monitor requires chunk_size=1 "
+                        f"(got chunk_size={chunk_size}). "
+                        "The step-based selection mask assumes one step per chunk. "
+                        "Pass chunk_size=1 or use TemporalAverage instead."
                     )
         outputs, final_states, final_bufs = self._backend._run_compiled(
             self._run_network_fn,
@@ -884,6 +895,19 @@ class NbHybridBackend(MakoUtilMix):
                         # broadcast += matches Python path (tgt += stim.get_coupling(step))
                         stim_arr[:, :, :, step_idx - 1] += sc
                 args.append(stim_arr)
+
+        # Per-subnetwork spatial parameter arrays (heterogeneous per-node parameters)
+        for sn_info in analysis.subnetworks:
+            sp_names = list(getattr(sn_info.model, 'spatial_parameter_names', []))
+            if sp_names:
+                sp_arr = np.array(
+                    [np.broadcast_to(getattr(sn_info.model, n), (sn_info.n_nodes,)).ravel()
+                     for n in sp_names],
+                    dtype=np.float32,
+                )
+            else:
+                sp_arr = np.zeros((0, sn_info.n_nodes), dtype=np.float32)
+            args.append(sp_arr)
 
         args.append(chunk_size)
 
