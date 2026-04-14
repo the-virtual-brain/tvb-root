@@ -493,6 +493,7 @@ class CompiledNetworkFn:
     _analysis: "NetworkAnalysis"
     _run_network_fn: object  # the exec'd Python callable
     _network_set: NetworkSet
+    _bold_states: Optional[dict]  # per-subnetwork Bold Balloon state, persisted across calls
 
     def run(
         self,
@@ -564,7 +565,11 @@ class CompiledNetworkFn:
             initial_states,
             _initial_buffers=_initial_buffers,
             monitors=monitors,
+            _bold_states=self._bold_states,
         )
+        # Persist Bold state across calls (Balloon model needs continuity)
+        if monitor_data.get('bold_states'):
+            self._bold_states = monitor_data['bold_states']
         if monitors is not None:
             dt = self._network_set.subnets[0].scheme.dt
             outputs = _apply_monitors(outputs, monitors, dt, monitor_data=monitor_data)
@@ -692,6 +697,7 @@ class NbHybridBackend(MakoUtilMix):
             _analysis=analysis,
             _run_network_fn=run_network_fn,
             _network_set=network_set,
+            _bold_states=None,
         )
 
     def run_network(
@@ -758,6 +764,7 @@ class NbHybridBackend(MakoUtilMix):
         initial_states: Optional[list],
         _initial_buffers: Optional[dict] = None,
         monitors: Optional[list] = None,
+        _bold_states: Optional[dict] = None,
     ) -> tuple:
         """Build the argument list and call the pre-compiled kernel."""
         # Guard: chunk_size must not exceed the minimum horizon
@@ -946,6 +953,8 @@ class NbHybridBackend(MakoUtilMix):
                 k1, k2, k3,
             ], dtype=np.float32)
 
+        _bold_state_arrays = {}  # name -> bold_state array (for persistence)
+
         for sn_info in analysis.subnetworks:
             n_voi = len(sn_info.model.variables_of_interest)
             n_nodes = sn_info.n_nodes
@@ -953,11 +962,15 @@ class NbHybridBackend(MakoUtilMix):
             voi = list(sn_info.model.variables_of_interest)
             voi_idx = [svars.index(v) if v in svars else 0 for v in voi]
             if _bold_mon is not None:
-                bold_state = np.zeros((n_voi, 4, n_nodes), dtype=np.float32)
-                # Initial conditions: s=0, f=1, v=1, q=1
-                bold_state[:, 1, :] = 1.0
-                bold_state[:, 2, :] = 1.0
-                bold_state[:, 3, :] = 1.0
+                # Reuse existing Bold state if available (persistence across calls)
+                if _bold_states is not None and sn_info.name in _bold_states:
+                    bold_state = _bold_states[sn_info.name]
+                else:
+                    bold_state = np.zeros((n_voi, 4, n_nodes), dtype=np.float32)
+                    # Initial conditions: s=0, f=1, v=1, q=1
+                    bold_state[:, 1, :] = 1.0
+                    bold_state[:, 2, :] = 1.0
+                    bold_state[:, 3, :] = 1.0
                 bold_params = _bold_params
                 bold_voi_idx = np.array(voi_idx, dtype=np.int32)
             else:
@@ -967,6 +980,9 @@ class NbHybridBackend(MakoUtilMix):
             args.append(bold_state)
             args.append(bold_params)
             args.append(bold_voi_idx)
+            # Track Bold state arrays for persistence
+            if _bold_mon is not None:
+                _bold_state_arrays[sn_info.name] = bold_state
 
         args.append(_bold_dt)
         args.append(np.int32(_bold_istep))
@@ -976,10 +992,13 @@ class NbHybridBackend(MakoUtilMix):
         outputs = run_network_fn(*args)
         # outputs[i] = (times, data, ctavg, spatial, proj, bold_times, bold_data)
         raw_outputs = [(t, d, c) for t, d, c, s, p, bt, bd in outputs]
+        # Bold state arrays are mutated in-place, so _bold_state_arrays now has updated values
+        bold_states_dict = _bold_state_arrays if _bold_state_arrays else None
         monitor_data = {
             'spatial': [s for t, d, c, s, p, bt, bd in outputs],
             'proj': [p for t, d, c, s, p, bt, bd in outputs],
             'bold': [(bt, bd) for t, d, c, s, p, bt, bd in outputs],
+            'bold_states': bold_states_dict,
         }
         return raw_outputs, sn_states, src_bufs, monitor_data
 

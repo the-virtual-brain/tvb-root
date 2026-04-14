@@ -3780,6 +3780,42 @@ class TestJITMonitorPrecomputation(unittest.TestCase):
             err_msg="JIT Balloon BOLD differs from Python reference",
         )
 
+    def test_bold_state_persists_across_calls(self):
+        """Bold Balloon state persists across multiple run() calls."""
+        from tvb.simulator.monitors import Bold
+
+        nets, model = self._make_net(self.N)
+        ic = self._make_ic(self.N)
+        backend = NbHybridBackend()
+        compiled = backend.compile(nets)
+
+        bold_period = 0.5  # ms
+        bold = Bold(period=bold_period)
+        bold.dt = self.DT
+        bold._config_dt(self.DT)
+        bold.compute_hrf()
+
+        # Run 1: 100 steps (2 Bold samples)
+        r1 = compiled.run(nstep=100, chunk_size=1, monitors=[bold], initial_states=ic)
+        t1, d1 = r1[0][0]
+        self.assertEqual(d1.shape[0], 2, f"Expected 2 Bold samples, got {d1.shape[0]}")
+
+        # Run 2: 100 more steps (2 more Bold samples)
+        r2 = compiled.run(nstep=100, chunk_size=1, monitors=[bold])
+        t2, d2 = r2[0][0]
+        self.assertEqual(d2.shape[0], 2, f"Expected 2 Bold samples, got {d2.shape[0]}")
+
+        # The second call should continue from where the first left off,
+        # so the BOLD values should evolve (not reset to initial)
+        # Check that values are different (evolving system)
+        self.assertFalse(
+            np.allclose(d1[-1], d2[0], rtol=1e-6),
+            "Bold signal should evolve between calls, not be identical"
+        )
+
+        # Verify the Bold state is actually persisted by checking it's stored
+        self.assertIsNotNone(compiled._bold_states)
+
 
 if __name__ == "__main__":
     unittest.main()
