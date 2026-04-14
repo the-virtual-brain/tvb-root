@@ -2040,17 +2040,26 @@ class TestNbHybridEpileptor:
     def test_epileptor_matches_python(self):
         from tvb.simulator.models.epileptor import Epileptor
 
-        # The template extracts state[vi] for vi in range(n_voi), so the first
-        # n_voi state variables are compared (x1, y1 for default Epileptor n_voi=2).
-        n_voi = len(Epileptor.variables_of_interest.default)
+        m = Epileptor()
+        m.configure()
+        svars = list(m.state_variables)
+        voi = list(m.variables_of_interest)  # ('x2 - x1', 'z')
+        # Build voi slice: voi[0] = 'x2 - x1' = state[3] - state[0], voi[1] = 'z' = state[2]
         x0 = self._make_ic()
         ns_py = self._build_network()
         ns_nb = self._build_network()
         py = _run_python_loop(ns_py, self.NSTEP, [x0.copy(), x0.copy()])
         nb = _run_nb(ns_nb, self.NSTEP, [x0.copy(), x0.copy()])
-        for py_d, nb_d in zip(py, nb):
+        # Construct Python voi array
+        py_voi_0 = py[0][:, 3, :, :] - py[0][:, 0, :, :]  # x2 - x1
+        py_voi_1 = py[0][:, 2, :, :]                       # z
+        py_voi = np.stack([py_voi_0, py_voi_1], axis=1).astype(np.float32)
+        py_voi_2 = py[1][:, 3, :, :] - py[1][:, 0, :, :]
+        py_voi_2b = py[1][:, 2, :, :]
+        py_voi_b = np.stack([py_voi_2, py_voi_2b], axis=1).astype(np.float32)
+        for py_d, nb_d in zip([py_voi, py_voi_b], nb):
             np.testing.assert_allclose(
-                nb_d, py_d[:, :n_voi, :, :].astype(np.float32), rtol=1e-2, atol=1e-2
+                nb_d, py_d, rtol=1e-2, atol=1e-2
             )
 
 
@@ -2760,12 +2769,14 @@ def _ic_from_range(model, n):
     """Initial conditions at the midpoint of each state variable's default range."""
     sv_range = model.state_variable_range  # plain dict after configure()
     svars = list(model.state_variables)
-    x0 = np.zeros((len(svars), n, 1), dtype=np.float64)
+    n_modes = model.number_of_modes
+    x0 = np.zeros((len(svars), n, n_modes), dtype=np.float64)
     for i, sv in enumerate(svars):
         if sv in sv_range:
             lo, hi = float(sv_range[sv][0]), float(sv_range[sv][1])
             if np.isfinite(lo) and np.isfinite(hi):
-                x0[i, :, 0] = (lo + hi) / 2.0
+                for m in range(n_modes):
+                    x0[i, :, m] = (lo + hi) / 2.0
     return x0
 
 
@@ -2840,6 +2851,51 @@ def test_ralph_model_output_finite(mod_path, cls_name):
     x0 = _ic_from_range(model, n)
     results = _run_nb(ns, nstep, [x0])
     assert np.all(np.isfinite(results[0])), f"{cls_name}: NaN/Inf in Numba output"
+
+
+@pytest.mark.parametrize("mod_path,cls_name", _RALPH_MODELS, ids=_RALPH_IDS)
+def test_ralph_model_matches_python(mod_path, cls_name):
+    """Ralph-completed model: Numba output matches Python dfun within float32 tolerance."""
+    import importlib
+
+    cls = getattr(importlib.import_module(mod_path), cls_name)
+    model = cls()
+    model.configure()
+    n, nstep = 4, 10
+    ns = _build_single_subnet(mod_path, cls_name, n=n)
+    x0 = _ic_from_range(model, n)
+
+    # Resolve voi — build Python-side voi array matching the template output
+    svars = list(model.state_variables)
+    voi = list(model.variables_of_interest)
+
+    py = _run_python_loop(ns, nstep, [x0.copy()])
+    nb = _run_nb(ns, nstep, [x0.copy()])
+
+    # Build Python voi array: for simple voi use state index, for derived voi
+    # (e.g. 'x2 - x1') replace svar names with state indices and evaluate.
+    py_voi_chunks = []
+    for v in voi:
+        if v in svars:
+            py_voi_chunks.append(py[0][:, svars.index(v), :, :])
+        else:
+            # Derived voi — replace svar names with state slicing and eval
+            expr = v
+            for sv_name, sv_idx in zip(svars, range(len(svars))):
+                expr = expr.replace(sv_name, f'py[0][:, {sv_idx}, :, :]')
+            py_voi_chunks.append(eval(expr))
+    py_voi = np.stack(py_voi_chunks, axis=1).astype(np.float32)
+    nb_voi = nb[0]
+
+    # Some models are numerically sensitive at default ICs; skip non-finite comparisons
+    if not np.all(np.isfinite(py_voi)) or not np.all(np.isfinite(nb_voi)):
+        pytest.skip(f"{cls_name}: non-finite output at default ICs (model instability)")
+
+    np.testing.assert_allclose(
+        nb_voi, py_voi,
+        rtol=1e-2, atol=1e-2,
+        err_msg=f"{cls_name}: Numba output differs from Python",
+    )
 
 
 # ---------------------------------------------------------------------------
