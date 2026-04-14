@@ -4776,5 +4776,80 @@ class TestAutoChunkSize(unittest.TestCase):
         self.assertEqual(data.shape[0], 20, f"Expected 20 chunks, got {data.shape[0]}")
 
 
+class TestModeSummation(unittest.TestCase):
+    """Verify that multi-mode output sums modes to match hybrid simulator observe."""
+
+    def test_multi_mode_output_sums_modes(self):
+        """n_modes=2 output has shape (n, voi, nodes, 1) — modes summed."""
+        from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
+        from tvb.simulator.hybrid import Subnetwork, NetworkSet
+
+        m = MontbrioPazoRoxin()
+        m.number_of_modes = 2
+        m.configure()
+        sn = Subnetwork(name='sn', model=m, scheme=HeunDeterministic(dt=DT), nnodes=4)
+        sn.configure()
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns.configure()
+
+        rng = np.random.RandomState(42)
+        x0 = rng.uniform(0.0, 0.2, (m.nvar, 4, 2)).astype(np.float64)
+        x0[0] = np.abs(x0[0])
+
+        nb_data = _run_nb(ns, 10, [x0])[0]
+        self.assertEqual(nb_data.shape[3], 1, f"Expected modes=1, got {nb_data.shape[3]}")
+
+    def test_mode_sum_matches_python_observe(self):
+        """JIT mode sum matches Python model.observe(x).sum(axis=-1)."""
+        from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
+        from tvb.simulator.hybrid import Subnetwork, NetworkSet
+
+        m = MontbrioPazoRoxin()
+        m.number_of_modes = 2
+        m.configure()
+        sn = Subnetwork(name='sn', model=m, scheme=HeunDeterministic(dt=DT), nnodes=4)
+        sn.configure()
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns.configure()
+
+        rng = np.random.RandomState(77)
+        x0 = rng.uniform(0.0, 0.2, (m.nvar, 4, 2)).astype(np.float64)
+        x0[0] = np.abs(x0[0])
+
+        # Numba output (modes summed)
+        nb_data = _run_nb(ns, 10, [x0.copy()])[0]
+
+        # Python reference (modes summed via observe)
+        py = _run_python_loop(ns, 10, [x0.copy()])
+        svars = list(m.state_variables)
+        voi = list(m.variables_of_interest)
+        py_voi_chunks = [py[0][:, svars.index(v), :, :] for v in voi]
+        py_voi = np.stack(py_voi_chunks, axis=1).astype(np.float32)
+        py_summed = py_voi.sum(axis=-1, keepdims=True)
+
+        np.testing.assert_allclose(
+            nb_data, py_summed, rtol=1e-3, atol=1e-4,
+            err_msg="JIT mode sum doesn't match Python observe().sum()"
+        )
+
+    def test_combined_mode_model_output_sums_modes(self):
+        """ReducedSetFitzHughNagumo (n_modes=3) output has modes=1."""
+        from tvb.simulator.models.stefanescu_jirsa import ReducedSetFitzHughNagumo
+        from tvb.simulator.hybrid import Subnetwork, NetworkSet
+
+        m = ReducedSetFitzHughNagumo()
+        m.configure()
+        sn = Subnetwork(name='sn', model=m, scheme=HeunDeterministic(dt=DT), nnodes=4)
+        sn.configure()
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns.configure()
+
+        rng = np.random.RandomState(42)
+        x0 = rng.uniform(-1, 1, (m.nvar, 4, 3)).astype(np.float64)
+
+        nb_data = _run_nb(ns, 10, [x0])[0]
+        self.assertEqual(nb_data.shape[3], 1, f"Expected modes=1, got {nb_data.shape[3]}")
+
+
 if __name__ == "__main__":
     unittest.main()
