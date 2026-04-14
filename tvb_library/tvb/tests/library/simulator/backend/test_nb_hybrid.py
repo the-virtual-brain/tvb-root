@@ -1642,7 +1642,7 @@ class TestNbHybridMultiMode:
         return x0
 
     def test_multi_mode_shape(self):
-        """Output shape contains n_modes > 1 in last dimension."""
+        """Output shape has modes=1 (summed) matching hybrid simulator observe."""
         nets = self._build_net()
         x0 = self._make_ic()
         results = _run_nb(nets, self.NSTEP, [x0])
@@ -1651,8 +1651,8 @@ class TestNbHybridMultiMode:
         assert d.ndim == 4
         assert d.shape[0] == self.NSTEP
         assert d.shape[2] == self.N
-        assert d.shape[3] == self.N_MODES, (
-            f"Expected n_modes={self.N_MODES}, got {d.shape[3]}"
+        assert d.shape[3] == 1, (
+            f"Expected modes=1 (summed), got {d.shape[3]}"
         )
 
     def test_multi_mode_finite(self):
@@ -1663,14 +1663,17 @@ class TestNbHybridMultiMode:
         assert np.all(np.isfinite(results[0])), "NaN/Inf in multi-mode output"
 
     def test_multi_mode_matches_python(self):
-        """n_modes=2 Numba output matches Python loop."""
+        """n_modes=2 Numba output matches Python loop (modes summed)."""
         nets_py = self._build_net()
         nets_nb = self._build_net()
         x0 = self._make_ic()
         py = _run_python_loop(nets_py, self.NSTEP, [x0])
         nb = _run_nb(nets_nb, self.NSTEP, [x0])
+        # Python returns (nstep, nvar, nodes, modes), Numba returns (nstep, nvoi, nodes, 1)
+        # Sum modes in Python to match Numba's mode-summed observe output
+        py_summed = py[0].astype(np.float32).sum(axis=-1, keepdims=True)
         np.testing.assert_allclose(
-            nb[0], py[0].astype(np.float32), rtol=1e-3, atol=1e-4
+            nb[0], py_summed, rtol=1e-3, atol=1e-4
         )
 
 
@@ -2345,15 +2348,15 @@ class TestNbHybridModeMap:
         NbHybridBackend().compile(ns)  # must not raise
 
     def test_nonidentity_mode_map_output_shape(self):
-        """run_network() output last dimension equals n_modes=2 with non-diagonal mode_map."""
+        """run_network() output last dimension is 1 (modes summed) with non-diagonal mode_map."""
         mm = np.array([[1, 1], [1, 1]], dtype=np.int_)
         ns = self._build_net(mm)
         x0 = self._make_ic()
         results = _run_nb_full(ns, self.NSTEP, [x0, x0.copy()])
         assert len(results) == 2
         for _, data, _ in results:
-            assert data.shape[-1] == self.N_MODES, (
-                f"Expected n_modes={self.N_MODES} in last dim, got shape {data.shape}"
+            assert data.shape[-1] == 1, (
+                f"Expected modes=1 (summed), got shape {data.shape}"
             )
 
     def test_nonidentity_mode_map_finite(self):
@@ -2857,7 +2860,7 @@ def test_ralph_model_output_shape(mod_path, cls_name):
     assert d.ndim == 4
     assert d.shape[0] == nstep
     assert d.shape[2] == n
-    assert d.shape[3] == model.number_of_modes
+    assert d.shape[3] == 1, f"Expected modes=1 (summed), got {d.shape[3]}"
 
 
 @pytest.mark.parametrize("mod_path,cls_name", _RALPH_MODELS, ids=_RALPH_IDS)
@@ -2903,6 +2906,8 @@ def test_ralph_model_matches_python(mod_path, cls_name):
                 expr = expr.replace(sv_name, f'py[0][:, {sv_idx}, :, :]')
             py_voi_chunks.append(eval(expr))
     py_voi = np.stack(py_voi_chunks, axis=1).astype(np.float32)
+    # Sum modes to match Numba's mode-summed observe output
+    py_voi = py_voi.sum(axis=-1, keepdims=True)
     nb_voi = nb[0]
 
     # Some models are numerically sensitive at default ICs; skip non-finite comparisons
@@ -3934,6 +3939,81 @@ class TestAutoChunkSize(unittest.TestCase):
         )
         times, data, ctavg = results[0]
         self.assertEqual(data.shape[0], 20, f"Expected 20 chunks, got {data.shape[0]}")
+
+
+class TestModeSummation(unittest.TestCase):
+    """Verify that multi-mode output sums modes to match hybrid simulator observe."""
+
+    def test_multi_mode_output_sums_modes(self):
+        """n_modes=2 output has shape (n, voi, nodes, 1) — modes summed."""
+        from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
+        from tvb.simulator.hybrid import Subnetwork, NetworkSet
+
+        m = MontbrioPazoRoxin()
+        m.number_of_modes = 2
+        m.configure()
+        sn = Subnetwork(name='sn', model=m, scheme=HeunDeterministic(dt=DT), nnodes=4)
+        sn.configure()
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns.configure()
+
+        rng = np.random.RandomState(42)
+        x0 = rng.uniform(0.0, 0.2, (m.nvar, 4, 2)).astype(np.float64)
+        x0[0] = np.abs(x0[0])
+
+        nb_data = _run_nb(ns, 10, [x0])[0]
+        self.assertEqual(nb_data.shape[3], 1, f"Expected modes=1, got {nb_data.shape[3]}")
+
+    def test_mode_sum_matches_python_observe(self):
+        """JIT mode sum matches Python model.observe(x).sum(axis=-1)."""
+        from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
+        from tvb.simulator.hybrid import Subnetwork, NetworkSet
+
+        m = MontbrioPazoRoxin()
+        m.number_of_modes = 2
+        m.configure()
+        sn = Subnetwork(name='sn', model=m, scheme=HeunDeterministic(dt=DT), nnodes=4)
+        sn.configure()
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns.configure()
+
+        rng = np.random.RandomState(77)
+        x0 = rng.uniform(0.0, 0.2, (m.nvar, 4, 2)).astype(np.float64)
+        x0[0] = np.abs(x0[0])
+
+        # Numba output (modes summed)
+        nb_data = _run_nb(ns, 10, [x0.copy()])[0]
+
+        # Python reference (modes summed via observe)
+        py = _run_python_loop(ns, 10, [x0.copy()])
+        svars = list(m.state_variables)
+        voi = list(m.variables_of_interest)
+        py_voi_chunks = [py[0][:, svars.index(v), :, :] for v in voi]
+        py_voi = np.stack(py_voi_chunks, axis=1).astype(np.float32)
+        py_summed = py_voi.sum(axis=-1, keepdims=True)
+
+        np.testing.assert_allclose(
+            nb_data, py_summed, rtol=1e-3, atol=1e-4,
+            err_msg="JIT mode sum doesn't match Python observe().sum()"
+        )
+
+    def test_combined_mode_model_output_sums_modes(self):
+        """ReducedSetFitzHughNagumo (n_modes=3) output has modes=1."""
+        from tvb.simulator.models.stefanescu_jirsa import ReducedSetFitzHughNagumo
+        from tvb.simulator.hybrid import Subnetwork, NetworkSet
+
+        m = ReducedSetFitzHughNagumo()
+        m.configure()
+        sn = Subnetwork(name='sn', model=m, scheme=HeunDeterministic(dt=DT), nnodes=4)
+        sn.configure()
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns.configure()
+
+        rng = np.random.RandomState(42)
+        x0 = rng.uniform(-1, 1, (m.nvar, 4, 3)).astype(np.float64)
+
+        nb_data = _run_nb(ns, 10, [x0])[0]
+        self.assertEqual(nb_data.shape[3], 1, f"Expected modes=1, got {nb_data.shape[3]}")
 
 
 if __name__ == "__main__":

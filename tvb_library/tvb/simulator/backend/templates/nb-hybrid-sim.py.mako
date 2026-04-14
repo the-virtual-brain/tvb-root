@@ -808,9 +808,11 @@ def network_chunk(
         for ni in range(${sn_nnodes_dict[sn.name]}):
             for mi in range(${sn_nmodes_dict[sn.name]}):
                 _sv = ${voi_exprs[vi].format(mi='mi')}
-                ${sn.name}_tavg[${vi}, ni, mi] += _sv
+                ## Sum over modes into mode-0 to match hybrid simulator observe:
+                ## model.observe(x).sum(axis=-1)[..., None]
+                ${sn.name}_tavg[${vi}, ni, 0] += _sv
                 for _ai in range(${sn.name}_spatial_mean.shape[0]):
-                    ${sn.name}_spatial_tavg[${vi}, _ai, mi] += ${sn.name}_spatial_mean[_ai, ni] * _sv
+                    ${sn.name}_spatial_tavg[${vi}, _ai, 0] += ${sn.name}_spatial_mean[_ai, ni] * _sv
                 for _si in range(${sn.name}_gain.shape[0]):
                     ${sn.name}_proj_tavg[${vi}, _si, 0] += ${sn.name}_gain[_si, ni] * _sv
         % endfor
@@ -1039,10 +1041,15 @@ def run_network(
     times_arr = np.array(${sn.name}_times, dtype=np.float64)
     ## stack outputs: each entry is (n_voi, n_nodes, n_modes) → (T, n_voi, n_nodes, n_modes)
     data_arr = np.stack(${sn.name}_outputs, axis=0)
+    ## Modes are summed into mode-0 (matching hybrid observe), slice to keep only mode 0
+    if data_arr.shape[-1] > 1:
+        data_arr = data_arr[..., :1]
     ## stack coupling outputs: each entry is (n_cvar, n_nodes, n_modes) → (T, n_cvar, n_nodes, n_modes)
     ctavg_arr = np.stack(${sn.name}_ctavg_outputs, axis=0)
     ## stack monitor outputs (only meaningful when shape[0] > 0)
     spatial_arr = np.stack(${sn.name}_spatial_outputs, axis=0) if ${sn.name}_spatial_mean.shape[0] > 0 else np.empty((0,), dtype=np.float32)
+    if isinstance(spatial_arr, np.ndarray) and spatial_arr.ndim == 4 and spatial_arr.shape[-1] > 1:
+        spatial_arr = spatial_arr[..., :1]
     proj_arr = np.stack(${sn.name}_proj_outputs, axis=0) if ${sn.name}_gain.shape[0] > 0 else np.empty((0,), dtype=np.float32)
     ## Bold outputs
     if len(${sn.name}_bold_times) > 0:
