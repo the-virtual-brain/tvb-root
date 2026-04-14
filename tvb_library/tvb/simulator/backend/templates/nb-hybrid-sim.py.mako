@@ -39,8 +39,8 @@ source_horizons_map = analysis.source_horizons
     is_inter = p.is_inter
     mono_src = (nsrc_m == 1)
     mono_tgt = (ntgt_m == 1)
-    pre_ct = ct if ct == 'sigmoidal_jr' else 'none'
-    post_ct = ct if ct != 'sigmoidal_jr' else 'none'
+    pre_ct = ct if ct in ('sigmoidal_jr', 'tanh', 'pre_sigmoidal') else 'none'
+    post_ct = ct if ct not in ('sigmoidal_jr', 'tanh', 'pre_sigmoidal', 'none') else 'none'
 %>
 
 ${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
@@ -76,12 +76,14 @@ def compute_coupling_${p.name}(
                 w = w_data[ptr]
                 src_node = w_indices[ptr]
                 buf_idx = (t - 1 - idelays[ptr] + ${source_horizons_map[p.source_subnet]}) % ${source_horizons_map[p.source_subnet]}
-            % if pre_ct == 'sigmoidal_jr':
-                _sv = srcbuf[cv, src_node, 0, buf_idx]
-                _sv = cfun_params[0] * nb.float32(2.0) * cfun_params[1] / (nb.float32(1.0) + exp(cfun_params[2] * (cfun_params[3] - _sv)))
-                wsum += w * _sv
-            % else:
                 wsum += w * srcbuf[cv, src_node, 0, buf_idx]
+            ## pre-cfun: applied to summed weighted afferent (before scale)
+            % if pre_ct == 'sigmoidal_jr':
+            wsum = cfun_params[0] * nb.float32(2.0) * cfun_params[1] / (nb.float32(1.0) + exp(cfun_params[2] * (cfun_params[3] - wsum)))
+            % elif pre_ct == 'tanh':
+            wsum = cfun_params[0] * (nb.float32(1.0) + nb.float32(math.tanh((wsum - cfun_params[1]) / cfun_params[2])))
+            % elif pre_ct == 'pre_sigmoidal':
+            wsum = cfun_params[0] * (cfun_params[1] + nb.float32(math.tanh(cfun_params[2] * (cfun_params[3] * wsum - cfun_params[4]))))
             % endif
             wsum *= scale
             % if post_ct == "linear":
@@ -90,6 +92,8 @@ def compute_coupling_${p.name}(
             wsum = cfun_params[0] * wsum
             % elif post_ct == "sigmoidal":
             wsum = cfun_params[3] + (cfun_params[4] - cfun_params[3]) / (nb.float32(1.0) + exp(-cfun_params[0] * ((wsum - cfun_params[2]) / cfun_params[1])))
+            % elif post_ct == "kuramoto":
+            wsum = cfun_params[0] * sin(wsum)
             % endif
 
             ## accumulate into target (mono_src)
@@ -145,14 +149,18 @@ def compute_coupling_${p.name}(
                 w = w_data[ptr]
                 src_node = w_indices[ptr]
                 buf_idx = (t - 1 - idelays[ptr] + ${source_horizons_map[p.source_subnet]}) % ${source_horizons_map[p.source_subnet]}
-            % if pre_ct == 'sigmoidal_jr':
-                for m in range(${nsrc_m}):
-                    _sv = srcbuf[cv, src_node, m, buf_idx]
-                    _sv = cfun_params[0] * nb.float32(2.0) * cfun_params[1] / (nb.float32(1.0) + exp(cfun_params[2] * (cfun_params[3] - _sv)))
-                    wsum[m] += w * _sv
-            % else:
                 for m in range(${nsrc_m}):
                     wsum[m] += w * srcbuf[cv, src_node, m, buf_idx]
+            ## pre-cfun: applied to summed weighted afferent (before scale)
+            % if pre_ct == 'sigmoidal_jr':
+            for m in range(${nsrc_m}):
+                wsum[m] = cfun_params[0] * nb.float32(2.0) * cfun_params[1] / (nb.float32(1.0) + exp(cfun_params[2] * (cfun_params[3] - wsum[m])))
+            % elif pre_ct == 'tanh':
+            for m in range(${nsrc_m}):
+                wsum[m] = cfun_params[0] * (nb.float32(1.0) + nb.float32(math.tanh((wsum[m] - cfun_params[1]) / cfun_params[2])))
+            % elif pre_ct == 'pre_sigmoidal':
+            for m in range(${nsrc_m}):
+                wsum[m] = cfun_params[0] * (cfun_params[1] + nb.float32(math.tanh(cfun_params[2] * (cfun_params[3] * wsum[m] - cfun_params[4]))))
             % endif
             for m in range(${nsrc_m}):
                 wsum[m] *= scale
@@ -165,6 +173,9 @@ def compute_coupling_${p.name}(
             % elif post_ct == "sigmoidal":
             for m in range(${nsrc_m}):
                 wsum[m] = cfun_params[3] + (cfun_params[4] - cfun_params[3]) / (nb.float32(1.0) + exp(-cfun_params[0] * ((wsum[m] - cfun_params[2]) / cfun_params[1])))
+            % elif post_ct == "kuramoto":
+            for m in range(${nsrc_m}):
+                wsum[m] = cfun_params[0] * sin(wsum[m])
             % endif
 
             ## accumulate into target (general)

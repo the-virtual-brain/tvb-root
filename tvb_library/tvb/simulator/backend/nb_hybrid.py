@@ -148,6 +148,10 @@ def _cfun_type(p: "ProjectionInfo") -> str:
         Scaling,
         Sigmoidal,
         SigmoidalJansenRit,
+        Kuramoto as KuramotoCfun,
+        Difference,
+        HyperbolicTangent,
+        PreSigmoidal,
     )
 
     if p.cfun is None:
@@ -160,27 +164,43 @@ def _cfun_type(p: "ProjectionInfo") -> str:
         return "sigmoidal"
     if isinstance(p.cfun, SigmoidalJansenRit):
         return "sigmoidal_jr"
+    if isinstance(p.cfun, KuramotoCfun):
+        return "kuramoto"
+    # Difference.post() is a * x — same as Scaling
+    if isinstance(p.cfun, Difference):
+        return "scaling"
+    if isinstance(p.cfun, HyperbolicTangent):
+        return "tanh"
+    if isinstance(p.cfun, PreSigmoidal):
+        return "pre_sigmoidal"
     return "none"
 
 
 def _cfun_params(p: "ProjectionInfo") -> "np.ndarray":
-    """Return a float32 array of length 5 with cfun parameters for a ProjectionInfo.
+    """Return a float32 array of length 8 with cfun parameters for a ProjectionInfo.
 
     Layout by cfun type:
-      none:          [1.0, 0.0, 0.0, 0.0, 0.0]
-      linear:        [a, b, 0.0, 0.0, 0.0]
-      scaling:       [a, 0.0, 0.0, 0.0, 0.0]
-      sigmoidal:     [a, sigma, midpoint, cmin, cmax]
-      sigmoidal_jr:  [a, e0, r, v0, 0.0]
+      none:          [1.0, 0, 0, 0, 0, 0, 0, 0]
+      linear:        [a, b, 0, 0, 0, 0, 0, 0]
+      scaling:       [a, 0, 0, 0, 0, 0, 0, 0]
+      sigmoidal:     [a, sigma, midpoint, cmin, cmax, 0, 0, 0]
+      sigmoidal_jr:  [a, e0, r, v0, 0, 0, 0, 0]
+      kuramoto:      [a, 0, 0, 0, 0, 0, 0, 0]
+      tanh:          [a, midpoint, sigma, 0, 0, 0, 0, 0]
+      pre_sigmoidal: [H, Q, G, P, theta, 0, 0, 0]
     """
     from tvb.simulator.hybrid.coupling import (
         Linear,
         Scaling,
         Sigmoidal,
         SigmoidalJansenRit,
+        Kuramoto as KuramotoCfun,
+        Difference,
+        HyperbolicTangent,
+        PreSigmoidal,
     )
 
-    arr = np.zeros(5, dtype=np.float32)
+    arr = np.zeros(8, dtype=np.float32)
     arr[0] = 1.0  # default: identity scale
     if p.cfun is None:
         return arr
@@ -189,6 +209,9 @@ def _cfun_params(p: "ProjectionInfo") -> "np.ndarray":
         arr[1] = float(p.cfun.b[0])
         return arr
     if isinstance(p.cfun, Scaling):
+        arr[0] = float(p.cfun.a[0])
+        return arr
+    if isinstance(p.cfun, Difference):
         arr[0] = float(p.cfun.a[0])
         return arr
     if isinstance(p.cfun, Sigmoidal):
@@ -203,6 +226,21 @@ def _cfun_params(p: "ProjectionInfo") -> "np.ndarray":
         arr[1] = float(p.cfun.e0[0])
         arr[2] = float(p.cfun.r[0])
         arr[3] = float(p.cfun.v0[0])
+        return arr
+    if isinstance(p.cfun, KuramotoCfun):
+        arr[0] = float(p.cfun.a[0])
+        return arr
+    if isinstance(p.cfun, HyperbolicTangent):
+        arr[0] = float(p.cfun.a[0])
+        arr[1] = float(p.cfun.midpoint[0])
+        arr[2] = float(p.cfun.sigma[0])
+        return arr
+    if isinstance(p.cfun, PreSigmoidal):
+        arr[0] = float(p.cfun.H[0])
+        arr[1] = float(p.cfun.Q[0])
+        arr[2] = float(p.cfun.G[0])
+        arr[3] = float(p.cfun.P[0])
+        arr[4] = float(p.cfun.theta[0])
         return arr
     return arr
 

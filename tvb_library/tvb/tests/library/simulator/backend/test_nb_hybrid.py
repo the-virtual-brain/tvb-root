@@ -572,6 +572,105 @@ class TestNbHybridCfun(unittest.TestCase):
         )
 
 
+class TestNbHybridCfunExtended(unittest.TestCase):
+    """Test Kuramoto, Difference, HyperbolicTangent, and PreSigmoidal cfuns."""
+
+    def _make_net_with_cfun(self, cfun, n=5, delay=False):
+        sn = _mpr_subnetwork("ctx", n)
+        w = _sparse_weights(n, n, seed=7)
+        lengths = sp.csr_matrix(w.toarray() * (10.0 if delay else 0.0))
+        intra = IntraProjection(
+            source_cvar=np.array([0], dtype=np.int_),
+            target_cvar=np.array([0], dtype=np.int_),
+            weights=w,
+            lengths=lengths,
+            cv=1.0,
+            dt=DT,
+            scale=1.0,
+            cfun=cfun,
+        )
+        sn.projections = [intra]
+        sn.configure()
+        network_set = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        network_set.configure()
+        return network_set, n
+
+    def _run_both(self, cfun, delay=False, nstep=8):
+        network_set, n = self._make_net_with_cfun(cfun, delay=delay)
+        rng = np.random.RandomState(99)
+        model = network_set.subnets[0].model
+        x0 = rng.uniform(0.0, 0.2, (model.nvar, n, 1)).astype(np.float64)
+        x0[0] = np.abs(x0[0])
+
+        py = _run_python_loop(network_set, nstep, [x0])[0]
+        nb = _run_nb(network_set, nstep, [x0])[0]
+        return py, nb
+
+    def test_kuramoto_cfun(self):
+        from tvb.simulator.hybrid.coupling import Kuramoto as KuramotoCfun
+        cfun = KuramotoCfun(a=np.array([0.3]))
+        py, nb = self._run_both(cfun)
+        self.assertEqual(py.shape, nb.shape)
+        np.testing.assert_allclose(
+            nb, py, rtol=1e-3, atol=1e-4,
+            err_msg="Kuramoto cfun: Numba differs from Python",
+        )
+
+    def test_difference_cfun(self):
+        from tvb.simulator.hybrid.coupling import Difference
+        cfun = Difference(a=np.array([1.5]))
+        py, nb = self._run_both(cfun)
+        self.assertEqual(py.shape, nb.shape)
+        np.testing.assert_allclose(
+            nb, py, rtol=1e-3, atol=1e-4,
+            err_msg="Difference cfun: Numba differs from Python",
+        )
+
+    def test_tanh_cfun(self):
+        from tvb.simulator.hybrid.coupling import HyperbolicTangent
+        cfun = HyperbolicTangent(a=np.array([0.5]), midpoint=np.array([0.0]), sigma=np.array([1.0]))
+        py, nb = self._run_both(cfun)
+        self.assertEqual(py.shape, nb.shape)
+        np.testing.assert_allclose(
+            nb, py, rtol=1e-3, atol=1e-4,
+            err_msg="HyperbolicTangent cfun: Numba differs from Python",
+        )
+
+    def test_pre_sigmoidal_cfun(self):
+        from tvb.simulator.hybrid.coupling import PreSigmoidal
+        cfun = PreSigmoidal(
+            H=np.array([0.5]), Q=np.array([0.0]), G=np.array([1.0]),
+            P=np.array([1.0]), theta=np.array([0.0]),
+        )
+        py, nb = self._run_both(cfun)
+        self.assertEqual(py.shape, nb.shape)
+        np.testing.assert_allclose(
+            nb, py, rtol=1e-3, atol=1e-4,
+            err_msg="PreSigmoidal cfun: Numba differs from Python",
+        )
+
+    def test_kuramoto_cfun_output_finite(self):
+        """Kuramoto cfun produces finite output over longer run."""
+        from tvb.simulator.hybrid.coupling import Kuramoto as KuramotoCfun
+        cfun = KuramotoCfun(a=np.array([1.0]))
+        network_set, n = self._make_net_with_cfun(cfun, n=6)
+        model = network_set.subnets[0].model
+        x0 = np.random.RandomState(42).uniform(-0.5, 0.5, (model.nvar, n, 1)).astype(np.float64)
+        results = _run_nb(network_set, 50, [x0])
+        self.assertTrue(np.all(np.isfinite(results[0])), "Kuramoto: NaN/Inf in output")
+
+    def test_tanh_cfun_with_delay(self):
+        """HyperbolicTangent cfun with non-zero delays."""
+        from tvb.simulator.hybrid.coupling import HyperbolicTangent
+        cfun = HyperbolicTangent(a=np.array([0.8]), midpoint=np.array([0.1]), sigma=np.array([2.0]))
+        py, nb = self._run_both(cfun, delay=True)
+        self.assertEqual(py.shape, nb.shape)
+        np.testing.assert_allclose(
+            nb, py, rtol=1e-3, atol=1e-4,
+            err_msg="HyperbolicTangent+delay: Numba differs from Python",
+        )
+
+
 # ---------------------------------------------------------------------------
 # Target-scales tests
 # ---------------------------------------------------------------------------
