@@ -669,6 +669,9 @@ def network_chunk(
     sn_voi_dict = {sn.name: list(sn.model.variables_of_interest)
                    for sn in subnets}
     sn_svars_dict = {sn.name: list(sn.model.state_variables) for sn in subnets}
+    sn_voi_idx_dict = {sn.name: [list(sn.model.state_variables).index(v) if v in sn.model.state_variables else -1
+                                         for v in sn.model.variables_of_interest]
+                      for sn in subnets}
 %>
     for t_local in range(nstep):
         t = t_start + t_local
@@ -752,16 +755,32 @@ def network_chunk(
         <%
             voi_names = sn_voi_dict[sn.name]
             svars_list = sn_svars_dict[sn.name]
+            voi_idx = sn_voi_idx_dict[sn.name]
+            # Build per-voi state access expressions (pure Python, no Mako $)
+            _sn = sn.name
+            voi_exprs = []
+            for vi_i, v in enumerate(voi_names):
+                idx = voi_idx[vi_i]
+                if idx >= 0:
+                    voi_exprs.append(f'{_sn}_state[{idx}, ni, {{mi}}]')
+                else:
+                    # Derived voi — parse simple binary expressions like 'x2 - x1'
+                    expr = v
+                    for _sv_name, _sv_idx in zip(svars_list, range(len(svars_list))):
+                        expr = expr.replace(_sv_name, f'{_sn}_state[{_sv_idx}, ni, {{mi}}]')
+                    voi_exprs.append(expr)
         %>
         % if sn_nmodes_dict[sn.name] == 1:
-        for vi in range(${sn_nvoi_dict[sn.name]}):
-            for ni in range(${sn_nnodes_dict[sn.name]}):
-                ${sn.name}_tavg[vi, ni, 0] += ${sn.name}_state[vi, ni, 0]
+        % for vi in range(len(voi_names)):
+        for ni in range(${sn_nnodes_dict[sn.name]}):
+            ${sn.name}_tavg[${vi}, ni, 0] += ${voi_exprs[vi].format(mi='0')}
+        % endfor
         % else:
-        for vi in range(${sn_nvoi_dict[sn.name]}):
-            for ni in range(${sn_nnodes_dict[sn.name]}):
-                for mi in range(${sn_nmodes_dict[sn.name]}):
-                    ${sn.name}_tavg[vi, ni, mi] += ${sn.name}_state[vi, ni, mi]
+        % for vi in range(len(voi_names)):
+        for ni in range(${sn_nnodes_dict[sn.name]}):
+            for mi in range(${sn_nmodes_dict[sn.name]}):
+                ${sn.name}_tavg[${vi}, ni, mi] += ${voi_exprs[vi].format(mi='mi')}
+        % endfor
         % endif
         % endfor
         tavg_count[0] += 1
