@@ -184,5 +184,27 @@
 - New test `test_rejects_subsample_with_chunk_size_gt_1` verifies the guard fires.
 - All 183 tests pass (182 original + 1 new).
 
+### 4. JIT Monitor Integration (DONE)
+
+**Files changed:**
+- `tvb_library/tvb/simulator/backend/templates/nb-hybrid-sim.py.mako`
+- `tvb_library/tvb/simulator/backend/nb_hybrid.py`
+- `tvb_library/tvb/tests/library/simulator/backend/test_nb_hybrid.py`
+
+**What was done:**
+- `network_chunk` (JIT) now accumulates `spatial_tavg` and `proj_tavg` alongside `tavg`.
+  - `spatial_tavg`: weighted sum using `spatial_mean[a, ni] * voi_val` per area, voi, mode.
+  - `proj_tavg`: weighted sum using `gain[s, ni] * voi_val` per sensor, voi (modes summed).
+  - Empty arrays passed when monitors don't need them → loops over `range(0)` → zero cost.
+- `run_network` (generated Python) allocates accumulators, passes to kernel, returns enriched
+  `(times, data, ctavg, spatial, proj)` tuples.
+- `_run_compiled` inspects monitor list, extracts `spatial_mean` / `gain` matrices, passes to kernel.
+- `_apply_monitors` uses pre-computed JIT data when available, falls back to Python einsum.
+- **Bug fix**: SpatialAverage einsum was `'ij,tklm->tkim'` (summed nodes independently) — now
+  correctly `'ij,tkjm->tkim'` (shared node index `j`).
+- Bold monitor stays in Python (HRF convolution too complex for JIT benefit).
+- 4 new tests: `TestJITMonitorPrecomputation` verifying JIT output matches Python.
+- All 187 tests pass (183 previous + 4 new).
+
 
 
