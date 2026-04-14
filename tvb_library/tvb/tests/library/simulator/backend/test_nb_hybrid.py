@@ -3012,9 +3012,78 @@ class TestNbHybridMonitors(unittest.TestCase):
         times, data = results[0][0]
         assert data.shape[2] == 1  # node axis collapsed to 1
 
+    def test_spatial_average_shape(self):
+        """SpatialAverage reduces node dimension from 4 to 2 areas."""
+        from tvb.simulator.monitors import SpatialAverage
+        from tvb.simulator.backend.nb_hybrid import NbHybridBackend
+
+        nets, n = self._make_net(n=4)
+        ic = self._make_ic(n)
+        backend = NbHybridBackend()
+        sa = SpatialAverage(period=DT)
+        # Manually set spatial_mean since we can't call config_for_sim
+        # 2 areas, 4 nodes: area 0 = nodes 0,1; area 1 = nodes 2,3
+        sa.spatial_mean = np.array(
+            [[0.5, 0.5, 0.0, 0.0], [0.0, 0.0, 0.5, 0.5]], dtype=np.float64
+        )
+        results = backend.run_network(
+            nets,
+            nstep=20,
+            chunk_size=1,
+            monitors=[sa],
+            initial_states=ic,
+        )
+        assert len(results) == 1
+        times, data = results[0][0]
+        # data shape: (n_chunks, n_voi, n_areas, n_modes)
+        assert data.shape[0] == 20  # nstep
+        assert data.shape[2] == 2  # n_areas
+        assert data.shape[3] == 1  # n_modes
+
+    def test_spatial_average_values(self):
+        """SpatialAverage output matches manual spatial_mean @ data."""
+        from tvb.simulator.monitors import SpatialAverage
+        from tvb.simulator.backend.nb_hybrid import NbHybridBackend
+
+        nets, n = self._make_net(n=4)
+        ic = self._make_ic(n)
+        backend = NbHybridBackend()
+        sa = SpatialAverage(period=DT)
+        spatial_mean = np.array(
+            [[0.5, 0.5, 0.0, 0.0], [0.0, 0.0, 0.5, 0.5]], dtype=np.float64
+        )
+        sa.spatial_mean = spatial_mean
+
+        # Run without monitors to get raw data
+        raw_results = backend.run_network(
+            nets,
+            nstep=20,
+            chunk_size=1,
+            initial_states=ic,
+        )
+        _, raw_data, _ = raw_results[0]
+
+        # Run with SpatialAverage monitor
+        sa_results = backend.run_network(
+            nets,
+            nstep=20,
+            chunk_size=1,
+            monitors=[sa],
+            initial_states=ic,
+        )
+        _, sa_data = sa_results[0][0]
+
+        # Manual computation: spatial_mean @ data for each (chunk, voi, mode)
+        # raw_data shape: (n_chunks, n_voi, n_nodes, n_modes)
+        expected = np.einsum('ij,tklm->tkim', spatial_mean, raw_data)
+        np.testing.assert_allclose(
+            sa_data, expected, rtol=1e-6, atol=1e-7,
+            err_msg="SpatialAverage output differs from manual spatial_mean @ data",
+        )
+
     def test_unsupported_monitor_raises(self):
-        """BOLD monitor raises NotImplementedError."""
-        from tvb.simulator.monitors import Bold
+        """Unsupported monitor raises NotImplementedError."""
+        from tvb.simulator.monitors import ProgressLogger
         from tvb.simulator.backend.nb_hybrid import NbHybridBackend
 
         nets, n = self._make_net()
@@ -3024,9 +3093,164 @@ class TestNbHybridMonitors(unittest.TestCase):
             backend.run_network(
                 nets,
                 nstep=10,
-                monitors=[Bold()],
+                monitors=[ProgressLogger()],
                 initial_states=ic,
             )
+
+
+    def test_bold_output_shape(self):
+        """Bold monitor produces output at the correct period."""
+        from tvb.simulator.monitors import Bold
+        from tvb.simulator.backend.nb_hybrid import NbHybridBackend
+
+        nets, n = self._make_net(n=4)
+        ic = self._make_ic(4)
+        backend = NbHybridBackend()
+
+        # Use short Bold period so we get output in a reasonable number of steps
+        bold_period = 20.0  # ms
+        bold = Bold(period=bold_period)
+        bold.dt = DT
+        bold._config_dt(DT)  # sets istep = period / dt = 2000
+        bold.compute_hrf()
+
+        nstep = 4000  # 2 Bold periods
+        results = backend.run_network(
+            nets, nstep=nstep, chunk_size=1, monitors=[bold], initial_states=ic,
+        )
+        assert len(results) == 1
+        times, data = results[0][0]
+        # Should get 2 Bold samples (at step 2000 and step 4000)
+        assert data.shape[0] == 2, f"Expected 2 Bold samples, got {data.shape[0]}"
+        assert data.ndim == 4  # (n_bold, n_voi, n_nodes, n_modes)
+
+    def test_bold_period_spacing(self):
+        """Bold output times are spaced at the Bold period."""
+        from tvb.simulator.monitors import Bold
+        from tvb.simulator.backend.nb_hybrid import NbHybridBackend
+
+        nets, n = self._make_net(n=4)
+        ic = self._make_ic(4)
+        backend = NbHybridBackend()
+
+        bold_period = 20.0
+        bold = Bold(period=bold_period)
+        bold.dt = DT
+        bold._config_dt(DT)
+        bold.compute_hrf()
+
+        nstep = 6000  # 3 Bold periods
+        results = backend.run_network(
+            nets, nstep=nstep, chunk_size=1, monitors=[bold], initial_states=ic,
+        )
+        times, data = results[0][0]
+        assert data.shape[0] == 3
+        # Times should be at multiples of the Bold period
+        for i, t in enumerate(times):
+            expected = (i + 1) * bold_period
+            assert abs(t - expected) < DT, f"Bold time {t} not near {expected}"
+
+    def test_bold_stateful_across_calls(self):
+        """Bold monitor accumulates state across multiple run_network calls."""
+        from tvb.simulator.monitors import Bold
+        from tvb.simulator.backend.nb_hybrid import NbHybridBackend
+
+        nets, n = self._make_net(n=4)
+        ic = self._make_ic(4)
+        backend = NbHybridBackend()
+
+        bold_period = 20.0
+        bold = Bold(period=bold_period)
+        bold.dt = DT
+        bold._config_dt(DT)
+        bold.compute_hrf()
+
+        # Run 2000 steps (1 Bold period) — should produce 1 sample
+        r1 = backend.run_network(
+            nets, nstep=2000, chunk_size=1, monitors=[bold], initial_states=ic,
+        )
+        t1, d1 = r1[0][0]
+        assert d1.shape[0] == 1, f"Expected 1 Bold sample, got {d1.shape[0]}"
+
+        # Run another 2000 steps — should produce another 1 sample
+        r2 = backend.run_network(
+            nets, nstep=2000, chunk_size=1, monitors=[bold], initial_states=ic,
+        )
+        t2, d2 = r2[0][0]
+        assert d2.shape[0] == 1, f"Expected 1 Bold sample, got {d2.shape[0]}"
+
+    def test_projection_shape(self):
+        """Projection (EEG) monitor produces (n_chunks, n_voi, n_sensors, 1) output."""
+        from tvb.simulator.monitors import EEG
+        from tvb.simulator.backend.nb_hybrid import NbHybridBackend
+
+        nets, n = self._make_net(n=4)
+        ic = self._make_ic(4)
+
+        eeg = EEG(period=1.0)
+        n_sensors = 3
+        rng_gain = np.random.RandomState(42)
+        eeg._gain = rng_gain.randn(n_sensors, n).astype(np.float64)
+
+        backend = NbHybridBackend()
+        results = backend.run_network(
+            nets,
+            nstep=20,
+            chunk_size=1,
+            monitors=[eeg],
+            initial_states=ic,
+        )
+        assert len(results) == 1  # one monitor
+        assert len(results[0]) == 1  # one subnetwork
+        times, data = results[0][0]
+        n_voi = 2  # MPR has 2 variables of interest
+        self.assertEqual(data.shape, (20, n_voi, n_sensors, 1),
+                         f"Expected (20, {n_voi}, {n_sensors}, 1), got {data.shape}")
+
+    def test_projection_values(self):
+        """Projection (EEG) monitor output matches manual gain @ data.sum(axis=-1)."""
+        from tvb.simulator.monitors import EEG
+        from tvb.simulator.backend.nb_hybrid import NbHybridBackend
+
+        nets, n = self._make_net(n=4)
+        ic = self._make_ic(4)
+
+        eeg = EEG(period=1.0)
+        n_sensors = 3
+        rng_gain = np.random.RandomState(42)
+        gain = rng_gain.randn(n_sensors, n).astype(np.float64)
+        eeg._gain = gain
+
+        backend = NbHybridBackend()
+        # Run with the EEG monitor
+        results = backend.run_network(
+            nets,
+            nstep=20,
+            chunk_size=1,
+            monitors=[eeg],
+            initial_states=ic,
+        )
+        times_proj, data_proj = results[0][0]
+
+        # Run without monitors to get raw data
+        raw_results = backend.run_network(
+            nets,
+            nstep=20,
+            chunk_size=1,
+            initial_states=ic,
+        )
+        _, data_raw, _ = raw_results[0]
+
+        # Manually compute: sum over modes, then apply gain
+        data_2d = data_raw.sum(axis=-1)  # (20, n_voi, n_nodes)
+        expected = np.einsum('ij,tkj->tki', gain.astype(data_raw.dtype), data_2d)
+        expected = expected[..., np.newaxis]  # (20, n_voi, n_sensors, 1)
+
+        np.testing.assert_allclose(
+            data_proj, expected,
+            rtol=1e-6, atol=1e-7,
+            err_msg="Projection monitor output does not match manual gain projection",
+        )
 
 
 if __name__ == "__main__":

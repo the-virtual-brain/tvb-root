@@ -105,19 +105,39 @@ def _apply_monitors(
         SubSample,
         GlobalAverage,
         AfferentCoupling,
+        SpatialAverage,
+        Projection,
+        Bold,
     )
 
     for m in monitors:
         if isinstance(m, Raw):
             pass
         elif isinstance(
-            m, (TemporalAverage, SubSample, GlobalAverage, AfferentCoupling)
+            m,
+            (TemporalAverage, SubSample, GlobalAverage, AfferentCoupling,
+             SpatialAverage),
         ):
             pass
+        elif isinstance(m, Projection):
+            if not hasattr(m, '_gain') or m._gain is None:
+                raise ValueError(
+                    f"Projection monitor {type(m).__name__} has no gain matrix "
+                    "configured. Set the gain matrix before running (e.g. via "
+                    "config_for_sim or by setting m._gain directly)."
+                )
+        elif isinstance(m, Bold):
+            # Bold needs compute_hrf() called; ensure dt and istep are set
+            if not hasattr(m, 'istep') or m.istep is None:
+                m.dt = dt
+                m._config_dt(dt)
+            if not hasattr(m, 'hemodynamic_response_function'):
+                m.compute_hrf()
         else:
             raise NotImplementedError(
                 f"Monitor {type(m).__name__} is not yet supported by the Numba backend. "
-                "Supported: TemporalAverage, Raw, SubSample, GlobalAverage, AfferentCoupling."
+                "Supported: TemporalAverage, Raw, SubSample, GlobalAverage, "
+                "AfferentCoupling, SpatialAverage, Projection (EEG/MEG/iEEG), Bold."
             )
 
     results: list = []
@@ -126,16 +146,109 @@ def _apply_monitors(
         for times, data, ctavg in raw_outputs:
             if isinstance(m, AfferentCoupling):
                 per_subnet.append((times, ctavg))
+            elif isinstance(m, Projection):
+                # gain is (n_sensors, n_nodes)
+                gain = m.gain.astype(data.dtype)
+                # data is (n_chunks, n_voi, n_nodes, n_modes) — sum over modes
+                data_2d = data.sum(axis=-1)  # (n_chunks, n_voi, n_nodes)
+                # Project: einsum over nodes dim
+                projected = np.einsum('ij,tkj->tki', gain, data_2d)  # (n_chunks, n_voi, n_sensors)
+                # Add back singleton modes dim
+                projected = projected[..., np.newaxis]  # (n_chunks, n_voi, n_sensors, 1)
+                per_subnet.append((times, projected))
             elif isinstance(m, GlobalAverage):
                 per_subnet.append((times, data.mean(axis=-2, keepdims=True)))
-            elif isinstance(m, (TemporalAverage, SubSample)):
+            elif isinstance(m, Bold):
+                from tvb.datatypes import equations
+                hrf = m.hemodynamic_response_function  # (1, stock_steps)
+                stock_steps = hrf.shape[1]
+                interim_istep = m._interim_istep
+                n_chunks, n_voi, n_nodes, n_modes = data.shape
+                sample_shape = (n_voi, n_nodes, n_modes)
+
+                # Initialise per-monitor state on first encounter (per subnet)
+                if not hasattr(m, '_nb_state'):
+                    m._nb_state = True
+                    m._nb_interim_stock = np.zeros((interim_istep,) + sample_shape, dtype=np.float32)
+                    m._nb_stock = np.zeros((stock_steps,) + sample_shape, dtype=np.float32)
+                    m._nb_step_offset = 0
+                    m._nb_subnets = []  # list of (interim, stock) per subnet index
+                # Grow per-subnet storage if needed
+                while len(m._nb_subnets) <= len(per_subnet):
+                    m._nb_subnets.append((
+                        np.zeros((interim_istep,) + sample_shape, dtype=np.float32),
+                        np.zeros((stock_steps,) + sample_shape, dtype=np.float32),
+                    ))
+                interim_stock, stock = m._nb_subnets[len(per_subnet)]
+
+                bold_results = []
+                bold_times = []
+                offset = m._nb_step_offset
+                for ci in range(n_chunks):
+                    step = offset + ci + 1
+                    # Update interim stock at every chunk (= integration step when chunk_size=1)
+                    interim_stock[(step - 1) % interim_istep] = data[ci]
+                    # At interim period, update main stock with temporal average
+                    if step % interim_istep == 0:
+                        avg = np.mean(interim_stock, axis=0)
+                        stock[(step // interim_istep - 1) % stock_steps] = avg
+                    # At Bold period, compute HRF convolution
+                    if step % m.istep == 0:
+                        t_bold = times[ci] if ci < len(times) else step * dt
+                        rolled_hrf = np.roll(
+                            hrf, (step // interim_istep - 1) % stock_steps, axis=1
+                        )
+                        # stock is (stock_steps, n_voi, n_nodes, n_modes)
+                        stock_t = stock.transpose((1, 2, 0, 3))  # (n_voi, n_nodes, stock_steps, n_modes)
+                        bold = np.dot(rolled_hrf, stock_t)  # (1, n_voi, n_nodes, n_modes)
+                        bold = bold.reshape(sample_shape)  # squeeze HRF dim
+                        # Apply FirstOrderVolterra scaling if applicable
+                        if isinstance(m.hrf_kernel, equations.FirstOrderVolterra):
+                            k1 = m.hrf_kernel.parameters.get('k_1', 1.0)
+                            V0 = m.hrf_kernel.parameters.get('V_0', 1.0)
+                            bold = (bold - 1.0) * k1 * V0
+                        bold_results.append(bold)
+                        bold_times.append(t_bold)
+                # Store updated buffers
+                m._nb_subnets[len(per_subnet)] = (interim_stock, stock)
+
+                if bold_results:
+                    bold_arr = np.stack(bold_results, axis=0)  # (n_bold, n_voi, n_nodes, n_modes)
+                    per_subnet.append((np.array(bold_times, dtype=np.float64), bold_arr))
+                else:
+                    per_subnet.append((
+                        np.array([], dtype=np.float64),
+                        np.empty((0,) + sample_shape, dtype=np.float32),
+                    ))
+            elif isinstance(m, SpatialAverage):
+                # m.spatial_mean is (n_areas, n_nodes), configured during config_for_sim
+                if hasattr(m, 'spatial_mean'):
+                    # data is (n_chunks, n_voi, n_nodes, n_modes)
+                    spatial = np.einsum('ij,tklm->tkim', m.spatial_mean, data)
+                    # spatial is (n_chunks, n_voi, n_areas, n_modes)
+                    per_subnet.append((times, spatial))
+                else:
+                    # spatial_mean not configured — pass through unchanged
+                    per_subnet.append((times, data))
+            elif isinstance(m, SubSample):
+                period = float(m.period)
+                mask = np.abs(times - np.round(times / period) * period) < dt
+                if np.any(mask):
+                    per_subnet.append((times[mask], data[mask]))
+                else:
+                    per_subnet.append((
+                        np.array([], dtype=times.dtype),
+                        np.empty((0,) + data.shape[1:], dtype=data.dtype),
+                    ))
+            elif isinstance(m, TemporalAverage):
                 per_subnet.append((times, data))
             elif isinstance(m, Raw):
                 per_subnet.append((times, data))
             else:
                 raise NotImplementedError(
                     f"Monitor {type(m).__name__} is not yet supported by the Numba backend. "
-                    "Supported: TemporalAverage, Raw, SubSample, GlobalAverage, AfferentCoupling."
+                    "Supported: TemporalAverage, Raw, SubSample, GlobalAverage, "
+                    "AfferentCoupling, SpatialAverage, Projection (EEG/MEG/iEEG)."
                 )
         results.append(per_subnet)
     return results
