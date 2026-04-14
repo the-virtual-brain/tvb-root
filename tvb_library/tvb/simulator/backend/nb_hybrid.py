@@ -84,6 +84,47 @@ _BOLD_BALLOON_DEFAULTS = {
 }
 
 
+def _compute_chunk_size(monitors, dt):
+    """Compute the optimal chunk_size from monitor periods.
+
+    For each monitor with a period, the number of integration steps per sample
+    is ``istep = round(period / dt)``.  The chunk_size must divide evenly into
+    every monitor's istep so that temporal averages align with sampling periods.
+
+    Returns the GCD of all monitor isteps.  Returns 1 when no monitors have
+    a meaningful period (e.g. only Raw).
+
+    Parameters
+    ----------
+    monitors : list
+        TVB monitor instances.
+    dt : float
+        Integration time step.
+
+    Returns
+    -------
+    int
+        The computed chunk_size.
+    """
+    import math
+    from tvb.simulator.monitors import Raw, AfferentCoupling, RawVoi
+
+    isteps = []
+    for m in monitors:
+        # Raw and AfferentCoupling output every step — no period constraint
+        if isinstance(m, (Raw, AfferentCoupling, RawVoi)):
+            continue
+        if hasattr(m, 'period') and m.period is not None:
+            istep = max(1, int(round(float(m.period) / dt)))
+            isteps.append(istep)
+    if not isteps:
+        return 1
+    result = isteps[0]
+    for s in isteps[1:]:
+        result = math.gcd(result, s)
+    return max(1, result)
+
+
 def _apply_monitors(
     raw_outputs: list,
     monitors: list,
@@ -498,7 +539,7 @@ class CompiledNetworkFn:
     def run(
         self,
         nstep: int,
-        chunk_size: int = 1,
+        chunk_size: int = None,
         initial_states: Optional[list] = None,
         return_snapshot: bool = False,
         _initial_buffers: Optional[dict] = None,
@@ -510,8 +551,11 @@ class CompiledNetworkFn:
         ----------
         nstep : int
             Number of integration steps to run.
-        chunk_size : int
-            Number of steps per temporal-average chunk (default 1 = raw output).
+        chunk_size : int or None
+            Number of steps per temporal-average chunk.  When *None* (default),
+            the chunk_size is auto-computed from monitor periods to ensure
+            sampling alignment: GCD of all monitor ``istep`` values.  If no
+            monitors are provided, defaults to 1 (raw output per step).
         initial_states : list of ndarray, optional
             Initial states per subnetwork.  If *None* the subnetwork's
             ``zero_states()`` are used.
@@ -540,6 +584,14 @@ class CompiledNetworkFn:
             is a dict with keys ``'states'`` and ``'buffers'`` suitable for passing
             to :meth:`resume`.
         """
+        # Resolve chunk_size: auto-compute from monitor periods when not specified
+        dt = self._network_set.subnets[0].scheme.dt
+        if chunk_size is None:
+            if monitors is not None:
+                chunk_size = _compute_chunk_size(monitors, dt)
+            else:
+                chunk_size = 1
+
         if monitors is not None:
             from tvb.simulator.monitors import Raw, SubSample
 
@@ -571,7 +623,6 @@ class CompiledNetworkFn:
         if monitor_data.get('bold_states'):
             self._bold_states = monitor_data['bold_states']
         if monitors is not None:
-            dt = self._network_set.subnets[0].scheme.dt
             outputs = _apply_monitors(outputs, monitors, dt, monitor_data=monitor_data)
         if not return_snapshot:
             return outputs
@@ -587,7 +638,7 @@ class CompiledNetworkFn:
         self,
         snapshot: dict,
         nstep: int,
-        chunk_size: int = 1,
+        chunk_size: int = None,
         return_snapshot: bool = False,
     ) -> list:
         """Resume a simulation from a snapshot returned by :meth:`run`.
@@ -600,8 +651,8 @@ class CompiledNetworkFn:
             ``'buffers'`` (dict of ndarray per source subnet name).
         nstep : int
             Number of additional integration steps to run.
-        chunk_size : int
-            Steps per temporal-average chunk.
+        chunk_size : int or None
+            Steps per temporal-average chunk.  When *None*, defaults to 1.
         return_snapshot : bool
             If True, also return a new snapshot of the final state.
 
@@ -610,6 +661,8 @@ class CompiledNetworkFn:
         list or (list, dict)
             Same format as :meth:`run`.
         """
+        if chunk_size is None:
+            chunk_size = 1
         return self.run(
             nstep,
             chunk_size,
@@ -704,7 +757,7 @@ class NbHybridBackend(MakoUtilMix):
         self,
         network_set: NetworkSet,
         nstep: int,
-        chunk_size: int = 1,
+        chunk_size: int = None,
         print_source: bool = False,
         initial_states: Optional[list] = None,
         debug_nojit: bool = False,
@@ -722,8 +775,9 @@ class NbHybridBackend(MakoUtilMix):
             Fully configured network (``configure()`` must have been called).
         nstep : int
             Number of integration steps to run.
-        chunk_size : int
-            Number of steps per temporal-average chunk (default 1 = raw output).
+        chunk_size : int or None
+            Number of steps per temporal-average chunk.  When *None* (default),
+            auto-computed from monitor periods.  See :meth:`CompiledNetworkFn.run`.
         print_source : bool
             If True, print the generated source code with line numbers.
         monitors : list of Monitor, optional

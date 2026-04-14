@@ -3817,6 +3817,125 @@ class TestJITMonitorPrecomputation(unittest.TestCase):
         self.assertIsNotNone(compiled._bold_states)
 
 
+
+# ---------------------------------------------------------------------------
+# Auto chunk_size tests: verify monitor period alignment
+# ---------------------------------------------------------------------------
+
+
+class TestAutoChunkSize(unittest.TestCase):
+    """Verify that chunk_size is auto-computed from monitor periods."""
+
+    N = 4
+    DT = 0.01
+
+    def _make_net(self, n=4):
+        from tvb.simulator.models.oscillator import Generic2dOscillator
+        from tvb.simulator.hybrid import Subnetwork, NetworkSet
+
+        m = Generic2dOscillator()
+        m.configure()
+        sn = Subnetwork(name='sn', model=m, scheme=HeunDeterministic(dt=self.DT), nnodes=n)
+        sn.configure()
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns.configure()
+        return ns, m
+
+    def _make_ic(self, n):
+        from tvb.simulator.models.oscillator import Generic2dOscillator
+
+        rng = np.random.RandomState(42)
+        m = Generic2dOscillator()
+        m.configure()
+        return [rng.uniform(0.0, 0.2, (m.nvar, n, 1)).astype(np.float64)]
+
+    def test_compute_chunk_size_from_period(self):
+        """_compute_chunk_size returns GCD of monitor periods in steps."""
+        from tvb.simulator.backend.nb_hybrid import _compute_chunk_size
+        from tvb.simulator.monitors import TemporalAverage, SpatialAverage
+
+        ta = TemporalAverage(period=1.0)  # istep=100
+        sa = SpatialAverage(period=0.5)   # istep=50
+        chunk = _compute_chunk_size([ta, sa], 0.01)
+        self.assertEqual(chunk, 50)  # GCD(100, 50) = 50
+
+    def test_compute_chunk_size_single_monitor(self):
+        """_compute_chunk_size returns istep for a single monitor."""
+        from tvb.simulator.backend.nb_hybrid import _compute_chunk_size
+        from tvb.simulator.monitors import TemporalAverage
+
+        ta = TemporalAverage(period=0.5)  # istep=50
+        chunk = _compute_chunk_size([ta], 0.01)
+        self.assertEqual(chunk, 50)
+
+    def test_compute_chunk_size_no_monitors(self):
+        """_compute_chunk_size returns 1 for monitors with no period."""
+        from tvb.simulator.backend.nb_hybrid import _compute_chunk_size
+        from tvb.simulator.monitors import Raw
+
+        raw = Raw()
+        chunk = _compute_chunk_size([raw], 0.01)
+        self.assertEqual(chunk, 1)
+
+    def test_auto_chunk_aligns_temporal_average(self):
+        """chunk_size=None auto-computes from TemporalAverage period."""
+        from tvb.simulator.monitors import TemporalAverage
+
+        nets, model = self._make_net(self.N)
+        ic = self._make_ic(self.N)
+        backend = NbHybridBackend()
+
+        period = 0.5  # 50 steps at dt=0.01
+        ta = TemporalAverage(period=period)
+        ta.dt = self.DT
+        ta._config_dt(self.DT)
+
+        nstep = 200  # 4 periods
+        # chunk_size=None should auto-compute to 50
+        results = backend.run_network(
+            nets, nstep=nstep, monitors=[ta], initial_states=ic,
+        )
+        times, data = results[0][0]
+        self.assertEqual(data.shape[0], 4, f"Expected 4 chunks, got {data.shape[0]}")
+        # Times should be evenly spaced at the period interval
+        # Verify spacing matches the period
+        if len(times) > 1:
+            spacing = np.diff(times)
+            np.testing.assert_allclose(spacing, [period] * len(spacing), atol=1e-3,
+                                       err_msg="TemporalAverage time spacing should match period")
+
+    def test_explicit_chunk_size_not_overridden(self):
+        """Explicit chunk_size=1 is preserved even with monitors."""
+        from tvb.simulator.monitors import TemporalAverage
+
+        nets, model = self._make_net(self.N)
+        ic = self._make_ic(self.N)
+        backend = NbHybridBackend()
+
+        ta = TemporalAverage(period=0.5)
+        ta.dt = self.DT
+        ta._config_dt(self.DT)
+
+        # Explicit chunk_size=1 should NOT be overridden
+        results = backend.run_network(
+            nets, nstep=20, chunk_size=1, monitors=[ta], initial_states=ic,
+        )
+        times, data = results[0][0]
+        self.assertEqual(data.shape[0], 20, f"Expected 20 chunks, got {data.shape[0]}")
+
+    def test_auto_chunk_with_no_monitors_defaults_to_1(self):
+        """chunk_size=None with no monitors defaults to 1."""
+        nets, model = self._make_net(self.N)
+        ic = self._make_ic(self.N)
+        backend = NbHybridBackend()
+
+        results = backend.run_network(
+            nets, nstep=20, initial_states=ic,
+        )
+        times, data, ctavg = results[0]
+        self.assertEqual(data.shape[0], 20, f"Expected 20 chunks, got {data.shape[0]}")
+
+
 if __name__ == "__main__":
     unittest.main()
     unittest.main()
