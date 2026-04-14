@@ -664,6 +664,13 @@ def network_chunk(
     % for sn in subnets:
     ${sn.name}_sp,  # (n_spatial_params, n_nodes) float32 — may be empty (0, n_nodes)
     % endfor
+    ## monitor accumulation arrays (SpatialAverage / Projection)
+    % for sn in subnets:
+    ${sn.name}_spatial_mean,  # (n_areas, n_nodes) float32 — empty (0, n_nodes) when unused
+    ${sn.name}_spatial_tavg,  # (n_voi, n_areas, n_modes) float32 — accumulator
+    ${sn.name}_gain,  # (n_sensors, n_nodes) float32 — empty (0, n_nodes) when unused
+    ${sn.name}_proj_tavg,  # (n_voi, n_sensors, 1) float32 — accumulator (modes summed)
+    % endfor
 ):
 <%
     all_sn_names = [sn.name for sn in subnets]
@@ -782,13 +789,23 @@ def network_chunk(
         % if sn_nmodes_dict[sn.name] == 1:
         % for vi in range(len(voi_names)):
         for ni in range(${sn_nnodes_dict[sn.name]}):
-            ${sn.name}_tavg[${vi}, ni, 0] += ${voi_exprs[vi].format(mi='0')}
+            _sv = ${voi_exprs[vi].format(mi='0')}
+            ${sn.name}_tavg[${vi}, ni, 0] += _sv
+            for _ai in range(${sn.name}_spatial_mean.shape[0]):
+                ${sn.name}_spatial_tavg[${vi}, _ai, 0] += ${sn.name}_spatial_mean[_ai, ni] * _sv
+            for _si in range(${sn.name}_gain.shape[0]):
+                ${sn.name}_proj_tavg[${vi}, _si, 0] += ${sn.name}_gain[_si, ni] * _sv
         % endfor
         % else:
         % for vi in range(len(voi_names)):
         for ni in range(${sn_nnodes_dict[sn.name]}):
             for mi in range(${sn_nmodes_dict[sn.name]}):
-                ${sn.name}_tavg[${vi}, ni, mi] += ${voi_exprs[vi].format(mi='mi')}
+                _sv = ${voi_exprs[vi].format(mi='mi')}
+                ${sn.name}_tavg[${vi}, ni, mi] += _sv
+                for _ai in range(${sn.name}_spatial_mean.shape[0]):
+                    ${sn.name}_spatial_tavg[${vi}, _ai, mi] += ${sn.name}_spatial_mean[_ai, ni] * _sv
+                for _si in range(${sn.name}_gain.shape[0]):
+                    ${sn.name}_proj_tavg[${vi}, _si, 0] += ${sn.name}_gain[_si, ni] * _sv
         % endfor
         % endif
         % endfor
@@ -829,6 +846,11 @@ def run_network(
     % for sn in subnets:
     ${sn.name}_sp,
     % endfor
+    ## monitor config arrays (SpatialAverage / Projection)
+    % for sn in subnets:
+    ${sn.name}_spatial_mean,
+    ${sn.name}_gain,
+    % endfor
     chunk_size,
 ):
     """Outer Python loop that calls the @njit kernel in chunks and collects output."""
@@ -845,10 +867,18 @@ def run_network(
     ${sn.name}_ctavg = np.zeros((${sn_ncvar_dict[sn.name]}, ${sn_nnodes_dict[sn.name]}, ${sn_nmodes_dict[sn.name]}), dtype=np.float32)
     % endfor
 
+    ## allocate monitor accumulators (shapes derived from runtime arrays)
+    % for sn in subnets:
+    ${sn.name}_spatial_tavg = np.zeros((${sn_nvoi_dict[sn.name]}, ${sn.name}_spatial_mean.shape[0], ${sn_nmodes_dict[sn.name]}), dtype=np.float32)
+    ${sn.name}_proj_tavg = np.zeros((${sn_nvoi_dict[sn.name]}, ${sn.name}_gain.shape[0], 1), dtype=np.float32)
+    % endfor
+
     ## storage for raw outputs per subnetwork
     % for sn in subnets:
     ${sn.name}_outputs = []
     ${sn.name}_ctavg_outputs = []
+    ${sn.name}_spatial_outputs = []
+    ${sn.name}_proj_outputs = []
     ${sn.name}_times   = []
     % endfor
     time_step = np.float32(${subnets[0].integrator.dt})
@@ -861,6 +891,8 @@ def run_network(
         % for sn in subnets:
         ${sn.name}_tavg[:] = np.float32(0.0)
         ${sn.name}_ctavg[:] = np.float32(0.0)
+        ${sn.name}_spatial_tavg[:] = np.float32(0.0)
+        ${sn.name}_proj_tavg[:] = np.float32(0.0)
         % endfor
         tavg_count[0] = 0
 
@@ -904,6 +936,13 @@ def run_network(
             % for sn in subnets:
             ${sn.name}_sp,
             % endfor
+            ## monitor accumulators
+            % for sn in subnets:
+            ${sn.name}_spatial_mean,
+            ${sn.name}_spatial_tavg,
+            ${sn.name}_gain,
+            ${sn.name}_proj_tavg,
+            % endfor
         )
 
         n = tavg_count[0]
@@ -912,11 +951,13 @@ def run_network(
         ${sn.name}_times.append(mid_t)
         ${sn.name}_outputs.append(${sn.name}_tavg / np.float32(n))
         ${sn.name}_ctavg_outputs.append(${sn.name}_ctavg / np.float32(n))
+        ${sn.name}_spatial_outputs.append(${sn.name}_spatial_tavg / np.float32(n))
+        ${sn.name}_proj_outputs.append(${sn.name}_proj_tavg / np.float32(n))
         % endfor
 
         t_global += this_chunk
 
-    ## package outputs in Simulator.run() format: list of (times, data) per subnetwork
+    ## package outputs: list of (times, data, ctavg, spatial, proj) per subnetwork
     results = []
     % for sn in subnets:
     times_arr = np.array(${sn.name}_times, dtype=np.float64)
@@ -924,6 +965,9 @@ def run_network(
     data_arr = np.stack(${sn.name}_outputs, axis=0)
     ## stack coupling outputs: each entry is (n_cvar, n_nodes, n_modes) → (T, n_cvar, n_nodes, n_modes)
     ctavg_arr = np.stack(${sn.name}_ctavg_outputs, axis=0)
-    results.append((times_arr, data_arr, ctavg_arr))
+    ## stack monitor outputs (only meaningful when shape[0] > 0)
+    spatial_arr = np.stack(${sn.name}_spatial_outputs, axis=0) if ${sn.name}_spatial_mean.shape[0] > 0 else np.empty((0,), dtype=np.float32)
+    proj_arr = np.stack(${sn.name}_proj_outputs, axis=0) if ${sn.name}_gain.shape[0] > 0 else np.empty((0,), dtype=np.float32)
+    results.append((times_arr, data_arr, ctavg_arr, spatial_arr, proj_arr))
     % endfor
     return results

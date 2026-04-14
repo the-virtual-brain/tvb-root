@@ -3093,7 +3093,7 @@ class TestNbHybridMonitors(unittest.TestCase):
 
         # Manual computation: spatial_mean @ data for each (chunk, voi, mode)
         # raw_data shape: (n_chunks, n_voi, n_nodes, n_modes)
-        expected = np.einsum('ij,tklm->tkim', spatial_mean, raw_data)
+        expected = np.einsum('ij,tkjm->tkim', spatial_mean, raw_data)
         np.testing.assert_allclose(
             sa_data, expected, rtol=1e-6, atol=1e-7,
             err_msg="SpatialAverage output differs from manual spatial_mean @ data",
@@ -3433,7 +3433,7 @@ class TestNbHybridMonitorsIntegrative(unittest.TestCase):
         nb_t, nb_d = self._numba_monitor(ns, [x0_list[0].copy()], self.NSTEP, sa)
 
         # Python: einsum spatial_mean @ raw
-        py_sa = np.einsum('ij,tklm->tkim', spatial_mean, py_raw).astype(np.float32)
+        py_sa = np.einsum('ij,tkjm->tkim', spatial_mean, py_raw).astype(np.float32)
 
         np.testing.assert_allclose(
             nb_d, py_sa, rtol=1e-2, atol=1e-2,
@@ -3527,6 +3527,152 @@ class TestNbHybridMonitorsIntegrative(unittest.TestCase):
             nb_d, py_bold_arr, rtol=1e-2, atol=1e-2,
             err_msg="Bold: Numba differs from Python",
         )
+
+
+# ---------------------------------------------------------------------------
+# JIT Monitor tests: verify JIT-precomputed monitor data matches Python
+# ---------------------------------------------------------------------------
+
+
+class TestJITMonitorPrecomputation(unittest.TestCase):
+    """Verify that JIT-precomputed spatial/projected averages match Python."""
+
+    N = 4
+    DT = 0.01
+
+    def _make_net(self, n=4):
+        from tvb.simulator.models.oscillator import Generic2dOscillator
+        from tvb.simulator.hybrid import Subnetwork, NetworkSet
+
+        m = Generic2dOscillator()
+        m.configure()
+        sn = Subnetwork(name='sn', model=m, scheme=HeunDeterministic(dt=self.DT), nnodes=n)
+        sn.configure()
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns.configure()
+        return ns, m
+
+    def _make_ic(self, n):
+        from tvb.simulator.models.oscillator import Generic2dOscillator
+
+        rng = np.random.RandomState(42)
+        m = Generic2dOscillator()
+        m.configure()
+        return [rng.uniform(0.0, 0.2, (m.nvar, n, 1)).astype(np.float64)]
+
+    def test_spatial_jit_matches_python(self):
+        """JIT spatial average accumulation matches einsum."""
+        from tvb.simulator.monitors import SpatialAverage
+
+        nets, model = self._make_net(self.N)
+        ic = self._make_ic(self.N)
+        backend = NbHybridBackend()
+
+        spatial_mean = np.array(
+            [[0.5, 0.5, 0.0, 0.0], [0.0, 0.0, 0.5, 0.5]], dtype=np.float64
+        )
+        sa = SpatialAverage(period=self.DT)
+        sa.spatial_mean = spatial_mean
+
+        # Run with JIT monitor
+        results = backend.run_network(
+            nets, nstep=20, chunk_size=1, monitors=[sa], initial_states=ic,
+        )
+        _, jit_sa = results[0][0]
+
+        # Run raw and compute manually
+        raw = backend.run_network(
+            nets, nstep=20, chunk_size=1, initial_states=[ic[0].copy()],
+        )
+        _, raw_data, _ = raw[0]
+        expected = np.einsum('ij,tkjm->tkim', spatial_mean, raw_data)
+
+        np.testing.assert_allclose(
+            jit_sa, expected, rtol=1e-6, atol=1e-7,
+            err_msg="JIT SpatialAverage differs from Python einsum",
+        )
+
+    def test_projection_jit_matches_python(self):
+        """JIT projection accumulation matches gain @ data."""
+        from tvb.simulator.monitors import EEG
+
+        nets, model = self._make_net(self.N)
+        ic = self._make_ic(self.N)
+        backend = NbHybridBackend()
+
+        n_sensors = 3
+        rng = np.random.RandomState(42)
+        gain = rng.randn(n_sensors, self.N).astype(np.float64)
+        eeg = EEG(period=1.0)
+        eeg._gain = gain
+
+        # Run with JIT monitor
+        results = backend.run_network(
+            nets, nstep=20, chunk_size=1, monitors=[eeg], initial_states=ic,
+        )
+        _, jit_proj = results[0][0]
+
+        # Run raw and compute manually
+        raw = backend.run_network(
+            nets, nstep=20, chunk_size=1, initial_states=[ic[0].copy()],
+        )
+        _, raw_data, _ = raw[0]
+        data_2d = raw_data.sum(axis=-1)
+        expected = np.einsum('ij,tkj->tki', gain, data_2d)[..., np.newaxis]
+
+        np.testing.assert_allclose(
+            jit_proj, expected, rtol=1e-6, atol=1e-7,
+            err_msg="JIT Projection differs from Python einsum",
+        )
+
+    def test_spatial_and_projection_combined(self):
+        """Both SpatialAverage and Projection can be computed in a single JIT run."""
+        from tvb.simulator.monitors import SpatialAverage, EEG
+
+        nets, model = self._make_net(self.N)
+        ic = self._make_ic(self.N)
+        backend = NbHybridBackend()
+
+        spatial_mean = np.array(
+            [[0.5, 0.5, 0.0, 0.0], [0.0, 0.0, 0.5, 0.5]], dtype=np.float64
+        )
+        sa = SpatialAverage(period=self.DT)
+        sa.spatial_mean = spatial_mean
+
+        n_sensors = 3
+        rng = np.random.RandomState(42)
+        gain = rng.randn(n_sensors, self.N).astype(np.float64)
+        eeg = EEG(period=1.0)
+        eeg._gain = gain
+
+        # Run with both monitors
+        results = backend.run_network(
+            nets, nstep=20, chunk_size=1, monitors=[sa, eeg], initial_states=ic,
+        )
+        # results = [[sa_subnet0], [eeg_subnet0]]
+        self.assertEqual(len(results), 2)
+
+        # SpatialAverage
+        _, sa_data = results[0][0]
+        self.assertEqual(sa_data.shape, (20, 1, 2, 1))  # n_chunks, n_voi, n_areas, n_modes
+
+        # Projection
+        _, proj_data = results[1][0]
+        self.assertEqual(proj_data.shape, (20, 1, n_sensors, 1))
+
+    def test_no_monitors_still_works(self):
+        """Running without monitors still produces correct raw output."""
+        nets, model = self._make_net(self.N)
+        ic = self._make_ic(self.N)
+        backend = NbHybridBackend()
+
+        raw = backend.run_network(
+            nets, nstep=20, chunk_size=1, initial_states=ic,
+        )
+        times, data, ctavg = raw[0]
+        self.assertEqual(data.shape, (20, 1, 4, 1))
+        self.assertEqual(ctavg.shape, (20, 1, 4, 1))
+        self.assertTrue(np.all(np.isfinite(data)))
 
 
 if __name__ == "__main__":

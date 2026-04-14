@@ -84,6 +84,7 @@ def _apply_monitors(
     raw_outputs: list,
     monitors: list,
     dt: float,
+    monitor_data: Optional[dict] = None,
 ) -> list:
     """Transform per-subnet (times, data, ctavg) tuples into monitor-dispatched output.
 
@@ -143,22 +144,27 @@ def _apply_monitors(
                 "AfferentCoupling, SpatialAverage, Projection (EEG/MEG/iEEG), Bold."
             )
 
+    # Extract pre-computed JIT monitor data if available
+    spatial_per_sn = monitor_data.get('spatial', []) if monitor_data else []
+    proj_per_sn = monitor_data.get('proj', []) if monitor_data else []
+
     results: list = []
     for m in monitors:
         per_subnet: list = []
-        for times, data, ctavg in raw_outputs:
+        for si, (times, data, ctavg) in enumerate(raw_outputs):
             if isinstance(m, AfferentCoupling):
                 per_subnet.append((times, ctavg))
             elif isinstance(m, Projection):
-                # gain is (n_sensors, n_nodes)
-                gain = m.gain.astype(data.dtype)
-                # data is (n_chunks, n_voi, n_nodes, n_modes) — sum over modes
-                data_2d = data.sum(axis=-1)  # (n_chunks, n_voi, n_nodes)
-                # Project: einsum over nodes dim
-                projected = np.einsum('ij,tkj->tki', gain, data_2d)  # (n_chunks, n_voi, n_sensors)
-                # Add back singleton modes dim
-                projected = projected[..., np.newaxis]  # (n_chunks, n_voi, n_sensors, 1)
-                per_subnet.append((times, projected))
+                # Use JIT-precomputed if available
+                if si < len(proj_per_sn) and proj_per_sn[si].ndim == 4 and proj_per_sn[si].shape[1] > 0:
+                    per_subnet.append((times, proj_per_sn[si]))
+                else:
+                    # Fallback: Python computation
+                    gain = m.gain.astype(data.dtype)
+                    data_2d = data.sum(axis=-1)
+                    projected = np.einsum('ij,tkj->tki', gain, data_2d)
+                    projected = projected[..., np.newaxis]
+                    per_subnet.append((times, projected))
             elif isinstance(m, GlobalAverage):
                 per_subnet.append((times, data.mean(axis=-2, keepdims=True)))
             elif isinstance(m, Bold):
@@ -225,14 +231,14 @@ def _apply_monitors(
                         np.empty((0,) + sample_shape, dtype=np.float32),
                     ))
             elif isinstance(m, SpatialAverage):
-                # m.spatial_mean is (n_areas, n_nodes), configured during config_for_sim
-                if hasattr(m, 'spatial_mean'):
-                    # data is (n_chunks, n_voi, n_nodes, n_modes)
-                    spatial = np.einsum('ij,tklm->tkim', m.spatial_mean, data)
-                    # spatial is (n_chunks, n_voi, n_areas, n_modes)
+                # Use JIT-precomputed if available
+                if si < len(spatial_per_sn) and spatial_per_sn[si].ndim == 4 and spatial_per_sn[si].shape[2] > 0:
+                    per_subnet.append((times, spatial_per_sn[si]))
+                elif hasattr(m, 'spatial_mean'):
+                    # Fallback: Python computation
+                    spatial = np.einsum('ij,tkjm->tkim', m.spatial_mean, data)
                     per_subnet.append((times, spatial))
                 else:
-                    # spatial_mean not configured — pass through unchanged
                     per_subnet.append((times, data))
             elif isinstance(m, SubSample):
                 period = float(m.period)
@@ -589,7 +595,7 @@ class CompiledNetworkFn:
                         "The step-based selection mask assumes one step per chunk. "
                         "Pass chunk_size=1 or use TemporalAverage instead."
                     )
-        outputs, final_states, final_bufs = self._backend._run_compiled(
+        outputs, final_states, final_bufs, monitor_data = self._backend._run_compiled(
             self._run_network_fn,
             self._analysis,
             self._network_set,
@@ -597,10 +603,11 @@ class CompiledNetworkFn:
             chunk_size,
             initial_states,
             _initial_buffers=_initial_buffers,
+            monitors=monitors,
         )
         if monitors is not None:
             dt = self._network_set.subnets[0].scheme.dt
-            outputs = _apply_monitors(outputs, monitors, dt)
+            outputs = _apply_monitors(outputs, monitors, dt, monitor_data=monitor_data)
         if not return_snapshot:
             return outputs
         snapshot = {
@@ -790,7 +797,8 @@ class NbHybridBackend(MakoUtilMix):
         chunk_size: int,
         initial_states: Optional[list],
         _initial_buffers: Optional[dict] = None,
-    ) -> list:
+        monitors: Optional[list] = None,
+    ) -> tuple:
         """Build the argument list and call the pre-compiled kernel."""
         # Guard: chunk_size must not exceed the minimum horizon
         if analysis.all_projections:
@@ -909,10 +917,44 @@ class NbHybridBackend(MakoUtilMix):
                 sp_arr = np.zeros((0, sn_info.n_nodes), dtype=np.float32)
             args.append(sp_arr)
 
+        # Per-subnetwork monitor config arrays (SpatialAverage / Projection)
+        from tvb.simulator.monitors import SpatialAverage as SpatialAverageMon, Projection as ProjectionMon
+        _spatial_mean_mon = None
+        _projection_mon = None
+        if monitors:
+            for m in monitors:
+                if isinstance(m, SpatialAverageMon) and hasattr(m, 'spatial_mean'):
+                    _spatial_mean_mon = m
+                if isinstance(m, ProjectionMon):
+                    _projection_mon = m
+        for sn_info in analysis.subnetworks:
+            # spatial_mean: (n_areas, n_nodes) or empty (0, n_nodes)
+            if _spatial_mean_mon is not None:
+                sm = np.asarray(_spatial_mean_mon.spatial_mean, dtype=np.float32)
+                if sm.shape[1] != sn_info.n_nodes:
+                    sm = np.zeros((0, sn_info.n_nodes), dtype=np.float32)
+            else:
+                sm = np.zeros((0, sn_info.n_nodes), dtype=np.float32)
+            args.append(sm)
+            # gain: (n_sensors, n_nodes) or empty (0, n_nodes)
+            if _projection_mon is not None and hasattr(_projection_mon, 'gain'):
+                gn = np.asarray(_projection_mon.gain, dtype=np.float32)
+                if gn.shape[1] != sn_info.n_nodes:
+                    gn = np.zeros((0, sn_info.n_nodes), dtype=np.float32)
+            else:
+                gn = np.zeros((0, sn_info.n_nodes), dtype=np.float32)
+            args.append(gn)
+
         args.append(chunk_size)
 
         outputs = run_network_fn(*args)
-        return outputs, sn_states, src_bufs
+        # outputs[i] = (times, data, ctavg, spatial, proj)
+        raw_outputs = [(t, d, c) for t, d, c, s, p in outputs]
+        monitor_data = {
+            'spatial': [s for t, d, c, s, p in outputs],
+            'proj': [p for t, d, c, s, p in outputs],
+        }
+        return raw_outputs, sn_states, src_bufs, monitor_data
 
     @staticmethod
     def _compute_stimulus_lazy(
