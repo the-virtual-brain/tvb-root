@@ -3253,5 +3253,264 @@ class TestNbHybridMonitors(unittest.TestCase):
         )
 
 
+# ---------------------------------------------------------------------------
+# Integrative monitor tests: Python hybrid vs Numba hybrid with monitors
+# ---------------------------------------------------------------------------
+
+
+class TestNbHybridMonitorsIntegrative(unittest.TestCase):
+    """Compare monitor output from Python hybrid step-loop against Numba backend.
+
+    Pattern: run the same simulation both ways, apply the same monitor logic,
+    and assert numerical equivalence.
+    """
+
+    N = 4
+    NSTEP = 50
+
+    @staticmethod
+    def _import_monitors():
+        from tvb.simulator.monitors import (
+            TemporalAverage, SubSample, GlobalAverage,
+            SpatialAverage, EEG, Bold,
+        )
+        return TemporalAverage, SubSample, GlobalAverage, SpatialAverage, EEG, Bold
+
+    def _build(self, n=4):
+        """Build a single-subnet MPR network + identical ICs for both paths."""
+        m = MontbrioPazoRoxin()
+        m.configure()
+        sn = _mpr_subnetwork("mon_sn", n)
+        sn.configure()
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns.configure()
+
+        rng = np.random.RandomState(77)
+        x0 = rng.uniform(0.0, 0.2, (m.nvar, n, 1)).astype(np.float64)
+        x0[0] = np.abs(x0[0])
+        return ns, [x0], m
+
+    def _python_raw(self, ns, x0_list, nstep, model):
+        """Run Python loop, return voi-indexed array (nstep, nvoi, nnodes, nmodes)."""
+        py = _run_python_loop(ns, nstep, x0_list)
+        svars = list(model.state_variables)
+        voi = list(model.variables_of_interest)
+        voi_idx = [svars.index(v) for v in voi]
+        return py[0][:, voi_idx, :, :]  # (nstep, nvoi, nnodes, nmodes)
+
+    def _numba_monitor(self, ns, x0_list, nstep, monitor):
+        """Run Numba backend with the given monitor, return (times, data)."""
+        backend = NbHybridBackend()
+        results = backend.run_network(
+            ns, nstep=nstep, chunk_size=1, monitors=[monitor], initial_states=x0_list,
+        )
+        return results[0][0]  # (times, data) for first (only) subnet
+
+    # --- TemporalAverage ---
+
+    def test_temporal_average_matches_python(self):
+        """TemporalAverage from Numba matches average of Python raw states."""
+        TemporalAverage, *_ = self._import_monitors()
+        ns, x0_list, model = self._build()
+        py_raw = self._python_raw(ns, [x0_list[0].copy()], self.NSTEP, model)
+
+        ta = TemporalAverage(period=DT)
+        nb_t, nb_d = self._numba_monitor(ns, [x0_list[0].copy()], self.NSTEP, ta)
+
+        # chunk_size=1, so each chunk is a single-step temporal average = the state itself
+        # NB: backend output is float32, Python is float64
+        np.testing.assert_allclose(
+            nb_d, py_raw.astype(np.float32), rtol=1e-2, atol=1e-2,
+            err_msg="TemporalAverage: Numba differs from Python",
+        )
+
+    def test_temporal_average_chunked_matches_python(self):
+        """TemporalAverage with chunk_size>1 matches temporal mean of Python states."""
+        TemporalAverage, *_ = self._import_monitors()
+        chunk = 5
+        ns, x0_list, model = self._build()
+        py_raw = self._python_raw(ns, [x0_list[0].copy()], self.NSTEP, model)
+
+        ta = TemporalAverage(period=DT * chunk)
+        backend = NbHybridBackend()
+        results = backend.run_network(
+            ns, nstep=self.NSTEP, chunk_size=chunk, monitors=[ta], initial_states=[x0_list[0].copy()],
+        )
+        nb_t, nb_d = results[0][0]
+
+        # Manual temporal average: reshape into chunks and mean
+        n_chunks = self.NSTEP // chunk
+        py_chunked = py_raw[:n_chunks * chunk].reshape(n_chunks, chunk, -1, model.nvar, 1)
+        # Wait — py_raw is (nstep, nvoi, nnodes, nmodes)
+        py_chunked = py_raw[:n_chunks * chunk].reshape(n_chunks, chunk, *py_raw.shape[1:])
+        py_mean = py_chunked.mean(axis=1).astype(np.float32)
+
+        np.testing.assert_allclose(
+            nb_d, py_mean, rtol=1e-2, atol=1e-2,
+            err_msg="TemporalAverage chunked: Numba differs from Python",
+        )
+
+    # --- SubSample ---
+
+    def test_subsample_matches_python(self):
+        """SubSample from Numba matches subsampled Python raw states."""
+        _, SubSample, *_ = self._import_monitors()
+        period = 0.5  # ms — at dt=0.01, istep=50
+        istep = int(round(period / DT))
+
+        ns, x0_list, model = self._build()
+        py_raw = self._python_raw(ns, [x0_list[0].copy()], self.NSTEP, model)
+
+        ss = SubSample(period=period)
+        nb_t, nb_d = self._numba_monitor(ns, [x0_list[0].copy()], self.NSTEP, ss)
+
+        # Python: subsample at multiples of istep (1-indexed steps)
+        py_steps = np.arange(1, self.NSTEP + 1)
+        py_mask = py_steps % istep == 0
+        py_sub = py_raw[py_mask].astype(np.float32)
+
+        # Both should have same number of samples
+        assert nb_d.shape[0] == py_sub.shape[0], (
+            f"SubSample sample count: Numba={nb_d.shape[0]}, Python={py_sub.shape[0]}"
+        )
+        np.testing.assert_allclose(
+            nb_d, py_sub, rtol=1e-2, atol=1e-2,
+            err_msg="SubSample: Numba differs from Python",
+        )
+
+    # --- GlobalAverage ---
+
+    def test_global_average_matches_python(self):
+        """GlobalAverage from Numba matches mean-across-nodes of Python raw states."""
+        _, _, GlobalAverage, *_ = self._import_monitors()
+        ns, x0_list, model = self._build()
+        py_raw = self._python_raw(ns, [x0_list[0].copy()], self.NSTEP, model)
+
+        ga = GlobalAverage(period=DT)
+        nb_t, nb_d = self._numba_monitor(ns, [x0_list[0].copy()], self.NSTEP, ga)
+
+        # Python: mean over nodes axis (axis=-2)
+        py_avg = py_raw.mean(axis=-2, keepdims=True).astype(np.float32)
+
+        np.testing.assert_allclose(
+            nb_d, py_avg, rtol=1e-2, atol=1e-2,
+            err_msg="GlobalAverage: Numba differs from Python",
+        )
+
+    # --- SpatialAverage ---
+
+    def test_spatial_average_matches_python(self):
+        """SpatialAverage from Numba matches spatial_mean @ Python raw states."""
+        _, _, _, SpatialAverage, *_ = self._import_monitors()
+        ns, x0_list, model = self._build()
+        py_raw = self._python_raw(ns, [x0_list[0].copy()], self.NSTEP, model)
+
+        # 2 areas: [0,1] -> area 0, [2,3] -> area 1
+        spatial_mean = np.array(
+            [[0.5, 0.5, 0.0, 0.0], [0.0, 0.0, 0.5, 0.5]], dtype=np.float64
+        )
+        sa = SpatialAverage(period=DT)
+        sa.spatial_mean = spatial_mean
+
+        nb_t, nb_d = self._numba_monitor(ns, [x0_list[0].copy()], self.NSTEP, sa)
+
+        # Python: einsum spatial_mean @ raw
+        py_sa = np.einsum('ij,tklm->tkim', spatial_mean, py_raw).astype(np.float32)
+
+        np.testing.assert_allclose(
+            nb_d, py_sa, rtol=1e-2, atol=1e-2,
+            err_msg="SpatialAverage: Numba differs from Python",
+        )
+
+    # --- Projection (EEG) ---
+
+    def test_projection_matches_python(self):
+        """Projection (EEG) from Numba matches gain @ Python raw states."""
+        _, _, _, _, EEG, _ = self._import_monitors()
+        ns, x0_list, model = self._build()
+        py_raw = self._python_raw(ns, [x0_list[0].copy()], self.NSTEP, model)
+
+        n_sensors = 3
+        rng = np.random.RandomState(42)
+        gain = rng.randn(n_sensors, self.N).astype(np.float64)
+
+        eeg = EEG(period=1.0)
+        eeg._gain = gain
+
+        nb_t, nb_d = self._numba_monitor(ns, [x0_list[0].copy()], self.NSTEP, eeg)
+
+        # Python: sum modes, then gain @ data
+        py_2d = py_raw.sum(axis=-1)  # (nstep, nvoi, nnodes)
+        py_proj = np.einsum('ij,tkj->tki', gain, py_2d)[..., np.newaxis].astype(np.float32)
+
+        np.testing.assert_allclose(
+            nb_d, py_proj, rtol=1e-2, atol=1e-2,
+            err_msg="Projection: Numba differs from Python",
+        )
+
+    # --- Bold ---
+
+    def test_bold_matches_python(self):
+        """Bold from Numba matches HRF convolution of Python raw states."""
+        from tvb.datatypes import equations
+        _, _, _, _, _, Bold = self._import_monitors()
+        bold_period = 20.0  # ms
+        istep = int(round(bold_period / DT))  # 2000 steps
+
+        # Need enough steps for at least 1 Bold sample
+        nstep = istep * 2  # 4000 steps for 2 Bold samples
+
+        ns, x0_list, model = self._build()
+        py_raw = self._python_raw(ns, [x0_list[0].copy()], nstep, model)
+
+        bold = Bold(period=bold_period)
+        bold.dt = DT
+        bold._config_dt(DT)
+        bold.compute_hrf()
+
+        nb_t, nb_d = self._numba_monitor(ns, [x0_list[0].copy()], nstep, bold)
+
+        # Python: replicate Bold.sample() logic
+        hrf = bold.hemodynamic_response_function  # (1, stock_steps)
+        stock_steps = hrf.shape[1]
+        interim_istep = bold._interim_istep
+
+        # Use float32 to match Numba backend precision
+        py_f32 = py_raw.astype(np.float32)
+        interim_stock = np.zeros((interim_istep,) + py_f32.shape[1:], dtype=np.float32)
+        stock = np.zeros((stock_steps,) + py_f32.shape[1:], dtype=np.float32)
+
+        py_bold_times = []
+        py_bold_data = []
+        for step in range(1, nstep + 1):
+            interim_stock[(step - 1) % interim_istep] = py_f32[step - 1]
+            if step % interim_istep == 0:
+                avg = np.mean(interim_stock, axis=0)
+                stock[(step // interim_istep - 1) % stock_steps] = avg
+            if step % istep == 0:
+                t = step * DT
+                rolled_hrf = np.roll(hrf, (step // interim_istep - 1) % stock_steps, axis=1)
+                stock_t = stock.transpose((1, 2, 0, 3))  # (nvoi, nnodes, stock_steps, nmodes)
+                bold_val = np.dot(rolled_hrf, stock_t).reshape(py_f32.shape[1:])
+                # Apply FirstOrderVolterra scaling to match Numba backend
+                if isinstance(bold.hrf_kernel, equations.FirstOrderVolterra):
+                    k1 = bold.hrf_kernel.parameters.get('k_1', 1.0)
+                    V0 = bold.hrf_kernel.parameters.get('V_0', 1.0)
+                    bold_val = (bold_val - 1.0) * k1 * V0
+                py_bold_times.append(t)
+                py_bold_data.append(bold_val)
+
+        py_bold_arr = np.stack(py_bold_data, axis=0)
+
+        assert nb_d.shape[0] == py_bold_arr.shape[0], (
+            f"Bold sample count: Numba={nb_d.shape[0]}, Python={py_bold_arr.shape[0]}"
+        )
+        np.testing.assert_allclose(
+            nb_d, py_bold_arr, rtol=1e-2, atol=1e-2,
+            err_msg="Bold: Numba differs from Python",
+        )
+
+
 if __name__ == "__main__":
+    unittest.main()
     unittest.main()
