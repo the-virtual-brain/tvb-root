@@ -232,7 +232,12 @@ def _apply_monitors(
                     per_subnet.append((times, data))
             elif isinstance(m, SubSample):
                 period = float(m.period)
-                mask = np.abs(times - np.round(times / period) * period) < dt
+                istep = max(1, int(round(period / dt)))
+                # Step-based selection (1-indexed) to match Python monitor semantics
+                # chunk i corresponds to step (offset + i + 1)
+                n_chunks = len(times)
+                step_numbers = np.arange(1, n_chunks + 1)
+                mask = step_numbers % istep == 0
                 if np.any(mask):
                     per_subnet.append((times[mask], data[mask]))
                 else:
