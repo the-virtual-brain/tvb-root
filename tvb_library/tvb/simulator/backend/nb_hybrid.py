@@ -125,10 +125,57 @@ def _compute_chunk_size(monitors, dt):
     return max(1, result)
 
 
+def _aggregate_chunks_to_period(times, data, period, dt, chunk_size):
+    """Aggregate per-chunk data into period-sized windows.
+
+    When chunk_size < monitor period (in steps), the JIT produces more chunks
+    than monitor samples. This function groups consecutive chunks into windows
+    of `istep / chunk_size` chunks each, averages each window, and returns
+    the downsampled result with midpoint times.
+
+    Parameters
+    ----------
+    times : ndarray (n_chunks,)
+        Per-chunk midpoint times.
+    data : ndarray (n_chunks, ...)
+        Per-chunk averaged data.
+    period : float
+        Monitor sampling period in ms.
+    dt : float
+        Integration time step in ms.
+    chunk_size : int
+        Number of integration steps per chunk.
+
+    Returns
+    -------
+    new_times : ndarray (n_samples,)
+    new_data : ndarray (n_samples, ...)
+    """
+    istep = max(1, int(round(period / dt)))
+    chunks_per_period = max(1, istep // chunk_size)
+    n_chunks = len(times)
+    n_periods = n_chunks // chunks_per_period
+    if n_periods == 0:
+        # Not enough chunks for one full period — return per-chunk data as-is
+        return times, data
+    # Reshape and average over chunks_per_period
+    truncated = n_periods * chunks_per_period
+    reshaped = data[:truncated].reshape(n_periods, chunks_per_period, *data.shape[1:])
+    avg_data = reshaped.mean(axis=1)
+    # Compute period midpoint times: first period starts at step 0
+    period_dt = istep * dt
+    new_times = np.array([
+        (i * chunks_per_period * chunk_size + istep / 2.0) * dt
+        for i in range(n_periods)
+    ], dtype=np.float64)
+    return new_times, avg_data
+
+
 def _apply_monitors(
     raw_outputs: list,
     monitors: list,
     dt: float,
+    chunk_size: int = 1,
     monitor_data: Optional[dict] = None,
 ) -> list:
     """Transform per-subnet (times, data, ctavg) tuples into monitor-dispatched output.
@@ -203,14 +250,21 @@ def _apply_monitors(
             elif isinstance(m, Projection):
                 # Use JIT-precomputed if available
                 if si < len(proj_per_sn) and proj_per_sn[si].ndim == 4 and proj_per_sn[si].shape[1] > 0:
-                    per_subnet.append((times, proj_per_sn[si]))
+                    proj_data = proj_per_sn[si]
                 else:
                     # Fallback: Python computation
                     gain = m.gain.astype(data.dtype)
                     data_2d = data.sum(axis=-1)
                     projected = np.einsum('ij,tkj->tki', gain, data_2d)
-                    projected = projected[..., np.newaxis]
-                    per_subnet.append((times, projected))
+                    proj_data = projected[..., np.newaxis]
+                # Aggregate chunks to match monitor period
+                if chunk_size > 0 and hasattr(m, 'period'):
+                    istep = max(1, int(round(float(m.period) / dt)))
+                    if chunk_size < istep:
+                        t, d = _aggregate_chunks_to_period(times, proj_data, float(m.period), dt, chunk_size)
+                        per_subnet.append((t, d))
+                        continue
+                per_subnet.append((times, proj_data))
             elif isinstance(m, GlobalAverage):
                 per_subnet.append((times, data.mean(axis=-2, keepdims=True)))
             elif isinstance(m, Bold):
@@ -234,13 +288,20 @@ def _apply_monitors(
             elif isinstance(m, SpatialAverage):
                 # Use JIT-precomputed if available
                 if si < len(spatial_per_sn) and spatial_per_sn[si].ndim == 4 and spatial_per_sn[si].shape[2] > 0:
-                    per_subnet.append((times, spatial_per_sn[si]))
+                    sa_data = spatial_per_sn[si]
                 elif hasattr(m, 'spatial_mean'):
                     # Fallback: Python computation
-                    spatial = np.einsum('ij,tkjm->tkim', m.spatial_mean, data)
-                    per_subnet.append((times, spatial))
+                    sa_data = np.einsum('ij,tkjm->tkim', m.spatial_mean, data)
                 else:
-                    per_subnet.append((times, data))
+                    sa_data = data
+                # Aggregate chunks to match monitor period
+                if chunk_size > 0 and hasattr(m, 'period'):
+                    istep = max(1, int(round(float(m.period) / dt)))
+                    if chunk_size < istep:
+                        t, d = _aggregate_chunks_to_period(times, sa_data, float(m.period), dt, chunk_size)
+                        per_subnet.append((t, d))
+                        continue
+                per_subnet.append((times, sa_data))
             elif isinstance(m, SubSample):
                 period = float(m.period)
                 istep = max(1, int(round(period / dt)))
@@ -623,7 +684,7 @@ class CompiledNetworkFn:
         if monitor_data.get('bold_states'):
             self._bold_states = monitor_data['bold_states']
         if monitors is not None:
-            outputs = _apply_monitors(outputs, monitors, dt, monitor_data=monitor_data)
+            outputs = _apply_monitors(outputs, monitors, dt, chunk_size=chunk_size, monitor_data=monitor_data)
         if not return_snapshot:
             return outputs
         snapshot = {

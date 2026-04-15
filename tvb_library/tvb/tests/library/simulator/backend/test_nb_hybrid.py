@@ -4016,6 +4016,99 @@ class TestModeSummation(unittest.TestCase):
         self.assertEqual(nb_data.shape[3], 1, f"Expected modes=1, got {nb_data.shape[3]}")
 
 
+
+class TestMonitorPeriodAggregation(unittest.TestCase):
+    """Verify Projection and SpatialAverage aggregate chunks to match period."""
+
+    N = 4
+    DT = 0.01
+
+    def _make_net(self, n=4):
+        from tvb.simulator.models.oscillator import Generic2dOscillator
+        from tvb.simulator.hybrid import Subnetwork, NetworkSet
+
+        m = Generic2dOscillator()
+        m.configure()
+        sn = Subnetwork(name='sn', model=m, scheme=HeunDeterministic(dt=self.DT), nnodes=n)
+        sn.configure()
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns.configure()
+        return ns, m
+
+    def _make_ic(self, n):
+        from tvb.simulator.models.oscillator import Generic2dOscillator
+
+        rng = np.random.RandomState(42)
+        m = Generic2dOscillator()
+        m.configure()
+        return [rng.uniform(0.0, 0.2, (m.nvar, n, 1)).astype(np.float64)]
+
+    def test_aggregate_chunks_to_period_basic(self):
+        """_aggregate_chunks_to_period correctly groups chunks."""
+        from tvb.simulator.backend.nb_hybrid import _aggregate_chunks_to_period
+
+        times = np.array([0.05, 0.15, 0.25, 0.35, 0.45, 0.55])  # 6 chunks, dt=0.1
+        data = np.ones((6, 1, 3, 1))
+        # period=0.3 -> istep=3, chunk_size=1 -> chunks_per_period=3
+        t, d = _aggregate_chunks_to_period(times, data, period=0.3, dt=0.1, chunk_size=1)
+        self.assertEqual(t.shape[0], 2, f"Expected 2 periods, got {t.shape[0]}")
+        self.assertEqual(d.shape[0], 2)
+        # Each period averages 3 chunks of ones → ones
+        np.testing.assert_allclose(d, 1.0)
+
+    def test_aggregate_chunks_to_period_insufficient(self):
+        """_aggregate_chunks_to_period returns per-chunk when not enough for one period."""
+        from tvb.simulator.backend.nb_hybrid import _aggregate_chunks_to_period
+
+        times = np.array([0.05, 0.15])  # 2 chunks
+        data = np.ones((2, 1, 3, 1))
+        # period=1.0 -> istep=100, chunk_size=1 -> chunks_per_period=100
+        t, d = _aggregate_chunks_to_period(times, data, period=1.0, dt=0.01, chunk_size=1)
+        self.assertEqual(t.shape[0], 2, "Should return per-chunk when insufficient for a period")
+
+    def test_projection_period_aggregation(self):
+        """Projection with chunk_size < period aggregates correctly."""
+        from tvb.simulator.monitors import EEG
+
+        nets, model = self._make_net(self.N)
+        ic = self._make_ic(self.N)
+        backend = NbHybridBackend()
+
+        eeg = EEG(period=0.1)  # istep = 10
+        eeg._gain = np.random.RandomState(42).randn(3, self.N).astype(np.float64)
+
+        # Use chunk_size=5 (half the period), run 40 steps = 4 periods
+        results = backend.run_network(
+            nets, nstep=40, chunk_size=5, monitors=[eeg], initial_states=ic,
+        )
+        times, data = results[0][0]
+        # 40 steps / 5 chunk_size = 8 chunks, aggregated to 40/10 = 4 periods
+        self.assertEqual(data.shape[0], 4, f"Expected 4 projection samples, got {data.shape[0]}")
+        self.assertEqual(data.shape[2], 3, f"Expected 3 sensors, got {data.shape[2]}")
+
+    def test_spatial_average_period_aggregation(self):
+        """SpatialAverage with chunk_size < period aggregates correctly."""
+        from tvb.simulator.monitors import SpatialAverage
+
+        nets, model = self._make_net(self.N)
+        ic = self._make_ic(self.N)
+        backend = NbHybridBackend()
+
+        spatial_mean = np.array(
+            [[0.5, 0.5, 0.0, 0.0], [0.0, 0.0, 0.5, 0.5]], dtype=np.float64
+        )
+        sa = SpatialAverage(period=0.1)  # istep = 10
+        sa.spatial_mean = spatial_mean
+
+        # Use chunk_size=5 (half the period), run 40 steps = 4 periods
+        results = backend.run_network(
+            nets, nstep=40, chunk_size=5, monitors=[sa], initial_states=ic,
+        )
+        times, data = results[0][0]
+        self.assertEqual(data.shape[0], 4, f"Expected 4 spatial samples, got {data.shape[0]}")
+        self.assertEqual(data.shape[2], 2, f"Expected 2 areas, got {data.shape[2]}")
+
+
 if __name__ == "__main__":
     unittest.main()
     unittest.main()
