@@ -4252,6 +4252,93 @@ class TestMergedMode(unittest.TestCase):
         # Not merged: 2 subnet entries
         self.assertEqual(len(results[0]), 2, "Expected per-subnet results without node_indices")
 
+    def test_projection_merged_sums_sensors(self):
+        """Projection with node_indices sums per-subnet sensor outputs."""
+        from tvb.simulator.monitors import EEG
+        from tvb.simulator.models.oscillator import Generic2dOscillator
+        from tvb.simulator.hybrid import Subnetwork, NetworkSet
+
+        DT = self.DT
+        m = Generic2dOscillator(); m.configure()
+        n1, n2 = 2, 2
+
+        sn1 = Subnetwork(name='ctx', model=m, scheme=HeunDeterministic(dt=DT), nnodes=n1)
+        sn1.node_indices = np.array([0, 2])
+        sn1.configure()
+        sn2 = Subnetwork(name='thal', model=m, scheme=HeunDeterministic(dt=DT), nnodes=n2)
+        sn2.node_indices = np.array([1, 3])
+        sn2.configure()
+        ns = NetworkSet(subnets=[sn1, sn2], projections=[], stimuli=[])
+        ns.configure()
+
+        rng = np.random.RandomState(42)
+        ics = [rng.uniform(0, 0.2, (m.nvar, n1, 1)).astype(np.float64),
+               rng.uniform(0, 0.2, (m.nvar, n2, 1)).astype(np.float64)]
+
+        # 2 sensors, 4 connectome nodes total
+        gain = rng.randn(2, 4).astype(np.float64)
+        eeg = EEG(period=DT)
+        eeg._gain = gain
+
+        results = NbHybridBackend().run_network(
+            ns, nstep=5, chunk_size=1, monitors=[eeg], initial_states=ics,
+        )
+        # Merged: single result with one entry
+        self.assertEqual(len(results[0]), 1, "Expected single merged projection result")
+        times, data = results[0][0]
+        # shape: (5, n_voi=1, n_sensors=2, 1)
+        self.assertEqual(data.shape[0], 5, f"Expected 5 samples, got {data.shape[0]}")
+        self.assertEqual(data.shape[2], 2, f"Expected 2 sensors, got {data.shape[2]}")
+        self.assertTrue(np.all(np.isfinite(data)), "NaN in merged projection output")
+
+        # Verify correctness: merged result should equal sum of individual projections
+        sn1.configure()
+        sn2.configure()
+        ns2 = NetworkSet(subnets=[sn1, sn2], projections=[], stimuli=[])
+        ns2.configure()
+        ics2 = [ics[0].copy(), ics[1].copy()]
+        # Run without node_indices (no merge) to get per-subnet projections
+        sn1_no = Subnetwork(name='ctx', model=m, scheme=HeunDeterministic(dt=DT), nnodes=n1)
+        sn1_no.configure()
+        sn2_no = Subnetwork(name='thal', model=m, scheme=HeunDeterministic(dt=DT), nnodes=n2)
+        sn2_no.configure()
+        ns_no = NetworkSet(subnets=[sn1_no, sn2_no], projections=[], stimuli=[])
+        ns_no.configure()
+
+        # Use per-subnet gain slices for the unmerged run
+        eeg1 = EEG(period=DT)
+        eeg1._gain = gain[:, [0, 2]]  # sensor x sn1 nodes
+        eeg2 = EEG(period=DT)
+        eeg2._gain = gain[:, [1, 3]]  # sensor x sn2 nodes
+
+        # Actually, just verify by running the same merged setup and checking
+        # that the merged projection equals the sum of independently computed ones.
+        # Use the backend to run each subnet separately and sum.
+        from tvb.simulator.backend.nb_hybrid import NbHybridBackend as BH
+
+        # Run subnet 1 alone
+        ns_s1 = NetworkSet(subnets=[sn1_no], projections=[], stimuli=[])
+        ns_s1.configure()
+        eeg_s1 = EEG(period=DT)
+        eeg_s1._gain = gain[:, [0, 2]]
+        r1 = BH().run_network(ns_s1, nstep=5, chunk_size=1, monitors=[eeg_s1],
+                              initial_states=[ics[0].copy()])
+
+        # Run subnet 2 alone
+        ns_s2 = NetworkSet(subnets=[sn2_no], projections=[], stimuli=[])
+        ns_s2.configure()
+        eeg_s2 = EEG(period=DT)
+        eeg_s2._gain = gain[:, [1, 3]]
+        r2 = BH().run_network(ns_s2, nstep=5, chunk_size=1, monitors=[eeg_s2],
+                              initial_states=[ics[1].copy()])
+
+        # Sum of individual projections should match merged result
+        expected = r1[0][0][1] + r2[0][0][1]
+        np.testing.assert_allclose(
+            data, expected, rtol=1e-5, atol=1e-6,
+            err_msg="Merged projection should equal sum of per-subnet projections"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

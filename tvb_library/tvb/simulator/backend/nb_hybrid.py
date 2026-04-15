@@ -249,23 +249,28 @@ def _apply_monitors(
             if isinstance(m, AfferentCoupling):
                 per_subnet.append((times, ctavg))
             elif isinstance(m, Projection):
-                # Use JIT-precomputed if available
-                if si < len(proj_per_sn) and proj_per_sn[si].ndim == 4 and proj_per_sn[si].shape[1] > 0:
-                    proj_data = proj_per_sn[si]
+                if subnet_infos and _can_merge_subnets(subnet_infos):
+                    # In merged mode, each subnet has fewer nodes than the
+                    # full gain matrix. Defer projection to the merge step,
+                    # which operates on connectome-ordered data.
+                    per_subnet.append((times, data))
                 else:
-                    # Fallback: Python computation
-                    gain = m.gain.astype(data.dtype)
-                    data_2d = data.sum(axis=-1)
-                    projected = np.einsum('ij,tkj->tki', gain, data_2d)
-                    proj_data = projected[..., np.newaxis]
-                # Aggregate chunks to match monitor period
-                if chunk_size > 0 and hasattr(m, 'period'):
-                    istep = max(1, int(round(float(m.period) / dt)))
-                    if chunk_size < istep:
-                        t, d = _aggregate_chunks_to_period(times, proj_data, float(m.period), dt, chunk_size)
-                        per_subnet.append((t, d))
-                        continue
-                per_subnet.append((times, proj_data))
+                    # Non-merged: project this subnet's data
+                    if si < len(proj_per_sn) and proj_per_sn[si].ndim == 4 and proj_per_sn[si].shape[1] > 0:
+                        proj_data = proj_per_sn[si]
+                    else:
+                        gain = m.gain.astype(data.dtype)
+                        data_2d = data.sum(axis=-1)
+                        projected = np.einsum('ij,tkj->tki', gain, data_2d)
+                        proj_data = projected[..., np.newaxis]
+                    # Aggregate chunks to match monitor period
+                    if chunk_size > 0 and hasattr(m, 'period'):
+                        istep = max(1, int(round(float(m.period) / dt)))
+                        if chunk_size < istep:
+                            t, d = _aggregate_chunks_to_period(times, proj_data, float(m.period), dt, chunk_size)
+                            per_subnet.append((t, d))
+                            continue
+                    per_subnet.append((times, proj_data))
             elif isinstance(m, GlobalAverage):
                 # In merged mode, defer averaging until after merge
                 if subnet_infos and _can_merge_subnets(subnet_infos):
@@ -357,7 +362,18 @@ def _apply_monitors(
                 merged = _merge_and_spatial_average(results[mi], subnet_infos, m.spatial_mean)
                 merged_results.append(merged)
                 continue
-            # SpatialAverage, Projection: merge by placing data at node_indices
+            if isinstance(m, Projection):
+                # Merge raw data into connectome order, then apply gain matrix.
+                # Each subnet stored raw data (not projected) in the per-subnet loop,
+                # because the full gain spans all connectome nodes.
+                merged = _merge_subnet_outputs(results[mi], subnet_infos)
+                times_m, data_m = merged[0]
+                gain = np.asarray(m.gain, dtype=data_m.dtype)
+                data_2d = data_m.sum(axis=-1)  # (T, n_voi, total_nodes)
+                projected = np.einsum('ij,tkj->tki', gain, data_2d)
+                merged_results.append([(times_m, projected[..., np.newaxis])])
+                continue
+            # Fallback: merge by placing data at node_indices
             merged = _merge_subnet_outputs(results[mi], subnet_infos)
             merged_results.append(merged)
         results = merged_results
