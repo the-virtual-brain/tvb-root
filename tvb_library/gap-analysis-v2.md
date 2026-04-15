@@ -113,7 +113,7 @@ The coupling CSR loop (68 targets × ~20 sources × 1 cvar) adds ~150% overhead 
 
 | Monitor | Status | Priority | Notes |
 |---|---|---|---|
-| `AfferentCouplingTemporalAverage` | ❌ Missing | LOW | Extends `AfferentCoupling` + `TemporalAverage`. The JIT already computes ctavg. Just needs dispatch in `_apply_monitors`. |
+| `AfferentCouplingTemporalAverage` | ✅ Fixed (commit `d8f3bcf9b`) | LOW | Period-aware ACTA now included in chunk_size GCD. Exempted from Raw guard. |
 | `BoldRegionROI` | ❌ Missing | LOW | Bold + region spatial average. Niche. |
 
 ### 2.4 Feature Gaps (1 gap)
