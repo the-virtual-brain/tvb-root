@@ -1815,6 +1815,59 @@ class TestNbHybridGeneric2dOscillator:
             )
 
 
+class TestNbHybridLinear:
+    """Linear model in numba backend — simplest 1-state-variable model."""
+
+    def _build_linear_network(self, n=6):
+        from tvb.simulator.models.linear import Linear
+        m = Linear(); m.configure()
+        sn = Subnetwork(name='lin', model=m, scheme=HeunDeterministic(dt=DT), nnodes=n)
+        sn.configure()
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns.configure()
+        return ns
+
+    def test_linear_accepted_by_backend(self):
+        """Linear is accepted by _check_compatibility."""
+        ns = self._build_linear_network()
+        NbHybridBackend()._check_compatibility(ns)  # should not raise
+
+    def test_linear_output_shape(self):
+        """Linear numba output has correct shape."""
+        ns = self._build_linear_network(n=5)
+        x0 = np.zeros((1, 5, 1), dtype=np.float32)
+        results = _run_nb_full(ns, 10, [x0.copy()])
+        assert len(results) == 1
+        t_arr, d_arr, _ = results[0]
+        assert d_arr.ndim == 4
+        assert d_arr.shape[1] == 1  # 1 VOI
+        assert d_arr.shape[2] == 5
+        assert d_arr.shape[3] == 1
+
+    def test_linear_output_finite(self):
+        """Linear numba output is finite."""
+        ns = self._build_linear_network(n=5)
+        x0 = np.zeros((1, 5, 1), dtype=np.float32)
+        results = _run_nb_full(ns, 15, [x0.copy()])
+        for t_arr, d_arr, _ in results:
+            assert np.all(np.isfinite(d_arr)), "NaN/Inf in Linear output"
+
+    def test_linear_matches_python(self):
+        """Linear numba output matches Python loop backend."""
+        ns = self._build_linear_network(n=5)
+        x0 = np.zeros((1, 5, 1), dtype=np.float32)
+        x0_list = [x0.copy()]
+        py_results = _run_python_loop(ns, 15, x0_list)
+        nb_results = _run_nb_full(ns, 15, x0_list)
+        svars = list(ns.subnets[0].model.state_variables)
+        voi = list(ns.subnets[0].model.variables_of_interest)
+        voi_idx = [svars.index(v) for v in voi]
+        for py_d, (_, nb_d, _) in zip(py_results, nb_results):
+            np.testing.assert_allclose(
+                nb_d, py_d[:, voi_idx, :, :].astype(np.float32), rtol=1e-3, atol=1e-3
+            )
+
+
 class TestNbHybridAfferentCoupling:
     """AfferentCoupling output (ctavg) from the numba backend."""
 
