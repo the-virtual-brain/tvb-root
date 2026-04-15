@@ -3993,6 +3993,35 @@ class TestAutoChunkSize(unittest.TestCase):
         times, data, ctavg = results[0]
         self.assertEqual(data.shape[0], 20, f"Expected 20 chunks, got {data.shape[0]}")
 
+    def test_afferent_coupling_temporal_average_period(self):
+        """AfferentCouplingTemporalAverage period is included in chunk_size GCD."""
+        from tvb.simulator.backend.nb_hybrid import _compute_chunk_size
+        from tvb.simulator.monitors import (
+            TemporalAverage,
+            AfferentCouplingTemporalAverage,
+        )
+
+        ta = TemporalAverage(period=1.0)      # istep=100
+        acta = AfferentCouplingTemporalAverage(period=0.5)  # istep=50
+        chunk = _compute_chunk_size([ta, acta], 0.01)
+        self.assertEqual(chunk, 50)  # GCD(100, 50) = 50
+
+    def test_afferent_coupling_temporal_average_runs(self):
+        """AfferentCouplingTemporalAverage produces finite output via backend."""
+        from tvb.simulator.monitors import AfferentCouplingTemporalAverage
+
+        nets, model = self._make_net(self.N)
+        ic = self._make_ic(self.N)
+        backend = NbHybridBackend()
+
+        acta = AfferentCouplingTemporalAverage(period=1.0)
+        results = backend.run_network(
+            nets, nstep=200, monitors=[acta], initial_states=ic,
+        )
+        times, data = results[0][0]
+        self.assertGreater(len(times), 0, "No ACTAvg output")
+        self.assertTrue(np.all(np.isfinite(data)), "NaN in ACTAvg output")
+
 
 class TestModeSummation(unittest.TestCase):
     """Verify that multi-mode output sums modes to match hybrid simulator observe."""

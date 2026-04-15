@@ -104,7 +104,14 @@ def _compute_chunk_size(monitors, dt):
 
     isteps = []
     for m in monitors:
-        # Raw and AfferentCoupling output every step — no period constraint
+        # Raw and base AfferentCoupling output every step — no period constraint.
+        # AfferentCouplingTemporalAverage (subclass) HAS a period, so check it first.
+        from tvb.simulator.monitors import AfferentCouplingTemporalAverage
+        if isinstance(m, AfferentCouplingTemporalAverage):
+            if hasattr(m, 'period') and m.period is not None:
+                istep = max(1, int(round(float(m.period) / dt)))
+                isteps.append(istep)
+            continue
         if isinstance(m, (Raw, AfferentCoupling, RawVoi)):
             continue
         if hasattr(m, 'period') and m.period is not None:
@@ -774,8 +781,9 @@ class CompiledNetworkFn:
         if monitors is not None:
             from tvb.simulator.monitors import Raw, SubSample
 
+            from tvb.simulator.monitors import AfferentCoupling
             for m in monitors:
-                if isinstance(m, Raw) and chunk_size != 1:
+                if isinstance(m, Raw) and not isinstance(m, AfferentCoupling) and chunk_size != 1:
                     raise ValueError(
                         "Raw monitor requires chunk_size=1; "
                         "pass chunk_size=1 to run_network()"
