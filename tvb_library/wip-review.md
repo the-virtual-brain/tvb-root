@@ -230,3 +230,19 @@
 
 
 
+
+### 6. Quick wins cleanup (DONE) — commit `4492254f5`
+
+**Files changed:**
+- `tvb_library/tvb/simulator/backend/nb_hybrid.py`
+- `tvb_library/tvb/tests/library/simulator/backend/test_nb_hybrid.py`
+
+**What was done:**
+- Added `Linear` model to `_supported_models` tuple
+- Deleted dead code: `_BOLD_BALLOON_DEFAULTS` constant, unused `period_dt` variable
+- Removed vestigial `compute_hrf()` call in Bold monitor validation
+- Cached `_can_merge_subnets()` result as `should_merge` (was called 5×, now 1×)
+- Cleaned up dead variables in `test_projection_merged_sums_sensors`
+- Fixed duplicate `unittest.main()` at end of test file
+- 4 new Linear model tests added (commit `30a8cfdc2`)
+- All 212 tests pass (144 non-ralph + 68 ralph)
