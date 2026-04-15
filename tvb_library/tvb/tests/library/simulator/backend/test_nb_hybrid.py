@@ -4404,6 +4404,72 @@ class TestMergedMode(unittest.TestCase):
             err_msg="Merged projection should equal sum of per-subnet projections"
         )
 
+    def test_bold_with_merged_subnets(self):
+        """Bold Balloon model works with merged multi-subnet output."""
+        from tvb.simulator.models.oscillator import Generic2dOscillator
+        from tvb.simulator.monitors import Bold
+
+        DT = self.DT
+        m = Generic2dOscillator(); m.configure()
+        n1, n2 = 3, 3
+
+        sn1 = Subnetwork(name='ctx', model=m, scheme=HeunDeterministic(dt=DT), nnodes=n1)
+        sn1.node_indices = np.array([0, 2, 4])
+        sn1.configure()
+        sn2 = Subnetwork(name='thal', model=m, scheme=HeunDeterministic(dt=DT), nnodes=n2)
+        sn2.node_indices = np.array([1, 3, 5])
+        sn2.configure()
+        ns = NetworkSet(subnets=[sn1, sn2], projections=[], stimuli=[])
+        ns.configure()
+
+        rng = np.random.RandomState(99)
+        ics = [rng.uniform(0, 0.2, (m.nvar, n1, 1)).astype(np.float64),
+               rng.uniform(0, 0.2, (m.nvar, n2, 1)).astype(np.float64)]
+
+        bold = Bold(period=5.0)
+        results = NbHybridBackend().run_network(
+            ns, nstep=200, monitors=[bold], initial_states=ics,
+        )
+        # Bold is a per-subnet monitor (no merge), so 2 entries
+        self.assertEqual(len(results[0]), 2)
+        for si, (times, data) in enumerate(results[0]):
+            if len(times) > 0:
+                self.assertTrue(np.all(np.isfinite(data)),
+                                f"NaN in Bold subnet {si}")
+
+
+class TestStimulusMonitorEndToEnd(unittest.TestCase):
+    """Stimulus + monitor integration test."""
+
+    DT = 0.1
+
+    def test_stimulus_with_temporal_average(self):
+        """Stimulus + TemporalAverage runs end-to-end and produces finite output."""
+        from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
+        from tvb.simulator.hybrid import Subnetwork, NetworkSet
+        from tvb.simulator.monitors import TemporalAverage
+
+        m = MontbrioPazoRoxin(); m.configure()
+        sn = _mpr_subnetwork('stim_test', 4)
+        sn.configure()
+        stim = _make_stim(sn, amplitude=0.05)
+        stim.configure(simulation_length=100 * self.DT)
+
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        ns.configure()
+
+        tavg = TemporalAverage(period=self.DT)
+        rng = np.random.RandomState(42)
+        ic = [rng.uniform(0, 0.1, (m.nvar, 4, 1)).astype(np.float64)]
+
+        results = NbHybridBackend().run_network(
+            ns, nstep=100, chunk_size=1, monitors=[tavg], initial_states=ic,
+        )
+        times, data = results[0][0]
+        self.assertGreater(len(times), 0, "No output")
+        self.assertTrue(np.all(np.isfinite(data)), "NaN in stimulus output")
+        self.assertEqual(data.shape[0], 100, f"Expected 100 samples, got {data.shape[0]}")
+
 
 if __name__ == "__main__":
     unittest.main()
