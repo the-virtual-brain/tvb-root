@@ -4109,6 +4109,150 @@ class TestMonitorPeriodAggregation(unittest.TestCase):
         self.assertEqual(data.shape[2], 2, f"Expected 2 areas, got {data.shape[2]}")
 
 
+
+class TestMergedMode(unittest.TestCase):
+    """Verify connectome-ordered output with node_indices (gap P1)."""
+
+    DT = 0.01
+
+    def _make_two_subnet_net(self, n1=3, n2=2):
+        """Build a 2-subnet network with node_indices for merged mode."""
+        from tvb.simulator.models.oscillator import Generic2dOscillator
+        from tvb.simulator.hybrid import Subnetwork, NetworkSet
+
+        m1 = Generic2dOscillator()
+        m1.configure()
+        sn1 = Subnetwork(name='ctx', model=m1, scheme=HeunDeterministic(dt=self.DT), nnodes=n1)
+        sn1.node_indices = np.array([0, 2, 4])  # positions in connectome
+        sn1.configure()
+
+        m2 = Generic2dOscillator()
+        m2.configure()
+        sn2 = Subnetwork(name='thal', model=m2, scheme=HeunDeterministic(dt=self.DT), nnodes=n2)
+        sn2.node_indices = np.array([1, 3])  # positions in connectome
+        sn2.configure()
+
+        ns = NetworkSet(subnets=[sn1, sn2], projections=[], stimuli=[])
+        ns.configure()
+        return ns, m1, n1, n2
+
+    def _make_ics(self, m, n1, n2):
+        rng = np.random.RandomState(42)
+        ic1 = rng.uniform(0.0, 0.2, (m.nvar, n1, 1)).astype(np.float64)
+        ic2 = rng.uniform(0.0, 0.2, (m.nvar, n2, 1)).astype(np.float64)
+        return [ic1, ic2]
+
+    def test_can_merge_subnets(self):
+        """_can_merge_subnets returns True when all have node_indices and same voi count."""
+        from tvb.simulator.backend.nb_hybrid import _can_merge_subnets, SubnetworkInfo
+        from tvb.simulator.models.oscillator import Generic2dOscillator
+
+        m = Generic2dOscillator(); m.configure()
+        infos = [
+            SubnetworkInfo(name='a', model=m, integrator=None, n_nodes=3, n_modes=1,
+                           node_indices=np.array([0, 2, 4])),
+            SubnetworkInfo(name='b', model=m, integrator=None, n_nodes=2, n_modes=1,
+                           node_indices=np.array([1, 3])),
+        ]
+        self.assertTrue(_can_merge_subnets(infos))
+
+    def test_cannot_merge_without_node_indices(self):
+        """_can_merge_subnets returns False when node_indices is None."""
+        from tvb.simulator.backend.nb_hybrid import _can_merge_subnets, SubnetworkInfo
+        from tvb.simulator.models.oscillator import Generic2dOscillator
+
+        m = Generic2dOscillator(); m.configure()
+        infos = [
+            SubnetworkInfo(name='a', model=m, integrator=None, n_nodes=3, n_modes=1,
+                           node_indices=np.array([0, 2, 4])),
+            SubnetworkInfo(name='b', model=m, integrator=None, n_nodes=2, n_modes=1,
+                           node_indices=None),
+        ]
+        self.assertFalse(_can_merge_subnets(infos))
+
+    def test_global_average_merged(self):
+        """GlobalAverage with node_indices produces single merged output."""
+        from tvb.simulator.monitors import GlobalAverage
+
+        ns, m, n1, n2 = self._make_two_subnet_net()
+        ics = self._make_ics(m, n1, n2)
+        backend = NbHybridBackend()
+
+        ga = GlobalAverage(period=self.DT)
+        results = backend.run_network(
+            ns, nstep=10, chunk_size=1, monitors=[ga], initial_states=ics,
+        )
+        # Merged: single entry (not one per subnet)
+        self.assertEqual(len(results), 1, "Expected single merged result")
+        self.assertEqual(len(results[0]), 1, "Expected single merged subnet entry")
+        times, data = results[0][0]
+        # data shape: (10, n_voi=1, 1, 1) — global average over 5 connectome nodes
+        self.assertEqual(data.shape, (10, 1, 1, 1), f"Unexpected shape: {data.shape}")
+
+    def test_spatial_average_merged_placement(self):
+        """SpatialAverage with node_indices places data at correct positions."""
+        from tvb.simulator.monitors import SpatialAverage
+        from tvb.simulator.models.oscillator import Generic2dOscillator
+        from tvb.simulator.hybrid import Subnetwork, NetworkSet
+
+        m = Generic2dOscillator(); m.configure()
+        sn1 = Subnetwork(name='ctx', model=m, scheme=HeunDeterministic(dt=self.DT), nnodes=2)
+        sn1.node_indices = np.array([0, 3])
+        sn1.configure()
+        sn2 = Subnetwork(name='thal', model=m, scheme=HeunDeterministic(dt=self.DT), nnodes=2)
+        sn2.node_indices = np.array([1, 2])
+        sn2.configure()
+        ns = NetworkSet(subnets=[sn1, sn2], projections=[], stimuli=[])
+        ns.configure()
+
+        rng = np.random.RandomState(42)
+        ics = [rng.uniform(0, 0.2, (m.nvar, 2, 1)).astype(np.float64),
+               rng.uniform(0, 0.2, (m.nvar, 2, 1)).astype(np.float64)]
+
+        spatial_mean = np.array([
+            [1.0, 0.0, 0.0, 0.0],  # area 0: node 0 only
+            [0.0, 1.0, 1.0, 0.0],  # area 1: nodes 1,2
+        ], dtype=np.float64)
+        sa = SpatialAverage(period=self.DT)
+        sa.spatial_mean = spatial_mean
+
+        results = NbHybridBackend().run_network(
+            ns, nstep=5, chunk_size=1, monitors=[sa], initial_states=ics,
+        )
+        # Merged: single result
+        self.assertEqual(len(results[0]), 1, "Expected single merged spatial result")
+        times, data = results[0][0]
+        # shape: (5, n_voi=1, n_areas=2, 1)
+        self.assertEqual(data.shape[1], 1, f"Expected n_voi=1, got {data.shape[1]}")
+        self.assertEqual(data.shape[2], 2, f"Expected n_areas=2, got {data.shape[2]}")
+        self.assertTrue(np.all(np.isfinite(data)), "NaN in merged spatial output")
+
+    def test_no_merge_without_node_indices(self):
+        """Without node_indices, per-subnet results are returned as-is."""
+        from tvb.simulator.monitors import GlobalAverage
+        from tvb.simulator.models.oscillator import Generic2dOscillator
+        from tvb.simulator.hybrid import Subnetwork, NetworkSet
+
+        m = Generic2dOscillator(); m.configure()
+        sn1 = Subnetwork(name='a', model=m, scheme=HeunDeterministic(dt=self.DT), nnodes=3)
+        sn1.configure()
+        sn2 = Subnetwork(name='b', model=m, scheme=HeunDeterministic(dt=self.DT), nnodes=2)
+        sn2.configure()
+        ns = NetworkSet(subnets=[sn1, sn2], projections=[], stimuli=[])
+        ns.configure()
+
+        rng = np.random.RandomState(42)
+        ics = [rng.uniform(0, 0.2, (m.nvar, 3, 1)).astype(np.float64),
+               rng.uniform(0, 0.2, (m.nvar, 2, 1)).astype(np.float64)]
+
+        ga = GlobalAverage(period=self.DT)
+        results = NbHybridBackend().run_network(
+            ns, nstep=5, chunk_size=1, monitors=[ga], initial_states=ics,
+        )
+        # Not merged: 2 subnet entries
+        self.assertEqual(len(results[0]), 2, "Expected per-subnet results without node_indices")
+
+
 if __name__ == "__main__":
     unittest.main()
     unittest.main()

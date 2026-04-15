@@ -177,6 +177,7 @@ def _apply_monitors(
     dt: float,
     chunk_size: int = 1,
     monitor_data: Optional[dict] = None,
+    subnet_infos: Optional[list] = None,
 ) -> list:
     """Transform per-subnet (times, data, ctavg) tuples into monitor-dispatched output.
 
@@ -266,7 +267,11 @@ def _apply_monitors(
                         continue
                 per_subnet.append((times, proj_data))
             elif isinstance(m, GlobalAverage):
-                per_subnet.append((times, data.mean(axis=-2, keepdims=True)))
+                # In merged mode, defer averaging until after merge
+                if subnet_infos and _can_merge_subnets(subnet_infos):
+                    per_subnet.append((times, data))
+                else:
+                    per_subnet.append((times, data.mean(axis=-2, keepdims=True)))
             elif isinstance(m, Bold):
                 # Use JIT-computed Balloon model BOLD signal
                 if si < len(bold_per_sn):
@@ -286,22 +291,27 @@ def _apply_monitors(
                         np.empty((0, n_voi, n_nodes, n_modes), dtype=np.float32),
                     ))
             elif isinstance(m, SpatialAverage):
-                # Use JIT-precomputed if available
-                if si < len(spatial_per_sn) and spatial_per_sn[si].ndim == 4 and spatial_per_sn[si].shape[2] > 0:
-                    sa_data = spatial_per_sn[si]
-                elif hasattr(m, 'spatial_mean'):
-                    # Fallback: Python computation
-                    sa_data = np.einsum('ij,tkjm->tkim', m.spatial_mean, data)
+                # In merged mode, spatial_mean covers all connectome nodes,
+                # so per-subnet JIT spatial is wrong. Use merged data instead.
+                if subnet_infos and _can_merge_subnets(subnet_infos) and hasattr(m, 'spatial_mean'):
+                    # Defer: store raw data, compute spatial after merge
+                    per_subnet.append((times, data))
                 else:
-                    sa_data = data
-                # Aggregate chunks to match monitor period
-                if chunk_size > 0 and hasattr(m, 'period'):
-                    istep = max(1, int(round(float(m.period) / dt)))
-                    if chunk_size < istep:
-                        t, d = _aggregate_chunks_to_period(times, sa_data, float(m.period), dt, chunk_size)
-                        per_subnet.append((t, d))
-                        continue
-                per_subnet.append((times, sa_data))
+                    # Use JIT-precomputed if available
+                    if si < len(spatial_per_sn) and spatial_per_sn[si].ndim == 4 and spatial_per_sn[si].shape[2] > 0:
+                        sa_data = spatial_per_sn[si]
+                    elif hasattr(m, 'spatial_mean'):
+                        sa_data = np.einsum('ij,tkjm->tkim', m.spatial_mean, data)
+                    else:
+                        sa_data = data
+                    # Aggregate chunks to match monitor period
+                    if chunk_size > 0 and hasattr(m, 'period'):
+                        istep = max(1, int(round(float(m.period) / dt)))
+                        if chunk_size < istep:
+                            t, d = _aggregate_chunks_to_period(times, sa_data, float(m.period), dt, chunk_size)
+                            per_subnet.append((t, d))
+                            continue
+                    per_subnet.append((times, sa_data))
             elif isinstance(m, SubSample):
                 period = float(m.period)
                 istep = max(1, int(round(period / dt)))
@@ -328,7 +338,105 @@ def _apply_monitors(
                     "AfferentCoupling, SpatialAverage, Projection (EEG/MEG/iEEG)."
                 )
         results.append(per_subnet)
+
+    # Merge subnets when node_indices are available (connectome-ordered output)
+    if subnet_infos and _can_merge_subnets(subnet_infos):
+        merged_results = []
+        for mi, m in enumerate(monitors):
+            if isinstance(m, (TemporalAverage, Raw, SubSample, Bold)):
+                # Per-subnet monitors: no merging needed
+                merged_results.append(results[mi])
+                continue
+            if isinstance(m, GlobalAverage):
+                # Merge raw data first, then average over all nodes
+                merged = _merge_and_global_average(results[mi], subnet_infos)
+                merged_results.append(merged)
+                continue
+            if isinstance(m, SpatialAverage) and hasattr(m, 'spatial_mean'):
+                # Merge raw data, then apply spatial_mean on the merged output
+                merged = _merge_and_spatial_average(results[mi], subnet_infos, m.spatial_mean)
+                merged_results.append(merged)
+                continue
+            # SpatialAverage, Projection: merge by placing data at node_indices
+            merged = _merge_subnet_outputs(results[mi], subnet_infos)
+            merged_results.append(merged)
+        results = merged_results
+
     return results
+
+
+def _can_merge_subnets(subnet_infos: list) -> bool:
+    """Check if all subnets have node_indices and same voi count."""
+    if not subnet_infos:
+        return False
+    # All must have node_indices
+    if not all(si.node_indices is not None for si in subnet_infos):
+        return False
+    # All must have same voi count
+    voi_counts = [len(si.model.variables_of_interest) for si in subnet_infos]
+    return len(set(voi_counts)) == 1
+
+
+def _merge_subnet_outputs(
+    per_subnet: list,
+    subnet_infos: list,
+) -> list:
+    """Merge per-subnet (times, data) outputs into connectome-ordered output.
+
+    Each subnet's data has shape (T, n_voi, n_subnet_nodes, 1). The merged
+    output has shape (T, n_voi, total_nodes, 1) with each subnet placed at
+    its node_indices positions.
+
+    Returns a single-element list [(merged_times, merged_data)] to match
+    the per-monitor list-of-subnet format.
+    """
+    total_nodes = max(int(ix.max()) for ix in [si.node_indices for si in subnet_infos]) + 1
+    # Use the first subnet's times (all should be aligned after aggregation)
+    merged_times = per_subnet[0][0]
+    n_chunks = len(merged_times)
+    n_voi = per_subnet[0][1].shape[1]
+
+    merged_data = np.zeros((n_chunks, n_voi, total_nodes, 1), dtype=np.float32)
+    for si, (t, d) in zip(subnet_infos, per_subnet):
+        # d shape: (T, n_voi, n_subnet_nodes, 1)
+        merged_data[:, :, si.node_indices, :] = d
+
+    return [(merged_times, merged_data)]
+
+
+def _merge_and_global_average(
+    per_subnet: list,
+    subnet_infos: list,
+) -> list:
+    """Merge per-subnet data then compute global average across all nodes.
+
+    Returns a single-element list [(times, averaged_data)] where
+    averaged_data has shape (T, n_voi, 1, 1).
+    """
+    merged = _merge_subnet_outputs(per_subnet, subnet_infos)
+    times, data = merged[0]
+    # Average over nodes axis (axis 2)
+    averaged = data.mean(axis=2, keepdims=True)
+    return [(times, averaged)]
+
+
+def _merge_and_spatial_average(
+    per_subnet: list,
+    subnet_infos: list,
+    spatial_mean: np.ndarray,
+) -> list:
+    """Merge per-subnet data then apply spatial_mean on merged connectome data.
+
+    Returns a single-element list [(times, spatial_data)].
+    """
+    merged = _merge_subnet_outputs(per_subnet, subnet_infos)
+    times, data = merged[0]
+    # data: (T, n_voi, total_nodes, 1)
+    # spatial_mean: (n_areas, total_nodes)
+    sm = np.asarray(spatial_mean, dtype=data.dtype)
+    # einsum: (n_areas, total_nodes) @ (T, n_voi, total_nodes, 1) -> (T, n_voi, n_areas, 1)
+    spatial = np.einsum('ij,tkjm->tkim', sm, data)
+    return [(times, spatial)]
 
 
 def _cfun_type(p: "ProjectionInfo") -> str:
@@ -467,6 +575,7 @@ class SubnetworkInfo:
     is_stochastic: bool = False
     noise_nsig: Optional[np.ndarray] = None  # shape (n_vars,), only when is_stochastic
     has_stimulus: bool = False
+    node_indices: Optional[np.ndarray] = None  # connectome positions, shape (n_nodes,)
 
 
 @dataclasses.dataclass
@@ -684,7 +793,9 @@ class CompiledNetworkFn:
         if monitor_data.get('bold_states'):
             self._bold_states = monitor_data['bold_states']
         if monitors is not None:
-            outputs = _apply_monitors(outputs, monitors, dt, chunk_size=chunk_size, monitor_data=monitor_data)
+            outputs = _apply_monitors(outputs, monitors, dt, chunk_size=chunk_size,
+                                      monitor_data=monitor_data,
+                                      subnet_infos=self._analysis.subnetworks)
         if not return_snapshot:
             return outputs
         snapshot = {
@@ -1334,6 +1445,7 @@ class NbHybridBackend(MakoUtilMix):
                     is_stochastic=is_stoch,
                     noise_nsig=noise_nsig,
                     has_stimulus=bool(stims_by_subnet[sn.name]),
+                    node_indices=getattr(sn, 'node_indices', None),
                 )
             )
 
