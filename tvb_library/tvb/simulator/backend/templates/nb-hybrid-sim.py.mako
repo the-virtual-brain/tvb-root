@@ -648,6 +648,10 @@ def network_chunk(
     % for sn in subnets:
     ${sn.name}_ctavg,  # (n_cvar, n_nodes, n_modes) — updated in-place
     % endfor
+    ## per-step coupling scratch arrays (pre-allocated, zero-filled each step)
+    % for sn in subnets:
+    ${sn.name}_c,  # (n_cvar, n_nodes, n_modes) — scratch for coupling dispatch
+    % endfor
     ## per-subnetwork noise arrays (stochastic only)
     % for sn in subnets:
     % if sn.is_stochastic:
@@ -699,9 +703,9 @@ def network_chunk(
     for t_local in range(nstep):
         t = t_start + t_local
 
-        ## zero coupling arrays
+        ## zero coupling arrays (pre-allocated, zero-filled)
         % for sn in subnets:
-        ${sn.name}_c = np.zeros((${sn_ncvar_dict[sn.name]}, ${sn_nnodes_dict[sn.name]}, ${sn_nmodes_dict[sn.name]}), dtype=np.float32)
+        ${sn.name}_c[:] = 0.0
         % endfor
 
         ## inter-projection coupling
@@ -913,6 +917,11 @@ def run_network(
     ${sn.name}_ctavg = np.zeros((${sn_ncvar_dict[sn.name]}, ${sn_nnodes_dict[sn.name]}, ${sn_nmodes_dict[sn.name]}), dtype=np.float32)
     % endfor
 
+    ## allocate per-step coupling scratch arrays (pre-allocated, zero-filled each step)
+    % for sn in subnets:
+    ${sn.name}_c = np.zeros((${sn_ncvar_dict[sn.name]}, ${sn_nnodes_dict[sn.name]}, ${sn_nmodes_dict[sn.name]}), dtype=np.float32)
+    % endfor
+
     ## allocate monitor accumulators (shapes derived from runtime arrays)
     % for sn in subnets:
     ${sn.name}_spatial_tavg = np.zeros((${sn_nvoi_dict[sn.name]}, ${sn.name}_spatial_mean.shape[0], ${sn_nmodes_dict[sn.name]}), dtype=np.float32)
@@ -969,6 +978,10 @@ def run_network(
             tavg_count,
             % for sn in subnets:
             ${sn.name}_ctavg,
+            % endfor
+            ## coupling scratch arrays
+            % for sn in subnets:
+            ${sn.name}_c,
             % endfor
             % for sn in subnets:
             % if sn.is_stochastic:
