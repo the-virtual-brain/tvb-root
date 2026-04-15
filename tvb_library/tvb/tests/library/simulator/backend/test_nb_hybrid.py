@@ -4292,28 +4292,11 @@ class TestMergedMode(unittest.TestCase):
         self.assertTrue(np.all(np.isfinite(data)), "NaN in merged projection output")
 
         # Verify correctness: merged result should equal sum of individual projections
-        sn1.configure()
-        sn2.configure()
-        ns2 = NetworkSet(subnets=[sn1, sn2], projections=[], stimuli=[])
-        ns2.configure()
-        ics2 = [ics[0].copy(), ics[1].copy()]
-        # Run without node_indices (no merge) to get per-subnet projections
         sn1_no = Subnetwork(name='ctx', model=m, scheme=HeunDeterministic(dt=DT), nnodes=n1)
         sn1_no.configure()
         sn2_no = Subnetwork(name='thal', model=m, scheme=HeunDeterministic(dt=DT), nnodes=n2)
         sn2_no.configure()
-        ns_no = NetworkSet(subnets=[sn1_no, sn2_no], projections=[], stimuli=[])
-        ns_no.configure()
 
-        # Use per-subnet gain slices for the unmerged run
-        eeg1 = EEG(period=DT)
-        eeg1._gain = gain[:, [0, 2]]  # sensor x sn1 nodes
-        eeg2 = EEG(period=DT)
-        eeg2._gain = gain[:, [1, 3]]  # sensor x sn2 nodes
-
-        # Actually, just verify by running the same merged setup and checking
-        # that the merged projection equals the sum of independently computed ones.
-        # Use the backend to run each subnet separately and sum.
         from tvb.simulator.backend.nb_hybrid import NbHybridBackend as BH
 
         # Run subnet 1 alone
@@ -4341,5 +4324,4 @@ class TestMergedMode(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
     unittest.main()

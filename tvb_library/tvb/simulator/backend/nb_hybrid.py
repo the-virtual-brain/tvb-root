@@ -77,13 +77,6 @@ __all__ = [
 # ---------------------------------------------------------------------------
 
 
-_BOLD_BALLOON_DEFAULTS = {
-    'tau_s': 0.65, 'tau_f': 0.41, 'tau_o': 0.98,
-    'alpha': 0.32, 'te': 0.04, 'v0': 4.0, 'e0': 0.4,
-    'epsilon': 0.5, 'nu_0': 40.3, 'r_0': 25.0,
-}
-
-
 def _compute_chunk_size(monitors, dt):
     """Compute the optimal chunk_size from monitor periods.
 
@@ -163,7 +156,6 @@ def _aggregate_chunks_to_period(times, data, period, dt, chunk_size):
     reshaped = data[:truncated].reshape(n_periods, chunks_per_period, *data.shape[1:])
     avg_data = reshaped.mean(axis=1)
     # Compute period midpoint times: first period starts at step 0
-    period_dt = istep * dt
     new_times = np.array([
         (i * chunks_per_period * chunk_size + istep / 2.0) * dt
         for i in range(n_periods)
@@ -207,6 +199,9 @@ def _apply_monitors(
         Bold,
     )
 
+    # Cache merge check — invariant for the entire call
+    should_merge = bool(subnet_infos) and _can_merge_subnets(subnet_infos)
+
     for m in monitors:
         if isinstance(m, Raw):
             pass
@@ -224,12 +219,10 @@ def _apply_monitors(
                     "config_for_sim or by setting m._gain directly)."
                 )
         elif isinstance(m, Bold):
-            # Bold needs compute_hrf() called; ensure dt and istep are set
+            # Bold: ensure dt and istep are set (used by stock allocation)
             if not hasattr(m, 'istep') or m.istep is None:
                 m.dt = dt
                 m._config_dt(dt)
-            if not hasattr(m, 'hemodynamic_response_function'):
-                m.compute_hrf()
         else:
             raise NotImplementedError(
                 f"Monitor {type(m).__name__} is not yet supported by the Numba backend. "
@@ -249,7 +242,7 @@ def _apply_monitors(
             if isinstance(m, AfferentCoupling):
                 per_subnet.append((times, ctavg))
             elif isinstance(m, Projection):
-                if subnet_infos and _can_merge_subnets(subnet_infos):
+                if should_merge:
                     # In merged mode, each subnet has fewer nodes than the
                     # full gain matrix. Defer projection to the merge step,
                     # which operates on connectome-ordered data.
@@ -273,7 +266,7 @@ def _apply_monitors(
                     per_subnet.append((times, proj_data))
             elif isinstance(m, GlobalAverage):
                 # In merged mode, defer averaging until after merge
-                if subnet_infos and _can_merge_subnets(subnet_infos):
+                if should_merge:
                     per_subnet.append((times, data))
                 else:
                     per_subnet.append((times, data.mean(axis=-2, keepdims=True)))
@@ -298,7 +291,7 @@ def _apply_monitors(
             elif isinstance(m, SpatialAverage):
                 # In merged mode, spatial_mean covers all connectome nodes,
                 # so per-subnet JIT spatial is wrong. Use merged data instead.
-                if subnet_infos and _can_merge_subnets(subnet_infos) and hasattr(m, 'spatial_mean'):
+                if should_merge and hasattr(m, 'spatial_mean'):
                     # Defer: store raw data, compute spatial after merge
                     per_subnet.append((times, data))
                 else:
@@ -345,7 +338,7 @@ def _apply_monitors(
         results.append(per_subnet)
 
     # Merge subnets when node_indices are available (connectome-ordered output)
-    if subnet_infos and _can_merge_subnets(subnet_infos):
+    if should_merge:
         merged_results = []
         for mi, m in enumerate(monitors):
             if isinstance(m, (TemporalAverage, Raw, SubSample, Bold)):
@@ -1337,6 +1330,7 @@ class NbHybridBackend(MakoUtilMix):
             ReducedSetFitzHughNagumo,
             ReducedSetHindmarshRose,
         )
+        from tvb.simulator.models.linear import Linear
 
         _supported_models = (
             MontbrioPazoRoxin,
@@ -1364,6 +1358,7 @@ class NbHybridBackend(MakoUtilMix):
             ZetterbergJansen,
             ReducedSetFitzHughNagumo,
             ReducedSetHindmarshRose,
+            Linear,
         )
         _allowed_integrators = (
             HeunDeterministic,
@@ -1382,7 +1377,7 @@ class NbHybridBackend(MakoUtilMix):
                     f"Epileptor, Epileptor2D, EpileptorCodim3, EpileptorCodim3SlowMod, EpileptorRestingState, "
                     f"WilsonCowan, ZerlautAdaptation*, "
                     f"CoombesByrne2D, CoombesByrne, GastSchmidtKnosche_SD/SF, DumontGutkin, "
-                    f"ReducedSetFitzHughNagumo, ReducedSetHindmarshRose."
+                    f"ReducedSetFitzHughNagumo, ReducedSetHindmarshRose, Linear."
                 )
             if not isinstance(sn.scheme, _allowed_integrators):
                 raise NotImplementedError(
