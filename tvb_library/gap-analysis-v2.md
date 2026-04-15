@@ -101,7 +101,7 @@ The coupling CSR loop (68 targets × ~20 sources × 1 cvar) adds ~150% overhead 
 |---|---|---|---|
 | `DecoBalancedExcInh` | ✅ Works | — | Subclass of `ReducedWongWangExcInh` (already supported). Passes `isinstance` check. Verified. |
 | `ZerlautAdaptationSecondOrder` | ✅ Works | — | Subclass of `ZerlautAdaptationFirstOrder` (already supported). Uses same custom template. Verified. |
-| `Linear` | ❌ Missing | **15 min** | 1 var (x), 1 cvar (c), trivial dfun: `dx = gamma * c`. Has `state_variable_dfuns` and `coupling_terms`. Just needs adding to `_supported_models` tuple. |
+| `Linear` | ✅ Fixed (commit `4492254f5`) | — | 1 var (x), 1 cvar (c), trivial dfun: `dx = gamma * c`. Added to `_supported_models`. 4 new tests. |
 
 ### 2.2 Integrators (1 gap)
 
@@ -179,18 +179,18 @@ The coupling CSR loop (68 targets × ~20 sources × 1 cvar) adds ~150% overhead 
 
 ### 4.1 Dead Code
 
-| Item | Location | Severity |
+| Item | Location | Status |
 |---|---|---|
-| `_BOLD_BALLOON_DEFAULTS` constant | `nb_hybrid.py:79-83` | LOW — defined but never used |
-| `period_dt` variable | `nb_hybrid.py:166` | LOW — computed but never read |
-| Vestigial `compute_hrf()` call | `nb_hybrid.py:231-233` | LOW — Bold uses Balloon, not HRF |
-| Unused variables in test | `test_nb_hybrid.py` | LOW — `ns2`, `ics2`, etc. in `test_projection_merged_sums_sensors` |
+| `_BOLD_BALLOON_DEFAULTS` constant | `nb_hybrid.py:79-83` | ✅ Deleted (commit `4492254f5`) |
+| `period_dt` variable | `nb_hybrid.py:166` | ✅ Deleted (commit `4492254f5`) |
+| Vestigial `compute_hrf()` call | `nb_hybrid.py:231-233` | ✅ Removed (commit `4492254f5`) |
+| Unused variables in test | `test_nb_hybrid.py` | ✅ Cleaned (commit `4492254f5`) |
 
 ### 4.2 Redundant Computation
 
 | Item | Location | Severity |
 |---|---|---|
-| `_can_merge_subnets()` called N×M times | `nb_hybrid.py:271,296` | LOW — invariant per call, should cache |
+| `_can_merge_subnets()` called N×M times | `nb_hybrid.py:271,296` | ✅ Cached (commit `4492254f5`) |
 | `_compute_chunk_size` recomputed each `run()` | `CompiledNetworkFn.run()` | LOW — monitors rarely change between calls |
 
 ### 4.3 Design Debt
@@ -207,11 +207,11 @@ The coupling CSR loop (68 targets × ~20 sources × 1 cvar) adds ~150% overhead 
 
 ### Tier 1: Quick Wins (1-2 hours total)
 
-| # | Item | Effort |
-|---|---|---|
-| Q1 | Add `Linear` to `_supported_models` list | 15 min |
-| Q2 | Delete dead code (`_BOLD_BALLOON_DEFAULTS`, `period_dt`, vestigial `compute_hrf`, test dead vars) | 30 min |
-| Q3 | Cache `_can_merge_subnets()` result | 15 min |
+| # | Item | Effort | Status |
+|---|---|---|---|
+| Q1 | Add `Linear` to `_supported_models` list | 15 min | ✅ Done (commit `4492254f5`) |
+| Q2 | Delete dead code (`_BOLD_BALLOON_DEFAULTS`, `period_dt`, vestigial `compute_hrf`, test dead vars) | 30 min | ✅ Done (commit `4492254f5`) |
+| Q3 | Cache `_can_merge_subnets()` result | 15 min | ✅ Done (commit `4492254f5`) |
 
 ### Tier 2: Feature Gaps (4-8 hours)
 
