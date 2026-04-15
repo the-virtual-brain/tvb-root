@@ -218,8 +218,8 @@ The coupling CSR loop (68 targets × ~20 sources × 1 cvar) adds ~150% overhead 
 | # | Item | Effort |
 |---|---|---|
 | F1 | `RungeKutta4thOrderDeterministic` template support | 4 hours |
-| F2 | `AfferentCouplingTemporalAverage` monitor dispatch | 30 min |
-| F3 | Pre-allocate coupling arrays outside step loop | 1 hour |
+| F2 | `AfferentCouplingTemporalAverage` monitor dispatch | 30 min | ✅ Done (commit `d8f3bcf9b`) |
+| F3 | Pre-allocate coupling arrays outside step loop | 1 hour | ✅ Done (commit `eed7b8f93`) |
 | F4 | Bold sampling modulo optimization | 30 min |
 
 ### Tier 3: Performance (8-16 hours, diminishing returns)
