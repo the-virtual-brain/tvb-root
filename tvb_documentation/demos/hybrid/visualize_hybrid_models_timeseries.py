@@ -37,7 +37,7 @@ from tvb.simulator.models.zerlaut import ZerlautAdaptationFirstOrder
 from tvb.simulator.monitors import TemporalAverage
 
 DT = 0.1
-NNODES = 38
+NNODES = 3
 SIMULATION_LENGTH = 1000.0
 NSTEP = int(round(SIMULATION_LENGTH / DT))
 TAVG_PERIOD = 1.0
@@ -185,7 +185,9 @@ def main():
             model=model,
             scheme=HeunDeterministic(dt=DT),
             nnodes=NNODES,
-        ).configure()
+        )
+        subnet.node_indices = np.arange(subnet.nnodes)
+        subnet.configure()
         nets = NetworkSet(subnets=[subnet], projections=[], stimuli=[])
         nets.configure()
         initial_states = [make_initial_state(subnet)]
