@@ -100,9 +100,9 @@ def make_single_network(model_cls, n_nodes: int) -> tuple[str, NetworkSet, list[
     return model_cls.__name__, nets, [make_initial_state(sn)]
 
 
-def make_coupled_network(n_nodes: int) -> tuple[str, NetworkSet, list[np.ndarray]]:
-    sn1 = make_subnet("sn1", MontbrioPazoRoxin, n_nodes)
-    sn2 = make_subnet("sn2", MontbrioPazoRoxin, n_nodes)
+def make_coupled_network(model_cls, n_nodes: int) -> tuple[str, NetworkSet, list[np.ndarray]]:
+    sn1 = make_subnet("sn1", model_cls, n_nodes)
+    sn2 = make_subnet("sn2", model_cls, n_nodes)
     weights = sp.eye(n_nodes, format="csr", dtype=np.float64) * 0.1
     lengths = sp.csr_matrix((n_nodes, n_nodes), dtype=np.float64)
     projection = InterProjection(
@@ -119,7 +119,7 @@ def make_coupled_network(n_nodes: int) -> tuple[str, NetworkSet, list[np.ndarray
     )
     nets = NetworkSet(subnets=[sn1, sn2], projections=[projection], stimuli=[])
     nets.configure()
-    return "CoupledMPR", nets, [make_initial_state(sn1), make_initial_state(sn2)]
+    return f"Coupled{model_cls.__name__}", nets, [make_initial_state(sn1), make_initial_state(sn2)]
 
 
 def run_case(label: str, nets: NetworkSet, initial_states: list[np.ndarray], chunk_size: int = 1) -> None:
@@ -155,7 +155,7 @@ def main() -> None:
         label, nets, initial_states = make_single_network(model_cls, n_nodes)
         run_case(label, nets, initial_states, chunk_size=1)
 
-    label, nets, initial_states = make_coupled_network(16)
+    label, nets, initial_states = make_coupled_network(MontbrioPazoRoxin, 16)
     run_case(label, nets, initial_states, chunk_size=1)
 
     print()
