@@ -29,6 +29,11 @@ from tvb.simulator.integrators import HeunDeterministic
 from tvb.simulator.models.epileptor import Epileptor
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
 from tvb.simulator.models.jansen_rit import JansenRit
+from tvb.simulator.models.wilson_cowan import WilsonCowan
+from tvb.simulator.models.wong_wang import ReducedWongWang
+from tvb.simulator.models.larter_breakspear import LarterBreakspear
+from tvb.simulator.models.oscillator import Generic2dOscillator
+from tvb.simulator.models.zerlaut import ZerlautAdaptationFirstOrder
 from tvb.simulator.monitors import TemporalAverage
 
 DT = 0.1
@@ -57,11 +62,12 @@ def make_initial_state(subnetwork: Subnetwork) -> np.ndarray:
 def run_python_temporal_average(
     nets: NetworkSet,
     initial_states: list[np.ndarray],
+    sim_length: float,
 ) -> tuple[np.ndarray, list[np.ndarray]]:
     tavg = TemporalAverage(period=TAVG_PERIOD)
     sim = Simulator(
         nets=nets,
-        simulation_length=SIMULATION_LENGTH,
+        simulation_length=sim_length,
         monitors=[tavg],
     )
     sim.configure()
@@ -85,11 +91,13 @@ def run_python_temporal_average(
 def run_numba_temporal_average(
     nets: NetworkSet,
     initial_states: list[np.ndarray],
+    sim_length: float,
 ) -> tuple[np.ndarray, list[np.ndarray]]:
+    nstep = int(round(sim_length / DT))
     backend = NbHybridBackend()
     results_nb = backend.run_network(
         nets,
-        nstep=NSTEP,
+        nstep=nstep,
         chunk_size=1,
         initial_states=[arr.copy() for arr in initial_states],
     )
@@ -147,18 +155,22 @@ def plot_comparison(t_py, y_py_list, t_nb, y_nb_list, model_name, output_dir, pl
                 ax.set_ylim(config['ylim'])
             # Add more options as needed
     plt.tight_layout()
-    plt.savefig(output_dir / f"{model_name}_comparison.png", dpi=100, bbox_inches="tight")
+    plt.savefig(output_dir / f"comparison_{model_name}.png", dpi=100, bbox_inches="tight")
     plt.close(fig)
 
 
 def main():
     models = {
-        "JansenRit": {"class": JansenRit, "params": {}},
-        "Epileptor": {"class": Epileptor, "params": {}},
-        "MontbrioPazoRoxin": {"class": MontbrioPazoRoxin, "params": {"I": np.array([2])}},
+        "JansenRit": {"class": JansenRit, "params": {}, "sim_length": 1000.0},
+        "Epileptor": {"class": Epileptor, "params": {}, "sim_length": 2000.0},
+        "MontbrioPazoRoxin": {"class": MontbrioPazoRoxin, "params": {"I": np.array([2])}, "sim_length": 100.0},
+        "WilsonCowan": {"class": WilsonCowan, "params": {}, "sim_length": 1000.0},
+        "WongWang": {"class": ReducedWongWang, "params": {}, "sim_length": 1000.0},
+        "LarterBreakspear": {"class": LarterBreakspear, "params": {}, "sim_length": 1000.0},
+        "Generic2dOscillator": {"class": Generic2dOscillator, "params": {}, "sim_length": 1000.0},
+        "ZerlautAdaptationFirstOrder": {"class": ZerlautAdaptationFirstOrder, "params": {}, "sim_length": 1000.0},
     }
     plots_config = {
-        "MontbrioPazoRoxin": {"xlim": (0, 100)},
         # Add more as needed, e.g., "JansenRit": {"ylim": (-1, 1)}
     }
     for model_name, model_info in models.items():
@@ -166,6 +178,7 @@ def main():
         # Build single network
         model_cls = model_info["class"]
         params = model_info["params"]
+        sim_length = model_info.get("sim_length", 1000.0)
         model = model_cls(**params)
         subnet = Subnetwork(
             name="subnet",
@@ -177,51 +190,12 @@ def main():
         nets.configure()
         initial_states = [make_initial_state(subnet)]
         # Run Python
-        t_py, y_py_list = run_python_temporal_average(nets, initial_states)
+        t_py, y_py_list = run_python_temporal_average(nets, initial_states, sim_length)
         # Run Numba
-        t_nb, y_nb_list = run_numba_temporal_average(nets, initial_states)
+        t_nb, y_nb_list = run_numba_temporal_average(nets, initial_states, sim_length)
         # Plot
         plot_comparison(t_py, y_py_list, t_nb, y_nb_list, model_name, OUTPUT_DIR, plots_config)
-    # Coupled MontbrioPazoRoxin
-    print("Processing Coupled MontbrioPazoRoxin")
-    montbrio_params = models["MontbrioPazoRoxin"]["params"]
-    sn1 = Subnetwork(
-        name="sn1",
-        model=MontbrioPazoRoxin(**montbrio_params),
-        scheme=HeunDeterministic(dt=DT),
-        nnodes=NNODES,
-    ).configure()
-    sn2 = Subnetwork(
-        name="sn2",
-        model=MontbrioPazoRoxin(**montbrio_params),
-        scheme=HeunDeterministic(dt=DT),
-        nnodes=NNODES,
-    ).configure()
-    rng = np.random.RandomState(42)
-    weights = sp.csr_matrix(np.abs(rng.randn(NNODES, NNODES)) * 0.01)
-    lengths = sp.csr_matrix((NNODES, NNODES))
-    projection = InterProjection(
-        source=sn1,
-        target=sn2,
-        source_cvar="r",
-        target_cvar="r",
-        weights=weights,
-        lengths=lengths,
-        cv=1.0,
-        dt=DT,
-        scale=0.1,
-    )
-    nets = NetworkSet(subnets=[sn1, sn2], projections=[projection], stimuli=[])
-    nets.configure()
-    initial_states = [make_initial_state(sn1), make_initial_state(sn2)]
-    # Run Python
-    t_py, y_py_list = run_python_temporal_average(nets, initial_states)
-    # Run Numba
-    t_nb, y_nb_list = run_numba_temporal_average(nets, initial_states)
-    # Plot
-    plot_comparison(t_py, y_py_list, t_nb, y_nb_list, "Coupled_MontbrioPazoRoxin", OUTPUT_DIR, plots_config)
-    print("Done")
-
+    
 
 if __name__ == "__main__":
     main()
