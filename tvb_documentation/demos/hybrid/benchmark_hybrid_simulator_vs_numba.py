@@ -122,7 +122,7 @@ def run_case(label: str, nets: NetworkSet, initial_states: list[np.ndarray]) -> 
     compile_t, nb_t = run_numba(nets, initial_states, NSTEP)
     speedup = py_t / nb_t if nb_t > 0 else float("inf")
 
-    print(f"{label:>16} | {py_t:>10.4f} | {compile_t:>11.4f} | {nb_t:>10.4f} | {speedup:>7.2f}x")
+    print(f"{label:<20} | {py_t:>10.4f} | {compile_t:>11.4f} | {nb_t:>10.4f} | {speedup:>7.2f}x")
 
 
 def main() -> None:
@@ -131,8 +131,8 @@ def main() -> None:
     print(f"dt            = {DT} ms")
     print(f"nstep         = {NSTEP}")
     print()
-    print(f"{'Case':>16} | {'Python(s)':>10} | {'Compile(s)':>11} | {'Numba(s)':>10} | {'Speedup':>8}")
-    print(f"{'-' * 16} | {'-' * 10} | {'-' * 11} | {'-' * 10} | {'-' * 8}")
+    print(f"{'Case':<20} | {'Python(s)':>10} | {'Compile(s)':>11} | {'Numba(s)':>10} | {'Speedup':>8}")
+    print(f"{'-' * 20} | {'-' * 10} | {'-' * 11} | {'-' * 10} | {'-' * 8}")
 
     for model_cls, n_nodes in [
         (MontbrioPazoRoxin, 16),
