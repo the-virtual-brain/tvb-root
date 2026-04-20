@@ -34,6 +34,11 @@ from tvb.simulator.integrators import HeunDeterministic
 from tvb.simulator.models.epileptor import Epileptor
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
 from tvb.simulator.models.jansen_rit import JansenRit
+from tvb.simulator.models.wilson_cowan import WilsonCowan
+from tvb.simulator.models.wong_wang import ReducedWongWang
+from tvb.simulator.models.larter_breakspear import LarterBreakspear
+from tvb.simulator.models.oscillator import Generic2dOscillator
+from tvb.simulator.models.zerlaut import ZerlautAdaptationFirstOrder
 
 
 DT = 0.1
@@ -74,16 +79,16 @@ def run_python(network_set: NetworkSet, initial_states: list[np.ndarray], nstep:
     return time.perf_counter() - t0
 
 
-def run_numba(network_set: NetworkSet, initial_states: list[np.ndarray], nstep: int) -> tuple[float, float]:
+def run_numba(network_set: NetworkSet, initial_states: list[np.ndarray], nstep: int, chunk_size: int = 1) -> tuple[float, float]:
     backend = NbHybridBackend()
 
     t0 = time.perf_counter()
     compiled = backend.compile(network_set)
-    compiled.run(nstep=5, chunk_size=1, initial_states=[arr.copy() for arr in initial_states])
+    compiled.run(nstep=5, chunk_size=chunk_size, initial_states=[arr.copy() for arr in initial_states])
     compile_time = time.perf_counter() - t0
 
     t0 = time.perf_counter()
-    compiled.run(nstep=nstep, chunk_size=1, initial_states=[arr.copy() for arr in initial_states])
+    compiled.run(nstep=nstep, chunk_size=chunk_size, initial_states=[arr.copy() for arr in initial_states])
     run_time = time.perf_counter() - t0
     return compile_time, run_time
 
@@ -117,12 +122,12 @@ def make_coupled_network(n_nodes: int) -> tuple[str, NetworkSet, list[np.ndarray
     return "CoupledMPR", nets, [make_initial_state(sn1), make_initial_state(sn2)]
 
 
-def run_case(label: str, nets: NetworkSet, initial_states: list[np.ndarray]) -> None:
+def run_case(label: str, nets: NetworkSet, initial_states: list[np.ndarray], chunk_size: int = 1) -> None:
     py_t = run_python(nets, initial_states, NSTEP)
-    compile_t, nb_t = run_numba(nets, initial_states, NSTEP)
+    compile_t, nb_t = run_numba(nets, initial_states, NSTEP, chunk_size)
     speedup = py_t / nb_t if nb_t > 0 else float("inf")
 
-    print(f"{label:<20} | {py_t:>10.4f} | {compile_t:>11.4f} | {nb_t:>10.4f} | {speedup:>7.2f}x")
+    print(f"{label:<30} | {py_t:>10.4f} | {compile_t:>11.4f} | {nb_t:>10.4f} | {speedup:>7.2f}x")
 
 
 def main() -> None:
@@ -131,21 +136,48 @@ def main() -> None:
     print(f"dt            = {DT} ms")
     print(f"nstep         = {NSTEP}")
     print()
-    print(f"{'Case':<20} | {'Python(s)':>10} | {'Compile(s)':>11} | {'Numba(s)':>10} | {'Speedup':>8}")
-    print(f"{'-' * 20} | {'-' * 10} | {'-' * 11} | {'-' * 10} | {'-' * 8}")
+
+    # Test with chunk_size=1 (raw output)
+    print("Chunk Size = 1 (Raw Output)")
+    print(f"{'Case':<30} | {'Python(s)':>10} | {'Compile(s)':>11} | {'Numba(s)':>10} | {'Speedup':>8}")
+    print(f"{'-' * 30} | {'-' * 10} | {'-' * 11} | {'-' * 10} | {'-' * 8}")
 
     for model_cls, n_nodes in [
         (MontbrioPazoRoxin, 16),
         (JansenRit, 16),
         (Epileptor, 16),
+        (WilsonCowan, 16),
+        (ReducedWongWang, 16),
+        (LarterBreakspear, 16),
+        (Generic2dOscillator, 16),
+        (ZerlautAdaptationFirstOrder, 16),
     ]:
         label, nets, initial_states = make_single_network(model_cls, n_nodes)
-        run_case(label, nets, initial_states)
+        run_case(label, nets, initial_states, chunk_size=1)
 
     label, nets, initial_states = make_coupled_network(16)
-    run_case(label, nets, initial_states)
+    run_case(label, nets, initial_states, chunk_size=1)
 
     print()
+    print("Chunk Size = 20 (Temporally Averaged - Single Networks Only)")
+    print(f"{'Case':<30} | {'Python(s)':>10} | {'Compile(s)':>11} | {'Numba(s)':>10} | {'Speedup':>8}")
+    print(f"{'-' * 30} | {'-' * 10} | {'-' * 11} | {'-' * 10} | {'-' * 8}")
+
+    for model_cls, n_nodes in [
+        (MontbrioPazoRoxin, 16),
+        (JansenRit, 16),
+        (Epileptor, 16),
+        (WilsonCowan, 16),
+        (ReducedWongWang, 16),
+        (LarterBreakspear, 16),
+        (Generic2dOscillator, 16),
+        (ZerlautAdaptationFirstOrder, 16),
+    ]:
+        label, nets, initial_states = make_single_network(model_cls, n_nodes)
+        run_case(label, nets, initial_states, chunk_size=20)
+
+    print()
+    print("NOTE: Coupled networks require chunk_size <= minimum delay (1 step)")
     print("Compile time includes code generation plus first JIT warmup.")
     print("Numba(s) is the cached compiled-kernel run time.")
 
