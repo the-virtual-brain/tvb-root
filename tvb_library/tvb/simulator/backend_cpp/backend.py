@@ -41,6 +41,7 @@ class CompiledCppNetwork:
             "generated_cpp_path": str(self.generated_cpp_path),
             "bindings_cpp_path": str(self.generated_source.bindings_cpp_path),
             "cmake_lists_path": str(self.generated_source.cmake_lists_path),
+            "runtime_header_path": str(self.generated_source.runtime_header_path),
             "sim_template_path": str(self.generated_source.sim_template_path),
             "bindings_template_path": str(self.generated_source.bindings_template_path),
             "cmake_template_path": str(self.generated_source.cmake_template_path),

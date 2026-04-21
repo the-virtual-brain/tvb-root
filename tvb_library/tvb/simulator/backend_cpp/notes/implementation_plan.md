@@ -112,28 +112,33 @@ Notes:
 
 ### Step 1. Inspect and Map Existing Reference Implementations
 
-Status: `[~]`
+Status: `[x]`
 
 Purpose:
 - Identify exactly what to reuse from TVB hybrid backend and from `tvbk`.
 
 Tasks:
-- [ ] Extract the lowering/analysis responsibilities from
+- [x] Extract the lowering/analysis responsibilities from
   `tvb/simulator/backend/nb_hybrid.py`.
-- [ ] Extract the generated-kernel boundaries from
+- [x] Extract the generated-kernel boundaries from
   `tvb/simulator/backend/templates/nb-hybrid-sim.py.mako`.
-- [ ] Extract runtime organization ideas from `tvbk`:
+- [x] Extract runtime organization ideas from `tvbk`:
   - model kernels
   - integrator kernels
   - stepping loops
   - extension layout
-- [ ] Write a concise mapping table:
+- [x] Write a concise mapping table:
   - `nb_hybrid` concept -> C++ backend equivalent
   - `tvbk` concept -> reusable runtime/reference idea
 
 Deliverables:
 - A short architecture mapping note in `notes/` or appended here.
 - Include the user-facing demo paths that will serve as initial fixtures.
+
+Completion note:
+- Satisfied by `notes/reference_mapping.md`, which captures the conceptual reuse
+  from `nb_hybrid.py`, `nb-hybrid-sim.py.mako`, `tvbk`, and the initial hybrid
+  demo fixtures.
 
 Exit criteria:
 - We know which pieces are copied conceptually, which are adapted, and which are
@@ -143,33 +148,37 @@ Exit criteria:
 
 ### Step 2. Define the Python-to-C++ Lowered Spec
 
-Status: `[ ]`
+Status: `[x]`
 
 Purpose:
 - Create a stable intermediate representation between TVB Python objects and the
   C++ backend.
 
 Tasks:
-- [ ] Define Python dataclasses or plain structures for:
+- [x] Define Python dataclasses or plain structures for:
   - `SimulationSpec`
   - `SubnetworkSpec`
   - `ProjectionSpec`
   - `IntegratorSpec`
   - `MonitorSpec`
   - optional `StimulusSpec`
-- [ ] Ensure the spec contains only C++-friendly data:
+- [x] Ensure the spec contains only C++-friendly data:
   - scalar values
   - strings/enums
   - contiguous NumPy arrays
   - integer maps and dimensions
-- [ ] Mirror the useful parts of `NetworkAnalysis` but remove Python object
+- [x] Mirror the useful parts of `NetworkAnalysis` but remove Python object
   dependencies.
-- [ ] Decide what is baked into generated code versus passed as runtime arrays.
-- [ ] Define a stable hash key for spec-based code generation cache.
+- [x] Decide what is baked into generated code versus passed as runtime arrays.
+- [x] Define a stable hash key for spec-based code generation cache.
 
 Deliverables:
 - `spec.py` or equivalent module with the lowered-spec schema.
 - A documented list of fields included in the first milestone.
+
+Completion note:
+- Implemented in `spec.py`; the first-milestone fields are captured directly by
+  the spec dataclasses and their serialized payload/hash representation.
 
 Exit criteria:
 - A `NetworkSet` can be lowered into a complete spec without requiring C++ yet.
@@ -178,13 +187,13 @@ Exit criteria:
 
 ### Step 3. Implement a Python Lowering Pass
 
-Status: `[ ]`
+Status: `[~]`
 
 Purpose:
 - Convert TVB runtime objects into the spec from Step 2.
 
 Tasks:
-- [ ] Build a lowering function that reads:
+- [x] Build a lowering function that reads:
   - subnetworks
   - inter/intra projections
   - model parameters
@@ -192,18 +201,28 @@ Tasks:
   - delays
   - coupling mappings
   - monitor configuration
-- [ ] Reuse compatibility checks from the existing hybrid backend where possible.
-- [ ] Normalize all arrays:
+- [~] Reuse compatibility checks from the existing hybrid backend where possible.
+- [x] Normalize all arrays:
   - dtype
   - memory layout
   - shape conventions
-- [ ] Decide initial treatment of stimuli:
+- [~] Decide initial treatment of stimuli:
   - either unsupported in milestone 1
   - or precomputed on Python side and passed as arrays
 
 Deliverables:
 - Lowering function with deterministic output.
 - Tests that validate spec contents for a small example network.
+
+Progress note:
+- `lowering.py` implements the lowering pass and reuses
+  `NbHybridBackend._analyse()` as the reference analysis path.
+- Scope compatibility is currently enforced by a narrower local gate for the
+  first milestone instead of fully reusing `NbHybridBackend._check_compatibility()`.
+- Stimuli are represented structurally in the spec, but execution semantics are
+  not yet implemented for the native path.
+- Example/demo coverage exists, but this step still needs dedicated automated
+  tests to satisfy the original deliverable fully.
 
 Exit criteria:
 - For the first supported path, the lowered spec is sufficient to run a
@@ -213,31 +232,48 @@ Exit criteria:
 
 ### Step 4. Create the Fixed C++ Runtime Skeleton
 
-Status: `[ ]`
+Status: `[~]`
 
 Purpose:
 - Establish the reusable C++ execution core before introducing large-scale code
   generation.
 
 Tasks:
-- [ ] Create C++ runtime directories and build structure.
+- [x] Create C++ runtime directories and build structure.
 - [ ] Add core runtime types for:
   - array views
   - state buffers
   - delay/ring buffers
   - CSR connectivity access
   - output buffers
-- [ ] Implement a minimal simulation loop API:
+- [x] Implement a minimal simulation loop API:
   - initialize state
   - step for `nstep`
   - accumulate one monitor type
   - package outputs
-- [ ] Add `pybind11` module scaffolding.
-- [ ] Build the extension with CMake.
+- [x] Add `pybind11` module scaffolding.
+- [x] Build the extension with CMake.
 
 Deliverables:
 - Compilable C++ runtime skeleton.
 - A trivial `pybind11` extension importable from Python.
+
+Progress note:
+- The generated module path already includes `pybind11` bindings and native
+  build support.
+- A first reusable fixed runtime layer now exists in `runtime/runtime.hpp`,
+  holding the shared simulation metadata/result types, Heun stepping loop,
+  monitor accumulation, and result packaging for the current narrow path.
+- Generated modules now include that fixed runtime and delegate
+  `describe()`/`run_simulation()` into it instead of owning the full loop.
+- The runtime is still minimal and header-only; delay buffers, CSR traversal,
+  state/buffer abstractions, and a broader runtime file layout are still
+  missing.
+
+Implementation note:
+- `examples/show_runtime_usage.py` demonstrates the current call chain from
+  Python -> generated module -> fixed runtime header and shows the generated
+  file/runtime paths for inspection.
 
 Exit criteria:
 - Python can import the extension and call a no-op or trivial test run.
@@ -246,28 +282,35 @@ Exit criteria:
 
 ### Step 5. Add the First End-to-End Generated Module Path
 
-Status: `[ ]`
+Status: `[~]`
 
 Purpose:
 - Prove the central idea: Python lowers spec, emits C++, compiles it, imports it,
   runs C++, and gets results back.
 
 Tasks:
-- [ ] Choose a single generated module layout:
+- [x] Choose a single generated module layout:
   - one generated `.cpp`
   - optional generated `.hpp`
   - linked against fixed runtime sources
-- [ ] Implement template rendering for:
+- [~] Implement template rendering for:
   - model `dfun`
   - one integrator path
   - one coupling path
   - one run entrypoint
-- [ ] Write codegen output to a cache/build directory based on a content hash.
-- [ ] Compile the generated module into a shared extension.
-- [ ] Import it dynamically from Python.
+- [x] Write codegen output to a cache/build directory based on a content hash.
+- [x] Compile the generated module into a shared extension.
+- [x] Import it dynamically from Python.
 
 Deliverables:
 - A single supported simulation path working end-to-end.
+
+Progress note:
+- The current generated path supports a real native run for the narrow case of
+  one `MontbrioPazoRoxin` subnetwork with `HeunDeterministic`, single mode, no
+  projections, and chunked monitor-like output.
+- This step remains in progress because the intended runtime/generated-code
+  split is not complete and coupling/projection support is still absent.
 
 Exit criteria:
 - The first generated module runs a real simulation from Python and returns arrays.
@@ -276,15 +319,15 @@ Exit criteria:
 
 ### Step 6. Implement the First Correctness Baseline
 
-Status: `[ ]`
+Status: `[~]`
 
 Purpose:
 - Make sure the generated C++ backend reproduces the existing backend behavior for
   the supported path.
 
 Tasks:
-- [ ] Build comparison tests against the current hybrid backend.
-- [ ] Compare:
+- [~] Build comparison tests against the current hybrid backend.
+- [x] Compare:
   - output shapes
   - time vectors
   - numerical values within tolerance
@@ -293,6 +336,11 @@ Tasks:
 
 Deliverables:
 - A small correctness test suite.
+
+Progress note:
+- `examples/compare_native_single_mpr.py` already compares Python, Numba, and
+  native C++ outputs for the single-network Montbrio path, but this is still an
+  example script rather than a proper automated test suite.
 
 Exit criteria:
 - The first supported C++ path matches the reference backend within defined
@@ -391,19 +439,22 @@ Exit criteria:
 
 ### Step 11. Integrate with TVB Backend Selection
 
-Status: `[ ]`
+Status: `[~]`
 
 Purpose:
 - Make the C++ backend accessible through the TVB simulator backend layer.
 
-Tasks:
-- [ ] Add a backend class such as `CppHybridBackend`.
-- [ ] Match the public entrypoints expected by current backend usage.
+- [x] Add a backend class such as `CppHybridBackend`.
+- [~] Match the public entrypoints expected by current backend usage.
 - [ ] Keep fallback behavior clear when a configuration is unsupported.
 - [ ] Document backend selection and expected limitations.
 
 Deliverables:
 - Python backend class wired into the simulator backend ecosystem.
+
+Progress note:
+- `backend.py` already provides `CppHybridBackend` plus compile/run entrypoints,
+  but it is not yet wired into the broader TVB backend-selection flow.
 
 Exit criteria:
 - A user can select the new backend from Python without custom scripts.

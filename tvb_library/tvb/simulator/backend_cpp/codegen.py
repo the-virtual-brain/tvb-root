@@ -5,6 +5,7 @@ import importlib.machinery
 import importlib.util
 import os
 from pathlib import Path
+import shutil
 import shlex
 import sysconfig
 import subprocess
@@ -14,6 +15,7 @@ from .spec import SimulationSpec
 
 
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
+RUNTIME_DIR = Path(__file__).resolve().parent / "runtime"
 DEFAULT_SIM_TEMPLATE = TEMPLATES_DIR / "sim_module.cpp.in"
 DEFAULT_BINDINGS_TEMPLATE = TEMPLATES_DIR / "module_bindings.cpp.in"
 DEFAULT_CMAKE_TEMPLATE = TEMPLATES_DIR / "CMakeLists.txt.in"
@@ -26,6 +28,7 @@ class GeneratedSourceArtifact:
     cpp_path: Path
     bindings_cpp_path: Path
     cmake_lists_path: Path
+    runtime_header_path: Path
     sim_template_path: Path
     bindings_template_path: Path
     cmake_template_path: Path
@@ -196,6 +199,9 @@ def generate_cpp_source(
     cpp_path = build_dir / f"{module_name}.cpp"
     bindings_cpp_path = build_dir / f"{module_name}_bindings.cpp"
     cmake_lists_path = build_dir / "CMakeLists.txt"
+    runtime_dir = build_dir / "runtime"
+    runtime_dir.mkdir(parents=True, exist_ok=True)
+    runtime_header_path = runtime_dir / "runtime.hpp"
 
     sim_source_text = render_cpp_template(
         spec=spec,
@@ -216,12 +222,17 @@ def generate_cpp_source(
     cpp_path.write_text(sim_source_text, encoding="utf-8")
     bindings_cpp_path.write_text(bindings_source_text, encoding="utf-8")
     cmake_lists_path.write_text(cmake_source_text, encoding="utf-8")
+    runtime_header_path.write_text(
+        (RUNTIME_DIR / "runtime.hpp").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
     return GeneratedSourceArtifact(
         module_name=module_name,
         build_dir=build_dir,
         cpp_path=cpp_path,
         bindings_cpp_path=bindings_cpp_path,
         cmake_lists_path=cmake_lists_path,
+        runtime_header_path=runtime_header_path,
         sim_template_path=sim_template_path,
         bindings_template_path=bindings_template_path,
         cmake_template_path=cmake_template_path,
@@ -249,6 +260,8 @@ def _build_generated_extension_with_cmake(
     cmake_build_type: str,
 ) -> GeneratedSourceArtifact:
     cmake_build_dir = artifact.build_dir / "cmake-build"
+    if cmake_build_dir.exists():
+        shutil.rmtree(cmake_build_dir)
     cmake_build_dir.mkdir(parents=True, exist_ok=True)
 
     configure_cmd = [
@@ -269,8 +282,20 @@ def _build_generated_extension_with_cmake(
         cmake_build_type,
     ]
 
-    subprocess.run(configure_cmd, check=True, cwd=artifact.build_dir)
-    subprocess.run(build_cmd, check=True, cwd=artifact.build_dir)
+    subprocess.run(
+        configure_cmd,
+        check=True,
+        cwd=artifact.build_dir,
+        capture_output=True,
+        text=True,
+    )
+    subprocess.run(
+        build_cmd,
+        check=True,
+        cwd=artifact.build_dir,
+        capture_output=True,
+        text=True,
+    )
     extension_path = _discover_extension_path(artifact.build_dir, artifact.module_name)
     return dataclasses.replace(artifact, extension_path=extension_path)
 
