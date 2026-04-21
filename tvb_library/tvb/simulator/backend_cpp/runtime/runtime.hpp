@@ -29,6 +29,67 @@ struct SimulationResult {
   std::size_t num_modes;
 };
 
+class StateBuffer {
+ public:
+  StateBuffer(
+      std::size_t n_state_vars,
+      std::size_t n_nodes,
+      std::size_t n_modes,
+      std::vector<double> values)
+      : n_state_vars_(n_state_vars),
+        n_nodes_(n_nodes),
+        n_modes_(n_modes),
+        values_(std::move(values)) {
+    const std::size_t expected_size = n_state_vars_ * n_nodes_ * n_modes_;
+    if (values_.size() != expected_size) {
+      throw std::runtime_error("StateBuffer size does not match declared shape.");
+    }
+  }
+
+  StateBuffer(
+      std::size_t n_state_vars,
+      std::size_t n_nodes,
+      std::size_t n_modes)
+      : StateBuffer(
+            n_state_vars,
+            n_nodes,
+            n_modes,
+            std::vector<double>(n_state_vars * n_nodes * n_modes, 0.0)) {}
+
+  double& operator()(std::size_t svar, std::size_t node, std::size_t mode) {
+    return values_[offset(svar, node, mode)];
+  }
+
+  const double& operator()(
+      std::size_t svar,
+      std::size_t node,
+      std::size_t mode) const {
+    return values_[offset(svar, node, mode)];
+  }
+
+  std::vector<double>& raw() { return values_; }
+
+  const std::vector<double>& raw() const { return values_; }
+
+  std::size_t size() const { return values_.size(); }
+
+ private:
+  std::size_t offset(
+      std::size_t svar,
+      std::size_t node,
+      std::size_t mode) const {
+    if (svar >= n_state_vars_ || node >= n_nodes_ || mode >= n_modes_) {
+      throw std::runtime_error("StateBuffer index out of range.");
+    }
+    return ((svar * n_nodes_) + node) * n_modes_ + mode;
+  }
+
+  std::size_t n_state_vars_;
+  std::size_t n_nodes_;
+  std::size_t n_modes_;
+  std::vector<double> values_;
+};
+
 template <typename Generated>
 inline SimulationMetadata describe() {
   return SimulationMetadata{
@@ -45,14 +106,13 @@ inline SimulationMetadata describe() {
 }
 
 template <typename Generated>
-inline void heun_step(std::vector<double>& state) {
-  std::vector<double> predictor = state;
+inline void heun_step(StateBuffer& state) {
+  StateBuffer predictor = state;
   for (std::size_t node = 0; node < Generated::kNumNodes; ++node) {
     std::array<double, Generated::kNumStateVars> dx0{};
     Generated::compute_dfun(state, node, dx0);
-    predictor[node] = state[node] + Generated::kDt * dx0[0];
-    predictor[Generated::kNumNodes + node] =
-        state[Generated::kNumNodes + node] + Generated::kDt * dx0[1];
+    predictor(0, node, 0) = state(0, node, 0) + Generated::kDt * dx0[0];
+    predictor(1, node, 0) = state(1, node, 0) + Generated::kDt * dx0[1];
     Generated::apply_state_constraints(predictor, node);
   }
 
@@ -61,9 +121,8 @@ inline void heun_step(std::vector<double>& state) {
     std::array<double, Generated::kNumStateVars> dx1{};
     Generated::compute_dfun(state, node, dx0);
     Generated::compute_dfun(predictor, node, dx1);
-    state[node] += 0.5 * Generated::kDt * (dx0[0] + dx1[0]);
-    state[Generated::kNumNodes + node] +=
-        0.5 * Generated::kDt * (dx0[1] + dx1[1]);
+    state(0, node, 0) += 0.5 * Generated::kDt * (dx0[0] + dx1[0]);
+    state(1, node, 0) += 0.5 * Generated::kDt * (dx0[1] + dx1[1]);
     Generated::apply_state_constraints(state, node);
   }
 }
@@ -90,7 +149,11 @@ inline SimulationResult run_simulation(
     throw std::runtime_error("chunk_size must be >= 1.");
   }
 
-  std::vector<double> state = initial_state;
+  StateBuffer state(
+      Generated::kNumStateVars,
+      Generated::kNumNodes,
+      Generated::kNumModes,
+      initial_state);
   const std::size_t num_chunks = (nstep + chunk_size - 1) / chunk_size;
   SimulationResult result;
   result.num_chunks = num_chunks;
@@ -113,8 +176,7 @@ inline SimulationResult run_simulation(
       const std::size_t svar =
           static_cast<std::size_t>(Generated::kVoiIndices[ivoi]);
       for (std::size_t node = 0; node < Generated::kNumNodes; ++node) {
-        accum[ivoi * Generated::kNumNodes + node] +=
-            state[svar * Generated::kNumNodes + node];
+        accum[ivoi * Generated::kNumNodes + node] += state(svar, node, 0);
       }
     }
     ++steps_in_chunk;

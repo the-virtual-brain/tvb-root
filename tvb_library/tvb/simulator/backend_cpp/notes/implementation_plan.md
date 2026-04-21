@@ -338,9 +338,17 @@ Deliverables:
 - A small correctness test suite.
 
 Progress note:
-- `examples/compare_native_single_mpr.py` already compares Python, Numba, and
-  native C++ outputs for the single-network Montbrio path, but this is still an
-  example script rather than a proper automated test suite.
+- `examples/compare_native_single_mpr.py` compares Python, Numba, and native
+  C++ outputs for the single-network Montbrio path.
+- Automated tests now exist in
+  `tvb/tests/library/simulator/backend_cpp/test_cpp_hybrid_backend.py`:
+  - a compile/runtime smoke test that checks the generated module includes the
+    fixed runtime and copied runtime header
+  - a compatibility test comparing native output against both Python hybrid and
+    `NbHybridBackend` for the current single-network supported path
+- This step remains in progress because reproducibility checks and explicit
+  documentation of the known Python/native time-stamp convention difference are
+  still missing.
 
 Exit criteria:
 - The first supported C++ path matches the reference backend within defined
