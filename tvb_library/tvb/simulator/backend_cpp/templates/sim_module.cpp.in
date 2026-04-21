@@ -1,0 +1,203 @@
+// Auto-generated C++ translation unit for the TVB hybrid backend.
+// Current native execution scope:
+// - single subnetwork
+// - MontbrioPazoRoxin
+// - HeunDeterministic
+// - no projections
+// - chunked monitor-like output returned as (times, data)
+
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cmath>
+#include <stdexcept>
+#include <vector>
+
+namespace tvb::hybrid::generated {
+
+static constexpr const char* kModuleName = "{{MODULE_NAME}}";
+static constexpr const char* kCacheKey = "{{CACHE_KEY}}";
+static constexpr const char* kBackendVersion = "{{BACKEND_VERSION}}";
+static constexpr const char* kUserSourceHint = "{{USER_SOURCE_HINT}}";
+static constexpr double kDt = {{DT}};
+static constexpr std::size_t kNumSubnetworks = {{NUM_SUBNETWORKS}};
+static constexpr std::size_t kNumInterProjections = {{NUM_INTER_PROJECTIONS}};
+static constexpr std::size_t kNumIntraProjections = {{NUM_INTRA_PROJECTIONS}};
+static constexpr std::size_t kNumMonitors = {{NUM_MONITORS}};
+
+static constexpr std::size_t kNumNodes = {{N_NODES}};
+static constexpr std::size_t kNumModes = {{N_MODES}};
+static constexpr std::size_t kNumStateVars = {{N_STATE_VARS}};
+static constexpr std::size_t kNumVoi = {{N_VOI}};
+static constexpr std::array<int, kNumVoi> kVoiIndices = { {{VOI_INDICES}} };
+
+static constexpr std::array<double, 1> kTau = { {{PARAM_TAU}} };
+static constexpr std::array<double, 1> kDelta = { {{PARAM_DELTA}} };
+static constexpr std::array<double, 1> kEta = { {{PARAM_ETA}} };
+static constexpr std::array<double, 1> kJ = { {{PARAM_J}} };
+static constexpr std::array<double, 1> kI = { {{PARAM_I}} };
+static constexpr std::array<double, 1> kCr = { {{PARAM_CR}} };
+static constexpr std::array<double, 1> kCv = { {{PARAM_CV}} };
+
+{{SUBNETWORK_SUMMARY}}
+{{PROJECTION_SUMMARY}}
+
+struct SimulationMetadata {
+  const char* module_name;
+  const char* cache_key;
+  const char* backend_version;
+  const char* user_source_hint;
+  double dt;
+  std::size_t num_subnetworks;
+  std::size_t num_inter_projections;
+  std::size_t num_intra_projections;
+  std::size_t num_monitors;
+};
+
+struct SimulationResult {
+  std::vector<double> times;
+  std::vector<double> data;  // shape: (num_chunks, n_voi, n_nodes, n_modes)
+  std::size_t num_chunks;
+  std::size_t num_voi;
+  std::size_t num_nodes;
+  std::size_t num_modes;
+};
+
+inline SimulationMetadata describe() {
+  return SimulationMetadata{
+      kModuleName,
+      kCacheKey,
+      kBackendVersion,
+      kUserSourceHint,
+      kDt,
+      kNumSubnetworks,
+      kNumInterProjections,
+      kNumIntraProjections,
+      kNumMonitors,
+  };
+}
+
+inline double param_at(const std::array<double, 1>& values, std::size_t) {
+  return values[0];
+}
+
+inline void compute_dfun(
+    const std::vector<double>& state,
+    std::size_t node,
+    std::array<double, kNumStateVars>& dx) {
+  const double r = std::max(0.0, state[node]);
+  const double V = state[kNumNodes + node];
+  const double tau = param_at(kTau, node);
+  const double Delta = param_at(kDelta, node);
+  const double eta = param_at(kEta, node);
+  const double J = param_at(kJ, node);
+  const double I = param_at(kI, node);
+  const double cr = param_at(kCr, node);
+  const double cv = param_at(kCv, node);
+  const double coupling_r = 0.0;
+  const double coupling_V = 0.0;
+
+  dx[0] = (1.0 / tau) * (Delta / (M_PI * tau) + 2.0 * V * r);
+  dx[1] = (1.0 / tau) *
+          (V * V - (M_PI * M_PI) * tau * tau * r * r + eta + J * tau * r + I +
+           cr * coupling_r + cv * coupling_V);
+}
+
+inline void apply_state_constraints(std::vector<double>& state, std::size_t node) {
+  state[node] = std::max(0.0, state[node]);
+}
+
+inline void heun_step(std::vector<double>& state) {
+  std::vector<double> predictor = state;
+  for (std::size_t node = 0; node < kNumNodes; ++node) {
+    std::array<double, kNumStateVars> dx0{};
+    compute_dfun(state, node, dx0);
+    predictor[node] = state[node] + kDt * dx0[0];
+    predictor[kNumNodes + node] = state[kNumNodes + node] + kDt * dx0[1];
+    apply_state_constraints(predictor, node);
+  }
+
+  for (std::size_t node = 0; node < kNumNodes; ++node) {
+    std::array<double, kNumStateVars> dx0{};
+    std::array<double, kNumStateVars> dx1{};
+    compute_dfun(state, node, dx0);
+    compute_dfun(predictor, node, dx1);
+    state[node] += 0.5 * kDt * (dx0[0] + dx1[0]);
+    state[kNumNodes + node] += 0.5 * kDt * (dx0[1] + dx1[1]);
+    apply_state_constraints(state, node);
+  }
+}
+
+inline SimulationResult run_simulation(
+    const std::vector<double>& initial_state,
+    std::size_t nstep,
+    std::size_t chunk_size) {
+  if (kNumSubnetworks != 1 || kNumInterProjections != 0 ||
+      kNumIntraProjections != 0) {
+    throw std::runtime_error(
+        "run_simulation currently supports exactly one subnetwork and no projections.");
+  }
+  if (kNumModes != 1) {
+    throw std::runtime_error(
+        "run_simulation currently supports only single-mode subnetworks.");
+  }
+  if (initial_state.size() != kNumStateVars * kNumNodes * kNumModes) {
+    throw std::runtime_error("initial_state size does not match generated spec.");
+  }
+  if (chunk_size == 0) {
+    throw std::runtime_error("chunk_size must be >= 1.");
+  }
+
+  std::vector<double> state = initial_state;
+  const std::size_t num_chunks = (nstep + chunk_size - 1) / chunk_size;
+  SimulationResult result;
+  result.num_chunks = num_chunks;
+  result.num_voi = kNumVoi;
+  result.num_nodes = kNumNodes;
+  result.num_modes = kNumModes;
+  result.times.resize(num_chunks);
+  result.data.resize(num_chunks * kNumVoi * kNumNodes * kNumModes, 0.0);
+
+  std::vector<double> accum(kNumVoi * kNumNodes, 0.0);
+  std::size_t current_chunk = 0;
+  std::size_t steps_in_chunk = 0;
+  std::size_t chunk_start_step = 1;
+
+  for (std::size_t step = 1; step <= nstep; ++step) {
+    heun_step(state);
+    for (std::size_t ivoi = 0; ivoi < kNumVoi; ++ivoi) {
+      const std::size_t svar = static_cast<std::size_t>(kVoiIndices[ivoi]);
+      for (std::size_t node = 0; node < kNumNodes; ++node) {
+        accum[ivoi * kNumNodes + node] += state[svar * kNumNodes + node];
+      }
+    }
+    ++steps_in_chunk;
+
+    const bool close_chunk = (steps_in_chunk == chunk_size) || (step == nstep);
+    if (!close_chunk) {
+      continue;
+    }
+
+    const double mid_step =
+        static_cast<double>(chunk_start_step) + (static_cast<double>(steps_in_chunk) - 1.0) / 2.0;
+    result.times[current_chunk] = mid_step * kDt;
+
+    for (std::size_t ivoi = 0; ivoi < kNumVoi; ++ivoi) {
+      for (std::size_t node = 0; node < kNumNodes; ++node) {
+        const std::size_t out_idx =
+            ((current_chunk * kNumVoi + ivoi) * kNumNodes + node) * kNumModes;
+        result.data[out_idx] = accum[ivoi * kNumNodes + node] /
+                               static_cast<double>(steps_in_chunk);
+      }
+    }
+
+    std::fill(accum.begin(), accum.end(), 0.0);
+    ++current_chunk;
+    chunk_start_step = step + 1;
+    steps_in_chunk = 0;
+  }
+
+  return result;
+}
+
+}  // namespace tvb::hybrid::generated
