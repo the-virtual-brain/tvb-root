@@ -166,6 +166,7 @@ class TestCppHybridBackend(unittest.TestCase):
             self.assertIn("class HistoryBuffer", runtime_header)
             self.assertIn("const StateBuffer& read", runtime_header)
             self.assertIn("double read_value", runtime_header)
+            self.assertIn("inline double delayed_state_value", runtime_header)
             self.assertIn("inline void heun_step", runtime_header)
             self.assertIn("inline SimulationResult run_simulation", runtime_header)
 
@@ -175,6 +176,9 @@ class TestCppHybridBackend(unittest.TestCase):
             self.assertEqual(history_probe["delay_0"], 40.0)
             self.assertEqual(history_probe["delay_1"], 30.0)
             self.assertEqual(history_probe["delay_2"], 20.0)
+            self.assertEqual(history_probe["helper_delay_0"], 40.0)
+            self.assertEqual(history_probe["helper_delay_1"], 30.0)
+            self.assertEqual(history_probe["helper_delay_2"], 20.0)
 
             times, data = compiled.run(
                 initial_states=[initial_state],
