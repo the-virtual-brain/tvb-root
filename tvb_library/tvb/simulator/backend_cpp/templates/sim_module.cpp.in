@@ -30,6 +30,7 @@ struct GeneratedModel {
   static constexpr std::size_t kNumModes = {{N_MODES}};
   static constexpr std::size_t kNumStateVars = {{N_STATE_VARS}};
   static constexpr std::size_t kNumVoi = {{N_VOI}};
+  static constexpr std::size_t kSourceHistoryHorizon = {{SOURCE_HISTORY_HORIZON}};
   static constexpr std::array<int, kNumVoi> kVoiIndices = { {{VOI_INDICES}} };
 
   static constexpr std::array<double, 1> kTau = { {{PARAM_TAU}} };
@@ -45,11 +46,11 @@ struct GeneratedModel {
   }
 
   static inline void compute_dfun(
-      const std::vector<double>& state,
+      const tvb::hybrid::runtime::StateBuffer& state,
       std::size_t node,
       std::array<double, kNumStateVars>& dx) {
-    const double r = std::max(0.0, state[node]);
-    const double V = state[kNumNodes + node];
+    const double r = std::max(0.0, state(0, node, 0));
+    const double V = state(1, node, 0);
     const double tau = param_at(kTau, node);
     const double Delta = param_at(kDelta, node);
     const double eta = param_at(kEta, node);
@@ -67,9 +68,9 @@ struct GeneratedModel {
   }
 
   static inline void apply_state_constraints(
-      std::vector<double>& state,
+      tvb::hybrid::runtime::StateBuffer& state,
       std::size_t node) {
-    state[node] = std::max(0.0, state[node]);
+    state(0, node, 0) = std::max(0.0, state(0, node, 0));
   }
 };
 

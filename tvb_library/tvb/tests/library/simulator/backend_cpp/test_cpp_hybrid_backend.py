@@ -163,8 +163,18 @@ class TestCppHybridBackend(unittest.TestCase):
                 generated_cpp,
             )
             self.assertIn("class StateBuffer", runtime_header)
+            self.assertIn("class HistoryBuffer", runtime_header)
+            self.assertIn("const StateBuffer& read", runtime_header)
+            self.assertIn("double read_value", runtime_header)
             self.assertIn("inline void heun_step", runtime_header)
             self.assertIn("inline SimulationResult run_simulation", runtime_header)
+
+            history_probe = compiled.load_module().debug_probe_history()
+            self.assertEqual(history_probe["capacity"], 3)
+            self.assertEqual(history_probe["size"], 3)
+            self.assertEqual(history_probe["delay_0"], 40.0)
+            self.assertEqual(history_probe["delay_1"], 30.0)
+            self.assertEqual(history_probe["delay_2"], 20.0)
 
             times, data = compiled.run(
                 initial_states=[initial_state],

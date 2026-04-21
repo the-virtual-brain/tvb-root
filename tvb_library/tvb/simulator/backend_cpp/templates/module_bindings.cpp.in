@@ -23,6 +23,34 @@ PYBIND11_MODULE({{MODULE_NAME}}, m) {
     return out;
   });
 
+  m.def("debug_probe_history", []() {
+    using tvb::hybrid::runtime::HistoryBuffer;
+    using tvb::hybrid::runtime::StateBuffer;
+
+    HistoryBuffer history(3, 1, 1, 1);
+    StateBuffer s0(1, 1, 1);
+    StateBuffer s1(1, 1, 1);
+    StateBuffer s2(1, 1, 1);
+    StateBuffer s3(1, 1, 1);
+    s0(0, 0, 0) = 10.0;
+    s1(0, 0, 0) = 20.0;
+    s2(0, 0, 0) = 30.0;
+    s3(0, 0, 0) = 40.0;
+
+    history.push(s0);
+    history.push(s1);
+    history.push(s2);
+    history.push(s3);
+
+    py::dict out;
+    out["capacity"] = py::int_(history.capacity());
+    out["size"] = py::int_(history.size());
+    out["delay_0"] = history.read_value(0, 0, 0, 0);
+    out["delay_1"] = history.read_value(1, 0, 0, 0);
+    out["delay_2"] = history.read_value(2, 0, 0, 0);
+    return out;
+  });
+
   m.def(
       "run_simulation",
       [](py::array_t<double, py::array::c_style | py::array::forcecast> initial_state,

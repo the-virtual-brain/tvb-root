@@ -264,6 +264,14 @@ Progress note:
 - A first reusable fixed runtime layer now exists in `runtime/runtime.hpp`,
   holding the shared simulation metadata/result types, Heun stepping loop,
   monitor accumulation, and result packaging for the current narrow path.
+- The runtime now has explicit `StateBuffer` and `MonitorBuffer`
+  abstractions instead of relying only on anonymous flat vectors in the step
+  loop.
+- A first `HistoryBuffer` ring-buffer abstraction now exists and the runtime
+  writes state snapshots into it each step.
+- Delayed reads are now implemented at the runtime level and covered by a
+  small backend_cpp test probe, but they are not yet used by projection or
+  coupling code.
 - Generated modules now include that fixed runtime and delegate
   `describe()`/`run_simulation()` into it instead of owning the full loop.
 - The runtime is still minimal and header-only; delay buffers, CSR traversal,

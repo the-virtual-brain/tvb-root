@@ -125,6 +125,7 @@ def render_cpp_template(
         "{{N_MODES}}": str(subnet.n_modes),
         "{{N_STATE_VARS}}": str(subnet.n_state_vars),
         "{{N_VOI}}": str(len(subnet.variables_of_interest)),
+        "{{SOURCE_HISTORY_HORIZON}}": str(spec.source_horizons.get(subnet.name, 1)),
         "{{VOI_INDICES}}": _format_int_array(voi_indices),
         "{{PARAM_TAU}}": _format_double_array(param_values["tau"]),
         "{{PARAM_DELTA}}": _format_double_array(param_values["Delta"]),
