@@ -18,6 +18,8 @@ env:
   DOCKER_IMAGE_NAME: thevirtualbrain/tvb-run
   DOCKER_EBRAINS_REGISTRY: docker-registry.ebrains.eu
   DOCKER_IMAGE_NAME_EBRAINS: docker-registry.ebrains.eu/tvb/tvb-run
+  EBRAINS_USER: ${{ secrets.EBRAINS_DOCKER_HUB_USERNAME }}
+  EBRAINS_PASSWORD: ${{ secrets.EBRAINS_DOCKER_HUB_PASSWORD }}
 
 jobs:
   build:
@@ -36,6 +38,9 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+      - name: Check EBRAINS Registry Connectivity
+        run: curl -v https://docker-registry.ebrains.eu/v2/
 
       - name: Login to EBRAINS Docker Registry
         id: login_ebrains
@@ -78,15 +83,17 @@ jobs:
           context: tvb_build/docker
           file: tvb_build/docker/Dockerfile-run
           push: true
+          load: true
           build-args: |
             LAST_SHA=${{ github.sha }}
             BRANCH_NAME=${{ github.ref_name }}
           tags: |
             ${{ env.DOCKER_IMAGE_NAME }}:${{ steps.get_tag.outputs.TAG }}
-            ${{ env.DOCKER_IMAGE_NAME }}:latest            
+            ${{ env.DOCKER_IMAGE_NAME }}:latest      
 
       - name: Push to EBRAINS registry
         if: steps.login_ebrains.outcome == 'success'
         run: |
+          curl -v https://docker-registry.ebrains.eu/v2/
           docker tag ${{ env.DOCKER_IMAGE_NAME }}:${{ steps.get_tag.outputs.TAG }} ${{ env.DOCKER_IMAGE_NAME_EBRAINS }}:${{ steps.get_tag.outputs.TAG }}
           docker push ${{ env.DOCKER_IMAGE_NAME_EBRAINS }}:${{ steps.get_tag.outputs.TAG }}
