@@ -17,6 +17,8 @@ Test categories
 7. Float32 vs float64 precision bounds
 8. Large network (68 nodes)
 9. Zero initial conditions
+10. Stimulus numerical parity (constant, time-varying, scale, multi-cvar,
+    spatial selectivity, combined with projections)
 """
 import math
 import unittest
@@ -38,11 +40,136 @@ from tvb.simulator.noise import Additive
 from tvb.simulator.monitors import TemporalAverage
 from tvb.simulator.hybrid import Subnetwork, NetworkSet
 from tvb.simulator.hybrid.inter_projection import InterProjection
-from tvb.simulator.hybrid.coupling import Linear as LinearCoupling
+from tvb.simulator.hybrid.intra_projection import IntraProjection
+from tvb.simulator.hybrid.coupling import Linear as LinearCoupling, Scaling as ScalingCoupling
+from tvb.simulator.hybrid.stimulus import Stim
 from tvb.simulator.backend.nb_hybrid import NbHybridBackend
+from tvb.datatypes.patterns import StimuliRegion
+from tvb.datatypes import equations as eqs
+from tvb.datatypes.connectivity import Connectivity
 
 
 DT = 0.1  # integration timestep
+
+
+# ── connectivity / stimulus helpers ─────────────────────────────────────
+
+def _make_minimal_connectivity(n_nodes: int) -> Connectivity:
+    """Create a minimal Connectivity object required by StimuliRegion."""
+    conn = Connectivity(
+        centres=np.zeros((n_nodes, 3)),
+        weights=np.zeros((n_nodes, n_nodes)),
+        tract_lengths=np.zeros((n_nodes, n_nodes)),
+        region_labels=np.array([str(i) for i in range(n_nodes)]),
+        speed=np.array([1.0]),
+    )
+    conn.configure()
+    return conn
+
+
+def _make_constant_stim(subnet, amplitude, target_node=0,
+                        target_cvar=None, projection_scale=1.0,
+                        simulation_length=None):
+    """Create a constant-amplitude (Linear a=0) StimuliRegion → Stim.
+
+    Parameters
+    ----------
+    subnet : Subnetwork
+        Target subnetwork.
+    amplitude : float
+        Constant stimulus amplitude.
+    target_node : int or None
+        Which node to stimulate.  None → all nodes.
+    target_cvar : ndarray or None
+        Target coupling-variable indices.  Default ``[0]``.
+    projection_scale : float
+        Global scaling factor.
+    simulation_length : float or None
+        Total simulation duration (ms).  Default ``100 * DT``.
+    """
+    if target_cvar is None:
+        target_cvar = np.array([0], dtype=np.int_)
+    if simulation_length is None:
+        simulation_length = 100 * DT
+    n = subnet.nnodes
+    conn = _make_minimal_connectivity(n)
+    temporal = eqs.Linear()
+    temporal.parameters["a"] = 0.0
+    temporal.parameters["b"] = float(amplitude)
+    weight = np.zeros(n)
+    if target_node is None:
+        weight[:] = 1.0
+    else:
+        weight[target_node] = 1.0
+    stim_pattern = StimuliRegion(
+        temporal=temporal, connectivity=conn, weight=weight,
+    )
+    stim = Stim(
+        target=subnet,
+        stimulus=stim_pattern,
+        target_cvar=target_cvar,
+        projection_scale=projection_scale,
+    )
+    stim.configure(simulation_length=simulation_length)
+    return stim
+
+
+def _make_sinusoidal_stim(subnet, amp, frequency, target_node=0,
+                          target_cvar=None, projection_scale=1.0,
+                          simulation_length=None):
+    """Sinusoid-driven StimuliRegion → Stim."""
+    if target_cvar is None:
+        target_cvar = np.array([0], dtype=np.int_)
+    if simulation_length is None:
+        simulation_length = 200 * DT
+    n = subnet.nnodes
+    conn = _make_minimal_connectivity(n)
+    temporal = eqs.Sinusoid()
+    temporal.parameters["amp"] = float(amp)
+    temporal.parameters["frequency"] = float(frequency)
+    weight = np.zeros(n)
+    weight[target_node] = 1.0
+    stim_pattern = StimuliRegion(
+        temporal=temporal, connectivity=conn, weight=weight,
+    )
+    stim = Stim(
+        target=subnet,
+        stimulus=stim_pattern,
+        target_cvar=target_cvar,
+        projection_scale=projection_scale,
+    )
+    stim.configure(simulation_length=simulation_length)
+    return stim
+
+
+def _make_pulse_stim(subnet, onset, period, tau, amp, target_node=0,
+                     target_cvar=None, projection_scale=1.0,
+                     simulation_length=None):
+    """PulseTrain-driven StimuliRegion → Stim."""
+    if target_cvar is None:
+        target_cvar = np.array([0], dtype=np.int_)
+    if simulation_length is None:
+        simulation_length = 200 * DT
+    n = subnet.nnodes
+    conn = _make_minimal_connectivity(n)
+    temporal = eqs.PulseTrain()
+    temporal.parameters["onset"] = float(onset)
+    temporal.parameters["T"] = float(period)
+    temporal.parameters["tau"] = float(tau)
+    temporal.parameters["amp"] = float(amp)
+    weight = np.zeros(n)
+    weight[target_node] = 1.0
+    stim_pattern = StimuliRegion(
+        temporal=temporal, connectivity=conn, weight=weight,
+    )
+    stim = Stim(
+        target=subnet,
+        stimulus=stim_pattern,
+        target_cvar=target_cvar,
+        projection_scale=projection_scale,
+    )
+    stim.configure(simulation_length=simulation_length)
+    return stim
 
 
 # ── helpers ───────────────────────────────────────────────────────────────
@@ -704,6 +831,899 @@ class TestZeroInitialConditions(unittest.TestCase):
             nb[0].astype(np.float64), py[0],
             rtol=1e-5, atol=1e-6,
             err_msg="Zero IC Heun diverged",
+        )
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# 10. Stimulus numerical parity tests
+# ══════════════════════════════════════════════════════════════════════════
+
+
+class TestStimulusParity(unittest.TestCase):
+    """Stimulus numerical parity: Python vs Numba backend with external stimuli.
+
+    Each test constructs a network that includes one or more :class:`Stim`
+    objects, runs it through both backends with identical initial conditions,
+    and asserts that the results match within floating-point tolerance.
+    """
+
+    N = 6
+    NSTEP = 100
+
+    # ── constant stimulus ────────────────────────────────────────────
+
+    def test_constant_stimulus_euler(self):
+        """Constant-amplitude stimulus: Euler parity."""
+        m = MontbrioPazoRoxin()
+        sn = _make_subnet("ctx", m, self.N, EulerDeterministic)
+        _configure_all(m, sn)
+        stim = _make_constant_stim(
+            sn, amplitude=0.05, target_node=0,
+            simulation_length=self.NSTEP * DT,
+        )
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        ns.configure()
+
+        ic = _seeded_ic(m, self.N, 1, seed=1001)
+        py = _run_python(ns, self.NSTEP, [ic])
+        nb = _run_numba(ns, self.NSTEP, [ic])
+
+        assert_allclose(
+            nb[0].astype(np.float64), py[0],
+            rtol=1e-5, atol=1e-6,
+            err_msg="Constant-stimulus Euler diverged between Python and Numba",
+        )
+
+    def test_constant_stimulus_heun(self):
+        """Constant-amplitude stimulus: Heun parity."""
+        m = MontbrioPazoRoxin()
+        sn = _make_subnet("ctx", m, self.N, HeunDeterministic)
+        _configure_all(m, sn)
+        stim = _make_constant_stim(
+            sn, amplitude=0.05, target_node=0,
+            simulation_length=self.NSTEP * DT,
+        )
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        ns.configure()
+
+        ic = _seeded_ic(m, self.N, 1, seed=1002)
+        py = _run_python(ns, self.NSTEP, [ic])
+        nb = _run_numba(ns, self.NSTEP, [ic])
+
+        assert_allclose(
+            nb[0].astype(np.float64), py[0],
+            rtol=1e-5, atol=1e-6,
+            err_msg="Constant-stimulus Heun diverged between Python and Numba",
+        )
+
+    # ── time-varying stimulus ────────────────────────────────────────
+
+    def test_sinusoidal_stimulus_parity(self):
+        """Sinusoid stimulus: per-step observed trajectory parity."""
+        m = MontbrioPazoRoxin()
+        nstep = 150
+        sn = _make_subnet("ctx", m, self.N, HeunDeterministic)
+        _configure_all(m, sn)
+        stim = _make_sinusoidal_stim(
+            sn, amp=0.03, frequency=0.05, target_node=0,
+            simulation_length=nstep * DT,
+        )
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        ns.configure()
+
+        ic = _seeded_ic(m, self.N, 1, seed=1003)
+        py_obs = _run_python_observed(ns, nstep, [ic])
+
+        be = NbHybridBackend()
+        results = be.run_network(
+            ns, nstep=nstep, chunk_size=1,
+            initial_states=[ic.copy()],
+        )
+        _times, data, _ctavg = results[0]
+
+        assert_allclose(
+            data.astype(np.float64), py_obs[0],
+            rtol=1e-3, atol=1e-4,
+            err_msg="Sinusoid stimulus per-step trajectory diverged",
+        )
+
+    def test_pulse_train_stimulus_parity(self):
+        """PulseTrain stimulus: final state parity."""
+        m = MontbrioPazoRoxin()
+        nstep = 150
+        sn = _make_subnet("ctx", m, self.N, EulerDeterministic)
+        _configure_all(m, sn)
+        stim = _make_pulse_stim(
+            sn, onset=2.0, period=10.0, tau=2.0, amp=0.05,
+            target_node=0,
+            simulation_length=nstep * DT,
+        )
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        ns.configure()
+
+        ic = _seeded_ic(m, self.N, 1, seed=1004)
+        py = _run_python(ns, nstep, [ic])
+        nb = _run_numba(ns, nstep, [ic])
+
+        assert_allclose(
+            nb[0].astype(np.float64), py[0],
+            rtol=1e-4, atol=1e-5,
+            err_msg="PulseTrain stimulus diverged between Python and Numba",
+        )
+
+    # ── projection scale ────────────────────────────────────────────
+
+    def test_stimulus_projection_scale(self):
+        """projection_scale ≠ 1.0: both backends apply same scaling."""
+        m = MontbrioPazoRoxin()
+        sn = _make_subnet("ctx", m, self.N, HeunDeterministic)
+        _configure_all(m, sn)
+        stim = _make_constant_stim(
+            sn, amplitude=0.05, target_node=0,
+            projection_scale=2.5,
+            simulation_length=self.NSTEP * DT,
+        )
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        ns.configure()
+
+        ic = _seeded_ic(m, self.N, 1, seed=1005)
+        py = _run_python(ns, self.NSTEP, [ic])
+        nb = _run_numba(ns, self.NSTEP, [ic])
+
+        assert_allclose(
+            nb[0].astype(np.float64), py[0],
+            rtol=1e-5, atol=1e-6,
+            err_msg="Stimulus projection_scale parity diverged",
+        )
+
+    # ── multi-cvar stimulus ──────────────────────────────────────────
+
+    def test_stimulus_multi_cvar(self):
+        """Stimulus targeting multiple coupling variables (r and V)."""
+        m = MontbrioPazoRoxin()
+        sn = _make_subnet("ctx", m, self.N, HeunDeterministic)
+        _configure_all(m, sn)
+        stim = _make_constant_stim(
+            sn, amplitude=0.02, target_node=0,
+            target_cvar=np.array([0, 1], dtype=np.int_),
+            simulation_length=self.NSTEP * DT,
+        )
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        ns.configure()
+
+        ic = _seeded_ic(m, self.N, 1, seed=1006)
+        py = _run_python(ns, self.NSTEP, [ic])
+        nb = _run_numba(ns, self.NSTEP, [ic])
+
+        assert_allclose(
+            nb[0].astype(np.float64), py[0],
+            rtol=1e-5, atol=1e-6,
+            err_msg="Multi-cvar stimulus diverged between Python and Numba",
+        )
+
+    # ── spatial selectivity ─────────────────────────────────────────
+
+    def test_stimulus_spatial_selectivity_parity(self):
+        """Only node 0 stimulated: both stimulated and unstimulated nodes match."""
+        m = MontbrioPazoRoxin()
+        nstep = 80
+        sn = _make_subnet("ctx", m, self.N, HeunDeterministic)
+        _configure_all(m, sn)
+        stim = _make_constant_stim(
+            sn, amplitude=0.1, target_node=0,
+            simulation_length=nstep * DT,
+        )
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        ns.configure()
+
+        ic = _seeded_ic(m, self.N, 1, seed=1007)
+        py = _run_python(ns, nstep, [ic])
+        nb = _run_numba(ns, nstep, [ic])
+
+        # Stimulated node (0)
+        assert_allclose(
+            nb[0][:, 0, :].astype(np.float64), py[0][:, 0, :],
+            rtol=1e-5, atol=1e-6,
+            err_msg="Stimulated node 0 diverged",
+        )
+        # Non-stimulated node (1)
+        assert_allclose(
+            nb[0][:, 1, :].astype(np.float64), py[0][:, 1, :],
+            rtol=1e-5, atol=1e-6,
+            err_msg="Non-stimulated node 1 diverged",
+        )
+
+    # ── stimulus + inter-projection ─────────────────────────────────
+
+    def test_stimulus_with_interprojection_parity(self):
+        """Stimulus and inter-projection coupling applied simultaneously."""
+        m1 = MontbrioPazoRoxin()
+        m2 = MontbrioPazoRoxin()
+        _configure_all(m1, m2)
+
+        n1, n2 = 4, 4
+        sn1 = _make_subnet("ctx", m1, n1, HeunDeterministic)
+        sn1.node_indices = np.arange(n1)
+        sn2 = _make_subnet("thal", m2, n2, HeunDeterministic)
+        sn2.node_indices = np.arange(n1, n1 + n2)
+        _configure_all(sn1, sn2)
+
+        # Weak coupling: ctx → thal
+        weights = sp.csr_matrix(np.ones((n2, n1)) * 0.01)
+        lengths = sp.csr_matrix(np.ones((n2, n1)) * DT)
+        proj = InterProjection(
+            source=sn1, target=sn2,
+            weights=weights, lengths=lengths,
+            source_cvar=np.array([0]), target_cvar=np.array([0]),
+            scale=1.0, dt=DT, cv=np.array([1.0]),
+            cfun=LinearCoupling(),
+        )
+
+        # Stimulus on cortex node 0
+        nstep = 80
+        stim = _make_constant_stim(
+            sn1, amplitude=0.05, target_node=0,
+            simulation_length=nstep * DT,
+        )
+
+        ns = NetworkSet(subnets=[sn1, sn2], projections=[proj], stimuli=[stim])
+        ns.configure()
+
+        ic1 = _seeded_ic(m1, n1, 1, seed=1008)
+        ic2 = _seeded_ic(m2, n2, 1, seed=1009)
+        py = _run_python(ns, nstep, [ic1, ic2])
+        nb = _run_numba(ns, nstep, [ic1, ic2])
+
+        for i, name in enumerate(["ctx", "thal"]):
+            assert_allclose(
+                nb[i].astype(np.float64), py[i],
+                rtol=1e-4, atol=1e-5,
+                err_msg=f"Stimulus+projection subnet '{name}' diverged",
+            )
+
+    # ── multiple stimuli ────────────────────────────────────────────
+
+    def test_multiple_stimuli_parity(self):
+        """Two stimuli on the same subnet targeting different cvars."""
+        m = MontbrioPazoRoxin()
+        nstep = 80
+        sn = _make_subnet("ctx", m, self.N, HeunDeterministic)
+        _configure_all(m, sn)
+
+        sim_len = nstep * DT
+        stim_r = _make_constant_stim(
+            sn, amplitude=0.03, target_node=0,
+            target_cvar=np.array([0], dtype=np.int_),
+            simulation_length=sim_len,
+        )
+        stim_v = _make_constant_stim(
+            sn, amplitude=0.02, target_node=1,
+            target_cvar=np.array([1], dtype=np.int_),
+            simulation_length=sim_len,
+        )
+
+        ns = NetworkSet(
+            subnets=[sn], projections=[], stimuli=[stim_r, stim_v],
+        )
+        ns.configure()
+
+        ic = _seeded_ic(m, self.N, 1, seed=1010)
+        py = _run_python(ns, nstep, [ic])
+        nb = _run_numba(ns, nstep, [ic])
+
+        assert_allclose(
+            nb[0].astype(np.float64), py[0],
+            rtol=1e-5, atol=1e-6,
+            err_msg="Multiple-stimuli diverged between Python and Numba",
+        )
+
+    # ── zero-amplitude ≡ baseline ───────────────────────────────────
+
+    def test_zero_amplitude_stimulus_matches_baseline(self):
+        """Zero-amplitude stimulus should produce identical output to no stimulus."""
+        m = MontbrioPazoRoxin()
+        nstep = 50
+
+        # Baseline: no stimulus
+        sn_base = _make_subnet("ctx", m, self.N, HeunDeterministic)
+        _configure_all(m, sn_base)
+        ns_base = NetworkSet(subnets=[sn_base], projections=[], stimuli=[])
+        ns_base.configure()
+
+        ic = _seeded_ic(m, self.N, 1, seed=1011)
+        py_base = _run_python(ns_base, nstep, [ic])
+        nb_base = _run_numba(ns_base, nstep, [ic])
+
+        # With zero-amplitude stimulus
+        sn_stim = _make_subnet("ctx", m, self.N, HeunDeterministic)
+        _configure_all(m, sn_stim)
+        stim = _make_constant_stim(
+            sn_stim, amplitude=0.0, target_node=0,
+            simulation_length=nstep * DT,
+        )
+        ns_stim = NetworkSet(subnets=[sn_stim], projections=[], stimuli=[stim])
+        ns_stim.configure()
+
+        py_stim = _run_python(ns_stim, nstep, [ic])
+        nb_stim = _run_numba(ns_stim, nstep, [ic])
+
+        # Zero-stimulus Python ≡ baseline Python
+        assert_allclose(
+            py_stim[0], py_base[0],
+            rtol=1e-12, atol=1e-14,
+            err_msg="Zero-amplitude stimulus python differs from no-stimulus baseline",
+        )
+
+        # Zero-stimulus Numba ≡ baseline Numba
+        assert_allclose(
+            nb_stim[0].astype(np.float64), nb_base[0].astype(np.float64),
+            rtol=1e-5, atol=1e-6,
+            err_msg="Zero-amplitude stimulus Numba differs from no-stimulus baseline",
+        )
+
+    # ── stimulus + intra-projection ──────────────────────────────────
+
+    def test_stimulus_with_intraprojection_parity(self):
+        """Single subnet with both intra-projection coupling and stimulus."""
+        m = MontbrioPazoRoxin()
+        nstep = 80
+        n = self.N
+        sn = _make_subnet("ctx", m, n, HeunDeterministic)
+        # Intra-projection: weak local coupling with zero delay
+        w = sp.csr_matrix(np.ones((n, n)) * 0.005)
+        np.fill_diagonal(w.toarray(), 0.0)
+        intra = IntraProjection(
+            source_cvar=np.array([0], dtype=np.int_),
+            target_cvar=np.array([0], dtype=np.int_),
+            weights=w,
+            lengths=sp.csr_matrix(np.zeros((n, n))),
+            cv=1.0, dt=DT, scale=1.0,
+        )
+        sn.projections = [intra]
+        _configure_all(m, sn)
+        stim = _make_constant_stim(
+            sn, amplitude=0.03, target_node=0,
+            simulation_length=nstep * DT,
+        )
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        ns.configure()
+
+        ic = _seeded_ic(m, n, 1, seed=1012)
+        py = _run_python(ns, nstep, [ic])
+        nb = _run_numba(ns, nstep, [ic])
+
+        assert_allclose(
+            nb[0].astype(np.float64), py[0],
+            rtol=1e-4, atol=1e-5,
+            err_msg="Stimulus+intra-projection diverged between Python and Numba",
+        )
+
+    # ── stimulus on all nodes ────────────────────────────────────────
+
+    def test_stimulus_all_nodes_parity(self):
+        """Stimulus applied uniformly to all nodes: parity check."""
+        m = MontbrioPazoRoxin()
+        sn = _make_subnet("ctx", m, self.N, HeunDeterministic)
+        _configure_all(m, sn)
+        stim = _make_constant_stim(
+            sn, amplitude=0.02, target_node=None,  # all nodes
+            simulation_length=self.NSTEP * DT,
+        )
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        ns.configure()
+
+        ic = _seeded_ic(m, self.N, 1, seed=1013)
+        py = _run_python(ns, self.NSTEP, [ic])
+        nb = _run_numba(ns, self.NSTEP, [ic])
+
+        assert_allclose(
+            nb[0].astype(np.float64), py[0],
+            rtol=1e-5, atol=1e-6,
+            err_msg="All-nodes stimulus diverged between Python and Numba",
+        )
+
+    # ── stimulus with Generic2dOscillator ─────────────────────────────
+
+    def test_stimulus_generic2d_oscillator_parity(self):
+        """Stimulus on a non-MPR model (Generic2dOscillator)."""
+        m = Generic2dOscillator()
+        nstep = 80
+        sn = _make_subnet("osc", m, 5, HeunDeterministic)
+        _configure_all(m, sn)
+        stim = _make_constant_stim(
+            sn, amplitude=0.05, target_node=0,
+            simulation_length=nstep * DT,
+        )
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        ns.configure()
+
+        ic = _seeded_ic(m, 5, 1, seed=1014)
+        py = _run_python(ns, nstep, [ic])
+        nb = _run_numba(ns, nstep, [ic])
+
+        assert_allclose(
+            nb[0].astype(np.float64), py[0],
+            rtol=1e-5, atol=1e-6,
+            err_msg="Generic2dOscillator stimulus diverged between Python and Numba",
+        )
+
+    # ── large network with stimulus ──────────────────────────────────
+
+    def test_stimulus_large_network_68_nodes(self):
+        """68-node network with stimulus: parity at realistic scale."""
+        m = MontbrioPazoRoxin()
+        nstep = 100
+        n = 68
+        sn = _make_subnet("ctx", m, n, HeunDeterministic)
+        _configure_all(m, sn)
+        stim = _make_constant_stim(
+            sn, amplitude=0.03, target_node=0,
+            simulation_length=nstep * DT,
+        )
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        ns.configure()
+
+        ic = _seeded_ic(m, n, 1, seed=1015)
+        py = _run_python(ns, nstep, [ic])
+        nb = _run_numba(ns, nstep, [ic])
+
+        assert_allclose(
+            nb[0].astype(np.float64), py[0],
+            rtol=1e-4, atol=1e-5,
+            err_msg="68-node stimulus diverged between Python and Numba",
+        )
+
+    # ── stimulus with stochastic integrator ──────────────────────────
+
+    def test_stimulus_euler_stochastic_parity(self):
+        """Stimulus + EulerStochastic with matched noise seed."""
+        m = MontbrioPazoRoxin()
+        nstep = 50
+        n = 4
+        nsig = 1e-4
+        seed = 42
+
+        # Python path
+        noise_py = Additive(nsig=np.array([nsig]))
+        noise_py.noise_seed = seed
+        noise_py.random_stream = np.random.RandomState(seed)
+        noise_py.configure_white(DT)
+        sn_py = _make_subnet("ctx", m, n, EulerStochastic, noise=noise_py)
+        _configure_all(m, sn_py)
+        stim_py = _make_constant_stim(
+            sn_py, amplitude=0.03, target_node=0,
+            simulation_length=nstep * DT,
+        )
+        ns_py = NetworkSet(subnets=[sn_py], projections=[], stimuli=[stim_py])
+        ns_py.configure()
+        ic = _seeded_ic(m, n, 1, seed=1016)
+        py = _run_python(ns_py, nstep, [ic])
+
+        # Numba path (fresh noise with same seed)
+        noise_nb = Additive(nsig=np.array([nsig]))
+        noise_nb.noise_seed = seed
+        noise_nb.random_stream = np.random.RandomState(seed)
+        noise_nb.configure_white(DT)
+        sn_nb = _make_subnet("ctx", m, n, EulerStochastic, noise=noise_nb)
+        _configure_all(m, sn_nb)
+        stim_nb = _make_constant_stim(
+            sn_nb, amplitude=0.03, target_node=0,
+            simulation_length=nstep * DT,
+        )
+        ns_nb = NetworkSet(subnets=[sn_nb], projections=[], stimuli=[stim_nb])
+        ns_nb.configure()
+        nb = _run_numba(ns_nb, nstep, [ic])
+
+        assert_allclose(
+            nb[0].astype(np.float64), py[0],
+            rtol=1e-4, atol=1e-5,
+            err_msg="EulerStochastic+stimulus diverged with matched noise seed",
+        )
+
+    # ── stimulus across node counts ──────────────────────────────────
+
+    def test_stimulus_multiple_node_counts(self):
+        """Validate stimulus parity across different network sizes."""
+        for n_nodes in [2, 4, 10, 32]:
+            with self.subTest(n_nodes=n_nodes):
+                m = MontbrioPazoRoxin()
+                sn = _make_subnet("ctx", m, n_nodes, HeunDeterministic)
+                _configure_all(m, sn)
+                stim = _make_constant_stim(
+                    sn, amplitude=0.05, target_node=0,
+                    simulation_length=50 * DT,
+                )
+                ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+                ns.configure()
+
+                ic = _seeded_ic(m, n_nodes, 1, seed=1017)
+                py = _run_python(ns, 50, [ic])
+                nb = _run_numba(ns, 50, [ic])
+
+                assert_allclose(
+                    nb[0].astype(np.float64), py[0],
+                    rtol=1e-4, atol=1e-5,
+                    err_msg=f"Stimulus diverged at n_nodes={n_nodes}",
+                )
+
+    # ── stimulus + intra + inter combined ────────────────────────────
+
+    def test_stimulus_with_intra_and_inter_parity(self):
+        """Full-featured: intra-projection + inter-projection + stimulus."""
+        m1 = MontbrioPazoRoxin()
+        m2 = MontbrioPazoRoxin()
+        _configure_all(m1, m2)
+
+        n1, n2 = 4, 4
+        sn1 = _make_subnet("ctx", m1, n1, HeunDeterministic)
+        sn1.node_indices = np.arange(n1)
+        # Intra-projection on source
+        w_intra = sp.csr_matrix(np.ones((n1, n1)) * 0.005)
+        np.fill_diagonal(w_intra.toarray(), 0.0)
+        intra = IntraProjection(
+            source_cvar=np.array([0], dtype=np.int_),
+            target_cvar=np.array([0], dtype=np.int_),
+            weights=w_intra,
+            lengths=sp.csr_matrix(np.zeros((n1, n1))),
+            cv=1.0, dt=DT, scale=1.0,
+            cfun=ScalingCoupling(a=np.array([1.5])),
+        )
+        sn1.projections = [intra]
+
+        sn2 = _make_subnet("thal", m2, n2, HeunDeterministic)
+        sn2.node_indices = np.arange(n1, n1 + n2)
+        _configure_all(sn1, sn2)
+
+        # Inter-projection ctx → thal
+        w_inter = sp.csr_matrix(np.ones((n2, n1)) * 0.01)
+        lengths = sp.csr_matrix(np.ones((n2, n1)) * DT)
+        proj = InterProjection(
+            source=sn1, target=sn2,
+            weights=w_inter, lengths=lengths,
+            source_cvar=np.array([0]), target_cvar=np.array([0]),
+            scale=1.0, dt=DT, cv=np.array([1.0]),
+            cfun=LinearCoupling(),
+        )
+
+        # Stimulus on cortex
+        nstep = 60
+        stim = _make_constant_stim(
+            sn1, amplitude=0.03, target_node=0,
+            simulation_length=nstep * DT,
+        )
+
+        ns = NetworkSet(subnets=[sn1, sn2], projections=[proj], stimuli=[stim])
+        ns.configure()
+
+        ic1 = _seeded_ic(m1, n1, 1, seed=1018)
+        ic2 = _seeded_ic(m2, n2, 1, seed=1019)
+        py = _run_python(ns, nstep, [ic1, ic2])
+        nb = _run_numba(ns, nstep, [ic1, ic2])
+
+        for i, name in enumerate(["ctx", "thal"]):
+            assert_allclose(
+                nb[i].astype(np.float64), py[i],
+                rtol=1e-4, atol=1e-5,
+                err_msg=f"Stimulus+intra+inter subnet '{name}' diverged",
+            )
+
+
+    # ── resume with stimulus ────────────────────────────────────────
+
+    def test_stimulus_snapshot_resume_parity(self):
+        """Snapshot/resume: stimulus is correctly preserved across calls."""
+        m = MontbrioPazoRoxin()
+        n1, n2 = 30, 30
+        sn = _make_subnet("ctx", m, self.N, HeunDeterministic)
+        _configure_all(m, sn)
+        stim = _make_constant_stim(
+            sn, amplitude=0.03, target_node=0,
+            simulation_length=(n1 + n2) * DT,
+        )
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        ns.configure()
+
+        ic = _seeded_ic(m, self.N, 1, seed=1020)
+
+        # --- Python: two-phase run ---
+        x = ns.zero_states(initial_states=[ic.copy()])
+        ns.init_projection_buffers(x)
+        for step in range(1, n1 + 1):
+            x = ns.step(step, x)
+        py_mid = np.asarray(list(x)[0], dtype=np.float64).copy()
+        for step in range(n1 + 1, n1 + n2 + 1):
+            x = ns.step(step, x)
+        py_final = np.asarray(list(x)[0], dtype=np.float64)
+
+        # --- Numba: two-phase run via snapshot/resume ---
+        be = NbHybridBackend()
+        compiled = be.compile(ns)
+        outputs, snapshot = compiled.run(
+            n1, chunk_size=1,
+            initial_states=[ic.copy()],
+            return_snapshot=True,
+        )
+        nb_mid = snapshot["states"][0].astype(np.float64)
+
+        # Resume from snapshot
+        outputs2, snapshot2 = compiled.run(
+            n2, chunk_size=1,
+            initial_states=snapshot["states"],
+            _initial_buffers=snapshot["buffers"],
+            return_snapshot=True,
+        )
+        nb_final = snapshot2["states"][0].astype(np.float64)
+
+        # Mid-point parity
+        assert_allclose(
+            nb_mid, py_mid,
+            rtol=1e-5, atol=1e-6,
+            err_msg="Stimulus snapshot mid-point diverged",
+        )
+        # Final parity (full run ≡ two-phase run)
+        py_full = _run_python(ns, n1 + n2, [ic])
+        assert_allclose(
+            nb_final, py_full[0],
+            rtol=1e-5, atol=1e-6,
+            err_msg="Stimulus resume final state diverged from continuous run",
+        )
+
+    # ── spatially-varying weights ─────────────────────────────────────
+
+    def test_stimulus_gradient_weights_parity(self):
+        """Gradient spatial weights: all nodes stimulated at different strengths."""
+        m = MontbrioPazoRoxin()
+        nstep = 80
+        n = self.N
+        sn = _make_subnet("ctx", m, n, HeunDeterministic)
+        _configure_all(m, sn)
+
+        # Gradient weights: node 0 → 1.0, node 5 → 0.0
+        conn = _make_minimal_connectivity(n)
+        temporal = eqs.Linear()
+        temporal.parameters["a"] = 0.0
+        temporal.parameters["b"] = 0.05
+        weight = np.linspace(1.0, 0.0, n)
+        stim_pattern = StimuliRegion(
+            temporal=temporal, connectivity=conn, weight=weight,
+        )
+        stim = Stim(
+            target=sn, stimulus=stim_pattern,
+            target_cvar=np.array([0], dtype=np.int_),
+            projection_scale=1.0,
+        )
+        stim.configure(simulation_length=nstep * DT)
+
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        ns.configure()
+
+        ic = _seeded_ic(m, n, 1, seed=1021)
+        py = _run_python(ns, nstep, [ic])
+        nb = _run_numba(ns, nstep, [ic])
+
+        assert_allclose(
+            nb[0].astype(np.float64), py[0],
+            rtol=1e-5, atol=1e-6,
+            err_msg="Gradient-weights stimulus diverged",
+        )
+
+    def test_stimulus_checkerboard_weights_parity(self):
+        """Alternating on/off spatial weights."""
+        m = MontbrioPazoRoxin()
+        nstep = 80
+        n = self.N
+        sn = _make_subnet("ctx", m, n, HeunDeterministic)
+        _configure_all(m, sn)
+
+        conn = _make_minimal_connectivity(n)
+        temporal = eqs.Sinusoid()
+        temporal.parameters["amp"] = 0.05
+        temporal.parameters["frequency"] = 0.05
+        weight = np.array([1.0, 0.0, 1.0, 0.0, 1.0, 0.0])[:n]
+        stim_pattern = StimuliRegion(
+            temporal=temporal, connectivity=conn, weight=weight,
+        )
+        stim = Stim(
+            target=sn, stimulus=stim_pattern,
+            target_cvar=np.array([0], dtype=np.int_),
+            projection_scale=1.0,
+        )
+        stim.configure(simulation_length=nstep * DT)
+
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        ns.configure()
+
+        ic = _seeded_ic(m, n, 1, seed=1022)
+        py = _run_python(ns, nstep, [ic])
+        nb = _run_numba(ns, nstep, [ic])
+
+        assert_allclose(
+            nb[0].astype(np.float64), py[0],
+            rtol=1e-3, atol=1e-4,
+            err_msg="Checkerboard-weights Sinusoid stimulus diverged",
+        )
+
+    # ── Cosine stimulus on validate side ─────────────────────────────
+
+    def test_cosine_stimulus_parity(self):
+        """Cosine-driven stimulus: per-step observed trajectory parity."""
+        m = MontbrioPazoRoxin()
+        nstep = 100
+        sn = _make_subnet("ctx", m, self.N, HeunDeterministic)
+        _configure_all(m, sn)
+
+        conn = _make_minimal_connectivity(self.N)
+        temporal = eqs.Cosine()
+        temporal.parameters["amp"] = 0.04
+        temporal.parameters["frequency"] = 0.05
+        weight = np.zeros(self.N)
+        weight[0] = 1.0
+        stim_pattern = StimuliRegion(
+            temporal=temporal, connectivity=conn, weight=weight,
+        )
+        stim = Stim(
+            target=sn, stimulus=stim_pattern,
+            target_cvar=np.array([0], dtype=np.int_),
+        )
+        stim.configure(simulation_length=nstep * DT)
+
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        ns.configure()
+
+        ic = _seeded_ic(m, self.N, 1, seed=1023)
+        py_obs = _run_python_observed(ns, nstep, [ic])
+
+        be = NbHybridBackend()
+        results = be.run_network(
+            ns, nstep=nstep, chunk_size=1,
+            initial_states=[ic.copy()],
+        )
+        _times, data, _ctavg = results[0]
+
+        assert_allclose(
+            data.astype(np.float64), py_obs[0],
+            rtol=1e-3, atol=1e-4,
+            err_msg="Cosine stimulus per-step trajectory diverged",
+        )
+
+    # ── Alpha stimulus on validate side ──────────────────────────────
+
+    def test_alpha_stimulus_parity(self):
+        """Alpha-function stimulus: final state parity."""
+        m = MontbrioPazoRoxin()
+        nstep = 100
+        sn = _make_subnet("ctx", m, self.N, EulerDeterministic)
+        _configure_all(m, sn)
+
+        conn = _make_minimal_connectivity(self.N)
+        temporal = eqs.Alpha()
+        temporal.parameters["onset"] = 1.0
+        temporal.parameters["alpha"] = 5.0
+        temporal.parameters["beta"] = 15.0
+        weight = np.zeros(self.N)
+        weight[0] = 1.0
+        stim_pattern = StimuliRegion(
+            temporal=temporal, connectivity=conn, weight=weight,
+        )
+        stim = Stim(
+            target=sn, stimulus=stim_pattern,
+            target_cvar=np.array([0], dtype=np.int_),
+        )
+        stim.configure(simulation_length=nstep * DT)
+
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        ns.configure()
+
+        ic = _seeded_ic(m, self.N, 1, seed=1024)
+        py = _run_python(ns, nstep, [ic])
+        nb = _run_numba(ns, nstep, [ic])
+
+        assert_allclose(
+            nb[0].astype(np.float64), py[0],
+            rtol=1e-4, atol=1e-5,
+            err_msg="Alpha stimulus diverged between Python and Numba",
+        )
+
+    # ── pulsetrain transition capture ────────────────────────────────
+
+    def test_pulsetrain_transition_parity(self):
+        """PulseTrain on→off and off→on transitions captured identically.
+
+        Compares per-step observed output to verify that every transition
+        frame matches between backends.
+        """
+        m = MontbrioPazoRoxin()
+        nstep = 100  # 10 ms; pulse at onset=2ms, T=5ms, tau=1ms → pulses at 2–3, 7–8 ms
+        sn = _make_subnet("ctx", m, self.N, HeunDeterministic)
+        _configure_all(m, sn)
+
+        conn = _make_minimal_connectivity(self.N)
+        temporal = eqs.PulseTrain()
+        temporal.parameters["onset"] = 2.0
+        temporal.parameters["T"] = 5.0
+        temporal.parameters["tau"] = 1.0
+        temporal.parameters["amp"] = 0.1
+        weight = np.zeros(self.N)
+        weight[0] = 1.0
+        stim_pattern = StimuliRegion(
+            temporal=temporal, connectivity=conn, weight=weight,
+        )
+        stim = Stim(
+            target=sn, stimulus=stim_pattern,
+            target_cvar=np.array([0], dtype=np.int_),
+        )
+        stim.configure(simulation_length=nstep * DT)
+
+        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        ns.configure()
+
+        ic = _seeded_ic(m, self.N, 1, seed=1025)
+        py_obs = _run_python_observed(ns, nstep, [ic])
+
+        be = NbHybridBackend()
+        results = be.run_network(
+            ns, nstep=nstep, chunk_size=1,
+            initial_states=[ic.copy()],
+        )
+        _times, data, _ctavg = results[0]
+
+        assert_allclose(
+            data.astype(np.float64), py_obs[0],
+            rtol=1e-3, atol=1e-4,
+            err_msg="PulseTrain transition per-step trajectory diverged",
+        )
+
+    # ── Heun stochastic + stimulus per-step ──────────────────────────
+
+    def test_heun_stochastic_stimulus_per_step_parity(self):
+        """HeunStochastic + constant stimulus: per-step trajectory parity."""
+        m = MontbrioPazoRoxin()
+        nstep = 40
+        n = 4
+        nsig = 1e-4
+        seed = 55
+
+        # Python
+        noise_py = Additive(nsig=np.array([nsig]))
+        noise_py.noise_seed = seed
+        noise_py.random_stream = np.random.RandomState(seed)
+        noise_py.configure_white(DT)
+        sn_py = _make_subnet("ctx", m, n, HeunStochastic, noise=noise_py)
+        _configure_all(m, sn_py)
+        stim_py = _make_constant_stim(
+            sn_py, amplitude=0.03, target_node=0,
+            simulation_length=nstep * DT,
+        )
+        ns_py = NetworkSet(subnets=[sn_py], projections=[], stimuli=[stim_py])
+        ns_py.configure()
+        ic = _seeded_ic(m, n, 1, seed=1026)
+        py_obs = _run_python_observed(ns_py, nstep, [ic])
+
+        # Numba (fresh noise with same seed)
+        noise_nb = Additive(nsig=np.array([nsig]))
+        noise_nb.noise_seed = seed
+        noise_nb.random_stream = np.random.RandomState(seed)
+        noise_nb.configure_white(DT)
+        sn_nb = _make_subnet("ctx", m, n, HeunStochastic, noise=noise_nb)
+        _configure_all(m, sn_nb)
+        stim_nb = _make_constant_stim(
+            sn_nb, amplitude=0.03, target_node=0,
+            simulation_length=nstep * DT,
+        )
+        ns_nb = NetworkSet(subnets=[sn_nb], projections=[], stimuli=[stim_nb])
+        ns_nb.configure()
+
+        be = NbHybridBackend()
+        results = be.run_network(
+            ns_nb, nstep=nstep, chunk_size=1,
+            initial_states=[ic.copy()],
+        )
+        _times, data, _ctavg = results[0]
+
+        assert_allclose(
+            data.astype(np.float64), py_obs[0],
+            rtol=1e-2, atol=1e-3,
+            err_msg="HeunStochastic+stimulus per-step trajectory diverged",
         )
 
 
