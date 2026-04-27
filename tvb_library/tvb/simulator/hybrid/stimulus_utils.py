@@ -151,3 +151,151 @@ def create_stimulus(
     )
 
     return stim
+
+
+def _make_weight_vector(n_nodes, target_node, amplitude=1.0):
+    """Build a per-node weight vector for StimuliRegion."""
+    if target_node is None:
+        return np.full(n_nodes, amplitude)
+    w = np.zeros(n_nodes)
+    w[target_node] = amplitude
+    return w
+
+
+def constant_stim(subnet, amplitude, target_node=0, target_cvar=0,
+                  projection_scale=1.0, simulation_length=None):
+    """Create a constant-amplitude stimulus in one call.
+
+    Builds a Linear(a=0, b=amplitude) temporal equation, a minimal
+    Connectivity, a StimuliRegion, and a configured Stim.
+
+    Parameters
+    ----------
+    subnet : Subnetwork
+        Target subnetwork.
+    amplitude : float
+        Constant stimulus amplitude.
+    target_node : int or None
+        Which node to stimulate. None → all nodes.
+    target_cvar : int
+        Target coupling-variable index (default 0).
+    projection_scale : float
+        Scaling factor for the stimulus.
+    simulation_length : float or None
+        If provided, ``stim.configure(simulation_length)`` is called.
+
+    Returns
+    -------
+    Stim
+        Ready-to-use stimulus.
+    """
+    from tvb.datatypes import equations as eqs
+    from tvb.datatypes.patterns import StimuliRegion
+
+    temporal = eqs.Linear()
+    temporal.parameters["a"] = 0.0
+    temporal.parameters["b"] = float(amplitude)
+    weight = _make_weight_vector(subnet.nnodes, target_node)
+    pattern = StimuliRegion.from_weights(weight=weight, temporal=temporal)
+    target_cvar = np.array([target_cvar], dtype=np.int_)
+    stim = Stim(target=subnet, stimulus=pattern,
+                target_cvar=target_cvar, projection_scale=projection_scale)
+    if simulation_length is not None:
+        stim.configure(simulation_length=simulation_length)
+    return stim
+
+
+def pulse_stim(subnet, amplitude, onset, period, pulse_width,
+               target_node=0, target_cvar=0,
+              projection_scale=1.0, simulation_length=None):
+    """Create a pulse-train stimulus in one call.
+
+    Parameters
+    ----------
+    subnet : Subnetwork
+        Target subnetwork.
+    amplitude : float
+        Pulse amplitude.
+    onset : float
+        Onset time (ms).
+    period : float
+        Pulse period T (ms).
+    pulse_width : float
+        Pulse width tau (ms).
+    target_node : int or None
+        Which node to stimulate. None → all nodes.
+    target_cvar : int
+        Target coupling-variable index (default 0).
+    projection_scale : float
+        Scaling factor for the stimulus.
+    simulation_length : float or None
+        If provided, ``stim.configure(simulation_length)`` is called.
+
+    Returns
+    -------
+    Stim
+        Ready-to-use stimulus.
+    """
+    from tvb.datatypes import equations as eqs
+    from tvb.datatypes.patterns import StimuliRegion
+
+    temporal = eqs.PulseTrain()
+    temporal.parameters["onset"] = float(onset)
+    temporal.parameters["T"] = float(period)
+    temporal.parameters["tau"] = float(pulse_width)
+    temporal.parameters["amp"] = float(amplitude)
+    weight = _make_weight_vector(subnet.nnodes, target_node)
+    pattern = StimuliRegion.from_weights(
+        weight=weight, temporal=temporal,
+    )
+    target_cvar = np.array([target_cvar], dtype=np.int_)
+    stim = Stim(target=subnet, stimulus=pattern,
+                target_cvar=target_cvar, projection_scale=projection_scale)
+    if simulation_length is not None:
+        stim.configure(simulation_length=simulation_length)
+    return stim
+
+
+def sinusoid_stim(subnet, amplitude, frequency, target_node=0,
+                  target_cvar=0, projection_scale=1.0,
+                  simulation_length=None):
+    """Create a sinusoidal stimulus in one call.
+
+    Parameters
+    ----------
+    subnet : Subnetwork
+        Target subnetwork.
+    amplitude : float
+        Sinusoid amplitude.
+    frequency : float
+        Sinusoid frequency.
+    target_node : int or None
+        Which node to stimulate. None → all nodes.
+    target_cvar : int
+        Target coupling-variable index (default 0).
+    projection_scale : float
+        Scaling factor for the stimulus.
+    simulation_length : float or None
+        If provided, ``stim.configure(simulation_length)`` is called.
+
+    Returns
+    -------
+    Stim
+        Ready-to-use stimulus.
+    """
+    from tvb.datatypes import equations as eqs
+    from tvb.datatypes.patterns import StimuliRegion
+
+    temporal = eqs.Sinusoid()
+    temporal.parameters["amp"] = float(amplitude)
+    temporal.parameters["frequency"] = float(frequency)
+    weight = _make_weight_vector(subnet.nnodes, target_node)
+    pattern = StimuliRegion.from_weights(
+        weight=weight, temporal=temporal,
+    )
+    target_cvar = np.array([target_cvar], dtype=np.int_)
+    stim = Stim(target=subnet, stimulus=pattern,
+                target_cvar=target_cvar, projection_scale=projection_scale)
+    if simulation_length is not None:
+        stim.configure(simulation_length=simulation_length)
+    return stim

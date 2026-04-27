@@ -69,11 +69,19 @@ class Simulator(t.HasTraits):
         Total simulation time in milliseconds
     """
 
+    _BACKEND_OPTIONS = ("python", "numba")
+
     nets: NetworkSet = t.Attr(NetworkSet)
     monitors: List[Monitor] = t.List(of=Monitor)
     simulation_length: float = t.Float()
 
     def __init__(self, **kwargs):
+        backend = kwargs.pop("backend", "python")
+        if backend not in self._BACKEND_OPTIONS:
+            raise ValueError(
+                f"backend must be one of {self._BACKEND_OPTIONS}, got {backend!r}"
+            )
+        self.backend = backend
         super().__init__(**kwargs)
         self.validate_dts()
         self.validate_vois()
@@ -204,21 +212,30 @@ class Simulator(t.HasTraits):
         initial_conditions = kwargs.pop("initial_conditions", None)
         random_state = kwargs.pop("random_state", None)
 
+        if self.backend == "numba":
+            return self._run_numba(initial_conditions, random_state)
+        return self._run_python(initial_conditions, random_state)
+
+    def _resolve_ics(self, initial_conditions, random_state):
+        """Resolve initial conditions from explicit arrays or random state."""
+        if initial_conditions is not None:
+            return self.nets.zero_states(
+                initial_states=[ic.copy() for ic in initial_conditions]
+            )
+        if random_state is None:
+            rng = np.random
+        elif isinstance(random_state, int):
+            rng = np.random.RandomState(random_state)
+        else:
+            rng = random_state
+        return self.nets.random_states(rng)
+
+    def _run_python(self, initial_conditions=None, random_state=None):
+        """Run simulation using the Python NetworkSet.step loop."""
         mts = [[] for _ in self.monitors]
         mxs = [[] for _ in self.monitors]
 
-        if initial_conditions is not None:
-            x = self.nets.zero_states(initial_states=initial_conditions)
-        else:
-            # Default: draw ICs from state variable ranges, matching classic TVB.
-            # Resolve the random number generator from random_state.
-            if random_state is None:
-                rng = np.random
-            elif isinstance(random_state, int):
-                rng = np.random.RandomState(random_state)
-            else:
-                rng = random_state
-            x = self.nets.random_states(rng)
+        x = self._resolve_ics(initial_conditions, random_state)
 
         # Initialize projection history buffers with initial state
         # to match classic TVB simulator behavior (history filled with ICs)
@@ -235,3 +252,35 @@ class Simulator(t.HasTraits):
                         mt.append(maybe_tx[0])
                         mx.append(maybe_tx[1])
         return [(np.array(t), np.array(x)) for t, x in zip(mts, mxs)]
+
+    def _run_numba(self, initial_conditions=None, random_state=None):
+        """Run simulation using the NbHybridBackend."""
+        from tvb.simulator.backend.nb_hybrid import NbHybridBackend
+
+        x = self._resolve_ics(initial_conditions, random_state)
+        self.nets.init_projection_buffers(x)
+        ics = [np.asarray(xi, dtype=np.float64) for xi in x]
+        nstep = int(math.ceil(self.simulation_length / self._dt0))
+
+        be = NbHybridBackend()
+        if self.monitors:
+            raw = be.run_network(
+                self.nets, nstep=nstep, monitors=self.monitors,
+                initial_states=ics,
+            )
+            # raw is list[list[tuple(times, data)]] indexed by [monitor][subnet]
+            result = []
+            for mon_idx in range(len(self.monitors)):
+                # Concatenate across subnets
+                all_t = []
+                all_d = []
+                for sn_idx in range(len(self.nets.subnets)):
+                    t, d = raw[mon_idx][sn_idx]
+                    all_t.append(t)
+                    all_d.append(d)
+                result.append((np.concatenate(all_t), np.concatenate(all_d, axis=1)))
+            return result
+        else:
+            # No monitors: run and return empty list (matching Python path)
+            be.run_network(self.nets, nstep=nstep, initial_states=ics)
+            return []

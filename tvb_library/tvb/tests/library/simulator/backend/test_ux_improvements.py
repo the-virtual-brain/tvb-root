@@ -110,7 +110,7 @@ class TestConstantStimFactory(unittest.TestCase):
         # Evaluate the temporal equation at a mid-point
         t = np.linspace(0, 10.0, 100)
         temporal = stim.stimulus.temporal
-        values = temporal(t)
+        values = temporal.evaluate(t)
         # Linear(a=0, b=amp) → constant = amp
         np.testing.assert_allclose(values, amp, rtol=1e-10)
 
