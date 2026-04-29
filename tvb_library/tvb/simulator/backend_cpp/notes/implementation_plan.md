@@ -187,7 +187,7 @@ Exit criteria:
 
 ### Step 3. Implement a Python Lowering Pass
 
-Status: `[~]`
+Status: `[x]`
 
 Purpose:
 - Convert TVB runtime objects into the spec from Step 2.
@@ -201,12 +201,12 @@ Tasks:
   - delays
   - coupling mappings
   - monitor configuration
-- [~] Reuse compatibility checks from the existing hybrid backend where possible.
+- [x] Reuse compatibility checks from the existing hybrid backend where possible.
 - [x] Normalize all arrays:
   - dtype
   - memory layout
   - shape conventions
-- [~] Decide initial treatment of stimuli:
+- [x] Decide initial treatment of stimuli:
   - either unsupported in milestone 1
   - or precomputed on Python side and passed as arrays
 
@@ -217,12 +217,14 @@ Deliverables:
 Progress note:
 - `lowering.py` implements the lowering pass and reuses
   `NbHybridBackend._analyse()` as the reference analysis path.
-- Scope compatibility is currently enforced by a narrower local gate for the
-  first milestone instead of fully reusing `NbHybridBackend._check_compatibility()`.
-- Stimuli are represented structurally in the spec, but execution semantics are
-  not yet implemented for the native path.
-- Example/demo coverage exists, but this step still needs dedicated automated
-  tests to satisfy the original deliverable fully.
+- Scope compatibility is enforced by a local C++-backend gate while still using
+  `NbHybridBackend._analyse()` for reference lowering. The gate currently
+  accepts configured subnetworks using `HeunDeterministic` and models exposing
+  expression-based `state_variable_dfuns`.
+- Stimuli are represented structurally in the spec but are explicitly outside
+  the current native execution scope.
+- Dedicated automated lowering tests exist in
+  `tvb/tests/library/simulator/backend_cpp/test_lowering.py`.
 
 Exit criteria:
 - For the first supported path, the lowered spec is sufficient to run a
@@ -240,8 +242,8 @@ Purpose:
 
 Tasks:
 - [x] Create C++ runtime directories and build structure.
-- [ ] Add core runtime types for:
-  - array views
+- [~] Add core runtime types for:
+  - lightweight projection array views
   - state buffers
   - delay/ring buffers
   - CSR connectivity access
@@ -269,17 +271,19 @@ Progress note:
   loop.
 - A first `HistoryBuffer` ring-buffer abstraction now exists and the runtime
   writes state snapshots into it each step.
-- Delayed reads are now implemented at the runtime level and covered by a
-  small backend_cpp test probe, but they are not yet used by projection or
-  coupling code.
-- The generated/native path can now call the delayed-history helper for a
-  minimal deterministic self-feedback example, which is validated against a
-  pure Python reference in tests and `examples/compare_native_delayed_self_feedback.py`.
+- Delayed reads are implemented at the runtime level and covered by a small
+  backend_cpp test probe.
+- `ProjectionArrays` and `accumulate_projection()` provide the first runtime
+  CSR projection traversal path. The implemented scope is deliberately narrow:
+  single-subnetwork, single-mode intra-projections with one source cvar feeding
+  one target coupling slot. Inter-subnetwork projections, mode maps,
+  multi-cvar mappings, target scales, and coupling-function transforms are not
+  implemented in the C++ runtime yet.
 - Generated modules now include that fixed runtime and delegate
   `describe()`/`run_simulation()` into it instead of owning the full loop.
-- The runtime is still minimal and header-only; delay buffers, CSR traversal,
-  state/buffer abstractions, and a broader runtime file layout are still
-  missing.
+- The runtime is still minimal and header-only; broader array/view abstractions,
+  multi-subnetwork buffers, full projection semantics, and a broader runtime
+  file layout are still missing.
 
 Implementation note:
 - `examples/show_runtime_usage.py` demonstrates the current call chain from
@@ -293,7 +297,7 @@ Exit criteria:
 
 ### Step 5. Add the First End-to-End Generated Module Path
 
-Status: `[~]`
+Status: `[x]`
 
 Purpose:
 - Prove the central idea: Python lowers spec, emits C++, compiles it, imports it,
@@ -304,7 +308,7 @@ Tasks:
   - one generated `.cpp`
   - optional generated `.hpp`
   - linked against fixed runtime sources
-- [~] Implement template rendering for:
+- [x] Implement template rendering for:
   - model `dfun`
   - one integrator path
   - one coupling path
@@ -317,11 +321,12 @@ Deliverables:
 - A single supported simulation path working end-to-end.
 
 Progress note:
-- The current generated path supports a real native run for the narrow case of
-  one `MontbrioPazoRoxin` subnetwork with `HeunDeterministic`, single mode, no
-  projections, and chunked monitor-like output.
-- This step remains in progress because the intended runtime/generated-code
-  split is not complete and coupling/projection support is still absent.
+- The current generated path supports real native runs for single-subnetwork,
+  single-mode, `HeunDeterministic` specs using expression-based model dfuns.
+  It supports no-projection runs and the first constrained intra-projection
+  path described in Step 7.
+- The generated module delegates the simulation loop to `runtime/runtime.hpp`
+  and exposes the compiled entrypoint through `pybind11`.
 
 Exit criteria:
 - The first generated module runs a real simulation from Python and returns arrays.
@@ -330,20 +335,20 @@ Exit criteria:
 
 ### Step 6. Implement the First Correctness Baseline
 
-Status: `[~]`
+Status: `[x]`
 
 Purpose:
 - Make sure the generated C++ backend reproduces the existing backend behavior for
   the supported path.
 
 Tasks:
-- [~] Build comparison tests against the current hybrid backend.
+- [x] Build comparison tests against the current hybrid backend.
 - [x] Compare:
   - output shapes
   - time vectors
   - numerical values within tolerance
-- [ ] Test deterministic reproducibility for the supported path.
-- [ ] Document any accepted numerical differences and why they occur.
+- [x] Test deterministic reproducibility for the supported path.
+- [x] Document any accepted numerical differences and why they occur.
 
 Deliverables:
 - A small correctness test suite.
@@ -357,9 +362,14 @@ Progress note:
     fixed runtime and copied runtime header
   - a compatibility test comparing native output against both Python hybrid and
     `NbHybridBackend` for the current single-network supported path
-- This step remains in progress because reproducibility checks and explicit
-  documentation of the known Python/native time-stamp convention difference are
-  still missing.
+  - deterministic reproducibility for repeated native runs from identical
+    initial conditions
+  - a constrained intra-projection comparison against `NbHybridBackend`
+  - a zero-weight projection regression proving the projection plumbing is
+    neutral when it should be
+- The known timestamp convention difference is documented in the tests:
+  native and Numba count temporal-average chunk midpoints from step 1, while
+  Python `TemporalAverage` is exactly `0.5 * dt` earlier for the same chunk.
 
 Exit criteria:
 - The first supported C++ path matches the reference backend within defined
@@ -369,43 +379,72 @@ Exit criteria:
 
 ### Step 7. Add Delay Buffers and Sparse Projection Traversal Properly
 
-Status: `[ ]`
+Status: `[~]`
 
 Purpose:
 - Move from the simplest execution path to actual hybrid network mechanics.
 
 Tasks:
-- [ ] Implement ring buffer semantics for delayed access.
-- [ ] Implement CSR traversal in the fixed runtime or generated kernel boundary.
+- [x] Implement ring buffer semantics for delayed access.
+- [~] Implement CSR traversal in the fixed runtime or generated kernel boundary.
 - [ ] Support inter-projection delayed reads.
-- [ ] Support intra-projection delayed reads if needed for milestone expansion.
-- [ ] Validate indexing and horizon behavior against the Python backend.
+- [x] Support intra-projection delayed reads for the first single-subnetwork
+  milestone path.
+- [~] Validate indexing and horizon behavior against the Python backend.
 
 Deliverables:
 - Tested delayed sparse coupling path.
 
+Progress note:
+- `runtime/runtime.hpp` now contains `ProjectionArrays` and
+  `accumulate_projection()`.
+- `backend.py` forwards intra-projection CSR arrays from `ProjectionSpec` to
+  the generated extension at run time.
+- `templates/module_bindings.cpp.mako` converts Python lists of NumPy arrays
+  into runtime `ProjectionArrays`.
+- `templates/sim_module.cpp.mako` routes generated execution through
+  `run_simulation(initial_state, projections, nstep, chunk_size)`.
+- Current limitations are intentional and important:
+  - still exactly one subnetwork
+  - no inter-subnetwork projections
+  - no mode maps
+  - no multi-source/multi-target cvar mapping beyond the one-to-one path used
+    by the current tests
+  - no projection coupling-function transforms or target scales in native C++
+    execution
+
 Exit criteria:
-- Delayed projection access behaves correctly for the first supported model path.
+- Delayed intra-projection access behaves correctly for the first supported
+  single-subnetwork model path, and the next expansion target is inter-projection
+  support.
 
 ---
 
 ### Step 8. Expand Monitor Support
 
-Status: `[ ]`
+Status: `[~]`
 
 Purpose:
 - Return useful outputs while keeping the C++ loop self-contained.
 
 Tasks:
-- [ ] Support `Raw` or `TemporalAverage` first.
-- [ ] Decide monitor handling architecture:
+- [x] Support `Raw` or `TemporalAverage` first.
+- [x] Decide monitor handling architecture:
   - fully in C++
   - partially postprocessed in Python
-- [ ] Add output shape conventions matching TVB expectations.
-- [ ] Add tests for chunking and monitor period semantics.
+- [x] Add output shape conventions matching TVB expectations.
+- [~] Add tests for chunking and monitor period semantics.
 
 Deliverables:
 - First production-usable monitor output path.
+
+Progress note:
+- Native execution currently returns chunked temporal-average-like state/VOI
+  output with shape `(n_chunks, n_voi, n_nodes, n_modes)`.
+- Monitor accumulation and result packaging are fully inside C++ for the
+  supported path.
+- Additional monitor types such as `Raw`, `AfferentCoupling`, `SpatialAverage`,
+  `Projection`, and `Bold` remain out of scope.
 
 Exit criteria:
 - Monitor outputs can be returned from C++ without per-step Python work.
@@ -414,19 +453,30 @@ Exit criteria:
 
 ### Step 9. Generalize Model and Integrator Coverage
 
-Status: `[ ]`
+Status: `[~]`
 
 Purpose:
 - Extend from the first milestone model path to a broader hybrid backend.
 
 Tasks:
-- [ ] Add a second model to prove the abstraction is not overfit.
+- [x] Add a second model to prove the abstraction is not overfit.
 - [ ] Add Euler support if Heun was first.
-- [ ] Separate model codegen from integrator codegen cleanly.
+- [~] Separate model codegen from integrator codegen cleanly.
 - [ ] Define a registration mechanism for supported models and integrators.
 
 Deliverables:
 - At least two models and two integrator paths, or a clear reason not to.
+
+Progress note:
+- The compatibility gate and expression translator now support more than
+  `MontbrioPazoRoxin`: any model exposing `state_variable_dfuns` can be lowered
+  and code-generated if its expressions are within the translator's supported
+  AST subset.
+- `examples/visualize_cpp_models_timeseries.py` and
+  `examples/benchmark_single_subnetwork_cpp.py` exercise multiple
+  single-subnetwork model cases. Models using custom Numba templates, such as
+  Zerlaut, are still rejected.
+- Only `HeunDeterministic` is supported.
 
 Exit criteria:
 - The code generator is organized around reusable model/integrator emitters, not
@@ -436,20 +486,29 @@ Exit criteria:
 
 ### Step 10. Add Build, Cache, and Developer Tooling
 
-Status: `[ ]`
+Status: `[~]`
 
 Purpose:
 - Make the backend usable repeatedly during development and tests.
 
 Tasks:
-- [ ] Add generated-source cache keyed by spec and backend version.
+- [x] Add generated-source cache keyed by spec and backend version.
 - [ ] Add rebuild invalidation rules.
-- [ ] Preserve generated sources for debugging when requested.
+- [x] Preserve generated sources for debugging when requested.
 - [ ] Add verbose compile/logging mode.
-- [ ] Document how to inspect generated C++.
+- [~] Document how to inspect generated C++.
 
 Deliverables:
 - Stable local development workflow for generated modules.
+
+Progress note:
+- Generated files are written under `.build/tvb_hybrid_cpp_<cache-key-prefix>/`
+  and copied runtime headers are preserved beside the generated module.
+- `CompiledCppNetwork.debug_summary()` and `examples/show_runtime_usage.py`
+  expose generated source paths for inspection.
+- The cache key controls build directory naming, but repeated execution still
+  rebuilds the extension; true rebuild avoidance and invalidation policy remain
+  pending.
 
 Exit criteria:
 - Re-running the same simulation spec avoids unnecessary regeneration and rebuilds.
@@ -482,17 +541,17 @@ Exit criteria:
 
 ### Step 12. Performance Validation and Optimization
 
-Status: `[ ]`
+Status: `[~]`
 
 Purpose:
 - Confirm the C++ path is worth keeping and tune only after correctness.
 
 Tasks:
-- [ ] Compare numerical results against:
+- [x] Compare numerical results against:
   - pure Python hybrid execution
   - Numba hybrid backend
-- [ ] Benchmark against existing Python/Numba hybrid backend.
-- [ ] Profile compile time and execution time separately.
+- [x] Benchmark against existing Python/Numba hybrid backend.
+- [x] Profile compile time and execution time separately.
 - [ ] Identify bottlenecks:
   - memory layout
   - coupling traversal
@@ -504,6 +563,14 @@ Tasks:
 Deliverables:
 - Benchmark notes with clear before/after measurements.
 
+Progress note:
+- `examples/benchmark_single_subnetwork_cpp.py` compares pure Python,
+  `NbHybridBackend`, and `CppHybridBackend` for single-subnetwork cases and
+  reports compile/warmup time separately from run time.
+- Current measurements show the native C++ run path can be faster than Numba
+  for supported single-subnetwork cases, while C++ compile time is still high
+  enough that short one-off runs may not benefit.
+
 Exit criteria:
 - We have evidence for the performance impact and know where optimization effort
   is justified.
@@ -514,18 +581,34 @@ Exit criteria:
 
 The first milestone is complete when all of the following are true:
 
-- [ ] Python can lower one supported `NetworkSet` into a C++-ready spec.
-- [ ] Python can generate and compile a simulation-specific C++ extension.
-- [ ] `pybind11` exposes a callable entrypoint.
-- [ ] The full simulation loop runs in C++.
-- [ ] Results are returned to Python as NumPy arrays.
-- [ ] Numerical output matches the reference backend within tolerance.
+- [x] Python can lower one supported `NetworkSet` into a C++-ready spec.
+- [x] Python can generate and compile a simulation-specific C++ extension.
+- [x] `pybind11` exposes a callable entrypoint.
+- [x] The full simulation loop runs in C++.
+- [x] Results are returned to Python as NumPy arrays.
+- [x] Numerical output matches the reference backend within tolerance.
+
+Completion note:
+- The first milestone is complete for the single-subnetwork, single-mode,
+  `HeunDeterministic` path with expression-based models and temporal-average
+  style output. A constrained intra-projection path is also present.
+- The next milestone should focus on multi-subnetwork/inter-projection support.
 
 ## Suggested Immediate Next Action
 
-Start with Step 0 and lock the first supported path in writing before coding.
-That decision controls the spec shape, generated templates, and runtime API.
+Implement the next projection milestone:
+
+- support inter-subnetwork projections in `CompiledCppNetwork.run()`
+- add one source history buffer per subnetwork in the native runtime
+- pass inter-projection arrays, source/target subnet ids, mode maps, cvar
+  mappings, target scales, and coupling-function parameters through pybind11
+- compare against `NbHybridBackend` on the coupled-MPR benchmark fixture
 
 ## Progress Log
 
 - 2026-04-20: Initial staged plan created.
+- 2026-04-29: Plan updated to reflect the current native backend: completed
+  first single-subnetwork generated path, automated correctness/reproducibility
+  tests, expression-based multi-model examples, benchmark script, and first
+  constrained intra-projection runtime path. Inter-subnetwork projection support
+  remains the main next milestone.
