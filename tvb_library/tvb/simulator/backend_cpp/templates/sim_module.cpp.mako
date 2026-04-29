@@ -115,10 +115,11 @@ inline SimulationMetadata describe() {
 
 inline SimulationResult run_simulation(
     const std::vector<double>& initial_state,
+    const std::vector<tvb::hybrid::runtime::ProjectionArrays>& projections,
     std::size_t nstep,
     std::size_t chunk_size) {
   return tvb::hybrid::runtime::run_simulation<GeneratedModel>(
-      initial_state, nstep, chunk_size);
+      initial_state, projections, nstep, chunk_size);
 }
 
 }  // namespace tvb::hybrid::generated

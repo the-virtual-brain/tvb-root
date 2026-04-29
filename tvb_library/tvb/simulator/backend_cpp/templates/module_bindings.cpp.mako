@@ -1,6 +1,5 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 
 #include "${generated_cpp_filename}"
 
@@ -99,17 +98,20 @@ PYBIND11_MODULE(${module_name}, m) {
 
         const auto result = tvb::hybrid::generated::run_simulation(flat, projections, nstep, chunk_size);
 
-        py::array_t<double> times(result.times.size());
+        std::vector<py::ssize_t> times_shape = {
+            static_cast<py::ssize_t>(result.times.size())};
+        py::array_t<double> times(times_shape);
         auto times_mut = times.mutable_unchecked<1>();
         for (py::ssize_t i = 0; i < static_cast<py::ssize_t>(result.times.size()); ++i) {
           times_mut(i) = result.times[static_cast<std::size_t>(i)];
         }
 
-        py::array_t<double> data(
-            {static_cast<py::ssize_t>(result.num_chunks),
-             static_cast<py::ssize_t>(result.num_voi),
-             static_cast<py::ssize_t>(result.num_nodes),
-             static_cast<py::ssize_t>(result.num_modes)});
+        std::vector<py::ssize_t> data_shape = {
+            static_cast<py::ssize_t>(result.num_chunks),
+            static_cast<py::ssize_t>(result.num_voi),
+            static_cast<py::ssize_t>(result.num_nodes),
+            static_cast<py::ssize_t>(result.num_modes)};
+        py::array_t<double> data(data_shape);
         auto data_mut = data.mutable_unchecked<4>();
         std::size_t idx = 0;
         for (std::size_t chunk = 0; chunk < result.num_chunks; ++chunk) {
