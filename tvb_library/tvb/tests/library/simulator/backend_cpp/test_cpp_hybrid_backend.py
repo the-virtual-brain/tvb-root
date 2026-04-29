@@ -242,8 +242,8 @@ class TestCppHybridBackend(unittest.TestCase):
             )
             self.assertIn("class StateBuffer", runtime_header)
             self.assertIn("class HistoryBuffer", runtime_header)
-            self.assertIn("const StateBuffer& read", runtime_header)
             self.assertIn("double read_value", runtime_header)
+            self.assertIn("std::vector<double> data_", runtime_header)
             self.assertIn("inline double delayed_state_value", runtime_header)
             self.assertIn("inline void heun_step", runtime_header)
             self.assertIn("inline SimulationResult run_simulation", runtime_header)
@@ -305,8 +305,10 @@ class TestCppHybridBackend(unittest.TestCase):
         np.testing.assert_allclose(native_data, nb_data, rtol=1e-6, atol=1e-6)
         np.testing.assert_allclose(native_times, nb_times, rtol=1e-6, atol=1e-6)
 
-        # The current native runtime timestamps chunk midpoints, while the Python
-        # monitor path reports chunk endpoints for this scenario.
+        # Timestamp convention: native and Numba both record the chunk midpoint
+        # counting steps from 1 (see runtime.hpp run_simulation comments).
+        # Python's TemporalAverage counts from step 0, so its midpoint is
+        # exactly 0.5 * dt earlier: python_time == native_time - 0.5 * dt.
         np.testing.assert_allclose(py_times - native_times, -0.5 * DT, atol=1e-12)
 
     def test_delayed_self_feedback_matches_python_reference(self):
@@ -343,3 +345,26 @@ class TestCppHybridBackend(unittest.TestCase):
 
         np.testing.assert_allclose(native_times, py_times, rtol=1e-12, atol=1e-12)
         np.testing.assert_allclose(native_data, py_data, rtol=1e-12, atol=1e-12)
+
+    def test_deterministic_reproducibility(self):
+        network, subnet = _make_network(4)
+        initial_state = _make_initial_state(subnet)
+        nstep = 10
+        chunk_size = 2
+
+        with tempfile.TemporaryDirectory(prefix="tvb-cpp-backend-build-") as build_root:
+            backend = CppHybridBackend(build_root=build_root)
+            compiled = backend.compile(
+                network,
+                monitors=[TemporalAverage(period=chunk_size * DT)],
+                user_source_hint="test_deterministic_reproducibility",
+            )
+            times1, data1 = compiled.run(
+                initial_states=[initial_state.copy()], nstep=nstep, chunk_size=chunk_size
+            )
+            times2, data2 = compiled.run(
+                initial_states=[initial_state.copy()], nstep=nstep, chunk_size=chunk_size
+            )
+
+        np.testing.assert_array_equal(times1, times2)
+        np.testing.assert_array_equal(data1, data2)
