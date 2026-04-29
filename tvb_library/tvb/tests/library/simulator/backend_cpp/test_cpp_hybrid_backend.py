@@ -1,25 +1,18 @@
 # -*- coding: utf-8 -*-
-#
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
-#  analysers necessary to run brain-simulations. You can use it stand alone or
-#  in conjunction with TheVirtualBrain-Framework Package. See content of the
-#  documentation-folder for more details. See also http://www.thevirtualbrain.org
-#
-# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
-#
 
 import os
 import tempfile
 import unittest
 
 import numpy as np
+import scipy.sparse as sp
 
 os.environ.setdefault("TVB_USER_HOME", os.path.join(tempfile.gettempdir(), "tvb-user"))
 os.environ.setdefault("MPLCONFIGDIR", os.path.join(tempfile.gettempdir(), "matplotlib"))
 
 from tvb.simulator.backend.nb_hybrid import NbHybridBackend
-from tvb.simulator.backend_cpp import CppHybridBackend, DelayedSelfFeedbackConfig
-from tvb.simulator.hybrid import NetworkSet, Simulator, Subnetwork
+from tvb.simulator.backend_cpp import CppHybridBackend
+from tvb.simulator.hybrid import IntraProjection, NetworkSet, Simulator, Subnetwork
 from tvb.simulator.integrators import HeunDeterministic
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
 from tvb.simulator.monitors import TemporalAverage
@@ -31,7 +24,7 @@ DT = 0.1
 class ScopedNbHybridBackend(NbHybridBackend):
     """Limit Numba comparison to the currently supported native C++ path."""
 
-    def _check_compatibility(self, network_set: NetworkSet) -> None:
+    def _check_compatibility(self, network_set) -> None:
         if not network_set.subnets:
             raise ValueError("NetworkSet must contain at least one subnetwork.")
         dt0 = float(network_set.subnets[0].scheme.dt)
@@ -48,7 +41,7 @@ class ScopedNbHybridBackend(NbHybridBackend):
                 raise ValueError("All subnetworks must share the same dt.")
 
 
-def _make_subnet(name: str, n_nodes: int) -> Subnetwork:
+def _make_subnet(name: str, n_nodes: int, projections=None) -> Subnetwork:
     model = MontbrioPazoRoxin(I=np.array([2.0]))
     model.configure()
     subnet = Subnetwork(
@@ -56,13 +49,14 @@ def _make_subnet(name: str, n_nodes: int) -> Subnetwork:
         model=model,
         scheme=HeunDeterministic(dt=DT),
         nnodes=n_nodes,
+        projections=projections or [],
     ).configure()
-    subnet.node_indices = np.arange(subnet.nnodes)
+    subnet.node_indices = np.arange(n_nodes)
     return subnet
 
 
-def _make_network(n_nodes: int) -> tuple[NetworkSet, Subnetwork]:
-    subnet = _make_subnet("sn", n_nodes)
+def _make_network(n_nodes: int, projections=None) -> tuple[NetworkSet, Subnetwork]:
+    subnet = _make_subnet("sn", n_nodes, projections=projections)
     network = NetworkSet(subnets=[subnet], projections=[], stimuli=[])
     network.configure()
     return network, subnet
@@ -121,14 +115,12 @@ def _run_native(
     nstep: int,
     chunk_size: int,
     build_root: str,
-    delayed_self_feedback: DelayedSelfFeedbackConfig | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     backend = CppHybridBackend(build_root=build_root)
     compiled = backend.compile(
         network,
         monitors=[TemporalAverage(period=chunk_size * DT)],
         user_source_hint="test_cpp_hybrid_backend",
-        delayed_self_feedback=delayed_self_feedback,
     )
     times, data = compiled.run(
         initial_states=[initial_state.copy()],
@@ -136,82 +128,6 @@ def _run_native(
         chunk_size=chunk_size,
     )
     return np.asarray(times, dtype=np.float64), np.asarray(data, dtype=np.float64)
-
-
-def _run_python_delayed_self_feedback(
-    subnetwork: Subnetwork,
-    initial_state: np.ndarray,
-    nstep: int,
-    chunk_size: int,
-    delay_steps: int,
-    gain: float,
-) -> tuple[np.ndarray, np.ndarray]:
-    model = subnetwork.model
-    tau = float(np.atleast_1d(model.tau)[0])
-    delta = float(np.atleast_1d(model.Delta)[0])
-    eta = float(np.atleast_1d(model.eta)[0])
-    j = float(np.atleast_1d(model.J)[0])
-    current_i = float(np.atleast_1d(model.I)[0])
-    cr = float(np.atleast_1d(model.cr)[0])
-    cv = float(np.atleast_1d(model.cv)[0])
-    n_nodes = subnetwork.nnodes
-
-    def compute_dfun(state: np.ndarray, delayed_r: np.ndarray) -> np.ndarray:
-        r = np.maximum(0.0, state[0, :, 0])
-        v = state[1, :, 0]
-        dx = np.zeros_like(state)
-        dx[0, :, 0] = (1.0 / tau) * (delta / (np.pi * tau) + 2.0 * v * r)
-        dx[1, :, 0] = (1.0 / tau) * (
-            v * v
-            - (np.pi * np.pi) * tau * tau * r * r
-            + eta
-            + j * tau * r
-            + current_i
-            + cr * 0.0
-            + cv * (gain * delayed_r)
-        )
-        return dx
-
-    history = [initial_state.copy() for _ in range(delay_steps + 1)]
-    state = initial_state.copy()
-    num_chunks = (nstep + chunk_size - 1) // chunk_size
-    times = np.zeros(num_chunks, dtype=np.float64)
-    data = np.zeros((num_chunks, model.nvar, n_nodes, 1), dtype=np.float64)
-    accum = np.zeros((model.nvar, n_nodes, 1), dtype=np.float64)
-    current_chunk = 0
-    steps_in_chunk = 0
-    chunk_start_step = 1
-
-    for step in range(1, nstep + 1):
-        delayed_state = history[-1 - delay_steps]
-        delayed_r = delayed_state[0, :, 0]
-
-        dx0 = compute_dfun(state, delayed_r)
-        predictor = state + DT * dx0
-        predictor[0, :, 0] = np.maximum(0.0, predictor[0, :, 0])
-
-        dx1 = compute_dfun(predictor, delayed_r)
-        state = state + 0.5 * DT * (dx0 + dx1)
-        state[0, :, 0] = np.maximum(0.0, state[0, :, 0])
-        history.append(state.copy())
-        if len(history) > delay_steps + 1:
-            history.pop(0)
-
-        accum += state
-        steps_in_chunk += 1
-        close_chunk = steps_in_chunk == chunk_size or step == nstep
-        if not close_chunk:
-            continue
-
-        mid_step = chunk_start_step + (steps_in_chunk - 1.0) / 2.0
-        times[current_chunk] = mid_step * DT
-        data[current_chunk] = accum / float(steps_in_chunk)
-        accum.fill(0.0)
-        current_chunk += 1
-        chunk_start_step = step + 1
-        steps_in_chunk = 0
-
-    return times, data
 
 
 class TestCppHybridBackend(unittest.TestCase):
@@ -233,18 +149,15 @@ class TestCppHybridBackend(unittest.TestCase):
             )
 
             self.assertIn('#include "runtime/runtime.hpp"', generated_cpp)
-            self.assertIn(
-                "tvb::hybrid::runtime::describe<GeneratedModel>()", generated_cpp
-            )
-            self.assertIn(
-                "tvb::hybrid::runtime::run_simulation<GeneratedModel>(",
-                generated_cpp,
-            )
+            self.assertIn("tvb::hybrid::runtime::describe<GeneratedModel>()", generated_cpp)
+            self.assertIn("tvb::hybrid::runtime::run_simulation<GeneratedModel>(", generated_cpp)
+            self.assertIn("kNumCouplingVars", generated_cpp)
             self.assertIn("class StateBuffer", runtime_header)
             self.assertIn("class HistoryBuffer", runtime_header)
             self.assertIn("double read_value", runtime_header)
             self.assertIn("std::vector<double> data_", runtime_header)
-            self.assertIn("inline double delayed_state_value", runtime_header)
+            self.assertIn("struct ProjectionArrays", runtime_header)
+            self.assertIn("accumulate_projection", runtime_header)
             self.assertIn("inline void heun_step", runtime_header)
             self.assertIn("inline SimulationResult run_simulation", runtime_header)
 
@@ -254,9 +167,6 @@ class TestCppHybridBackend(unittest.TestCase):
             self.assertEqual(history_probe["delay_0"], 40.0)
             self.assertEqual(history_probe["delay_1"], 30.0)
             self.assertEqual(history_probe["delay_2"], 20.0)
-            self.assertEqual(history_probe["helper_delay_0"], 40.0)
-            self.assertEqual(history_probe["helper_delay_1"], 30.0)
-            self.assertEqual(history_probe["helper_delay_2"], 20.0)
 
             times, data = compiled.run(
                 initial_states=[initial_state],
@@ -311,41 +221,6 @@ class TestCppHybridBackend(unittest.TestCase):
         # exactly 0.5 * dt earlier: python_time == native_time - 0.5 * dt.
         np.testing.assert_allclose(py_times - native_times, -0.5 * DT, atol=1e-12)
 
-    def test_delayed_self_feedback_matches_python_reference(self):
-        chunk_size = 2
-        nstep = 12
-        delay_steps = 3
-        gain = 0.25
-
-        network, subnet = _make_network(3)
-        initial_state = _make_initial_state(subnet)
-        py_times, py_data = _run_python_delayed_self_feedback(
-            subnetwork=subnet,
-            initial_state=initial_state,
-            nstep=nstep,
-            chunk_size=chunk_size,
-            delay_steps=delay_steps,
-            gain=gain,
-        )
-
-        with tempfile.TemporaryDirectory(prefix="tvb-cpp-backend-build-") as build_root:
-            native_times, native_data = _run_native(
-                network=network,
-                initial_state=initial_state,
-                nstep=nstep,
-                chunk_size=chunk_size,
-                build_root=build_root,
-                delayed_self_feedback=DelayedSelfFeedbackConfig(
-                    delay_steps=delay_steps,
-                    gain=gain,
-                    source_state_var="r",
-                    target_state_var="V",
-                ),
-            )
-
-        np.testing.assert_allclose(native_times, py_times, rtol=1e-12, atol=1e-12)
-        np.testing.assert_allclose(native_data, py_data, rtol=1e-12, atol=1e-12)
-
     def test_deterministic_reproducibility(self):
         network, subnet = _make_network(4)
         initial_state = _make_initial_state(subnet)
@@ -368,3 +243,79 @@ class TestCppHybridBackend(unittest.TestCase):
 
         np.testing.assert_array_equal(times1, times2)
         np.testing.assert_array_equal(data1, data2)
+
+    def test_intra_projection_matches_numba_reference(self):
+        """Intra-projection (r→r self-coupling, zero delay) matches NbHybridBackend."""
+        nstep = 20
+        # NbHybridBackend requires chunk_size <= min_horizon (1 for zero-delay projections)
+        chunk_size = 1
+        n_nodes = 4
+
+        # Build an intra-projection: r state var → Coupling_Term_r (slot 0)
+        w = sp.eye(n_nodes, format="csr") * 0.05
+        l = sp.csr_matrix((n_nodes, n_nodes))  # zero delays
+        proj = IntraProjection(
+            source_cvar=np.array([0]),   # r
+            target_cvar=np.array([0]),   # Coupling_Term_r slot
+            weights=w,
+            lengths=l,
+            cv=7.0,
+            dt=DT,
+            scale=0.1,
+        )
+        network, subnet = _make_network(n_nodes, projections=[proj])
+        initial_state = _make_initial_state(subnet)
+
+        nb_times, nb_data = _run_numba(
+            network=network,
+            initial_state=initial_state,
+            nstep=nstep,
+            chunk_size=chunk_size,
+        )
+
+        with tempfile.TemporaryDirectory(prefix="tvb-cpp-backend-build-") as build_root:
+            native_times, native_data = _run_native(
+                network=network,
+                initial_state=initial_state,
+                nstep=nstep,
+                chunk_size=chunk_size,
+                build_root=build_root,
+            )
+
+        self.assertEqual(nb_data.shape, native_data.shape)
+        # Numba uses float32; allow for float32↔float64 rounding
+        np.testing.assert_allclose(native_data, nb_data, rtol=1e-4, atol=1e-4)
+        np.testing.assert_allclose(native_times, nb_times, rtol=1e-6, atol=1e-6)
+
+    def test_zero_weight_projection_matches_no_projection(self):
+        """A projection with zero weights must produce identical output to no projection."""
+        nstep = 10
+        chunk_size = 2
+        n_nodes = 3
+
+        network_no_proj, subnet = _make_network(n_nodes)
+        initial_state = _make_initial_state(subnet)
+
+        w_zero = sp.csr_matrix((n_nodes, n_nodes))  # all zeros
+        l_zero = sp.csr_matrix((n_nodes, n_nodes))
+        proj = IntraProjection(
+            source_cvar=np.array([0]),
+            target_cvar=np.array([0]),
+            weights=w_zero,
+            lengths=l_zero,
+            cv=7.0,
+            dt=DT,
+            scale=1.0,
+        )
+        network_with_proj, _ = _make_network(n_nodes, projections=[proj])
+
+        with tempfile.TemporaryDirectory(prefix="tvb-cpp-backend-build-") as build_root:
+            times_no, data_no = _run_native(
+                network_no_proj, initial_state, nstep, chunk_size, build_root
+            )
+            times_with, data_with = _run_native(
+                network_with_proj, initial_state, nstep, chunk_size, build_root
+            )
+
+        np.testing.assert_array_equal(times_no, times_with)
+        np.testing.assert_array_equal(data_no, data_with)
