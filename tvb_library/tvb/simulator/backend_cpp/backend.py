@@ -11,7 +11,6 @@ from .codegen import (
     GeneratedSourceArtifact,
     build_generated_extension,
     generate_cpp_source,
-    render_cpp_template,
 )
 from .lowering import SpecLoweringResult, lower_network_set
 from .spec import ProjectionSpec, SimulationSpec
@@ -27,6 +26,27 @@ def _projection_arrays(proj: ProjectionSpec) -> dict[str, Any]:
         "source_svar": int(proj.source_cvar[0]),
         "target_cvar_slot": int(proj.target_cvar[0]),
         "scale": float(proj.scale),
+    }
+
+
+def _inter_projection_arrays(proj: ProjectionSpec) -> dict[str, Any]:
+    """Build arrays for an inter-projection, folding mode_map[0,0] into scale.
+
+    For single-mode subnets the mode_map is always (1, 1).  We absorb the
+    scalar into the projection scale so the C++ runtime needs no special mode
+    logic — it uses the same accumulate_projection path as intra-projections.
+    """
+    effective_scale = float(proj.scale)
+    if proj.mode_map is not None:
+        effective_scale *= float(proj.mode_map.flat[0])
+    return {
+        "weights_data": np.ascontiguousarray(proj.weights_data, dtype=np.float64),
+        "weights_indices": np.ascontiguousarray(proj.weights_indices, dtype=np.int32),
+        "weights_indptr": np.ascontiguousarray(proj.weights_indptr, dtype=np.int32),
+        "idelays": np.ascontiguousarray(proj.idelays, dtype=np.int32),
+        "source_svar": int(proj.source_cvar[0]),
+        "target_cvar_slot": int(proj.target_cvar[0]),
+        "scale": effective_scale,
     }
 
 
@@ -75,7 +95,7 @@ class CompiledCppNetwork:
         spec.loader.exec_module(module)
         return module
 
-    def run(self, *args, **kwargs):
+    def run(self, **kwargs):
         initial_states = kwargs.pop("initial_states", None)
         nstep = kwargs.pop("nstep", None)
         chunk_size = kwargs.pop("chunk_size", 1)
@@ -83,35 +103,41 @@ class CompiledCppNetwork:
             raise TypeError(f"Unexpected keyword arguments: {sorted(kwargs.keys())}")
         if nstep is None:
             raise TypeError("run() requires nstep.")
-        if len(self.spec.subnetworks) != 1:
-            raise NotImplementedError(
-                "CompiledCppNetwork.run() currently supports only single-subnetwork specs."
-            )
         if initial_states is None:
-            raise TypeError("run() requires initial_states=[array].")
-        if isinstance(initial_states, (list, tuple)):
-            if len(initial_states) != 1:
-                raise ValueError("run() expects exactly one initial-state array.")
-            initial_state = initial_states[0]
-        else:
-            initial_state = initial_states
+            raise TypeError("run() requires initial_states=[array, ...].")
 
         module = self.load_module()
 
-        # Build projection arrays from spec (intra-projections only for single subnet).
-        proj_data = [_projection_arrays(p) for p in self.spec.intra_projections]
+        # Intra-projection arrays (within a single subnet).
+        intra_data = [_projection_arrays(p) for p in self.spec.intra_projections]
+        # Inter-projection arrays (between subnets); mode_map folded into scale.
+        inter_data = [_inter_projection_arrays(p) for p in self.spec.inter_projections]
+
+        # Ensure each initial state is a contiguous float64 array.
+        flat_states = [
+            np.ascontiguousarray(s, dtype=np.float64) for s in initial_states
+        ]
 
         return module.run_simulation(
-            initial_state,
+            flat_states,
             int(nstep),
             int(chunk_size),
-            [p["weights_data"]    for p in proj_data],
-            [p["weights_indices"] for p in proj_data],
-            [p["weights_indptr"]  for p in proj_data],
-            [p["idelays"]         for p in proj_data],
-            [p["source_svar"]     for p in proj_data],
-            [p["target_cvar_slot"] for p in proj_data],
-            [p["scale"]           for p in proj_data],
+            # --- intra projections ---
+            [p["weights_data"]     for p in intra_data],
+            [p["weights_indices"]  for p in intra_data],
+            [p["weights_indptr"]   for p in intra_data],
+            [p["idelays"]          for p in intra_data],
+            [p["source_svar"]      for p in intra_data],
+            [p["target_cvar_slot"] for p in intra_data],
+            [p["scale"]            for p in intra_data],
+            # --- inter projections ---
+            [p["weights_data"]     for p in inter_data],
+            [p["weights_indices"]  for p in inter_data],
+            [p["weights_indptr"]   for p in inter_data],
+            [p["idelays"]          for p in inter_data],
+            [p["source_svar"]      for p in inter_data],
+            [p["target_cvar_slot"] for p in inter_data],
+            [p["scale"]            for p in inter_data],
         )
 
 
@@ -147,7 +173,6 @@ class CppHybridBackend:
         cache_key = spec.cache_key()
         module_name = f"tvb_hybrid_cpp_{cache_key[:16]}"
         build_dir = self.build_root / module_name
-        generated_cpp_path = build_dir / f"{module_name}.cpp"
         generated_source = generate_cpp_source(
             spec=spec,
             build_dir=build_dir,
@@ -161,7 +186,7 @@ class CppHybridBackend:
             spec=spec,
             lowering=lowering,
             build_dir=build_dir,
-            generated_cpp_path=generated_source.cpp_path,
+            generated_cpp_path=generated_source.cpp_path,  # kept for debug_summary
             module_name=module_name,
             generated_source=generated_source,
             pipeline_stage=pipeline_stage,

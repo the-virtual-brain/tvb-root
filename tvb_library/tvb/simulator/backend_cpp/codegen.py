@@ -229,7 +229,6 @@ def _build_dfun_context(subnet: SubnetworkSpec) -> dict:
 
     def _cpp_double(v: float) -> str:
         s = f"{v:.17g}"
-        # ensure C++ sees a double literal, not an int literal (e.g. 0 → 0.0)
         if "." not in s and "e" not in s and "E" not in s:
             s += ".0"
         return s
@@ -333,33 +332,71 @@ def _format_subnetwork_summary(spec: SimulationSpec) -> str:
     return "\n".join(lines)
 
 
-def _single_subnet(spec: SimulationSpec):
-    if len(spec.subnetworks) != 1:
-        raise NotImplementedError(
-            "The current C++ backend supports only single-subnetwork specs."
-        )
-    if spec.inter_projections:
-        raise NotImplementedError(
-            "Inter-subnet projections require multi-subnet support (Step 7b — not yet implemented)."
-        )
-    subnet = spec.subnetworks[0]
-    if not subnet.state_variable_dfuns:
-        raise NotImplementedError(
-            f"Model '{subnet.model_type}' has no state_variable_dfuns — "
-            f"C++ dfun generation requires the standard expression-based interface."
-        )
-    if subnet.integrator.type_name != "HeunDeterministic":
-        raise NotImplementedError(
-            "Only HeunDeterministic is currently supported."
-        )
-    return subnet
+def _validate_spec(spec: SimulationSpec) -> None:
+    """Validate that all subnets are supported by the C++ backend."""
+    for subnet in spec.subnetworks:
+        if not subnet.state_variable_dfuns:
+            raise NotImplementedError(
+                f"Model '{subnet.model_type}' has no state_variable_dfuns — "
+                f"C++ dfun generation requires the standard expression-based interface."
+            )
+        if subnet.integrator.type_name != "HeunDeterministic":
+            raise NotImplementedError(
+                f"Subnet '{subnet.name}': only HeunDeterministic is currently supported "
+                f"(got '{subnet.integrator.type_name}')."
+            )
+        if subnet.n_modes != 1:
+            raise NotImplementedError(
+                f"Subnet '{subnet.name}': only single-mode subnetworks are currently "
+                f"supported (got n_modes={subnet.n_modes})."
+            )
 
 
 def _history_horizon(spec: SimulationSpec, subnet_name: str) -> int:
+    """History buffer depth for a given source subnet.
+
+    Covers intra-projections from that subnet and inter-projections that use
+    that subnet as the source (both read from this subnet's history).
+    """
     base = int(spec.source_horizons.get(subnet_name, 1))
-    for proj in spec.intra_projections:
-        base = max(base, int(proj.horizon))
+    for proj in spec.all_projections:
+        if proj.source_subnet == subnet_name:
+            base = max(base, int(proj.horizon))
     return max(base, 1)
+
+
+def _build_subnets_ctx(spec: SimulationSpec) -> list[dict]:
+    """Build per-subnet context dicts for the Mako template.
+
+    Each dict contains:
+      subnet            — SubnetworkSpec
+      dfun_ctx          — result of _build_dfun_context()
+      horizon           — history buffer depth for this subnet
+      intra_proj_indices — indices into spec.intra_projections targeting this subnet
+      inter_proj_targets — list of (proj_idx, source_subnet_idx) for inter-projections
+                           that target this subnet (ordered by proj_idx)
+    """
+    subnet_name_to_idx = {sn.name: i for i, sn in enumerate(spec.subnetworks)}
+    subnets_ctx: list[dict] = []
+    for si, subnet in enumerate(spec.subnetworks):
+        intra_proj_indices = [
+            pi
+            for pi, proj in enumerate(spec.intra_projections)
+            if proj.target_subnet == subnet.name
+        ]
+        inter_proj_targets = [
+            (pi, subnet_name_to_idx[proj.source_subnet])
+            for pi, proj in enumerate(spec.inter_projections)
+            if proj.target_subnet == subnet.name
+        ]
+        subnets_ctx.append({
+            "subnet": subnet,
+            "dfun_ctx": _build_dfun_context(subnet),
+            "horizon": _history_horizon(spec, subnet.name),
+            "intra_proj_indices": intra_proj_indices,
+            "inter_proj_targets": inter_proj_targets,
+        })
+    return subnets_ctx
 
 
 def render_cpp_template(
@@ -367,7 +404,8 @@ def render_cpp_template(
     module_name: str,
     template_path: Path = DEFAULT_SIM_TEMPLATE,
 ) -> str:
-    subnet = _single_subnet(spec)
+    _validate_spec(spec)
+    subnets_ctx = _build_subnets_ctx(spec)
     ctx = {
         "module_name": module_name,
         "cache_key": spec.cache_key(),
@@ -378,23 +416,25 @@ def render_cpp_template(
         "num_inter_projections": len(spec.inter_projections),
         "num_intra_projections": len(spec.intra_projections),
         "num_monitors": len(spec.monitors),
-        "subnet": subnet,
-        "source_history_horizon": _history_horizon(spec, subnet.name),
         "subnetwork_summary": _format_subnetwork_summary(spec),
         "projection_summary": _format_projection_summary(spec),
-        **_build_dfun_context(subnet),
+        "subnets_ctx": subnets_ctx,
     }
     return _render_mako_template(template_path, ctx)
 
 
 def render_bindings_template(
+    spec: SimulationSpec,
     module_name: str,
     generated_cpp_filename: str,
     template_path: Path = DEFAULT_BINDINGS_TEMPLATE,
 ) -> str:
+    subnets_ctx = _build_subnets_ctx(spec)
     ctx = {
         "module_name": module_name,
         "generated_cpp_filename": generated_cpp_filename,
+        "num_subnetworks": len(spec.subnetworks),
+        "subnets_ctx": subnets_ctx,
     }
     return _render_mako_template(template_path, ctx)
 
@@ -448,6 +488,7 @@ def generate_cpp_source(
         template_path=sim_template_path,
     )
     bindings_source_text = render_bindings_template(
+        spec=spec,
         module_name=module_name,
         generated_cpp_filename=cpp_path.name,
         template_path=bindings_template_path,
