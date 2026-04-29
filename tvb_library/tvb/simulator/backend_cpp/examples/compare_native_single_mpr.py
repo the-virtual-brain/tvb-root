@@ -43,6 +43,7 @@ from backend_cpp import CppHybridBackend
 
 
 DT = 0.1
+OUTPUT_DIR = EXAMPLES_DIR / "outputs"
 
 
 class ScopedNbHybridBackend(NbHybridBackend):
@@ -182,6 +183,7 @@ def plot_timeseries(
         ax.legend()
     axes[-1].set_xlabel("Time (ms)")
     fig.tight_layout()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=120, bbox_inches="tight")
     plt.close(fig)
 
@@ -196,7 +198,7 @@ def main() -> None:
     parser.add_argument(
         "--plot",
         type=Path,
-        default=EXAMPLES_DIR / "native_single_mpr_comparison.png",
+        default=OUTPUT_DIR / "native_single_mpr_comparison.png",
     )
     args = parser.parse_args()
 
