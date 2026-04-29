@@ -1,14 +1,12 @@
-"""Hybrid C++ backend scaffolding.
+"""Hybrid C++ backend for the TVB simulator.
 
-This package holds the Python-side lowering and code-generation pipeline for a
-simulation-specific C++ backend. The initial implementation focuses on the
-lowered spec boundary so the Python hybrid API can be translated into a
-backend-neutral representation before code generation is introduced.
+Pipeline: Python lowers a NetworkSet into a SimulationSpec → Mako templates
+emit C++ → pybind11 extension compiled via CMake → full simulation loop runs
+in C++ → monitor outputs returned as NumPy arrays.
 """
 
 from .backend import CompiledCppNetwork, CppHybridBackend
 from .codegen import (
-    DelayedSelfFeedbackConfig,
     GeneratedSourceArtifact,
     build_generated_extension,
     generate_cpp_source,
@@ -27,7 +25,6 @@ from .spec import (
 __all__ = [
     "CompiledCppNetwork",
     "CppHybridBackend",
-    "DelayedSelfFeedbackConfig",
     "GeneratedSourceArtifact",
     "IntegratorSpec",
     "MonitorSpec",

@@ -5,27 +5,33 @@ import importlib.util
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+
 from .codegen import (
-    DelayedSelfFeedbackConfig,
     GeneratedSourceArtifact,
     build_generated_extension,
     generate_cpp_source,
+    render_cpp_template,
 )
 from .lowering import SpecLoweringResult, lower_network_set
-from .spec import SimulationSpec
+from .spec import ProjectionSpec, SimulationSpec
+
+
+def _projection_arrays(proj: ProjectionSpec) -> dict[str, Any]:
+    """Extract numpy arrays from a ProjectionSpec for the native binding."""
+    return {
+        "weights_data": np.ascontiguousarray(proj.weights_data, dtype=np.float64),
+        "weights_indices": np.ascontiguousarray(proj.weights_indices, dtype=np.int32),
+        "weights_indptr": np.ascontiguousarray(proj.weights_indptr, dtype=np.int32),
+        "idelays": np.ascontiguousarray(proj.idelays, dtype=np.int32),
+        "source_svar": int(proj.source_cvar[0]),
+        "target_cvar_slot": int(proj.target_cvar[0]),
+        "scale": float(proj.scale),
+    }
 
 
 @dataclasses.dataclass(frozen=True)
 class CompiledCppNetwork:
-    """Stub compiled artifact for the future C++ backend pipeline.
-
-    Current status:
-    - lowering is implemented
-    - C++ code generation is not yet implemented
-    - native compilation is not yet implemented
-    - execution is not yet implemented
-    """
-
     spec: SimulationSpec
     lowering: SpecLoweringResult
     build_dir: Path
@@ -43,9 +49,6 @@ class CompiledCppNetwork:
             "bindings_cpp_path": str(self.generated_source.bindings_cpp_path),
             "cmake_lists_path": str(self.generated_source.cmake_lists_path),
             "runtime_header_path": str(self.generated_source.runtime_header_path),
-            "sim_template_path": str(self.generated_source.sim_template_path),
-            "bindings_template_path": str(self.generated_source.bindings_template_path),
-            "cmake_template_path": str(self.generated_source.cmake_template_path),
             "extension_path": None
             if self.generated_source.extension_path is None
             else str(self.generated_source.extension_path),
@@ -85,9 +88,7 @@ class CompiledCppNetwork:
                 "CompiledCppNetwork.run() currently supports only single-subnetwork specs."
             )
         if initial_states is None:
-            raise TypeError(
-                "run() currently requires initial_states=[array] for the generated backend."
-            )
+            raise TypeError("run() requires initial_states=[array].")
         if isinstance(initial_states, (list, tuple)):
             if len(initial_states) != 1:
                 raise ValueError("run() expects exactly one initial-state array.")
@@ -96,23 +97,25 @@ class CompiledCppNetwork:
             initial_state = initial_states
 
         module = self.load_module()
-        return module.run_simulation(initial_state, int(nstep), int(chunk_size))
+
+        # Build projection arrays from spec (intra-projections only for single subnet).
+        proj_data = [_projection_arrays(p) for p in self.spec.intra_projections]
+
+        return module.run_simulation(
+            initial_state,
+            int(nstep),
+            int(chunk_size),
+            [p["weights_data"]    for p in proj_data],
+            [p["weights_indices"] for p in proj_data],
+            [p["weights_indptr"]  for p in proj_data],
+            [p["idelays"]         for p in proj_data],
+            [p["source_svar"]     for p in proj_data],
+            [p["target_cvar_slot"] for p in proj_data],
+            [p["scale"]           for p in proj_data],
+        )
 
 
 class CppHybridBackend:
-    """Python-side frontend stub for the future C++ hybrid backend.
-
-    Intended pipeline:
-    1. Validate and lower `NetworkSet` to `SimulationSpec`
-    2. Generate simulation-specific C++ from the spec
-    3. Compile a `pybind11` extension module
-    4. Execute the full simulation loop in C++
-    5. Return monitor outputs to Python
-
-    Current implementation:
-    - Step 1 only
-    """
-
     def __init__(self, build_root: str | Path | None = None):
         self.build_root = Path(build_root) if build_root is not None else Path.cwd() / ".build"
 
@@ -134,7 +137,6 @@ class CppHybridBackend:
         monitors: list[object] | None = None,
         user_source_hint: str | None = None,
         build_native: bool = True,
-        delayed_self_feedback: DelayedSelfFeedbackConfig | None = None,
     ) -> CompiledCppNetwork:
         lowering = self.lower(
             network_set=network_set,
@@ -150,7 +152,6 @@ class CppHybridBackend:
             spec=spec,
             build_dir=build_dir,
             module_name=module_name,
-            delayed_self_feedback=delayed_self_feedback,
         )
         pipeline_stage = "cpp_generated"
         if build_native:

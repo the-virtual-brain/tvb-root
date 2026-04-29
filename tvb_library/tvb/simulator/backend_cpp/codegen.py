@@ -208,10 +208,11 @@ def _build_dfun_context(subnet: SubnetworkSpec) -> dict:
         for p in subnet.global_parameter_names
     ]
 
-    # Coupling reads (zero until projection support lands)
+    # Coupling reads — from the pre-accumulated coupling array.
+    # Layout: coupling[cvar_slot * kNumNodes + node]
     coupling_reads = [
-        f"const double {ct} = 0.0;"
-        for ct in subnet.coupling_terms
+        f"const double {ct} = coupling[{i} * kNumNodes + node];"
+        for i, ct in enumerate(subnet.coupling_terms)
     ]
 
     # Intermediate variable declarations
@@ -247,6 +248,14 @@ def _build_dfun_context(subnet: SubnetworkSpec) -> dict:
                 f"state({i}, node, 0) = std::min({_cpp_double(hi)}, state({i}, node, 0));"
             )
 
+    # VOI computation — handles both simple state vars and derived expressions
+    voi_assignments: list[str] = []
+    for ivoi, voi_name in enumerate(subnet.variables_of_interest):
+        if voi_name in svar_to_idx:
+            voi_assignments.append(f"voi[{ivoi}] = state({svar_to_idx[voi_name]}, node, 0);")
+        else:
+            voi_assignments.append(f"voi[{ivoi}] = {translate(voi_name)};")
+
     return {
         "dfun_helper_decls": helper_decls,
         "dfun_state_reads": state_reads,
@@ -255,6 +264,8 @@ def _build_dfun_context(subnet: SubnetworkSpec) -> dict:
         "dfun_intermediate_decls": intermediate_decls,
         "dfun_dx_assignments": dx_assignments,
         "dfun_constraint_stmts": constraint_stmts,
+        "dfun_voi_assignments": voi_assignments,
+        "n_coupling_vars": len(subnet.coupling_terms),
     }
 
 
@@ -274,13 +285,6 @@ class GeneratedSourceArtifact:
     cmake_source_text: str
     extension_path: Path | None = None
 
-
-@dataclasses.dataclass(frozen=True)
-class DelayedSelfFeedbackConfig:
-    delay_steps: int
-    gain: float
-    source_state_var: str = "r"
-    target_state_var: str = "V"
 
 
 def _render_mako_template(template_path: Path, ctx: dict) -> str:
@@ -332,11 +336,11 @@ def _format_subnetwork_summary(spec: SimulationSpec) -> str:
 def _single_subnet(spec: SimulationSpec):
     if len(spec.subnetworks) != 1:
         raise NotImplementedError(
-            "Native run_simulation currently supports only single-subnetwork specs."
+            "The current C++ backend supports only single-subnetwork specs."
         )
-    if spec.inter_projections or spec.intra_projections:
+    if spec.inter_projections:
         raise NotImplementedError(
-            "Native run_simulation currently supports only specs without projections."
+            "Inter-subnet projections require multi-subnet support (Step 7b — not yet implemented)."
         )
     subnet = spec.subnetworks[0]
     if not subnet.state_variable_dfuns:
@@ -346,60 +350,24 @@ def _single_subnet(spec: SimulationSpec):
         )
     if subnet.integrator.type_name != "HeunDeterministic":
         raise NotImplementedError(
-            "Native run_simulation currently supports only HeunDeterministic."
+            "Only HeunDeterministic is currently supported."
         )
     return subnet
+
+
+def _history_horizon(spec: SimulationSpec, subnet_name: str) -> int:
+    base = int(spec.source_horizons.get(subnet_name, 1))
+    for proj in spec.intra_projections:
+        base = max(base, int(proj.horizon))
+    return max(base, 1)
 
 
 def render_cpp_template(
     spec: SimulationSpec,
     module_name: str,
-    delayed_self_feedback: DelayedSelfFeedbackConfig | None = None,
     template_path: Path = DEFAULT_SIM_TEMPLATE,
 ) -> str:
     subnet = _single_subnet(spec)
-    svar_index_map = {name: idx for idx, name in enumerate(subnet.state_variables)}
-    voi_indices = [svar_index_map[name] for name in subnet.variables_of_interest]
-
-    delayed_enabled = delayed_self_feedback is not None
-    delayed_source_svar = 0
-    delayed_target_svar = 1
-    delayed_gain = 0.0
-    delayed_steps = 0
-    source_history_horizon = int(spec.source_horizons.get(subnet.name, 1))
-    if delayed_self_feedback is not None:
-        delayed_source_svar = svar_index_map[delayed_self_feedback.source_state_var]
-        delayed_target_svar = svar_index_map[delayed_self_feedback.target_state_var]
-        delayed_gain = float(delayed_self_feedback.gain)
-        delayed_steps = int(delayed_self_feedback.delay_steps)
-        source_history_horizon = max(source_history_horizon, delayed_steps + 1)
-
-    dfun_ctx = _build_dfun_context(subnet)
-
-    # Delayed self-feedback: override the target coupling term's read expression.
-    # This is temporary scaffolding until projection support (Step 7) lands.
-    if delayed_self_feedback is not None:
-        target_sv = delayed_self_feedback.target_state_var
-        # Find coupling term by naming convention (Coupling_Term_{svar}) or
-        # fall back to the single term if the model only has one.
-        target_ct = f"Coupling_Term_{target_sv}"
-        if target_ct not in subnet.coupling_terms:
-            if len(subnet.coupling_terms) == 1:
-                target_ct = subnet.coupling_terms[0]
-            else:
-                target_ct = ""  # no match — leave all couplings at 0
-        new_coupling_reads = []
-        for ct in subnet.coupling_terms:
-            if ct == target_ct:
-                new_coupling_reads.append(
-                    f"const double {ct} = {delayed_gain:.17g} * "
-                    f"tvb::hybrid::runtime::delayed_state_value("
-                    f"history, {delayed_steps}, {delayed_source_svar}, node, 0);"
-                )
-            else:
-                new_coupling_reads.append(f"const double {ct} = 0.0;")
-        dfun_ctx = {**dfun_ctx, "dfun_coupling_reads": new_coupling_reads}
-
     ctx = {
         "module_name": module_name,
         "cache_key": spec.cache_key(),
@@ -411,11 +379,10 @@ def render_cpp_template(
         "num_intra_projections": len(spec.intra_projections),
         "num_monitors": len(spec.monitors),
         "subnet": subnet,
-        "voi_indices": voi_indices,
-        "source_history_horizon": source_history_horizon,
+        "source_history_horizon": _history_horizon(spec, subnet.name),
         "subnetwork_summary": _format_subnetwork_summary(spec),
         "projection_summary": _format_projection_summary(spec),
-        **dfun_ctx,
+        **_build_dfun_context(subnet),
     }
     return _render_mako_template(template_path, ctx)
 
@@ -462,7 +429,6 @@ def generate_cpp_source(
     spec: SimulationSpec,
     build_dir: str | Path,
     module_name: str,
-    delayed_self_feedback: DelayedSelfFeedbackConfig | None = None,
     sim_template_path: Path = DEFAULT_SIM_TEMPLATE,
     bindings_template_path: Path = DEFAULT_BINDINGS_TEMPLATE,
     cmake_template_path: Path = DEFAULT_CMAKE_TEMPLATE,
@@ -479,7 +445,6 @@ def generate_cpp_source(
     sim_source_text = render_cpp_template(
         spec=spec,
         module_name=module_name,
-        delayed_self_feedback=delayed_self_feedback,
         template_path=sim_template_path,
     )
     bindings_source_text = render_bindings_template(

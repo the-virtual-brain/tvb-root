@@ -25,16 +25,9 @@ struct GeneratedModel {
   static constexpr std::size_t kNumNodes            = ${subnet.n_nodes};
   static constexpr std::size_t kNumModes            = ${subnet.n_modes};
   static constexpr std::size_t kNumStateVars        = ${subnet.n_state_vars};
+  static constexpr std::size_t kNumCouplingVars     = ${n_coupling_vars};
   static constexpr std::size_t kNumVoi              = ${len(subnet.variables_of_interest)};
   static constexpr std::size_t kSourceHistoryHorizon = ${source_history_horizon};
-
-  static constexpr bool        kDelayedSelfFeedbackEnabled    = ${'true' if delayed_enabled else 'false'};
-  static constexpr std::size_t kDelayedSelfFeedbackSteps      = ${delayed_steps};
-  static constexpr double      kDelayedSelfFeedbackGain       = ${f'{delayed_gain:.17g}'};
-  static constexpr std::size_t kDelayedSelfFeedbackSourceSvar = ${delayed_source_svar};
-  static constexpr std::size_t kDelayedSelfFeedbackTargetSvar = ${delayed_target_svar};
-
-  static constexpr std::array<int, kNumVoi> kVoiIndices = { ${', '.join(str(i) for i in voi_indices)} };
 
   // Model parameters (${subnet.model_type})
 <%
@@ -50,43 +43,59 @@ struct GeneratedModel {
     else { return values[node]; }
   }
 
-% if subnet.model_type == 'MontbrioPazoRoxin':
+  // Helper functions
+% for decl in dfun_helper_decls:
+${decl}
+
+% endfor
+  // coupling layout: coupling[cvar_slot * kNumNodes + node]
   static inline void compute_dfun(
       const tvb::hybrid::runtime::StateBuffer& state,
-      const tvb::hybrid::runtime::HistoryBuffer& history,
+      const double* coupling,
       std::size_t node,
       std::array<double, kNumStateVars>& dx) {
-    const double r     = std::max(0.0, state(0, node, 0));
-    const double V     = state(1, node, 0);
-    const double tau   = param_at(kParam_tau,   node);
-    const double Delta = param_at(kParam_Delta, node);
-    const double eta   = param_at(kParam_eta,   node);
-    const double J     = param_at(kParam_J,     node);
-    const double I     = param_at(kParam_I,     node);
-    const double cr    = param_at(kParam_cr,    node);
-    const double cv    = param_at(kParam_cv,    node);
-    const double coupling_r = 0.0;
-    double coupling_V = 0.0;
-    if constexpr (kDelayedSelfFeedbackEnabled) {
-      coupling_V += kDelayedSelfFeedbackGain *
-                    tvb::hybrid::runtime::delayed_state_value(
-                        history, kDelayedSelfFeedbackSteps,
-                        kDelayedSelfFeedbackSourceSvar, node, 0);
-    }
-    dx[0] = (1.0 / tau) * (Delta / (M_PI * tau) + 2.0 * V * r);
-    dx[1] = (1.0 / tau) *
-            (V * V - (M_PI * M_PI) * tau * tau * r * r + eta + J * tau * r + I +
-             cr * coupling_r + cv * coupling_V);
+    // state variables
+% for stmt in dfun_state_reads:
+    ${stmt}
+% endfor
+    // model parameters
+% for stmt in dfun_param_reads:
+    ${stmt}
+% endfor
+    // coupling inputs (zero until projection support is wired in;
+    // delayed self-feedback, if enabled, overrides specific terms)
+% for stmt in dfun_coupling_reads:
+    ${stmt}
+% endfor
+% for stmt in dfun_intermediate_decls:
+    ${stmt}
+% endfor
+    // derivatives
+% for stmt in dfun_dx_assignments:
+    ${stmt}
+% endfor
+  }
+
+  static inline void compute_voi(
+      const tvb::hybrid::runtime::StateBuffer& state,
+      std::size_t node,
+      std::array<double, kNumVoi>& voi) {
+% for stmt in dfun_voi_assignments:
+    ${stmt}
+% endfor
   }
 
   static inline void apply_state_constraints(
       tvb::hybrid::runtime::StateBuffer& state,
       std::size_t node) {
-    state(0, node, 0) = std::max(0.0, state(0, node, 0));
-  }
+% if dfun_constraint_stmts:
+% for stmt in dfun_constraint_stmts:
+    ${stmt}
+% endfor
 % else:
-#error "Model type '${subnet.model_type}' does not have a generated dfun in this backend version."
+    (void)state; (void)node;
 % endif
+  }
 };
 
 ${subnetwork_summary}
@@ -96,7 +105,6 @@ static constexpr std::size_t kNumNodes     = GeneratedModel::kNumNodes;
 static constexpr std::size_t kNumModes     = GeneratedModel::kNumModes;
 static constexpr std::size_t kNumStateVars = GeneratedModel::kNumStateVars;
 static constexpr std::size_t kNumVoi       = GeneratedModel::kNumVoi;
-static constexpr auto        kVoiIndices   = GeneratedModel::kVoiIndices;
 
 using SimulationMetadata = tvb::hybrid::runtime::SimulationMetadata;
 using SimulationResult   = tvb::hybrid::runtime::SimulationResult;

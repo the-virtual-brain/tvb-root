@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <stdexcept>
 #include <vector>
 
@@ -28,6 +29,36 @@ struct SimulationResult {
   std::size_t num_nodes;
   std::size_t num_modes;
 };
+
+// ---------------------------------------------------------------------------
+// ProjectionArrays — lightweight view over CSR projection data owned by Python
+// ---------------------------------------------------------------------------
+
+// All pointers point directly into numpy array buffers; no copy is made.
+// n_target_nodes must equal weights_indptr.size() - 1.
+// Layout of coupling output: coupling[target_cvar_slot * coupling_n_nodes + j]
+struct ProjectionArrays {
+  const double*   weights_data;
+  const int32_t*  weights_indices;  // source node per edge
+  const int32_t*  weights_indptr;   // row pointer (target nodes)
+  const int32_t*  idelays;          // delay in steps per edge (0 = previous step)
+  std::size_t     n_target_nodes;
+  std::size_t     source_svar;      // state-variable index to read from source history
+  std::size_t     target_cvar_slot; // index into target subnet's coupling array
+  double          scale;            // global projection scale
+};
+
+// Accumulate one CSR projection into a flat coupling buffer.
+// coupling layout: coupling[cvar_slot * coupling_n_nodes + target_node]
+inline void accumulate_projection(
+    const ProjectionArrays& proj,
+    const class HistoryBuffer& src_history,
+    double* coupling,
+    std::size_t coupling_n_nodes);
+
+// ---------------------------------------------------------------------------
+// MonitorBuffer
+// ---------------------------------------------------------------------------
 
 class MonitorBuffer {
  public:
@@ -82,6 +113,10 @@ class MonitorBuffer {
   std::size_t n_modes_;
   std::vector<double> accum_;
 };
+
+// ---------------------------------------------------------------------------
+// StateBuffer
+// ---------------------------------------------------------------------------
 
 class StateBuffer {
  public:
@@ -144,13 +179,15 @@ class StateBuffer {
   std::vector<double> values_;
 };
 
-// Ring buffer of simulation history frames.
+// ---------------------------------------------------------------------------
+// HistoryBuffer — flat ring buffer of simulation frames
 //
 // Layout: data_[slot * frame_stride + svar * (n_nodes * n_modes) + node * n_modes + mode]
 //
 // Slots are written in round-robin order.  push() copies one full frame
-// (n_svars * n_nodes * n_modes doubles) contiguously.  read_value() computes a
-// direct index with no intermediate StateBuffer allocation.
+// contiguously.  read_value() computes a direct index.
+// ---------------------------------------------------------------------------
+
 class HistoryBuffer {
  public:
   HistoryBuffer(
@@ -207,14 +244,35 @@ class HistoryBuffer {
   std::vector<double> data_;
 };
 
-inline double delayed_state_value(
-    const HistoryBuffer& history,
-    std::size_t delay_steps,
-    std::size_t svar,
-    std::size_t node,
-    std::size_t mode) {
-  return history.read_value(delay_steps, svar, node, mode);
+// ---------------------------------------------------------------------------
+// accumulate_projection — defined after HistoryBuffer is complete
+// ---------------------------------------------------------------------------
+
+inline void accumulate_projection(
+    const ProjectionArrays& proj,
+    const HistoryBuffer& src_history,
+    double* coupling,
+    std::size_t coupling_n_nodes) {
+  for (std::size_t j = 0; j < proj.n_target_nodes; ++j) {
+    double wsum = 0.0;
+    for (std::ptrdiff_t ptr = proj.weights_indptr[j];
+         ptr < proj.weights_indptr[j + 1];
+         ++ptr) {
+      const std::size_t src_node =
+          static_cast<std::size_t>(proj.weights_indices[ptr]);
+      const std::size_t delay =
+          static_cast<std::size_t>(proj.idelays[ptr]);
+      wsum += proj.weights_data[ptr] *
+              src_history.read_value(delay, proj.source_svar, src_node, 0);
+    }
+    coupling[proj.target_cvar_slot * coupling_n_nodes + j] +=
+        proj.scale * wsum;
+  }
 }
+
+// ---------------------------------------------------------------------------
+// describe<Generated>
+// ---------------------------------------------------------------------------
 
 template <typename Generated>
 inline SimulationMetadata describe() {
@@ -231,12 +289,20 @@ inline SimulationMetadata describe() {
   };
 }
 
+// ---------------------------------------------------------------------------
+// heun_step<Generated>
+//
+// coupling: flat array (kNumCouplingVars * kNumNodes) — pre-accumulated by
+// accumulate_projection before this step.  coupling[slot * kNumNodes + node]
+// gives coupling term `slot` at `node`.
+// ---------------------------------------------------------------------------
+
 template <typename Generated>
-inline void heun_step(StateBuffer& state, const HistoryBuffer& history) {
+inline void heun_step(StateBuffer& state, const double* coupling) {
   StateBuffer predictor = state;
   for (std::size_t node = 0; node < Generated::kNumNodes; ++node) {
     std::array<double, Generated::kNumStateVars> dx0{};
-    Generated::compute_dfun(state, history, node, dx0);
+    Generated::compute_dfun(state, coupling, node, dx0);
     for (std::size_t svar = 0; svar < Generated::kNumStateVars; ++svar) {
       predictor(svar, node, 0) = state(svar, node, 0) + Generated::kDt * dx0[svar];
     }
@@ -246,8 +312,8 @@ inline void heun_step(StateBuffer& state, const HistoryBuffer& history) {
   for (std::size_t node = 0; node < Generated::kNumNodes; ++node) {
     std::array<double, Generated::kNumStateVars> dx0{};
     std::array<double, Generated::kNumStateVars> dx1{};
-    Generated::compute_dfun(state, history, node, dx0);
-    Generated::compute_dfun(predictor, history, node, dx1);
+    Generated::compute_dfun(state, coupling, node, dx0);
+    Generated::compute_dfun(predictor, coupling, node, dx1);
     for (std::size_t svar = 0; svar < Generated::kNumStateVars; ++svar) {
       state(svar, node, 0) += 0.5 * Generated::kDt * (dx0[svar] + dx1[svar]);
     }
@@ -255,16 +321,19 @@ inline void heun_step(StateBuffer& state, const HistoryBuffer& history) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// run_simulation<Generated>
+//
+// projections: runtime-provided CSR projection data (may be empty).
+// For intra-projections the source history is this subnet's own history.
+// ---------------------------------------------------------------------------
+
 template <typename Generated>
 inline SimulationResult run_simulation(
     const std::vector<double>& initial_state,
+    const std::vector<ProjectionArrays>& projections,
     std::size_t nstep,
     std::size_t chunk_size) {
-  if (Generated::kNumSubnetworks != 1 || Generated::kNumInterProjections != 0 ||
-      Generated::kNumIntraProjections != 0) {
-    throw std::runtime_error(
-        "run_simulation currently supports exactly one subnetwork and no projections.");
-  }
   if (Generated::kNumModes != 1) {
     throw std::runtime_error(
         "run_simulation currently supports only single-mode subnetworks.");
@@ -290,6 +359,10 @@ inline SimulationResult run_simulation(
   for (std::size_t i = 0; i < history.capacity(); ++i) {
     history.push(state);
   }
+
+  // Coupling buffer: coupling[cvar_slot * kNumNodes + node]
+  std::vector<double> coupling(Generated::kNumCouplingVars * Generated::kNumNodes, 0.0);
+
   const std::size_t num_chunks = (nstep + chunk_size - 1) / chunk_size;
   SimulationResult result;
   result.num_chunks = num_chunks;
@@ -310,15 +383,20 @@ inline SimulationResult run_simulation(
   std::size_t chunk_start_step = 1;
 
   for (std::size_t step = 1; step <= nstep; ++step) {
-    heun_step<Generated>(state, history);
+    // Accumulate coupling from all projections (reads history from previous step).
+    std::fill(coupling.begin(), coupling.end(), 0.0);
+    for (const auto& proj : projections) {
+      accumulate_projection(proj, history, coupling.data(), Generated::kNumNodes);
+    }
+
+    heun_step<Generated>(state, coupling.data());
     history.push(state);
-    for (std::size_t ivoi = 0; ivoi < Generated::kNumVoi; ++ivoi) {
-      const std::size_t svar =
-          static_cast<std::size_t>(Generated::kVoiIndices[ivoi]);
-      for (std::size_t node = 0; node < Generated::kNumNodes; ++node) {
-        for (std::size_t mode = 0; mode < Generated::kNumModes; ++mode) {
-          monitor.accum(ivoi, node, mode) += state(svar, node, mode);
-        }
+
+    for (std::size_t node = 0; node < Generated::kNumNodes; ++node) {
+      std::array<double, Generated::kNumVoi> voi_vals{};
+      Generated::compute_voi(state, node, voi_vals);
+      for (std::size_t ivoi = 0; ivoi < Generated::kNumVoi; ++ivoi) {
+        monitor.accum(ivoi, node, 0) += voi_vals[ivoi];
       }
     }
     ++steps_in_chunk;
