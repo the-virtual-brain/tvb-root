@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast as _ast
 import dataclasses
 import importlib.machinery
 import importlib.util
@@ -15,7 +16,7 @@ from mako.exceptions import text_error_template
 from mako.lookup import TemplateLookup
 from mako.template import Template
 
-from .spec import SimulationSpec
+from .spec import SimulationSpec, SubnetworkSpec
 
 
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
@@ -23,6 +24,238 @@ RUNTIME_DIR = Path(__file__).resolve().parent / "runtime"
 DEFAULT_SIM_TEMPLATE = TEMPLATES_DIR / "sim_module.cpp.mako"
 DEFAULT_BINDINGS_TEMPLATE = TEMPLATES_DIR / "module_bindings.cpp.mako"
 DEFAULT_CMAKE_TEMPLATE = TEMPLATES_DIR / "CMakeLists.txt.mako"
+
+# ---------------------------------------------------------------------------
+# Python → C++ expression translator
+# ---------------------------------------------------------------------------
+
+_BARE_TO_STD: dict[str, str] = {
+    "exp": "std::exp",
+    "tanh": "std::tanh",
+    "sinh": "std::sinh",
+    "cosh": "std::cosh",
+    "sqrt": "std::sqrt",
+    "sin": "std::sin",
+    "cos": "std::cos",
+    "log": "std::log",
+    "log2": "std::log2",
+    "log10": "std::log10",
+    "abs": "std::abs",
+    "fabs": "std::fabs",
+    "atan": "std::atan",
+    "atan2": "std::atan2",
+    "floor": "std::floor",
+    "ceil": "std::ceil",
+    "pow": "std::pow",
+}
+
+
+class _CppExprGen(_ast.NodeVisitor):
+    """Walk a Python expression AST and emit equivalent C++ source."""
+
+    def __init__(
+        self,
+        svar_to_idx: dict[str, int],
+        param_names: set[str],
+        coupling_names: set[str],
+        local_names: set[str],
+    ) -> None:
+        self._svar = svar_to_idx
+        self._params = param_names
+        self._coupling = coupling_names
+        self._locals = local_names
+
+    def visit_Constant(self, node: _ast.Constant) -> str:
+        if isinstance(node.value, bool):
+            return "true" if node.value else "false"
+        if isinstance(node.value, float):
+            return f"{node.value:.17g}"
+        return str(node.value)
+
+    def visit_Name(self, node: _ast.Name) -> str:
+        name = node.id
+        if name == "pi":
+            return "M_PI"
+        if name in self._svar:
+            return f"state({self._svar[name]}, node, 0)"
+        if name in self._params:
+            return f"param_at(kParam_{name}, node)"
+        if name in self._coupling or name in self._locals:
+            return name
+        return name  # fallback — let C++ catch unknown identifiers
+
+    def visit_BinOp(self, node: _ast.BinOp) -> str:
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        if isinstance(node.op, _ast.Pow):
+            return f"std::pow({left}, {right})"
+        op = {
+            _ast.Add: "+",
+            _ast.Sub: "-",
+            _ast.Mult: "*",
+            _ast.Div: "/",
+        }.get(type(node.op))
+        if op is None:
+            raise ValueError(f"Unsupported binary op: {type(node.op).__name__}")
+        return f"({left} {op} {right})"
+
+    def visit_UnaryOp(self, node: _ast.UnaryOp) -> str:
+        operand = self.visit(node.operand)
+        if isinstance(node.op, _ast.USub):
+            return f"(-{operand})"
+        if isinstance(node.op, _ast.UAdd):
+            return operand
+        raise ValueError(f"Unsupported unary op: {type(node.op).__name__}")
+
+    def visit_Call(self, node: _ast.Call) -> str:
+        args = [self.visit(a) for a in node.args]
+
+        if isinstance(node.func, _ast.Attribute):
+            obj = node.func.value
+            attr = node.func.attr
+            if isinstance(obj, _ast.Name):
+                if obj.id == "nb" and attr == "float32":
+                    # nb.float32(x) → x (drop the cast)
+                    return args[0] if args else "0.0"
+                if obj.id == "math":
+                    cpp_fn = _BARE_TO_STD.get(attr, f"std::{attr}")
+                    return f"{cpp_fn}({', '.join(args)})"
+
+        if isinstance(node.func, _ast.Name):
+            fn = node.func.id
+            if fn in _BARE_TO_STD:
+                return f"{_BARE_TO_STD[fn]}({', '.join(args)})"
+            # User-defined helper or unknown — pass through
+            return f"{fn}({', '.join(args)})"
+
+        raise ValueError(f"Unsupported call: {_ast.dump(node.func)}")
+
+    def visit_IfExp(self, node: _ast.IfExp) -> str:
+        # Python:  body if test else orelse
+        # C++:     (test ? body : orelse)
+        cond = self.visit(node.test)
+        then = self.visit(node.body)
+        else_ = self.visit(node.orelse)
+        return f"({cond} ? {then} : {else_})"
+
+    def visit_Compare(self, node: _ast.Compare) -> str:
+        _op_map = {
+            _ast.Lt: "<", _ast.LtE: "<=",
+            _ast.Gt: ">", _ast.GtE: ">=",
+            _ast.Eq: "==", _ast.NotEq: "!=",
+        }
+        parts = [self.visit(node.left)]
+        for op, comp in zip(node.ops, node.comparators):
+            parts.append(_op_map[type(op)])
+            parts.append(self.visit(comp))
+        return " ".join(parts)
+
+    def generic_visit(self, node: _ast.AST) -> str:
+        raise ValueError(f"Unsupported AST node: {type(node).__name__}: {_ast.dump(node)}")
+
+
+def py_expr_to_cpp(
+    expr: str,
+    svar_to_idx: dict[str, int],
+    param_names: set[str],
+    coupling_names: set[str],
+    local_names: set[str],
+) -> str:
+    """Translate a Python math expression string to a C++ expression string."""
+    tree = _ast.parse(expr.strip(), mode="eval")
+    return _CppExprGen(svar_to_idx, param_names, coupling_names, local_names).visit(
+        tree.body
+    )
+
+
+def _build_dfun_context(subnet: SubnetworkSpec) -> dict:
+    """Pre-translate all dfun expressions to C++ and return template context."""
+    svar_to_idx = {sv: i for i, sv in enumerate(subnet.state_variables)}
+    param_names = set(subnet.global_parameter_names)
+    coupling_names = set(subnet.coupling_terms)
+    intermediate_names = {name for name, _ in subnet.dfun_intermediates}
+    helper_names = {name for name, _, _ in subnet.dfun_helpers}
+    local_names = intermediate_names | helper_names
+
+    def translate(expr: str, extra_locals: set[str] | None = None) -> str:
+        return py_expr_to_cpp(
+            expr, svar_to_idx, param_names, coupling_names,
+            local_names | (extra_locals or set()),
+        )
+
+    # Helper function declarations (struct members, 2-space indent)
+    helper_decls: list[str] = []
+    for h_name, h_args, h_body in subnet.dfun_helpers:
+        arg_names = {a.strip() for a in h_args.split(",")}
+        cpp_args = ", ".join(f"double {a.strip()}" for a in h_args.split(","))
+        # Translate body with NO model context — only the function's own args
+        cpp_body = py_expr_to_cpp(h_body, {}, set(), set(), arg_names)
+        helper_decls.append(
+            f"  static inline double {h_name}({cpp_args}) {{\n"
+            f"    return {cpp_body};\n"
+            f"  }}"
+        )
+
+    # State variable reads inside compute_dfun
+    state_reads = [
+        f"const double {sv} = state({i}, node, 0);"
+        for i, sv in enumerate(subnet.state_variables)
+    ]
+
+    # Parameter reads (only globals referenced in dfun expressions)
+    param_reads = [
+        f"const double {p} = param_at(kParam_{p}, node);"
+        for p in subnet.global_parameter_names
+    ]
+
+    # Coupling reads (zero until projection support lands)
+    coupling_reads = [
+        f"const double {ct} = 0.0;"
+        for ct in subnet.coupling_terms
+    ]
+
+    # Intermediate variable declarations
+    intermediate_decls = [
+        f"const double {name} = {translate(expr)};"
+        for name, expr in subnet.dfun_intermediates
+    ]
+
+    # dx[i] = ... assignments
+    dx_assignments = [
+        f"dx[{i}] = {translate(subnet.state_variable_dfuns[sv])};"
+        for i, sv in enumerate(subnet.state_variables)
+    ]
+
+    def _cpp_double(v: float) -> str:
+        s = f"{v:.17g}"
+        # ensure C++ sees a double literal, not an int literal (e.g. 0 → 0.0)
+        if "." not in s and "e" not in s and "E" not in s:
+            s += ".0"
+        return s
+
+    # apply_state_constraints body
+    constraint_stmts: list[str] = []
+    for i, sv in enumerate(subnet.state_variables):
+        lo = subnet.state_lower_bounds.get(sv)
+        hi = subnet.state_upper_bounds.get(sv)
+        if lo is not None:
+            constraint_stmts.append(
+                f"state({i}, node, 0) = std::max({_cpp_double(lo)}, state({i}, node, 0));"
+            )
+        if hi is not None:
+            constraint_stmts.append(
+                f"state({i}, node, 0) = std::min({_cpp_double(hi)}, state({i}, node, 0));"
+            )
+
+    return {
+        "dfun_helper_decls": helper_decls,
+        "dfun_state_reads": state_reads,
+        "dfun_param_reads": param_reads,
+        "dfun_coupling_reads": coupling_reads,
+        "dfun_intermediate_decls": intermediate_decls,
+        "dfun_dx_assignments": dx_assignments,
+        "dfun_constraint_stmts": constraint_stmts,
+    }
 
 
 @dataclasses.dataclass(frozen=True)
@@ -99,20 +332,21 @@ def _format_subnetwork_summary(spec: SimulationSpec) -> str:
 def _single_subnet(spec: SimulationSpec):
     if len(spec.subnetworks) != 1:
         raise NotImplementedError(
-            "Native run_simulation is currently implemented only for single-subnetwork specs."
+            "Native run_simulation currently supports only single-subnetwork specs."
         )
     if spec.inter_projections or spec.intra_projections:
         raise NotImplementedError(
-            "Native run_simulation is currently implemented only for specs without projections."
+            "Native run_simulation currently supports only specs without projections."
         )
     subnet = spec.subnetworks[0]
-    if subnet.model_type != "MontbrioPazoRoxin":
+    if not subnet.state_variable_dfuns:
         raise NotImplementedError(
-            "Native run_simulation is currently implemented only for MontbrioPazoRoxin."
+            f"Model '{subnet.model_type}' has no state_variable_dfuns — "
+            f"C++ dfun generation requires the standard expression-based interface."
         )
     if subnet.integrator.type_name != "HeunDeterministic":
         raise NotImplementedError(
-            "Native run_simulation is currently implemented only for HeunDeterministic."
+            "Native run_simulation currently supports only HeunDeterministic."
         )
     return subnet
 
@@ -124,8 +358,8 @@ def render_cpp_template(
     template_path: Path = DEFAULT_SIM_TEMPLATE,
 ) -> str:
     subnet = _single_subnet(spec)
-    voi_index_map = {name: idx for idx, name in enumerate(subnet.state_variables)}
-    voi_indices = [voi_index_map[name] for name in subnet.variables_of_interest]
+    svar_index_map = {name: idx for idx, name in enumerate(subnet.state_variables)}
+    voi_indices = [svar_index_map[name] for name in subnet.variables_of_interest]
 
     delayed_enabled = delayed_self_feedback is not None
     delayed_source_svar = 0
@@ -134,12 +368,37 @@ def render_cpp_template(
     delayed_steps = 0
     source_history_horizon = int(spec.source_horizons.get(subnet.name, 1))
     if delayed_self_feedback is not None:
-        state_index_map = {name: idx for idx, name in enumerate(subnet.state_variables)}
-        delayed_source_svar = state_index_map[delayed_self_feedback.source_state_var]
-        delayed_target_svar = state_index_map[delayed_self_feedback.target_state_var]
+        delayed_source_svar = svar_index_map[delayed_self_feedback.source_state_var]
+        delayed_target_svar = svar_index_map[delayed_self_feedback.target_state_var]
         delayed_gain = float(delayed_self_feedback.gain)
         delayed_steps = int(delayed_self_feedback.delay_steps)
         source_history_horizon = max(source_history_horizon, delayed_steps + 1)
+
+    dfun_ctx = _build_dfun_context(subnet)
+
+    # Delayed self-feedback: override the target coupling term's read expression.
+    # This is temporary scaffolding until projection support (Step 7) lands.
+    if delayed_self_feedback is not None:
+        target_sv = delayed_self_feedback.target_state_var
+        # Find coupling term by naming convention (Coupling_Term_{svar}) or
+        # fall back to the single term if the model only has one.
+        target_ct = f"Coupling_Term_{target_sv}"
+        if target_ct not in subnet.coupling_terms:
+            if len(subnet.coupling_terms) == 1:
+                target_ct = subnet.coupling_terms[0]
+            else:
+                target_ct = ""  # no match — leave all couplings at 0
+        new_coupling_reads = []
+        for ct in subnet.coupling_terms:
+            if ct == target_ct:
+                new_coupling_reads.append(
+                    f"const double {ct} = {delayed_gain:.17g} * "
+                    f"tvb::hybrid::runtime::delayed_state_value("
+                    f"history, {delayed_steps}, {delayed_source_svar}, node, 0);"
+                )
+            else:
+                new_coupling_reads.append(f"const double {ct} = 0.0;")
+        dfun_ctx = {**dfun_ctx, "dfun_coupling_reads": new_coupling_reads}
 
     ctx = {
         "module_name": module_name,
@@ -154,13 +413,9 @@ def render_cpp_template(
         "subnet": subnet,
         "voi_indices": voi_indices,
         "source_history_horizon": source_history_horizon,
-        "delayed_enabled": delayed_enabled,
-        "delayed_steps": delayed_steps,
-        "delayed_gain": delayed_gain,
-        "delayed_source_svar": delayed_source_svar,
-        "delayed_target_svar": delayed_target_svar,
         "subnetwork_summary": _format_subnetwork_summary(spec),
         "projection_summary": _format_projection_summary(spec),
+        **dfun_ctx,
     }
     return _render_mako_template(template_path, ctx)
 

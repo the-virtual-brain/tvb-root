@@ -66,6 +66,14 @@ class SubnetworkSpec:
     parameter_values: dict[str, np.ndarray]
     initial_state_shape: tuple[int, int, int]
     has_stimulus: bool = False
+    # dfun metadata — populated for models that expose state_variable_dfuns
+    global_parameter_names: tuple[str, ...] = ()
+    coupling_terms: tuple[str, ...] = ()
+    state_variable_dfuns: dict[str, str] = dataclasses.field(default_factory=dict)
+    dfun_intermediates: tuple[tuple[str, str], ...] = ()
+    dfun_helpers: tuple[tuple[str, str, str], ...] = ()
+    state_lower_bounds: dict[str, float] = dataclasses.field(default_factory=dict)
+    state_upper_bounds: dict[str, float] = dataclasses.field(default_factory=dict)
 
     def payload(self) -> dict[str, Any]:
         return {
@@ -84,6 +92,13 @@ class SubnetworkSpec:
             },
             "initial_state_shape": list(self.initial_state_shape),
             "has_stimulus": self.has_stimulus,
+            "global_parameter_names": list(self.global_parameter_names),
+            "coupling_terms": list(self.coupling_terms),
+            "state_variable_dfuns": dict(sorted(self.state_variable_dfuns.items())),
+            "dfun_intermediates": [list(pair) for pair in self.dfun_intermediates],
+            "dfun_helpers": [list(triple) for triple in self.dfun_helpers],
+            "state_lower_bounds": dict(sorted(self.state_lower_bounds.items())),
+            "state_upper_bounds": dict(sorted(self.state_upper_bounds.items())),
         }
 
 

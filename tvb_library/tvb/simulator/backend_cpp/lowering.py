@@ -11,7 +11,6 @@ from tvb.simulator.backend.nb_hybrid import (
     _cvar_mapping_mode,
 )
 from tvb.simulator.integrators import HeunDeterministic
-from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
 
 from .spec import (
     IntegratorSpec,
@@ -32,34 +31,32 @@ class SpecLoweringResult:
     analysis: object
 
 
-def _check_initial_scope_compatibility(network_set) -> None:
-    """Temporary compatibility gate for the first C++ backend milestone.
+def _check_scope_compatibility(network_set) -> None:
+    """Compatibility gate for the C++ backend.
 
-    We intentionally avoid reusing `NbHybridBackend._check_compatibility()`
-    here because its broad model imports currently pull in modules that trigger
-    unrelated Numba cache issues during import. For the first milestone we only
-    validate the narrower execution path we have explicitly committed to.
+    Accepts any TVB model that exposes `state_variable_dfuns` (the standard
+    expression-based dfun interface). Models using a custom Numba template
+    (e.g. Zerlaut) are rejected at this point with a clear message.
     """
-
     if not network_set.subnets:
         raise ValueError("NetworkSet must contain at least one subnetwork.")
 
     dt0 = float(network_set.subnets[0].scheme.dt)
     for subnet in network_set.subnets:
-        if not isinstance(subnet.model, MontbrioPazoRoxin):
+        dfuns = getattr(subnet.model, "state_variable_dfuns", None)
+        if not dfuns:
             raise NotImplementedError(
-                "CppHybridBackend initial scope currently supports only "
-                "MontbrioPazoRoxin subnetworks."
+                f"CppHybridBackend requires models that expose state_variable_dfuns. "
+                f"'{type(subnet.model).__name__}' uses a custom dfun template and is "
+                f"not yet supported."
             )
         if not isinstance(subnet.scheme, HeunDeterministic):
             raise NotImplementedError(
-                "CppHybridBackend initial scope currently supports only "
-                "HeunDeterministic integrators."
+                "CppHybridBackend currently supports only HeunDeterministic integrators."
             )
         if float(subnet.scheme.dt) != dt0:
             raise ValueError(
-                "All subnetworks must share the same dt in the current "
-                "CppHybridBackend scope."
+                "All subnetworks must share the same dt."
             )
 
 
@@ -69,6 +66,21 @@ def _collect_model_parameters(model: object) -> dict[str, np.ndarray]:
         value = getattr(model, name)
         parameter_values[name] = np.ascontiguousarray(np.atleast_1d(value))
     return parameter_values
+
+
+def _extract_state_bounds(
+    model: object,
+) -> tuple[dict[str, float], dict[str, float]]:
+    lo_bounds: dict[str, float] = {}
+    hi_bounds: dict[str, float] = {}
+    svb = getattr(model, "state_variable_boundaries", None) or {}
+    for svar, bounds in svb.items():
+        bounds_arr = np.atleast_1d(np.asarray(bounds, dtype=float))
+        if bounds_arr.shape[0] >= 1 and np.isfinite(bounds_arr[0]):
+            lo_bounds[str(svar)] = float(bounds_arr[0])
+        if bounds_arr.shape[0] >= 2 and np.isfinite(bounds_arr[1]):
+            hi_bounds[str(svar)] = float(bounds_arr[1])
+    return lo_bounds, hi_bounds
 
 
 def _build_integrator_spec(subnet_info) -> IntegratorSpec:
@@ -84,6 +96,7 @@ def _build_integrator_spec(subnet_info) -> IntegratorSpec:
 
 def _build_subnetwork_spec(subnet_info) -> SubnetworkSpec:
     model = subnet_info.model
+    lo_bounds, hi_bounds = _extract_state_bounds(model)
     return SubnetworkSpec(
         name=subnet_info.name,
         model_type=type(model).__name__,
@@ -97,6 +110,26 @@ def _build_subnetwork_spec(subnet_info) -> SubnetworkSpec:
         parameter_values=_collect_model_parameters(model),
         initial_state_shape=(int(model.nvar), int(subnet_info.n_nodes), int(subnet_info.n_modes)),
         has_stimulus=bool(subnet_info.has_stimulus),
+        global_parameter_names=tuple(
+            str(p) for p in (getattr(model, "global_parameter_names", None) or [])
+        ),
+        coupling_terms=tuple(
+            str(ct) for ct in (getattr(model, "coupling_terms", None) or [])
+        ),
+        state_variable_dfuns={
+            str(k): str(v)
+            for k, v in (getattr(model, "state_variable_dfuns", None) or {}).items()
+        },
+        dfun_intermediates=tuple(
+            (str(name), str(expr))
+            for name, expr in (getattr(model, "dfun_intermediates", None) or [])
+        ),
+        dfun_helpers=tuple(
+            (str(name), str(args), str(expr))
+            for name, args, expr in (getattr(model, "dfun_helpers", None) or [])
+        ),
+        state_lower_bounds=lo_bounds,
+        state_upper_bounds=hi_bounds,
     )
 
 
@@ -164,7 +197,7 @@ def lower_network_set(
     """
 
     backend = NbHybridBackend()
-    _check_initial_scope_compatibility(network_set)
+    _check_scope_compatibility(network_set)
     analysis = backend._analyse(network_set)
 
     subnetworks = tuple(_build_subnetwork_spec(sn) for sn in analysis.subnetworks)
