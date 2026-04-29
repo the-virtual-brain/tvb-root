@@ -603,7 +603,19 @@ def _build_generated_extension_with_compiler(
         str(extension_path),
         *ldflags,
     ]
-    subprocess.run(compile_cmd, check=True, cwd=artifact.build_dir)
+    try:
+        subprocess.run(
+            compile_cmd,
+            check=True,
+            cwd=artifact.build_dir,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        detail = (exc.stderr or exc.stdout or "").strip()
+        if detail:
+            raise RuntimeError(f"Direct compiler build failed:\n{detail}") from exc
+        raise
     return dataclasses.replace(artifact, extension_path=extension_path)
 
 
