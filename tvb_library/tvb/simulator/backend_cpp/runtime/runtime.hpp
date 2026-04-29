@@ -144,6 +144,13 @@ class StateBuffer {
   std::vector<double> values_;
 };
 
+// Ring buffer of simulation history frames.
+//
+// Layout: data_[slot * frame_stride + svar * (n_nodes * n_modes) + node * n_modes + mode]
+//
+// Slots are written in round-robin order.  push() copies one full frame
+// (n_svars * n_nodes * n_modes doubles) contiguously.  read_value() computes a
+// direct index with no intermediate StateBuffer allocation.
 class HistoryBuffer {
  public:
   HistoryBuffer(
@@ -152,31 +159,22 @@ class HistoryBuffer {
       std::size_t n_nodes,
       std::size_t n_modes)
       : capacity_(std::max<std::size_t>(1, capacity)),
+        n_state_vars_(n_state_vars),
+        n_nodes_(n_nodes),
+        n_modes_(n_modes),
+        frame_stride_(n_state_vars * n_nodes * n_modes),
         next_slot_(0),
-        filled_(0) {
-    snapshots_.reserve(capacity_);
-    for (std::size_t i = 0; i < capacity_; ++i) {
-      snapshots_.emplace_back(n_state_vars, n_nodes, n_modes);
-    }
-  }
+        filled_(0),
+        data_(capacity_ * frame_stride_, 0.0) {}
 
   void push(const StateBuffer& state) {
-    snapshots_[next_slot_] = state;
+    const std::size_t offset = next_slot_ * frame_stride_;
+    std::copy(
+        state.raw().begin(),
+        state.raw().end(),
+        data_.begin() + static_cast<std::ptrdiff_t>(offset));
     next_slot_ = (next_slot_ + 1) % capacity_;
     filled_ = std::min(filled_ + 1, capacity_);
-  }
-
-  const StateBuffer& read(std::size_t delay_steps) const {
-    if (filled_ == 0) {
-      throw std::runtime_error("HistoryBuffer is empty.");
-    }
-    if (delay_steps >= filled_) {
-      throw std::runtime_error("Requested delay exceeds available history.");
-    }
-    const std::size_t latest_slot = (next_slot_ + capacity_ - 1) % capacity_;
-    const std::size_t slot =
-        (latest_slot + capacity_ - (delay_steps % capacity_)) % capacity_;
-    return snapshots_[slot];
   }
 
   double read_value(
@@ -184,18 +182,29 @@ class HistoryBuffer {
       std::size_t svar,
       std::size_t node,
       std::size_t mode) const {
-    return read(delay_steps)(svar, node, mode);
+    if (filled_ == 0) {
+      throw std::runtime_error("HistoryBuffer is empty.");
+    }
+    if (delay_steps >= filled_) {
+      throw std::runtime_error("Requested delay exceeds available history.");
+    }
+    const std::size_t latest_slot = (next_slot_ + capacity_ - 1) % capacity_;
+    const std::size_t slot = (latest_slot + capacity_ - delay_steps) % capacity_;
+    return data_[slot * frame_stride_ + svar * (n_nodes_ * n_modes_) + node * n_modes_ + mode];
   }
 
   std::size_t capacity() const { return capacity_; }
-
   std::size_t size() const { return filled_; }
 
  private:
   std::size_t capacity_;
+  std::size_t n_state_vars_;
+  std::size_t n_nodes_;
+  std::size_t n_modes_;
+  std::size_t frame_stride_;
   std::size_t next_slot_;
   std::size_t filled_;
-  std::vector<StateBuffer> snapshots_;
+  std::vector<double> data_;
 };
 
 inline double delayed_state_value(
@@ -228,8 +237,9 @@ inline void heun_step(StateBuffer& state, const HistoryBuffer& history) {
   for (std::size_t node = 0; node < Generated::kNumNodes; ++node) {
     std::array<double, Generated::kNumStateVars> dx0{};
     Generated::compute_dfun(state, history, node, dx0);
-    predictor(0, node, 0) = state(0, node, 0) + Generated::kDt * dx0[0];
-    predictor(1, node, 0) = state(1, node, 0) + Generated::kDt * dx0[1];
+    for (std::size_t svar = 0; svar < Generated::kNumStateVars; ++svar) {
+      predictor(svar, node, 0) = state(svar, node, 0) + Generated::kDt * dx0[svar];
+    }
     Generated::apply_state_constraints(predictor, node);
   }
 
@@ -238,8 +248,9 @@ inline void heun_step(StateBuffer& state, const HistoryBuffer& history) {
     std::array<double, Generated::kNumStateVars> dx1{};
     Generated::compute_dfun(state, history, node, dx0);
     Generated::compute_dfun(predictor, history, node, dx1);
-    state(0, node, 0) += 0.5 * Generated::kDt * (dx0[0] + dx1[0]);
-    state(1, node, 0) += 0.5 * Generated::kDt * (dx0[1] + dx1[1]);
+    for (std::size_t svar = 0; svar < Generated::kNumStateVars; ++svar) {
+      state(svar, node, 0) += 0.5 * Generated::kDt * (dx0[svar] + dx1[svar]);
+    }
     Generated::apply_state_constraints(state, node);
   }
 }
@@ -317,6 +328,14 @@ inline SimulationResult run_simulation(
       continue;
     }
 
+    // Timestamp convention (shared with NbHybridBackend): midpoint of the step
+    // range [chunk_start_step, chunk_start_step + steps_in_chunk - 1], with
+    // steps counted from 1.  The first chunk midpoint is therefore
+    // (1 + (chunk_size-1)/2) * dt = 1.5 * dt for chunk_size == 2.
+    //
+    // Python's TemporalAverage counts from step 0, placing its first midpoint
+    // at (chunk_size-1)/2 * dt = 0.5 * dt for chunk_size == 2.  The constant
+    // offset is: python_time == native_time - 0.5 * dt.
     const double mid_step = static_cast<double>(chunk_start_step) +
                             (static_cast<double>(steps_in_chunk) - 1.0) / 2.0;
     result.times[current_chunk] = mid_step * Generated::kDt;
