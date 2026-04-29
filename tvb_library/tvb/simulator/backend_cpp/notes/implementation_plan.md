@@ -272,6 +272,9 @@ Progress note:
 - Delayed reads are now implemented at the runtime level and covered by a
   small backend_cpp test probe, but they are not yet used by projection or
   coupling code.
+- The generated/native path can now call the delayed-history helper for a
+  minimal deterministic self-feedback example, which is validated against a
+  pure Python reference in tests and `examples/compare_native_delayed_self_feedback.py`.
 - Generated modules now include that fixed runtime and delegate
   `describe()`/`run_simulation()` into it instead of owning the full loop.
 - The runtime is still minimal and header-only; delay buffers, CSR traversal,

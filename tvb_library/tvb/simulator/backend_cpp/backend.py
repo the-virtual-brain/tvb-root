@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from .codegen import (
+    DelayedSelfFeedbackConfig,
     GeneratedSourceArtifact,
     build_generated_extension,
     generate_cpp_source,
@@ -133,6 +134,7 @@ class CppHybridBackend:
         monitors: list[object] | None = None,
         user_source_hint: str | None = None,
         build_native: bool = True,
+        delayed_self_feedback: DelayedSelfFeedbackConfig | None = None,
     ) -> CompiledCppNetwork:
         lowering = self.lower(
             network_set=network_set,
@@ -148,6 +150,7 @@ class CppHybridBackend:
             spec=spec,
             build_dir=build_dir,
             module_name=module_name,
+            delayed_self_feedback=delayed_self_feedback,
         )
         pipeline_stage = "cpp_generated"
         if build_native:

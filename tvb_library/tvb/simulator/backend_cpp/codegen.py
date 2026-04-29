@@ -11,14 +11,18 @@ import sysconfig
 import subprocess
 import sys
 
+from mako.exceptions import text_error_template
+from mako.lookup import TemplateLookup
+from mako.template import Template
+
 from .spec import SimulationSpec
 
 
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 RUNTIME_DIR = Path(__file__).resolve().parent / "runtime"
-DEFAULT_SIM_TEMPLATE = TEMPLATES_DIR / "sim_module.cpp.in"
-DEFAULT_BINDINGS_TEMPLATE = TEMPLATES_DIR / "module_bindings.cpp.in"
-DEFAULT_CMAKE_TEMPLATE = TEMPLATES_DIR / "CMakeLists.txt.in"
+DEFAULT_SIM_TEMPLATE = TEMPLATES_DIR / "sim_module.cpp.mako"
+DEFAULT_BINDINGS_TEMPLATE = TEMPLATES_DIR / "module_bindings.cpp.mako"
+DEFAULT_CMAKE_TEMPLATE = TEMPLATES_DIR / "CMakeLists.txt.mako"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -36,6 +40,28 @@ class GeneratedSourceArtifact:
     bindings_source_text: str
     cmake_source_text: str
     extension_path: Path | None = None
+
+
+@dataclasses.dataclass(frozen=True)
+class DelayedSelfFeedbackConfig:
+    delay_steps: int
+    gain: float
+    source_state_var: str = "r"
+    target_state_var: str = "V"
+
+
+def _render_mako_template(template_path: Path, ctx: dict) -> str:
+    lookup = TemplateLookup(directories=[str(template_path.parent)])
+    tmpl = Template(
+        template_path.read_text(encoding="utf-8"),
+        lookup=lookup,
+        strict_undefined=True,
+    )
+    try:
+        return tmpl.render(**ctx)
+    except Exception:
+        print(text_error_template().render())
+        raise
 
 
 def _format_projection_summary(spec: SimulationSpec) -> str:
@@ -70,14 +96,6 @@ def _format_subnetwork_summary(spec: SimulationSpec) -> str:
     return "\n".join(lines)
 
 
-def _format_double_array(values) -> str:
-    return ", ".join(f"{float(v):.17g}" for v in values)
-
-
-def _format_int_array(values) -> str:
-    return ", ".join(str(int(v)) for v in values)
-
-
 def _single_subnet(spec: SimulationSpec):
     if len(spec.subnetworks) != 1:
         raise NotImplementedError(
@@ -102,43 +120,49 @@ def _single_subnet(spec: SimulationSpec):
 def render_cpp_template(
     spec: SimulationSpec,
     module_name: str,
+    delayed_self_feedback: DelayedSelfFeedbackConfig | None = None,
     template_path: Path = DEFAULT_SIM_TEMPLATE,
 ) -> str:
-    template = template_path.read_text(encoding="utf-8")
     subnet = _single_subnet(spec)
-    param_values = subnet.parameter_values
     voi_index_map = {name: idx for idx, name in enumerate(subnet.state_variables)}
     voi_indices = [voi_index_map[name] for name in subnet.variables_of_interest]
-    replacements = {
-        "{{MODULE_NAME}}": module_name,
-        "{{CACHE_KEY}}": spec.cache_key(),
-        "{{BACKEND_VERSION}}": spec.backend_version,
-        "{{DT}}": f"{spec.dt:.17g}",
-        "{{USER_SOURCE_HINT}}": spec.user_source_hint or "",
-        "{{NUM_SUBNETWORKS}}": str(len(spec.subnetworks)),
-        "{{NUM_INTER_PROJECTIONS}}": str(len(spec.inter_projections)),
-        "{{NUM_INTRA_PROJECTIONS}}": str(len(spec.intra_projections)),
-        "{{NUM_MONITORS}}": str(len(spec.monitors)),
-        "{{SUBNETWORK_SUMMARY}}": _format_subnetwork_summary(spec),
-        "{{PROJECTION_SUMMARY}}": _format_projection_summary(spec),
-        "{{N_NODES}}": str(subnet.n_nodes),
-        "{{N_MODES}}": str(subnet.n_modes),
-        "{{N_STATE_VARS}}": str(subnet.n_state_vars),
-        "{{N_VOI}}": str(len(subnet.variables_of_interest)),
-        "{{SOURCE_HISTORY_HORIZON}}": str(spec.source_horizons.get(subnet.name, 1)),
-        "{{VOI_INDICES}}": _format_int_array(voi_indices),
-        "{{PARAM_TAU}}": _format_double_array(param_values["tau"]),
-        "{{PARAM_DELTA}}": _format_double_array(param_values["Delta"]),
-        "{{PARAM_ETA}}": _format_double_array(param_values["eta"]),
-        "{{PARAM_J}}": _format_double_array(param_values["J"]),
-        "{{PARAM_I}}": _format_double_array(param_values["I"]),
-        "{{PARAM_CR}}": _format_double_array(param_values["cr"]),
-        "{{PARAM_CV}}": _format_double_array(param_values["cv"]),
+
+    delayed_enabled = delayed_self_feedback is not None
+    delayed_source_svar = 0
+    delayed_target_svar = 1
+    delayed_gain = 0.0
+    delayed_steps = 0
+    source_history_horizon = int(spec.source_horizons.get(subnet.name, 1))
+    if delayed_self_feedback is not None:
+        state_index_map = {name: idx for idx, name in enumerate(subnet.state_variables)}
+        delayed_source_svar = state_index_map[delayed_self_feedback.source_state_var]
+        delayed_target_svar = state_index_map[delayed_self_feedback.target_state_var]
+        delayed_gain = float(delayed_self_feedback.gain)
+        delayed_steps = int(delayed_self_feedback.delay_steps)
+        source_history_horizon = max(source_history_horizon, delayed_steps + 1)
+
+    ctx = {
+        "module_name": module_name,
+        "cache_key": spec.cache_key(),
+        "backend_version": spec.backend_version,
+        "user_source_hint": spec.user_source_hint or "",
+        "dt": spec.dt,
+        "num_subnetworks": len(spec.subnetworks),
+        "num_inter_projections": len(spec.inter_projections),
+        "num_intra_projections": len(spec.intra_projections),
+        "num_monitors": len(spec.monitors),
+        "subnet": subnet,
+        "voi_indices": voi_indices,
+        "source_history_horizon": source_history_horizon,
+        "delayed_enabled": delayed_enabled,
+        "delayed_steps": delayed_steps,
+        "delayed_gain": delayed_gain,
+        "delayed_source_svar": delayed_source_svar,
+        "delayed_target_svar": delayed_target_svar,
+        "subnetwork_summary": _format_subnetwork_summary(spec),
+        "projection_summary": _format_projection_summary(spec),
     }
-    rendered = template
-    for key, value in replacements.items():
-        rendered = rendered.replace(key, value)
-    return rendered
+    return _render_mako_template(template_path, ctx)
 
 
 def render_bindings_template(
@@ -146,15 +170,11 @@ def render_bindings_template(
     generated_cpp_filename: str,
     template_path: Path = DEFAULT_BINDINGS_TEMPLATE,
 ) -> str:
-    template = template_path.read_text(encoding="utf-8")
-    replacements = {
-        "{{MODULE_NAME}}": module_name,
-        "{{GENERATED_CPP_FILENAME}}": generated_cpp_filename,
+    ctx = {
+        "module_name": module_name,
+        "generated_cpp_filename": generated_cpp_filename,
     }
-    rendered = template
-    for key, value in replacements.items():
-        rendered = rendered.replace(key, value)
-    return rendered
+    return _render_mako_template(template_path, ctx)
 
 
 def render_cmake_template(
@@ -162,16 +182,12 @@ def render_cmake_template(
     bindings_cpp_filename: str,
     template_path: Path = DEFAULT_CMAKE_TEMPLATE,
 ) -> str:
-    template = template_path.read_text(encoding="utf-8")
-    replacements = {
-        "{{MODULE_NAME}}": module_name,
-        "{{BINDINGS_CPP_FILENAME}}": bindings_cpp_filename,
-        "{{PYTHON_EXECUTABLE}}": sys.executable,
+    ctx = {
+        "module_name": module_name,
+        "bindings_cpp_filename": bindings_cpp_filename,
+        "python_executable": sys.executable,
     }
-    rendered = template
-    for key, value in replacements.items():
-        rendered = rendered.replace(key, value)
-    return rendered
+    return _render_mako_template(template_path, ctx)
 
 
 def _discover_extension_path(build_dir: Path, module_name: str) -> Path:
@@ -191,6 +207,7 @@ def generate_cpp_source(
     spec: SimulationSpec,
     build_dir: str | Path,
     module_name: str,
+    delayed_self_feedback: DelayedSelfFeedbackConfig | None = None,
     sim_template_path: Path = DEFAULT_SIM_TEMPLATE,
     bindings_template_path: Path = DEFAULT_BINDINGS_TEMPLATE,
     cmake_template_path: Path = DEFAULT_CMAKE_TEMPLATE,
@@ -207,6 +224,7 @@ def generate_cpp_source(
     sim_source_text = render_cpp_template(
         spec=spec,
         module_name=module_name,
+        delayed_self_feedback=delayed_self_feedback,
         template_path=sim_template_path,
     )
     bindings_source_text = render_bindings_template(

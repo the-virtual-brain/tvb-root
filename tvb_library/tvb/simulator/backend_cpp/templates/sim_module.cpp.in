@@ -31,6 +31,11 @@ struct GeneratedModel {
   static constexpr std::size_t kNumStateVars = {{N_STATE_VARS}};
   static constexpr std::size_t kNumVoi = {{N_VOI}};
   static constexpr std::size_t kSourceHistoryHorizon = {{SOURCE_HISTORY_HORIZON}};
+  static constexpr bool kDelayedSelfFeedbackEnabled = {{DELAYED_SELF_FEEDBACK_ENABLED}};
+  static constexpr std::size_t kDelayedSelfFeedbackSteps = {{DELAYED_SELF_FEEDBACK_STEPS}};
+  static constexpr double kDelayedSelfFeedbackGain = {{DELAYED_SELF_FEEDBACK_GAIN}};
+  static constexpr std::size_t kDelayedSelfFeedbackSourceSvar = {{DELAYED_SELF_FEEDBACK_SOURCE_SVAR}};
+  static constexpr std::size_t kDelayedSelfFeedbackTargetSvar = {{DELAYED_SELF_FEEDBACK_TARGET_SVAR}};
   static constexpr std::array<int, kNumVoi> kVoiIndices = { {{VOI_INDICES}} };
 
   static constexpr std::array<double, 1> kTau = { {{PARAM_TAU}} };
@@ -47,6 +52,7 @@ struct GeneratedModel {
 
   static inline void compute_dfun(
       const tvb::hybrid::runtime::StateBuffer& state,
+      const tvb::hybrid::runtime::HistoryBuffer& history,
       std::size_t node,
       std::array<double, kNumStateVars>& dx) {
     const double r = std::max(0.0, state(0, node, 0));
@@ -59,7 +65,16 @@ struct GeneratedModel {
     const double cr = param_at(kCr, node);
     const double cv = param_at(kCv, node);
     const double coupling_r = 0.0;
-    const double coupling_V = 0.0;
+    double coupling_V = 0.0;
+    if constexpr (kDelayedSelfFeedbackEnabled) {
+      coupling_V += kDelayedSelfFeedbackGain *
+                    tvb::hybrid::runtime::delayed_state_value(
+                        history,
+                        kDelayedSelfFeedbackSteps,
+                        kDelayedSelfFeedbackSourceSvar,
+                        node,
+                        0);
+    }
 
     dx[0] = (1.0 / tau) * (Delta / (M_PI * tau) + 2.0 * V * r);
     dx[1] = (1.0 / tau) *

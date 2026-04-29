@@ -8,6 +8,7 @@ backend-neutral representation before code generation is introduced.
 
 from .backend import CompiledCppNetwork, CppHybridBackend
 from .codegen import (
+    DelayedSelfFeedbackConfig,
     GeneratedSourceArtifact,
     build_generated_extension,
     generate_cpp_source,
@@ -26,6 +27,7 @@ from .spec import (
 __all__ = [
     "CompiledCppNetwork",
     "CppHybridBackend",
+    "DelayedSelfFeedbackConfig",
     "GeneratedSourceArtifact",
     "IntegratorSpec",
     "MonitorSpec",

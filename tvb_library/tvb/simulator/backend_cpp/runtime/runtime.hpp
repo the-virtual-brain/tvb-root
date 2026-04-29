@@ -29,6 +29,60 @@ struct SimulationResult {
   std::size_t num_modes;
 };
 
+class MonitorBuffer {
+ public:
+  MonitorBuffer(std::size_t n_voi, std::size_t n_nodes, std::size_t n_modes)
+      : n_voi_(n_voi),
+        n_nodes_(n_nodes),
+        n_modes_(n_modes),
+        accum_(n_voi * n_nodes * n_modes, 0.0) {}
+
+  double& accum(std::size_t voi, std::size_t node, std::size_t mode) {
+    return accum_[offset(voi, node, mode)];
+  }
+
+  const double& accum(
+      std::size_t voi,
+      std::size_t node,
+      std::size_t mode) const {
+    return accum_[offset(voi, node, mode)];
+  }
+
+  void clear_accum() { std::fill(accum_.begin(), accum_.end(), 0.0); }
+
+  void write_chunk_average(
+      SimulationResult& result,
+      std::size_t chunk_index,
+      std::size_t steps_in_chunk) const {
+    for (std::size_t voi = 0; voi < n_voi_; ++voi) {
+      for (std::size_t node = 0; node < n_nodes_; ++node) {
+        for (std::size_t mode = 0; mode < n_modes_; ++mode) {
+          const std::size_t out_idx =
+              ((chunk_index * n_voi_ + voi) * n_nodes_ + node) * n_modes_ + mode;
+          result.data[out_idx] =
+              accum(voi, node, mode) / static_cast<double>(steps_in_chunk);
+        }
+      }
+    }
+  }
+
+ private:
+  std::size_t offset(
+      std::size_t voi,
+      std::size_t node,
+      std::size_t mode) const {
+    if (voi >= n_voi_ || node >= n_nodes_ || mode >= n_modes_) {
+      throw std::runtime_error("MonitorBuffer index out of range.");
+    }
+    return ((voi * n_nodes_) + node) * n_modes_ + mode;
+  }
+
+  std::size_t n_voi_;
+  std::size_t n_nodes_;
+  std::size_t n_modes_;
+  std::vector<double> accum_;
+};
+
 class StateBuffer {
  public:
   StateBuffer(
@@ -90,6 +144,69 @@ class StateBuffer {
   std::vector<double> values_;
 };
 
+class HistoryBuffer {
+ public:
+  HistoryBuffer(
+      std::size_t capacity,
+      std::size_t n_state_vars,
+      std::size_t n_nodes,
+      std::size_t n_modes)
+      : capacity_(std::max<std::size_t>(1, capacity)),
+        next_slot_(0),
+        filled_(0) {
+    snapshots_.reserve(capacity_);
+    for (std::size_t i = 0; i < capacity_; ++i) {
+      snapshots_.emplace_back(n_state_vars, n_nodes, n_modes);
+    }
+  }
+
+  void push(const StateBuffer& state) {
+    snapshots_[next_slot_] = state;
+    next_slot_ = (next_slot_ + 1) % capacity_;
+    filled_ = std::min(filled_ + 1, capacity_);
+  }
+
+  const StateBuffer& read(std::size_t delay_steps) const {
+    if (filled_ == 0) {
+      throw std::runtime_error("HistoryBuffer is empty.");
+    }
+    if (delay_steps >= filled_) {
+      throw std::runtime_error("Requested delay exceeds available history.");
+    }
+    const std::size_t latest_slot = (next_slot_ + capacity_ - 1) % capacity_;
+    const std::size_t slot =
+        (latest_slot + capacity_ - (delay_steps % capacity_)) % capacity_;
+    return snapshots_[slot];
+  }
+
+  double read_value(
+      std::size_t delay_steps,
+      std::size_t svar,
+      std::size_t node,
+      std::size_t mode) const {
+    return read(delay_steps)(svar, node, mode);
+  }
+
+  std::size_t capacity() const { return capacity_; }
+
+  std::size_t size() const { return filled_; }
+
+ private:
+  std::size_t capacity_;
+  std::size_t next_slot_;
+  std::size_t filled_;
+  std::vector<StateBuffer> snapshots_;
+};
+
+inline double delayed_state_value(
+    const HistoryBuffer& history,
+    std::size_t delay_steps,
+    std::size_t svar,
+    std::size_t node,
+    std::size_t mode) {
+  return history.read_value(delay_steps, svar, node, mode);
+}
+
 template <typename Generated>
 inline SimulationMetadata describe() {
   return SimulationMetadata{
@@ -106,11 +223,11 @@ inline SimulationMetadata describe() {
 }
 
 template <typename Generated>
-inline void heun_step(StateBuffer& state) {
+inline void heun_step(StateBuffer& state, const HistoryBuffer& history) {
   StateBuffer predictor = state;
   for (std::size_t node = 0; node < Generated::kNumNodes; ++node) {
     std::array<double, Generated::kNumStateVars> dx0{};
-    Generated::compute_dfun(state, node, dx0);
+    Generated::compute_dfun(state, history, node, dx0);
     predictor(0, node, 0) = state(0, node, 0) + Generated::kDt * dx0[0];
     predictor(1, node, 0) = state(1, node, 0) + Generated::kDt * dx0[1];
     Generated::apply_state_constraints(predictor, node);
@@ -119,8 +236,8 @@ inline void heun_step(StateBuffer& state) {
   for (std::size_t node = 0; node < Generated::kNumNodes; ++node) {
     std::array<double, Generated::kNumStateVars> dx0{};
     std::array<double, Generated::kNumStateVars> dx1{};
-    Generated::compute_dfun(state, node, dx0);
-    Generated::compute_dfun(predictor, node, dx1);
+    Generated::compute_dfun(state, history, node, dx0);
+    Generated::compute_dfun(predictor, history, node, dx1);
     state(0, node, 0) += 0.5 * Generated::kDt * (dx0[0] + dx1[0]);
     state(1, node, 0) += 0.5 * Generated::kDt * (dx0[1] + dx1[1]);
     Generated::apply_state_constraints(state, node);
@@ -154,6 +271,14 @@ inline SimulationResult run_simulation(
       Generated::kNumNodes,
       Generated::kNumModes,
       initial_state);
+  HistoryBuffer history(
+      Generated::kSourceHistoryHorizon,
+      Generated::kNumStateVars,
+      Generated::kNumNodes,
+      Generated::kNumModes);
+  for (std::size_t i = 0; i < history.capacity(); ++i) {
+    history.push(state);
+  }
   const std::size_t num_chunks = (nstep + chunk_size - 1) / chunk_size;
   SimulationResult result;
   result.num_chunks = num_chunks;
@@ -165,18 +290,24 @@ inline SimulationResult run_simulation(
       num_chunks * Generated::kNumVoi * Generated::kNumNodes * Generated::kNumModes,
       0.0);
 
-  std::vector<double> accum(Generated::kNumVoi * Generated::kNumNodes, 0.0);
+  MonitorBuffer monitor(
+      Generated::kNumVoi,
+      Generated::kNumNodes,
+      Generated::kNumModes);
   std::size_t current_chunk = 0;
   std::size_t steps_in_chunk = 0;
   std::size_t chunk_start_step = 1;
 
   for (std::size_t step = 1; step <= nstep; ++step) {
-    heun_step<Generated>(state);
+    heun_step<Generated>(state, history);
+    history.push(state);
     for (std::size_t ivoi = 0; ivoi < Generated::kNumVoi; ++ivoi) {
       const std::size_t svar =
           static_cast<std::size_t>(Generated::kVoiIndices[ivoi]);
       for (std::size_t node = 0; node < Generated::kNumNodes; ++node) {
-        accum[ivoi * Generated::kNumNodes + node] += state(svar, node, 0);
+        for (std::size_t mode = 0; mode < Generated::kNumModes; ++mode) {
+          monitor.accum(ivoi, node, mode) += state(svar, node, mode);
+        }
       }
     }
     ++steps_in_chunk;
@@ -190,18 +321,8 @@ inline SimulationResult run_simulation(
                             (static_cast<double>(steps_in_chunk) - 1.0) / 2.0;
     result.times[current_chunk] = mid_step * Generated::kDt;
 
-    for (std::size_t ivoi = 0; ivoi < Generated::kNumVoi; ++ivoi) {
-      for (std::size_t node = 0; node < Generated::kNumNodes; ++node) {
-        const std::size_t out_idx =
-            ((current_chunk * Generated::kNumVoi + ivoi) * Generated::kNumNodes +
-             node) *
-            Generated::kNumModes;
-        result.data[out_idx] = accum[ivoi * Generated::kNumNodes + node] /
-                               static_cast<double>(steps_in_chunk);
-      }
-    }
-
-    std::fill(accum.begin(), accum.end(), 0.0);
+    monitor.write_chunk_average(result, current_chunk, steps_in_chunk);
+    monitor.clear_accum();
     ++current_chunk;
     chunk_start_step = step + 1;
     steps_in_chunk = 0;

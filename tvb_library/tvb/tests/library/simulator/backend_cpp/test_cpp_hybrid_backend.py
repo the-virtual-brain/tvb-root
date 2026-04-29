@@ -18,7 +18,7 @@ os.environ.setdefault("TVB_USER_HOME", os.path.join(tempfile.gettempdir(), "tvb-
 os.environ.setdefault("MPLCONFIGDIR", os.path.join(tempfile.gettempdir(), "matplotlib"))
 
 from tvb.simulator.backend.nb_hybrid import NbHybridBackend
-from tvb.simulator.backend_cpp import CppHybridBackend
+from tvb.simulator.backend_cpp import CppHybridBackend, DelayedSelfFeedbackConfig
 from tvb.simulator.hybrid import NetworkSet, Simulator, Subnetwork
 from tvb.simulator.integrators import HeunDeterministic
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
@@ -121,12 +121,14 @@ def _run_native(
     nstep: int,
     chunk_size: int,
     build_root: str,
+    delayed_self_feedback: DelayedSelfFeedbackConfig | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     backend = CppHybridBackend(build_root=build_root)
     compiled = backend.compile(
         network,
         monitors=[TemporalAverage(period=chunk_size * DT)],
         user_source_hint="test_cpp_hybrid_backend",
+        delayed_self_feedback=delayed_self_feedback,
     )
     times, data = compiled.run(
         initial_states=[initial_state.copy()],
@@ -134,6 +136,82 @@ def _run_native(
         chunk_size=chunk_size,
     )
     return np.asarray(times, dtype=np.float64), np.asarray(data, dtype=np.float64)
+
+
+def _run_python_delayed_self_feedback(
+    subnetwork: Subnetwork,
+    initial_state: np.ndarray,
+    nstep: int,
+    chunk_size: int,
+    delay_steps: int,
+    gain: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    model = subnetwork.model
+    tau = float(np.atleast_1d(model.tau)[0])
+    delta = float(np.atleast_1d(model.Delta)[0])
+    eta = float(np.atleast_1d(model.eta)[0])
+    j = float(np.atleast_1d(model.J)[0])
+    current_i = float(np.atleast_1d(model.I)[0])
+    cr = float(np.atleast_1d(model.cr)[0])
+    cv = float(np.atleast_1d(model.cv)[0])
+    n_nodes = subnetwork.nnodes
+
+    def compute_dfun(state: np.ndarray, delayed_r: np.ndarray) -> np.ndarray:
+        r = np.maximum(0.0, state[0, :, 0])
+        v = state[1, :, 0]
+        dx = np.zeros_like(state)
+        dx[0, :, 0] = (1.0 / tau) * (delta / (np.pi * tau) + 2.0 * v * r)
+        dx[1, :, 0] = (1.0 / tau) * (
+            v * v
+            - (np.pi * np.pi) * tau * tau * r * r
+            + eta
+            + j * tau * r
+            + current_i
+            + cr * 0.0
+            + cv * (gain * delayed_r)
+        )
+        return dx
+
+    history = [initial_state.copy() for _ in range(delay_steps + 1)]
+    state = initial_state.copy()
+    num_chunks = (nstep + chunk_size - 1) // chunk_size
+    times = np.zeros(num_chunks, dtype=np.float64)
+    data = np.zeros((num_chunks, model.nvar, n_nodes, 1), dtype=np.float64)
+    accum = np.zeros((model.nvar, n_nodes, 1), dtype=np.float64)
+    current_chunk = 0
+    steps_in_chunk = 0
+    chunk_start_step = 1
+
+    for step in range(1, nstep + 1):
+        delayed_state = history[-1 - delay_steps]
+        delayed_r = delayed_state[0, :, 0]
+
+        dx0 = compute_dfun(state, delayed_r)
+        predictor = state + DT * dx0
+        predictor[0, :, 0] = np.maximum(0.0, predictor[0, :, 0])
+
+        dx1 = compute_dfun(predictor, delayed_r)
+        state = state + 0.5 * DT * (dx0 + dx1)
+        state[0, :, 0] = np.maximum(0.0, state[0, :, 0])
+        history.append(state.copy())
+        if len(history) > delay_steps + 1:
+            history.pop(0)
+
+        accum += state
+        steps_in_chunk += 1
+        close_chunk = steps_in_chunk == chunk_size or step == nstep
+        if not close_chunk:
+            continue
+
+        mid_step = chunk_start_step + (steps_in_chunk - 1.0) / 2.0
+        times[current_chunk] = mid_step * DT
+        data[current_chunk] = accum / float(steps_in_chunk)
+        accum.fill(0.0)
+        current_chunk += 1
+        chunk_start_step = step + 1
+        steps_in_chunk = 0
+
+    return times, data
 
 
 class TestCppHybridBackend(unittest.TestCase):
@@ -230,3 +308,38 @@ class TestCppHybridBackend(unittest.TestCase):
         # The current native runtime timestamps chunk midpoints, while the Python
         # monitor path reports chunk endpoints for this scenario.
         np.testing.assert_allclose(py_times - native_times, -0.5 * DT, atol=1e-12)
+
+    def test_delayed_self_feedback_matches_python_reference(self):
+        chunk_size = 2
+        nstep = 12
+        delay_steps = 3
+        gain = 0.25
+
+        network, subnet = _make_network(3)
+        initial_state = _make_initial_state(subnet)
+        py_times, py_data = _run_python_delayed_self_feedback(
+            subnetwork=subnet,
+            initial_state=initial_state,
+            nstep=nstep,
+            chunk_size=chunk_size,
+            delay_steps=delay_steps,
+            gain=gain,
+        )
+
+        with tempfile.TemporaryDirectory(prefix="tvb-cpp-backend-build-") as build_root:
+            native_times, native_data = _run_native(
+                network=network,
+                initial_state=initial_state,
+                nstep=nstep,
+                chunk_size=chunk_size,
+                build_root=build_root,
+                delayed_self_feedback=DelayedSelfFeedbackConfig(
+                    delay_steps=delay_steps,
+                    gain=gain,
+                    source_state_var="r",
+                    target_state_var="V",
+                ),
+            )
+
+        np.testing.assert_allclose(native_times, py_times, rtol=1e-12, atol=1e-12)
+        np.testing.assert_allclose(native_data, py_data, rtol=1e-12, atol=1e-12)
