@@ -106,10 +106,9 @@ class CompiledCppNetwork:
         if initial_states is None:
             raise TypeError("run() requires initial_states=[array, ...].")
 
-        # Raw and RawVoi record every step — same code path as TemporalAverage
-        # but with chunk_size=1 so every step produces one output sample.
         monitor_type = self.spec.monitors[0].type_name if self.spec.monitors else "TemporalAverage"
-        if monitor_type in ("Raw", "RawVoi"):
+        # Per-step monitors: force chunk_size=1 (mirrors Numba _compute_chunk_size).
+        if monitor_type in ("Raw", "RawVoi", "AfferentCoupling"):
             chunk_size = 1
 
         module = self.load_module()
@@ -124,7 +123,7 @@ class CompiledCppNetwork:
             np.ascontiguousarray(s, dtype=np.float64) for s in initial_states
         ]
 
-        return module.run_simulation(
+        raw_results = module.run_simulation(
             flat_states,
             int(nstep),
             int(chunk_size),
@@ -145,6 +144,15 @@ class CompiledCppNetwork:
             [p["target_cvar_slot"] for p in inter_data],
             [p["scale"]            for p in inter_data],
         )
+
+        # Select output based on monitor type.  AfferentCoupling variants return
+        # the temporally-averaged coupling input (ctavg) instead of state VOIs
+        # (data), matching the Numba backend's _apply_monitors behaviour.
+        is_afferent = monitor_type in ("AfferentCoupling", "AfferentCouplingTemporalAverage")
+        return [
+            (times, ctavg) if is_afferent else (times, data)
+            for times, data, ctavg in raw_results
+        ]
 
 
 class CppHybridBackend:

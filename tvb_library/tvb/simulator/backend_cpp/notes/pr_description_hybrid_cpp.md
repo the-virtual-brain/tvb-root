@@ -280,7 +280,12 @@ and the Python `TemporalAverage` endpoint is documented in the tests.
       backend — per-step VOI output, shape `(nstep, n_voi, n_nodes, n_modes)`).
       Monitor type validation added to `_validate_spec()` with a clear error for
       unsupported types.
-- [ ] Add `AfferentCouplingTemporalAverage` monitor support.
+- [x] Add `AfferentCoupling` and `AfferentCouplingTemporalAverage` monitor support:
+      the generated module always computes a `ctavg` buffer (coupling temporally
+      averaged over each chunk, matching Numba's pattern); `backend.py` returns
+      `(times, ctavg)` for these monitors and `(times, data)` for all others.
+      `AfferentCoupling` (base) forces `chunk_size=1`; `AfferentCouplingTemporalAverage`
+      uses the caller-supplied `chunk_size` computed from its period.
 - [ ] Add stochastic integrator support (noise terms, Heun stochastic variant).
 - [ ] Implement native stimulus execution (spec dataclasses exist; C++ execution
       path not yet complete).

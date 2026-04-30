@@ -23,11 +23,13 @@ struct SimulationMetadata {
 
 struct SimulationResult {
   std::vector<double> times;
-  std::vector<double> data;  // shape: (num_chunks, n_voi, n_nodes, n_modes)
+  std::vector<double> data;        // (num_chunks, n_voi, n_nodes, n_modes)
+  std::vector<double> ctavg_data;  // (num_chunks, n_coupling_vars, n_nodes, 1)
   std::size_t num_chunks;
   std::size_t num_voi;
   std::size_t num_nodes;
   std::size_t num_modes;
+  std::size_t num_coupling_vars;
 };
 
 // ---------------------------------------------------------------------------
@@ -81,8 +83,8 @@ class MonitorBuffer {
 
   void clear_accum() { std::fill(accum_.begin(), accum_.end(), 0.0); }
 
-  void write_chunk_average(
-      SimulationResult& result,
+  void write_chunk_average_into(
+      std::vector<double>& out,
       std::size_t chunk_index,
       std::size_t steps_in_chunk) const {
     for (std::size_t voi = 0; voi < n_voi_; ++voi) {
@@ -90,11 +92,17 @@ class MonitorBuffer {
         for (std::size_t mode = 0; mode < n_modes_; ++mode) {
           const std::size_t out_idx =
               ((chunk_index * n_voi_ + voi) * n_nodes_ + node) * n_modes_ + mode;
-          result.data[out_idx] =
-              accum(voi, node, mode) / static_cast<double>(steps_in_chunk);
+          out[out_idx] = accum(voi, node, mode) / static_cast<double>(steps_in_chunk);
         }
       }
     }
+  }
+
+  void write_chunk_average(
+      SimulationResult& result,
+      std::size_t chunk_index,
+      std::size_t steps_in_chunk) const {
+    write_chunk_average_into(result.data, chunk_index, steps_in_chunk);
   }
 
  private:
