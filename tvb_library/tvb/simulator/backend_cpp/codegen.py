@@ -406,6 +406,11 @@ def render_cpp_template(
 ) -> str:
     _validate_spec(spec)
     subnets_ctx = _build_subnets_ctx(spec)
+    subnet_name_to_idx = {sn.name: i for i, sn in enumerate(spec.subnetworks)}
+    all_inter_proj_routes = [
+        (pi, subnet_name_to_idx[proj.source_subnet], subnet_name_to_idx[proj.target_subnet])
+        for pi, proj in enumerate(spec.inter_projections)
+    ]
     ctx = {
         "module_name": module_name,
         "cache_key": spec.cache_key(),
@@ -419,6 +424,7 @@ def render_cpp_template(
         "subnetwork_summary": _format_subnetwork_summary(spec),
         "projection_summary": _format_projection_summary(spec),
         "subnets_ctx": subnets_ctx,
+        "all_inter_proj_routes": all_inter_proj_routes,
     }
     return _render_mako_template(template_path, ctx)
 
