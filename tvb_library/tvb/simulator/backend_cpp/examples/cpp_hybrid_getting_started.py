@@ -223,6 +223,9 @@ print(f"  FHN xi amplitude (last 500 ms): {xi_mean[-500:].max() - xi_mean[-500:]
 # Optional: compare with Numba backend
 # ---------------------------------------------------------------------------
 
+nb_t0 = nb_t1 = None
+nb_y1_mean = nb_xi_mean = None
+
 try:
     from tvb.simulator.backend.nb_hybrid import NbHybridBackend
 
@@ -301,6 +304,8 @@ try:
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
 
     axes[0].plot(times_ctx, y1_mean, linewidth=0.8, color="steelblue", label="C++ backend")
+    if nb_y1_mean is not None:
+        axes[0].plot(nb_t0, nb_y1_mean, linewidth=0.8, linestyle="--", color="black", label="Numba backend")
     axes[0].set_title("Cortex — JansenRit y₁ (mean over 38 nodes)")
     axes[0].set_xlabel("Time (ms)")
     axes[0].set_ylabel("y₁ (mV)")
@@ -308,6 +313,8 @@ try:
     axes[0].grid(alpha=0.3)
 
     axes[1].plot(times_thal, xi_mean, linewidth=0.8, color="firebrick", label="C++ backend")
+    if nb_xi_mean is not None:
+        axes[1].plot(nb_t1, nb_xi_mean, linewidth=0.8, linestyle="--", color="black", label="Numba backend")
     axes[1].set_title("Thalamus — FHN ξ, mode-summed (mean over 38 nodes)")
     axes[1].set_xlabel("Time (ms)")
     axes[1].set_ylabel("ξ (a.u.)")
@@ -317,7 +324,7 @@ try:
     fig.suptitle("C++ hybrid backend: cortex (JR) → thalamus (FHN)", fontsize=13)
     plt.tight_layout()
 
-    out_path = Path("cpp_hybrid_getting_started.png")
+    out_path = _EXAMPLES_DIR / "outputs" / "cpp_hybrid_getting_started.png"
     plt.savefig(out_path, dpi=100, bbox_inches="tight")
     print(f"\nPlot saved to {out_path}")
 

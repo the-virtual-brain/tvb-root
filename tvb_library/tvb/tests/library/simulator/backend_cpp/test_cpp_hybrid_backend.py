@@ -122,7 +122,7 @@ def _run_native(
         monitors=[TemporalAverage(period=chunk_size * DT)],
         user_source_hint="test_cpp_hybrid_backend",
     )
-    times, data = compiled.run(
+    ((times, data),) = compiled.run(
         initial_states=[initial_state.copy()],
         nstep=nstep,
         chunk_size=chunk_size,
@@ -149,8 +149,11 @@ class TestCppHybridBackend(unittest.TestCase):
             )
 
             self.assertIn('#include "runtime/runtime.hpp"', generated_cpp)
-            self.assertIn("tvb::hybrid::runtime::describe<GeneratedModel>()", generated_cpp)
-            self.assertIn("tvb::hybrid::runtime::run_simulation<GeneratedModel>(", generated_cpp)
+            self.assertIn("inline SimulationMetadata describe()", generated_cpp)
+            self.assertIn(
+                "inline std::vector<SimulationResult> run_simulation(",
+                generated_cpp,
+            )
             self.assertIn("kNumCouplingVars", generated_cpp)
             self.assertIn("class StateBuffer", runtime_header)
             self.assertIn("class HistoryBuffer", runtime_header)
@@ -159,7 +162,6 @@ class TestCppHybridBackend(unittest.TestCase):
             self.assertIn("struct ProjectionArrays", runtime_header)
             self.assertIn("accumulate_projection", runtime_header)
             self.assertIn("inline void heun_step", runtime_header)
-            self.assertIn("inline SimulationResult run_simulation", runtime_header)
 
             history_probe = compiled.load_module().debug_probe_history()
             self.assertEqual(history_probe["capacity"], 3)
@@ -168,7 +170,7 @@ class TestCppHybridBackend(unittest.TestCase):
             self.assertEqual(history_probe["delay_1"], 30.0)
             self.assertEqual(history_probe["delay_2"], 20.0)
 
-            times, data = compiled.run(
+            ((times, data),) = compiled.run(
                 initial_states=[initial_state],
                 nstep=4,
                 chunk_size=2,
@@ -234,10 +236,10 @@ class TestCppHybridBackend(unittest.TestCase):
                 monitors=[TemporalAverage(period=chunk_size * DT)],
                 user_source_hint="test_deterministic_reproducibility",
             )
-            times1, data1 = compiled.run(
+            ((times1, data1),) = compiled.run(
                 initial_states=[initial_state.copy()], nstep=nstep, chunk_size=chunk_size
             )
-            times2, data2 = compiled.run(
+            ((times2, data2),) = compiled.run(
                 initial_states=[initial_state.copy()], nstep=nstep, chunk_size=chunk_size
             )
 
