@@ -13,9 +13,17 @@ os.environ.setdefault("MPLCONFIGDIR", os.path.join(tempfile.gettempdir(), "matpl
 from tvb.simulator.backend.nb_hybrid import NbHybridBackend
 from tvb.simulator.backend_cpp import CppHybridBackend
 from tvb.simulator.hybrid import IntraProjection, NetworkSet, Simulator, Subnetwork
-from tvb.simulator.integrators import HeunDeterministic
+from tvb.simulator.integrators import HeunDeterministic, HeunStochastic
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
-from tvb.simulator.monitors import Raw, RawVoi, SubSample, TemporalAverage
+from tvb.simulator.noise import Additive
+from tvb.simulator.monitors import (
+    AfferentCoupling,
+    AfferentCouplingTemporalAverage,
+    Raw,
+    RawVoi,
+    SubSample,
+    TemporalAverage,
+)
 
 
 DT = 0.1
@@ -57,6 +65,29 @@ def _make_subnet(name: str, n_nodes: int, projections=None) -> Subnetwork:
 
 def _make_network(n_nodes: int, projections=None) -> tuple[NetworkSet, Subnetwork]:
     subnet = _make_subnet("sn", n_nodes, projections=projections)
+    network = NetworkSet(subnets=[subnet], projections=[], stimuli=[])
+    network.configure()
+    return network, subnet
+
+
+def _make_stochastic_network(
+    n_nodes: int,
+    nsig: np.ndarray,
+    noise_seed: int = 1234,
+) -> tuple[NetworkSet, Subnetwork]:
+    model = MontbrioPazoRoxin(I=np.array([2.0]))
+    model.configure()
+    subnet = Subnetwork(
+        name="sn",
+        model=model,
+        scheme=HeunStochastic(
+            dt=DT,
+            noise=Additive(nsig=np.asarray(nsig, dtype=np.float64), noise_seed=noise_seed),
+        ),
+        nnodes=n_nodes,
+        projections=[],
+    ).configure()
+    subnet.node_indices = np.arange(n_nodes)
     network = NetworkSet(subnets=[subnet], projections=[], stimuli=[])
     network.configure()
     return network, subnet
@@ -245,6 +276,100 @@ class TestCppHybridBackend(unittest.TestCase):
 
         np.testing.assert_array_equal(times1, times2)
         np.testing.assert_array_equal(data1, data2)
+
+    def test_heun_stochastic_zero_noise_matches_deterministic(self):
+        nstep = 5
+        chunk_size = 1
+        det_network, det_subnet = _make_network(2)
+        stoch_network, stoch_subnet = _make_stochastic_network(
+            2, nsig=np.array([0.0, 0.0])
+        )
+        det_initial_state = _make_initial_state(det_subnet)
+        stoch_initial_state = _make_initial_state(stoch_subnet)
+
+        with tempfile.TemporaryDirectory(prefix="tvb-cpp-backend-build-") as build_root:
+            det_backend = CppHybridBackend(build_root=build_root)
+            det_compiled = det_backend.compile(
+                det_network,
+                monitors=[Raw()],
+                user_source_hint="test_heun_stochastic_zero_noise_deterministic",
+            )
+            stoch_backend = CppHybridBackend(build_root=build_root)
+            stoch_compiled = stoch_backend.compile(
+                stoch_network,
+                monitors=[Raw()],
+                user_source_hint="test_heun_stochastic_zero_noise_stochastic",
+            )
+
+            ((det_times, det_data),) = det_compiled.run(
+                initial_states=[det_initial_state.copy()],
+                nstep=nstep,
+                chunk_size=chunk_size,
+            )
+            ((stoch_times, stoch_data),) = stoch_compiled.run(
+                initial_states=[stoch_initial_state.copy()],
+                nstep=nstep,
+                chunk_size=chunk_size,
+            )
+
+            generated_cpp = stoch_compiled.generated_cpp_path.read_text(
+                encoding="utf-8"
+            )
+            runtime_header = stoch_compiled.generated_source.runtime_header_path.read_text(
+                encoding="utf-8"
+            )
+
+        self.assertIn("heun_step_stochastic<SubnetModel_0>", generated_cpp)
+        self.assertIn("inline void heun_step_stochastic", runtime_header)
+        np.testing.assert_allclose(stoch_times, det_times, rtol=0.0, atol=0.0)
+        np.testing.assert_allclose(stoch_data, det_data, rtol=1e-12, atol=1e-12)
+
+    def test_heun_stochastic_noise_is_seed_reproducible_after_reset(self):
+        nstep = 5
+        network, subnet = _make_stochastic_network(
+            2, nsig=np.array([0.01, 0.01]), noise_seed=123
+        )
+        initial_state = _make_initial_state(subnet)
+
+        with tempfile.TemporaryDirectory(prefix="tvb-cpp-backend-build-") as build_root:
+            backend = CppHybridBackend(build_root=build_root)
+            compiled = backend.compile(
+                network,
+                monitors=[Raw()],
+                user_source_hint="test_heun_stochastic_noise_reproducible",
+            )
+
+            ((times1, data1),) = compiled.run(
+                initial_states=[initial_state.copy()],
+                nstep=nstep,
+                chunk_size=1,
+            )
+            subnet.scheme.noise.reset_random_stream()
+            ((times2, data2),) = compiled.run(
+                initial_states=[initial_state.copy()],
+                nstep=nstep,
+                chunk_size=1,
+            )
+
+        np.testing.assert_array_equal(times1, times2)
+        np.testing.assert_array_equal(data1, data2)
+
+        det_network, det_subnet = _make_network(2)
+        det_initial_state = _make_initial_state(det_subnet)
+        with tempfile.TemporaryDirectory(prefix="tvb-cpp-backend-build-") as build_root:
+            det_backend = CppHybridBackend(build_root=build_root)
+            det_compiled = det_backend.compile(
+                det_network,
+                monitors=[Raw()],
+                user_source_hint="test_heun_stochastic_noise_deterministic_compare",
+            )
+            ((_det_times, det_data),) = det_compiled.run(
+                initial_states=[det_initial_state.copy()],
+                nstep=nstep,
+                chunk_size=1,
+            )
+
+        self.assertGreater(float(np.max(np.abs(data1 - det_data))), 1e-6)
 
     def test_raw_monitor_forces_one_sample_per_step(self):
         network, subnet = _make_network(3)
