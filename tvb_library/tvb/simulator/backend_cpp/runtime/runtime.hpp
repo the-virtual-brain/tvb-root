@@ -329,4 +329,49 @@ inline void heun_step(StateBuffer& state, const double* coupling) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// heun_step_stochastic<Generated>
+//
+// Mirrors TVB HeunStochastic: the same Wiener increment w is added to both
+// the predictor and the corrector (additive noise on state transitions).
+//
+// noise layout: (kNumStateVars, kNumNodes, 1, nstep) C-contiguous float64.
+// Access: noise[svar * kNumNodes * nstep + node * nstep + step_0idx]
+// ---------------------------------------------------------------------------
+
+template <typename Generated>
+inline void heun_step_stochastic(
+    StateBuffer& state,
+    const double* coupling,
+    const double* noise,
+    std::size_t step_0idx,
+    std::size_t nstep) {
+  StateBuffer predictor = state;
+  for (std::size_t node = 0; node < Generated::kNumNodes; ++node) {
+    std::array<double, Generated::kNumStateVars> dx0{};
+    Generated::compute_dfun(state, coupling, node, dx0);
+    for (std::size_t svar = 0; svar < Generated::kNumStateVars; ++svar) {
+      const double w =
+          noise[svar * Generated::kNumNodes * nstep + node * nstep + step_0idx];
+      predictor(svar, node, 0) =
+          state(svar, node, 0) + Generated::kDt * dx0[svar] + w;
+    }
+    Generated::apply_state_constraints(predictor, node);
+  }
+
+  for (std::size_t node = 0; node < Generated::kNumNodes; ++node) {
+    std::array<double, Generated::kNumStateVars> dx0{};
+    std::array<double, Generated::kNumStateVars> dx1{};
+    Generated::compute_dfun(state, coupling, node, dx0);
+    Generated::compute_dfun(predictor, coupling, node, dx1);
+    for (std::size_t svar = 0; svar < Generated::kNumStateVars; ++svar) {
+      const double w =
+          noise[svar * Generated::kNumNodes * nstep + node * nstep + step_0idx];
+      state(svar, node, 0) +=
+          0.5 * Generated::kDt * (dx0[svar] + dx1[svar]) + w;
+    }
+    Generated::apply_state_constraints(state, node);
+  }
+}
+
 }  // namespace tvb::hybrid::runtime

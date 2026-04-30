@@ -35,6 +35,7 @@ struct SubnetModel_${si} {
   static constexpr std::size_t kNumCouplingVars = ${dfun_ctx['n_coupling_vars']};
   static constexpr std::size_t kNumVoi          = ${len(subnet.variables_of_interest)};
   static constexpr std::size_t kSourceHistoryHorizon = ${horizon};
+  static constexpr bool        kIsStochastic         = ${'true' if sc['is_stochastic'] else 'false'};
 
 % for param_name, param_values in params:
   static constexpr std::array<double, ${len(param_values)}> kParam_${param_name} = { ${', '.join(f'{float(v):.17g}' for v in param_values)} };
@@ -123,6 +124,16 @@ inline SimulationMetadata describe() {
 // ============================================================
 // Multi-subnet simulation loop
 //
+// The loop follows the same phase order as the Numba backend:
+//   1. Zero all coupling arrays.
+//   2. Accumulate all intra-projection coupling (each subnet reads its own history).
+//   3. Accumulate all inter-projection coupling (each reads the *source* subnet's
+//      history, which was last written at the END of the previous step — so all
+//      reads see consistent t-1 state regardless of subnet ordering).
+//   4. Integrate all subnets (Heun step, using the now-complete coupling arrays).
+//   5. Push all updated states into their history buffers.
+//   6. Accumulate monitor data.
+//
 // initial_states[i]        : flat (n_state_vars * n_nodes * n_modes) for subnet i
 // intra_projections        : CSR projections within a single subnet (source == target)
 // inter_projections        : CSR projections between different subnets;
@@ -134,7 +145,13 @@ inline std::vector<SimulationResult> run_simulation(
     const std::vector<tvb::hybrid::runtime::ProjectionArrays>& intra_projections,
     const std::vector<tvb::hybrid::runtime::ProjectionArrays>& inter_projections,
     std::size_t nstep,
-    std::size_t chunk_size) {
+    std::size_t chunk_size,
+    const std::vector<const double*>& noise_ptrs,
+    const std::vector<const double*>& stim_ptrs) {
+  // noise_ptrs[i]: nullptr for deterministic subnets, else (n_vars, n_nodes, n_modes, nstep).
+  // stim_ptrs[i]:  nullptr for no-stimulus subnets, else (n_cvar, n_nodes, nstep) — already
+  //               accumulated to target_cvar slots on the Python side.
+  // (kNumStateVars, kNumNodes, 1, nstep) C-contiguous float64 array.
 
   using namespace tvb::hybrid::runtime;
 
@@ -175,22 +192,30 @@ inline std::vector<SimulationResult> run_simulation(
       SubnetModel_${si}::kNumVoi,
       SubnetModel_${si}::kNumNodes,
       SubnetModel_${si}::kNumModes);
+  MonitorBuffer ctavg_${si}(
+      SubnetModel_${si}::kNumCouplingVars,
+      SubnetModel_${si}::kNumNodes,
+      1);  // coupling has no mode dimension
 % endfor
 
   // --- Result storage ---
   const std::size_t num_chunks = (nstep + chunk_size - 1) / chunk_size;
 % for si, sc in enumerate(subnets_ctx):
   SimulationResult result_${si};
-  result_${si}.num_chunks = num_chunks;
-  result_${si}.num_voi    = SubnetModel_${si}::kNumVoi;
-  result_${si}.num_nodes  = SubnetModel_${si}::kNumNodes;
-  result_${si}.num_modes  = SubnetModel_${si}::kNumModes;
+  result_${si}.num_chunks      = num_chunks;
+  result_${si}.num_voi         = SubnetModel_${si}::kNumVoi;
+  result_${si}.num_nodes       = SubnetModel_${si}::kNumNodes;
+  result_${si}.num_modes       = SubnetModel_${si}::kNumModes;
+  result_${si}.num_coupling_vars = SubnetModel_${si}::kNumCouplingVars;
   result_${si}.times.resize(num_chunks);
   result_${si}.data.resize(
       num_chunks *
       SubnetModel_${si}::kNumVoi *
       SubnetModel_${si}::kNumNodes *
       SubnetModel_${si}::kNumModes,
+      0.0);
+  result_${si}.ctavg_data.resize(
+      num_chunks * SubnetModel_${si}::kNumCouplingVars * SubnetModel_${si}::kNumNodes,
       0.0);
 % endfor
 
@@ -200,35 +225,227 @@ inline std::vector<SimulationResult> run_simulation(
 
   for (std::size_t step = 1; step <= nstep; ++step) {
 
+    // ---- Phase 1: zero all coupling arrays ----
+% for si in range(num_subnetworks):
+    std::fill(coupling_${si}.begin(), coupling_${si}.end(), 0.0);
+% endfor
+
+    // ---- Phase 2a: intra-projection coupling ----
+    // Each subnet reads its own history (state at end of previous step).
 % for si, sc in enumerate(subnets_ctx):
     // === Subnet ${si}: ${sc['subnet'].name} (${sc['subnet'].model_type}) ===
     std::fill(coupling_${si}.begin(), coupling_${si}.end(), 0.0);
 <%
     intra_indices = sc['intra_proj_indices']
-    inter_targets = sc['inter_proj_targets']
 %>
-% if intra_indices:
-    // intra-projections
 % for pi in intra_indices:
     accumulate_projection(
         intra_projections[${pi}], history_${si},
         coupling_${si}.data(), SubnetModel_${si}::kNumNodes);
 % endfor
-% endif
-% if inter_targets:
-    // inter-projections targeting this subnet
-% for pi, src_si in inter_targets:
+% endfor
+
+    // ---- Phase 2b: inter-projection coupling ----
+    // All reads happen before any history push, so every subnet sees the
+    // consistent t-1 state of every source regardless of traversal order.
+% for pi, src_si, tgt_si in all_inter_proj_routes:
     accumulate_projection(
         inter_projections[${pi}], history_${src_si},
-        coupling_${si}.data(), SubnetModel_${si}::kNumNodes);
+        coupling_${tgt_si}.data(), SubnetModel_${tgt_si}::kNumNodes);
 % endfor
-% endif
-    heun_step<SubnetModel_${si}>(state_${si}, coupling_${si}.data());
-    history_${si}.push(state_${si});
 
+    // ---- Phase 2c: apply pre-computed stimulus to coupling ----
+    // Mirrors Numba: stimulus is added after projections, before ctavg accumulation,
+    // so the ctavg monitor reflects the total input (projection + stimulus).
+    // stim layout: (n_cvar, n_nodes, nstep), target_cvar already applied Python-side.
+% for si in range(num_subnetworks):
+    if (stim_ptrs[${si}] != nullptr) {
+      const std::size_t step_0idx_s = step - 1;
+      for (std::size_t cv = 0; cv < SubnetModel_${si}::kNumCouplingVars; ++cv) {
+        for (std::size_t node = 0; node < SubnetModel_${si}::kNumNodes; ++node) {
+          coupling_${si}[cv * SubnetModel_${si}::kNumNodes + node] +=
+              stim_ptrs[${si}][cv * SubnetModel_${si}::kNumNodes * nstep +
+                               node * nstep + step_0idx_s];
+        }
+      }
+    }
 % endfor
-    // Monitor accumulation
+
+    // ---- Phase 2d: accumulate afferent coupling for AfferentCoupling monitor ----
+    // Mirrors Numba template: coupling is sampled after full accumulation,
+    // before integration, so ctavg reflects the actual input each node received.
+% for si in range(num_subnetworks):
+    for (std::size_t cv = 0; cv < SubnetModel_${si}::kNumCouplingVars; ++cv) {
+      for (std::size_t node = 0; node < SubnetModel_${si}::kNumNodes; ++node) {
+        ctavg_${si}.accum(cv, node, 0) +=
+            coupling_${si}[cv * SubnetModel_${si}::kNumNodes + node];
+      }
+    }
+% endfor
+
+    // ---- Phase 3: integrate all subnets ----
 % for si, sc in enumerate(subnets_ctx):
+<%
+    subnet   = sc['subnet']
+    dfun_ctx = sc['dfun_ctx']
+    is_comb  = dfun_ctx['is_combined']
+    n_modes  = subnet.n_modes
+    n_sv     = subnet.n_state_vars
+%>
+    // Subnet ${si}: ${subnet.name} (${subnet.model_type})
+% if is_comb:
+    for (std::size_t node = 0; node < SubnetModel_${si}::kNumNodes; ++node) {
+      // Parameter and coupling reads (same for all modes)
+% for stmt in dfun_ctx['param_reads']:
+      ${stmt}
+% endfor
+% for stmt in dfun_ctx['coupling_reads']:
+      ${stmt}
+% endfor
+
+      // Cross-mode matrix-vector products from current state
+% for op in dfun_ctx['dm_ops_info']:
+      double ${op['result']}[${n_modes}] = {};
+      for (std::size_t mi = 0; mi < ${n_modes}; ++mi) {
+        for (std::size_t mk = 0; mk < ${n_modes}; ++mk) {
+          ${op['result']}[mi] += SubnetModel_${si}::kDerived_${op['matrix']}[mi * ${n_modes} + mk]
+                                * state_${si}(${op['svar_idx']}, node, mk);
+        }
+      }
+% endfor
+
+      // k1: derivatives for all modes
+      double k1[${n_sv * n_modes}] = {};
+      for (std::size_t m = 0; m < ${n_modes}; ++m) {
+% for stmt in dfun_ctx['state_reads_k1']:
+        ${stmt}
+% endfor
+% for stmt in dfun_ctx['derived_scalar_reads']:
+        ${stmt}
+% endfor
+% for stmt in dfun_ctx['cross_mode_reads_k1']:
+        ${stmt}
+% endfor
+% for stmt in dfun_ctx['k1_assignments']:
+        ${stmt}
+% endfor
+      }
+
+% if sc['is_euler']:
+      // Euler: state += dt * k1 [+ noise for stochastic]
+      for (std::size_t sv = 0; sv < ${n_sv}; ++sv) {
+        for (std::size_t m = 0; m < ${n_modes}; ++m) {
+          state_${si}(sv, node, m) += kDt * k1[sv * ${n_modes} + m];
+% if sc['is_stochastic']:
+          state_${si}(sv, node, m) += noise_ptrs[${si}][
+              sv * SubnetModel_${si}::kNumNodes * ${n_modes} * nstep +
+              node * ${n_modes} * nstep +
+              m * nstep + (step - 1)];
+% endif
+        }
+      }
+% else:
+      // Predictor: state + dt * k1 [+ noise for stochastic]
+      // noise layout: (n_vars, n_nodes, n_modes, nstep) — same index used in corrector.
+      double pred[${n_sv * n_modes}] = {};
+      for (std::size_t sv = 0; sv < ${n_sv}; ++sv) {
+        for (std::size_t m = 0; m < ${n_modes}; ++m) {
+          pred[sv * ${n_modes} + m] = state_${si}(sv, node, m) + kDt * k1[sv * ${n_modes} + m];
+% if sc['is_stochastic']:
+          pred[sv * ${n_modes} + m] += noise_ptrs[${si}][
+              sv * SubnetModel_${si}::kNumNodes * ${n_modes} * nstep +
+              node * ${n_modes} * nstep +
+              m * nstep + (step - 1)];
+% endif
+        }
+      }
+
+      // Cross-mode matrix-vector products from predictor
+% for op in dfun_ctx['dm_ops_info']:
+      double ${op['result']}_p[${n_modes}] = {};
+      for (std::size_t mi = 0; mi < ${n_modes}; ++mi) {
+        for (std::size_t mk = 0; mk < ${n_modes}; ++mk) {
+          ${op['result']}_p[mi] += SubnetModel_${si}::kDerived_${op['matrix']}[mi * ${n_modes} + mk]
+                                  * pred[${op['svar_idx']} * ${n_modes} + mk];
+        }
+      }
+% endfor
+
+      // k2: derivatives at predictor states
+      double k2[${n_sv * n_modes}] = {};
+      for (std::size_t m = 0; m < ${n_modes}; ++m) {
+% for stmt in dfun_ctx['state_reads_k2']:
+        ${stmt}
+% endfor
+% for stmt in dfun_ctx['derived_scalar_reads']:
+        ${stmt}
+% endfor
+% for stmt in dfun_ctx['cross_mode_reads_k2']:
+        ${stmt}
+% endfor
+% for stmt in dfun_ctx['k2_assignments']:
+        ${stmt}
+% endfor
+      }
+
+      // Corrector: state += 0.5 * dt * (k1 + k2) [+ same noise for stochastic]
+      for (std::size_t sv = 0; sv < ${n_sv}; ++sv) {
+        for (std::size_t m = 0; m < ${n_modes}; ++m) {
+          state_${si}(sv, node, m) +=
+              0.5 * kDt * (k1[sv * ${n_modes} + m] + k2[sv * ${n_modes} + m]);
+% if sc['is_stochastic']:
+          state_${si}(sv, node, m) += noise_ptrs[${si}][
+              sv * SubnetModel_${si}::kNumNodes * ${n_modes} * nstep +
+              node * ${n_modes} * nstep +
+              m * nstep + (step - 1)];
+% endif
+        }
+      }
+% endif
+    }  // end node loop (combined-mode)
+% else:
+% if sc['is_euler']:
+% if sc['is_stochastic']:
+    euler_step_stochastic<SubnetModel_${si}>(
+        state_${si}, coupling_${si}.data(), noise_ptrs[${si}], step - 1, nstep);
+% else:
+    euler_step<SubnetModel_${si}>(state_${si}, coupling_${si}.data());
+% endif
+% else:
+% if sc['is_stochastic']:
+    heun_step_stochastic<SubnetModel_${si}>(
+        state_${si}, coupling_${si}.data(), noise_ptrs[${si}], step - 1, nstep);
+% else:
+    heun_step<SubnetModel_${si}>(state_${si}, coupling_${si}.data());
+% endif
+% endif
+% endif
+% endfor
+
+    // ---- Phase 4: push all updated states into history buffers ----
+    // All integrations are complete before any push, so all inter-projection
+    // reads in the next step will consistently see this step's final states.
+% for si in range(num_subnetworks):
+    history_${si}.push(state_${si});
+% endfor
+
+    // ---- Monitor accumulation ----
+% for si, sc in enumerate(subnets_ctx):
+<%
+    dfun_ctx = sc['dfun_ctx']
+    subnet   = sc['subnet']
+    is_comb  = dfun_ctx['is_combined']
+    svar_to_idx = {sv: i for i, sv in enumerate(subnet.state_variables)}
+%>
+% if is_comb:
+    for (std::size_t node = 0; node < SubnetModel_${si}::kNumNodes; ++node) {
+      for (std::size_t m = 0; m < SubnetModel_${si}::kNumModes; ++m) {
+% for ivoi, voi in enumerate(subnet.variables_of_interest):
+        monitor_${si}.accum(${ivoi}, node, m) += state_${si}(${svar_to_idx.get(voi, 0)}, node, m);
+% endfor
+      }
+    }
+% else:
     for (std::size_t node = 0; node < SubnetModel_${si}::kNumNodes; ++node) {
       std::array<double, SubnetModel_${si}::kNumVoi> voi_vals{};
       SubnetModel_${si}::compute_voi(state_${si}, node, voi_vals);
@@ -236,6 +453,7 @@ inline std::vector<SimulationResult> run_simulation(
         monitor_${si}.accum(ivoi, node, 0) += voi_vals[ivoi];
       }
     }
+% endif
 % endfor
 
     ++steps_in_chunk;
@@ -249,6 +467,8 @@ inline std::vector<SimulationResult> run_simulation(
     result_${si}.times[current_chunk] = mid_step * kDt;
     monitor_${si}.write_chunk_average(result_${si}, current_chunk, steps_in_chunk);
     monitor_${si}.clear_accum();
+    ctavg_${si}.write_chunk_average_into(result_${si}.ctavg_data, current_chunk, steps_in_chunk);
+    ctavg_${si}.clear_accum();
 % endfor
     ++current_chunk;
     chunk_start_step = step + 1;

@@ -286,7 +286,11 @@ and the Python `TemporalAverage` endpoint is documented in the tests.
       `(times, ctavg)` for these monitors and `(times, data)` for all others.
       `AfferentCoupling` (base) forces `chunk_size=1`; `AfferentCouplingTemporalAverage`
       uses the caller-supplied `chunk_size` computed from its period.
-- [ ] Add stochastic integrator support (noise terms, Heun stochastic variant).
+- [x] Add `HeunStochastic` integrator support: noise pre-generated on the Python
+      side as `sqrt(2*nsig*dt)*randn` and shaped `(n_vars, n_nodes, 1, nstep)`
+      (matching the Numba backend); `heun_step_stochastic` in `runtime.hpp` applies
+      the same Wiener increment to both predictor and corrector (additive noise).
+      Combined-mode (multi-mode) stochastic is rejected with a clear error.
 - [ ] Implement native stimulus execution (spec dataclasses exist; C++ execution
       path not yet complete).
 - [ ] Add Euler integrator support (Heun is currently the only option).

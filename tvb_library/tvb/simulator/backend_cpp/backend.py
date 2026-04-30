@@ -29,6 +29,36 @@ def _projection_arrays(proj: ProjectionSpec) -> dict[str, Any]:
     }
 
 
+def _build_noise_arrays(
+    spec: SimulationSpec,
+    lowering: "SpecLoweringResult",
+    nstep: int,
+) -> list[np.ndarray]:
+    """Pre-generate Wiener increments for stochastic subnets.
+
+    Mirrors the Numba backend: noise = sqrt(2*nsig*dt)*randn, shaped
+    (n_vars, n_nodes, 1, nstep) C-contiguous float64. Deterministic subnets
+    get an empty (0,) placeholder so the noise_ptrs vector is always n_subnets
+    long, which lets the binding safely index it for every subnet.
+    """
+    noise_arrays: list[np.ndarray] = []
+    sn_infos = lowering.analysis.subnetworks
+    for sn_spec, sn_info in zip(spec.subnetworks, sn_infos):
+        if not sn_info.is_stochastic:
+            noise_arrays.append(np.empty(0, dtype=np.float64))
+            continue
+        dt = float(sn_spec.integrator.dt)
+        nsig = np.asarray(sn_spec.integrator.noise_nsig, dtype=np.float64)  # (n_vars,)
+        noise_std = np.sqrt(2.0 * nsig * dt)
+        rng = sn_info.integrator.noise.random_stream
+        # Draw (nstep, n_vars, n_nodes, 1), scale, transpose → (n_vars, n_nodes, 1, nstep)
+        dw = rng.randn(nstep, sn_spec.n_state_vars, sn_spec.n_nodes, 1)
+        dw *= noise_std[np.newaxis, :, np.newaxis, np.newaxis]
+        dw = np.ascontiguousarray(np.transpose(dw, (1, 2, 3, 0)), dtype=np.float64)
+        noise_arrays.append(dw.ravel())
+    return noise_arrays
+
+
 def _inter_projection_arrays(proj: ProjectionSpec) -> dict[str, Any]:
     """Build arrays for an inter-projection, folding mode_map[0,0] into scale.
 
@@ -123,6 +153,10 @@ class CompiledCppNetwork:
             np.ascontiguousarray(s, dtype=np.float64) for s in initial_states
         ]
 
+        # Pre-generate noise arrays for stochastic subnets (mirrors Numba approach:
+        # noise = sqrt(2*nsig*dt)*randn, transposed to (n_vars, n_nodes, 1, nstep)).
+        noise_arrays = _build_noise_arrays(self.spec, self.lowering, int(nstep))
+
         raw_results = module.run_simulation(
             flat_states,
             int(nstep),
@@ -143,6 +177,7 @@ class CompiledCppNetwork:
             [p["source_svar"]      for p in inter_data],
             [p["target_cvar_slot"] for p in inter_data],
             [p["scale"]            for p in inter_data],
+            noise_arrays,
         )
 
         # Select output based on monitor type.  AfferentCoupling variants return

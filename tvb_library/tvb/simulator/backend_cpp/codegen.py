@@ -340,15 +340,20 @@ def _validate_spec(spec: SimulationSpec) -> None:
                 f"Model '{subnet.model_type}' has no state_variable_dfuns — "
                 f"C++ dfun generation requires the standard expression-based interface."
             )
-        if subnet.integrator.type_name != "HeunDeterministic":
+        if subnet.integrator.type_name not in ("HeunDeterministic", "HeunStochastic"):
             raise NotImplementedError(
-                f"Subnet '{subnet.name}': only HeunDeterministic is currently supported "
-                f"(got '{subnet.integrator.type_name}')."
+                f"Subnet '{subnet.name}': only HeunDeterministic and HeunStochastic are "
+                f"currently supported (got '{subnet.integrator.type_name}')."
             )
         if subnet.n_modes != 1:
             raise NotImplementedError(
                 f"Subnet '{subnet.name}': only single-mode subnetworks are currently "
                 f"supported (got n_modes={subnet.n_modes})."
+            )
+        if is_combined and subnet.integrator.is_stochastic:
+            raise NotImplementedError(
+                f"Subnet '{subnet.name}': stochastic integration for combined-mode "
+                f"(multi-mode) models is not yet supported in the C++ backend."
             )
     _SUPPORTED_MONITORS = {"TemporalAverage", "Raw", "RawVoi",
                            "AfferentCoupling", "AfferentCouplingTemporalAverage"}
@@ -403,6 +408,7 @@ def _build_subnets_ctx(spec: SimulationSpec) -> list[dict]:
             "horizon": _history_horizon(spec, subnet.name),
             "intra_proj_indices": intra_proj_indices,
             "inter_proj_targets": inter_proj_targets,
+            "is_stochastic": subnet.integrator.is_stochastic,
         })
     return subnets_ctx
 

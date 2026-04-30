@@ -10,7 +10,7 @@ from tvb.simulator.backend.nb_hybrid import (
     _cfun_type,
     _cvar_mapping_mode,
 )
-from tvb.simulator.integrators import HeunDeterministic
+from tvb.simulator.integrators import HeunDeterministic, HeunStochastic
 
 from .spec import (
     IntegratorSpec,
@@ -50,9 +50,10 @@ def _check_scope_compatibility(network_set) -> None:
                 f"'{type(subnet.model).__name__}' uses a custom dfun template and is "
                 f"not yet supported."
             )
-        if not isinstance(subnet.scheme, HeunDeterministic):
+        if not isinstance(subnet.scheme, (HeunDeterministic, HeunStochastic)):
             raise NotImplementedError(
-                "CppHybridBackend currently supports only HeunDeterministic integrators."
+                "CppHybridBackend currently supports HeunDeterministic and HeunStochastic "
+                f"integrators (got '{type(subnet.scheme).__name__}')."
             )
         if float(subnet.scheme.dt) != dt0:
             raise ValueError(

@@ -88,7 +88,9 @@ PYBIND11_MODULE(${module_name}, m) {
          py::list inter_proj_idelays,
          py::list inter_proj_source_svars,
          py::list inter_proj_target_cvars,
-         py::list inter_proj_scales) {
+         py::list inter_proj_scales,
+         // --- per-subnet noise arrays (empty array for deterministic subnets) ---
+         py::list noise_data_list) {
 
         // ---- initial states ----
         const std::size_t n_subnets = initial_states.size();
@@ -161,9 +163,24 @@ PYBIND11_MODULE(${module_name}, m) {
             inter_proj_source_svars, inter_proj_target_cvars, inter_proj_scales,
             inter_p_data, inter_p_idx, inter_p_ptr, inter_p_del);
 
+        // ---- noise arrays (one float64 array per subnet; empty for deterministic) ----
+        const std::size_t n_sn = ${num_subnetworks};
+        std::vector<py::array_t<double, py::array::c_style | py::array::forcecast>> noise_arrs(n_sn);
+        std::vector<const double*> noise_ptrs(n_sn, nullptr);
+        if (static_cast<std::size_t>(noise_data_list.size()) == n_sn) {
+          for (std::size_t i = 0; i < n_sn; ++i) {
+            noise_arrs[i] = noise_data_list[i].cast<
+                py::array_t<double, py::array::c_style | py::array::forcecast>>();
+            if (noise_arrs[i].size() > 0) {
+              noise_ptrs[i] = noise_arrs[i].data();
+            }
+          }
+        }
+
         // ---- run ----
         const auto results = tvb::hybrid::generated::run_simulation(
-            flat_states, intra_projections, inter_projections, nstep, chunk_size);
+            flat_states, intra_projections, inter_projections, nstep, chunk_size,
+            noise_ptrs);
 
         // ---- pack output: list of (times, data) per subnet ----
         py::list out;
@@ -221,5 +238,6 @@ PYBIND11_MODULE(${module_name}, m) {
       py::arg("inter_proj_idelays")            = py::list(),
       py::arg("inter_proj_source_svars")       = py::list(),
       py::arg("inter_proj_target_cvars")       = py::list(),
-      py::arg("inter_proj_scales")             = py::list());
+      py::arg("inter_proj_scales")             = py::list(),
+      py::arg("noise_data_list")               = py::list());
 }
