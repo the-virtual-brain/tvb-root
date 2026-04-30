@@ -106,6 +106,12 @@ class CompiledCppNetwork:
         if initial_states is None:
             raise TypeError("run() requires initial_states=[array, ...].")
 
+        # Raw and RawVoi record every step — same code path as TemporalAverage
+        # but with chunk_size=1 so every step produces one output sample.
+        monitor_type = self.spec.monitors[0].type_name if self.spec.monitors else "TemporalAverage"
+        if monitor_type in ("Raw", "RawVoi"):
+            chunk_size = 1
+
         module = self.load_module()
 
         # Intra-projection arrays (within a single subnet).

@@ -350,6 +350,13 @@ def _validate_spec(spec: SimulationSpec) -> None:
                 f"Subnet '{subnet.name}': only single-mode subnetworks are currently "
                 f"supported (got n_modes={subnet.n_modes})."
             )
+    _SUPPORTED_MONITORS = {"TemporalAverage", "Raw", "RawVoi"}
+    for monitor in spec.monitors:
+        if monitor.type_name not in _SUPPORTED_MONITORS:
+            raise NotImplementedError(
+                f"Monitor '{monitor.type_name}' is not yet supported by the C++ backend. "
+                f"Supported: {sorted(_SUPPORTED_MONITORS)}."
+            )
 
 
 def _history_horizon(spec: SimulationSpec, subnet_name: str) -> int:
