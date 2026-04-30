@@ -270,9 +270,16 @@ and the Python `TemporalAverage` endpoint is documented in the tests.
       optional backend/API parameter.
 
 ### Feature gaps
-- [ ] Complete inter-subnetwork delayed projection support in the C++ runtime (currently
-      only intra-subnetwork delayed projections are fully implemented).
-- [ ] Add `Raw` and `RawVoi` monitor support in the generated C++ path.
+- [x] Complete inter-subnetwork delayed projection support in the C++ runtime:
+      restructured the simulation loop into 4 explicit phases (zero coupling /
+      accumulate intra / accumulate inter / integrate / push history) matching the
+      Numba backend's ordering, so all inter-projection reads consistently see the
+      t-1 state of every source subnet regardless of subnet traversal order.
+- [x] Add `Raw` and `RawVoi` monitor support: both map to the existing
+      `TemporalAverage` code path with `chunk_size=1` (matching the Numba
+      backend — per-step VOI output, shape `(nstep, n_voi, n_nodes, n_modes)`).
+      Monitor type validation added to `_validate_spec()` with a clear error for
+      unsupported types.
 - [ ] Add `AfferentCouplingTemporalAverage` monitor support.
 - [ ] Add stochastic integrator support (noise terms, Heun stochastic variant).
 - [ ] Implement native stimulus execution (spec dataclasses exist; C++ execution
