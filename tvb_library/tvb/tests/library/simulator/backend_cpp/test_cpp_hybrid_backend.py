@@ -15,7 +15,7 @@ from tvb.simulator.backend_cpp import CppHybridBackend
 from tvb.simulator.hybrid import IntraProjection, NetworkSet, Simulator, Subnetwork
 from tvb.simulator.integrators import HeunDeterministic
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
-from tvb.simulator.monitors import TemporalAverage
+from tvb.simulator.monitors import Raw, RawVoi, SubSample, TemporalAverage
 
 
 DT = 0.1
@@ -245,6 +245,65 @@ class TestCppHybridBackend(unittest.TestCase):
 
         np.testing.assert_array_equal(times1, times2)
         np.testing.assert_array_equal(data1, data2)
+
+    def test_raw_monitor_forces_one_sample_per_step(self):
+        network, subnet = _make_network(3)
+        initial_state = _make_initial_state(subnet)
+        nstep = 5
+
+        with tempfile.TemporaryDirectory(prefix="tvb-cpp-backend-build-") as build_root:
+            backend = CppHybridBackend(build_root=build_root)
+            compiled = backend.compile(
+                network,
+                monitors=[Raw()],
+                user_source_hint="test_raw_monitor_forces_one_sample_per_step",
+            )
+            ((times, data),) = compiled.run(
+                initial_states=[initial_state.copy()],
+                nstep=nstep,
+                chunk_size=4,
+            )
+
+        self.assertEqual(times.shape, (nstep,))
+        self.assertEqual(data.shape, (nstep, 2, subnet.nnodes, 1))
+        np.testing.assert_allclose(times, DT * np.arange(1, nstep + 1))
+
+    def test_rawvoi_monitor_forces_one_sample_per_step(self):
+        network, subnet = _make_network(2)
+        initial_state = _make_initial_state(subnet)
+        nstep = 6
+
+        with tempfile.TemporaryDirectory(prefix="tvb-cpp-backend-build-") as build_root:
+            backend = CppHybridBackend(build_root=build_root)
+            compiled = backend.compile(
+                network,
+                monitors=[RawVoi()],
+                user_source_hint="test_rawvoi_monitor_forces_one_sample_per_step",
+            )
+            ((times, data),) = compiled.run(
+                initial_states=[initial_state.copy()],
+                nstep=nstep,
+                chunk_size=3,
+            )
+
+        self.assertEqual(times.shape, (nstep,))
+        self.assertEqual(data.shape, (nstep, 2, subnet.nnodes, 1))
+        np.testing.assert_allclose(times, DT * np.arange(1, nstep + 1))
+
+    def test_unsupported_monitor_raises_clear_error(self):
+        network, _subnet = _make_network(2)
+
+        with tempfile.TemporaryDirectory(prefix="tvb-cpp-backend-build-") as build_root:
+            backend = CppHybridBackend(build_root=build_root)
+            with self.assertRaisesRegex(
+                NotImplementedError,
+                "Monitor 'SubSample' is not yet supported by the C\\+\\+ backend",
+            ):
+                backend.compile(
+                    network,
+                    monitors=[SubSample(period=DT)],
+                    user_source_hint="test_unsupported_monitor_raises_clear_error",
+                )
 
     def test_intra_projection_matches_numba_reference(self):
         """Intra-projection (r→r self-coupling, zero delay) matches NbHybridBackend."""
