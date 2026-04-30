@@ -51,8 +51,8 @@ def _build_noise_arrays(
         nsig = np.asarray(sn_spec.integrator.noise_nsig, dtype=np.float64)  # (n_vars,)
         noise_std = np.sqrt(2.0 * nsig * dt)
         rng = sn_info.integrator.noise.random_stream
-        # Draw (nstep, n_vars, n_nodes, 1), scale, transpose → (n_vars, n_nodes, 1, nstep)
-        dw = rng.randn(nstep, sn_spec.n_state_vars, sn_spec.n_nodes, 1)
+        # Draw (nstep, n_vars, n_nodes, n_modes), scale, transpose → (n_vars, n_nodes, n_modes, nstep)
+        dw = rng.randn(nstep, sn_spec.n_state_vars, sn_spec.n_nodes, sn_spec.n_modes)
         dw *= noise_std[np.newaxis, :, np.newaxis, np.newaxis]
         dw = np.ascontiguousarray(np.transpose(dw, (1, 2, 3, 0)), dtype=np.float64)
         noise_arrays.append(dw.ravel())

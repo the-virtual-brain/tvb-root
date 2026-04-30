@@ -350,11 +350,6 @@ def _validate_spec(spec: SimulationSpec) -> None:
                 f"Subnet '{subnet.name}': only single-mode subnetworks are currently "
                 f"supported (got n_modes={subnet.n_modes})."
             )
-        if is_combined and subnet.integrator.is_stochastic:
-            raise NotImplementedError(
-                f"Subnet '{subnet.name}': stochastic integration for combined-mode "
-                f"(multi-mode) models is not yet supported in the C++ backend."
-            )
     _SUPPORTED_MONITORS = {"TemporalAverage", "Raw", "RawVoi",
                            "AfferentCoupling", "AfferentCouplingTemporalAverage"}
     for monitor in spec.monitors:

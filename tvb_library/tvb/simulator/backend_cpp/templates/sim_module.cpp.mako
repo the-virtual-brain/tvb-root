@@ -331,20 +331,6 @@ inline std::vector<SimulationResult> run_simulation(
 % endfor
       }
 
-% if sc['is_euler']:
-      // Euler: state += dt * k1 [+ noise for stochastic]
-      for (std::size_t sv = 0; sv < ${n_sv}; ++sv) {
-        for (std::size_t m = 0; m < ${n_modes}; ++m) {
-          state_${si}(sv, node, m) += kDt * k1[sv * ${n_modes} + m];
-% if sc['is_stochastic']:
-          state_${si}(sv, node, m) += noise_ptrs[${si}][
-              sv * SubnetModel_${si}::kNumNodes * ${n_modes} * nstep +
-              node * ${n_modes} * nstep +
-              m * nstep + (step - 1)];
-% endif
-        }
-      }
-% else:
       // Predictor: state + dt * k1 [+ noise for stochastic]
       // noise layout: (n_vars, n_nodes, n_modes, nstep) — same index used in corrector.
       double pred[${n_sv * n_modes}] = {};
