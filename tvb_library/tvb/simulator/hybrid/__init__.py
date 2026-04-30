@@ -98,8 +98,7 @@ Example: Hybrid Simulation with Stimulus
 ...     weight=stim_weights
 ... )
 >>>
->>> nets.add_stimulus(
-...     target_name='cortex',
+>>> cortex.add_stimulus(
 ...     stimulus=stimulus,
 ...     stimulus_cvar='y0',
 ...     projection_scale=2.0
@@ -120,7 +119,7 @@ Advanced Features
 - Multiple source cvars: source_cvar=['y0', 'y1'] maps multiple state variables to target
 - Multiple target cvars: target_cvar=['V1', 'V2'] broadcasts to multiple targets
 - Repeated cvars: source_cvar=['y0', 'y0', 'y0'] allows more cvars than svars
-- External stimuli: Add Stim objects to NetworkSet for controlled external input
+- External stimuli: Add Stim objects to Subnetwork for controlled external input
 - Named cvars in stimuli: Use model.state_variables names instead of indices
 
 Coupling Functions

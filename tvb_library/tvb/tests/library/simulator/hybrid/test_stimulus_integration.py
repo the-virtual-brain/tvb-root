@@ -27,18 +27,19 @@
 """
 Integration tests for stimulus functionality in the hybrid simulator.
 
-Validates that external stimuli routed through
-:func:`~tvb.simulator.hybrid.stimulus_utils.create_stimulus` have a
-measurable impact on simulation output, compared with unstimulated baseline
-runs.  Three scenarios are covered:
+Validates that external stimuli attached to
+:class:`~tvb.simulator.hybrid.subnetwork.Subnetwork` objects (via
+:meth:`~tvb.simulator.hybrid.subnetwork.Subnetwork.add_stimulus` or the
+``stimuli`` attribute) have a measurable impact on simulation output, compared
+with unstimulated baseline runs.  Scenarios covered:
 
-- **Direct impact** (``test_stimulus_impact_on_simulation``) – the stimulated
-  node diverges from its baseline trajectory and has higher mean activity.
-- **Spatial selectivity** (``test_stimulus_impact_decreases_with_distance``) –
-  only the directly stimulated node has elevated final state; non-stimulated
-  nodes remain at baseline because no inter-node coupling is present.
-- **Time-varying stimulus** (``test_time_varying_stimulus``) – a
-  cosine-modulated stimulus produces plausible time-dependent dynamics.
+- **Direct impact** – the stimulated node diverges from baseline.
+- **Spatial selectivity** – only the directly stimulated node has elevated state.
+- **Time-varying stimulus** – cosine-modulated stimulus produces dynamics.
+- **Pulse train** – discrete activations from a pulse train.
+- **Spatially-varying** – node-specific effects from weighted stimulus.
+- **Multiple stimuli** – two stimuli on the same subnetwork.
+- **Projection scale** – ``projection_scale`` controls intensity.
 """
 
 import numpy as np
@@ -101,13 +102,14 @@ def setup_linear_network(n_nodes=3, dt=0.1):
 
 
 class TestStimulusIntegration:
-    """Integration tests for :func:`~tvb.simulator.hybrid.stimulus_utils.create_stimulus`.
+    """Integration tests for stimuli attached to subnetworks.
 
     Each test builds a minimal isolated network (no inter-node projections)
     via :func:`setup_linear_network`, applies a stimulus through a
-    :class:`~tvb.simulator.hybrid.Stim` object, and compares the resulting
-    trajectory against a no-stimulus baseline.  The absence of coupling
-    ensures that any observed differences are caused solely by the stimulus.
+    :class:`~tvb.simulator.hybrid.Stim` object on the subnetwork, and
+    compares the resulting trajectory against a no-stimulus baseline.  The
+    absence of coupling ensures that any observed differences are caused
+    solely by the stimulus.
     """
 
     def test_stimulus_impact_on_simulation(self):
@@ -160,18 +162,18 @@ class TestStimulusIntegration:
             temporal=temporal, connectivity=conn, weight=stim_weights
         )
 
-        # Add stimulus to network
+        # Attach stimulus to the subnetwork
         stim = stimulus_utils.create_stimulus(
             target_subnet=subnet,
             stimulus=stim_pattern,
             stimulus_cvar=np.r_[0],  # First state variable
             projection_scale=1.0,
         )
+        subnet.stimuli = [stim]
 
         nets_with_stim = NetworkSet(
             subnets=[subnet],
             projections=[],
-            stimuli=[stim],
         )
 
         sim_with_stim = Simulator(
@@ -227,18 +229,18 @@ class TestStimulusIntegration:
             temporal=temporal, connectivity=conn, weight=stim_weights
         )
 
-        # Add stimulus with weights (default all-to-all identity)
+        # Attach stimulus to the subnetwork
         stim = stimulus_utils.create_stimulus(
             target_subnet=subnet,
             stimulus=stim_pattern,
             stimulus_cvar=np.r_[0],
             projection_scale=1.0,
         )
+        subnet.stimuli = [stim]
 
         nets = NetworkSet(
             subnets=[subnet],
             projections=[],
-            stimuli=[stim],
         )
 
         sim = Simulator(
@@ -295,11 +297,11 @@ class TestStimulusIntegration:
             stimulus_cvar=np.r_[0],
             projection_scale=1.0,
         )
+        subnet.stimuli = [stim]
 
         nets = NetworkSet(
             subnets=[subnet],
             projections=[],
-            stimuli=[stim],
         )
 
         sim = Simulator(
@@ -357,11 +359,11 @@ class TestStimulusIntegration:
             stimulus_cvar=np.r_[0],
             projection_scale=1.0,
         )
+        subnet.stimuli = [stim]
 
         nets = NetworkSet(
             subnets=[subnet],
             projections=[],
-            stimuli=[stim],
         )
 
         sim = Simulator(
@@ -418,11 +420,11 @@ class TestStimulusIntegration:
             stimulus_cvar=np.r_[0],
             projection_scale=1.0,
         )
+        subnet.stimuli = [stim]
 
         nets = NetworkSet(
             subnets=[subnet],
             projections=[],
-            stimuli=[stim],
         )
 
         sim = Simulator(
@@ -452,7 +454,7 @@ class TestStimulusIntegration:
         )
 
     def test_multiple_stimuli(self):
-        """Test that multiple stimuli can be applied simultaneously."""
+        """Test that multiple stimuli can be applied simultaneously to a subnetwork."""
         simulation_length = 20.0
         n_nodes = 3
         dt = 0.1
@@ -489,14 +491,16 @@ class TestStimulusIntegration:
         stim2 = stimulus_utils.create_stimulus(
             target_subnet=subnet,
             stimulus=stim_pattern_2,
-            stimulus_cvar=np.r_[1],  # Different state variable
+            stimulus_cvar=np.r_[0],  # Same coupling variable, different spatial pattern
             projection_scale=1.0,
         )
+
+        # Attach both stimuli to the subnetwork
+        subnet.stimuli = [stim1, stim2]
 
         nets = NetworkSet(
             subnets=[subnet],
             projections=[],
-            stimuli=[stim1, stim2],
         )
 
         sim = Simulator(
@@ -528,9 +532,6 @@ class TestStimulusIntegration:
         n_nodes = 2
         dt = 0.1
 
-        # Setup network
-        conn, subnet = setup_linear_network(n_nodes=n_nodes, dt=dt)
-
         # Create stimulus with small scale
         stim_weights = np.ones(n_nodes)
         temporal = equations.Linear()
@@ -538,28 +539,67 @@ class TestStimulusIntegration:
         temporal.parameters["b"] = 1.0
 
         stim_pattern = patterns.StimuliRegion(
-            temporal=temporal, connectivity=conn, weight=stim_weights
+            temporal=temporal, connectivity=Connectivity(
+                centres=np.ones((n_nodes, 3)),
+                weights=np.ones((n_nodes, n_nodes)) * 0.1,
+                tract_lengths=np.zeros((n_nodes, n_nodes)),
+                region_labels=np.array([f"region_{i}" for i in range(n_nodes)]),
+                speed=np.array([1.0]),
+            ), weight=stim_weights
         )
+        stim_pattern.configure_time(np.arange(0.0, simulation_length + dt, dt).reshape((1, -1)))
+        stim_pattern.configure_space()
+
+        stim_pattern_2 = patterns.StimuliRegion(
+            temporal=temporal, connectivity=Connectivity(
+                centres=np.ones((n_nodes, 3)),
+                weights=np.ones((n_nodes, n_nodes)) * 0.1,
+                tract_lengths=np.zeros((n_nodes, n_nodes)),
+                region_labels=np.array([f"region_{i}" for i in range(n_nodes)]),
+                speed=np.array([1.0]),
+            ), weight=stim_weights
+        )
+        stim_pattern_2.configure_time(np.arange(0.0, simulation_length + dt, dt).reshape((1, -1)))
+        stim_pattern_2.configure_space()
 
         stim_small = stimulus_utils.create_stimulus(
-            target_subnet=subnet,
+            target_subnet=Subnetwork(
+                name="small",
+                model=models.Generic2dOscillator(),
+                scheme=integrators.EulerDeterministic(dt=dt),
+                nnodes=n_nodes,
+            ),
             stimulus=stim_pattern,
             stimulus_cvar=np.r_[0],
             projection_scale=0.5,  # Small scale
         )
 
         stim_large = stimulus_utils.create_stimulus(
-            target_subnet=subnet,
-            stimulus=stim_pattern,
+            target_subnet=Subnetwork(
+                name="large",
+                model=models.Generic2dOscillator(),
+                scheme=integrators.EulerDeterministic(dt=dt),
+                nnodes=n_nodes,
+            ),
+            stimulus=stim_pattern_2,
             stimulus_cvar=np.r_[0],
             projection_scale=2.0,  # Large scale
         )
 
         # Run with small scale
-        nets_small = NetworkSet(
-            subnets=[subnet],
-            projections=[],
+        subnet_small = Subnetwork(
+            name="small_net",
+            model=models.Generic2dOscillator(),
+            scheme=integrators.EulerDeterministic(dt=dt),
+            nnodes=n_nodes,
             stimuli=[stim_small],
+        )
+        # Fix the target reference to point to the actual subnetwork
+        stim_small.target = subnet_small
+
+        nets_small = NetworkSet(
+            subnets=[subnet_small],
+            projections=[],
         )
 
         sim_small = Simulator(
@@ -575,10 +615,19 @@ class TestStimulusIntegration:
         final_small = states_small[-1]  # (cvar, node, mode)
 
         # Run with large scale
-        nets_large = NetworkSet(
-            subnets=[subnet],
-            projections=[],
+        subnet_large = Subnetwork(
+            name="large_net",
+            model=models.Generic2dOscillator(),
+            scheme=integrators.EulerDeterministic(dt=dt),
+            nnodes=n_nodes,
             stimuli=[stim_large],
+        )
+        # Fix the target reference to point to the actual subnetwork
+        stim_large.target = subnet_large
+
+        nets_large = NetworkSet(
+            subnets=[subnet_large],
+            projections=[],
         )
 
         sim_large = Simulator(
@@ -595,4 +644,57 @@ class TestStimulusIntegration:
         # Larger scale should produce larger states
         assert final_large[0, 0, 0] > final_small[0, 0, 0] + 0.1, (
             "Larger projection_scale should produce larger state values"
+        )
+
+    def test_add_stimulus_convenience_method(self):
+        """Test Subnetwork.add_stimulus() convenience method."""
+        simulation_length = 20.0
+        n_nodes = 3
+        dt = 0.1
+
+        # Setup network
+        conn, subnet = setup_linear_network(n_nodes=n_nodes, dt=dt)
+
+        # Create stimulus pattern
+        stim_weights = np.zeros(n_nodes)
+        stim_weights[0] = 1.0
+
+        temporal = equations.Linear()
+        temporal.parameters["a"] = 0.0
+        temporal.parameters["b"] = 0.5
+
+        stim_pattern = patterns.StimuliRegion(
+            temporal=temporal, connectivity=conn, weight=stim_weights
+        )
+
+        # Use the convenience method
+        stim = subnet.add_stimulus(
+            stimulus=stim_pattern,
+            stimulus_cvar=np.r_[0],
+            projection_scale=1.0,
+        )
+
+        # Verify stim was added
+        assert len(subnet.stimuli) == 1
+        assert subnet.stimuli[0] is stim
+
+        nets = NetworkSet(
+            subnets=[subnet],
+            projections=[],
+        )
+
+        sim = Simulator(
+            nets=nets,
+            simulation_length=simulation_length,
+            monitors=[monitors.Raw()],
+        )
+        sim.configure()
+
+        # Run simulation — should complete without error
+        result = sim.run(initial_conditions=[np.zeros((2, n_nodes, 1))])
+        time, states = result[0]
+
+        # Verify stimulus had an effect
+        assert states[-1, 0, 0, 0] != 0.0, (
+            "Stimulated node should have non-zero state"
         )

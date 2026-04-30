@@ -148,18 +148,14 @@ class Simulator(t.HasTraits):
                 )
 
         for subnet in self.nets.subnets:
-            # Subnetwork.configure() also configures its IntraProjections
-            subnet.configure()
+            # Subnetwork.configure() also configures its IntraProjections and stimuli
+            subnet.configure(simulation_length=self.simulation_length)
             # Configure recorders in each subnetwork
             for recorder in subnet.monitors:
                 recorder.configure(self.simulation_length)
 
         # Configure the NetworkSet, which configures InterProjections
         self.nets.configure()
-
-        # Configure all stimuli
-        for stim in self.nets.stimuli:
-            stim.configure(self.simulation_length)
 
     def run(self, **kwargs):
         """Run the simulation and return recorded monitor data.

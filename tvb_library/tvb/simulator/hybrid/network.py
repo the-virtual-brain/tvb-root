@@ -31,9 +31,8 @@ A ``NetworkSet`` collects subnetworks and the projections that couple them,
 forming a complete hybrid model.  At each simulation step the network:
 
 1. Reads delayed afferent states from projection history buffers (``cfun``).
-2. Applies external stimuli to coupling variables.
-3. Delegates integration to each subnetwork (``Subnetwork.step``).
-4. Writes the post-integration states back to the projection buffers.
+2. Delegates integration to each subnetwork (``Subnetwork.step``).
+3. Writes the post-integration states back to the projection buffers.
 
 The ``States`` namedtuple provides attribute-style access to per-subnetwork
 state arrays so that code such as ``xs.cortex`` is readable throughout the
@@ -47,16 +46,14 @@ from .subnetwork import Subnetwork
 from .inter_projection import InterProjection
 from .intra_projection import IntraProjection
 from .base_projection import BaseProjection
-from .stimulus import Stim
 from . import projection_utils
-from . import stimulus_utils
 
 
 class NetworkSet(t.HasTraits):
     """A collection of subnetworks and their projections.
 
     A NetworkSet represents a complete hybrid model by collecting subnetworks
-    and defining how they interact through projections and stimuli.
+    and defining how they interact through projections.
 
     Attributes
     ----------
@@ -64,15 +61,12 @@ class NetworkSet(t.HasTraits):
         List of subnetworks
     projections : list
         List of projections between subnetworks
-    stimuli : list
-        List of external stimuli
     States : namedtuple
         Named tuple class for accessing subnetwork states
     """
 
     subnets: [Subnetwork] = t.List(of=Subnetwork)
     projections: [BaseProjection] = t.List(of=BaseProjection)
-    stimuli: [Stim] = t.List(of=Stim)
     # NOTE dynamically generated namedtuple based on subnetworks
     States: collections.namedtuple = None
     # TODO consider typing this as a tuple[ndarray[float]]?
@@ -260,8 +254,7 @@ class NetworkSet(t.HasTraits):
         """Compute coupling inputs for all subnetworks from projection buffers.
 
         Reads delayed afferent states from each inter-projection's history
-        buffer and accumulates them into per-subnetwork coupling arrays.  Any
-        external stimuli registered with this network are added on top.
+        buffer and accumulates them into per-subnetwork coupling arrays.
 
         Note that ``eff`` (the current states) is accepted for API symmetry but
         is not used here: coupling is read exclusively from the pre-filled
@@ -281,7 +274,7 @@ class NetworkSet(t.HasTraits):
         States
             Named tuple of coupling variable arrays, one per subnetwork.
             Each array has shape ``(ncvar, nnodes, modes)`` and includes
-            contributions from inter-projections and stimuli.
+            contributions from inter-projections.
         """
         aff = self.zero_cvars()
 
@@ -293,12 +286,6 @@ class NetworkSet(t.HasTraits):
                 continue
             tgt = getattr(aff, p.target.name)
             p.apply(tgt, step)
-
-        # Process stimuli
-        for stim in self.stimuli:
-            tgt = getattr(aff, stim.target.name)
-            stim_coupling = stim.get_coupling(step)
-            tgt += stim_coupling
 
         return aff
 
@@ -485,83 +472,4 @@ class NetworkSet(t.HasTraits):
             **kwargs,
         )
 
-    def add_stimulus(self, target_name, stimulus, stimulus_cvar, **kwargs):
-        """Add an external stimulus to a subnetwork by name.
 
-        Convenience method to avoid looking up subnetwork objects manually.
-
-        Parameters
-        ----------
-        target_name : str
-            Name of target subnetwork.
-        stimulus : SpatioTemporalPattern
-            Spatiotemporal pattern defining the stimulus (e.g., StimuliRegion)
-        stimulus_cvar : str or list of str or ndarray of int
-            Name(s) of target state variable(s) that receive stimulus.
-            Can be a single string name, list of names, or integer indices.
-        **kwargs : dict
-            Additional arguments passed to create_stimulus.
-            Can include projection_scale, weights, etc.
-
-        Returns
-        -------
-        Stim
-            The created stimulus.
-
-        Examples
-        --------
-        >>> from tvb.datatypes import patterns, equations
-        >>>
-        >>> # Create spatial pattern (stimulate region 0)
-        >>> stim_weights = np.zeros((n_nodes,))
-        >>> stim_weights[0] = 1.0
-        >>>
-        >>> # Create temporal pattern (pulse train)
-        >>> temporal = equations.PulseTrain()
-        >>> temporal.parameters['onset'] = 500.0
-        >>> temporal.parameters['T'] = 1000.0
-        >>> temporal.parameters['tau'] = 100.0
-        >>>
-        >>> # Create stimulus pattern
-        >>> stimulus = patterns.StimuliRegion(
-        ...     temporal=temporal,
-        ...     connectivity=conn,
-        ...     weight=stim_weights
-        ... )
-        >>>
-        >>> # Add to network
-        >>> nets.add_stimulus(
-        ...     target_name='cortex',
-        ...     stimulus=stimulus,
-        ...     stimulus_cvar='y0',
-        ...     projection_scale=1.0
-        ... )
-        """
-        # Look up target subnetwork by name
-        target_subnets = [sn for sn in self.subnets if sn.name == target_name]
-
-        if not target_subnets:
-            raise ValueError(
-                f"Target subnetwork '{target_name}' not found. "
-                f"Available: {[sn.name for sn in self.subnets]}"
-            )
-
-        if len(target_subnets) > 1:
-            raise ValueError(f"Multiple subnetworks named '{target_name}' found")
-
-        target = target_subnets[0]
-
-        # Create stimulus using factory function
-        stim = stimulus_utils.create_stimulus(
-            target_subnet=target,
-            stimulus=stimulus,
-            stimulus_cvar=stimulus_cvar,
-            **kwargs,
-        )
-
-        # Add to stimuli list
-        if isinstance(self.stimuli, tuple):
-            self.stimuli = list(self.stimuli)
-        self.stimuli.append(stim)
-
-        return stim

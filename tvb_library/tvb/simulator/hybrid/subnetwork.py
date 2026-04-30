@@ -76,6 +76,8 @@ class Subnetwork(t.HasTraits):
         Number of nodes in the subnetwork
     monitors : list
         List of recorders for monitoring simulation data
+    stimuli : list
+        List of external stimuli applied to this subnetwork
     """
 
     name: str = t.Attr(str)
@@ -83,6 +85,7 @@ class Subnetwork(t.HasTraits):
     scheme: Integrator = t.Attr(Integrator)
     monitors: List[Recorder] = t.List(of=Recorder)
     projections: List[IntraProjection] = t.List(of=IntraProjection)
+    stimuli: list = t.List()
     nnodes: int = t.Int()
     node_indices = t.NArray(
         dtype=int,
@@ -94,12 +97,19 @@ class Subnetwork(t.HasTraits):
         order.  Must satisfy ``len(node_indices) == nnodes``.""",
     )
 
-    def configure(self):
-        """Configure the subnetwork's model and intra-projection buffers.
+    def configure(self, simulation_length=None):
+        """Configure the subnetwork's model, intra-projection buffers, and stimuli.
 
         Calls ``model.configure()`` and then configures the history buffer of
-        every ``IntraProjection`` attached to this subnetwork.  Must be called
-        before the first integration step.
+        every ``IntraProjection`` attached to this subnetwork.  When
+        ``simulation_length`` is provided, all owned stimuli are configured
+        as well.  Must be called before the first integration step.
+
+        Parameters
+        ----------
+        simulation_length : float or None
+            Total simulation duration in milliseconds.  Required for
+            configuring stimuli; ignored when the subnetwork has no stimuli.
 
         Returns
         -------
@@ -129,6 +139,10 @@ class Subnetwork(t.HasTraits):
             if hasattr(p, "set_model_for_cvar_resolution"):
                 p.set_model_for_cvar_resolution(self.model)
             p.configure_buffer(self.model.nvar, self.nnodes, self.model.number_of_modes)
+        # Configure owned stimuli
+        if simulation_length is not None:
+            for stim in self.stimuli:
+                stim.configure(simulation_length)
         return self
 
     def add_monitor(self, monitor: Monitor):
@@ -289,7 +303,11 @@ class Subnetwork(t.HasTraits):
         """
         # Calculate internal coupling first, passing the current step
         internal_c = self.cfun(step, x)
-        # Add internal coupling to external coupling
+        # Apply stimuli owned by this subnetwork
+        for stim in self.stimuli:
+            stim_coupling = stim.get_coupling(step)
+            internal_c[stim.target_cvar] += stim_coupling
+        # Add internal coupling (with stimuli) to external coupling
         total_c = c + internal_c
         nx = self.scheme.scheme(x, self.model.dfun, total_c, 0.0, 0.0)
         self.scheme.bound_and_clamp(nx)
@@ -308,10 +326,62 @@ class Subnetwork(t.HasTraits):
         return nx
 
 
-class Stim(Subnetwork):
-    """Stimulator adapted for hybrid cases"""
+    def add_stimulus(self, stimulus, stimulus_cvar, **kwargs):
+        """Attach an external stimulus to this subnetwork.
 
-    # classic use is non-modal:
-    # stimulus[self.model.stvar, :, :] = \
-    #   self.stimulus(stim_step).reshape((1, -1, 1))
-    pass
+        Convenience method that creates a
+        :class:`~tvb.simulator.hybrid.stimulus.Stim` via
+        :func:`~tvb.simulator.hybrid.stimulus_utils.create_stimulus` and
+        appends it to :attr:`stimuli`.
+
+        Parameters
+        ----------
+        stimulus : SpatioTemporalPattern
+            Spatiotemporal pattern defining the stimulus (e.g.,
+            ``StimuliRegion``).
+        stimulus_cvar : str or list of str or ndarray of int
+            Name(s) or index/indices of the target coupling variable(s)
+            that receive the stimulus.
+        **kwargs : dict
+            Additional arguments passed to :func:`create_stimulus`.
+            Can include ``projection_scale``, ``weights``, etc.
+
+        Returns
+        -------
+        Stim
+            The created stimulus.
+
+        Examples
+        --------
+        >>> from tvb.datatypes import patterns, equations
+        >>>
+        >>> stim_weights = np.zeros(n_nodes)
+        >>> stim_weights[0] = 1.0
+        >>> temporal = equations.PulseTrain()
+        >>> temporal.parameters['onset'] = 500.0
+        >>> stimulus = patterns.StimuliRegion(
+        ...     temporal=temporal,
+        ...     connectivity=conn,
+        ...     weight=stim_weights,
+        ... )
+        >>> cortex.add_stimulus(
+        ...     stimulus=stimulus,
+        ...     stimulus_cvar='y0',
+        ...     projection_scale=1.0,
+        ... )
+        """
+        # Import here to avoid circular dependency
+        from . import stimulus_utils
+
+        stim = stimulus_utils.create_stimulus(
+            target_subnet=self,
+            stimulus=stimulus,
+            stimulus_cvar=stimulus_cvar,
+            **kwargs,
+        )
+
+        # NOTE default for t.List() is a tuple
+        if isinstance(self.stimuli, tuple):
+            self.stimuli = []
+        self.stimuli.append(stim)
+        return stim
