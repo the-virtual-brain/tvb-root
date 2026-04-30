@@ -293,8 +293,11 @@ and the Python `TemporalAverage` endpoint is documented in the tests.
       for standard single-mode models; combined-mode (multi-mode) stochastic Heun
       adds noise at the same two points inside the inline per-node block, with the
       full `noise[sv, node, mode, step]` indexing.
-- [ ] Implement native stimulus execution (spec dataclasses exist; C++ execution
-      path not yet complete).
+- [x] Implement native stimulus execution: `_build_stimulus_arrays` pre-computes
+      `(n_cvar, n_nodes, nstep)` float64 per subnet on the Python side (calling
+      `stim.get_coupling(step)` for every step, placing values at `target_cvar`
+      indices); added as Phase 2c in the simulation loop — after inter-projection
+      coupling and before ctavg accumulation, matching Numba's step ordering.
 - [ ] Add Euler integrator support (Heun is currently the only option).
 - [ ] Support models using custom Numba templates (e.g., Zerlaut) through a
       separate codegen path or explicit rejection message.

@@ -29,6 +29,40 @@ def _projection_arrays(proj: ProjectionSpec) -> dict[str, Any]:
     }
 
 
+def _build_stimulus_arrays(
+    spec: SimulationSpec,
+    lowering: "SpecLoweringResult",
+    nstep: int,
+) -> list[np.ndarray]:
+    """Pre-compute stimulus coupling contributions for all steps.
+
+    Mirrors the Numba backend: for each subnet with stimuli, call
+    stim.get_coupling(step) for every step and accumulate into a
+    (n_cvar, n_nodes, nstep) float64 array.  Values are placed at the
+    target_cvar indices the stimulus specifies.  Deterministic (no-stimulus)
+    subnets get an empty placeholder so the stim_ptrs vector stays aligned.
+    """
+    stim_arrays: list[np.ndarray] = []
+    sn_infos = lowering.analysis.subnetworks
+    for sn_spec, sn_info in zip(spec.subnetworks, sn_infos):
+        if not sn_info.has_stimulus:
+            stim_arrays.append(np.empty(0, dtype=np.float64))
+            continue
+        n_cvar = sn_spec.n_coupling_vars
+        n_nodes = sn_spec.n_nodes
+        arr = np.zeros((n_cvar, n_nodes, nstep), dtype=np.float64)
+        for stim_obj in lowering.analysis.stimuli_by_subnet[sn_info.name]:
+            target_cvar = np.asarray(stim_obj.target_cvar, dtype=int)
+            for step_idx in range(1, nstep + 1):
+                sc = np.asarray(stim_obj.get_coupling(step_idx), dtype=np.float64)
+                # sc shape: (n_stim_cvar, n_nodes, n_modes) — use mode 0
+                if sc.ndim == 3:
+                    sc = sc[:, :, 0]  # (n_stim_cvar, n_nodes)
+                arr[target_cvar, :, step_idx - 1] += sc
+        stim_arrays.append(arr.ravel())
+    return stim_arrays
+
+
 def _build_noise_arrays(
     spec: SimulationSpec,
     lowering: "SpecLoweringResult",
@@ -153,9 +187,8 @@ class CompiledCppNetwork:
             np.ascontiguousarray(s, dtype=np.float64) for s in initial_states
         ]
 
-        # Pre-generate noise arrays for stochastic subnets (mirrors Numba approach:
-        # noise = sqrt(2*nsig*dt)*randn, transposed to (n_vars, n_nodes, 1, nstep)).
         noise_arrays = _build_noise_arrays(self.spec, self.lowering, int(nstep))
+        stim_arrays = _build_stimulus_arrays(self.spec, self.lowering, int(nstep))
 
         raw_results = module.run_simulation(
             flat_states,
@@ -178,6 +211,7 @@ class CompiledCppNetwork:
             [p["target_cvar_slot"] for p in inter_data],
             [p["scale"]            for p in inter_data],
             noise_arrays,
+            stim_arrays,
         )
 
         # Select output based on monitor type.  AfferentCoupling variants return

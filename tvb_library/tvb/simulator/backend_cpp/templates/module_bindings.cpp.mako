@@ -90,7 +90,10 @@ PYBIND11_MODULE(${module_name}, m) {
          py::list inter_proj_target_cvars,
          py::list inter_proj_scales,
          // --- per-subnet noise arrays (empty array for deterministic subnets) ---
-         py::list noise_data_list) {
+         py::list noise_data_list,
+         // --- per-subnet stimulus arrays (empty array for no-stimulus subnets) ---
+         // layout: (n_cvar, n_nodes, nstep) float64, target_cvar applied Python-side
+         py::list stim_data_list) {
 
         // ---- initial states ----
         const std::size_t n_subnets = initial_states.size();
@@ -177,10 +180,23 @@ PYBIND11_MODULE(${module_name}, m) {
           }
         }
 
+        // ---- stimulus arrays ----
+        std::vector<py::array_t<double, py::array::c_style | py::array::forcecast>> stim_arrs(n_sn);
+        std::vector<const double*> stim_ptrs(n_sn, nullptr);
+        if (static_cast<std::size_t>(stim_data_list.size()) == n_sn) {
+          for (std::size_t i = 0; i < n_sn; ++i) {
+            stim_arrs[i] = stim_data_list[i].cast<
+                py::array_t<double, py::array::c_style | py::array::forcecast>>();
+            if (stim_arrs[i].size() > 0) {
+              stim_ptrs[i] = stim_arrs[i].data();
+            }
+          }
+        }
+
         // ---- run ----
         const auto results = tvb::hybrid::generated::run_simulation(
             flat_states, intra_projections, inter_projections, nstep, chunk_size,
-            noise_ptrs);
+            noise_ptrs, stim_ptrs);
 
         // ---- pack output: list of (times, data) per subnet ----
         py::list out;
@@ -239,5 +255,6 @@ PYBIND11_MODULE(${module_name}, m) {
       py::arg("inter_proj_source_svars")       = py::list(),
       py::arg("inter_proj_target_cvars")       = py::list(),
       py::arg("inter_proj_scales")             = py::list(),
-      py::arg("noise_data_list")               = py::list());
+      py::arg("noise_data_list")               = py::list(),
+      py::arg("stim_data_list")                = py::list());
 }
