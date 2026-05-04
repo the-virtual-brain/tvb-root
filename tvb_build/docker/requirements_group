@@ -27,6 +27,7 @@ BeautifulSoup4
 subprocess32
 python-keycloak
 mako
+pybind11>=2.10
 pyunicore
 formencode
 flask
@@ -58,4 +59,3 @@ requests-toolbelt>=0.10
 elasticsearch
 urllib3<2.0
 pycodestyle==2.10.0
-
