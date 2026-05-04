@@ -136,27 +136,24 @@ class ProjectionSpec:
         return int(self.n_src_modes)
 
     def payload(self) -> dict[str, Any]:
+        # Only include fields that affect generated C++ code structure.
+        # Runtime-only fields (scale, weights, idelays, cfun_params) are passed
+        # to run_simulation() at call time and must NOT influence the cache key —
+        # excluding them lets the compiled binary be reused across parameter sweeps
+        # (e.g. global-coupling or connectivity sweeps) without recompilation.
         data: dict[str, Any] = {
             "name": self.name,
             "source_subnet": self.source_subnet,
             "target_subnet": self.target_subnet,
             "source_cvar": _array_payload(self.source_cvar),
             "target_cvar": _array_payload(self.target_cvar),
-            "weights_data": _array_payload(self.weights_data),
-            "weights_indices": _array_payload(self.weights_indices),
-            "weights_indptr": _array_payload(self.weights_indptr),
-            "idelays": _array_payload(self.idelays),
+            # horizon is baked into C++ as kSourceHistoryHorizon; idelays are runtime.
             "horizon": self.horizon,
-            "scale": float(self.scale),
-            "target_scales": _array_payload(self.target_scales),
             "cfun_type": self.cfun_type,
-            "cfun_params": _array_payload(self.cfun_params),
             "cvar_mapping_mode": self.cvar_mapping_mode,
             "is_inter": self.is_inter,
             "n_src_modes": self.n_src_modes,
         }
-        if self.mode_map is not None:
-            data["mode_map"] = _array_payload(self.mode_map)
         return data
 
 

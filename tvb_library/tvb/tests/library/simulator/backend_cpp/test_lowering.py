@@ -9,9 +9,12 @@ import numpy as np
 os.environ.setdefault("TVB_USER_HOME", os.path.join(tempfile.gettempdir(), "tvb-user"))
 os.environ.setdefault("MPLCONFIGDIR", os.path.join(tempfile.gettempdir(), "matplotlib"))
 
+import scipy.sparse as sp
+
 from tvb.simulator.backend_cpp.lowering import SpecLoweringResult, lower_network_set
 from tvb.simulator.backend_cpp.spec import IntegratorSpec, SimulationSpec, SubnetworkSpec
-from tvb.simulator.hybrid import NetworkSet, Subnetwork
+from tvb.simulator.hybrid import IntraProjection, NetworkSet, Subnetwork
+from tvb.simulator.hybrid.coupling import Linear
 from tvb.simulator.integrators import (
     EulerDeterministic,
     EulerStochastic,
@@ -223,6 +226,36 @@ class TestCacheKey(unittest.TestCase):
         key1 = _lower(I=np.array([1.0])).spec.cache_key()
         key2 = _lower(I=np.array([2.0])).spec.cache_key()
         self.assertNotEqual(key1, key2)
+
+    def test_cache_key_invariant_to_projection_scale(self):
+        """Changing projection scale must NOT change the cache key.
+
+        scale is a runtime parameter passed to run_simulation(); the generated
+        C++ structure is identical regardless of its value, so recompilation
+        would be wasted work.
+        """
+        n_nodes = 3
+        w = sp.eye(n_nodes, format="csr", dtype=np.float64)
+        l = sp.csr_matrix((n_nodes, n_nodes), dtype=np.float64)
+
+        def _lower_with_scale(scale: float) -> str:
+            proj = IntraProjection(
+                source_cvar=np.array([0]),
+                target_cvar=np.array([0]),
+                weights=w,
+                lengths=l,
+                cv=7.0,
+                dt=DT,
+                scale=scale,
+                cfun=Linear(),
+            )
+            subnet = _make_mpr_subnet("sn", n_nodes)
+            network = NetworkSet(subnets=[subnet], projections=[proj], stimuli=[])
+            network.configure()
+            return lower_network_set(network).spec.cache_key()
+
+        self.assertEqual(_lower_with_scale(0.0), _lower_with_scale(0.5))
+        self.assertEqual(_lower_with_scale(0.5), _lower_with_scale(1.0))
 
     def test_cache_key_changes_with_dt(self):
         subnet1 = _make_mpr_subnet("sn", 3)
