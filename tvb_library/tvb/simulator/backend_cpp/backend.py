@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import importlib.util
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -95,6 +96,29 @@ def _build_noise_arrays(
         dw = np.ascontiguousarray(np.transpose(dw, (1, 2, 3, 0)), dtype=np.float64)
         noise_arrays.append(dw.ravel())
     return noise_arrays
+
+
+_LAST_USED_FILE = ".last_used"
+
+
+def _touch_last_used(build_dir: Path) -> None:
+    sentinel = build_dir / _LAST_USED_FILE
+    sentinel.touch()
+
+
+def _evict_old_cache_entries(build_root: Path, keep: int) -> None:
+    if keep <= 0:
+        return
+    entries = [d for d in build_root.iterdir() if d.is_dir() and d.name.startswith("tvb_hybrid_cpp_")]
+    if len(entries) <= keep:
+        return
+    def _mtime(d: Path) -> float:
+        sentinel = d / _LAST_USED_FILE
+        target = sentinel if sentinel.exists() else d
+        return target.stat().st_mtime
+    entries.sort(key=_mtime, reverse=True)
+    for old_dir in entries[keep:]:
+        shutil.rmtree(old_dir, ignore_errors=True)
 
 
 def _inter_projection_arrays(proj: ProjectionSpec) -> dict[str, Any]:
@@ -229,8 +253,13 @@ class CompiledCppNetwork:
 
 
 class CppHybridBackend:
-    def __init__(self, build_root: str | Path | None = None):
+    def __init__(
+        self,
+        build_root: str | Path | None = None,
+        max_cached_builds: int = 16,
+    ):
         self.build_root = Path(build_root) if build_root is not None else Path.cwd() / ".build"
+        self.max_cached_builds = max_cached_builds
 
     def lower(
         self,
@@ -276,6 +305,8 @@ class CppHybridBackend:
                     cmake_template_path=DEFAULT_CMAKE_TEMPLATE,
                     extension_path=extension_path,
                 )
+                _touch_last_used(build_dir)
+                _evict_old_cache_entries(self.build_root, self.max_cached_builds)
                 return CompiledCppNetwork(
                     spec=spec,
                     lowering=lowering,
@@ -297,6 +328,9 @@ class CppHybridBackend:
         if build_native:
             generated_source = build_generated_extension(generated_source)
             pipeline_stage = "extension_built"
+        if build_native:
+            _touch_last_used(build_dir)
+            _evict_old_cache_entries(self.build_root, self.max_cached_builds)
         return CompiledCppNetwork(
             spec=spec,
             lowering=lowering,
