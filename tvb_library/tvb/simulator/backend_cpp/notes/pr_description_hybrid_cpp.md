@@ -306,8 +306,8 @@ and the Python `TemporalAverage` endpoint is documented in the tests.
 - [x] Add true rebuild avoidance — reuse cached `.so` when spec hash matches,
       without re-invoking CMake.
 - [x] Add LRU eviction or version-based purge for `.build/` cache directories.
-- [ ] Add verbose compile logging mode.
-- [ ] Remove any accidentally committed generated build artifacts before merge.
+- [x] Add verbose compile logging mode.
+- [x] Remove any accidentally committed generated build artifacts before merge.
 
 ### Integration
 - [ ] Wire `CppHybridBackend` into the TVB backend selection/registry mechanism
