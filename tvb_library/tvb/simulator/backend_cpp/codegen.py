@@ -178,6 +178,21 @@ def _build_dfun_context(subnet: SubnetworkSpec) -> dict:
     local_names = intermediate_names | helper_names
 
     def translate(expr: str, extra_locals: set[str] | None = None) -> str:
+        # State vars and params are declared as C++ locals at the top of
+        # compute_dfun, so pass empty maps and add them to local_names.
+        # This keeps their short identifiers in translated expressions,
+        # ensuring the declarations are actually referenced (no -Wunused).
+        all_locals = (
+            set(svar_to_idx.keys())
+            | param_names
+            | local_names
+            | (extra_locals or set())
+        )
+        return py_expr_to_cpp(expr, {}, set(), coupling_names, all_locals)
+
+    def translate_expanded(expr: str, extra_locals: set[str] | None = None) -> str:
+        # For contexts without local declarations (e.g. compute_voi), use the
+        # full-expansion form so state vars and params resolve to state()/param_at().
         return py_expr_to_cpp(
             expr, svar_to_idx, param_names, coupling_names,
             local_names | (extra_locals or set()),
@@ -247,13 +262,14 @@ def _build_dfun_context(subnet: SubnetworkSpec) -> dict:
                 f"state({i}, node, 0) = std::min({_cpp_double(hi)}, state({i}, node, 0));"
             )
 
-    # VOI computation — handles both simple state vars and derived expressions
+    # VOI computation — compute_voi has no local declarations, so use
+    # the expanded translator (state()/param_at() forms) throughout.
     voi_assignments: list[str] = []
     for ivoi, voi_name in enumerate(subnet.variables_of_interest):
         if voi_name in svar_to_idx:
             voi_assignments.append(f"voi[{ivoi}] = state({svar_to_idx[voi_name]}, node, 0);")
         else:
-            voi_assignments.append(f"voi[{ivoi}] = {translate(voi_name)};")
+            voi_assignments.append(f"voi[{ivoi}] = {translate_expanded(voi_name)};")
 
     return {
         "dfun_helper_decls": helper_decls,
