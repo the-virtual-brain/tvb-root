@@ -279,6 +279,7 @@ class CppHybridBackend:
         monitors: list[object] | None = None,
         user_source_hint: str | None = None,
         build_native: bool = True,
+        verbose: bool = False,
     ) -> CompiledCppNetwork:
         lowering = self.lower(
             network_set=network_set,
@@ -305,6 +306,8 @@ class CppHybridBackend:
                     cmake_template_path=DEFAULT_CMAKE_TEMPLATE,
                     extension_path=extension_path,
                 )
+                if verbose:
+                    print(f"[tvb-cpp] Cache hit:       {module_name}")
                 _touch_last_used(build_dir)
                 _evict_old_cache_entries(self.build_root, self.max_cached_builds)
                 return CompiledCppNetwork(
@@ -323,10 +326,11 @@ class CppHybridBackend:
             spec=spec,
             build_dir=build_dir,
             module_name=module_name,
+            verbose=verbose,
         )
         pipeline_stage = "cpp_generated"
         if build_native:
-            generated_source = build_generated_extension(generated_source)
+            generated_source = build_generated_extension(generated_source, verbose=verbose)
             pipeline_stage = "extension_built"
         if build_native:
             _touch_last_used(build_dir)

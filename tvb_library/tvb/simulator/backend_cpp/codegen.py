@@ -494,9 +494,12 @@ def generate_cpp_source(
     sim_template_path: Path = DEFAULT_SIM_TEMPLATE,
     bindings_template_path: Path = DEFAULT_BINDINGS_TEMPLATE,
     cmake_template_path: Path = DEFAULT_CMAKE_TEMPLATE,
+    verbose: bool = False,
 ) -> GeneratedSourceArtifact:
     build_dir = Path(build_dir)
     build_dir.mkdir(parents=True, exist_ok=True)
+    if verbose:
+        print(f"[tvb-cpp] Generating C++ source → {build_dir}")
     cpp_path = build_dir / f"{module_name}.cpp"
     bindings_cpp_path = build_dir / f"{module_name}_bindings.cpp"
     cmake_lists_path = build_dir / "CMakeLists.txt"
@@ -547,19 +550,24 @@ def generate_cpp_source(
 def build_generated_extension(
     artifact: GeneratedSourceArtifact,
     cmake_build_type: str = "Release",
+    verbose: bool = False,
 ) -> GeneratedSourceArtifact:
     try:
         return _build_generated_extension_with_cmake(
             artifact=artifact,
             cmake_build_type=cmake_build_type,
+            verbose=verbose,
         )
     except subprocess.CalledProcessError:
-        return _build_generated_extension_with_compiler(artifact)
+        if verbose:
+            print("[tvb-cpp] CMake build failed — falling back to direct compiler")
+        return _build_generated_extension_with_compiler(artifact, verbose=verbose)
 
 
 def _build_generated_extension_with_cmake(
     artifact: GeneratedSourceArtifact,
     cmake_build_type: str,
+    verbose: bool = False,
 ) -> GeneratedSourceArtifact:
     cmake_build_dir = artifact.build_dir / "cmake-build"
     if cmake_build_dir.exists():
@@ -584,26 +592,28 @@ def _build_generated_extension_with_cmake(
         cmake_build_type,
     ]
 
-    subprocess.run(
-        configure_cmd,
-        check=True,
-        cwd=artifact.build_dir,
-        capture_output=True,
-        text=True,
-    )
-    subprocess.run(
-        build_cmd,
-        check=True,
-        cwd=artifact.build_dir,
-        capture_output=True,
-        text=True,
-    )
+    subprocess_kwargs: dict = {"check": True, "cwd": artifact.build_dir, "text": True}
+    if verbose:
+        print(f"[tvb-cpp] CMake configure: {' '.join(configure_cmd)}")
+    else:
+        subprocess_kwargs["capture_output"] = True
+
+    subprocess.run(configure_cmd, **subprocess_kwargs)
+
+    if verbose:
+        print(f"[tvb-cpp] CMake build:     {' '.join(build_cmd)}")
+
+    subprocess.run(build_cmd, **subprocess_kwargs)
+
     extension_path = _discover_extension_path(artifact.build_dir, artifact.module_name)
+    if verbose:
+        print(f"[tvb-cpp] Built:           {extension_path}")
     return dataclasses.replace(artifact, extension_path=extension_path)
 
 
 def _build_generated_extension_with_compiler(
     artifact: GeneratedSourceArtifact,
+    verbose: bool = False,
 ) -> GeneratedSourceArtifact:
     include_flags = _resolve_compiler_include_flags()
     ext_suffix = sysconfig.get_config_var("EXT_SUFFIX")
@@ -625,12 +635,14 @@ def _build_generated_extension_with_compiler(
         str(extension_path),
         *ldflags,
     ]
+    if verbose:
+        print(f"[tvb-cpp] Compiler: {' '.join(compile_cmd)}")
     try:
         subprocess.run(
             compile_cmd,
             check=True,
             cwd=artifact.build_dir,
-            capture_output=True,
+            capture_output=not verbose,
             text=True,
         )
     except subprocess.CalledProcessError as exc:
@@ -638,6 +650,8 @@ def _build_generated_extension_with_compiler(
         if detail:
             raise RuntimeError(f"Direct compiler build failed:\n{detail}") from exc
         raise
+    if verbose:
+        print(f"[tvb-cpp] Built:    {extension_path}")
     return dataclasses.replace(artifact, extension_path=extension_path)
 
 

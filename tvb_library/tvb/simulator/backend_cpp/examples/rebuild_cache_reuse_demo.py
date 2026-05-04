@@ -86,6 +86,7 @@ def timed_compile(backend: CppHybridBackend, network: NetworkSet, monitor: Tempo
         network,
         monitors=[monitor],
         user_source_hint="rebuild_cache_reuse_demo",
+        verbose=False
     )
     return compiled, time.perf_counter() - start
 
