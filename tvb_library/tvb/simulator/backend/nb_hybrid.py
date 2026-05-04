@@ -1612,3 +1612,89 @@ class NbHybridBackend(MakoUtilMix):
             raise exc
         _COMPILED_FN_CACHE[cache_key] = fn
         return fn
+
+    def run_sweep(
+        self,
+        network_set,
+        sweep_values: np.ndarray,
+        nstep: int = 100,
+        initial_states: Optional[list] = None,
+        sweep_descriptor: Optional[list] = None,
+        chunk_size: Optional[int] = None,
+        bold_period: Optional[float] = None,
+        print_source: bool = False,
+        **monitors,
+    ):
+        """Run parameter sweep sequentially on CPU.
+
+        Each sweep point calls run_network() internally. Results are
+        returned as a list of per-sweep-point tuples matching the
+        run_network() return format.
+
+        Parameters
+        ----------
+        sweep_values : ndarray (n_sweeps,) or (n_sweeps, n_sweep_dims)
+        sweep_descriptor : list of dict, optional
+            [{type: 'cfun', projection: 'proj_AB', param_idx: 0},
+             {type: 'model', subnet: 'A', param: 'tau_E'}]
+        """
+        sweep_values = np.asarray(sweep_values, dtype=np.float32)
+        if sweep_values.ndim == 1:
+            sweep_values = sweep_values.reshape(-1, 1)
+
+        if sweep_descriptor is None:
+            if network_set.projections:
+                first_proj = network_set.projections[0]
+                sweep_descriptor = [{'type': 'cfun', 'projection': first_proj.name,
+                                     'param_idx': 0}]
+            else:
+                sweep_descriptor = []
+
+        n_sweeps = sweep_values.shape[0]
+        results = []
+
+        for tid in range(n_sweeps):
+            sv = sweep_values[tid]
+
+            # Apply sweep values to cfun/model params
+            restore = {}
+            for dim, desc in enumerate(sweep_descriptor):
+                if desc['type'] == 'cfun':
+                    pname = desc['projection']
+                    pidx = desc.get('param_idx', 0)
+                    for proj in network_set.projections:
+                        if proj.name == pname:
+                            key = ('cfun', pname, pidx)
+                            restore[key] = float(proj.cfun.parameters[pidx])
+                            proj.cfun.parameters[pidx] = float(sv[dim])
+                elif desc['type'] == 'model':
+                    sname = desc['subnet']
+                    param = desc['param']
+                    for sn in network_set.subnets:
+                        if sn.name == sname:
+                            key = ('model', sname, param)
+                            val = float(getattr(sn.model, param))
+                            restore[key] = val
+                            setattr(sn.model, param, np.array([float(sv[dim])]))
+
+            # Run single simulation
+            result = self.run_network(network_set, nstep=nstep,
+                                      initial_states=initial_states,
+                                      chunk_size=chunk_size,
+                                      bold_period=bold_period,
+                                      print_source=print_source,
+                                      **monitors)
+            results.append(result)
+
+            # Restore original values
+            for key, orig in restore.items():
+                if key[0] == 'cfun':
+                    for proj in network_set.projections:
+                        if proj.name == key[1]:
+                            proj.cfun.parameters[key[2]] = orig
+                elif key[0] == 'model':
+                    for sn in network_set.subnets:
+                        if sn.name == key[1]:
+                            setattr(sn.model, key[2], np.array([orig]))
+
+        return results
