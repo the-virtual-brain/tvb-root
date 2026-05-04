@@ -298,7 +298,7 @@ and the Python `TemporalAverage` endpoint is documented in the tests.
       `stim.get_coupling(step)` for every step, placing values at `target_cvar`
       indices); added as Phase 2c in the simulation loop — after inter-projection
       coupling and before ctavg accumulation, matching Numba's step ordering.
-- [ ] Add Euler integrator support (Heun is currently the only option).
+- [x] Add Euler integrator support (Heun is currently the only option).
 - [ ] Support models using custom Numba templates (e.g., Zerlaut) through a
       separate codegen path or explicit rejection message.
 

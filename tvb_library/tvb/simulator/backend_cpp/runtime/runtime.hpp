@@ -374,4 +374,43 @@ inline void heun_step_stochastic(
   }
 }
 
+// ---------------------------------------------------------------------------
+// euler_step<Generated>
+// ---------------------------------------------------------------------------
+
+template <typename Generated>
+inline void euler_step(StateBuffer& state, const double* coupling) {
+  for (std::size_t node = 0; node < Generated::kNumNodes; ++node) {
+    std::array<double, Generated::kNumStateVars> dx{};
+    Generated::compute_dfun(state, coupling, node, dx);
+    for (std::size_t svar = 0; svar < Generated::kNumStateVars; ++svar) {
+      state(svar, node, 0) += Generated::kDt * dx[svar];
+    }
+    Generated::apply_state_constraints(state, node);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// euler_step_stochastic<Generated>
+// ---------------------------------------------------------------------------
+
+template <typename Generated>
+inline void euler_step_stochastic(
+    StateBuffer& state,
+    const double* coupling,
+    const double* noise,
+    std::size_t step_0idx,
+    std::size_t nstep) {
+  for (std::size_t node = 0; node < Generated::kNumNodes; ++node) {
+    std::array<double, Generated::kNumStateVars> dx{};
+    Generated::compute_dfun(state, coupling, node, dx);
+    for (std::size_t svar = 0; svar < Generated::kNumStateVars; ++svar) {
+      const double w =
+          noise[svar * Generated::kNumNodes * nstep + node * nstep + step_0idx];
+      state(svar, node, 0) += Generated::kDt * dx[svar] + w;
+    }
+    Generated::apply_state_constraints(state, node);
+  }
+}
+
 }  // namespace tvb::hybrid::runtime

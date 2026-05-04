@@ -340,10 +340,16 @@ def _validate_spec(spec: SimulationSpec) -> None:
                 f"Model '{subnet.model_type}' has no state_variable_dfuns — "
                 f"C++ dfun generation requires the standard expression-based interface."
             )
-        if subnet.integrator.type_name not in ("HeunDeterministic", "HeunStochastic"):
+        if subnet.integrator.type_name not in (
+            "EulerDeterministic",
+            "EulerStochastic",
+            "HeunDeterministic",
+            "HeunStochastic",
+        ):
             raise NotImplementedError(
-                f"Subnet '{subnet.name}': only HeunDeterministic and HeunStochastic are "
-                f"currently supported (got '{subnet.integrator.type_name}')."
+                f"Subnet '{subnet.name}': only Euler{{Deterministic,Stochastic}} and "
+                f"Heun{{Deterministic,Stochastic}} are currently supported "
+                f"(got '{subnet.integrator.type_name}')."
             )
         if subnet.n_modes != 1:
             raise NotImplementedError(
@@ -404,6 +410,7 @@ def _build_subnets_ctx(spec: SimulationSpec) -> list[dict]:
             "intra_proj_indices": intra_proj_indices,
             "inter_proj_targets": inter_proj_targets,
             "is_stochastic": subnet.integrator.is_stochastic,
+            "is_euler": subnet.integrator.type_name in ("EulerDeterministic", "EulerStochastic"),
         })
     return subnets_ctx
 
