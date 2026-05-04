@@ -13,7 +13,12 @@ os.environ.setdefault("MPLCONFIGDIR", os.path.join(tempfile.gettempdir(), "matpl
 from tvb.simulator.backend.nb_hybrid import NbHybridBackend
 from tvb.simulator.backend_cpp import CppHybridBackend
 from tvb.simulator.hybrid import IntraProjection, NetworkSet, Simulator, Subnetwork
-from tvb.simulator.integrators import HeunDeterministic, HeunStochastic
+from tvb.simulator.integrators import (
+    EulerDeterministic,
+    EulerStochastic,
+    HeunDeterministic,
+    HeunStochastic,
+)
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
 from tvb.simulator.noise import Additive
 from tvb.simulator.monitors import (
@@ -41,21 +46,26 @@ class ScopedNbHybridBackend(NbHybridBackend):
                 raise NotImplementedError(
                     "ScopedNbHybridBackend comparison path supports only MontbrioPazoRoxin."
                 )
-            if not isinstance(subnet.scheme, HeunDeterministic):
+            if not isinstance(subnet.scheme, (EulerDeterministic, HeunDeterministic)):
                 raise NotImplementedError(
-                    "ScopedNbHybridBackend comparison path supports only HeunDeterministic."
+                    "ScopedNbHybridBackend comparison path supports only deterministic Euler/Heun."
                 )
             if float(subnet.scheme.dt) != dt0:
                 raise ValueError("All subnetworks must share the same dt.")
 
 
-def _make_subnet(name: str, n_nodes: int, projections=None) -> Subnetwork:
+def _make_subnet(
+    name: str,
+    n_nodes: int,
+    projections=None,
+    scheme=None,
+) -> Subnetwork:
     model = MontbrioPazoRoxin(I=np.array([2.0]))
     model.configure()
     subnet = Subnetwork(
         name=name,
         model=model,
-        scheme=HeunDeterministic(dt=DT),
+        scheme=scheme or HeunDeterministic(dt=DT),
         nnodes=n_nodes,
         projections=projections or [],
     ).configure()
@@ -63,8 +73,12 @@ def _make_subnet(name: str, n_nodes: int, projections=None) -> Subnetwork:
     return subnet
 
 
-def _make_network(n_nodes: int, projections=None) -> tuple[NetworkSet, Subnetwork]:
-    subnet = _make_subnet("sn", n_nodes, projections=projections)
+def _make_network(
+    n_nodes: int,
+    projections=None,
+    scheme=None,
+) -> tuple[NetworkSet, Subnetwork]:
+    subnet = _make_subnet("sn", n_nodes, projections=projections, scheme=scheme)
     network = NetworkSet(subnets=[subnet], projections=[], stimuli=[])
     network.configure()
     return network, subnet
@@ -74,13 +88,14 @@ def _make_stochastic_network(
     n_nodes: int,
     nsig: np.ndarray,
     noise_seed: int = 1234,
+    integrator_cls=HeunStochastic,
 ) -> tuple[NetworkSet, Subnetwork]:
     model = MontbrioPazoRoxin(I=np.array([2.0]))
     model.configure()
     subnet = Subnetwork(
         name="sn",
         model=model,
-        scheme=HeunStochastic(
+        scheme=integrator_cls(
             dt=DT,
             noise=Additive(nsig=np.asarray(nsig, dtype=np.float64), noise_seed=noise_seed),
         ),
@@ -254,6 +269,46 @@ class TestCppHybridBackend(unittest.TestCase):
         # exactly 0.5 * dt earlier: python_time == native_time - 0.5 * dt.
         np.testing.assert_allclose(py_times - native_times, -0.5 * DT, atol=1e-12)
 
+    def test_euler_deterministic_matches_python_and_numba_references(self):
+        simulation_length = 2.0
+        chunk_size = 2
+        tavg_period = chunk_size * DT
+        nstep = int(round(simulation_length / DT))
+
+        network, subnet = _make_network(3, scheme=EulerDeterministic(dt=DT))
+        initial_state = _make_initial_state(subnet)
+
+        py_times, py_data = _run_python(
+            network=network,
+            initial_state=initial_state,
+            simulation_length=simulation_length,
+            tavg_period=tavg_period,
+        )
+        nb_times, nb_data = _run_numba(
+            network=network,
+            initial_state=initial_state,
+            nstep=nstep,
+            chunk_size=chunk_size,
+        )
+        with tempfile.TemporaryDirectory(prefix="tvb-cpp-backend-build-") as build_root:
+            native_times, native_data = _run_native(
+                network=network,
+                initial_state=initial_state,
+                nstep=nstep,
+                chunk_size=chunk_size,
+                build_root=build_root,
+            )
+
+        self.assertEqual(py_data.shape, native_data.shape)
+        self.assertEqual(nb_data.shape, native_data.shape)
+        self.assertEqual(py_times.shape, native_times.shape)
+        self.assertEqual(nb_times.shape, native_times.shape)
+
+        np.testing.assert_allclose(native_data, py_data, rtol=1e-12, atol=1e-12)
+        np.testing.assert_allclose(native_data, nb_data, rtol=1e-6, atol=1e-6)
+        np.testing.assert_allclose(native_times, nb_times, rtol=1e-6, atol=1e-6)
+        np.testing.assert_allclose(py_times - native_times, -0.5 * DT, atol=1e-12)
+
     def test_deterministic_reproducibility(self):
         network, subnet = _make_network(4)
         initial_state = _make_initial_state(subnet)
@@ -321,6 +376,52 @@ class TestCppHybridBackend(unittest.TestCase):
 
         self.assertIn("heun_step_stochastic<SubnetModel_0>", generated_cpp)
         self.assertIn("inline void heun_step_stochastic", runtime_header)
+        np.testing.assert_allclose(stoch_times, det_times, rtol=0.0, atol=0.0)
+        np.testing.assert_allclose(stoch_data, det_data, rtol=1e-12, atol=1e-12)
+
+    def test_euler_stochastic_zero_noise_matches_deterministic(self):
+        nstep = 5
+        det_network, det_subnet = _make_network(2, scheme=EulerDeterministic(dt=DT))
+        stoch_network, stoch_subnet = _make_stochastic_network(
+            2, nsig=np.array([0.0, 0.0]), integrator_cls=EulerStochastic
+        )
+        det_initial_state = _make_initial_state(det_subnet)
+        stoch_initial_state = _make_initial_state(stoch_subnet)
+
+        with tempfile.TemporaryDirectory(prefix="tvb-cpp-backend-build-") as build_root:
+            det_backend = CppHybridBackend(build_root=build_root)
+            det_compiled = det_backend.compile(
+                det_network,
+                monitors=[Raw()],
+                user_source_hint="test_euler_stochastic_zero_noise_deterministic",
+            )
+            stoch_backend = CppHybridBackend(build_root=build_root)
+            stoch_compiled = stoch_backend.compile(
+                stoch_network,
+                monitors=[Raw()],
+                user_source_hint="test_euler_stochastic_zero_noise_stochastic",
+            )
+
+            ((det_times, det_data),) = det_compiled.run(
+                initial_states=[det_initial_state.copy()],
+                nstep=nstep,
+                chunk_size=1,
+            )
+            ((stoch_times, stoch_data),) = stoch_compiled.run(
+                initial_states=[stoch_initial_state.copy()],
+                nstep=nstep,
+                chunk_size=1,
+            )
+
+            generated_cpp = stoch_compiled.generated_cpp_path.read_text(
+                encoding="utf-8"
+            )
+            runtime_header = stoch_compiled.generated_source.runtime_header_path.read_text(
+                encoding="utf-8"
+            )
+
+        self.assertIn("euler_step_stochastic<SubnetModel_0>", generated_cpp)
+        self.assertIn("inline void euler_step_stochastic", runtime_header)
         np.testing.assert_allclose(stoch_times, det_times, rtol=0.0, atol=0.0)
         np.testing.assert_allclose(stoch_data, det_data, rtol=1e-12, atol=1e-12)
 

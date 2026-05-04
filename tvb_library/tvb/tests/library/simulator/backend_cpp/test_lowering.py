@@ -12,7 +12,13 @@ os.environ.setdefault("MPLCONFIGDIR", os.path.join(tempfile.gettempdir(), "matpl
 from tvb.simulator.backend_cpp.lowering import SpecLoweringResult, lower_network_set
 from tvb.simulator.backend_cpp.spec import IntegratorSpec, SimulationSpec, SubnetworkSpec
 from tvb.simulator.hybrid import NetworkSet, Subnetwork
-from tvb.simulator.integrators import EulerDeterministic, HeunDeterministic
+from tvb.simulator.integrators import (
+    EulerDeterministic,
+    EulerStochastic,
+    HeunDeterministic,
+    HeunStochastic,
+)
+from tvb.simulator.noise import Additive
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
 from tvb.simulator.monitors import TemporalAverage
 
@@ -20,13 +26,18 @@ from tvb.simulator.monitors import TemporalAverage
 DT = 0.1
 
 
-def _make_mpr_subnet(name: str, n_nodes: int, **model_kwargs) -> Subnetwork:
+def _make_mpr_subnet(
+    name: str,
+    n_nodes: int,
+    scheme=None,
+    **model_kwargs,
+) -> Subnetwork:
     model = MontbrioPazoRoxin(**model_kwargs)
     model.configure()
     subnet = Subnetwork(
         name=name,
         model=model,
-        scheme=HeunDeterministic(dt=DT),
+        scheme=scheme or HeunDeterministic(dt=DT),
         nnodes=n_nodes,
     ).configure()
     subnet.node_indices = np.arange(n_nodes)
@@ -229,18 +240,47 @@ class TestCacheKey(unittest.TestCase):
 
 
 class TestCompatibilityGate(unittest.TestCase):
-    def test_unsupported_integrator_raises(self):
-        model = MontbrioPazoRoxin()
-        model.configure()
-        subnet = Subnetwork(
-            name="sn",
-            model=model,
-            scheme=EulerDeterministic(dt=DT),
-            nnodes=3,
-        ).configure()
-        subnet.node_indices = np.arange(3)
-        with self.assertRaises(NotImplementedError):
-            lower_network_set(_make_network(subnet))
+    def test_euler_deterministic_is_supported(self):
+        subnet = _make_mpr_subnet("sn", 3, scheme=EulerDeterministic(dt=DT))
+        result = lower_network_set(_make_network(subnet))
+        self.assertEqual(
+            result.spec.subnetworks[0].integrator.type_name,
+            "EulerDeterministic",
+        )
+        self.assertFalse(result.spec.subnetworks[0].integrator.is_stochastic)
+
+    def test_euler_stochastic_is_supported(self):
+        subnet = _make_mpr_subnet(
+            "sn",
+            3,
+            scheme=EulerStochastic(
+                dt=DT,
+                noise=Additive(nsig=np.array([0.01, 0.02]), noise_seed=123),
+            ),
+        )
+        result = lower_network_set(_make_network(subnet))
+        integrator = result.spec.subnetworks[0].integrator
+        self.assertEqual(integrator.type_name, "EulerStochastic")
+        self.assertTrue(integrator.is_stochastic)
+        np.testing.assert_array_equal(
+            integrator.noise_nsig,
+            np.array([0.01, 0.02], dtype=np.float64),
+        )
+
+    def test_heun_stochastic_is_supported(self):
+        subnet = _make_mpr_subnet(
+            "sn",
+            3,
+            scheme=HeunStochastic(
+                dt=DT,
+                noise=Additive(nsig=np.array([0.0, 0.0]), noise_seed=123),
+            ),
+        )
+        result = lower_network_set(_make_network(subnet))
+        self.assertEqual(
+            result.spec.subnetworks[0].integrator.type_name,
+            "HeunStochastic",
+        )
 
     def test_empty_network_raises(self):
         network = NetworkSet(subnets=[], projections=[], stimuli=[])
