@@ -8,7 +8,11 @@ from typing import Any
 import numpy as np
 
 from .codegen import (
+    DEFAULT_BINDINGS_TEMPLATE,
+    DEFAULT_CMAKE_TEMPLATE,
+    DEFAULT_SIM_TEMPLATE,
     GeneratedSourceArtifact,
+    _discover_extension_path,
     build_generated_extension,
     generate_cpp_source,
 )
@@ -256,6 +260,34 @@ class CppHybridBackend:
         cache_key = spec.cache_key()
         module_name = f"tvb_hybrid_cpp_{cache_key[:16]}"
         build_dir = self.build_root / module_name
+
+        if build_native:
+            try:
+                extension_path = _discover_extension_path(build_dir, module_name)
+                generated_source = GeneratedSourceArtifact(
+                    module_name=module_name,
+                    build_dir=build_dir,
+                    cpp_path=build_dir / f"{module_name}.cpp",
+                    bindings_cpp_path=build_dir / f"{module_name}_bindings.cpp",
+                    cmake_lists_path=build_dir / "CMakeLists.txt",
+                    runtime_header_path=build_dir / "runtime" / "runtime.hpp",
+                    sim_template_path=DEFAULT_SIM_TEMPLATE,
+                    bindings_template_path=DEFAULT_BINDINGS_TEMPLATE,
+                    cmake_template_path=DEFAULT_CMAKE_TEMPLATE,
+                    extension_path=extension_path,
+                )
+                return CompiledCppNetwork(
+                    spec=spec,
+                    lowering=lowering,
+                    build_dir=build_dir,
+                    generated_cpp_path=generated_source.cpp_path,
+                    module_name=module_name,
+                    generated_source=generated_source,
+                    pipeline_stage="extension_cached",
+                )
+            except FileNotFoundError:
+                pass
+
         generated_source = generate_cpp_source(
             spec=spec,
             build_dir=build_dir,

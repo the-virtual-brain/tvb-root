@@ -279,10 +279,10 @@ class GeneratedSourceArtifact:
     sim_template_path: Path
     bindings_template_path: Path
     cmake_template_path: Path
-    sim_source_text: str
-    bindings_source_text: str
-    cmake_source_text: str
     extension_path: Path | None = None
+    sim_source_text: str = ""
+    bindings_source_text: str = ""
+    cmake_source_text: str = ""
 
 
 
