@@ -1,2 +1,12 @@
 .build/
 .codex
+__pycache__/
+*.py[cod]
+*.so
+*.pyd
+*.dll
+*.dylib
+cmake-build/
+CMakeFiles/
+CMakeCache.txt
+compile_commands.json
