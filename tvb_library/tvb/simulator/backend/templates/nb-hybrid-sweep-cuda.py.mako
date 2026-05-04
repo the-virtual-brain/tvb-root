@@ -630,7 +630,7 @@ def run_sweep(
                 ${sn.name}_ctavg[tid, _ci, _j, 0] += ${sn.name}_c[_ci, _j, 0]
                 % else:
                 for _m in range(${sn.n_modes}):
-                    ${sn.name}_ctavg[tid, _ci, _j, _m] += ${sn.name}_c[_ci, _j, _m]
+                    ${sn.name}_ctavg[tid, _ci, _j, 0] += ${sn.name}_c[_ci, _j, _m]
                 % endif
         % endif
         % endfor
@@ -749,26 +749,6 @@ def run_sweep(
                 _i1_${sv}[m] = ${sv} + dt_f * d0_${sv}
                 % endfor
                 % endif
-
-            ## clamp i1 intermediates for all modes
-<%
-    _has_lo = any(sv in lo_map and lo_map[sv] != float('-inf') for sv in svars)
-    _has_hi = any(sv in hi_map and hi_map[sv] != float('inf') for sv in svars)
-    _has_clamp = _has_lo or _has_hi
-%>
-% if _has_clamp:
-            for m in range(${n_modes}):
-                % for sv in svars:
-                % if sv in lo_map and lo_map[sv] != float('-inf'):
-                if _i1_${sv}[m] < np.float32(${lo_map[sv]}):
-                    _i1_${sv}[m] = np.float32(${lo_map[sv]})
-                % endif
-                % if sv in hi_map and hi_map[sv] != float('inf'):
-                if _i1_${sv}[m] > np.float32(${hi_map[sv]}):
-                    _i1_${sv}[m] = np.float32(${hi_map[sv]})
-                % endif
-                % endfor
-% endif
 
             ## Recompute cross-mode intermediates from i1 arrays (correct per-mk indexing)
             % for _op_name, _op_mat, _op_svar in _dm_ops:
@@ -965,15 +945,17 @@ def run_sweep(
             ## end for m (non-combined)
 % endif  ## _is_combined
 
-            ## accumulate temporal average (sum over modes)
+            ## accumulate temporal average (sum all modes into mode-0)
             % for vi, voi_name in enumerate(voi_names):
 <%
     voi_idx_val = voi_idx_list[vi]
     is_derived = voi_idx_val < 0
 %>
 % if not is_derived:
+            _sv = np.float32(0.0)
             for _m in range(${n_modes}):
-                ${sn.name}_tavg[tid, ${vi}, i, _m] += ${sn.name}_state[tid, ${voi_idx_val}, i, _m]
+                _sv += ${sn.name}_state[tid, ${voi_idx_val}, i, _m]
+            ${sn.name}_tavg[tid, ${vi}, i, 0] += _sv
 % else:
 <%
     import re
@@ -987,20 +969,23 @@ def run_sweep(
     expr = expr.replace('log(', 'math.log(')
     expr = expr.replace('tanh(', 'math.tanh(')
 %>
+            _sv = np.float32(0.0)
             for _m in range(${n_modes}):
-                ${sn.name}_tavg[tid, ${vi}, i, _m] += ${expr}
+                _sv += ${expr}
+            ${sn.name}_tavg[tid, ${vi}, i, 0] += _sv
 % endif
             % endfor
 
-            ## accumulate spatial average and projection monitors
+            ## accumulate spatial average and projection monitors (sum all modes)
             % for vi, voi_name in enumerate(voi_names):
 <%
     voi_idx_val = voi_idx_list[vi]
     is_derived = voi_idx_val < 0
 %>
 % if not is_derived:
+            _sv = np.float32(0.0)
             for _m in range(${n_modes}):
-                _sv = ${sn.name}_state[tid, ${voi_idx_val}, i, _m]
+                _sv += ${sn.name}_state[tid, ${voi_idx_val}, i, _m]
 % else:
 <%
     import re
@@ -1014,8 +999,9 @@ def run_sweep(
     expr = expr.replace('log(', 'math.log(')
     expr = expr.replace('tanh(', 'math.tanh(')
 %>
+            _sv = np.float32(0.0)
             for _m in range(${n_modes}):
-                _sv = ${expr}
+                _sv += ${expr}
 % endif
                 for _ai in range(${sn.name}_spatial_mean.shape[0]):
                     ${sn.name}_spatial_tavg[tid, ${vi}, _ai, 0] += ${sn.name}_spatial_mean[_ai, i] * _sv
@@ -1023,7 +1009,7 @@ def run_sweep(
                     ${sn.name}_proj_tavg[tid, ${vi}, _si, 0] += ${sn.name}_gain[_si, i] * _sv
             % endfor
 
-            ## monitor raw / subsample
+            ## monitor raw / subsample — store mode-0 (sum of all modes)
             if monitor_type == 1:
                 % for vi, voi_name in enumerate(voi_names):
 <%
@@ -1031,8 +1017,10 @@ def run_sweep(
     is_derived = voi_idx_val < 0
 %>
 % if not is_derived:
+                _sv = np.float32(0.0)
                 for _m in range(${n_modes}):
-                    ${sn.name}_raw[tid, t - 1, ${vi}, i, _m] = ${sn.name}_state[tid, ${voi_idx_val}, i, _m]
+                    _sv += ${sn.name}_state[tid, ${voi_idx_val}, i, _m]
+                ${sn.name}_raw[tid, t - 1, ${vi}, i, 0] = _sv
 % else:
 <%
     import re
@@ -1046,8 +1034,10 @@ def run_sweep(
     expr = expr.replace('log(', 'math.log(')
     expr = expr.replace('tanh(', 'math.tanh(')
 %>
+                _sv = np.float32(0.0)
                 for _m in range(${n_modes}):
-                    ${sn.name}_raw[tid, t - 1, ${vi}, i, _m] = ${expr}
+                    _sv += ${expr}
+                ${sn.name}_raw[tid, t - 1, ${vi}, i, 0] = _sv
 % endif
                 % endfor
             elif monitor_type == 2:
@@ -1059,8 +1049,10 @@ def run_sweep(
     is_derived = voi_idx_val < 0
 %>
 % if not is_derived:
+                    _sv = np.float32(0.0)
                     for _m in range(${n_modes}):
-                        ${sn.name}_raw[tid, _raw_idx, ${vi}, i, _m] = ${sn.name}_state[tid, ${voi_idx_val}, i, _m]
+                        _sv += ${sn.name}_state[tid, ${voi_idx_val}, i, _m]
+                    ${sn.name}_raw[tid, _raw_idx, ${vi}, i, 0] = _sv
 % else:
 <%
     import re
@@ -1074,8 +1066,10 @@ def run_sweep(
     expr = expr.replace('log(', 'math.log(')
     expr = expr.replace('tanh(', 'math.tanh(')
 %>
+                    _sv = np.float32(0.0)
                     for _m in range(${n_modes}):
-                        ${sn.name}_raw[tid, _raw_idx, ${vi}, i, _m] = ${expr}
+                        _sv += ${expr}
+                    ${sn.name}_raw[tid, _raw_idx, ${vi}, i, 0] = _sv
 % endif
                     % endfor
 

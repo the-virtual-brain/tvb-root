@@ -1427,8 +1427,9 @@ class NbHybridBackend(MakoUtilMix):
 
         # Build stimulus lookup: subnet name -> list of Stim objects
         stims_by_subnet: dict = {sn.name: [] for sn in network_set.subnets}
-        for stim in network_set.stimuli or []:
-            stims_by_subnet[stim.target.name].append(stim)
+        for sn in network_set.subnets:
+            for stim in (sn.stimuli or []):
+                stims_by_subnet[sn.name].append(stim)
 
         subnets = []
         for sn in network_set.subnets:

@@ -201,6 +201,7 @@ class NbHybridCUDASweepBackend(MakoUtilMix):
         print_source: bool = False,
         bold_period: Optional[float] = None,
         verbose: bool = False,
+        **kwargs,
     ):
         """Convenience: compile + run in one call."""
         compiled = self.compile_sweep(network_set, sweep_descriptor=sweep_descriptor, print_source=print_source)
@@ -210,6 +211,7 @@ class NbHybridCUDASweepBackend(MakoUtilMix):
             initial_states=initial_states,
             bold_period=bold_period,
             verbose=verbose,
+            **kwargs,
         )
 
 
