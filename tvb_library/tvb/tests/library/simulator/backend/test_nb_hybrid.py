@@ -689,7 +689,7 @@ class TestNbHybridChunkSizeEquivalence(unittest.TestCase):
         m.configure()
         sn = Subnetwork(name="sn", model=m, scheme=HeunDeterministic(dt=0.1), nnodes=3)
         sn.configure()
-        nets = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        nets = NetworkSet(subnets=[sn], projections=[])
         nets.configure()
         sub = SubSample(period=1.0)
         with self.assertRaises(ValueError) as ctx:
@@ -4677,7 +4677,7 @@ class TestAutoChunkSize(unittest.TestCase):
         m.configure()
         sn = Subnetwork(name='sn', model=m, scheme=HeunDeterministic(dt=self.DT), nnodes=n)
         sn.configure()
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
         return ns, m
 
@@ -4818,7 +4818,7 @@ class TestModeSummation(unittest.TestCase):
         m.configure()
         sn = Subnetwork(name='sn', model=m, scheme=HeunDeterministic(dt=DT), nnodes=4)
         sn.configure()
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         rng = np.random.RandomState(42)
@@ -4838,7 +4838,7 @@ class TestModeSummation(unittest.TestCase):
         m.configure()
         sn = Subnetwork(name='sn', model=m, scheme=HeunDeterministic(dt=DT), nnodes=4)
         sn.configure()
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         rng = np.random.RandomState(77)
@@ -4870,7 +4870,7 @@ class TestModeSummation(unittest.TestCase):
         m.configure()
         sn = Subnetwork(name='sn', model=m, scheme=HeunDeterministic(dt=DT), nnodes=4)
         sn.configure()
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         rng = np.random.RandomState(42)
@@ -4895,7 +4895,7 @@ class TestMonitorPeriodAggregation(unittest.TestCase):
         m.configure()
         sn = Subnetwork(name='sn', model=m, scheme=HeunDeterministic(dt=self.DT), nnodes=n)
         sn.configure()
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
         return ns, m
 
@@ -4996,7 +4996,7 @@ class TestMergedMode(unittest.TestCase):
         sn2.node_indices = np.array([1, 3])  # positions in connectome
         sn2.configure()
 
-        ns = NetworkSet(subnets=[sn1, sn2], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn1, sn2], projections=[])
         ns.configure()
         return ns, m1, n1, n2
 
@@ -5066,7 +5066,7 @@ class TestMergedMode(unittest.TestCase):
         sn2 = Subnetwork(name='thal', model=m, scheme=HeunDeterministic(dt=self.DT), nnodes=2)
         sn2.node_indices = np.array([1, 2])
         sn2.configure()
-        ns = NetworkSet(subnets=[sn1, sn2], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn1, sn2], projections=[])
         ns.configure()
 
         rng = np.random.RandomState(42)
@@ -5102,7 +5102,7 @@ class TestMergedMode(unittest.TestCase):
         sn1.configure()
         sn2 = Subnetwork(name='b', model=m, scheme=HeunDeterministic(dt=self.DT), nnodes=2)
         sn2.configure()
-        ns = NetworkSet(subnets=[sn1, sn2], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn1, sn2], projections=[])
         ns.configure()
 
         rng = np.random.RandomState(42)
@@ -5132,7 +5132,7 @@ class TestMergedMode(unittest.TestCase):
         sn2 = Subnetwork(name='thal', model=m, scheme=HeunDeterministic(dt=DT), nnodes=n2)
         sn2.node_indices = np.array([1, 3])
         sn2.configure()
-        ns = NetworkSet(subnets=[sn1, sn2], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn1, sn2], projections=[])
         ns.configure()
 
         rng = np.random.RandomState(42)
@@ -5164,7 +5164,7 @@ class TestMergedMode(unittest.TestCase):
         from tvb.simulator.backend.nb_hybrid import NbHybridBackend as BH
 
         # Run subnet 1 alone
-        ns_s1 = NetworkSet(subnets=[sn1_no], projections=[], stimuli=[])
+        ns_s1 = NetworkSet(subnets=[sn1_no], projections=[])
         ns_s1.configure()
         eeg_s1 = EEG(period=DT)
         eeg_s1._gain = gain[:, [0, 2]]
@@ -5172,7 +5172,7 @@ class TestMergedMode(unittest.TestCase):
                               initial_states=[ics[0].copy()])
 
         # Run subnet 2 alone
-        ns_s2 = NetworkSet(subnets=[sn2_no], projections=[], stimuli=[])
+        ns_s2 = NetworkSet(subnets=[sn2_no], projections=[])
         ns_s2.configure()
         eeg_s2 = EEG(period=DT)
         eeg_s2._gain = gain[:, [1, 3]]
@@ -5201,7 +5201,7 @@ class TestMergedMode(unittest.TestCase):
         sn2 = Subnetwork(name='thal', model=m, scheme=HeunDeterministic(dt=DT), nnodes=n2)
         sn2.node_indices = np.array([1, 3, 5])
         sn2.configure()
-        ns = NetworkSet(subnets=[sn1, sn2], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn1, sn2], projections=[])
         ns.configure()
 
         rng = np.random.RandomState(99)
@@ -5237,7 +5237,9 @@ class TestStimulusMonitorEndToEnd(unittest.TestCase):
         stim = _make_stim(sn, amplitude=0.05)
         stim.configure(simulation_length=100 * self.DT)
 
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        new_stim = sn.add_stimulus(stim.stimulus, stim.target_cvar)
+        new_stim.configure(simulation_length=100 * DT)
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         tavg = TemporalAverage(period=self.DT)
