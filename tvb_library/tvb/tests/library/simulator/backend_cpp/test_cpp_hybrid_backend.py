@@ -27,6 +27,7 @@ from tvb.simulator.noise import Additive
 from tvb.simulator.monitors import (
     AfferentCoupling,
     AfferentCouplingTemporalAverage,
+    Bold,
     Raw,
     RawVoi,
     SubSample,
@@ -563,6 +564,112 @@ class TestCppHybridBackend(unittest.TestCase):
         self.assertEqual(times.shape, (nstep,))
         self.assertEqual(data.shape, (nstep, 2, subnet.nnodes, 1))
         np.testing.assert_allclose(times, DT * np.arange(1, nstep + 1))
+
+    def test_afferent_coupling_returns_ctavg_and_forces_one_sample_per_step(self):
+        network, subnet = _make_network(3)
+        initial_state = _make_initial_state(subnet)
+        nstep = 5
+
+        with tempfile.TemporaryDirectory(prefix="tvb-cpp-backend-build-") as build_root:
+            backend = CppHybridBackend(build_root=build_root)
+            compiled = backend.compile(
+                network,
+                monitors=[AfferentCoupling()],
+                user_source_hint="test_afferent_coupling_returns_ctavg",
+            )
+            ((times, ctavg),) = compiled.run(
+                initial_states=[initial_state.copy()],
+                nstep=nstep,
+                chunk_size=4,
+            )
+
+        self.assertEqual(times.shape, (nstep,))
+        self.assertEqual(ctavg.shape, (nstep, 2, subnet.nnodes, 1))
+        np.testing.assert_allclose(times, DT * np.arange(1, nstep + 1))
+        np.testing.assert_array_equal(ctavg, np.zeros_like(ctavg))
+
+    def test_afferent_coupling_temporal_average_uses_requested_chunk_size(self):
+        network, subnet = _make_network(3)
+        initial_state = _make_initial_state(subnet)
+        nstep = 6
+        chunk_size = 3
+
+        with tempfile.TemporaryDirectory(prefix="tvb-cpp-backend-build-") as build_root:
+            backend = CppHybridBackend(build_root=build_root)
+            compiled = backend.compile(
+                network,
+                monitors=[AfferentCouplingTemporalAverage(period=chunk_size * DT)],
+                user_source_hint="test_afferent_coupling_temporal_average",
+            )
+            ((times, ctavg),) = compiled.run(
+                initial_states=[initial_state.copy()],
+                nstep=nstep,
+                chunk_size=chunk_size,
+            )
+
+        self.assertEqual(times.shape, (2,))
+        self.assertEqual(ctavg.shape, (2, 2, subnet.nnodes, 1))
+        np.testing.assert_allclose(times, np.array([0.2, 0.5]))
+        np.testing.assert_array_equal(ctavg, np.zeros_like(ctavg))
+
+    def test_bold_monitor_matches_python_monitor_sample_path(self):
+        network, subnet = _make_network(2)
+        initial_state = _make_initial_state(subnet)
+        nstep = 80
+        bold_period = 4.0
+
+        with tempfile.TemporaryDirectory(prefix="tvb-cpp-backend-build-") as build_root:
+            backend = CppHybridBackend(build_root=build_root)
+
+            raw_compiled = backend.compile(
+                network,
+                monitors=[Raw()],
+                user_source_hint="test_bold_monitor_reference_raw",
+            )
+            ((_, raw_data),) = raw_compiled.run(
+                initial_states=[initial_state.copy()],
+                nstep=nstep,
+                chunk_size=1,
+            )
+
+            bold = Bold(period=bold_period)
+            bold_compiled = backend.compile(
+                network,
+                monitors=[bold],
+                user_source_hint="test_bold_monitor_matches_python_monitor",
+            )
+            ((bold_times, bold_data),) = bold_compiled.run(
+                initial_states=[initial_state.copy()],
+                nstep=nstep,
+                chunk_size=1,
+            )
+
+        ref_bold = Bold(period=bold_period)
+        ref_bold.voi = slice(None)
+        ref_bold._config_dt(DT)
+        ref_bold.compute_hrf()
+        ref_bold._config_stock(
+            len(subnet.model.variables_of_interest),
+            subnet.nnodes,
+            subnet.model.number_of_modes,
+        )
+
+        ref_times = []
+        ref_data = []
+        for step, state in enumerate(raw_data, start=1):
+            maybe_bold = ref_bold.sample(step, state)
+            if maybe_bold is not None:
+                ref_times.append(maybe_bold[0])
+                ref_data.append(maybe_bold[1])
+
+        ref_times = np.asarray(ref_times, dtype=np.float64)
+        ref_data = np.asarray(ref_data, dtype=np.float64)
+
+        self.assertEqual(bold_times.shape, (2,))
+        self.assertEqual(bold_data.shape, (2, 2, subnet.nnodes, 1))
+        np.testing.assert_allclose(bold_times, ref_times)
+        np.testing.assert_allclose(bold_data, ref_data, rtol=1e-12, atol=1e-12)
+
 
     def test_unsupported_monitor_raises_clear_error(self):
         network, _subnet = _make_network(2)

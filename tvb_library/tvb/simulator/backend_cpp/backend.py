@@ -152,7 +152,7 @@ def _apply_bold_hrf(
     bold_times : (n_bold,)
     bold_data  : (n_bold, n_voi, n_nodes, n_modes)
     """
-    from tvb.simulator.equations import FirstOrderVolterra
+    from tvb.datatypes.equations import FirstOrderVolterra
 
     n_interim = interim_data.shape[0]
     k = int(bold_monitor._stock_steps)
