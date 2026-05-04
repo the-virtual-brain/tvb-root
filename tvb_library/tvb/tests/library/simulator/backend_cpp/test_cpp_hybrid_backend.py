@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 
+import importlib.machinery
 import os
 import tempfile
 import unittest
+from pathlib import Path
+from unittest import mock
 
 import numpy as np
 import scipy.sparse as sp
@@ -177,6 +180,51 @@ def _run_native(
 
 
 class TestCppHybridBackend(unittest.TestCase):
+    def test_compile_reuses_cached_extension_without_regenerating_or_building(self):
+        network, _subnet = _make_network(2)
+        monitors = [TemporalAverage(period=0.2)]
+        source_hint = "test_compile_reuses_cached_extension"
+
+        with tempfile.TemporaryDirectory(prefix="tvb-cpp-backend-build-") as build_root:
+            backend = CppHybridBackend(build_root=build_root)
+            lowering = backend.lower(
+                network,
+                monitors=monitors,
+                user_source_hint=source_hint,
+            )
+            cache_key = lowering.spec.cache_key()
+            module_name = f"tvb_hybrid_cpp_{cache_key[:16]}"
+            build_dir = Path(build_root) / module_name
+            build_dir.mkdir(parents=True)
+            extension_path = build_dir / (
+                module_name + importlib.machinery.EXTENSION_SUFFIXES[0]
+            )
+            extension_path.touch()
+
+            with (
+                mock.patch(
+                    "tvb.simulator.backend_cpp.backend.generate_cpp_source",
+                    side_effect=AssertionError("cache hit should not regenerate source"),
+                ) as generate_cpp_source,
+                mock.patch(
+                    "tvb.simulator.backend_cpp.backend.build_generated_extension",
+                    side_effect=AssertionError("cache hit should not invoke native build"),
+                ) as build_generated_extension,
+            ):
+                compiled = backend.compile(
+                    network,
+                    monitors=monitors,
+                    user_source_hint=source_hint,
+                    build_native=True,
+                )
+
+            generate_cpp_source.assert_not_called()
+            build_generated_extension.assert_not_called()
+            self.assertEqual(compiled.pipeline_stage, "extension_cached")
+            self.assertEqual(compiled.module_name, module_name)
+            self.assertEqual(compiled.generated_source.extension_path, extension_path)
+            self.assertEqual(compiled.debug_summary()["cache_key"], cache_key)
+
     def test_compile_emits_runtime_header_and_statebuffer(self):
         network, subnet = _make_network(2)
         initial_state = _make_initial_state(subnet)
