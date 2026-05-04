@@ -303,9 +303,9 @@ and the Python `TemporalAverage` endpoint is documented in the tests.
       separate codegen path or explicit rejection message.
 
 ### Build and tooling
-- [ ] Add true rebuild avoidance — reuse cached `.so` when spec hash matches,
+- [x] Add true rebuild avoidance — reuse cached `.so` when spec hash matches,
       without re-invoking CMake.
-- [ ] Add LRU eviction or version-based purge for `.build/` cache directories.
+- [x] Add LRU eviction or version-based purge for `.build/` cache directories.
 - [ ] Add verbose compile logging mode.
 - [ ] Remove any accidentally committed generated build artifacts before merge.
 
