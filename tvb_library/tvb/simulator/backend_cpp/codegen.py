@@ -373,7 +373,8 @@ def _validate_spec(spec: SimulationSpec) -> None:
                 f"supported (got n_modes={subnet.n_modes})."
             )
     _SUPPORTED_MONITORS = {"TemporalAverage", "Raw", "RawVoi",
-                           "AfferentCoupling", "AfferentCouplingTemporalAverage"}
+                           "AfferentCoupling", "AfferentCouplingTemporalAverage",
+                           "Bold"}
     for monitor in spec.monitors:
         if monitor.type_name not in _SUPPORTED_MONITORS:
             raise NotImplementedError(

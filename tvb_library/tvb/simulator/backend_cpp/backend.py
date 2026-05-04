@@ -121,6 +121,76 @@ def _evict_old_cache_entries(build_root: Path, keep: int) -> None:
         shutil.rmtree(old_dir, ignore_errors=True)
 
 
+def _configure_bold_monitor(bold_monitor, spec_dt: float):
+    """Set dt/istep on a Bold monitor and call compute_hrf() to prepare it."""
+    bold_monitor.dt = spec_dt
+    bold_monitor.istep = int(round(bold_monitor.period / spec_dt))
+    bold_monitor.compute_hrf()
+
+
+def _apply_bold_hrf(
+    bold_monitor,
+    interim_times: np.ndarray,
+    interim_data: np.ndarray,
+    spec_dt: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Apply HRF convolution to C++ interim TA output to produce BOLD signal.
+
+    Mirrors Bold.sample() in monitors.py exactly.  The C++ kernel runs with
+    chunk_size = _interim_istep, so each returned chunk is already the temporal
+    average over one interim period — equivalent to _interim_stock.mean(axis=0).
+
+    Parameters
+    ----------
+    bold_monitor  : Bold, compute_hrf() already called.
+    interim_times : (n_interim,)
+    interim_data  : (n_interim, n_voi, n_nodes, n_modes)
+    spec_dt       : simulation dt in ms
+
+    Returns
+    -------
+    bold_times : (n_bold,)
+    bold_data  : (n_bold, n_voi, n_nodes, n_modes)
+    """
+    from tvb.simulator.equations import FirstOrderVolterra
+
+    n_interim = interim_data.shape[0]
+    k = int(bold_monitor._stock_steps)
+    hrf = bold_monitor.hemodynamic_response_function          # (1, k)
+    istep = int(bold_monitor.istep)
+    interim_istep = int(bold_monitor._interim_istep)
+
+    stock = np.zeros((k,) + interim_data.shape[1:])          # (k, n_voi, n_nodes, n_modes)
+    bold_times: list[float] = []
+    bold_data_list: list[np.ndarray] = []
+
+    for i in range(n_interim):
+        neural_step = (i + 1) * interim_istep
+        stock_idx = (neural_step // interim_istep % k) - 1
+        stock[stock_idx] = interim_data[i]
+
+        if neural_step % istep == 0:
+            hrf_rolled = np.roll(hrf, stock_idx, axis=1)
+            # stock.transpose((1,2,0,3)): (n_voi, n_nodes, k, n_modes)
+            # np.dot result: (1, n_voi, n_nodes, n_modes) → reshaped to (n_voi, n_nodes, n_modes)
+            bold = np.dot(hrf_rolled, stock.transpose((1, 2, 0, 3)))
+            bold = bold.reshape(stock.shape[1:])
+            if isinstance(bold_monitor.hrf_kernel, FirstOrderVolterra):
+                k1_V0 = (
+                    bold_monitor.hrf_kernel.parameters["k_1"]
+                    * bold_monitor.hrf_kernel.parameters["V_0"]
+                )
+                bold = (bold - 1.0) * k1_V0
+            bold_times.append(float(neural_step * spec_dt))
+            bold_data_list.append(bold)
+
+    if not bold_times:
+        n_voi, n_nodes, n_modes = interim_data.shape[1:]
+        return np.empty(0), np.empty((0, n_voi, n_nodes, n_modes))
+
+    return np.array(bold_times), np.stack(bold_data_list, axis=0)
+
+
 def _inter_projection_arrays(proj: ProjectionSpec) -> dict[str, Any]:
     """Build arrays for an inter-projection, folding mode_map[0,0] into scale.
 
@@ -200,8 +270,21 @@ class CompiledCppNetwork:
 
         monitor_type = self.spec.monitors[0].type_name if self.spec.monitors else "TemporalAverage"
         # Per-step monitors: force chunk_size=1 (mirrors Numba _compute_chunk_size).
+        bold_monitor = None
         if monitor_type in ("Raw", "RawVoi", "AfferentCoupling"):
             chunk_size = 1
+        elif monitor_type == "Bold":
+            bold_monitor = next(
+                (m for m in self.lowering.monitors if type(m).__name__ == "Bold"),
+                None,
+            )
+            if bold_monitor is None:
+                raise RuntimeError(
+                    "Bold monitor type in spec but no Bold monitor object in lowering.monitors. "
+                    "Ensure monitors=[Bold(...)] is passed to compile()."
+                )
+            _configure_bold_monitor(bold_monitor, self.spec.dt)
+            chunk_size = bold_monitor._interim_istep
 
         module = self.load_module()
 
@@ -245,6 +328,11 @@ class CompiledCppNetwork:
         # Select output based on monitor type.  AfferentCoupling variants return
         # the temporally-averaged coupling input (ctavg) instead of state VOIs
         # (data), matching the Numba backend's _apply_monitors behaviour.
+        if bold_monitor is not None:
+            return [
+                _apply_bold_hrf(bold_monitor, times, data, self.spec.dt)
+                for times, data, _ in raw_results
+            ]
         is_afferent = monitor_type in ("AfferentCoupling", "AfferentCouplingTemporalAverage")
         return [
             (times, ctavg) if is_afferent else (times, data)

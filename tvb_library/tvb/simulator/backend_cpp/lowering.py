@@ -34,6 +34,7 @@ BACKEND_VERSION = "0.2"
 class SpecLoweringResult:
     spec: SimulationSpec
     analysis: object
+    monitors: tuple = ()  # original monitor objects, needed by run() for Bold post-processing
 
 
 def _check_scope_compatibility(network_set) -> None:
@@ -229,4 +230,4 @@ def lower_network_set(
         source_horizons={str(k): int(v) for k, v in analysis.source_horizons.items()},
         user_source_hint=user_source_hint,
     )
-    return SpecLoweringResult(spec=spec, analysis=analysis)
+    return SpecLoweringResult(spec=spec, analysis=analysis, monitors=tuple(monitors or []))
