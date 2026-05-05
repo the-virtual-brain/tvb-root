@@ -28,6 +28,7 @@ from tvb.simulator.integrators import (
     HeunStochastic,
 )
 from tvb.simulator.noise import Additive
+from tvb.simulator.models import Generic2dOscillator
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
 from tvb.simulator.monitors import TemporalAverage
 
@@ -499,3 +500,49 @@ class TestTemplateRendering(unittest.TestCase):
             bindings_cpp_filename="bindings.cpp",
         )
         self.assertIn("mymod_xyz", src)
+
+
+class TestModelDiversity(unittest.TestCase):
+    """Verify spec/lowering logic works for non-MPR models."""
+
+    def _lower_g2d(self, n_nodes: int = 3) -> SpecLoweringResult:
+        model = Generic2dOscillator()
+        model.configure()
+        subnet = Subnetwork(
+            name="sn",
+            model=model,
+            scheme=HeunDeterministic(dt=0.1),
+            nnodes=n_nodes,
+        ).configure()
+        subnet.node_indices = np.arange(n_nodes)
+        network = NetworkSet(subnets=[subnet], projections=[])
+        network.configure()
+        return lower_network_set(network, monitors=[TemporalAverage(period=0.2)])
+
+    def test_g2d_model_type(self):
+        result = self._lower_g2d()
+        self.assertEqual(result.spec.subnetworks[0].model_type, "Generic2dOscillator")
+
+    def test_g2d_state_variables(self):
+        result = self._lower_g2d()
+        sn = result.spec.subnetworks[0]
+        self.assertIn("V", sn.state_variables)
+        self.assertIn("W", sn.state_variables)
+        self.assertEqual(len(sn.state_variables), 2)
+
+    def test_g2d_parameter_values_are_float64_arrays(self):
+        result = self._lower_g2d(n_nodes=4)
+        for name, values in result.spec.subnetworks[0].parameter_values.items():
+            self.assertIsInstance(values, np.ndarray, msg=f"param {name}")
+            self.assertEqual(values.dtype, np.float64, msg=f"param {name}")
+
+    def test_g2d_initial_state_shape(self):
+        result = self._lower_g2d(n_nodes=5)
+        self.assertEqual(result.spec.subnetworks[0].initial_state_shape, (2, 5, 1))
+
+    def test_g2d_dfun_context_has_correct_dx_count(self):
+        from tvb.simulator.backend_cpp.codegen import _build_dfun_context
+        result = self._lower_g2d()
+        spec = result.spec.subnetworks[0]
+        ctx = _build_dfun_context(spec)
+        self.assertEqual(len(ctx["dfun_dx_assignments"]), 2)
