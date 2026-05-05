@@ -17,7 +17,13 @@ from tvb.datatypes import equations, patterns
 from tvb.datatypes.connectivity import Connectivity
 from tvb.simulator.backend.nb_hybrid import NbHybridBackend
 from tvb.simulator.backend_cpp import CppHybridBackend
-from tvb.simulator.hybrid import IntraProjection, NetworkSet, Simulator, Subnetwork
+from tvb.simulator.hybrid import (
+    InterProjection,
+    IntraProjection,
+    NetworkSet,
+    Simulator,
+    Subnetwork,
+)
 from tvb.simulator.integrators import (
     EulerDeterministic,
     EulerStochastic,
@@ -730,6 +736,101 @@ class TestCppHybridBackend(unittest.TestCase):
         # Numba uses float32; allow for float32↔float64 rounding
         np.testing.assert_allclose(native_data, nb_data, rtol=1e-4, atol=1e-4)
         np.testing.assert_allclose(native_times, nb_times, rtol=1e-6, atol=1e-6)
+
+    def test_inter_projection_delayed_coupling_is_nonzero_and_shaped(self):
+        """Inter-projection delayed coupling reaches the target subnet."""
+        nstep = 6
+        delay_steps = 2
+        cv = 10.0
+        scale = 0.5
+        weights = np.array([[0.20], [0.35]], dtype=np.float64)
+        lengths = np.full_like(weights, delay_steps * cv * DT)
+
+        source = _make_subnet("source", 1)
+        source.node_indices = np.array([0])
+        target = _make_subnet("target", 2)
+        target.node_indices = np.array([1, 2])
+        projection = InterProjection(
+            source=source,
+            target=target,
+            source_cvar=np.array([0]),  # source r state variable
+            target_cvar=np.array([0]),  # target Coupling_Term_r slot
+            weights=sp.csr_matrix(weights),
+            lengths=sp.csr_matrix(lengths),
+            cv=cv,
+            dt=DT,
+            scale=scale,
+        )
+        network = NetworkSet(subnets=[source, target], projections=[projection])
+        network.configure()
+
+        initial_source = _make_initial_state(source)
+        initial_target = _make_initial_state(target)
+        initial_source[0, :, :] = 0.8
+        initial_source[1, :, :] = -0.2
+        initial_target[0, :, :] = 1.1
+        initial_target[1, :, :] = -0.3
+
+        with tempfile.TemporaryDirectory(prefix="tvb-cpp-backend-build-") as build_root:
+            backend = CppHybridBackend(build_root=build_root)
+            raw_compiled = backend.compile(
+                network,
+                monitors=[Raw()],
+                user_source_hint="test_inter_projection_delayed_raw",
+            )
+            raw_results = raw_compiled.run(
+                initial_states=[initial_source.copy(), initial_target.copy()],
+                nstep=nstep,
+                chunk_size=1,
+            )
+            (raw_source_times, raw_source_data), (_raw_target_times, _raw_target_data) = (
+                raw_results
+            )
+
+            aff_compiled = backend.compile(
+                network,
+                monitors=[AfferentCoupling()],
+                user_source_hint="test_inter_projection_delayed_coupling",
+            )
+            aff_results = aff_compiled.run(
+                initial_states=[initial_source.copy(), initial_target.copy()],
+                nstep=nstep,
+                chunk_size=1,
+            )
+            (source_times, source_coupling), (target_times, target_coupling) = (
+                aff_results
+            )
+
+        self.assertEqual(projection.idelays.tolist(), [delay_steps, delay_steps])
+        self.assertEqual(source_coupling.shape, (nstep, 2, 1, 1))
+        self.assertEqual(target_coupling.shape, (nstep, 2, 2, 1))
+        np.testing.assert_allclose(source_times, DT * np.arange(1, nstep + 1))
+        np.testing.assert_array_equal(source_coupling, np.zeros_like(source_coupling))
+        self.assertGreater(float(np.max(np.abs(target_coupling[:, 0, :, 0]))), 0.0)
+
+        source_r_after_steps = raw_source_data[:, 0, 0, 0]
+        delayed_source_r = np.concatenate(
+            (
+                np.full(delay_steps + 1, initial_source[0, 0, 0]),
+                source_r_after_steps[: nstep - delay_steps - 1],
+            )
+        )
+        expected = (
+            scale
+            * delayed_source_r[:, np.newaxis]
+            * weights[:, 0][np.newaxis, :]
+        )
+        np.testing.assert_allclose(target_times, raw_source_times, rtol=0.0, atol=0.0)
+        np.testing.assert_allclose(
+            target_coupling[:, 0, :, 0],
+            expected,
+            rtol=1e-7,
+            atol=1e-9,
+        )
+        np.testing.assert_array_equal(
+            target_coupling[:, 1, :, 0],
+            np.zeros_like(target_coupling[:, 1, :, 0]),
+        )
 
     def test_zero_weight_projection_matches_no_projection(self):
         """A projection with zero weights must produce identical output to no projection."""
