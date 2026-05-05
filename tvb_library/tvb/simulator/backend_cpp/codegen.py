@@ -70,6 +70,8 @@ class _CppExprGen(_ast.NodeVisitor):
             return "true" if node.value else "false"
         if isinstance(node.value, float):
             return f"{node.value:.17g}"
+        if isinstance(node.value, int):
+            return f"{node.value}.0"
         return str(node.value)
 
     def visit_Name(self, node: _ast.Name) -> str:

@@ -11,6 +11,7 @@ os.environ.setdefault("MPLCONFIGDIR", os.path.join(tempfile.gettempdir(), "matpl
 
 import scipy.sparse as sp
 
+from tvb.simulator.backend_cpp.codegen import py_expr_to_cpp
 from tvb.simulator.backend_cpp.lowering import SpecLoweringResult, lower_network_set
 from tvb.simulator.backend_cpp.spec import (
     IntegratorSpec,
@@ -384,3 +385,22 @@ class TestCompatibilityGate(unittest.TestCase):
         network.configure()
         with self.assertRaises(ValueError):
             lower_network_set(network)
+
+
+class TestPyExprToCpp(unittest.TestCase):
+    def _tr(self, expr: str) -> str:
+        return py_expr_to_cpp(expr, {}, set(), set(), set())
+
+    def test_integer_division_emits_doubles(self):
+        # 3 / 2 must produce 1.5 in C++, not integer division (1).
+        result = self._tr("3 / 2")
+        self.assertIn("3.0", result)
+        self.assertIn("2.0", result)
+
+    def test_float_literal_unchanged(self):
+        result = self._tr("1.5")
+        self.assertIn("1.5", result)
+
+    def test_bool_literal(self):
+        self.assertEqual(self._tr("True"), "true")
+        self.assertEqual(self._tr("False"), "false")
