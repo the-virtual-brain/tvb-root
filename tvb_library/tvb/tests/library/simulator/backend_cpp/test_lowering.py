@@ -404,3 +404,98 @@ class TestPyExprToCpp(unittest.TestCase):
     def test_bool_literal(self):
         self.assertEqual(self._tr("True"), "true")
         self.assertEqual(self._tr("False"), "false")
+
+
+class TestDfunContextBuilder(unittest.TestCase):
+    """Unit tests for _build_dfun_context_standard against MPR spec."""
+
+    def _spec(self) -> SubnetworkSpec:
+        return _lower().spec.subnetworks[0]
+
+    def test_required_keys_present(self):
+        from tvb.simulator.backend_cpp.codegen import _build_dfun_context
+        ctx = _build_dfun_context(self._spec())
+        for key in (
+            "dfun_dx_assignments",
+            "dfun_state_reads",
+            "dfun_coupling_reads",
+            "dfun_param_reads",
+            "dfun_intermediate_decls",
+            "dfun_voi_assignments",
+            "dfun_constraint_stmts",
+        ):
+            self.assertIn(key, ctx, msg=f"missing context key: {key}")
+
+    def test_dx_assignment_count_matches_state_vars(self):
+        from tvb.simulator.backend_cpp.codegen import _build_dfun_context
+        spec = self._spec()
+        ctx = _build_dfun_context(spec)
+        self.assertEqual(len(ctx["dfun_dx_assignments"]), len(spec.state_variables))
+
+    def test_dx_assignments_reference_dx_array(self):
+        from tvb.simulator.backend_cpp.codegen import _build_dfun_context
+        ctx = _build_dfun_context(self._spec())
+        for stmt in ctx["dfun_dx_assignments"]:
+            self.assertIn("dx[", stmt, msg=f"assignment does not reference dx[]: {stmt}")
+
+    def test_state_reads_contain_all_state_variables(self):
+        from tvb.simulator.backend_cpp.codegen import _build_dfun_context
+        spec = self._spec()
+        ctx = _build_dfun_context(spec)
+        combined = "\n".join(ctx["dfun_state_reads"])
+        for sv in spec.state_variables:
+            self.assertIn(sv, combined, msg=f"state var '{sv}' missing from state reads")
+
+    def test_param_reads_contain_all_parameters(self):
+        from tvb.simulator.backend_cpp.codegen import _build_dfun_context
+        spec = self._spec()
+        ctx = _build_dfun_context(spec)
+        combined = "\n".join(ctx["dfun_param_reads"])
+        for p in spec.global_parameter_names:
+            self.assertIn(p, combined, msg=f"parameter '{p}' missing from param reads")
+
+    def test_coupling_reads_count_matches_coupling_terms(self):
+        from tvb.simulator.backend_cpp.codegen import _build_dfun_context
+        spec = self._spec()
+        ctx = _build_dfun_context(spec)
+        self.assertEqual(len(ctx["dfun_coupling_reads"]), len(spec.coupling_terms))
+
+    def test_is_combined_false_for_standard_model(self):
+        from tvb.simulator.backend_cpp.codegen import _build_dfun_context
+        ctx = _build_dfun_context(self._spec())
+        self.assertFalse(ctx["is_combined"])
+
+
+class TestTemplateRendering(unittest.TestCase):
+    """Smoke-tests that Mako templates render without error and emit expected symbols."""
+
+    def _spec(self) -> SimulationSpec:
+        return _lower().spec
+
+    def test_cpp_template_contains_required_symbols(self):
+        from tvb.simulator.backend_cpp.codegen import render_cpp_template
+        src = render_cpp_template(self._spec(), module_name="test_mod")
+        for symbol in ("compute_dfun", "compute_voi", "kNumNodes", "kNumStateVars"):
+            self.assertIn(symbol, src, msg=f"expected symbol '{symbol}' missing from rendered C++")
+
+    def test_cpp_template_embeds_module_name(self):
+        from tvb.simulator.backend_cpp.codegen import render_cpp_template
+        src = render_cpp_template(self._spec(), module_name="mymod_xyz")
+        self.assertIn("mymod_xyz", src)
+
+    def test_bindings_template_contains_module_name(self):
+        from tvb.simulator.backend_cpp.codegen import render_bindings_template
+        src = render_bindings_template(
+            self._spec(),
+            module_name="mymod_xyz",
+            generated_cpp_filename="gen.cpp",
+        )
+        self.assertIn("mymod_xyz", src)
+
+    def test_cmake_template_contains_module_name(self):
+        from tvb.simulator.backend_cpp.codegen import render_cmake_template
+        src = render_cmake_template(
+            module_name="mymod_xyz",
+            bindings_cpp_filename="bindings.cpp",
+        )
+        self.assertIn("mymod_xyz", src)
