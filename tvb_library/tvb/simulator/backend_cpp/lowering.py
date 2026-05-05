@@ -4,12 +4,6 @@ import dataclasses
 
 import numpy as np
 
-from tvb.simulator.backend.nb_hybrid import (
-    NbHybridBackend,
-    _cfun_params,
-    _cfun_type,
-    _cvar_mapping_mode,
-)
 from tvb.simulator.integrators import (
     EulerDeterministic,
     EulerStochastic,
@@ -17,6 +11,12 @@ from tvb.simulator.integrators import (
     HeunStochastic,
 )
 
+from ._network_analysis import (
+    _cfun_params,
+    _cfun_type,
+    _cvar_mapping_mode,
+    analyse_network,
+)
 from .spec import (
     IntegratorSpec,
     MonitorSpec,
@@ -201,15 +201,11 @@ def lower_network_set(
 ) -> SpecLoweringResult:
     """Lower a configured hybrid `NetworkSet` into a backend-neutral spec.
 
-    The current implementation reuses `NbHybridBackend._analyse()` as the
-    reference lowering path so the new C++ backend can lock the spec boundary
-    before re-implementing execution. Compatibility validation is currently a
-    narrow local check for the first milestone scope.
+    Reads only public attributes of NetworkSet and its subnetworks/projections.
+    No dependency on NbHybridBackend.
     """
-
-    backend = NbHybridBackend()
     _check_scope_compatibility(network_set)
-    analysis = backend._analyse(network_set)
+    analysis = analyse_network(network_set)
 
     subnetworks = tuple(_build_subnetwork_spec(sn) for sn in analysis.subnetworks)
     inter_projections = tuple(
