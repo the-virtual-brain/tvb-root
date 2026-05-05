@@ -574,7 +574,18 @@ class TestCppHybridBackend(unittest.TestCase):
         np.testing.assert_allclose(times, DT * np.arange(1, nstep + 1))
 
     def test_afferent_coupling_returns_ctavg_and_forces_one_sample_per_step(self):
-        network, subnet = _make_network(3)
+        # Identity intra-projection (r→c_r) so AfferentCoupling records non-zero values.
+        n_nodes = 3
+        proj = IntraProjection(
+            source_cvar=np.array([0]),
+            target_cvar=np.array([0]),
+            weights=sp.eye(n_nodes, format="csr") * 0.1,
+            lengths=sp.csr_matrix((n_nodes, n_nodes)),
+            cv=7.0,
+            dt=DT,
+            scale=1.0,
+        )
+        network, subnet = _make_network(n_nodes, projections=[proj])
         initial_state = _make_initial_state(subnet)
         nstep = 5
 
@@ -594,13 +605,28 @@ class TestCppHybridBackend(unittest.TestCase):
         self.assertEqual(times.shape, (nstep,))
         self.assertEqual(ctavg.shape, (nstep, 2, subnet.nnodes, 1))
         np.testing.assert_allclose(times, DT * np.arange(1, nstep + 1))
-        np.testing.assert_array_equal(ctavg, np.zeros_like(ctavg))
+        # c_r slot (index 0) must be non-zero: r starts at ~0.5 and weight=0.1.
+        self.assertTrue(
+            np.any(ctavg[:, 0, :, :] != 0.0),
+            "AfferentCoupling c_r slot should be non-zero with a non-zero intra-projection",
+        )
 
     def test_afferent_coupling_temporal_average_uses_requested_chunk_size(self):
-        network, subnet = _make_network(3)
+        # Identity intra-projection so the monitor records non-zero coupling values.
+        n_nodes = 3
+        chunk_size = 3
+        proj = IntraProjection(
+            source_cvar=np.array([0]),
+            target_cvar=np.array([0]),
+            weights=sp.eye(n_nodes, format="csr") * 0.1,
+            lengths=sp.csr_matrix((n_nodes, n_nodes)),
+            cv=7.0,
+            dt=DT,
+            scale=1.0,
+        )
+        network, subnet = _make_network(n_nodes, projections=[proj])
         initial_state = _make_initial_state(subnet)
         nstep = 6
-        chunk_size = 3
 
         with tempfile.TemporaryDirectory(prefix="tvb-cpp-backend-build-") as build_root:
             backend = CppHybridBackend(build_root=build_root)
@@ -615,10 +641,15 @@ class TestCppHybridBackend(unittest.TestCase):
                 chunk_size=chunk_size,
             )
 
+        # Chunk-size assertions: period=chunk_size*DT → 2 output samples for nstep=6.
         self.assertEqual(times.shape, (2,))
         self.assertEqual(ctavg.shape, (2, 2, subnet.nnodes, 1))
         np.testing.assert_allclose(times, np.array([0.2, 0.5]))
-        np.testing.assert_array_equal(ctavg, np.zeros_like(ctavg))
+        # c_r values must be non-zero given the intra-projection and non-zero initial r.
+        self.assertTrue(
+            np.any(ctavg[:, 0, :, :] != 0.0),
+            "AfferentCouplingTemporalAverage c_r slot should be non-zero with a non-zero intra-projection",
+        )
 
     def test_bold_monitor_matches_python_monitor_sample_path(self):
         network, subnet = _make_network(2)
