@@ -13,6 +13,8 @@ import scipy.sparse as sp
 os.environ.setdefault("TVB_USER_HOME", os.path.join(tempfile.gettempdir(), "tvb-user"))
 os.environ.setdefault("MPLCONFIGDIR", os.path.join(tempfile.gettempdir(), "matplotlib"))
 
+from tvb.datatypes import equations, patterns
+from tvb.datatypes.connectivity import Connectivity
 from tvb.simulator.backend.nb_hybrid import NbHybridBackend
 from tvb.simulator.backend_cpp import CppHybridBackend
 from tvb.simulator.hybrid import IntraProjection, NetworkSet, Simulator, Subnetwork
@@ -83,7 +85,7 @@ def _make_network(
     scheme=None,
 ) -> tuple[NetworkSet, Subnetwork]:
     subnet = _make_subnet("sn", n_nodes, projections=projections, scheme=scheme)
-    network = NetworkSet(subnets=[subnet], projections=[], stimuli=[])
+    network = NetworkSet(subnets=[subnet], projections=[])
     network.configure()
     return network, subnet
 
@@ -107,7 +109,7 @@ def _make_stochastic_network(
         projections=[],
     ).configure()
     subnet.node_indices = np.arange(n_nodes)
-    network = NetworkSet(subnets=[subnet], projections=[], stimuli=[])
+    network = NetworkSet(subnets=[subnet], projections=[])
     network.configure()
     return network, subnet
 
@@ -761,3 +763,61 @@ class TestCppHybridBackend(unittest.TestCase):
 
         np.testing.assert_array_equal(times_no, times_with)
         np.testing.assert_array_equal(data_no, data_with)
+
+    def test_stimulus_output_differs_from_no_stimulus_baseline(self):
+        """Non-zero stimulus must change the output on targeted nodes."""
+        n_nodes = 4
+        nstep = 50
+        chunk_size = 5
+        simulation_length = nstep * DT
+
+        network_no_stim, subnet = _make_network(n_nodes)
+        initial_state = _make_initial_state(subnet)
+
+        # Build a stimulus network sharing the same initial state.
+        subnet_stim = _make_subnet("sn", n_nodes)
+        subnet_stim.node_indices = np.arange(n_nodes)
+        network_stim = NetworkSet(subnets=[subnet_stim], projections=[])
+
+        temporal = equations.PulseTrain()
+        temporal.parameters["onset"] = 0.0
+        temporal.parameters["T"] = simulation_length * 2  # one long pulse covering full run
+        temporal.parameters["tau"] = simulation_length
+        temporal.parameters["amp"] = 0.5
+
+        weights = np.zeros(n_nodes, dtype=np.float64)
+        weights[0] = 1.0  # node 0 receives full stimulus; node 1+ receive none
+
+        conn = Connectivity(
+            centres=np.ones((n_nodes, 3)),
+            weights=np.ones((n_nodes, n_nodes), dtype=np.float64),
+            tract_lengths=np.zeros((n_nodes, n_nodes), dtype=np.float64),
+            region_labels=np.array([f"r{i}" for i in range(n_nodes)]),
+            speed=np.array([1.0]),
+        )
+        conn.configure()
+
+        subnet_stim.add_stimulus(
+            stimulus=patterns.StimuliRegion(
+                temporal=temporal, connectivity=conn, weight=weights
+            ),
+            stimulus_cvar=np.r_[0],
+            projection_scale=1.0,
+        )
+        network_stim.configure()
+        for stim in subnet_stim.stimuli:
+            stim.configure(simulation_length)
+
+        with tempfile.TemporaryDirectory(prefix="tvb-cpp-backend-build-") as build_root:
+            times_no, data_no = _run_native(
+                network_no_stim, initial_state.copy(), nstep, chunk_size, build_root
+            )
+            times_stim, data_stim = _run_native(
+                network_stim, initial_state.copy(), nstep, chunk_size, build_root
+            )
+
+        self.assertEqual(data_no.shape, data_stim.shape)
+        np.testing.assert_array_equal(times_no, times_stim)
+        # Node 0 received stimulus — its trajectory must diverge from the baseline.
+        diff_node0 = float(np.max(np.abs(data_stim[:, :, 0, :] - data_no[:, :, 0, :])))
+        self.assertGreater(diff_node0, 1e-6, "stimulus had no effect on node 0")
