@@ -737,6 +737,66 @@ class TestCppHybridBackend(unittest.TestCase):
         np.testing.assert_allclose(native_data, nb_data, rtol=1e-4, atol=1e-4)
         np.testing.assert_allclose(native_times, nb_times, rtol=1e-6, atol=1e-6)
 
+    def test_multi_subnet_compiled_run_matches_independent_single_subnets(self):
+        """A compiled two-subnet NetworkSet runs and returns one result per subnet."""
+        nstep = 6
+        chunk_size = 2
+
+        subnet_a = _make_subnet("a", 1)
+        subnet_a.node_indices = np.array([0])
+        subnet_b = _make_subnet("b", 3)
+        subnet_b.node_indices = np.array([1, 2, 3])
+        multi_network = NetworkSet(subnets=[subnet_a, subnet_b], projections=[])
+        multi_network.configure()
+
+        initial_a = _make_initial_state(subnet_a)
+        initial_b = _make_initial_state(subnet_b)
+        initial_a[0, :, :] = 0.7
+        initial_a[1, :, :] = -0.25
+        initial_b[0, :, :] = np.array([[1.0], [1.1], [1.2]])
+        initial_b[1, :, :] = np.array([[-0.45], [-0.35], [-0.30]])
+
+        with tempfile.TemporaryDirectory(prefix="tvb-cpp-backend-build-") as build_root:
+            backend = CppHybridBackend(build_root=build_root)
+            multi_compiled = backend.compile(
+                multi_network,
+                monitors=[TemporalAverage(period=chunk_size * DT)],
+                user_source_hint="test_multi_subnet_compiled_run",
+            )
+            multi_results = multi_compiled.run(
+                initial_states=[initial_a.copy(), initial_b.copy()],
+                nstep=nstep,
+                chunk_size=chunk_size,
+            )
+
+            single_a, single_subnet_a = _make_network(1)
+            single_b, single_subnet_b = _make_network(3)
+            single_initial_a = initial_a.copy()
+            single_initial_b = initial_b.copy()
+            times_a, data_a = _run_native(
+                single_a,
+                single_initial_a,
+                nstep,
+                chunk_size,
+                build_root,
+            )
+            times_b, data_b = _run_native(
+                single_b,
+                single_initial_b,
+                nstep,
+                chunk_size,
+                build_root,
+            )
+
+        self.assertEqual(len(multi_results), 2)
+        (multi_times_a, multi_data_a), (multi_times_b, multi_data_b) = multi_results
+        self.assertEqual(multi_data_a.shape, (3, 2, single_subnet_a.nnodes, 1))
+        self.assertEqual(multi_data_b.shape, (3, 2, single_subnet_b.nnodes, 1))
+        np.testing.assert_allclose(multi_times_a, times_a, rtol=0.0, atol=0.0)
+        np.testing.assert_allclose(multi_times_b, times_b, rtol=0.0, atol=0.0)
+        np.testing.assert_allclose(multi_data_a, data_a, rtol=1e-12, atol=1e-12)
+        np.testing.assert_allclose(multi_data_b, data_b, rtol=1e-12, atol=1e-12)
+
     def test_inter_projection_delayed_coupling_is_nonzero_and_shaped(self):
         """Inter-projection delayed coupling reaches the target subnet."""
         nstep = 6
