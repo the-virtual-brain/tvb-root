@@ -54,7 +54,7 @@ def _make_mpr_subnet(
 
 
 def _make_network(*subnets: Subnetwork) -> NetworkSet:
-    network = NetworkSet(subnets=list(subnets), projections=[], stimuli=[])
+    network = NetworkSet(subnets=list(subnets), projections=[])
     network.configure()
     return network
 
@@ -299,7 +299,7 @@ class TestCacheKey(unittest.TestCase):
                 cfun=Linear(),
             )
             subnet = _make_mpr_subnet("sn", n_nodes)
-            network = NetworkSet(subnets=[subnet], projections=[proj], stimuli=[])
+            network = NetworkSet(subnets=[subnet], projections=[proj])
             network.configure()
             return lower_network_set(network).spec.cache_key()
 
@@ -365,7 +365,7 @@ class TestCompatibilityGate(unittest.TestCase):
         )
 
     def test_empty_network_raises(self):
-        network = NetworkSet(subnets=[], projections=[], stimuli=[])
+        network = NetworkSet(subnets=[], projections=[])
         network.configure()
         with self.assertRaises(ValueError):
             lower_network_set(network)
@@ -381,7 +381,7 @@ class TestCompatibilityGate(unittest.TestCase):
             nnodes=3,
         ).configure()
         sn2.node_indices = np.arange(3)
-        network = NetworkSet(subnets=[sn1, sn2], projections=[], stimuli=[])
+        network = NetworkSet(subnets=[sn1, sn2], projections=[])
         network.configure()
         with self.assertRaises(ValueError):
             lower_network_set(network)
