@@ -3,7 +3,6 @@ from __future__ import annotations
 import ast as _ast
 import dataclasses
 import importlib.machinery
-import importlib.util
 import os
 from pathlib import Path
 import shutil
@@ -693,17 +692,17 @@ def _resolve_pybind11_include_dir() -> str:
     if env_include and Path(env_include).exists():
         return env_include
 
-    spec = importlib.util.find_spec("pybind11")
-    if spec and spec.origin:
-        package_dir = Path(spec.origin).resolve().parent
-        include_dir = package_dir / "include"
-        if include_dir.exists():
-            return str(include_dir)
+    try:
+        import pybind11
+        return pybind11.get_include()
+    except ImportError:
+        pass
 
+    pyver = f"python{sys.version_info.major}.{sys.version_info.minor}"
     candidates = [
-        Path(sys.prefix) / "lib" / f"python{sys.version_info.major}.{sys.version_info.minor}" / "site-packages" / "pybind11" / "include",
-        Path.home() / "anaconda3" / "lib" / "python3.11" / "site-packages" / "pybind11" / "include",
-        Path.home() / ".local" / "lib" / f"python{sys.version_info.major}.{sys.version_info.minor}" / "site-packages" / "pybind11" / "include",
+        Path(sys.prefix) / "lib" / pyver / "site-packages" / "pybind11" / "include",
+        Path.home() / "anaconda3" / "lib" / pyver / "site-packages" / "pybind11" / "include",
+        Path.home() / ".local" / "lib" / pyver / "site-packages" / "pybind11" / "include",
     ]
     for candidate in candidates:
         if candidate.exists():
