@@ -12,7 +12,12 @@ os.environ.setdefault("MPLCONFIGDIR", os.path.join(tempfile.gettempdir(), "matpl
 import scipy.sparse as sp
 
 from tvb.simulator.backend_cpp.lowering import SpecLoweringResult, lower_network_set
-from tvb.simulator.backend_cpp.spec import IntegratorSpec, SimulationSpec, SubnetworkSpec
+from tvb.simulator.backend_cpp.spec import (
+    IntegratorSpec,
+    ProjectionSpec,
+    SimulationSpec,
+    SubnetworkSpec,
+)
 from tvb.simulator.hybrid import IntraProjection, NetworkSet, Subnetwork
 from tvb.simulator.hybrid.coupling import Linear
 from tvb.simulator.integrators import (
@@ -191,6 +196,49 @@ class TestParameterValues(unittest.TestCase):
     def test_eta_reflects_configuration(self):
         params = self._params(eta=np.array([-2.0]))
         np.testing.assert_array_equal(params["eta"], np.array([-2.0]))
+
+
+class TestProjectionSpec(unittest.TestCase):
+    def _projection_spec(self, *, is_inter: bool, mode_map=None, n_src_modes=None):
+        return ProjectionSpec(
+            name="proj",
+            source_subnet="src",
+            target_subnet="tgt",
+            source_cvar=np.array([0], dtype=np.int32),
+            target_cvar=np.array([0], dtype=np.int32),
+            weights_data=np.array([1.0], dtype=np.float32),
+            weights_indices=np.array([0], dtype=np.int32),
+            weights_indptr=np.array([0, 1], dtype=np.int32),
+            idelays=np.array([0], dtype=np.int32),
+            horizon=1,
+            scale=1.0,
+            target_scales=np.array([], dtype=np.float32),
+            cfun_type="none",
+            cfun_params=np.array([], dtype=np.float32),
+            cvar_mapping_mode="single",
+            is_inter=is_inter,
+            mode_map=mode_map,
+            n_src_modes=n_src_modes,
+        )
+
+    def test_inter_projection_missing_mode_map_raises_value_error(self):
+        spec = self._projection_spec(is_inter=True, mode_map=None)
+        with self.assertRaisesRegex(ValueError, "requires mode_map"):
+            _ = spec.n_tgt_modes
+
+    def test_intra_projection_missing_n_src_modes_raises_value_error(self):
+        spec = self._projection_spec(is_inter=False, n_src_modes=None)
+        with self.assertRaisesRegex(ValueError, "requires n_src_modes"):
+            _ = spec.n_tgt_modes
+
+    def test_n_tgt_modes_valid_specs(self):
+        inter = self._projection_spec(
+            is_inter=True,
+            mode_map=np.ones((2, 3), dtype=np.float32),
+        )
+        intra = self._projection_spec(is_inter=False, n_src_modes=2)
+        self.assertEqual(inter.n_tgt_modes, 3)
+        self.assertEqual(intra.n_tgt_modes, 2)
 
 
 class TestSpecHoldsNoPythonObjects(unittest.TestCase):

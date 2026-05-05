@@ -130,9 +130,15 @@ class ProjectionSpec:
     @property
     def n_tgt_modes(self) -> int:
         if self.is_inter:
-            assert self.mode_map is not None
+            if self.mode_map is None:
+                raise ValueError(
+                    f"Inter-projection '{self.name}' requires mode_map to determine target modes."
+                )
             return int(self.mode_map.shape[1])
-        assert self.n_src_modes is not None
+        if self.n_src_modes is None:
+            raise ValueError(
+                f"Intra-projection '{self.name}' requires n_src_modes to determine target modes."
+            )
         return int(self.n_src_modes)
 
     def payload(self) -> dict[str, Any]:
@@ -212,4 +218,3 @@ class SimulationSpec:
 
     def cache_key(self) -> str:
         return _hash_payload(self.payload())
-
