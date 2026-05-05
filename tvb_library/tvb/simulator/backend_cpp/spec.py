@@ -213,7 +213,6 @@ class SimulationSpec:
             "monitors": [m.payload() for m in self.monitors],
             "stimuli": [s.payload() for s in self.stimuli],
             "source_horizons": dict(sorted(self.source_horizons.items())),
-            "user_source_hint": self.user_source_hint,
         }
 
     def cache_key(self) -> str:

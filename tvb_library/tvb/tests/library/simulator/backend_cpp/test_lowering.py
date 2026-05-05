@@ -307,6 +307,21 @@ class TestCacheKey(unittest.TestCase):
         self.assertEqual(_lower_with_scale(0.0), _lower_with_scale(0.5))
         self.assertEqual(_lower_with_scale(0.5), _lower_with_scale(1.0))
 
+    def test_cache_key_invariant_to_user_source_hint(self):
+        """user_source_hint must NOT affect the cache key.
+
+        Two compilations of the same topology with different hints must reuse
+        the cached extension rather than triggering a rebuild.
+        """
+        key_a = lower_network_set(_make_network(_make_mpr_subnet("sn", 3)),
+                                  user_source_hint="run_a").spec.cache_key()
+        key_b = lower_network_set(_make_network(_make_mpr_subnet("sn", 3)),
+                                  user_source_hint="run_b").spec.cache_key()
+        key_none = lower_network_set(_make_network(_make_mpr_subnet("sn", 3)),
+                                     user_source_hint=None).spec.cache_key()
+        self.assertEqual(key_a, key_b)
+        self.assertEqual(key_a, key_none)
+
     def test_cache_key_changes_with_dt(self):
         subnet1 = _make_mpr_subnet("sn", 3)
         subnet2 = Subnetwork(
