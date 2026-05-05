@@ -433,6 +433,26 @@ class CppHybridBackend:
             pipeline_stage=pipeline_stage,
         )
 
-    def run(self, *args, **kwargs):
-        compiled = self.compile(*args, **kwargs)
-        return compiled.run()
+    def run(
+        self,
+        network_set,
+        monitors=None,
+        user_source_hint=None,
+        build_native=True,
+        verbose=False,
+        initial_states=None,
+        nstep=None,
+        chunk_size=1,
+    ):
+        compiled = self.compile(
+            network_set,
+            monitors=monitors,
+            user_source_hint=user_source_hint,
+            build_native=build_native,
+            verbose=verbose,
+        )
+        return compiled.run(
+            initial_states=initial_states,
+            nstep=nstep,
+            chunk_size=chunk_size,
+        )
