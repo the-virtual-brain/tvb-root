@@ -10,6 +10,7 @@ import shlex
 import sysconfig
 import subprocess
 import sys
+import re
 
 from mako.exceptions import text_error_template
 from mako.lookup import TemplateLookup
@@ -169,7 +170,158 @@ def py_expr_to_cpp(
     )
 
 
-def _build_dfun_context(subnet: SubnetworkSpec) -> dict:
+def _build_dfun_context_combined(subnet: SubnetworkSpec, si: int = 0) -> dict:
+    """Build dfun context for combined-mode (multi-mode) models.
+
+    These models (e.g. ReducedSetFitzHughNagumo) use a special _{m} subscript
+    notation in their dfun expressions, pre-computed derived matrix arrays
+    (Aik, Bik, ...), and cross-mode matrix-vector products (Axi, Balpha, ...).
+    The Heun integrator must compute k1 for ALL modes before updating any mode
+    because the cross-mode terms couple the modes.
+    """
+
+    n_modes = subnet.n_modes
+    svars = list(subnet.state_variables)
+    svar_to_idx = {sv: i for i, sv in enumerate(svars)}
+    coupling_terms = list(subnet.coupling_terms)
+    dm_names = list(subnet.derived_matrix_names)
+    dm_name_set = set(dm_names)
+    dm_ops = list(subnet.derived_matrix_ops)    # [(result, matrix, source_svar), ...]
+    result_names = {op[0] for op in dm_ops}
+
+    # All names that are local C++ variables (pass through the AST translator as-is).
+    local_names = (
+        {f"{sv}_m" for sv in svars}            # xi_m, eta_m, alpha_m, beta_m
+        | {f"{dm}_m" for dm in dm_names}        # e_i_m, f_i_m, IE_i_m, ...
+        | {f"{r}_m" for r in result_names}      # Axi_m, Balpha_m, Cxi_m
+        | set(coupling_terms)                   # c_xi, c_alpha (no mode suffix)
+        | set(subnet.global_parameter_names)    # tau, K11, b, ...
+    )
+
+    def expand_mode_expr(expr: str) -> str:
+        """Replace _{m} subscript patterns and remove nb.float32() casts."""
+        def _replace(mo: re.Match) -> str:
+            nm = mo.group(1)
+            if nm in set(svars):
+                return f"{nm}_m"          # state var local for mode m
+            if nm in set(coupling_terms):
+                return nm                 # coupling is scalar (same all modes)
+            if nm in dm_name_set or nm in result_names:
+                return f"{nm}_m"          # derived array or cross-mode result
+            return f"{nm}_m"              # fallback
+        expr = re.sub(r"nb\.float32\(([^)]+)\)", r"\1", expr)
+        return re.sub(r"(\w+)_\{m\}", _replace, expr)
+
+    def translate(expr: str) -> str:
+        expanded = expand_mode_expr(expr)
+        return py_expr_to_cpp(expanded, {}, set(), set(), local_names)
+
+    # --- Dfun C++ expressions per state variable ---
+    dfun_cpp_exprs = {sv: translate(subnet.state_variable_dfuns[sv]) for sv in svars}
+
+    # --- Struct-level: kDerived_* array literals ---
+    derived_array_decls: list[str] = []
+    for dm_name in dm_names:
+        arr = subnet.derived_matrix_values.get(dm_name)
+        if arr is None:
+            continue
+        flat = arr.ravel()
+        vals = ", ".join(f"{float(v):.17g}" for v in flat)
+        derived_array_decls.append(
+            f"  static constexpr std::array<double, {len(flat)}> kDerived_{dm_name} = {{ {vals} }};"
+        )
+
+    # --- Cross-mode op info for the template ---
+    dm_ops_info = [
+        {
+            "result": op[0],
+            "matrix": op[1],
+            "svar_idx": svar_to_idx[op[2]],
+        }
+        for op in dm_ops
+    ]
+
+    sm = f"SubnetModel_{si}"  # struct qualifier for use outside the struct
+
+    # --- Per-node reads (outside mode loop) ---
+    param_reads = [
+        f"const double {p} = {sm}::param_at({sm}::kParam_{p}, node);"
+        for p in subnet.global_parameter_names
+    ]
+    coupling_reads = [
+        f"const double {ct} = coupling_{si}[{i} * {sm}::kNumNodes + node];"
+        for i, ct in enumerate(coupling_terms)
+    ]
+
+    # --- Per-mode reads (inside mode loop): state vars from current state ---
+    state_reads_k1 = [
+        f"const double {sv}_m = state_{si}({svar_to_idx[sv]}, node, m);"
+        for sv in svars
+    ]
+    # --- Per-mode reads: state vars from predictor array ---
+    state_reads_k2 = [
+        f"const double {sv}_m = pred[{svar_to_idx[sv]} * {n_modes} + m];"
+        for sv in svars
+    ]
+    # --- Per-mode reads: derived 1D arrays ---
+    derived_scalar_reads = [
+        f"const double {dm}_m = {sm}::kDerived_{dm}[m];"
+        for dm in dm_names
+        if dm in subnet.derived_matrix_values
+        and subnet.derived_matrix_values[dm].ndim == 1
+    ]
+    # --- Per-mode reads: cross-mode intermediates (k1 and k2 versions) ---
+    cross_mode_reads_k1 = [f"const double {op['result']}_m = {op['result']}[m];" for op in dm_ops_info]
+    cross_mode_reads_k2 = [f"const double {op['result']}_m = {op['result']}_p[m];" for op in dm_ops_info]
+
+    # --- k1 / k2 derivative assignments ---
+    k1_assignments = [
+        f"k1[{svar_to_idx[sv]} * {n_modes} + m] = {dfun_cpp_exprs[sv]};"
+        for sv in svars
+    ]
+    k2_assignments = [
+        f"k2[{svar_to_idx[sv]} * {n_modes} + m] = {dfun_cpp_exprs[sv]};"
+        for sv in svars
+    ]
+
+    # --- VOI accumulation (per mode) ---
+    voi_accum = [
+        f"monitor_{{si}}.accum({ivoi}, node, m) += state_{{si}}({svar_to_idx[voi]}, node, m);"
+        if voi in svar_to_idx else
+        f"monitor_{{si}}.accum({ivoi}, node, m) += 0.0;  // derived VOI not supported"
+        for ivoi, voi in enumerate(subnet.variables_of_interest)
+    ]
+
+    return {
+        "is_combined": True,
+        "n_modes": n_modes,
+        "n_state_vars": subnet.n_state_vars,
+        "n_coupling_vars": len(coupling_terms),
+        "dfun_helper_decls": [],                # combined mode has no standalone helpers
+        "derived_array_decls": derived_array_decls,
+        "dm_ops_info": dm_ops_info,
+        "param_reads": param_reads,
+        "coupling_reads": coupling_reads,
+        "state_reads_k1": state_reads_k1,
+        "state_reads_k2": state_reads_k2,
+        "derived_scalar_reads": derived_scalar_reads,
+        "cross_mode_reads_k1": cross_mode_reads_k1,
+        "cross_mode_reads_k2": cross_mode_reads_k2,
+        "k1_assignments": k1_assignments,
+        "k2_assignments": k2_assignments,
+        "voi_accum": voi_accum,
+        # For compatibility with the template's struct section:
+        "dfun_state_reads": [],
+        "dfun_param_reads": [],
+        "dfun_coupling_reads": [],
+        "dfun_intermediate_decls": [],
+        "dfun_dx_assignments": [],
+        "dfun_constraint_stmts": [],
+        "dfun_voi_assignments": [],
+    }
+
+
+def _build_dfun_context(subnet: SubnetworkSpec, si: int = 0) -> dict:
     """Pre-translate all dfun expressions to C++ and return template context."""
     svar_to_idx = {sv: i for i, sv in enumerate(subnet.state_variables)}
     param_names = set(subnet.global_parameter_names)
