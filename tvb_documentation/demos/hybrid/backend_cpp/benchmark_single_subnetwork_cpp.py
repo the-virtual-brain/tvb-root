@@ -123,7 +123,7 @@ def make_initial_state(subnetwork: Subnetwork) -> np.ndarray:
 
 def make_single_network(model_name: str, n_nodes: int) -> tuple[NetworkSet, list[np.ndarray]]:
     subnet = make_subnet("sn", model_name, n_nodes)
-    nets = NetworkSet(subnets=[subnet], projections=[], stimuli=[])
+    nets = NetworkSet(subnets=[subnet], projections=[])
     nets.configure()
     return nets, [make_initial_state(subnet)]
 
