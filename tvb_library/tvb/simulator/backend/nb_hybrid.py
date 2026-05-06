@@ -2209,9 +2209,19 @@ class NbHybridBackend(MakoUtilMix):
         result = SweepResult(sweep_values=sweep_values, backend="cuda", elapsed=elapsed,
                             snapshot=raw.get("snapshot"))
         if raw.get("tavg"):
-            result.tavg = dict(zip(subnet_names, raw["tavg"]))
+            result.tavg = {}
+            for si, sname in enumerate(subnet_names):
+                arr = raw["tavg"][si]
+                # GPU may return shape (n_sweeps, n_voi, N, n_modes) where n_modes > 1;
+                # only mode-0 contains the summed signal.  Squeeze to match CPU format.
+                if arr.ndim == 4 and arr.shape[3] > 1:
+                    arr = arr[:, :, :, 0:1]  # keep dim but select mode 0
+                result.tavg[sname] = arr
         if raw.get("merged_tavg") is not None:
-            result.merged_tavg = raw["merged_tavg"]
+            arr = raw["merged_tavg"]
+            if arr.ndim == 4 and arr.shape[3] > 1:
+                arr = arr[:, :, :, 0:1]
+            result.merged_tavg = arr
         elif result.tavg:
             result.merged_tavg = np.concatenate(list(result.tavg.values()), axis=2)
         if raw.get("ctavg"):
@@ -2226,24 +2236,33 @@ class NbHybridBackend(MakoUtilMix):
         return result
 
     def _stack_cpu_results(self, raw_results, network_set, node_indices, sweep_values, backend_label, elapsed):
-        """Stack CPU list-of-tuples into SweepResult."""
+        """Stack CPU list-of-tuples into SweepResult.
+
+        raw_results: list of n_sweeps tuples, each tuple has n_subnets entries
+        of (times, data, ctavg).  data shape: (n_chunks, n_voi, N, modes).
+        We average over n_chunks to produce (n_sweeps, n_voi, N, modes)
+        matching the GPU SweepResult format.
+        """
         subnet_names = [sn.name for sn in network_set.subnets]
-        tavg_dict = {};
+        tavg_dict = {}
         ctavg_dict = {}
         for si, sname in enumerate(subnet_names):
-            tavg_dict[sname] = np.stack([r[si][1] for r in raw_results], axis=0)
-            ctavg_dict[sname] = np.stack([r[si][2] for r in raw_results], axis=0)
-        # Merge
-        if node_indices:
+            # Average over time (chunk) dimension to match GPU format
+            tavg_arr = np.stack([r[si][1].mean(axis=0) for r in raw_results], axis=0)
+            ctavg_arr = np.stack([r[si][2].mean(axis=0) for r in raw_results], axis=0)
+            tavg_dict[sname] = tavg_arr
+            ctavg_dict[sname] = ctavg_arr
+        # Merge along node axis
+        if node_indices and len(node_indices) > 0:
             n_global = max(max(idxs) for idxs in node_indices.values()) + 1
             ref = list(tavg_dict.values())[0]
-            merged = np.zeros((ref.shape[0], ref.shape[1], ref.shape[2], n_global, ref.shape[4]), dtype=np.float32)
+            merged = np.zeros((ref.shape[0], ref.shape[1], n_global, ref.shape[3]), dtype=np.float32)
             for sname in subnet_names:
                 if sname in node_indices:
-                    merged[:, :, :, node_indices[sname], :] = tavg_dict[sname]
+                    merged[:, :, node_indices[sname], :] = tavg_dict[sname]
             merged_tavg = merged
         else:
-            merged_tavg = np.concatenate(list(tavg_dict.values()), axis=3)
+            merged_tavg = np.concatenate(list(tavg_dict.values()), axis=2)
         times = raw_results[0][0][0] if raw_results else np.array([])
         return SweepResult(tavg=tavg_dict, merged_tavg=merged_tavg, ctavg=ctavg_dict,
                           times=times, sweep_values=sweep_values, backend=backend_label, elapsed=elapsed)
