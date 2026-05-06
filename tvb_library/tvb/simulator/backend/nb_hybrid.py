@@ -1793,6 +1793,97 @@ class NbHybridBackend(MakoUtilMix):
         _COMPILED_FN_CACHE[cache_key] = fn
         return fn
 
+    # ----- Helper: get/set cfun parameter by index -----
+
+    @staticmethod
+    def _cfun_get_param(cfun, pidx):
+        """Get the pidx-th parameter of a cfun object.
+
+        Maps param_idx (as used in sweep_descriptor) to the named attribute
+        of each coupling function type.  Mirrors the _cfun_params() layout:
+
+          linear:        [a, b]
+          scaling:       [a]
+          sigmoidal:     [a, sigma, midpoint, cmin, cmax]
+          sigmoidal_jr:  [a, e0, r, v0]
+          kuramoto:      [a]
+          tanh:          [a, midpoint, sigma]
+          pre_sigmoidal: [H, Q, G, P, theta]
+        """
+        from tvb.simulator.hybrid.coupling import (
+            Linear, Scaling, Sigmoidal, SigmoidalJansenRit,
+            Kuramoto as KuramotoCfun, Difference,
+            HyperbolicTangent, PreSigmoidal,
+        )
+        if cfun is None:
+            if pidx == 0:
+                return 1.0
+            raise IndexError(f"No parameter index {pidx} for None cfun")
+        if isinstance(cfun, Linear):
+            return [float(cfun.a[0]), float(cfun.b[0])][pidx]
+        elif isinstance(cfun, Scaling):
+            if pidx == 0:
+                return float(cfun.a[0])
+            raise IndexError(f"Scaling has only 1 parameter (index 0), got {pidx}")
+        elif isinstance(cfun, Sigmoidal):
+            return [float(cfun.a[0]), float(cfun.sigma[0]),
+                    float(cfun.midpoint[0]), float(cfun.cmin[0]),
+                    float(cfun.cmax[0])][pidx]
+        elif isinstance(cfun, SigmoidalJansenRit):
+            return [float(cfun.a[0]), float(cfun.e0[0]),
+                    float(cfun.r[0]), float(cfun.v0[0])][pidx]
+        elif isinstance(cfun, KuramotoCfun):
+            if pidx == 0:
+                return float(cfun.a[0])
+            raise IndexError(f"Kuramoto has only 1 parameter (index 0), got {pidx}")
+        elif isinstance(cfun, Difference):
+            raise IndexError("Difference cfun has no sweepable parameters")
+        elif isinstance(cfun, HyperbolicTangent):
+            return [float(cfun.a[0]), float(cfun.midpoint[0]),
+                    float(cfun.sigma[0])][pidx]
+        elif isinstance(cfun, PreSigmoidal):
+            return [float(cfun.H[0]), float(cfun.Q[0]), float(cfun.G[0]),
+                    float(cfun.P[0]), float(cfun.theta[0])][pidx]
+        else:
+            raise TypeError(f"Unknown cfun type: {type(cfun).__name__}")
+
+    @staticmethod
+    def _cfun_set_param(cfun, pidx, value):
+        """Set the pidx-th parameter of a cfun object.
+
+        Sets the named attribute corresponding to param_idx.
+        """
+        from tvb.simulator.hybrid.coupling import (
+            Linear, Scaling, Sigmoidal, SigmoidalJansenRit,
+            Kuramoto as KuramotoCfun, Difference,
+            HyperbolicTangent, PreSigmoidal,
+        )
+        if isinstance(cfun, Linear):
+            for i, attr in enumerate(['a', 'b']):
+                setattr(cfun, attr, np.array([float(value)])) if i == pidx else None
+            setattr(cfun, ['a', 'b'][pidx], np.array([float(value)]))
+        elif isinstance(cfun, Scaling):
+            assert pidx == 0, f"Scaling: only param_idx=0, got {pidx}"
+            cfun.a = np.array([float(value)])
+        elif isinstance(cfun, Sigmoidal):
+            setattr(cfun, ['a', 'sigma', 'midpoint', 'cmin', 'cmax'][pidx],
+                    np.array([float(value)]))
+            setattr(cfun, ['a', 'sigma', 'midpoint', 'cmin', 'cmax'][pidx],
+                    np.array([float(value)]))
+        elif isinstance(cfun, SigmoidalJansenRit):
+            setattr(cfun, ['a', 'e0', 'r', 'v0'][pidx], np.array([float(value)]))
+        elif isinstance(cfun, KuramotoCfun):
+            assert pidx == 0, f"Kuramoto: only param_idx=0, got {pidx}"
+            cfun.a = np.array([float(value)])
+        elif isinstance(cfun, Difference):
+            raise IndexError("Difference cfun has no sweepable parameters")
+        elif isinstance(cfun, HyperbolicTangent):
+            setattr(cfun, ['a', 'midpoint', 'sigma'][pidx], np.array([float(value)]))
+        elif isinstance(cfun, PreSigmoidal):
+            setattr(cfun, ['H', 'Q', 'G', 'P', 'theta'][pidx], np.array([float(value)]))
+        else:
+            raise TypeError(f"Unknown cfun type: {type(cfun).__name__}")
+
     def run_sweep(
         self,
         network_set,
@@ -1824,8 +1915,10 @@ class NbHybridBackend(MakoUtilMix):
 
         if sweep_descriptor is None:
             if network_set.projections:
+                # Use naming convention for projections
                 first_proj = network_set.projections[0]
-                sweep_descriptor = [{'type': 'cfun', 'projection': first_proj.name,
+                proj_name = f"{first_proj.source.name}_to_{first_proj.target.name}"
+                sweep_descriptor = [{'type': 'cfun', 'projection': proj_name,
                                      'param_idx': 0}]
             else:
                 sweep_descriptor = []
@@ -1842,11 +1935,28 @@ class NbHybridBackend(MakoUtilMix):
                 if desc['type'] == 'cfun':
                     pname = desc['projection']
                     pidx = desc.get('param_idx', 0)
+                    # Find projection by naming convention
+                    # Inter: "{src}_to_{tgt}", Intra: "intra"
+                    matched_proj = None
                     for proj in network_set.projections:
-                        if proj.name == pname:
-                            key = ('cfun', pname, pidx)
-                            restore[key] = float(proj.cfun.parameters[pidx])
-                            proj.cfun.parameters[pidx] = float(sv[dim])
+                        expected_name = f"{proj.source.name}_to_{proj.target.name}"
+                        if expected_name == pname:
+                            matched_proj = proj
+                            break
+                    if matched_proj is None:
+                        for sn in network_set.subnets:
+                            for p in sn.projections:
+                                expected_name = getattr(p, 'name', None) or 'intra'
+                                if expected_name == pname:
+                                    matched_proj = p
+                                    break
+                            if matched_proj is not None:
+                                break
+                    if matched_proj is None:
+                        raise ValueError(f"Projection '{pname}' not found in sweep")
+                    key = ('cfun', pname, pidx)
+                    restore[key] = self._cfun_get_param(matched_proj.cfun, pidx)
+                    self._cfun_set_param(matched_proj.cfun, pidx, float(sv[dim]))
                 elif desc['type'] == 'model':
                     sname = desc['subnet']
                     param = desc['param']
@@ -1858,20 +1968,33 @@ class NbHybridBackend(MakoUtilMix):
                             setattr(sn.model, param, np.array([float(sv[dim])]))
 
             # Run single simulation
-            result = self.run_network(network_set, nstep=nstep,
-                                      initial_states=initial_states,
-                                      chunk_size=chunk_size,
-                                      bold_period=bold_period,
-                                      print_source=print_source,
-                                      **monitors)
+            kwargs = dict(initial_states=initial_states, print_source=print_source)
+            if chunk_size is not None:
+                kwargs['chunk_size'] = chunk_size
+            result = self.run_network(network_set, nstep=nstep, **kwargs)
             results.append(result)
 
             # Restore original values
             for key, orig in restore.items():
                 if key[0] == 'cfun':
+                    pname, pidx = key[1], key[2]
+                    matched_proj = None
                     for proj in network_set.projections:
-                        if proj.name == key[1]:
-                            proj.cfun.parameters[key[2]] = orig
+                        expected_name = f"{proj.source.name}_to_{proj.target.name}"
+                        if expected_name == pname:
+                            matched_proj = proj
+                            break
+                    if matched_proj is None:
+                        for sn in network_set.subnets:
+                            for p in sn.projections:
+                                expected_name = getattr(p, 'name', None) or 'intra'
+                                if expected_name == pname:
+                                    matched_proj = p
+                                    break
+                            if matched_proj is not None:
+                                break
+                    if matched_proj is not None:
+                        self._cfun_set_param(matched_proj.cfun, pidx, orig)
                 elif key[0] == 'model':
                     for sn in network_set.subnets:
                         if sn.name == key[1]:
