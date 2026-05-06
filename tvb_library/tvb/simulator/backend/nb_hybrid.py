@@ -2262,7 +2262,12 @@ class NbHybridBackend(MakoUtilMix):
                     merged[:, :, node_indices[sname], :] = tavg_dict[sname]
             merged_tavg = merged
         else:
-            merged_tavg = np.concatenate(list(tavg_dict.values()), axis=2)
+            # Concatenate along node axis only if all subnets share the same n_voi
+            vois = set(a.shape[1] for a in tavg_dict.values())
+            if len(vois) == 1:
+                merged_tavg = np.concatenate(list(tavg_dict.values()), axis=2)
+            else:
+                merged_tavg = None  # VOI counts differ — can't merge
         times = raw_results[0][0][0] if raw_results else np.array([])
         return SweepResult(tavg=tavg_dict, merged_tavg=merged_tavg, ctavg=ctavg_dict,
                           times=times, sweep_values=sweep_values, backend=backend_label, elapsed=elapsed)
