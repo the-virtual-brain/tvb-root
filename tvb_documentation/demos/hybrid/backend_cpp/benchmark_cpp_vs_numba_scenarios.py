@@ -93,7 +93,7 @@ def make_single_network(
     _chunk_size: int,
 ) -> tuple[NetworkSet, list[np.ndarray]]:
     sn = make_subnet("sn", n_nodes)
-    network = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+    network = NetworkSet(subnets=[sn], projections=[])
     network.configure()
     return network, [make_initial_state(sn)]
 
@@ -104,7 +104,7 @@ def make_uncoupled_two_subnet_network(
 ) -> tuple[NetworkSet, list[np.ndarray]]:
     sn1 = make_subnet("sn1", n_nodes, node_offset=0)
     sn2 = make_subnet("sn2", n_nodes, node_offset=n_nodes)
-    network = NetworkSet(subnets=[sn1, sn2], projections=[], stimuli=[])
+    network = NetworkSet(subnets=[sn1, sn2], projections=[])
     network.configure()
     return network, [make_initial_state(sn1), make_initial_state(sn2)]
 
@@ -134,7 +134,7 @@ def make_delayed_coupled_two_subnet_network(
         cfun=Linear(),
     )
 
-    network = NetworkSet(subnets=[sn1, sn2], projections=[projection], stimuli=[])
+    network = NetworkSet(subnets=[sn1, sn2], projections=[projection])
     network.configure()
     return network, [make_initial_state(sn1), make_initial_state(sn2)]
 
