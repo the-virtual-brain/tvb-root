@@ -80,6 +80,10 @@ def _sweep_parallel_worker(args):
     Accesses compiled function and network_set via module-level globals
     (inherited via fork).  Each iteration mutates cfun/model parameters,
     runs one simulation, then restores original values.
+
+    NOTE: Fork-safety is limited — Numba LLVM is not fully fork-safe.
+    A future prange-based sweep kernel (single process, thread-parallel)
+    will replace this mechanism for models that trigger LLVM corruption.
     """
     import numpy as _np
     from tvb.simulator.backend.nb_hybrid import NbHybridBackend
@@ -2286,7 +2290,13 @@ class NbHybridBackend(MakoUtilMix):
 
     def _sweep_cpu_parallel(self, network_set, sweep_descriptor, sweep_values,
                              nstep, n_workers, initial_states, node_indices):
-        """Multi-core CPU sweep using fork-based multiprocessing."""
+        """Multi-core CPU sweep using fork-based multiprocessing.
+
+        NOTE: Numba LLVM is not fully fork-safe.  Some models (especially
+        multi-subnet with spatial/projection monitors) may trigger segfaults
+        or malloc corruption in forked workers.  A future prange-based sweep
+        kernel (single process, @nb.jit(parallel=True)) will replace this.
+        """
         import time as _time_mod
         import multiprocessing as mp
 
