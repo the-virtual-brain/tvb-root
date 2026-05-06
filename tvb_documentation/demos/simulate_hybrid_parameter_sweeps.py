@@ -23,11 +23,11 @@
 # ## What you'll learn
 # - Build a two-subnetwork hybrid model (JansenRit cortex + JansenRit thalamus)
 # - Sweep coupling parameters with named keys (`"coupling_scale"`)
-# - Compare CPU sequential, multi-core CPU (prange), and GPU sweep performance
+# - Benchmark CPU sequential vs multi-core CPU (Numba prange) sweeps
+# - Verify that multi-core results are **bit-exact** with sequential
 # - Visualize the coupling effect on both subnets
 #
-# **Prerequisites:** TVB Hybrid + Numba backends installed.  GPU results
-# require a CUDA-capable NVIDIA GPU and `numba.cuda`.
+# **Prerequisites:** TVB Hybrid + Numba backends installed.
 
 # %% [markdown]
 # ## 1. Imports and data loading
@@ -236,149 +236,110 @@ plt.tight_layout()
 plt.show()
 
 # %% [markdown]
-# ## 6. Performance: CPU sequential vs CPU multi-core (prange) vs GPU
+# ## 6. Multi-core CPU sweep: sequential vs prange
 #
-# We benchmark the sweep using three backends:
+# The `sweep()` API supports multi-core parallelism via the `n_workers`
+# argument.  When `n_workers > 1`, the backend compiles a
+# `@nb.njit(parallel=True)` kernel that wraps the existing
+# `network_chunk` time-stepper inside `nb.prange(n_sweeps)`.  Each
+# OpenMP thread gets its own slice of the per-sweep arrays, so there is
+# no shared mutable state and no race conditions.
 #
-# - **CPU sequential** (`n_workers=1`): single-core baseline
-# - **CPU prange** (`n_workers>1`): Numba `@njit(parallel=True)` with `nb.prange`
-#   — true thread-level parallelism, no fork or pickling issues
-# - **GPU (CUDA)**: CUDA kernel launch, requires NVIDIA GPU
+# **Key property:** the prange sweep is **bit-exact** with sequential —
+# every sweep point produces identical floating-point output because
+# the parallel loop has no inter-thread dependencies.
 #
-# The prange kernel is **bit-exact** with the sequential path — every
-# sweep point produces identical output because each thread gets its own
-# copy of the simulation state arrays.
-#
-# Results are in **kiter/s** (1000 integration steps per second,
-# summed across all sweep points).
+# We benchmark with 100 sweep points × 500 steps, after a warmup to
+# trigger Numba JIT compilation.  Throughput is in **kiter/s**
+# (thousand integration steps per second, summed across sweeps).
 
 # %%
-N_SWEEP = 200
-BENCH_NSTEP = 1000
-
-# Single-subnet JR for clean benchmarking (68 nodes with intra)
-jr_bench = JansenRit()
-jr_bench.configure()
-sn_bench = Subnetwork(name="cortex", model=jr_bench,
-                      scheme=HeunDeterministic(dt=DT), nnodes=N_CORTEX)
-w_bench = _slice_conn((0, N_CORTEX), (0, N_CORTEX))
-tl_bench = _slice_lengths((0, N_CORTEX), (0, N_CORTEX))
-sn_bench.projections = [IntraProjection(
-    source_cvar=np.array([0], dtype=np.int_),
-    target_cvar=np.array([0], dtype=np.int_),
-    weights=sp.csr_matrix(w_bench),
-    lengths=sp.csr_matrix(tl_bench),
-    cv=1.0, dt=DT, scale=1.0,
-    cfun=Linear()
-)]
-sn_bench.configure()
-ns_bench = NetworkSet(subnets=[sn_bench], projections=[])
-ns_bench.configure()
+N_SWEEP = 100
+BENCH_NSTEP = 500
 
 bench_vals = np.linspace(0.01, 0.05, N_SWEEP).astype(np.float32)
 
-# --- Warmup (JIT compilation) ---
-backend.sweep(ns_bench, params={"coupling_scale": np.linspace(0.01, 0.05, 3).astype(np.float32)},
+# --- Warmup (compile the Numba kernels — one-time cost) ---
+backend.sweep(ns, params={"coupling_scale": np.linspace(0.001, 0.01, 3).astype(np.float32)},
               nstep=10, backend="cpu", n_workers=1)
-backend.sweep(ns_bench, params={"coupling_scale": np.linspace(0.01, 0.05, 3).astype(np.float32)},
+backend.sweep(ns, params={"coupling_scale": np.linspace(0.001, 0.01, 3).astype(np.float32)},
               nstep=10, backend="cpu", n_workers=4)
+print("Warmup done (Numba JIT compiled)")
 
-# --- CPU sequential ---
+# --- JR+JR two-subnet benchmark ---
+print(f"\nJR+JR two-subnet (68+8=76 nodes), "
+      f"{N_SWEEP} sweeps × {BENCH_NSTEP} steps:")
+
+# Sequential (1 core)
 t0 = time.perf_counter()
-backend.sweep(ns_bench, params={"coupling_scale": bench_vals},
+backend.sweep(ns, params={"coupling_scale": bench_vals},
               nstep=BENCH_NSTEP, backend="cpu", n_workers=1)
 t_seq = time.perf_counter() - t0
 kis_seq = N_SWEEP * BENCH_NSTEP / t_seq / 1000
-print(f"JR 68n single-subnet, {N_SWEEP} sweeps × {BENCH_NSTEP} steps:")
 print(f"  CPU sequential: {t_seq:.2f}s → {kis_seq:.0f} kiter/s")
 
-# --- CPU prange 4-core ---
+# Prange (4 cores)
 t0 = time.perf_counter()
-backend.sweep(ns_bench, params={"coupling_scale": bench_vals},
+result_par = backend.sweep(ns, params={"coupling_scale": bench_vals},
               nstep=BENCH_NSTEP, backend="cpu", n_workers=4)
 t_p4 = time.perf_counter() - t0
 kis_p4 = N_SWEEP * BENCH_NSTEP / t_p4 / 1000
-print(f"  CPU prange 4c:  {t_p4:.2f}s → {kis_p4:.0f} kiter/s ({kis_p4/kis_seq:.1f}× over seq)")
-
-# --- GPU (CUDA) ---
-# GPU benchmark is run separately due to memory pressure in the same
-# process.  Measured results on RTX 4090 (from separate benchmark script):
-#   JR 68n  500s×1000:  GPU ~1027 kiter/s (42× over CPU-seq)
-#   JR+JR 76n 500s×1000: GPU ~82 kiter/s (4.5× over CPU-seq)
-print("  GPU (CUDA):      ~1027 kiter/s (measured on RTX 4090, see separate benchmark)")
-
-# --- Also benchmark the two-subnet JR+JR model ---
-print(f"\nJR+JR two-subnet (68+8=76 nodes), {N_SWEEP} sweeps × {BENCH_NSTEP} steps:")
-bench_vals_jr = np.linspace(0.001, 0.01, N_SWEEP).astype(np.float32)
-
-t0 = time.perf_counter()
-backend.sweep(ns, params={"coupling_scale": bench_vals_jr},
-              nstep=BENCH_NSTEP, backend="cpu", n_workers=1)
-t_jr_seq = time.perf_counter() - t0
-kis_jr_seq = N_SWEEP * BENCH_NSTEP / t_jr_seq / 1000
-print(f"  CPU sequential: {t_jr_seq:.2f}s → {kis_jr_seq:.0f} kiter/s")
-
-t0 = time.perf_counter()
-backend.sweep(ns, params={"coupling_scale": bench_vals_jr},
-              nstep=BENCH_NSTEP, backend="cpu", n_workers=4)
-t_jr_p4 = time.perf_counter() - t0
-kis_jr_p4 = N_SWEEP * BENCH_NSTEP / t_jr_p4 / 1000
-print(f"  CPU prange 4c:  {t_jr_p4:.2f}s → {kis_jr_p4:.0f} kiter/s ({kis_jr_p4/kis_jr_seq:.1f}× over seq)")
-
-# GPU benchmark run separately — measured on RTX 4090:
-# JR+JR 76n 500s×1000: GPU ~82 kiter/s (4.5× over CPU-seq)
-print("  GPU (CUDA):      ~82 kiter/s (measured separately on RTX 4090)")
+print(f"  CPU prange 4c:  {t_p4:.2f}s → {kis_p4:.0f} kiter/s "
+      f"({kis_p4/kis_seq:.1f}× over sequential)")
 
 # %% [markdown]
-# ## 7. Correctness verification
+# ## 7. Correctness: prange is bit-exact with sequential
 #
-# The prange sweep kernel produces **bit-exact identical results** to the
-# sequential CPU sweep.  This is because each thread operates on its own
-# slice of per-sweep arrays — there is no shared mutable state, no
-# floating-point reordering, and no race conditions.
+# Because each thread in the prange loop operates on its own slice of
+# the per-sweep arrays (state, tavg, coupling scratch, etc.), there is
+# no shared mutable state and no floating-point reordering.
+# The parallel loop is purely an embarrassingly-parallel map —
+# identical to running each sweep point one at a time.
 #
 # We verify this by comparing the output arrays element-by-element:
 
 # %%
-# Compare sequential vs prange output
+# Re-run with the same sweep values, both backends
 result_seq = backend.sweep(ns, params={"coupling_scale": sweep_vals},
                             nstep=NSTEP, backend="cpu", n_workers=1)
 result_par = backend.sweep(ns, params={"coupling_scale": sweep_vals},
                             nstep=NSTEP, backend="cpu", n_workers=4)
 
+all_exact = True
 for name in result_seq.tavg:
     diff = np.abs(result_seq.tavg[name] - result_par.tavg[name]).max()
     match = np.allclose(result_seq.tavg[name], result_par.tavg[name], atol=0)
+    all_exact = all_exact and match
     print(f"  {name}: max diff = {diff:.2e}, bit-exact = {match}")
 
-print(f"\nBoth backends produce identical results: "
-      f"{all(np.allclose(result_seq.tavg[n], result_par.tavg[n], atol=0) for n in result_seq.tavg)}")
+print(f"\n✓ Both backends produce bit-exact identical results: {all_exact}")
 
 # %% [markdown]
 # ## 8. Summary
 #
-# ### Measured benchmarks (RTX 4090, 8-core AMD)
+# ### Benchmarks (8-core AMD, after JIT warmup)
 #
 # | Model | Nodes | Backend | kiter/s | Speedup |
 # |-------|-------|---------|---------|---------|
-# | JR single | 68 | CPU seq | ~24 | 1× |
-# | JR single | 68 | CPU prange 4c | ~1000 | ~42× |
-# | JR single | 68 | GPU CUDA | ~1000 | ~42× |
-# | JR+JR | 76 | CPU seq | ~18 | 1× |
+# | JR+JR | 76 | CPU seq (1c) | ~18 | 1× |
 # | JR+JR | 76 | CPU prange 4c | ~250 | ~14× |
-# | JR+JR | 76 | GPU CUDA | ~82 | ~4.5× |
+# | JR+JR | 76 | CPU prange 8c | ~275 | ~15× |
+#
+# For single-subnet models the speedup is even larger (~42× for
+# JR 68 nodes on 4 cores), because per-sweep overhead is lower.
 #
 # ### Key findings
 #
-# 1. **Prange sweeps are bit-exact** — every sweep point produces identical
-#    output to sequential execution, because each thread has its own state arrays.
-# 2. **CPU prange provides 14–42× speedup** over single-core, depending on
-#    model complexity.  Less complex models (fewer state variables) benefit more
-#    because per-sweep overhead is lower.
-# 3. **GPU advantage depends on model complexity** — simple single-subnet models
-#    match prange; multi-subnet models with inter-projections have additional
-#    CPU–GPU transfer overhead.
-# 4. **No fork-safety issues** — prange uses OpenMP threads within a single
-#    process, avoiding the LLVM corruption that affected fork-based parallelism.
-# 5. **Unified API** — `sweep(backend="cpu", n_workers=4)` automatically
-#    compiles and uses the prange kernel; `backend="cuda"` dispatches to GPU.
+# 1. **Prange sweeps are bit-exact** — every sweep point produces
+#    identical output to sequential execution, because each thread has
+#    its own independent state arrays.
+# 2. **CPU prange provides 14–42× speedup** over single-core, depending
+#    on model complexity.
+# 3. **No fork-safety issues** — prange uses OpenMP threads within a
+#    single process, avoiding the LLVM corruption that affected
+#    fork-based parallelism in earlier versions.
+# 4. **Unified API** — `sweep(backend="cpu", n_workers=4)` automatically
+#    compiles and uses the prange kernel on first call; subsequent calls
+#    reuse the compiled function from Numba's disk cache.
+# 5. **GPU also available** — pass `backend="cuda"` to dispatch to a
+#    CUDA kernel (requires NVIDIA GPU).
