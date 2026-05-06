@@ -2292,20 +2292,22 @@ class NbHybridBackend(MakoUtilMix):
                              nstep, n_workers, initial_states, node_indices):
         """Multi-core CPU sweep using fork-based multiprocessing.
 
-        NOTE: Numba LLVM is not fully fork-safe.  Some models (especially
-        multi-subnet with spatial/projection monitors) may trigger segfaults
-        or malloc corruption in forked workers.  A future prange-based sweep
-        kernel (single process, @nb.jit(parallel=True)) will replace this.
+        Pre-compiles the Numba kernel in the parent so forked children inherit
+        the compiled function via copy-on-write.  Each child processes a batch
+        of sweep points by mutating cfun/model parameters, running the compiled
+        kernel, and restoring the original values.
+
+        NOTE: Numba LLVM is not fully fork-safe.  Single-subnet models with
+        simple monitors work well.  Multi-subnet setups with JansenRit or
+        spatial/projection monitors may trigger segfaults in forked children.
+        For those cases, a prange-based sweep kernel (single process,
+        @nb.njit(parallel=True)) is the proper long-term fix.
         """
         import time as _time_mod
         import multiprocessing as mp
 
-        # Pre-compile so children inherit JIT cache via fork
         compiled = self.compile(network_set, eager=True)
 
-        # Store references in module-level globals so fork workers can access them.
-        # (Pool.map pickles the function object even with fork, so we can't
-        # pass closures. Instead, workers access globals inherited via fork.)
         global _PARALLEL_NETWORK_SET, _PARALLEL_COMPILED_FN, _PARALLEL_DESCRIPTOR
         _PARALLEL_NETWORK_SET = network_set
         _PARALLEL_COMPILED_FN = compiled

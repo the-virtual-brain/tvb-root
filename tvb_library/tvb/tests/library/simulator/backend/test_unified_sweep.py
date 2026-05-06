@@ -242,8 +242,11 @@ class TestCPUSweep:
         assert "sub" in result.tavg
         assert result.tavg["ctx"].shape[0] == 10
         assert result.tavg["sub"].shape[0] == 10
-        # merged_tavg should have 76 nodes
-        assert result.merged_tavg.shape[2] == 76
+        # merged_tavg may be None when subnets have different VOI counts
+        # (JR has 4 VOI, FHN has 2).  Check per-subnet node counts instead.
+        assert result.tavg["ctx"].shape[2] == 68   # cortex nodes
+        assert result.tavg["sub"].shape[2] == 8    # thalamus nodes
+        # Total: 68 + 8 = 76
 
 
 # ---------------------------------------------------------------------------
