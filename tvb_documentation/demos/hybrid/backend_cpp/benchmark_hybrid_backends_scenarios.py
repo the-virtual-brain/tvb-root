@@ -57,7 +57,6 @@ from tvb.simulator.hybrid import InterProjection, NetworkSet, Subnetwork
 from tvb.simulator.hybrid.coupling import Linear
 from tvb.simulator.integrators import HeunDeterministic
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
-from tvb.simulator.monitors import TemporalAverage
 
 
 DT = 0.1
@@ -350,14 +349,24 @@ def benchmark_cpp(
     repeats: int,
     plan: SweepPlan,
     source_hint: str,
+    allow_scale_proxy: bool,
 ) -> dict[str, Any]:
+    if plan.kind == "coupling" and not allow_scale_proxy:
+        return {
+            "status": "skipped",
+            "reason": (
+                "C++ does not currently expose the CUDA cfun.a sweep parameter "
+                "at runtime; pass --cpp-scale-proxy to benchmark projection scale "
+                "as an approximate proxy."
+            ),
+        }
+
     backend = CppHybridBackend()
-    monitor = TemporalAverage(period=chunk_size * DT)
 
     t0 = time.perf_counter()
     compiled = backend.compile(
         network,
-        monitors=[monitor],
+        monitors=None,
         user_source_hint=source_hint,
     )
     compiled.run(
@@ -382,7 +391,10 @@ def benchmark_cpp(
         ),
     )
     sweeps = plan.values.size
-    return {"status": "ok", "compile_s": compile_time, "run_s": run_time, "per_sim_s": run_time / sweeps}
+    result = {"status": "ok", "compile_s": compile_time, "run_s": run_time, "per_sim_s": run_time / sweeps}
+    if plan.kind == "coupling" and allow_scale_proxy:
+        result["proxy_sweep"] = "projection.scale used as proxy for Linear.a"
+    return result
 
 
 def cuda_available() -> tuple[bool, str | None]:
@@ -483,6 +495,7 @@ def benchmark_case(
     sweeps: int,
     cpu_sample_sweeps: int | None,
     max_batch_sweeps: int | None,
+    cpp_scale_proxy: bool,
     sweep_start: float,
     sweep_stop: float,
     strict: bool,
@@ -523,6 +536,7 @@ def benchmark_case(
             repeats,
             cpu_plan,
             source_hint=f"benchmark_hybrid_backends_{scenario.label}_chunk_{chunk_size}",
+            allow_scale_proxy=cpp_scale_proxy,
         ),
         strict,
     )
@@ -608,6 +622,8 @@ def print_row(row: dict[str, Any]) -> None:
         reasons.append(
             f"cpu estimated from {row['cpu_sample_sweeps']}/{row['sweeps']} sweep points"
         )
+    if row["cpp"].get("proxy_sweep"):
+        reasons.append(f"cpp proxy: {row['cpp']['proxy_sweep']}")
     status = "ok" if not reasons else "; ".join(reasons)
     total_speedups = row["speedups_total_sweep"]
     sweep_label = row["sweep"]["label"]
@@ -673,6 +689,15 @@ def parse_args() -> argparse.Namespace:
         help="Optional CUDA batch cap. Default lets the CUDA backend choose from GPU memory.",
     )
     parser.add_argument(
+        "--cpp-scale-proxy",
+        action="store_true",
+        help=(
+            "For coupling sweeps, benchmark C++ by changing projection.scale as "
+            "a mathematical proxy for CUDA/Numba Linear.a. Off by default to avoid "
+            "mixing different runtime parameters."
+        ),
+    )
+    parser.add_argument(
         "--output-json",
         type=Path,
         default=OUTPUT_DIR / "hybrid_backends_scenario_benchmark.json",
@@ -720,6 +745,7 @@ def main() -> None:
                 sweeps=args.sweeps,
                 cpu_sample_sweeps=args.cpu_sample_sweeps,
                 max_batch_sweeps=args.max_batch_sweeps,
+                cpp_scale_proxy=args.cpp_scale_proxy,
                 sweep_start=args.sweep_start,
                 sweep_stop=args.sweep_stop,
                 strict=args.strict,
