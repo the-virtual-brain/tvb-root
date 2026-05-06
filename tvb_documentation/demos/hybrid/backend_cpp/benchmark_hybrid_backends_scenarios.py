@@ -64,8 +64,9 @@ DT = 0.1
 DEFAULT_NODES = 16
 DEFAULT_NSTEP = 1000
 DEFAULT_CHUNK_SIZES = (1, 10)
-DEFAULT_REPEATS = 3
-DEFAULT_SWEEPS = 100
+DEFAULT_REPEATS = 2
+DEFAULT_SWEEPS = 1024
+DEFAULT_CPU_SAMPLE_SWEEPS = None
 OUTPUT_DIR = EXAMPLES_DIR / "outputs"
 
 
@@ -232,6 +233,27 @@ def cuda_sweep_values(plan: SweepPlan) -> np.ndarray:
     if plan.kind == "coupling":
         return plan.values.reshape(-1, 1).astype(np.float32, copy=False)
     return np.empty((plan.values.size, 0), dtype=np.float32)
+
+
+def sampled_plan(plan: SweepPlan, sample_sweeps: int) -> SweepPlan:
+    return dataclasses.replace(plan, values=plan.values[:sample_sweeps])
+
+
+def extrapolate_result(
+    result: dict[str, Any],
+    measured_sweeps: int,
+    target_sweeps: int,
+) -> dict[str, Any]:
+    if result["status"] != "ok":
+        return result
+    measured_run_s = result["run_s"]
+    result["measured_run_s"] = measured_run_s
+    result["measured_sweeps"] = measured_sweeps
+    result["target_sweeps"] = target_sweeps
+    result["extrapolated"] = measured_sweeps != target_sweeps
+    result["run_s"] = measured_run_s * (target_sweeps / measured_sweeps)
+    result["per_sim_s"] = measured_run_s / measured_sweeps
+    return result
 
 
 def best_of(repeats: int, fn: Callable[[], Any]) -> float:
@@ -459,6 +481,7 @@ def benchmark_case(
     chunk_size: int,
     repeats: int,
     sweeps: int,
+    cpu_sample_sweeps: int | None,
     max_batch_sweeps: int | None,
     sweep_start: float,
     sweep_stop: float,
@@ -466,15 +489,19 @@ def benchmark_case(
 ) -> dict[str, Any]:
     network, initial_states = scenario.builder(n_nodes, chunk_size)
     plan = make_sweep_plan(network, scenario, sweeps, sweep_start, sweep_stop)
+    measured_cpu_sweeps = min(cpu_sample_sweeps or sweeps, sweeps)
+    cpu_plan = sampled_plan(plan, measured_cpu_sweeps)
 
     py = try_benchmark(
-        lambda: benchmark_python(network, initial_states, nstep, repeats, plan),
+        lambda: benchmark_python(network, initial_states, nstep, repeats, cpu_plan),
         strict,
     )
+    py = extrapolate_result(py, measured_cpu_sweeps, sweeps)
     nb = try_benchmark(
-        lambda: benchmark_numba(network, initial_states, nstep, chunk_size, repeats, plan),
+        lambda: benchmark_numba(network, initial_states, nstep, chunk_size, repeats, cpu_plan),
         strict,
     )
+    nb = extrapolate_result(nb, measured_cpu_sweeps, sweeps)
     cuda = try_benchmark(
         lambda: benchmark_cuda(
             network,
@@ -494,11 +521,12 @@ def benchmark_case(
             nstep,
             chunk_size,
             repeats,
-            plan,
+            cpu_plan,
             source_hint=f"benchmark_hybrid_backends_{scenario.label}_chunk_{chunk_size}",
         ),
         strict,
     )
+    cpp = extrapolate_result(cpp, measured_cpu_sweeps, sweeps)
 
     py_per = ok_time(py, "per_sim_s")
     py_total = ok_time(py, "run_s")
@@ -511,6 +539,8 @@ def benchmark_case(
         "chunk_size": chunk_size,
         "repeats": repeats,
         "sweeps": sweeps,
+        "cpu_sample_sweeps": measured_cpu_sweeps,
+        "cpu_times_extrapolated": measured_cpu_sweeps != sweeps,
         "sweep": {
             "kind": plan.kind,
             "label": plan.label,
@@ -547,6 +577,7 @@ def print_header(args: argparse.Namespace) -> None:
     print(f"nstep         = {args.nstep}")
     print(f"chunk_sizes   = {', '.join(str(v) for v in args.chunk_sizes)}")
     print(f"sweeps        = {args.sweeps}")
+    print(f"cpu_sample    = {args.cpu_sample_sweeps or args.sweeps}")
     print(f"sweep_range   = {args.sweep_start:g} .. {args.sweep_stop:g}")
     print(f"repeats       = {args.repeats}")
     print()
@@ -573,6 +604,10 @@ def print_row(row: dict[str, Any]) -> None:
     ):
         if row[key]["status"] != "ok":
             reasons.append(f"{label}: {row[key]['reason']}")
+    if row["cpu_times_extrapolated"]:
+        reasons.append(
+            f"cpu estimated from {row['cpu_sample_sweeps']}/{row['sweeps']} sweep points"
+        )
     status = "ok" if not reasons else "; ".join(reasons)
     total_speedups = row["speedups_total_sweep"]
     sweep_label = row["sweep"]["label"]
@@ -603,6 +638,15 @@ def parse_args() -> argparse.Namespace:
         default=list(DEFAULT_CHUNK_SIZES),
     )
     parser.add_argument("--sweeps", type=int, default=DEFAULT_SWEEPS)
+    parser.add_argument(
+        "--cpu-sample-sweeps",
+        type=int,
+        default=DEFAULT_CPU_SAMPLE_SWEEPS,
+        help=(
+            "Run Python/Numba/C++ on this many sweep points and linearly "
+            "extrapolate their full-sweep times. CUDA still runs all --sweeps points."
+        ),
+    )
     parser.add_argument(
         "--sweep-start",
         type=float,
@@ -650,6 +694,8 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("repeats must be >= 1.")
     if args.sweeps < 1:
         raise ValueError("sweeps must be >= 1.")
+    if args.cpu_sample_sweeps is not None and args.cpu_sample_sweeps < 1:
+        raise ValueError("cpu-sample-sweeps must be >= 1 when provided.")
     if any(chunk_size < 1 for chunk_size in args.chunk_sizes):
         raise ValueError("all chunk sizes must be >= 1.")
     if args.max_batch_sweeps is not None and args.max_batch_sweeps < 1:
@@ -672,6 +718,7 @@ def main() -> None:
                 chunk_size=chunk_size,
                 repeats=args.repeats,
                 sweeps=args.sweeps,
+                cpu_sample_sweeps=args.cpu_sample_sweeps,
                 max_batch_sweeps=args.max_batch_sweeps,
                 sweep_start=args.sweep_start,
                 sweep_stop=args.sweep_stop,
