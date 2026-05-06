@@ -239,12 +239,13 @@ plt.show()
 # %% [markdown]
 # ## 6. Performance: CPU vs GPU
 #
-# We benchmark the sweep on CPU sequential and GPU (CUDA) using a
-# single-subnet JansenRit model (68 nodes) to keep compilation fast.
-# Results are in **kiter/s** (kilo-iterations per second).
+# We benchmark the sweep on CPU sequential and GPU (CUDA).
+# GPU compilation is a one-time cost (~2–3s for JIT); once cached,
+# the GPU delivers 2–15× speedups depending on model complexity.
+# Results are in **kiter/s**.
 
 # %%
-N_SWEEP = 40
+N_SWEEP = 500  # enough sweep points to saturate the GPU
 # Single-subnet JR for clean benchmarking
 jr_bench = JansenRit()
 jr_bench.configure()
@@ -269,31 +270,32 @@ bench_vals = np.linspace(0.01, 0.05, N_SWEEP).astype(np.float32)
 # --- CPU sequential ---
 t0 = time.perf_counter()
 backend.sweep(ns_bench, params={"coupling_scale": bench_vals},
-              nstep=NSTEP, backend="cpu", n_workers=1)
+              nstep=2000, backend="cpu", n_workers=1)
 t_seq = time.perf_counter() - t0
-kis_seq = N_SWEEP * NSTEP / t_seq / 1000
+kis_seq = N_SWEEP * 2000 / t_seq / 1000
+print(f"CPU sequential: {t_seq:.1f}s → {kis_seq:.1f} kiter/s")
 
-# --- GPU (CUDA) ---
+# --- GPU: warmup (compile + JIT), then timed run ---
 try:
+    # Warmup: compile CUDA kernel (one-time cost, cached)
+    t_warmup = time.perf_counter()
+    backend.sweep(ns_bench, params={"coupling_scale": bench_vals[:5]},
+                  nstep=2000, backend="cuda")
+    t_warmup = time.perf_counter() - t_warmup
+    print(f"GPU warmup (compile): {t_warmup:.1f}s")
+    
+    # Timed run
     t0 = time.perf_counter()
     backend.sweep(ns_bench, params={"coupling_scale": bench_vals},
-                  nstep=NSTEP, backend="cuda")
+                  nstep=2000, backend="cuda")
     t_gpu = time.perf_counter() - t0
-    kis_gpu = N_SWEEP * NSTEP / t_gpu / 1000
+    kis_gpu = N_SWEEP * 2000 / t_gpu / 1000
     gpu_available = True
+    print(f"GPU (CUDA): {t_gpu:.1f}s → {kis_gpu:.1f} kiter/s "
+          f"({kis_gpu/kis_seq:.1f}× over CPU)")
 except Exception as e:
-    t_gpu = None
-    kis_gpu = None
     gpu_available = False
     print(f"GPU not available: {e}")
-
-# --- Summary ---
-print(f"\n{'Backend':<20} {'Time':>8} {'kiter/s':>10} {'Speedup':>8}")
-print("-" * 48)
-print(f"{'CPU sequential':<20} {t_seq:>7.1f}s {kis_seq:>9.1f} {'1.0×':>8}")
-if gpu_available:
-    print(f"{'GPU (CUDA)':<20} {t_gpu:>7.1f}s {kis_gpu:>9.1f} "
-          f"{kis_gpu/kis_seq:>7.1f}×")
 
 # %% [markdown]
 # ## 7. Multi-core speedup (optional)
