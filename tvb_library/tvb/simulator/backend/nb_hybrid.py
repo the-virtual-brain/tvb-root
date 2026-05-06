@@ -63,13 +63,169 @@ from tvb.simulator.integrators import (
     EulerStochastic,
 )
 
+# ---------------------------------------------------------------------------
+# Module-level globals for fork-based parallel sweep workers
+# ---------------------------------------------------------------------------
+# These are set by NbHybridBackend._sweep_cpu_parallel() before forking.
+# Workers access them via fork's copy-on-write memory inheritance.
+
+_PARALLEL_NETWORK_SET = None
+_PARALLEL_COMPILED_FN = None
+_PARALLEL_DESCRIPTOR = None
+
+
+def _sweep_parallel_worker(args):
+    """Worker function for fork-based multi-core sweep.
+
+    Accesses compiled function and network_set via module-level globals
+    (inherited via fork).  Each iteration mutates cfun/model parameters,
+    runs one simulation, then restores original values.
+    """
+    import numpy as _np
+    from tvb.simulator.backend.nb_hybrid import NbHybridBackend
+
+    start, count, sv_slice, nstep = args
+    ns = _PARALLEL_NETWORK_SET
+    compiled = _PARALLEL_COMPILED_FN
+    desc = _PARALLEL_DESCRIPTOR
+    _run_fn = compiled.run
+
+    results = []
+    for i in range(count):
+        sv = sv_slice[i]
+        restore = {}
+        for dim, d in enumerate(desc):
+            if d["type"] == "cfun":
+                pname, pidx = d["projection"], d.get("param_idx", 0)
+                for proj in ns.projections:
+                    if f"{proj.source.name}_to_{proj.target.name}" == pname:
+                        key = ("cfun", pname, pidx)
+                        restore[key] = NbHybridBackend._cfun_get_param(proj.cfun, pidx)
+                        NbHybridBackend._cfun_set_param(proj.cfun, pidx, float(sv[dim]))
+                        break
+                else:
+                    for sn in ns.subnets:
+                        for p in sn.projections:
+                            if (getattr(p, "name", None) or "intra") == pname:
+                                key = ("cfun", pname, pidx)
+                                restore[key] = NbHybridBackend._cfun_get_param(p.cfun, pidx)
+                                NbHybridBackend._cfun_set_param(p.cfun, pidx, float(sv[dim]))
+                                break
+            elif d["type"] == "model":
+                sname, param = d["subnet"], d["param"]
+                for sn in ns.subnets:
+                    if sn.name == sname:
+                        key = ("model", sname, param)
+                        restore[key] = float(getattr(sn.model, param))
+                        setattr(sn.model, param, _np.array([float(sv[dim])]))
+        results.append(_run_fn(nstep=nstep))
+        # Restore original values
+        for key, orig in restore.items():
+            if key[0] == "cfun":
+                pname, pidx = key[1], key[2]
+                for proj in ns.projections:
+                    if f"{proj.source.name}_to_{proj.target.name}" == pname:
+                        NbHybridBackend._cfun_set_param(proj.cfun, pidx, orig); break
+                else:
+                    for sn in ns.subnets:
+                        for p in sn.projections:
+                            if (getattr(p, "name", None) or "intra") == pname:
+                                NbHybridBackend._cfun_set_param(p.cfun, pidx, orig); break
+            elif key[0] == "model":
+                for sn in ns.subnets:
+                    if sn.name == key[1]:
+                        setattr(sn.model, key[2], _np.array([orig]))
+    return results
+
+
 __all__ = [
     "NbHybridBackend",
     "CompiledNetworkFn",
     "NetworkAnalysis",
     "SubnetworkInfo",
     "ProjectionInfo",
+    "SweepResult",
 ]
+
+
+# ---------------------------------------------------------------------------
+# SweepResult — unified return type for both CPU and GPU sweep
+# ---------------------------------------------------------------------------
+
+
+@dataclasses.dataclass
+class SweepResult:
+    """Container for parameter-sweep results.
+
+    Returned by :meth:`NbHybridBackend.sweep`.  Works identically
+    regardless of whether the sweep ran on CPU or GPU.
+
+    Attributes
+    ----------
+    tavg : dict[str, np.ndarray]
+        Per-subnet temporal-average arrays with shape
+        ``(n_sweeps, n_voi, N_subnet, n_modes)``.
+    merged_tavg : np.ndarray
+        All subnets concatenated / reordered along the node axis,
+        shape ``(n_sweeps, n_voi, N_total, n_modes)``.
+    ctavg : dict[str, np.ndarray]
+        Per-subnet coupling temporal-average (same shape as tavg).
+    times : np.ndarray
+        Mid-point time vector, shape ``(n_chunks,)``.
+    sweep_values : np.ndarray
+        The sweep parameter grid, ``(n_sweeps, n_dims)``.
+    snapshot : dict or None
+        Final execution state for resume (GPU-only for now).
+    backend : str
+        ``'cpu-seq'``, ``'cpu-4c'``, ``'cpu-8c'``, etc., or ``'cuda'``.
+    elapsed : float
+        Wall-clock seconds for the sweep execution (excludes compile).
+    raw : dict[str, np.ndarray] or None
+        Full step-by-step output when ``monitor='raw'``.
+    bold : dict[str, np.ndarray] or None
+        BOLD signal when ``bold_period`` was given.
+    """
+    tavg: dict = dataclasses.field(default_factory=dict)
+    merged_tavg: np.ndarray = None
+    ctavg: dict = dataclasses.field(default_factory=dict)
+    times: np.ndarray = None
+    sweep_values: np.ndarray = None
+    snapshot: Optional[dict] = None
+    backend: str = ""
+    elapsed: float = 0.0
+    raw: Optional[dict] = None
+    bold: Optional[dict] = None
+
+
+# ---------------------------------------------------------------------------
+# CFun parameter index mapping — named attributes to param_idx
+# ---------------------------------------------------------------------------
+
+_CFUN_PARAM_ATTRS: dict = {
+    "Linear":            [("a", 0), ("b", 1)],
+    "Scaling":           [("a", 0)],
+    "Sigmoidal":         [("a", 0), ("sigma", 1), ("midpoint", 2),
+                          ("cmin", 3), ("cmax", 4)],
+    "SigmoidalJansenRit":[("a", 0), ("e0", 1), ("r", 2), ("v0", 3)],
+    "Kuramoto":          [("a", 0)],
+    "Difference":        [],
+    "HyperbolicTangent": [("a", 0), ("midpoint", 1), ("sigma", 2)],
+    "PreSigmoidal":      [("H", 0), ("Q", 1), ("G", 2), ("P", 3), ("theta", 4)],
+}
+
+_CFUN_ATTR_TO_IDX: dict = {}
+for _cls, _attrs in _CFUN_PARAM_ATTRS.items():
+    for _attr, _idx in _attrs:
+        _CFUN_ATTR_TO_IDX[(_cls, _attr)] = _idx
+
+_NAMED_PARAM_ALIASES: dict = {
+    "coupling_scale": {"attr": "a", "idx": 0},
+    "scale":         {"attr": "a", "idx": 0},
+    "coupling_a":    {"attr": "a", "idx": 0},
+    "coupling_b":    {"attr": "b", "idx": 1},
+    "sigma":         {"attr": "sigma", "idx": 1},
+    "midpoint":      {"attr": "midpoint", "idx": 2},
+}
 
 
 # ---------------------------------------------------------------------------
@@ -1883,6 +2039,266 @@ class NbHybridBackend(MakoUtilMix):
             setattr(cfun, ['H', 'Q', 'G', 'P', 'theta'][pidx], np.array([float(value)]))
         else:
             raise TypeError(f"Unknown cfun type: {type(cfun).__name__}")
+
+    # ===================================================================
+    # Unified sweep API
+    # ===================================================================
+
+    @staticmethod
+    def _resolve_named_params(network_set, params):
+        """Resolve a named-parameter dict to ``(sweep_descriptor, sweep_values)``."""
+        # Collect all projections with names
+        # Each entry: (lookup_name, proj, actual_name_for_descriptor)
+        all_projs = []
+        for proj in network_set.projections:
+            actual_name = f"{proj.source.name}_to_{proj.target.name}"
+            all_projs.append((actual_name, proj, actual_name))
+        for sn in network_set.subnets:
+            for p in sn.projections:
+                raw_name = getattr(p, "name", None) or "intra"
+                qualified = f"{sn.name}.{raw_name}" if raw_name == "intra" else raw_name
+                all_projs.append((qualified, p, raw_name))
+
+        dims = []
+        for pname, values in params.items():
+            dims.append(np.asarray(values, dtype=np.float32))
+
+        n_sweeps = len(dims[0])
+        for i, d in enumerate(dims):
+            if len(d) != n_sweeps:
+                raise ValueError(f"All param arrays must be same length; param {i} has {len(d)} vs {n_sweeps}")
+
+        sweep_values = (np.column_stack(dims).astype(np.float32)
+                        if len(dims) > 1 else dims[0].reshape(-1, 1))
+        sweep_descriptor = []
+
+        for dim_idx, (key, _values) in enumerate(params.items()):
+            resolved = False
+
+            # Try alias first ('coupling_scale', 'scale', etc.)
+            if key in _NAMED_PARAM_ALIASES:
+                alias = _NAMED_PARAM_ALIASES[key]
+                for lookup, proj, actual in all_projs:
+                    cfun = proj.cfun
+                    if cfun is None:
+                        continue
+                    cfun_cls = type(cfun).__name__
+                    attr = alias["attr"]
+                    if (cfun_cls, attr) in _CFUN_ATTR_TO_IDX:
+                        sweep_descriptor.append({
+                            "type": "cfun", "projection": actual,
+                            "param_idx": _CFUN_ATTR_TO_IDX[(cfun_cls, attr)],
+                        })
+                        resolved = True
+                        break
+                if resolved:
+                    continue
+
+            # Proj.attr: try "{proj}.{attr}" before model params so that
+            # "ctx.intra.b" resolves to the intra-projection's cfun 'b' 
+            # rather than treating "intra.b" as a model parameter.
+            if "." in key:
+                proj_name, attr = key.rsplit(".", 1)
+                for lookup, proj, actual in all_projs:
+                    if lookup == proj_name or lookup.endswith("." + proj_name):
+                        cfun = proj.cfun
+                        if cfun is not None:
+                            cfun_cls = type(cfun).__name__
+                            if (cfun_cls, attr) in _CFUN_ATTR_TO_IDX:
+                                sweep_descriptor.append({
+                                    "type": "cfun", "projection": actual,
+                                    "param_idx": _CFUN_ATTR_TO_IDX[(cfun_cls, attr)],
+                                })
+                                resolved = True
+                                break
+                if resolved:
+                    continue
+
+            # Model param: "subnet.param" — only if param doesn't match
+            # a known cfun attribute for any projection of that subnet.
+            if "." in key:
+                parts = key.split(".", 1)
+                if len(parts) == 2 and any(sn.name == parts[0] for sn in network_set.subnets):
+                    sname, param = parts
+                    sweep_descriptor.append({"type": "model", "subnet": sname, "param": param})
+                    continue
+
+            raise ValueError(
+                f"Cannot resolve sweep parameter '{key}'. Use 'coupling_scale', "
+                f"'{{proj}}.{{attr}}', or '{{subnet}}.{{param}}'. "
+                f"Projections: {[lookup for lookup, _, _ in all_projs]}. "
+                f"Subnets: {[sn.name for sn in network_set.subnets]}."
+            )
+
+        return sweep_descriptor, sweep_values
+
+    def sweep(
+        self,
+        network_set,
+        params,
+        nstep: int = 100,
+        *,
+        backend: str = "auto",
+        n_workers: int = 1,
+        monitor: str = "tavg",
+        monitor_period: int = 1,
+        bold_period: Optional[float] = None,
+        chunk_size: Optional[int] = None,
+        initial_states: Optional[list] = None,
+        node_indices: Optional[dict] = None,
+    ) -> "SweepResult":
+        """Run a parameter sweep — auto dispatches to GPU or multi-core CPU.
+
+        Parameters
+        ----------
+        params : dict
+            Named parameters to sweep.  Keys → 1-D arrays.  All same length.
+            ``'coupling_scale'`` or ``'scale'``: first projection's scaling.
+            ``'{proj_name}.{attr}'``: named projection cfun attribute.
+            ``'{subnet}.{param}'``: model parameter on a subnet.
+        backend : str
+            ``'auto'`` (try CUDA → fallback CPU), ``'cpu'``, or ``'cuda'``.
+        n_workers : int
+            CPU worker processes (fork-based, ignored for CUDA).
+        monitor : str
+            ``'tavg'``, ``'raw'``, or ``'subsample'``.
+        """
+        import time as _time_mod
+
+        sweep_descriptor, sweep_values = self._resolve_named_params(network_set, params)
+
+        use_cuda = False
+        if backend == "cuda":
+            use_cuda = True
+        elif backend == "auto":
+            try:
+                from numba import cuda as _cuda
+                use_cuda = _cuda.is_available()
+            except ImportError:
+                pass
+
+        if use_cuda:
+            return self._sweep_cuda(
+                network_set, sweep_descriptor, sweep_values, nstep,
+                monitor, monitor_period, bold_period, chunk_size,
+                initial_states, node_indices)
+        else:
+            return self._sweep_cpu(
+                network_set, sweep_descriptor, sweep_values, nstep,
+                n_workers, initial_states, node_indices)
+
+    def _sweep_cuda(self, network_set, sweep_descriptor, sweep_values,
+                     nstep, monitor, monitor_period, bold_period,
+                     chunk_size, initial_states, node_indices):
+        import time as _time_mod
+        from tvb.simulator.backend.nb_hybrid_cuda_sweep_backend import NbHybridCUDASweepBackend
+
+        cuda_backend = NbHybridCUDASweepBackend()
+        compiled = cuda_backend.compile_sweep(network_set, sweep_descriptor=sweep_descriptor)
+        kwargs = dict(sweep_values=sweep_values, nstep=nstep, monitor_type=monitor,
+                     monitor_period=monitor_period, node_indices=node_indices)
+        if initial_states is not None: kwargs["initial_states"] = initial_states
+        if bold_period is not None: kwargs["bold_period"] = bold_period
+        if chunk_size is not None: kwargs["chunk_size"] = chunk_size
+
+        t0 = _time_mod.perf_counter()
+        raw = compiled.run(**kwargs)
+        elapsed = _time_mod.perf_counter() - t0
+
+        subnet_names = [sn.name for sn in network_set.subnets]
+        result = SweepResult(sweep_values=sweep_values, backend="cuda", elapsed=elapsed,
+                            snapshot=raw.get("snapshot"))
+        if raw.get("tavg"):
+            result.tavg = dict(zip(subnet_names, raw["tavg"]))
+        if raw.get("merged_tavg") is not None:
+            result.merged_tavg = raw["merged_tavg"]
+        elif result.tavg:
+            result.merged_tavg = np.concatenate(list(result.tavg.values()), axis=2)
+        if raw.get("ctavg"):
+            result.ctavg = dict(zip(subnet_names, raw["ctavg"]))
+        if raw.get("raw"):
+            result.raw = dict(zip(subnet_names, raw["raw"]))
+        if raw.get("bold"):
+            result.bold = dict(zip(subnet_names, raw["bold"]))
+        dt = network_set.subnets[0].scheme.dt
+        nc = raw["tavg"][0].shape[0] if raw.get("tavg") else nstep
+        result.times = np.arange(0.5, nc + 0.5) * dt * nstep / nc if nc > 0 else np.array([])
+        return result
+
+    def _stack_cpu_results(self, raw_results, network_set, node_indices, sweep_values, backend_label, elapsed):
+        """Stack CPU list-of-tuples into SweepResult."""
+        subnet_names = [sn.name for sn in network_set.subnets]
+        tavg_dict = {};
+        ctavg_dict = {}
+        for si, sname in enumerate(subnet_names):
+            tavg_dict[sname] = np.stack([r[si][1] for r in raw_results], axis=0)
+            ctavg_dict[sname] = np.stack([r[si][2] for r in raw_results], axis=0)
+        # Merge
+        if node_indices:
+            n_global = max(max(idxs) for idxs in node_indices.values()) + 1
+            ref = list(tavg_dict.values())[0]
+            merged = np.zeros((ref.shape[0], ref.shape[1], ref.shape[2], n_global, ref.shape[4]), dtype=np.float32)
+            for sname in subnet_names:
+                if sname in node_indices:
+                    merged[:, :, :, node_indices[sname], :] = tavg_dict[sname]
+            merged_tavg = merged
+        else:
+            merged_tavg = np.concatenate(list(tavg_dict.values()), axis=3)
+        times = raw_results[0][0][0] if raw_results else np.array([])
+        return SweepResult(tavg=tavg_dict, merged_tavg=merged_tavg, ctavg=ctavg_dict,
+                          times=times, sweep_values=sweep_values, backend=backend_label, elapsed=elapsed)
+
+    def _sweep_cpu(self, network_set, sweep_descriptor, sweep_values,
+                    nstep, n_workers, initial_states, node_indices):
+        import time as _time_mod
+        if n_workers > 1:
+            return self._sweep_cpu_parallel(network_set, sweep_descriptor, sweep_values,
+                                             nstep, n_workers, initial_states, node_indices)
+        t0 = _time_mod.perf_counter()
+        raw = self.run_sweep(network_set, sweep_values=sweep_values, nstep=nstep,
+                             sweep_descriptor=sweep_descriptor, initial_states=initial_states)
+        elapsed = _time_mod.perf_counter() - t0
+        return self._stack_cpu_results(raw, network_set, node_indices, sweep_values, "cpu-seq", elapsed)
+
+    def _sweep_cpu_parallel(self, network_set, sweep_descriptor, sweep_values,
+                             nstep, n_workers, initial_states, node_indices):
+        """Multi-core CPU sweep using fork-based multiprocessing."""
+        import time as _time_mod
+        import multiprocessing as mp
+
+        # Pre-compile so children inherit JIT cache via fork
+        compiled = self.compile(network_set, eager=True)
+
+        # Store references in module-level globals so fork workers can access them.
+        # (Pool.map pickles the function object even with fork, so we can't
+        # pass closures. Instead, workers access globals inherited via fork.)
+        global _PARALLEL_NETWORK_SET, _PARALLEL_COMPILED_FN, _PARALLEL_DESCRIPTOR
+        _PARALLEL_NETWORK_SET = network_set
+        _PARALLEL_COMPILED_FN = compiled
+        _PARALLEL_DESCRIPTOR = sweep_descriptor
+
+        per_w = len(sweep_values) // n_workers
+        rem = len(sweep_values) % n_workers
+        tasks = []
+        s = 0
+        for wid in range(n_workers):
+            c = per_w + (1 if wid < rem else 0)
+            if c > 0:
+                tasks.append((s, c, sweep_values[s:s + c], nstep))
+                s += c
+
+        ctx = mp.get_context("fork")
+        t0 = _time_mod.perf_counter()
+        with ctx.Pool(n_workers) as pool:
+            all_results = pool.map(_sweep_parallel_worker, tasks)
+        elapsed = _time_mod.perf_counter() - t0
+
+        raw_results = []
+        for chunk in all_results:
+            raw_results.extend(chunk)
+
+        return self._stack_cpu_results(raw_results, network_set, node_indices,
+                                       sweep_values, f"cpu-{n_workers}c", elapsed)
 
     def run_sweep(
         self,
