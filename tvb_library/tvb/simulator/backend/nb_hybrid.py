@@ -63,83 +63,7 @@ from tvb.simulator.integrators import (
     EulerStochastic,
 )
 
-# ---------------------------------------------------------------------------
-# Module-level globals for fork-based parallel sweep workers
-# ---------------------------------------------------------------------------
-# These are set by NbHybridBackend._sweep_cpu_parallel() before forking.
-# Workers access them via fork's copy-on-write memory inheritance.
 
-_PARALLEL_NETWORK_SET = None
-_PARALLEL_COMPILED_FN = None
-_PARALLEL_DESCRIPTOR = None
-
-
-def _sweep_parallel_worker(args):
-    """Worker function for fork-based multi-core sweep.
-
-    Accesses compiled function and network_set via module-level globals
-    (inherited via fork).  Each iteration mutates cfun/model parameters,
-    runs one simulation, then restores original values.
-
-    NOTE: Fork-safety is limited — Numba LLVM is not fully fork-safe.
-    A future prange-based sweep kernel (single process, thread-parallel)
-    will replace this mechanism for models that trigger LLVM corruption.
-    """
-    import numpy as _np
-    from tvb.simulator.backend.nb_hybrid import NbHybridBackend
-
-    start, count, sv_slice, nstep = args
-    ns = _PARALLEL_NETWORK_SET
-    compiled = _PARALLEL_COMPILED_FN
-    desc = _PARALLEL_DESCRIPTOR
-    _run_fn = compiled.run
-
-    results = []
-    for i in range(count):
-        sv = sv_slice[i]
-        restore = {}
-        for dim, d in enumerate(desc):
-            if d["type"] == "cfun":
-                pname, pidx = d["projection"], d.get("param_idx", 0)
-                for proj in ns.projections:
-                    if f"{proj.source.name}_to_{proj.target.name}" == pname:
-                        key = ("cfun", pname, pidx)
-                        restore[key] = NbHybridBackend._cfun_get_param(proj.cfun, pidx)
-                        NbHybridBackend._cfun_set_param(proj.cfun, pidx, float(sv[dim]))
-                        break
-                else:
-                    for sn in ns.subnets:
-                        for p in sn.projections:
-                            if (getattr(p, "name", None) or "intra") == pname:
-                                key = ("cfun", pname, pidx)
-                                restore[key] = NbHybridBackend._cfun_get_param(p.cfun, pidx)
-                                NbHybridBackend._cfun_set_param(p.cfun, pidx, float(sv[dim]))
-                                break
-            elif d["type"] == "model":
-                sname, param = d["subnet"], d["param"]
-                for sn in ns.subnets:
-                    if sn.name == sname:
-                        key = ("model", sname, param)
-                        restore[key] = float(getattr(sn.model, param))
-                        setattr(sn.model, param, _np.array([float(sv[dim])]))
-        results.append(_run_fn(nstep=nstep))
-        # Restore original values
-        for key, orig in restore.items():
-            if key[0] == "cfun":
-                pname, pidx = key[1], key[2]
-                for proj in ns.projections:
-                    if f"{proj.source.name}_to_{proj.target.name}" == pname:
-                        NbHybridBackend._cfun_set_param(proj.cfun, pidx, orig); break
-                else:
-                    for sn in ns.subnets:
-                        for p in sn.projections:
-                            if (getattr(p, "name", None) or "intra") == pname:
-                                NbHybridBackend._cfun_set_param(p.cfun, pidx, orig); break
-            elif key[0] == "model":
-                for sn in ns.subnets:
-                    if sn.name == key[1]:
-                        setattr(sn.model, key[2], _np.array([orig]))
-    return results
 
 
 __all__ = [
@@ -927,9 +851,11 @@ _STIM_LAZY_THRESHOLD_MB: int = 64
 
 # Keyed by SHA-256 of the rendered (pre-autopep8) source string so the same
 # topology produces the same key regardless of which NbHybridBackend instance
-# triggers the compile.  This survives new NbHybridBackend() instantiations
-# within a single Python process.
+# Module-level cache for compiled functions, keyed by SHA-256 of rendered source.
+# Stores (run_network_fn, module_object) pairs so the sweep kernel can
+# reference network_chunk from the same module.
 _COMPILED_FN_CACHE: dict = {}
+_COMPILED_MOD_CACHE: dict = {}
 
 
 def _build_as_module(source: str, cache_key: str):
@@ -960,6 +886,8 @@ def _build_as_module(source: str, cache_key: str):
     # Register in sys.modules so Numba can find it for cache lookup.
     sys.modules[mod_name] = mod
     spec.loader.exec_module(mod)
+    # Also cache the module object so the sweep kernel can reference network_chunk
+    _COMPILED_MOD_CACHE[cache_key] = mod
     return mod.run_network
 
 
@@ -2280,61 +2208,44 @@ class NbHybridBackend(MakoUtilMix):
                     nstep, n_workers, initial_states, node_indices):
         import time as _time_mod
         if n_workers > 1:
-            return self._sweep_cpu_parallel(network_set, sweep_descriptor, sweep_values,
-                                             nstep, n_workers, initial_states, node_indices)
+            # Use prange-based parallel sweep instead of fork
+            return self._sweep_cpu_prange(
+                network_set, sweep_descriptor, sweep_values,
+                nstep, initial_states, node_indices)
         t0 = _time_mod.perf_counter()
         raw = self.run_sweep(network_set, sweep_values=sweep_values, nstep=nstep,
                              sweep_descriptor=sweep_descriptor, initial_states=initial_states)
         elapsed = _time_mod.perf_counter() - t0
         return self._stack_cpu_results(raw, network_set, node_indices, sweep_values, "cpu-seq", elapsed)
 
-    def _sweep_cpu_parallel(self, network_set, sweep_descriptor, sweep_values,
-                             nstep, n_workers, initial_states, node_indices):
-        """Multi-core CPU sweep using fork-based multiprocessing.
 
-        Pre-compiles the Numba kernel in the parent so forked children inherit
-        the compiled function via copy-on-write.  Each child processes a batch
-        of sweep points by mutating cfun/model parameters, running the compiled
-        kernel, and restoring the original values.
+    def _sweep_cpu_prange(self, network_set, sweep_descriptor, sweep_values,
+                          nstep, initial_states, node_indices):
+        """Multi-core CPU sweep using Numba prange (single-process threading).
 
-        NOTE: Numba LLVM is not fully fork-safe.  Single-subnet models with
-        simple monitors work well.  Multi-subnet setups with JansenRit or
-        spatial/projection monitors may trigger segfaults in forked children.
-        For those cases, a prange-based sweep kernel (single process,
-        @nb.njit(parallel=True)) is the proper long-term fix.
+        Compiles a ``@nb.njit(parallel=True)`` sweep kernel via a Mako
+        template (``nb-hybrid-sweep-cpu.py.mako``), appended to the
+        single-sim module so ``sweep_kernel`` can call ``network_chunk``
+        directly from inside ``nb.prange``.  Each thread operates on its
+        own slice of per-sweep arrays, giving true multi-core parallelism
+        without the fork-safety issues of multiprocessing.
         """
-        import time as _time_mod
-        import multiprocessing as mp
+        from tvb.simulator.backend.nb_hybrid_sweep_cpu import (
+            compile_sweep_kernel, run_sweep_prange)
 
+        # Ensure single-sim function is compiled (and module is cached)
         compiled = self.compile(network_set, eager=True)
+        analysis = compiled._analysis
 
-        global _PARALLEL_NETWORK_SET, _PARALLEL_COMPILED_FN, _PARALLEL_DESCRIPTOR
-        _PARALLEL_NETWORK_SET = network_set
-        _PARALLEL_COMPILED_FN = compiled
-        _PARALLEL_DESCRIPTOR = sweep_descriptor
+        # Compile the sweep kernel (Mako template + single-sim source)
+        kernel_fn = compile_sweep_kernel(self, analysis)
 
-        per_w = len(sweep_values) // n_workers
-        rem = len(sweep_values) % n_workers
-        tasks = []
-        s = 0
-        for wid in range(n_workers):
-            c = per_w + (1 if wid < rem else 0)
-            if c > 0:
-                tasks.append((s, c, sweep_values[s:s + c], nstep))
-                s += c
+        # Run the sweep
+        return run_sweep_prange(
+            kernel_fn, analysis, network_set, sweep_descriptor,
+            sweep_values, nstep, self, initial_states=initial_states)
 
-        ctx = mp.get_context("fork")
-        t0 = _time_mod.perf_counter()
-        with ctx.Pool(n_workers) as pool:
-            all_results = pool.map(_sweep_parallel_worker, tasks)
-        elapsed = _time_mod.perf_counter() - t0
 
-        raw_results = []
-        for chunk in all_results:
-            raw_results.extend(chunk)
-
-        return self._stack_cpu_results(raw_results, network_set, node_indices,
-                                       sweep_values, f"cpu-{n_workers}c", elapsed)
 
     def run_sweep(
         self,
