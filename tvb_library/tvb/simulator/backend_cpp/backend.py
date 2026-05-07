@@ -4,7 +4,7 @@ import dataclasses
 import importlib.util
 import shutil
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 
@@ -19,6 +19,94 @@ from .codegen import (
 )
 from .lowering import SpecLoweringResult, lower_network_set
 from .spec import ProjectionSpec, SimulationSpec
+
+
+# ---------------------------------------------------------------------------
+# Sweep result container
+# ---------------------------------------------------------------------------
+
+@dataclasses.dataclass
+class SweepResult:
+    """Results from :meth:`CppHybridBackend.sweep`.
+
+    Attributes
+    ----------
+    tavg : dict[str, np.ndarray]
+        Per-subnet temporal averages, shape ``(n_sweeps, n_voi, N_subnet, n_modes)``.
+    merged_tavg : np.ndarray or None
+        All subnets concatenated along the node axis,
+        shape ``(n_sweeps, n_voi, N_total, n_modes)``.
+    ctavg : dict[str, np.ndarray]
+        Per-subnet coupling temporal averages (same shape as tavg).
+    times : np.ndarray
+        Time vector from the last subnet of the first sweep point.
+    sweep_values : np.ndarray
+        Parameter grid, shape ``(n_sweeps, n_dims)``.
+    backend : str
+        Always ``'cpp-seq'`` for this backend.
+    elapsed : float
+        Wall-clock seconds (excludes compilation).
+    raw, bold : None
+        Reserved for future use; always ``None`` in the current implementation.
+    """
+    tavg: dict = dataclasses.field(default_factory=dict)
+    merged_tavg: Optional[np.ndarray] = None
+    ctavg: dict = dataclasses.field(default_factory=dict)
+    times: Optional[np.ndarray] = None
+    sweep_values: Optional[np.ndarray] = None
+    backend: str = ""
+    elapsed: float = 0.0
+    raw: Optional[dict] = None
+    bold: Optional[dict] = None
+
+
+# ---------------------------------------------------------------------------
+# Cfun parameter tables — shared with the sweep resolver
+# ---------------------------------------------------------------------------
+
+_CFUN_PARAM_ATTRS: dict = {
+    "Linear":             [("a", 0), ("b", 1)],
+    "Scaling":            [("a", 0)],
+    "Sigmoidal":          [("a", 0), ("sigma", 1), ("midpoint", 2), ("cmin", 3), ("cmax", 4)],
+    "SigmoidalJansenRit": [("a", 0), ("e0", 1), ("r", 2), ("v0", 3)],
+    "Kuramoto":           [("a", 0)],
+    "HyperbolicTangent":  [("a", 0), ("midpoint", 1), ("sigma", 2)],
+    "PreSigmoidal":       [("H", 0), ("Q", 1), ("G", 2), ("P", 3), ("theta", 4)],
+}
+
+_CFUN_ATTR_TO_IDX: dict = {
+    (cls, attr): idx
+    for cls, attrs in _CFUN_PARAM_ATTRS.items()
+    for attr, idx in attrs
+}
+
+_NAMED_PARAM_ALIASES: dict = {
+    "coupling_scale": {"attr": "a", "idx": 0},
+    "scale":          {"attr": "a", "idx": 0},
+    "coupling_a":     {"attr": "a", "idx": 0},
+    "coupling_b":     {"attr": "b", "idx": 1},
+    "sigma":          {"attr": "sigma", "idx": 1},
+    "midpoint":       {"attr": "midpoint", "idx": 2},
+}
+
+
+# ---------------------------------------------------------------------------
+# Initial-state helpers
+# ---------------------------------------------------------------------------
+
+def _default_initial_states(network_set) -> list[np.ndarray]:
+    """Generate midpoint initial states for every subnet in *network_set*."""
+    states = []
+    for sn in network_set.subnets:
+        model = sn.model
+        x0 = np.zeros((model.nvar, sn.nnodes, model.number_of_modes), dtype=np.float64)
+        for i, sv in enumerate(model.state_variables):
+            rng = model.state_variable_range.get(sv)
+            if rng is not None:
+                lo, hi = float(rng[0]), float(rng[1])
+                x0[i] = (lo + hi) / 2.0
+        states.append(x0)
+    return states
 
 
 def _projection_arrays(proj: ProjectionSpec) -> dict[str, Any]:
@@ -455,4 +543,435 @@ class CppHybridBackend:
             initial_states=initial_states,
             nstep=nstep,
             chunk_size=chunk_size,
+        )
+
+    # -----------------------------------------------------------------------
+    # Unified sweep API
+    # -----------------------------------------------------------------------
+
+    @staticmethod
+    def _resolve_named_params(network_set, params):
+        """Resolve a named-parameter dict to ``(sweep_descriptor, sweep_values)``.
+
+        Mirrors ``NbHybridBackend._resolve_named_params`` so that the same
+        ``params`` dict works for both backends.
+
+        Parameters
+        ----------
+        network_set : NetworkSet
+        params : dict
+            Keys are parameter names; values are 1-D arrays of the same length.
+
+        Returns
+        -------
+        sweep_descriptor : list[dict]
+            One entry per dimension, e.g.
+            ``[{'type': 'cfun', 'projection': 'ctx_to_thal', 'param_idx': 0}]``.
+        sweep_values : np.ndarray, shape (n_sweeps, n_dims)
+        """
+        all_projs = []
+        for proj in network_set.projections:
+            actual_name = f"{proj.source.name}_to_{proj.target.name}"
+            all_projs.append((actual_name, proj, actual_name))
+        for sn in network_set.subnets:
+            for p in sn.projections:
+                raw_name = getattr(p, "name", None) or "intra"
+                qualified = f"{sn.name}.{raw_name}" if raw_name == "intra" else raw_name
+                all_projs.append((qualified, p, raw_name))
+
+        dims = [np.asarray(v, dtype=np.float32) for v in params.values()]
+        n_sweeps = len(dims[0])
+        for i, d in enumerate(dims):
+            if len(d) != n_sweeps:
+                raise ValueError(
+                    f"All param arrays must be the same length; "
+                    f"param {i} has {len(d)} vs {n_sweeps}"
+                )
+
+        sweep_values = (
+            np.column_stack(dims).astype(np.float32)
+            if len(dims) > 1
+            else dims[0].reshape(-1, 1)
+        )
+        sweep_descriptor: list[dict] = []
+
+        for _dim_idx, (key, _values) in enumerate(params.items()):
+            resolved = False
+
+            # 1. Named alias ('coupling_scale', 'scale', …)
+            if key in _NAMED_PARAM_ALIASES:
+                alias = _NAMED_PARAM_ALIASES[key]
+                for _lookup, proj, actual in all_projs:
+                    cfun = proj.cfun
+                    if cfun is None:
+                        continue
+                    cfun_cls = type(cfun).__name__
+                    attr = alias["attr"]
+                    if (cfun_cls, attr) in _CFUN_ATTR_TO_IDX:
+                        sweep_descriptor.append({
+                            "type": "cfun",
+                            "projection": actual,
+                            "param_idx": _CFUN_ATTR_TO_IDX[(cfun_cls, attr)],
+                        })
+                        resolved = True
+                        break
+                if resolved:
+                    continue
+
+            # 2. '{proj}.{attr}' — explicit projection cfun attribute
+            if "." in key:
+                proj_name, attr = key.rsplit(".", 1)
+                for lookup, proj, actual in all_projs:
+                    if lookup == proj_name or lookup.endswith("." + proj_name):
+                        cfun = proj.cfun
+                        if cfun is not None:
+                            cfun_cls = type(cfun).__name__
+                            if (cfun_cls, attr) in _CFUN_ATTR_TO_IDX:
+                                sweep_descriptor.append({
+                                    "type": "cfun",
+                                    "projection": actual,
+                                    "param_idx": _CFUN_ATTR_TO_IDX[(cfun_cls, attr)],
+                                })
+                                resolved = True
+                                break
+                if resolved:
+                    continue
+
+            # 3. '{subnet}.{param}' — model parameter (requires recompile)
+            if "." in key:
+                parts = key.split(".", 1)
+                if len(parts) == 2 and any(
+                    sn.name == parts[0] for sn in network_set.subnets
+                ):
+                    sname, param = parts
+                    sweep_descriptor.append(
+                        {"type": "model", "subnet": sname, "param": param}
+                    )
+                    continue
+
+            raise ValueError(
+                f"Cannot resolve sweep parameter '{key}'. "
+                f"Use 'coupling_scale', '{{proj}}.{{attr}}', or '{{subnet}}.{{param}}'. "
+                f"Projections: {[lk for lk, _, _ in all_projs]}. "
+                f"Subnets: {[sn.name for sn in network_set.subnets]}."
+            )
+
+        return sweep_descriptor, sweep_values
+
+    def sweep(
+        self,
+        network_set,
+        params: dict,
+        nstep: int = 100,
+        *,
+        monitors: Optional[list] = None,
+        initial_states: Optional[list] = None,
+        node_indices: Optional[dict] = None,
+        verbose: bool = False,
+    ) -> SweepResult:
+        """Run a parameter sweep on the C++ backend (sequential CPU).
+
+        Parameters
+        ----------
+        network_set : NetworkSet
+            Configured hybrid network.
+        params : dict
+            Named parameters to sweep.  Keys → 1-D arrays, all same length.
+
+            * ``'coupling_scale'`` / ``'scale'``: first projection's ``cfun.a``
+              (folded into the runtime scale — **no recompilation**).
+            * ``'{proj_name}.{attr}'``: any named projection cfun attribute
+              that resolves to a linear scale factor (``param_idx == 0``).
+            * ``'{subnet}.{param}'``: model parameter; each unique value
+              triggers a recompile (handled by the build cache).
+        nstep : int
+            Number of integration steps per sweep point.
+        monitors : list, optional
+            Monitor objects passed to :meth:`compile`.  Defaults to
+            ``TemporalAverage``.
+        initial_states : list of np.ndarray, optional
+            Per-subnet initial states.  If *None*, midpoints of the model's
+            ``state_variable_range`` are used.
+        node_indices : dict, optional
+            Mapping ``{subnet_name: array_of_global_node_indices}`` used to
+            assemble ``merged_tavg``.
+        verbose : bool
+            Forward to :meth:`compile`.
+
+        Returns
+        -------
+        SweepResult
+        """
+        sweep_descriptor, sweep_values = self._resolve_named_params(network_set, params)
+        return self._sweep_cpu(
+            network_set, sweep_descriptor, sweep_values,
+            nstep, monitors, initial_states, node_indices, verbose,
+        )
+
+    def _sweep_cpu(
+        self,
+        network_set,
+        sweep_descriptor: list[dict],
+        sweep_values: np.ndarray,
+        nstep: int,
+        monitors,
+        initial_states,
+        node_indices,
+        verbose: bool,
+    ) -> SweepResult:
+        import time as _t
+
+        n_sweeps = sweep_values.shape[0]
+
+        if initial_states is None:
+            initial_states = _default_initial_states(network_set)
+        flat_states = [
+            np.ascontiguousarray(s, dtype=np.float64) for s in initial_states
+        ]
+
+        has_model_sweep = any(d["type"] == "model" for d in sweep_descriptor)
+
+        # For cfun-only sweeps compile once; the build cache handles model sweeps.
+        if not has_model_sweep:
+            compiled = self.compile(network_set, monitors=monitors, verbose=verbose)
+
+        raw_results: list = []
+        t0 = _t.perf_counter()
+
+        for tid in range(n_sweeps):
+            sv = sweep_values[tid]
+
+            # Apply model param changes and (re-)compile if needed.
+            restore: dict = {}
+            if has_model_sweep:
+                for dim_idx, desc in enumerate(sweep_descriptor):
+                    if desc["type"] == "model":
+                        sname, param = desc["subnet"], desc["param"]
+                        for sn in network_set.subnets:
+                            if sn.name == sname:
+                                old = float(
+                                    np.atleast_1d(getattr(sn.model, param))[0]
+                                )
+                                restore[(sname, param)] = old
+                                setattr(
+                                    sn.model, param,
+                                    np.array([float(sv[dim_idx])]),
+                                )
+                compiled = self.compile(
+                    network_set, monitors=monitors, verbose=verbose
+                )
+
+            intra_scales, inter_scales = self._compute_sweep_scales(
+                compiled, sweep_descriptor, sv
+            )
+            result = self._run_for_sweep(
+                compiled, nstep, flat_states, intra_scales, inter_scales
+            )
+            raw_results.append(result)
+
+            # Restore model params for the next iteration.
+            for (sname, param), old_val in restore.items():
+                for sn in network_set.subnets:
+                    if sn.name == sname:
+                        setattr(sn.model, param, np.array([old_val]))
+
+        elapsed = _t.perf_counter() - t0
+        return self._stack_cpp_results(
+            raw_results, network_set, node_indices, sweep_values, "cpp-seq", elapsed
+        )
+
+    def _compute_sweep_scales(
+        self,
+        compiled,
+        sweep_descriptor: list[dict],
+        sv: np.ndarray,
+    ) -> tuple[list[float], list[float]]:
+        """Return (intra_scales, inter_scales) with cfun.a folded in for this sweep point.
+
+        For a ``Linear`` cfun with ``a=x`` and ``proj.scale=s``, the C++
+        ``accumulate_projection`` only applies ``scale``, so we fold:
+        ``effective_scale = x * s``.  Only ``param_idx=0`` (the linear
+        multiplier ``a``) is supported; ``param_idx=1`` (additive ``b``) cannot
+        be expressed as a pure scale and raises ``NotImplementedError``.
+        """
+        intra_scales = [float(p.scale) for p in compiled.spec.intra_projections]
+        inter_scales = [
+            float(p.scale) * (float(p.mode_map.flat[0]) if p.mode_map is not None else 1.0)
+            for p in compiled.spec.inter_projections
+        ]
+
+        for dim_idx, desc in enumerate(sweep_descriptor):
+            if desc["type"] != "cfun":
+                continue
+            proj_name = desc["projection"]
+            param_idx = desc.get("param_idx", 0)
+            sweep_val = float(sv[dim_idx])
+
+            if param_idx != 0:
+                raise NotImplementedError(
+                    f"C++ sweep: only param_idx=0 (linear multiplier 'a') can be "
+                    f"folded into scale; got param_idx={param_idx} for '{proj_name}'. "
+                    f"Additive offsets (b) are not representable as a runtime scale."
+                )
+
+            found = False
+            for i, p in enumerate(compiled.spec.intra_projections):
+                if p.name == proj_name:
+                    intra_scales[i] = sweep_val * float(p.scale)
+                    found = True
+                    break
+            if not found:
+                for i, p in enumerate(compiled.spec.inter_projections):
+                    if p.name == proj_name:
+                        mode_factor = (
+                            float(p.mode_map.flat[0])
+                            if p.mode_map is not None
+                            else 1.0
+                        )
+                        inter_scales[i] = sweep_val * float(p.scale) * mode_factor
+                        found = True
+                        break
+            if not found:
+                raise ValueError(
+                    f"Projection '{proj_name}' not found in compiled spec. "
+                    f"Available intra: {[p.name for p in compiled.spec.intra_projections]}, "
+                    f"inter: {[p.name for p in compiled.spec.inter_projections]}."
+                )
+
+        return intra_scales, inter_scales
+
+    def _run_for_sweep(
+        self,
+        compiled,
+        nstep: int,
+        flat_states: list[np.ndarray],
+        intra_scales: list[float],
+        inter_scales: list[float],
+    ) -> list[tuple[np.ndarray, np.ndarray, np.ndarray]]:
+        """Run one sweep point; return ``[(times, data, ctavg), ...]`` per subnet."""
+        monitor_type = (
+            compiled.spec.monitors[0].type_name
+            if compiled.spec.monitors
+            else "TemporalAverage"
+        )
+        # chunk_size: for TemporalAverage use nstep (one monitor sample = full tavg).
+        # For per-step monitors keep chunk_size=1.
+        chunk_size = nstep
+        bold_monitor = None
+        if monitor_type in ("Raw", "RawVoi", "AfferentCoupling",
+                            "AfferentCouplingTemporalAverage"):
+            chunk_size = 1
+        elif monitor_type == "Bold":
+            bold_monitor = next(
+                (m for m in compiled.lowering.monitors if type(m).__name__ == "Bold"),
+                None,
+            )
+            if bold_monitor is not None:
+                _configure_bold_monitor(bold_monitor, compiled.spec.dt)
+                chunk_size = bold_monitor._interim_istep
+
+        module = compiled.load_module()
+
+        intra_data = [_projection_arrays(p) for p in compiled.spec.intra_projections]
+        inter_data = [_inter_projection_arrays(p) for p in compiled.spec.inter_projections]
+
+        # Override projection scales for this sweep point.
+        for i, s in enumerate(intra_scales):
+            intra_data[i]["scale"] = s
+        for i, s in enumerate(inter_scales):
+            inter_data[i]["scale"] = s
+
+        noise_arrays = _build_noise_arrays(compiled.spec, compiled.lowering, int(nstep))
+        stim_arrays = _build_stimulus_arrays(compiled.spec, compiled.lowering, int(nstep))
+
+        raw = module.run_simulation(
+            flat_states,
+            int(nstep),
+            int(chunk_size),
+            [p["weights_data"]     for p in intra_data],
+            [p["weights_indices"]  for p in intra_data],
+            [p["weights_indptr"]   for p in intra_data],
+            [p["idelays"]          for p in intra_data],
+            [p["source_svar"]      for p in intra_data],
+            [p["target_cvar_slot"] for p in intra_data],
+            [p["scale"]            for p in intra_data],
+            [p["weights_data"]     for p in inter_data],
+            [p["weights_indices"]  for p in inter_data],
+            [p["weights_indptr"]   for p in inter_data],
+            [p["idelays"]          for p in inter_data],
+            [p["source_svar"]      for p in inter_data],
+            [p["target_cvar_slot"] for p in inter_data],
+            [p["scale"]            for p in inter_data],
+            noise_arrays,
+            stim_arrays,
+        )
+
+        if bold_monitor is not None:
+            result = []
+            for times, data, ctavg in raw:
+                t_arr = np.asarray(times)
+                d_arr = np.asarray(data)
+                b_times, b_data = _apply_bold_hrf(
+                    bold_monitor, t_arr, d_arr, compiled.spec.dt
+                )
+                result.append((b_times, b_data, np.asarray(ctavg)))
+            return result
+
+        return [
+            (np.asarray(times), np.asarray(data), np.asarray(ctavg))
+            for times, data, ctavg in raw
+        ]
+
+    def _stack_cpp_results(
+        self,
+        raw_results: list,
+        network_set,
+        node_indices: Optional[dict],
+        sweep_values: np.ndarray,
+        backend_label: str,
+        elapsed: float,
+    ) -> SweepResult:
+        """Stack per-sweep-point tuples into a :class:`SweepResult`."""
+        subnet_names = [sn.name for sn in network_set.subnets]
+        tavg_dict: dict = {}
+        ctavg_dict: dict = {}
+
+        for si, sname in enumerate(subnet_names):
+            # data shape per sweep point: (n_chunks, n_voi, n_nodes, n_modes)
+            # mean over n_chunks → (n_voi, n_nodes, n_modes)
+            tavg_dict[sname] = np.stack(
+                [r[si][1].mean(axis=0) for r in raw_results], axis=0
+            )
+            ctavg_dict[sname] = np.stack(
+                [r[si][2].mean(axis=0) for r in raw_results], axis=0
+            )
+
+        if node_indices:
+            n_global = max(max(idxs) for idxs in node_indices.values()) + 1
+            ref = next(iter(tavg_dict.values()))
+            merged = np.zeros(
+                (ref.shape[0], ref.shape[1], n_global, ref.shape[3]),
+                dtype=ref.dtype,
+            )
+            for sname in subnet_names:
+                if sname in node_indices:
+                    merged[:, :, node_indices[sname], :] = tavg_dict[sname]
+            merged_tavg: Optional[np.ndarray] = merged
+        else:
+            voi_counts = {a.shape[1] for a in tavg_dict.values()}
+            merged_tavg = (
+                np.concatenate(list(tavg_dict.values()), axis=2)
+                if len(voi_counts) == 1
+                else None
+            )
+
+        times = raw_results[0][0][0] if raw_results else np.array([])
+        return SweepResult(
+            tavg=tavg_dict,
+            merged_tavg=merged_tavg,
+            ctavg=ctavg_dict,
+            times=times,
+            sweep_values=sweep_values,
+            backend=backend_label,
+            elapsed=elapsed,
         )
