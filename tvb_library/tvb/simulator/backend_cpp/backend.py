@@ -683,8 +683,9 @@ class CppHybridBackend:
         initial_states: Optional[list] = None,
         node_indices: Optional[dict] = None,
         verbose: bool = False,
+        n_workers: int = 1,
     ) -> SweepResult:
-        """Run a parameter sweep on the C++ backend (sequential CPU).
+        """Run a parameter sweep on the C++ backend.
 
         Parameters
         ----------
@@ -712,6 +713,12 @@ class CppHybridBackend:
             assemble ``merged_tavg``.
         verbose : bool
             Forward to :meth:`compile`.
+        n_workers : int
+            Number of parallel threads for cfun-only sweeps.  Each sweep point
+            runs ``run_simulation`` concurrently; the GIL is released inside the
+            C++ call so threads execute in true parallel.  Has no effect when the
+            sweep includes model-parameter changes (those must recompile
+            sequentially).  Default ``1`` (sequential).
 
         Returns
         -------
@@ -721,6 +728,7 @@ class CppHybridBackend:
         return self._sweep_cpu(
             network_set, sweep_descriptor, sweep_values,
             nstep, monitors, initial_states, node_indices, verbose,
+            n_workers=n_workers,
         )
 
     def _sweep_cpu(
@@ -733,6 +741,7 @@ class CppHybridBackend:
         initial_states,
         node_indices,
         verbose: bool,
+        n_workers: int = 1,
     ) -> SweepResult:
         import time as _t
 
@@ -753,46 +762,64 @@ class CppHybridBackend:
         raw_results: list = []
         t0 = _t.perf_counter()
 
-        for tid in range(n_sweeps):
-            sv = sweep_values[tid]
+        # Parallel path: cfun-only sweeps with n_workers > 1.
+        # run_simulation releases the GIL internally so threads execute in true parallel.
+        # Model-parameter sweeps must remain sequential (recompilation mutates network_set).
+        if n_workers > 1 and not has_model_sweep:
+            import concurrent.futures
 
-            # Apply model param changes and (re-)compile if needed.
-            restore: dict = {}
-            if has_model_sweep:
-                for dim_idx, desc in enumerate(sweep_descriptor):
-                    if desc["type"] == "model":
-                        sname, param = desc["subnet"], desc["param"]
-                        for sn in network_set.subnets:
-                            if sn.name == sname:
-                                old = float(
-                                    np.atleast_1d(getattr(sn.model, param))[0]
-                                )
-                                restore[(sname, param)] = old
-                                setattr(
-                                    sn.model, param,
-                                    np.array([float(sv[dim_idx])]),
-                                )
-                compiled = self.compile(
-                    network_set, monitors=monitors, verbose=verbose
+            def _run_point(sv):
+                intra_scales, inter_scales = self._compute_sweep_scales(
+                    compiled, sweep_descriptor, sv
                 )
+                return self._run_for_sweep(compiled, nstep, flat_states, intra_scales, inter_scales)
 
-            intra_scales, inter_scales = self._compute_sweep_scales(
-                compiled, sweep_descriptor, sv
-            )
-            result = self._run_for_sweep(
-                compiled, nstep, flat_states, intra_scales, inter_scales
-            )
-            raw_results.append(result)
+            with concurrent.futures.ThreadPoolExecutor(max_workers=n_workers) as pool:
+                futures = [pool.submit(_run_point, sweep_values[tid]) for tid in range(n_sweeps)]
+                raw_results = [f.result() for f in futures]
 
-            # Restore model params for the next iteration.
-            for (sname, param), old_val in restore.items():
-                for sn in network_set.subnets:
-                    if sn.name == sname:
-                        setattr(sn.model, param, np.array([old_val]))
+        else:
+            for tid in range(n_sweeps):
+                sv = sweep_values[tid]
+
+                # Apply model param changes and (re-)compile if needed.
+                restore: dict = {}
+                if has_model_sweep:
+                    for dim_idx, desc in enumerate(sweep_descriptor):
+                        if desc["type"] == "model":
+                            sname, param = desc["subnet"], desc["param"]
+                            for sn in network_set.subnets:
+                                if sn.name == sname:
+                                    old = float(
+                                        np.atleast_1d(getattr(sn.model, param))[0]
+                                    )
+                                    restore[(sname, param)] = old
+                                    setattr(
+                                        sn.model, param,
+                                        np.array([float(sv[dim_idx])]),
+                                    )
+                    compiled = self.compile(
+                        network_set, monitors=monitors, verbose=verbose
+                    )
+
+                intra_scales, inter_scales = self._compute_sweep_scales(
+                    compiled, sweep_descriptor, sv
+                )
+                result = self._run_for_sweep(
+                    compiled, nstep, flat_states, intra_scales, inter_scales
+                )
+                raw_results.append(result)
+
+                # Restore model params for the next iteration.
+                for (sname, param), old_val in restore.items():
+                    for sn in network_set.subnets:
+                        if sn.name == sname:
+                            setattr(sn.model, param, np.array([old_val]))
 
         elapsed = _t.perf_counter() - t0
+        backend_label = f"cpp-par-{n_workers}" if n_workers > 1 and not has_model_sweep else "cpp-seq"
         return self._stack_cpp_results(
-            raw_results, network_set, node_indices, sweep_values, "cpp-seq", elapsed
+            raw_results, network_set, node_indices, sweep_values, backend_label, elapsed
         )
 
     def _compute_sweep_scales(

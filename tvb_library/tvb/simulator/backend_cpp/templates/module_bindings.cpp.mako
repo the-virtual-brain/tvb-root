@@ -194,9 +194,14 @@ PYBIND11_MODULE(${module_name}, m) {
         }
 
         // ---- run ----
-        const auto results = tvb::hybrid::generated::run_simulation(
-            flat_states, intra_projections, inter_projections, nstep, chunk_size,
-            noise_ptrs, stim_ptrs);
+        // Release the GIL so Python threads can run other sweep points concurrently.
+        // All numpy→C++ copies are done above; result→numpy conversion happens below.
+        const auto results = [&]() {
+            py::gil_scoped_release release;
+            return tvb::hybrid::generated::run_simulation(
+                flat_states, intra_projections, inter_projections, nstep, chunk_size,
+                noise_ptrs, stim_ptrs);
+        }();
 
         // ---- pack output: list of (times, data) per subnet ----
         py::list out;

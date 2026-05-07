@@ -169,6 +169,7 @@ node_indices = {
 backend = CppHybridBackend(build_root=BUILD_ROOT)
 monitor = TemporalAverage(period=TAVG_PERIOD)
 
+# --- sequential ---
 start = time.perf_counter()
 result = backend.sweep(
     network,
@@ -176,14 +177,39 @@ result = backend.sweep(
     nstep=NSTEP,
     monitors=[monitor],
     node_indices=node_indices,
+    n_workers=1,
 )
-elapsed = time.perf_counter() - start
+elapsed_seq = time.perf_counter() - start
 
-print(f"C++ sequential sweep: {elapsed:.2f}s ({len(sweep_values)} sweeps x {NSTEP} steps)")
-print(f"Result backend: {result.backend}")
-for name, arr in result.tavg.items():
+# --- parallel (all available cores) ---
+n_workers = os.cpu_count() or 1
+start = time.perf_counter()
+result_par = backend.sweep(
+    network,
+    params={"coupling_scale": sweep_values},
+    nstep=NSTEP,
+    monitors=[monitor],
+    node_indices=node_indices,
+    n_workers=n_workers,
+)
+elapsed_par = time.perf_counter() - start
+
+print(f"C++ sequential sweep: {elapsed_seq:.2f}s ({len(sweep_values)} sweeps x {NSTEP} steps)")
+print(f"C++ parallel sweep ({n_workers} workers): {elapsed_par:.2f}s  "
+      f"(speedup {elapsed_seq / elapsed_par:.1f}x)")
+print(f"Result backend: {result_par.backend}")
+for name, arr in result_par.tavg.items():
     print(f"tavg[{name!r}] shape: {arr.shape}; mean={arr.mean():.4f}; NaN={np.isnan(arr).any()}")
-print(f"merged_tavg shape: {None if result.merged_tavg is None else result.merged_tavg.shape}")
+print(f"merged_tavg shape: {None if result_par.merged_tavg is None else result_par.merged_tavg.shape}")
+
+# Sanity-check: sequential and parallel results must agree.
+for name in result.tavg:
+    if not np.allclose(result.tavg[name], result_par.tavg[name], atol=1e-10):
+        print(f"WARNING: seq vs par mismatch for '{name}'")
+    else:
+        print(f"OK: seq == par for '{name}'")
+
+result = result_par  # use parallel result for the rest of the script
 
 # ## 4. Visualize the coupling response
 #
