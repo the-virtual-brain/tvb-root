@@ -153,7 +153,6 @@ def run_sweep_prange(kernel_fn, analysis, network_set, sweep_descriptor,
 
         # Output/scratch accumulators
         tavg_all[sn.name] = np.zeros((n_sweeps, nvoi, n_nodes, n_modes), dtype=np.float32)
-        tavg_count_all[sn.name] = np.zeros(n_sweeps, dtype=np.int32)
         ctavg_all[sn.name] = np.zeros((n_sweeps, ncvar, n_nodes, n_modes), dtype=np.float32)
         c_all[sn.name] = np.zeros((n_sweeps, ncvar, n_nodes, n_modes), dtype=np.float32)
 
@@ -181,6 +180,9 @@ def run_sweep_prange(kernel_fn, analysis, network_set, sweep_descriptor,
             4.3*40.3*0.04*0.5, 0.5*25*0.04*0.5, 1-0.5
         ], dtype=np.float32)
         bold_voi_idx[sn.name] = np.array(voi_idx, dtype=np.int32)
+
+    # Single shared tavg counter for all subnets
+    tavg_count_all = np.zeros(n_sweeps, dtype=np.int32)
 
     # ---- Build per-projection cfun_params with swept entries ----
     cfun_params_all = {}
@@ -288,9 +290,9 @@ def run_sweep_prange(kernel_fn, analysis, network_set, sweep_descriptor,
     # Per-sweep accumulators
     for sn in subnets:
         args.append(tavg_all[sn.name])
-        args.append(tavg_count_all[sn.name])
         args.append(ctavg_all[sn.name])
         args.append(c_all[sn.name])
+    args.append(tavg_count_all)
 
     # Noise
     for sn in subnets:
@@ -330,7 +332,7 @@ def run_sweep_prange(kernel_fn, analysis, network_set, sweep_descriptor,
     result_tavg = {}
     result_ctavg = {}
     for sn in subnets:
-        count = tavg_count_all[sn.name].astype(np.float32)
+        count = tavg_count_all.astype(np.float32)
         count = np.where(count > 0, count, np.float32(1.0))
         count_4d = count[:, np.newaxis, np.newaxis, np.newaxis]
         result_tavg[sn.name] = tavg_all[sn.name] / count_4d

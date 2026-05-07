@@ -35,7 +35,7 @@ sn_nvoi_dict = {sn.name: len(sn.model.variables_of_interest) for sn in subnets}
 ## CPU parallel sweep kernel
 ## ============================================================
 
-${'' if debug_nojit else '@nb.njit(parallel=True, cache=False)'}
+${'' if debug_nojit else '@nb.njit(parallel=True, cache=True)'}
 def sweep_kernel(
     _n_sweeps, _nstep, _t_start,
     _sweep_params,  # (n_sweeps, n_sweep_dims) float32
@@ -58,10 +58,10 @@ def sweep_kernel(
     ## per-subnet tavg output arrays (leading n_sweeps dimension)
     % for sn in subnets:
     ${sn.name}_tavg_all,     # (n_sweeps, n_voi, n_nodes, n_modes)
-    ${sn.name}_tavg_count_all,  # (n_sweeps,) int32 — per-sweep tavg count
     ${sn.name}_ctavg_all,    # (n_sweeps, n_cvar, n_nodes, n_modes)
     ${sn.name}_c_all,        # (n_sweeps, n_cvar, n_nodes, n_modes) — coupling scratch
     % endfor
+    _tavg_count_all,  # (n_sweeps,) int32 — shared tavg counter
     ## per-subnet noise arrays (stochastic only — shared across sweeps)
     % for sn in subnets:
     % if sn.is_stochastic:
@@ -118,13 +118,11 @@ def sweep_kernel(
         ${sn.name}_tavg[:, :, :] = np.float32(0.0)
         ${sn.name}_ctavg[:, :, :] = np.float32(0.0)
         ${sn.name}_c[:, :, :] = np.float32(0.0)
-        ${sn.name}_tavg_count_all[_tid] = 0
         ${sn.name}_spatial_tavg[:, :, :] = np.float32(0.0)
         ${sn.name}_proj_tavg[:, :, :] = np.float32(0.0)
         % endfor
-
-        ## Shared tavg_count (single element) for network_chunk
-        tavg_count = np.zeros(1, dtype=np.int32)
+        _tavg_count_all[_tid] = 0
+        tavg_count = _tavg_count_all[_tid:_tid+1]  ## 1-element view, no heap allocation
 
         ## Call network_chunk for this sweep point
         network_chunk(
@@ -194,7 +192,4 @@ def sweep_kernel(
             _bold_dt,
         )
 
-        ## Write back tavg_count to per-sweep array
-        % for sn in subnets:
-        ${sn.name}_tavg_count_all[_tid] = tavg_count[0]
-        % endfor
+        ## tavg_count is already a view into _tavg_count_all — no writeback needed

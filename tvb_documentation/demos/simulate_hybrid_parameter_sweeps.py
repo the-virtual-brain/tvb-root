@@ -186,9 +186,9 @@ for name, arr in result.tavg.items():
 ctx_tavg = result.tavg["cortex"]    # (n_sweeps, n_voi, N_cortex, modes)
 thal_tavg = result.tavg["thalamus"] # (n_sweeps, n_voi, N_thalamus, modes)
 
-# Average over nodes (axis=2) and squeeze modes (axis=3)
-ctx_mean = ctx_tavg.mean(axis=2).squeeze(-1)   # (n_sweeps, n_voi)
-thal_mean = thal_tavg.mean(axis=2).squeeze(-1) # (n_sweeps, n_voi)
+# Average over time (chunks, axis=1) and nodes (axis=3), squeeze modes (axis=4)
+ctx_mean = ctx_tavg.mean(axis=(1, 3)).squeeze(-1)   # (n_sweeps, n_voi)
+thal_mean = thal_tavg.mean(axis=(1, 3)).squeeze(-1) # (n_sweeps, n_voi)
 
 fig, axes = plt.subplots(1, 2, figsize=(12, 4))
 

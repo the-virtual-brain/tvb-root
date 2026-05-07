@@ -2172,32 +2172,32 @@ class NbHybridBackend(MakoUtilMix):
 
         raw_results: list of n_sweeps tuples, each tuple has n_subnets entries
         of (times, data, ctavg).  data shape: (n_chunks, n_voi, N, modes).
-        We average over n_chunks to produce (n_sweeps, n_voi, N, modes)
-        matching the GPU SweepResult format.
+        Stacks into (n_sweeps, n_chunks, n_voi, N, modes) preserving the
+        time (chunk) dimension so callers can access per-timestep traces.
         """
         subnet_names = [sn.name for sn in network_set.subnets]
         tavg_dict = {}
         ctavg_dict = {}
         for si, sname in enumerate(subnet_names):
-            # Average over time (chunk) dimension to match GPU format
-            tavg_arr = np.stack([r[si][1].mean(axis=0) for r in raw_results], axis=0)
-            ctavg_arr = np.stack([r[si][2].mean(axis=0) for r in raw_results], axis=0)
+            # Preserve time (chunk) dimension for per-timestep traces
+            tavg_arr = np.stack([r[si][1] for r in raw_results], axis=0)
+            ctavg_arr = np.stack([r[si][2] for r in raw_results], axis=0)
             tavg_dict[sname] = tavg_arr
             ctavg_dict[sname] = ctavg_arr
         # Merge along node axis
         if node_indices and len(node_indices) > 0:
             n_global = max(max(idxs) for idxs in node_indices.values()) + 1
             ref = list(tavg_dict.values())[0]
-            merged = np.zeros((ref.shape[0], ref.shape[1], n_global, ref.shape[3]), dtype=np.float32)
+            merged = np.zeros((ref.shape[0], ref.shape[1], ref.shape[2], n_global, ref.shape[4]), dtype=np.float32)
             for sname in subnet_names:
                 if sname in node_indices:
-                    merged[:, :, node_indices[sname], :] = tavg_dict[sname]
+                    merged[:, :, :, node_indices[sname], :] = tavg_dict[sname]
             merged_tavg = merged
         else:
             # Concatenate along node axis only if all subnets share the same n_voi
-            vois = set(a.shape[1] for a in tavg_dict.values())
+            vois = set(a.shape[2] for a in tavg_dict.values())
             if len(vois) == 1:
-                merged_tavg = np.concatenate(list(tavg_dict.values()), axis=2)
+                merged_tavg = np.concatenate(list(tavg_dict.values()), axis=3)
             else:
                 merged_tavg = None  # VOI counts differ — can't merge
         times = raw_results[0][0][0] if raw_results else np.array([])
