@@ -5,6 +5,7 @@ emit C++ → pybind11 extension compiled via CMake → full simulation loop runs
 in C++ → monitor outputs returned as NumPy arrays.
 """
 
+from .__version__ import BACKEND_VERSION
 from .backend import CompiledCppNetwork, CppHybridBackend, SweepResult
 from .codegen import (
     GeneratedSourceArtifact,
@@ -23,6 +24,7 @@ from .spec import (
 )
 
 __all__ = [
+    "BACKEND_VERSION",
     "CompiledCppNetwork",
     "CppHybridBackend",
     "SweepResult",

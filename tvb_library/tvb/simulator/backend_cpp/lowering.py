@@ -25,9 +25,7 @@ from .spec import (
     StimulusSpec,
     SubnetworkSpec,
 )
-
-
-BACKEND_VERSION = "0.2"
+from .__version__ import BACKEND_VERSION
 
 
 @dataclasses.dataclass(frozen=True)
