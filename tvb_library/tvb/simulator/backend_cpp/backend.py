@@ -435,7 +435,11 @@ class CppHybridBackend:
         build_root: str | Path | None = None,
         max_cached_builds: int = 16,
     ):
-        missing = [t for t in ("cmake", "c++") if shutil.which(t) is None]
+        # On Windows MSVC exposes 'cl', not 'c++'; accept either.
+        import sys as _sys
+        cxx_candidates = ["cl"] if _sys.platform == "win32" else ["c++"]
+        has_cxx = any(shutil.which(t) is not None for t in cxx_candidates)
+        missing = ([] if shutil.which("cmake") else ["cmake"]) + ([] if has_cxx else cxx_candidates)
         if missing:
             raise RuntimeError(
                 f"CppHybridBackend requires {missing} but they were not found on PATH.\n"

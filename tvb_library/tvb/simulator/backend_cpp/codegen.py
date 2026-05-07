@@ -649,7 +649,7 @@ def _discover_extension_path(build_dir: Path, module_name: str) -> Path:
         candidate = build_dir / f"{module_name}{suffix}"
         if candidate.exists():
             return candidate
-    matches = sorted(build_dir.glob(f"{module_name}*.so"))
+    matches = sorted(build_dir.glob(f"{module_name}*.so")) or sorted(build_dir.glob(f"{module_name}*.pyd"))
     if matches:
         return matches[0]
     raise FileNotFoundError(
