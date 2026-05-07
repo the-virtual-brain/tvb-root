@@ -435,6 +435,16 @@ class CppHybridBackend:
         build_root: str | Path | None = None,
         max_cached_builds: int = 16,
     ):
+        missing = [t for t in ("cmake", "c++") if shutil.which(t) is None]
+        if missing:
+            raise RuntimeError(
+                f"CppHybridBackend requires {missing} but they were not found on PATH.\n"
+                "Install the missing tools and try again:\n"
+                "  conda: conda install -c conda-forge cmake cxx-compiler\n"
+                "  apt:   sudo apt install cmake g++\n"
+                "  brew:  brew install cmake\n"
+                "The rest of tvb-library works without a C++ toolchain."
+            )
         self.build_root = Path(build_root) if build_root is not None else Path.cwd() / ".build"
         self.max_cached_builds = max_cached_builds
 
