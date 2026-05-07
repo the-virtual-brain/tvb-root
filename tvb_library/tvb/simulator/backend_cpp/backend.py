@@ -32,10 +32,11 @@ class SweepResult:
     Attributes
     ----------
     tavg : dict[str, np.ndarray]
-        Per-subnet temporal averages, shape ``(n_sweeps, n_voi, N_subnet, n_modes)``.
+        Per-subnet temporal averages, shape ``(n_sweeps, n_time, n_voi, N_subnet, n_modes)``.
+        ``n_time = nstep // chunk_size`` where ``chunk_size = round(period / dt)``.
     merged_tavg : np.ndarray or None
         All subnets concatenated along the node axis,
-        shape ``(n_sweeps, n_voi, N_total, n_modes)``.
+        shape ``(n_sweeps, n_time, n_voi, N_total, n_modes)``.
     ctavg : dict[str, np.ndarray]
         Per-subnet coupling temporal averages (same shape as tavg).
     times : np.ndarray
@@ -854,9 +855,18 @@ class CppHybridBackend:
             if compiled.spec.monitors
             else "TemporalAverage"
         )
-        # chunk_size: for TemporalAverage use nstep (one monitor sample = full tavg).
-        # For per-step monitors keep chunk_size=1.
-        chunk_size = nstep
+        # chunk_size drives how many integration steps the C++ module processes per
+        # output sample.  For TemporalAverage derive it from the monitor period so
+        # callers get one output row per period (multiple time points per sweep).
+        mon_spec = compiled.spec.monitors[0] if compiled.spec.monitors else None
+        if (
+            monitor_type == "TemporalAverage"
+            and mon_spec is not None
+            and mon_spec.period is not None
+        ):
+            chunk_size = max(1, round(mon_spec.period / compiled.spec.dt))
+        else:
+            chunk_size = nstep
         bold_monitor = None
         if monitor_type in ("Raw", "RawVoi", "AfferentCoupling",
                             "AfferentCouplingTemporalAverage"):
@@ -938,29 +948,30 @@ class CppHybridBackend:
 
         for si, sname in enumerate(subnet_names):
             # data shape per sweep point: (n_chunks, n_voi, n_nodes, n_modes)
-            # mean over n_chunks → (n_voi, n_nodes, n_modes)
+            # stack over sweeps → (n_sweeps, n_chunks, n_voi, n_nodes, n_modes)
             tavg_dict[sname] = np.stack(
-                [r[si][1].mean(axis=0) for r in raw_results], axis=0
+                [r[si][1] for r in raw_results], axis=0
             )
             ctavg_dict[sname] = np.stack(
-                [r[si][2].mean(axis=0) for r in raw_results], axis=0
+                [r[si][2] for r in raw_results], axis=0
             )
 
         if node_indices:
             n_global = max(max(idxs) for idxs in node_indices.values()) + 1
             ref = next(iter(tavg_dict.values()))
+            # ref shape: (n_sweeps, n_chunks, n_voi, n_nodes, n_modes)
             merged = np.zeros(
-                (ref.shape[0], ref.shape[1], n_global, ref.shape[3]),
+                (ref.shape[0], ref.shape[1], ref.shape[2], n_global, ref.shape[4]),
                 dtype=ref.dtype,
             )
             for sname in subnet_names:
                 if sname in node_indices:
-                    merged[:, :, node_indices[sname], :] = tavg_dict[sname]
+                    merged[:, :, :, node_indices[sname], :] = tavg_dict[sname]
             merged_tavg: Optional[np.ndarray] = merged
         else:
-            voi_counts = {a.shape[1] for a in tavg_dict.values()}
+            voi_counts = {a.shape[2] for a in tavg_dict.values()}
             merged_tavg = (
-                np.concatenate(list(tavg_dict.values()), axis=2)
+                np.concatenate(list(tavg_dict.values()), axis=3)
                 if len(voi_counts) == 1
                 else None
             )
