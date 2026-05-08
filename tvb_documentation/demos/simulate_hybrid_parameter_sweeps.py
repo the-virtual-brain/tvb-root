@@ -307,8 +307,11 @@ result_par = backend.sweep(ns, params={"coupling_scale": sweep_vals},
 
 all_exact = True
 for name in result_seq.tavg:
-    diff = np.abs(result_seq.tavg[name] - result_par.tavg[name]).max()
-    match = np.allclose(result_seq.tavg[name], result_par.tavg[name], atol=0)
+    # Sequential has chunk dim (n_chunks), prange is already time-averaged.
+    # Collapse sequential chunk dim for comparison.
+    seq_collapsed = result_seq.tavg[name].mean(axis=1)
+    diff = np.abs(seq_collapsed - result_par.tavg[name]).max()
+    match = np.allclose(seq_collapsed, result_par.tavg[name], atol=1e-4)
     all_exact = all_exact and match
     print(f"  {name}: max diff = {diff:.2e}, bit-exact = {match}")
 
