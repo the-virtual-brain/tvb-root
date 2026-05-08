@@ -794,12 +794,9 @@ class ProjectionInfo:
     target_scales: np.ndarray  # (n_tgt_cvar,) or empty
     cfun: object  # coupling function or None
     is_inter: bool
+    n_tgt_nodes: int
     # mode_map only for inter projections
     mode_map: Optional[np.ndarray] = None  # (n_src_modes, n_tgt_modes)
-
-    @property
-    def n_tgt_nodes(self) -> int:
-        return self.weights_indptr.shape[0] - 1
 
     @property
     def n_src_modes(self) -> int:
@@ -1811,6 +1808,10 @@ class NbHybridBackend(MakoUtilMix):
         nz_mask = weights_csr.data != 0
         weights_csr.eliminate_zeros()
         idelays_stripped = idelays_raw[nz_mask].astype(np.int32)
+        if is_inter:
+            n_tgt_nodes = p.target.nnodes
+        else:
+            n_tgt_nodes = p.weights.shape[1]  # number of target nodes in intra-projection
         pi = ProjectionInfo(
             name=proj_name,
             source_subnet=src_name,
@@ -1828,6 +1829,7 @@ class NbHybridBackend(MakoUtilMix):
             else np.zeros(0, dtype=np.float32),
             cfun=p.cfun,
             is_inter=is_inter,
+            n_tgt_nodes=n_tgt_nodes,
             mode_map=mode_map,
         )
         if not is_inter:
