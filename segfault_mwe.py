@@ -1,20 +1,7 @@
 """
 Minimal reproducer for Numba JIT compilation segfault.
 
-Context: TVB hybrid-numba backends generate @nb.njit kernels for neural
-mass simulations.  When the generated code contains a large outer loop
-that repeatedly inlines a moderately-complex inner function (e.g. sparse
-CSR coupling), Numba/LLVM segfaults during first-time compilation.
-
-The crash does NOT happen when:
-  - the same function is loaded from Numba's disk cache, OR
-  - the inner function is removed (all loops inline directly into outer).
-
-The crash DOES happen when:
-  - @nb.njit(inline="always") is used on the inner function, AND
-  - outer() calls it ~80 times inside a loop.
-
-No TVB dependencies — only numpy + numba.
+Now with boundscheck=True to locate the exact OOB index.
 """
 
 import numpy as np
@@ -53,7 +40,7 @@ def outer(nstep, srcbuf, w_data, w_indices, w_indptr, idelays,
 
 if __name__ == "__main__":
     N_C = 68
-    NSPARSE = 20
+    NSPARSE = 68
     srcbuf = np.zeros((1, N_C, 1, 1), dtype=np.float32)
     w_data = np.ones(NSPARSE, dtype=np.float32)
     w_indices = np.zeros(NSPARSE, dtype=np.int32)
@@ -62,8 +49,16 @@ if __name__ == "__main__":
     cfun_params = np.ones(8, dtype=np.float32) * 0.01
     tgt = np.zeros((1, N_C, 1), dtype=np.float32)
 
-    print("Calling outer(10, ...)...", flush=True)
-    outer(10, srcbuf, w_data, w_indices, w_indptr, idelays,
-          cfun_params, tgt)
-    print("  OK", flush=True)
-    print("Exiting cleanly.", flush=True)
+    # Now remove boundscheck to see if the crash was purely from OOB
+    print("Calling outer(10, ...) without boundscheck...", flush=True)
+    try:
+        outer(10, srcbuf, w_data, w_indices, w_indptr, idelays,
+              cfun_params, tgt)
+        print("  OK", flush=True)
+    except IndexError as e:
+        print("  IndexError:", e, flush=True)
+        print("  w_data shape:", w_data.shape, flush=True)
+        print("  w_indptr:", w_indptr[:10], "...", w_indptr[-5:], flush=True)
+        print("  NSPARSE:", NSPARSE, "N_C:", N_C, flush=True)
+        print("  w_indptr says", w_indptr[-1], "nonzeros but w_data has", len(w_data), flush=True)
+    print("Exiting.", flush=True)
