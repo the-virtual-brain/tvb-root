@@ -203,10 +203,12 @@ PYBIND11_MODULE(${module_name}, m) {
                 noise_ptrs, stim_ptrs);
         }();
 
-        // ---- pack output: list of (times, data) per subnet ----
+        // ---- pack output: list of (times, data, ctavg) per subnet ----
+        // ctavg shape: (num_chunks, n_coupling_vars, n_nodes, 1)
+        // Backend selects which of data or ctavg to expose based on monitor type.
         py::list out;
         for (const auto& result : results) {
-          // times
+          // times: (num_chunks,)
           py::array_t<double> times(
               std::vector<py::ssize_t>{static_cast<py::ssize_t>(result.times.size())});
           {
@@ -239,7 +241,28 @@ PYBIND11_MODULE(${module_name}, m) {
             }
           }
 
-          out.append(py::make_tuple(times, data));
+          // ctavg: (num_chunks, n_coupling_vars, n_nodes, 1)
+          py::array_t<double> ctavg(std::vector<py::ssize_t>{
+              static_cast<py::ssize_t>(result.num_chunks),
+              static_cast<py::ssize_t>(result.num_coupling_vars),
+              static_cast<py::ssize_t>(result.num_nodes),
+              1});
+          {
+            auto m = ctavg.mutable_unchecked<4>();
+            std::size_t idx = 0;
+            for (std::size_t chunk = 0; chunk < result.num_chunks; ++chunk) {
+              for (std::size_t cv = 0; cv < result.num_coupling_vars; ++cv) {
+                for (std::size_t node = 0; node < result.num_nodes; ++node) {
+                  m(static_cast<py::ssize_t>(chunk),
+                    static_cast<py::ssize_t>(cv),
+                    static_cast<py::ssize_t>(node),
+                    0) = result.ctavg_data[idx++];
+                }
+              }
+            }
+          }
+
+          out.append(py::make_tuple(times, data, ctavg));
         }
         return out;
       },
