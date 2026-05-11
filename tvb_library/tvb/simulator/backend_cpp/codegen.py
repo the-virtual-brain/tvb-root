@@ -425,6 +425,7 @@ def _build_dfun_context(subnet: SubnetworkSpec, si: int = 0) -> dict:
             voi_assignments.append(f"voi[{ivoi}] = {translate_expanded(voi_name)};")
 
     return {
+        "is_combined": False,
         "dfun_helper_decls": helper_decls,
         "dfun_state_reads": state_reads,
         "dfun_param_reads": param_reads,
