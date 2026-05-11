@@ -189,7 +189,7 @@ def main():
         )
         subnet.node_indices = np.arange(subnet.nnodes)
         subnet.configure()
-        nets = NetworkSet(subnets=[subnet], projections=[], stimuli=[])
+        nets = NetworkSet(subnets=[subnet], projections=[])
         nets.configure()
         initial_states = [make_initial_state(subnet)]
         # Run Python

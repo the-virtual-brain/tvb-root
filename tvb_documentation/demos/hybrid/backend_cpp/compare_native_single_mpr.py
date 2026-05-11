@@ -39,7 +39,7 @@ from tvb.simulator.integrators import HeunDeterministic
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
 from tvb.simulator.monitors import TemporalAverage
 
-from backend_cpp import CppHybridBackend
+from tvb.simulator.backend_cpp import CppHybridBackend
 
 
 DT = 0.1
@@ -79,7 +79,7 @@ def make_subnet(name: str, n_nodes: int) -> Subnetwork:
 
 def make_network(n_nodes: int) -> tuple[NetworkSet, Subnetwork]:
     subnet = make_subnet("sn", n_nodes)
-    network = NetworkSet(subnets=[subnet], projections=[], stimuli=[])
+    network = NetworkSet(subnets=[subnet], projections=[])
     network.configure()
     return network, subnet
 

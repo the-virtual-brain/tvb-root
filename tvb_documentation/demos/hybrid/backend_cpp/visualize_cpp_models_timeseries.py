@@ -128,7 +128,7 @@ def make_single_network(
     )
     subnet.node_indices = np.arange(subnet.nnodes)
     subnet.configure()
-    nets = NetworkSet(subnets=[subnet], projections=[], stimuli=[])
+    nets = NetworkSet(subnets=[subnet], projections=[])
     nets.configure()
     return nets, subnet, make_initial_state(subnet)
 

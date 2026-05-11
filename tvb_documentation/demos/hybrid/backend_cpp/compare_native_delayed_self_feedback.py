@@ -50,7 +50,7 @@ def make_subnet(name: str, n_nodes: int) -> Subnetwork:
 
 def make_network(n_nodes: int) -> tuple[NetworkSet, Subnetwork]:
     subnet = make_subnet("sn", n_nodes)
-    network = NetworkSet(subnets=[subnet], projections=[], stimuli=[])
+    network = NetworkSet(subnets=[subnet], projections=[])
     network.configure()
     return network, subnet
 

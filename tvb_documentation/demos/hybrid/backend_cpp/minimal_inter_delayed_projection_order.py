@@ -162,7 +162,6 @@ def main() -> None:
     network = NetworkSet(
         subnets=[subnet_a, subnet_b],
         projections=[proj_ab, proj_ba],
-        stimuli=[],
     )
     network.configure()
 

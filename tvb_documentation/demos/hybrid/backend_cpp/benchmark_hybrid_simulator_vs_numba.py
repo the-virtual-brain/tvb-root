@@ -95,7 +95,7 @@ def run_numba(network_set: NetworkSet, initial_states: list[np.ndarray], nstep: 
 
 def make_single_network(model_cls, n_nodes: int) -> tuple[str, NetworkSet, list[np.ndarray]]:
     sn = make_subnet("sn", model_cls, n_nodes)
-    nets = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+    nets = NetworkSet(subnets=[sn], projections=[])
     nets.configure()
     return model_cls.__name__, nets, [make_initial_state(sn)]
 
@@ -117,7 +117,7 @@ def make_coupled_network(model_cls, n_nodes: int) -> tuple[str, NetworkSet, list
         scale=1.0,
         cfun=Linear(),
     )
-    nets = NetworkSet(subnets=[sn1, sn2], projections=[projection], stimuli=[])
+    nets = NetworkSet(subnets=[sn1, sn2], projections=[projection])
     nets.configure()
     return f"Coupled{model_cls.__name__}", nets, [make_initial_state(sn1), make_initial_state(sn2)]
 

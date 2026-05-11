@@ -98,7 +98,7 @@ def make_coupled_network(n_nodes: int) -> tuple[NetworkSet, Subnetwork, Subnetwo
         cfun=Linear(),
     )
 
-    network = NetworkSet(subnets=[sn1, sn2], projections=[projection], stimuli=[])
+    network = NetworkSet(subnets=[sn1, sn2], projections=[projection])
     network.configure()
     return network, sn1, sn2
 
@@ -107,14 +107,14 @@ def make_uncoupled_network(n_nodes: int) -> tuple[NetworkSet, Subnetwork, Subnet
     sn1 = make_subnet("sn1", n_nodes)
     sn2 = make_subnet("sn2", n_nodes)
     sn2.node_indices = np.arange(n_nodes, 2 * n_nodes)
-    network = NetworkSet(subnets=[sn1, sn2], projections=[], stimuli=[])
+    network = NetworkSet(subnets=[sn1, sn2], projections=[])
     network.configure()
     return network, sn1, sn2
 
 
 def make_single_network(name: str, n_nodes: int) -> tuple[NetworkSet, Subnetwork]:
     subnet = make_subnet(name, n_nodes)
-    network = NetworkSet(subnets=[subnet], projections=[], stimuli=[])
+    network = NetworkSet(subnets=[subnet], projections=[])
     network.configure()
     return network, subnet
 

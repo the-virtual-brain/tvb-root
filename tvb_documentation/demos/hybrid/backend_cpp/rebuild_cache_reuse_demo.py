@@ -61,8 +61,9 @@ def make_network() -> tuple[NetworkSet, Subnetwork]:
     ).configure()
     subnet.node_indices = np.arange(N_NODES)
 
-    network = NetworkSet(subnets=[subnet], projections=[], stimuli=[])
+    network = NetworkSet(subnets=[subnet], projections=[])
     network.configure()
+    
     return network, subnet
 
 

@@ -129,7 +129,7 @@ def make_subnet(
 
 
 def make_network(subnet: Subnetwork) -> NetworkSet:
-    network = NetworkSet(subnets=[subnet], projections=[], stimuli=[])
+    network = NetworkSet(subnets=[subnet], projections=[])
     network.configure()
     return network
 

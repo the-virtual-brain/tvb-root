@@ -145,7 +145,6 @@ print(f"  target_cvar slot : {proj.target_cvar}")
 network = NetworkSet(
     subnets=[cortex, thalamus],
     projections=[proj],
-    stimuli=[],
 )
 network.configure()
 

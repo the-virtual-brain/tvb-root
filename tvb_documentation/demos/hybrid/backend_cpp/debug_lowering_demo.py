@@ -32,7 +32,7 @@ from tvb.simulator.integrators import HeunDeterministic
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
 from tvb.simulator.monitors import TemporalAverage
 
-from backend_cpp import CppHybridBackend
+from tvb.simulator.backend_cpp import CppHybridBackend
 
 DT = 0.1
 
@@ -64,7 +64,7 @@ def make_initial_state(subnetwork: Subnetwork) -> np.ndarray:
 
 def make_single_network(n_nodes: int) -> NetworkSet:
     subnet = make_subnet("sn", n_nodes)
-    network = NetworkSet(subnets=[subnet], projections=[], stimuli=[])
+    network = NetworkSet(subnets=[subnet], projections=[])
     network.configure()
     return network
 
@@ -86,7 +86,7 @@ def make_coupled_network(n_nodes: int) -> NetworkSet:
         scale=1.0,
         cfun=Linear(),
     )
-    network = NetworkSet(subnets=[sn1, sn2], projections=[projection], stimuli=[])
+    network = NetworkSet(subnets=[sn1, sn2], projections=[projection])
     network.configure()
     return network
 

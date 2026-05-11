@@ -90,7 +90,7 @@ def make_network(with_stimulus: bool, simulation_length: float) -> tuple[Network
     ).configure()
     subnet.node_indices = np.arange(NNODES)
 
-    network = NetworkSet(subnets=[subnet], projections=[], stimuli=[])
+    network = NetworkSet(subnets=[subnet], projections=[])
     if with_stimulus:
         network.add_stimulus(
             target_name="g2d",
