@@ -74,6 +74,10 @@ class SubnetworkSpec:
     dfun_helpers: tuple[tuple[str, str, str], ...] = ()
     state_lower_bounds: dict[str, float] = dataclasses.field(default_factory=dict)
     state_upper_bounds: dict[str, float] = dataclasses.field(default_factory=dict)
+    # multi-mode (combined-mode) support — populated for ReducedSet* models
+    derived_matrix_names: tuple[str, ...] = ()
+    derived_matrix_ops: tuple[tuple[str, str, str], ...] = ()
+    derived_matrix_values: dict[str, np.ndarray] = dataclasses.field(default_factory=dict)
 
     def payload(self) -> dict[str, Any]:
         return {
@@ -99,6 +103,12 @@ class SubnetworkSpec:
             "dfun_helpers": [list(triple) for triple in self.dfun_helpers],
             "state_lower_bounds": dict(sorted(self.state_lower_bounds.items())),
             "state_upper_bounds": dict(sorted(self.state_upper_bounds.items())),
+            "derived_matrix_names": list(self.derived_matrix_names),
+            "derived_matrix_ops": [list(t) for t in self.derived_matrix_ops],
+            "derived_matrix_values": {
+                key: _array_payload(value)
+                for key, value in sorted(self.derived_matrix_values.items())
+            },
         }
 
 

@@ -521,11 +521,6 @@ def _validate_spec(spec: SimulationSpec) -> None:
                 f"Heun{{Deterministic,Stochastic}} are currently supported "
                 f"(got '{subnet.integrator.type_name}')."
             )
-        if subnet.n_modes != 1:
-            raise NotImplementedError(
-                f"Subnet '{subnet.name}': only single-mode subnetworks are currently "
-                f"supported (got n_modes={subnet.n_modes})."
-            )
     _SUPPORTED_MONITORS = {"TemporalAverage", "Raw", "RawVoi",
                            "AfferentCoupling", "AfferentCouplingTemporalAverage",
                            "Bold"}
@@ -576,7 +571,11 @@ def _build_subnets_ctx(spec: SimulationSpec) -> list[dict]:
         ]
         subnets_ctx.append({
             "subnet": subnet,
-            "dfun_ctx": _build_dfun_context(subnet),
+            "dfun_ctx": (
+                _build_dfun_context_combined(subnet, si)
+                if subnet.n_modes > 1
+                else _build_dfun_context(subnet)
+            ),
             "horizon": _history_horizon(spec, subnet.name),
             "intra_proj_indices": intra_proj_indices,
             "inter_proj_targets": inter_proj_targets,

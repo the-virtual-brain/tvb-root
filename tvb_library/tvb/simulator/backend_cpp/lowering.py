@@ -139,6 +139,18 @@ def _build_subnetwork_spec(subnet_info) -> SubnetworkSpec:
         ),
         state_lower_bounds=lo_bounds,
         state_upper_bounds=hi_bounds,
+        derived_matrix_names=tuple(
+            str(n) for n in (getattr(model, "derived_matrix_names", None) or [])
+        ),
+        derived_matrix_ops=tuple(
+            (str(r), str(mat), str(sv))
+            for r, mat, sv in (getattr(model, "derived_matrix_ops", None) or [])
+        ),
+        derived_matrix_values={
+            str(n): np.ascontiguousarray(getattr(model, n))
+            for n in (getattr(model, "derived_matrix_names", None) or [])
+            if hasattr(model, n)
+        },
     )
 
 

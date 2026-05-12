@@ -40,6 +40,11 @@ struct SubnetModel_${si} {
 % for param_name, param_values in params:
   static constexpr std::array<double, ${len(param_values)}> kParam_${param_name} = { ${', '.join(f'{float(v):.17g}' for v in param_values)} };
 % endfor
+% if dfun_ctx['is_combined']:
+% for decl in dfun_ctx['derived_array_decls']:
+${decl}
+% endfor
+% endif
 
   template <std::size_t N>
   static inline double param_at(const std::array<double, N>& values, std::size_t node) {
