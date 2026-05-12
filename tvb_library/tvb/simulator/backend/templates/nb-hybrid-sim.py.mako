@@ -76,15 +76,17 @@ def compute_coupling_${p.name}(
                 w = w_data[ptr]
                 src_node = w_indices[ptr]
                 buf_idx = (t - 1 - idelays[ptr] + ${source_horizons_map[p.source_subnet]}) % ${source_horizons_map[p.source_subnet]}
-                wsum += w * srcbuf[cv, src_node, 0, buf_idx]
-            ## pre-cfun: applied to summed weighted afferent (before scale)
-            % if pre_ct == 'sigmoidal_jr':
-            wsum = cfun_params[0] * nb.float32(2.0) * cfun_params[1] / (nb.float32(1.0) + exp(cfun_params[2] * (cfun_params[3] - wsum)))
-            % elif pre_ct == 'tanh':
-            wsum = cfun_params[0] * (nb.float32(1.0) + nb.float32(math.tanh((wsum - cfun_params[1]) / cfun_params[2])))
-            % elif pre_ct == 'pre_sigmoidal':
-            wsum = cfun_params[0] * (cfun_params[1] + nb.float32(math.tanh(cfun_params[2] * (cfun_params[3] * wsum - cfun_params[4]))))
-            % endif
+                edge_val = srcbuf[cv, src_node, 0, buf_idx]
+                # Apply pre() PER-EDGE before weighting
+                % if pre_ct == 'sigmoidal_jr':
+                edge_val = cfun_params[0] * nb.float32(2.0) * cfun_params[1] / (nb.float32(1.0) + exp(cfun_params[2] * (cfun_params[3] - edge_val)))
+                % elif pre_ct == 'tanh':
+                edge_val = cfun_params[0] * (nb.float32(1.0) + nb.float32(math.tanh((edge_val - cfun_params[1]) / cfun_params[2])))
+                % elif pre_ct == 'pre_sigmoidal':
+                edge_val = cfun_params[0] * (cfun_params[1] + nb.float32(math.tanh(cfun_params[2] * (cfun_params[3] * edge_val - cfun_params[4]))))
+                % endif
+                wsum += w * edge_val
+            # pre already applied per-edge; now scale and post
             wsum *= scale
             % if post_ct == "linear":
             wsum = cfun_params[0] * wsum + cfun_params[1]
@@ -150,18 +152,17 @@ def compute_coupling_${p.name}(
                 src_node = w_indices[ptr]
                 buf_idx = (t - 1 - idelays[ptr] + ${source_horizons_map[p.source_subnet]}) % ${source_horizons_map[p.source_subnet]}
                 for m in range(${nsrc_m}):
-                    wsum[m] += w * srcbuf[cv, src_node, m, buf_idx]
-            ## pre-cfun: applied to summed weighted afferent (before scale)
-            % if pre_ct == 'sigmoidal_jr':
-            for m in range(${nsrc_m}):
-                wsum[m] = cfun_params[0] * nb.float32(2.0) * cfun_params[1] / (nb.float32(1.0) + exp(cfun_params[2] * (cfun_params[3] - wsum[m])))
-            % elif pre_ct == 'tanh':
-            for m in range(${nsrc_m}):
-                wsum[m] = cfun_params[0] * (nb.float32(1.0) + nb.float32(math.tanh((wsum[m] - cfun_params[1]) / cfun_params[2])))
-            % elif pre_ct == 'pre_sigmoidal':
-            for m in range(${nsrc_m}):
-                wsum[m] = cfun_params[0] * (cfun_params[1] + nb.float32(math.tanh(cfun_params[2] * (cfun_params[3] * wsum[m] - cfun_params[4]))))
-            % endif
+                    edge_val = srcbuf[cv, src_node, m, buf_idx]
+                    # Apply pre() per-edge
+                    % if pre_ct == 'sigmoidal_jr':
+                    edge_val = cfun_params[0] * nb.float32(2.0) * cfun_params[1] / (nb.float32(1.0) + exp(cfun_params[2] * (cfun_params[3] - edge_val)))
+                    % elif pre_ct == 'tanh':
+                    edge_val = cfun_params[0] * (nb.float32(1.0) + nb.float32(math.tanh((edge_val - cfun_params[1]) / cfun_params[2])))
+                    % elif pre_ct == 'pre_sigmoidal':
+                    edge_val = cfun_params[0] * (cfun_params[1] + nb.float32(math.tanh(cfun_params[2] * (cfun_params[3] * edge_val - cfun_params[4]))))
+                    % endif
+                    wsum[m] += w * edge_val
+            # pre already applied per-edge; scale and post
             for m in range(${nsrc_m}):
                 wsum[m] *= scale
             % if post_ct == "linear":

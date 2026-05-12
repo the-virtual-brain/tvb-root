@@ -369,6 +369,10 @@ class BaseProjection(t.HasTraits):
         ]
         # Result shape: (n_src_cvar, nnz, n_src_modes)
 
+        # Apply pre-scaling coupling function per-edge before weighting
+        if self.cfun is not None:
+            delayed_states = self.cfun.pre(delayed_states)
+
         # Apply weights element-wise
         # weights.data has shape (nnz,)
         # Need to reshape weights.data for broadcasting: (1, nnz, 1)
@@ -385,15 +389,18 @@ class BaseProjection(t.HasTraits):
         # Result shape: (n_src_cvar, n_target_nodes, n_src_modes)
         # Note: n_target_nodes comes from the structure of the CSR matrix (number of rows)
 
-        # Apply pre-scaling coupling function if provided
-        if self.cfun is not None:
-            summed_input = self.cfun.pre(summed_input)
-
         # Apply scaling factor
         scaled_input = self.scale * summed_input
         # Result shape: (n_src_cvar, n_target_nodes, n_src_modes)
 
         # Apply post-scaling coupling function if provided
+        # NOTE: The docstring states C_i = s · post(Σ w·pre(x)), implying
+        # scale should be applied AFTER post().  The current code computes
+        # post(scale * sum) instead.  This is currently harmless because
+        # no existing coupling function has both nonlinear pre() AND
+        # nonlinear post() — but if one is added, the docstring or the
+        # code ordering must be reconciled.  See also the classic TVB
+        # Coupling.__call__() which does not apply a separate scale.
         if self.cfun is not None:
             scaled_input = self.cfun.post(scaled_input)
 
