@@ -92,15 +92,14 @@ def make_network(with_stimulus: bool, simulation_length: float) -> tuple[Network
 
     network = NetworkSet(subnets=[subnet], projections=[])
     if with_stimulus:
-        network.add_stimulus(
-            target_name="g2d",
+        subnet.add_stimulus(
             stimulus=make_pulse_stimulus(NNODES),
             stimulus_cvar=np.r_[0],
             projection_scale=2.0,
         )
 
     network.configure()
-    for stim in network.stimuli:
+    for stim in subnet.stimuli:
         # The Python Simulator does this in configure(); the native backend needs
         # the same prepared Stim objects before _build_stimulus_arrays() runs.
         stim.configure(simulation_length)
@@ -319,7 +318,7 @@ def main() -> None:
         },
         "native_debug": {
             "pipeline_stage": cpp_summary["pipeline_stage"],
-            "stimulus_count": len(stim_network_cpp.stimuli),
+            "stimulus_count": len(stim_subnet_cpp.stimuli),
             "generated_cpp_path": cpp_summary["generated_cpp_path"],
         },
         "plot_path": str(args.plot),

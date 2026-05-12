@@ -42,14 +42,10 @@ if str(TVB_LIBRARY_ROOT) not in sys.path:
 
 os.environ.setdefault("TVB_USER_HOME", str(Path(tempfile.gettempdir()) / "tvb-user"))
 os.environ.setdefault("MPLCONFIGDIR", str(Path(tempfile.gettempdir()) / "matplotlib"))
-os.environ.setdefault("NUMBA_CACHE_DIR", str(Path(tempfile.gettempdir()) / "numba-cache"))
-os.environ.setdefault("TVB_CUDA_CACHE_DIR", str(Path(tempfile.gettempdir()) / "tvb-cuda-cache"))
+
 warnings.filterwarnings("ignore", message="Hybrid simulation is experimental: .*")
-warnings.filterwarnings(
-    "ignore",
-    message="Grid size .* will likely result in GPU under-utilization .*",
-    category=NumbaPerformanceWarning,
-)
+from numba.core.errors import NumbaPerformanceWarning
+warnings.simplefilter('ignore', category=NumbaPerformanceWarning)
 
 from tvb.simulator.backend.nb_hybrid import NbHybridBackend
 from tvb.simulator.backend_cpp import CppHybridBackend

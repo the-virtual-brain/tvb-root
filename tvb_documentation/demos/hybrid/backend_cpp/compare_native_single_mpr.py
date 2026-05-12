@@ -143,7 +143,7 @@ def run_native(
         monitors=[TemporalAverage(period=chunk_size * DT)],
         user_source_hint="compare_native_single_mpr",
     )
-    times, data = compiled.run(
+    ((times, data),) = compiled.run(
         initial_states=[initial_state.copy()],
         nstep=nstep,
         chunk_size=chunk_size,
