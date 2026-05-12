@@ -687,10 +687,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--cpp-scale-proxy",
         action="store_true",
+        default=True,
         help=(
             "For coupling sweeps, benchmark C++ by changing projection.scale as "
-            "a mathematical proxy for CUDA/Numba Linear.a. Off by default to avoid "
-            "mixing different runtime parameters."
+            "a mathematical proxy for CUDA/Numba Linear.a. On by default."
         ),
     )
     parser.add_argument(
