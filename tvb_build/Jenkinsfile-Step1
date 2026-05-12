@@ -20,6 +20,56 @@ pipeline {
                 }
             }
         }
+
+        stage ('Install Trivy') {
+            steps {
+                sh '''#!/bin/bash
+                    set -e
+                    mkdir -p bin
+                    if [ ! -x ./bin/trivy ]; then
+                        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b ./bin
+                    fi
+                    ./bin/trivy --version
+                '''
+            }
+        }
+
+        stage ('Scan Docker Image') {
+            steps {
+                sh '''#!/bin/bash
+                    set +e
+                    rm -rf TRIVY_OUTPUT
+                    mkdir -p TRIVY_OUTPUT
+
+                    # Refresh the vulnerability DB
+                    ./bin/trivy --cache-dir .trivycache image --download-db-only
+
+                    # Human-readable report
+                    ./bin/trivy --cache-dir .trivycache image \
+                        --format table \
+                        --output TRIVY_OUTPUT/trivy-report.txt \
+                        ${FULL_DOCKER_IMAGE_NAME}
+
+                    # JSON report
+                    ./bin/trivy --cache-dir .trivycache image \
+                        --format json \
+                        --output TRIVY_OUTPUT/trivy-report.json \
+                        ${FULL_DOCKER_IMAGE_NAME}
+
+                    # SARIF report
+                    ./bin/trivy --cache-dir .trivycache image \
+                        --format sarif \
+                        --output TRIVY_OUTPUT/trivy-report.sarif \
+                        ${FULL_DOCKER_IMAGE_NAME}
+
+                    echo "Trivy scan results"
+                    cat TRIVY_OUTPUT/trivy-report.txt
+                    exit 0
+                '''
+                archiveArtifacts artifacts: 'TRIVY_OUTPUT/trivy-report.*', fingerprint: true, allowEmptyArchive: false
+            }
+        }
+    }
         stage ('Build TVB documentation') {
             steps {
                 withDockerContainer(image: '${FULL_DOCKER_IMAGE_NAME}') {
