@@ -70,6 +70,10 @@ def compute_coupling_${proj_name}(
                     wsum[m] += w * buf[cv, src_node, m, buf_idx]
 
             # Apply cfun.pre() — identity for "none"
+            # NOTE: This template only handles coupling functions where pre() is the identity
+            # (none, linear, scaling). If non-identity pre functions are added here in the
+            # future, pre() must be applied PER-EDGE inside the inner loop (before weighting
+            # and accumulation), not after the sum. See FIX_COUPLING_PIPELINE.md for details.
             % if cfun_type == "none":
             # no pre transform
             % elif cfun_type == "linear":
