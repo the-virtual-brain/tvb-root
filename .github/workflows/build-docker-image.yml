@@ -40,10 +40,12 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
       - name: Check EBRAINS Registry Connectivity
+        if: github.event_name == 'workflow_dispatch' || inputs.invoked_by == 'release'
         run: curl -v https://docker-registry.ebrains.eu/v2/
 
       - name: Login to EBRAINS Docker Registry
         id: login_ebrains
+        if: github.event_name == 'workflow_dispatch' || inputs.invoked_by == 'release'
         uses: docker/login-action@v3
         continue-on-error: true
         with:
@@ -92,7 +94,7 @@ jobs:
             ${{ env.DOCKER_IMAGE_NAME }}:latest      
 
       - name: Push to EBRAINS registry
-        if: steps.login_ebrains.outcome == 'success'
+        if: steps.login_ebrains.outcome == 'success' && (github.event_name == 'workflow_dispatch' || inputs.invoked_by == 'release')
         run: |
           curl -v https://docker-registry.ebrains.eu/v2/
           docker tag ${{ env.DOCKER_IMAGE_NAME }}:${{ steps.get_tag.outputs.TAG }} ${{ env.DOCKER_IMAGE_NAME_EBRAINS }}:${{ steps.get_tag.outputs.TAG }}
