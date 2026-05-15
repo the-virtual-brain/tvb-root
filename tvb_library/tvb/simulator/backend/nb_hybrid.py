@@ -134,10 +134,12 @@ _CFUN_PARAM_ATTRS: dict = {
     "Scaling":           [("a", 0)],
     "Sigmoidal":         [("a", 0), ("sigma", 1), ("midpoint", 2),
                           ("cmin", 3), ("cmax", 4)],
-    "SigmoidalJansenRit":[("a", 0), ("e0", 1), ("r", 2), ("v0", 3)],
-    "Kuramoto":          [("a", 0)],
-    "Difference":        [],
-    "HyperbolicTangent": [("a", 0), ("midpoint", 1), ("sigma", 2)],
+    "SigmoidalJansenRit":[("a", 0), ("e0", 1), ("r", 2), ("v0", 3),
+                          ("cmin", 4), ("cmax", 5), ("midpoint", 6)],
+    "Kuramoto":          [("a", 0), ("inv_N", 1)],
+    "Difference":        [("a", 0)],
+    "HyperbolicTangent": [("a", 0), ("midpoint", 1), ("sigma", 2),
+                          ("b", 3)],
     "PreSigmoidal":      [("H", 0), ("Q", 1), ("G", 2), ("P", 3), ("theta", 4)],
 }
 
@@ -661,31 +663,37 @@ def _cfun_type(p: "ProjectionInfo") -> str:
     if isinstance(p.cfun, Sigmoidal):
         return "sigmoidal"
     if isinstance(p.cfun, SigmoidalJansenRit):
-        return "sigmoidal_jr"
+        if getattr(p.cfun, 'use_classic', 1):
+            return "sigmoidal_jr"
+        return "sigmoidal_jr_legacy"
     if isinstance(p.cfun, KuramotoCfun):
         return "kuramoto"
-    # Difference.post() is a * x — same as Scaling
     if isinstance(p.cfun, Difference):
-        return "scaling"
+        return "difference"
     if isinstance(p.cfun, HyperbolicTangent):
         return "tanh"
     if isinstance(p.cfun, PreSigmoidal):
+        if getattr(p.cfun, 'dynamic', 0):
+            return "pre_sigmoidal_dynamic"
         return "pre_sigmoidal"
     return "none"
 
 
 def _cfun_params(p: "ProjectionInfo") -> "np.ndarray":
-    """Return a float32 array of length 8 with cfun parameters for a ProjectionInfo.
+    """Return a float32 array of length 16 with cfun parameters for a ProjectionInfo.
 
     Layout by cfun type:
-      none:          [1.0, 0, 0, 0, 0, 0, 0, 0]
-      linear:        [a, b, 0, 0, 0, 0, 0, 0]
-      scaling:       [a, 0, 0, 0, 0, 0, 0, 0]
-      sigmoidal:     [a, sigma, midpoint, cmin, cmax, 0, 0, 0]
-      sigmoidal_jr:  [a, e0, r, v0, 0, 0, 0, 0]
-      kuramoto:      [a, 0, 0, 0, 0, 0, 0, 0]
-      tanh:          [a, midpoint, sigma, 0, 0, 0, 0, 0]
-      pre_sigmoidal: [H, Q, G, P, theta, 0, 0, 0]
+      none:                  [1.0, 0, 0, 0, 0, 0, 0, 0, ...]
+      linear:                [a, b, 0, 0, 0, 0, 0, 0, ...]
+      scaling:               [a, 0, 0, 0, 0, 0, 0, 0, ...]
+      sigmoidal:             [a, sigma, midpoint, cmin, cmax, 0, 0, 0, ...]
+      sigmoidal_jr:          [a, cmin, cmax, r, midpoint, 0, 0, 0, ...]  (classic)
+      sigmoidal_jr_legacy:   [a, e0, r, v0, 0, 0, 0, 0, ...]           (legacy)
+      kuramoto:              [a, 1/N, 0, 0, 0, 0, 0, 0, ...]
+      difference:            [a, 0, 0, 0, 0, 0, 0, 0, ...]
+      tanh:                  [a, b, midpoint, sigma, 0, 0, 0, 0, ...]
+      pre_sigmoidal:         [H, Q, G, P, theta, 0, 0, 0, ...]          (static)
+      pre_sigmoidal_dynamic: [H, Q, G, P, 0, 0, 0, 0, ...]              (dynamic)
     """
     from tvb.simulator.hybrid.coupling import (
         Linear,
@@ -698,7 +706,7 @@ def _cfun_params(p: "ProjectionInfo") -> "np.ndarray":
         PreSigmoidal,
     )
 
-    arr = np.zeros(8, dtype=np.float32)
+    arr = np.zeros(16, dtype=np.float32)
     arr[0] = 1.0  # default: identity scale
     if p.cfun is None:
         return arr
@@ -720,27 +728,69 @@ def _cfun_params(p: "ProjectionInfo") -> "np.ndarray":
         arr[4] = float(p.cfun.cmax[0])
         return arr
     if isinstance(p.cfun, SigmoidalJansenRit):
-        arr[0] = float(p.cfun.a[0])
-        arr[1] = float(p.cfun.e0[0])
-        arr[2] = float(p.cfun.r[0])
-        arr[3] = float(p.cfun.v0[0])
+        if getattr(p.cfun, 'use_classic', 1):
+            # Classic mode: [a, cmin, cmax, r, midpoint]
+            arr[0] = float(p.cfun.a[0])
+            arr[1] = float(p.cfun.cmin[0])
+            arr[2] = float(p.cfun.cmax[0])
+            arr[3] = float(p.cfun.r[0])
+            arr[4] = float(p.cfun.midpoint[0])
+        else:
+            # Legacy mode: [a, e0, r, v0]
+            arr[0] = float(p.cfun.a[0])
+            arr[1] = float(p.cfun.e0[0])
+            arr[2] = float(p.cfun.r[0])
+            arr[3] = float(p.cfun.v0[0])
         return arr
     if isinstance(p.cfun, KuramotoCfun):
         arr[0] = float(p.cfun.a[0])
+        # N = number of coupling variables for normalization
+        n_cvar = p.source_cvar.shape[0]
+        arr[1] = 1.0 / n_cvar if n_cvar > 0 else 1.0
         return arr
     if isinstance(p.cfun, HyperbolicTangent):
         arr[0] = float(p.cfun.a[0])
-        arr[1] = float(p.cfun.midpoint[0])
-        arr[2] = float(p.cfun.sigma[0])
+        arr[1] = float(p.cfun.b[0])
+        arr[2] = float(p.cfun.midpoint[0])
+        arr[3] = float(p.cfun.sigma[0])
         return arr
     if isinstance(p.cfun, PreSigmoidal):
         arr[0] = float(p.cfun.H[0])
         arr[1] = float(p.cfun.Q[0])
         arr[2] = float(p.cfun.G[0])
         arr[3] = float(p.cfun.P[0])
-        arr[4] = float(p.cfun.theta[0])
+        if getattr(p.cfun, 'dynamic', 0):
+            # Dynamic mode: theta not used, threshold from x_j[1]
+            arr[4] = 0.0
+        else:
+            # Static mode: theta
+            arr[4] = float(p.cfun.theta[0])
         return arr
     return arr
+
+
+def _needs_xi(p: "ProjectionInfo") -> bool:
+    """Return True if the coupling function needs per-edge target state x_i.
+
+    Difference and Kuramoto need x_i to compute x_j - x_i or sin(x_j - x_i)
+    per edge before the weighted sum.
+    """
+    ct = _cfun_type(p)
+    return ct in ("difference", "kuramoto")
+
+
+def _n_src_cvar_pre(p: "ProjectionInfo") -> int:
+    """Return the number of source coupling variables consumed by pre().
+
+    Most coupling functions read one source cvar per projection edge.
+    SigmoidalJansenRit (classic) and PreSigmoidal (dynamic) read two.
+    """
+    ct = _cfun_type(p)
+    if ct == "sigmoidal_jr":
+        return 2
+    if ct == "pre_sigmoidal_dynamic":
+        return 2
+    return p.source_cvar.shape[0]
 
 
 def _cvar_mapping_mode(p: "ProjectionInfo") -> str:
@@ -1892,13 +1942,16 @@ class NbHybridBackend(MakoUtilMix):
         Maps param_idx (as used in sweep_descriptor) to the named attribute
         of each coupling function type.  Mirrors the _cfun_params() layout:
 
-          linear:        [a, b]
-          scaling:       [a]
-          sigmoidal:     [a, sigma, midpoint, cmin, cmax]
-          sigmoidal_jr:  [a, e0, r, v0]
-          kuramoto:      [a]
-          tanh:          [a, midpoint, sigma]
-          pre_sigmoidal: [H, Q, G, P, theta]
+          linear:                [a, b]
+          scaling:               [a]
+          sigmoidal:             [a, sigma, midpoint, cmin, cmax]
+          sigmoidal_jr:          [a, cmin, cmax, r, midpoint]  (classic)
+          sigmoidal_jr_legacy:   [a, e0, r, v0]                 (legacy)
+          kuramoto:              [a, 1/N]
+          difference:             [a]
+          tanh:                  [a, b, midpoint, sigma]
+          pre_sigmoidal:         [H, Q, G, P, theta]
+          pre_sigmoidal_dynamic: [H, Q, G, P, 0]
         """
         from tvb.simulator.hybrid.coupling import (
             Linear, Scaling, Sigmoidal, SigmoidalJansenRit,
@@ -1920,17 +1973,36 @@ class NbHybridBackend(MakoUtilMix):
                     float(cfun.midpoint[0]), float(cfun.cmin[0]),
                     float(cfun.cmax[0])][pidx]
         elif isinstance(cfun, SigmoidalJansenRit):
-            return [float(cfun.a[0]), float(cfun.e0[0]),
-                    float(cfun.r[0]), float(cfun.v0[0])][pidx]
+            # Legacy indices 0-3 preserved for backward compat with saved sweeps.
+            # Classic indices 4-6 are new.
+            if pidx <= 3:
+                return [float(cfun.a[0]), float(cfun.e0[0]),
+                        float(cfun.r[0]), float(cfun.v0[0])][pidx]
+            elif pidx <= 6:
+                return [float(cfun.cmin[0]), float(cfun.cmax[0]),
+                        float(cfun.midpoint[0])][pidx - 4]
+            raise IndexError(
+                f"SigmoidalJansenRit has 7 sweepable parameters (0-6), got {pidx}"
+            )
         elif isinstance(cfun, KuramotoCfun):
             if pidx == 0:
                 return float(cfun.a[0])
-            raise IndexError(f"Kuramoto has only 1 parameter (index 0), got {pidx}")
+            raise IndexError(f"Kuramoto: only param_idx=0 is sweepable, got {pidx}")
         elif isinstance(cfun, Difference):
-            raise IndexError("Difference cfun has no sweepable parameters")
+            if pidx == 0:
+                return float(cfun.a[0])
+            raise IndexError(f"Difference has only 1 sweepable parameter, got {pidx}")
         elif isinstance(cfun, HyperbolicTangent):
-            return [float(cfun.a[0]), float(cfun.midpoint[0]),
-                    float(cfun.sigma[0])][pidx]
+            # Indices 0-2 preserved for backward compat with saved sweeps;
+            # b is new at index 3.
+            if pidx <= 2:
+                return [float(cfun.a[0]), float(cfun.midpoint[0]),
+                        float(cfun.sigma[0])][pidx]
+            elif pidx == 3:
+                return float(cfun.b[0])
+            raise IndexError(
+                f"HyperbolicTangent has 4 sweepable parameters (0-3), got {pidx}"
+            )
         elif isinstance(cfun, PreSigmoidal):
             return [float(cfun.H[0]), float(cfun.Q[0]), float(cfun.G[0]),
                     float(cfun.P[0]), float(cfun.theta[0])][pidx]
@@ -1961,14 +2033,27 @@ class NbHybridBackend(MakoUtilMix):
             setattr(cfun, ['a', 'sigma', 'midpoint', 'cmin', 'cmax'][pidx],
                     np.array([float(value)]))
         elif isinstance(cfun, SigmoidalJansenRit):
-            setattr(cfun, ['a', 'e0', 'r', 'v0'][pidx], np.array([float(value)]))
+            # Legacy indices 0-3 preserved for backward compat with saved sweeps.
+            # Classic indices 4-6 are new.
+            if pidx <= 3:
+                setattr(cfun, ['a', 'e0', 'r', 'v0'][pidx],
+                        np.array([float(value)]))
+            elif pidx <= 6:
+                setattr(cfun, ['cmin', 'cmax', 'midpoint'][pidx - 4],
+                        np.array([float(value)]))
+            else:
+                raise IndexError(
+                    f"SigmoidalJansenRit has 7 sweepable parameters (0-6), got {pidx}"
+                )
         elif isinstance(cfun, KuramotoCfun):
             assert pidx == 0, f"Kuramoto: only param_idx=0, got {pidx}"
             cfun.a = np.array([float(value)])
         elif isinstance(cfun, Difference):
-            raise IndexError("Difference cfun has no sweepable parameters")
+            assert pidx == 0, f"Difference: only param_idx=0, got {pidx}"
+            cfun.a = np.array([float(value)])
         elif isinstance(cfun, HyperbolicTangent):
-            setattr(cfun, ['a', 'midpoint', 'sigma'][pidx], np.array([float(value)]))
+            # Indices 0-2 preserved for backward compat; b is new at index 3.
+            setattr(cfun, ['a', 'midpoint', 'sigma', 'b'][pidx], np.array([float(value)]))
         elif isinstance(cfun, PreSigmoidal):
             setattr(cfun, ['H', 'Q', 'G', 'P', 'theta'][pidx], np.array([float(value)]))
         else:

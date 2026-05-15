@@ -180,7 +180,7 @@ class InterProjection(BaseProjection):
         self.configure_buffer(n_vars_src, n_nodes_src, n_modes_src)
         return self
 
-    def apply(self, tgt: np.ndarray, step: int):
+    def apply(self, tgt: np.ndarray, step: int, x_i=None):
         """Apply the inter-subnetwork projection to the target coupling array.
 
         Delegates to ``BaseProjection.apply()`` with this projection's
@@ -194,7 +194,9 @@ class InterProjection(BaseProjection):
             ``target_cvar`` are incremented in-place.
         step : int
             Current time step index passed to ``BaseProjection.apply()``.
+        x_i : ndarray, shape (n_vars_tgt, n_nodes_tgt, n_modes_tgt), optional
+            Current target subnetwork state, forwarded to
+            ``BaseProjection.apply()`` for coupling functions that need
+            both source and target activity.
         """
-        # Call the base class apply method, passing the specific mode_map
-        # BaseProjection.apply now uses its internal buffer
-        super().apply(tgt, step, self.mode_map)
+        super().apply(tgt, step, self.mode_map, x_i=x_i)

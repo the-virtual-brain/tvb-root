@@ -44,16 +44,16 @@ The total weighted coupling at target node *i* is:
 .. math::
 
     C_i = s \\cdot \\mathrm{post}\\!\\left(
-          \\sum_{j} w_{ij}\\,\\mathrm{pre}\\!\\bigl(x_j(t - \\tau_{ij})\\bigr)
+          \\sum_{j} w_{ij}\\,\\mathrm{pre}\\!\\bigl(x_j(t - \\tau_{ij}),
+          x_i(t)\\bigr)
           \\right)
 
-where *s* is ``scale``, *w_ij* are the sparse weights, and ``pre`` / ``post``
-are optional coupling transformations from the attached ``cfun``.
-
-When ``target_scales`` is provided it is applied **after** mode-mapping,
-multiplicatively on top of the global ``scale``.  Effective per-target weight
-is ``scale * target_scales[i]``.  ``target_scales`` must have the same length
-as ``target_cvar``.
+where *s* is ``scale``, *w_ij* are the sparse weights, and ``pre`` /
+``post`` are optional coupling transformations from the attached
+``cfun``.  When ``pre`` is a two-argument function (e.g.  ``Difference``
+or ``Kuramoto``), the current target state *x_i* at the coupling
+variables is provided as the second argument so that expressions like
+``x_j - x_i`` or ``sin(x_j - x_i)`` can be evaluated accurately.
 
 Delays are resolved once at construction time from the sparse ``lengths``
 matrix, the conduction velocity ``cv``, and the time step ``dt``.  A small
@@ -61,6 +61,8 @@ epsilon is temporarily added to the weight and length matrices to guarantee
 a uniform CSR sparsity structure (required for ``np.add.reduceat``), then
 removed once the structure is established.
 """
+
+import inspect
 
 import numpy as np
 from scipy import sparse as sp
@@ -317,7 +319,7 @@ class BaseProjection(t.HasTraits):
         # Extraction happens in apply() when reading from buffer
         self._history_buffer[..., buffer_idx] = current_src_state
 
-    def apply(self, tgt: np.ndarray, t: int, mode_map: np.ndarray):
+    def apply(self, tgt: np.ndarray, t: int, mode_map: np.ndarray, x_i=None):
         """Compute delayed weighted coupling and accumulate into the target array.
 
         Reads delayed source states from the internal history buffer,
@@ -342,6 +344,15 @@ class BaseProjection(t.HasTraits):
             the weighted sum.  For intra-subnetwork coupling this is the
             identity matrix; for inter-subnetwork coupling it may
             re-weight or collapse mode contributions.
+        x_i : ndarray, shape (n_vars_tgt, n_nodes_tgt, n_modes_tgt), optional
+            Current target subnetwork state.  When provided and the
+            coupling function's ``pre()`` method accepts two arguments,
+            the target state at the coupling variables is expanded to
+            per-edge shape and passed as the second argument to
+            ``cfun.pre()``.  This enables coupling functions like
+            ``Difference`` and ``Kuramoto`` to compute expressions that
+            depend on both source and target activity (e.g.
+            ``x_j - x_i`` or ``sin(x_j - x_i)``).
 
         Raises
         ------
@@ -371,7 +382,51 @@ class BaseProjection(t.HasTraits):
 
         # Apply pre-scaling coupling function per-edge before weighting
         if self.cfun is not None:
-            delayed_states = self.cfun.pre(delayed_states)
+            if x_i is not None:
+                if "x_i" in inspect.signature(self.cfun.pre).parameters:
+                    # Derive per-edge target state from x_i.
+                    # In CSR format, for entry ptr the target node (row) can be
+                    # recovered from indptr: row_indices[ptr] = row containing ptr.
+                    row_indices = np.repeat(
+                        np.arange(self.weights.shape[0]),
+                        np.diff(self.weights.indptr),
+                    )
+                    # x_i has shape (n_vars_tgt, n_nodes_tgt, n_modes_tgt).
+                    # Extract target state at the coupling variables for each
+                    # target node, giving per-edge x_i with shape
+                    # (n_tgt_cvar, nnz, n_modes_tgt).
+                    x_i_per_edge = x_i[
+                        self.target_cvar[:, np.newaxis], row_indices, :
+                    ]
+                    # Handle shape mismatch between source and target cvar dims.
+                    # When cvar counts match, expand x_i_per_edge to align with
+                    # delayed_states along axis 0 for element-wise pre().
+                    n_sc = self.source_cvar.size
+                    n_tc = self.target_cvar.size
+                    if n_sc == n_tc:
+                        delayed_states = self.cfun.pre(delayed_states, x_i_per_edge)
+                    elif n_sc == 1 and n_tc > 1:
+                        # Broadcast single source cvar across multiple target cvars
+                        delayed_states = self.cfun.pre(delayed_states, x_i_per_edge)
+                    elif n_tc == 1 and n_sc > 1:
+                        # Broadcast single target cvar across multiple source cvars
+                        delayed_states = self.cfun.pre(delayed_states, x_i_per_edge)
+                    else:
+                        raise ValueError(
+                            f"Cannot pass x_i to pre(): source_cvar size ({n_sc}) "
+                            f"and target_cvar size ({n_tc}) are both > 1 and "
+                            f"unequal. The shape semantics are ambiguous."
+                        )
+                else:
+                    delayed_states = self.cfun.pre(delayed_states)
+            else:
+                delayed_states = self.cfun.pre(delayed_states)
+
+        # Detect cvar collapse: when a multi-cvar pre() (e.g. SigmoidalJansenRit
+        # or PreSigmoidal in dynamic mode) collapses N source cvars into 1
+        # output, the first dimension of delayed_states shrinks.  We record
+        # the effective cvar count for the downstream accumulation logic.
+        effective_n_src_cvar = delayed_states.shape[0]
 
         # Apply weights element-wise
         # weights.data has shape (nnz,)
@@ -389,20 +444,17 @@ class BaseProjection(t.HasTraits):
         # Result shape: (n_src_cvar, n_target_nodes, n_src_modes)
         # Note: n_target_nodes comes from the structure of the CSR matrix (number of rows)
 
-        # Apply scaling factor
-        scaled_input = self.scale * summed_input
-        # Result shape: (n_src_cvar, n_target_nodes, n_src_modes)
-
         # Apply post-scaling coupling function if provided
-        # NOTE: The docstring states C_i = s · post(Σ w·pre(x)), implying
-        # scale should be applied AFTER post().  The current code computes
-        # post(scale * sum) instead.  This is currently harmless because
-        # no existing coupling function has both nonlinear pre() AND
-        # nonlinear post() — but if one is added, the docstring or the
-        # code ordering must be reconciled.  See also the classic TVB
-        # Coupling.__call__() which does not apply a separate scale.
+        # Order: post is applied BEFORE scale, giving C_i = scale * post(sum).
+        # This matches the docstring convention and the classic TVB order
+        # where coupling functions are applied before any projection-specific
+        # scaling factor.  For nonlinear post() (e.g., Sigmoidal), the
+        # order matters: post(sum) * scale != post(scale * sum).
         if self.cfun is not None:
-            scaled_input = self.cfun.post(scaled_input)
+            summed_input = self.cfun.post(summed_input)
+
+        # Apply scaling factor after post()
+        scaled_input = self.scale * summed_input
 
         # Apply mode mapping
         # mode_map shape: (n_src_modes, n_target_modes)
@@ -413,6 +465,8 @@ class BaseProjection(t.HasTraits):
         # Apply to target coupling variables
         # tgt shape: (n_target_vars, n_target_nodes, n_target_modes)
         # target_cvar shape: (n_target_cvar,)
+        # Use effective_n_src_cvar instead of source_cvar.size to handle
+        # cvar-collapsing coupling functions (e.g. SigmoidalJansenRit 2→1).
         if self.target_cvar.size == 1:
             # If only one target cvar, sum contributions from all source cvars
             # Sum along axis 0 (source_cvar dimension)
@@ -422,8 +476,9 @@ class BaseProjection(t.HasTraits):
                 summed_aff = summed_aff * self.target_scales[0]
             # Add to the single target cvar across all nodes/modes
             tgt[self.target_cvar[0], :, :] += summed_aff
-        elif self.source_cvar.size == 1:
-            # If only one source cvar, apply its contribution to all target cvars directly
+        elif effective_n_src_cvar == 1:
+            # If only one effective source cvar (possibly collapsed from N),
+            # apply its contribution to all target cvars directly.
             # aff has shape (1, n_target_nodes, n_target_modes)
             # Squeeze axis 0 to get shape (n_target_nodes, n_target_modes)
             squeezed_aff = aff.squeeze(axis=0)
@@ -432,18 +487,18 @@ class BaseProjection(t.HasTraits):
                 squeezed_aff = squeezed_aff * self.target_scales[:, None, None]
             # Add to all target cvars
             tgt[self.target_cvar, :, :] += squeezed_aff
-        elif self.source_cvar.size == self.target_cvar.size:
-            # If source and target cvars match in number, apply element-wise mapping
+        elif effective_n_src_cvar == self.target_cvar.size:
+            # If effective source and target cvars match in number, apply element-wise mapping
             # aff shape: (n_cvar, n_target_nodes, n_target_modes)
             # tgt[target_cvar] shape: (n_cvar, n_target_nodes, n_target_modes)
             if self.target_scales is not None:
                 aff = aff * self.target_scales[:, None, None]
             tgt[self.target_cvar, :, :] += aff
         else:
-            # Ambiguous case: M source cvars to N target cvars (M != N, M!=1, N!=1)
+            # Ambiguous case: M effective source cvars to N target cvars
             # Raise error or define specific reduction/broadcasting rule
             raise ValueError(
-                f"Unsupported projection: {self.source_cvar.size} source cvars "
+                f"Unsupported projection: {effective_n_src_cvar} effective source cvars "
                 f"to {self.target_cvar.size} target cvars. "
                 f"Requires M=1, N=1, or M=N."
             )

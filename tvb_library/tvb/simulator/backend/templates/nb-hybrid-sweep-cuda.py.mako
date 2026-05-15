@@ -33,6 +33,25 @@ import numba
     n_tgt_cvar = p.target_cvar.shape[0]
     src = p.source_subnet
     tgt = p.target_subnet
+    # pre_ct: coupling functions that apply PER-EDGE before weighting
+    if ct in ('sigmoidal_jr', 'sigmoidal_jr_legacy', 'tanh', 'pre_sigmoidal', 'pre_sigmoidal_dynamic', 'difference', 'kuramoto'):
+        pre_ct = ct
+    else:
+        pre_ct = 'none'
+    # post_ct: coupling functions that apply AFTER weighted sum
+    if ct == 'linear':
+        post_ct = 'linear'
+    elif ct in ('scaling', 'difference'):
+        post_ct = 'scaling'
+    elif ct == 'sigmoidal':
+        post_ct = 'sigmoidal'
+    elif ct == 'kuramoto':
+        post_ct = 'kuramoto_norm'  # a * (1/N) * wsum — sin is now in pre
+    else:
+        post_ct = 'none'
+    needs_xi = _needs_xi(p)
+    is_multi_cvar = (ct in ('sigmoidal_jr', 'pre_sigmoidal_dynamic'))
+    has_ts = p.target_scales.shape[0] > 0
 %>
 
 @cuda.jit(device=True)
@@ -57,6 +76,7 @@ def compute_coupling_${p.name}(
 % if p.is_inter:
     ${p.name}_mode_map,
 % endif
+    ${tgt}_state,
     ${tgt}_c,
     sweep_params,
     tid,
@@ -91,59 +111,136 @@ def compute_coupling_${p.name}(
             d = ${p.name}_idelays[ptr]
             slot = (t - 1 - d + horizon) % horizon
 
-            ## cvar accumulation with source-mode loop
+            ## cvar accumulation with per-edge pre-cfun and source-mode loop
             % if cm in ('1_to_1', 'n_to_n'):
             % for ic in range(n_tgt_cvar):
             for _ms in range(${p.n_src_modes}):
-                ${p.name}_wsum_${ic}[_ms] += w * ${src}_srcbuf[tidy, ${p.source_cvar[ic]}, src_node, _ms, slot]
+                _edge_val = ${src}_srcbuf[tidy, ${p.source_cvar[ic]}, src_node, _ms, slot]
+                % if pre_ct == 'sigmoidal_jr':
+                # Classic: cmin + (cmax-cmin)/(1+exp(r*(midpoint-diff)))
+                # cfun_params: [0]=a, [1]=cmin, [2]=cmax, [3]=r, [4]=midpoint
+                cv0 = ${p.name}_source_cvar[0]
+                cv1 = ${p.name}_source_cvar[1]
+                x0 = ${src}_srcbuf[tidy, cv0, src_node, _ms, slot]
+                x1 = ${src}_srcbuf[tidy, cv1, src_node, _ms, slot]
+                _edge_val = ${p.name}_cfun_params[1] + (${p.name}_cfun_params[2] - ${p.name}_cfun_params[1]) / (np.float32(1.0) + math.exp(${p.name}_cfun_params[3] * (${p.name}_cfun_params[4] - (x0 - x1))))
+                % elif pre_ct == 'sigmoidal_jr_legacy':
+                # Legacy: a * 2*e0 / (1+exp(r*(v0-x)))
+                # cfun_params: [0]=a, [1]=e0, [2]=r, [3]=v0
+                _edge_val = ${_cparam(p.name, 0)} * np.float32(2.0) * ${p.name}_cfun_params[1] / (np.float32(1.0) + math.exp(${p.name}_cfun_params[2] * (${p.name}_cfun_params[3] - _edge_val)))
+                % elif pre_ct == 'tanh':
+                _edge_val = ${_cparam(p.name, 0)} * (np.float32(1.0) + math.tanh((${p.name}_cfun_params[1] * _edge_val - ${p.name}_cfun_params[2]) / ${p.name}_cfun_params[3]))
+                % elif pre_ct == 'pre_sigmoidal':
+                _edge_val = ${_cparam(p.name, 0)} * (${p.name}_cfun_params[1] + math.tanh(${p.name}_cfun_params[2] * (${p.name}_cfun_params[3] * _edge_val - ${p.name}_cfun_params[4])))
+                % elif pre_ct == 'pre_sigmoidal_dynamic':
+                # Dynamic: H*(Q + tanh(G*(P*x_j[0] - x_j[1])))
+                # cfun_params: [0]=H, [1]=Q, [2]=G, [3]=P
+                cv0 = ${p.name}_source_cvar[0]
+                cv1 = ${p.name}_source_cvar[1]
+                x0 = ${src}_srcbuf[tidy, cv0, src_node, _ms, slot]
+                x1 = ${src}_srcbuf[tidy, cv1, src_node, _ms, slot]
+                _edge_val = ${p.name}_cfun_params[0] * (${p.name}_cfun_params[1] + math.tanh(${p.name}_cfun_params[2] * (${p.name}_cfun_params[3] * x0 - x1)))
+                % elif pre_ct == 'difference':
+                xi_val = ${tgt}_state[tidy, ${p.name}_target_cvar[ic], j, _ms]
+                _edge_val = _edge_val - xi_val
+                % elif pre_ct == 'kuramoto':
+                xi_val = ${tgt}_state[tidy, ${p.name}_target_cvar[ic], j, _ms]
+                _edge_val = math.sin(_edge_val - xi_val)
+                % endif
+                ${p.name}_wsum_${ic}[_ms] += w * _edge_val
             % endfor
             % elif cm == 'many_to_1':
             for _ms in range(${p.n_src_modes}):
                 % for ic in range(n_src_cvar):
-                ${p.name}_wsum_0[_ms] += w * ${src}_srcbuf[tidy, ${p.source_cvar[ic]}, src_node, _ms, slot]
+                _edge_val = ${src}_srcbuf[tidy, ${p.source_cvar[ic]}, src_node, _ms, slot]
+                % if pre_ct == 'sigmoidal_jr':
+                # Classic: cmin + (cmax-cmin)/(1+exp(r*(midpoint-diff)))
+                # cfun_params: [0]=a, [1]=cmin, [2]=cmax, [3]=r, [4]=midpoint
+                cv0 = ${p.name}_source_cvar[0]
+                cv1 = ${p.name}_source_cvar[1]
+                x0 = ${src}_srcbuf[tidy, cv0, src_node, _ms, slot]
+                x1 = ${src}_srcbuf[tidy, cv1, src_node, _ms, slot]
+                _edge_val = ${p.name}_cfun_params[1] + (${p.name}_cfun_params[2] - ${p.name}_cfun_params[1]) / (np.float32(1.0) + math.exp(${p.name}_cfun_params[3] * (${p.name}_cfun_params[4] - (x0 - x1))))
+                % elif pre_ct == 'sigmoidal_jr_legacy':
+                # Legacy: a * 2*e0 / (1+exp(r*(v0-x)))
+                # cfun_params: [0]=a, [1]=e0, [2]=r, [3]=v0
+                _edge_val = ${_cparam(p.name, 0)} * np.float32(2.0) * ${p.name}_cfun_params[1] / (np.float32(1.0) + math.exp(${p.name}_cfun_params[2] * (${p.name}_cfun_params[3] - _edge_val)))
+                % elif pre_ct == 'tanh':
+                _edge_val = ${_cparam(p.name, 0)} * (np.float32(1.0) + math.tanh((${p.name}_cfun_params[1] * _edge_val - ${p.name}_cfun_params[2]) / ${p.name}_cfun_params[3]))
+                % elif pre_ct == 'pre_sigmoidal':
+                _edge_val = ${_cparam(p.name, 0)} * (${p.name}_cfun_params[1] + math.tanh(${p.name}_cfun_params[2] * (${p.name}_cfun_params[3] * _edge_val - ${p.name}_cfun_params[4])))
+                % elif pre_ct == 'pre_sigmoidal_dynamic':
+                # Dynamic: H*(Q + tanh(G*(P*x_j[0] - x_j[1])))
+                # cfun_params: [0]=H, [1]=Q, [2]=G, [3]=P
+                cv0 = ${p.name}_source_cvar[0]
+                cv1 = ${p.name}_source_cvar[1]
+                x0 = ${src}_srcbuf[tidy, cv0, src_node, _ms, slot]
+                x1 = ${src}_srcbuf[tidy, cv1, src_node, _ms, slot]
+                _edge_val = ${p.name}_cfun_params[0] * (${p.name}_cfun_params[1] + math.tanh(${p.name}_cfun_params[2] * (${p.name}_cfun_params[3] * x0 - x1)))
+                % elif pre_ct == 'difference':
+                xi_val = ${tgt}_state[tidy, ${p.name}_target_cvar[0], j, _ms]
+                _edge_val = _edge_val - xi_val
+                % elif pre_ct == 'kuramoto':
+                xi_val = ${tgt}_state[tidy, ${p.name}_target_cvar[0], j, _ms]
+                _edge_val = math.sin(_edge_val - xi_val)
+                % endif
+                ${p.name}_wsum_0[_ms] += w * _edge_val
                 % endfor
             % elif cm == '1_to_many':
             for _ms in range(${p.n_src_modes}):
-                _cv = ${src}_srcbuf[tidy, ${p.source_cvar[0]}, src_node, _ms, slot]
+                _edge_val = ${src}_srcbuf[tidy, ${p.source_cvar[0]}, src_node, _ms, slot]
+                % if pre_ct == 'sigmoidal_jr':
+                # Classic: cmin + (cmax-cmin)/(1+exp(r*(midpoint-diff)))
+                # cfun_params: [0]=a, [1]=cmin, [2]=cmax, [3]=r, [4]=midpoint
+                cv0 = ${p.name}_source_cvar[0]
+                cv1 = ${p.name}_source_cvar[1]
+                x0 = ${src}_srcbuf[tidy, cv0, src_node, _ms, slot]
+                x1 = ${src}_srcbuf[tidy, cv1, src_node, _ms, slot]
+                _edge_val = ${p.name}_cfun_params[1] + (${p.name}_cfun_params[2] - ${p.name}_cfun_params[1]) / (np.float32(1.0) + math.exp(${p.name}_cfun_params[3] * (${p.name}_cfun_params[4] - (x0 - x1))))
+                % elif pre_ct == 'sigmoidal_jr_legacy':
+                # Legacy: a * 2*e0 / (1+exp(r*(v0-x)))
+                # cfun_params: [0]=a, [1]=e0, [2]=r, [3]=v0
+                _edge_val = ${_cparam(p.name, 0)} * np.float32(2.0) * ${p.name}_cfun_params[1] / (np.float32(1.0) + math.exp(${p.name}_cfun_params[2] * (${p.name}_cfun_params[3] - _edge_val)))
+                % elif pre_ct == 'tanh':
+                _edge_val = ${_cparam(p.name, 0)} * (np.float32(1.0) + math.tanh((${p.name}_cfun_params[1] * _edge_val - ${p.name}_cfun_params[2]) / ${p.name}_cfun_params[3]))
+                % elif pre_ct == 'pre_sigmoidal':
+                _edge_val = ${_cparam(p.name, 0)} * (${p.name}_cfun_params[1] + math.tanh(${p.name}_cfun_params[2] * (${p.name}_cfun_params[3] * _edge_val - ${p.name}_cfun_params[4])))
+                % elif pre_ct == 'pre_sigmoidal_dynamic':
+                # Dynamic: H*(Q + tanh(G*(P*x_j[0] - x_j[1])))
+                # cfun_params: [0]=H, [1]=Q, [2]=G, [3]=P
+                cv0 = ${p.name}_source_cvar[0]
+                cv1 = ${p.name}_source_cvar[1]
+                x0 = ${src}_srcbuf[tidy, cv0, src_node, _ms, slot]
+                x1 = ${src}_srcbuf[tidy, cv1, src_node, _ms, slot]
+                _edge_val = ${p.name}_cfun_params[0] * (${p.name}_cfun_params[1] + math.tanh(${p.name}_cfun_params[2] * (${p.name}_cfun_params[3] * x0 - x1)))
+                % elif pre_ct == 'difference':
+                xi_val = ${tgt}_state[tidy, ${p.name}_target_cvar[0], j, _ms]
+                _edge_val = _edge_val - xi_val
+                % elif pre_ct == 'kuramoto':
+                xi_val = ${tgt}_state[tidy, ${p.name}_target_cvar[0], j, _ms]
+                _edge_val = math.sin(_edge_val - xi_val)
+                % endif
                 % for ic in range(n_tgt_cvar):
-                ${p.name}_wsum_${ic}[_ms] += w * _cv
+                ${p.name}_wsum_${ic}[_ms] += w * _edge_val
                 % endfor
             % endif
 
-        ## --- classify pre/post cfun ---
-        <%
-            pre_ct = ct if ct in ('sigmoidal_jr', 'tanh', 'pre_sigmoidal') else 'none'
-            post_ct = ct if ct not in ('sigmoidal_jr', 'tanh', 'pre_sigmoidal', 'none') else 'none'
-            has_ts = p.target_scales.shape[0] > 0
-        %>
-
-        ## Apply cfun per source mode, then map to target modes
+        ## pre-cfun already applied per-edge; now post-cfun then scale
         % if cm in ('1_to_1', 'n_to_n'):
         % for ic in range(n_tgt_cvar):
         for _ms in range(${p.n_src_modes}):
-            ## 1. pre-cfun (before scale)
-            % if pre_ct == 'sigmoidal_jr':
-            ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 0)} * np.float32(2.0) * ${p.name}_cfun_params[1] / (np.float32(1.0) + math.exp(${p.name}_cfun_params[2] * (${p.name}_cfun_params[3] - ${p.name}_wsum_${ic}[_ms])))
-            % elif pre_ct == 'tanh':
-            ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 0)} * (np.float32(1.0) + math.tanh((${p.name}_wsum_${ic}[_ms] - ${p.name}_cfun_params[1]) / ${p.name}_cfun_params[2]))
-            % elif pre_ct == 'pre_sigmoidal':
-            ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 0)} * (${p.name}_cfun_params[1] + math.tanh(${p.name}_cfun_params[2] * (${p.name}_cfun_params[3] * ${p.name}_wsum_${ic}[_ms] - ${p.name}_cfun_params[4])))
-            % endif
-
-            ## 2. apply scale
-            ${p.name}_wsum_${ic}[_ms] *= ${p.name}_scale
-
-            ## 3. post-cfun (after scale)
             % if post_ct == 'scaling':
             ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 0)} * ${p.name}_wsum_${ic}[_ms]
             % elif post_ct == 'linear':
             ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 0)} * ${p.name}_wsum_${ic}[_ms] + ${p.name}_cfun_params[1]
             % elif post_ct == 'sigmoidal':
             ${p.name}_wsum_${ic}[_ms] = ${p.name}_cfun_params[3] + (${p.name}_cfun_params[4] - ${p.name}_cfun_params[3]) / (np.float32(1.0) + math.exp(-${_cparam(p.name, 0)} * ((${p.name}_wsum_${ic}[_ms] - ${p.name}_cfun_params[2]) / ${p.name}_cfun_params[1])))
-            % elif post_ct == 'kuramoto':
-            ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 0)} * math.sin(${p.name}_wsum_${ic}[_ms])
+            % elif post_ct == 'kuramoto_norm':
+            # a * (1/N) * wsum — sin is now applied per-edge in pre
+            ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 0)} * ${p.name}_cfun_params[1] * ${p.name}_wsum_${ic}[_ms]
             % endif
-        ## 4. target_scales and mode_map → accumulate into tgt_c
+            ${p.name}_wsum_${ic}[_ms] *= ${p.name}_scale
+        ## target_scales and mode_map → accumulate into tgt_c
         % if p.is_inter:
         for _mt in range(${p.n_tgt_modes}):
             _contrib = np.float32(0.0)
@@ -166,23 +263,17 @@ def compute_coupling_${p.name}(
 
         % elif cm == 'many_to_1':
         for _ms in range(${p.n_src_modes}):
-            % if pre_ct == 'sigmoidal_jr':
-            ${p.name}_wsum_0[_ms] = ${_cparam(p.name, 0)} * np.float32(2.0) * ${p.name}_cfun_params[1] / (np.float32(1.0) + math.exp(${p.name}_cfun_params[2] * (${p.name}_cfun_params[3] - ${p.name}_wsum_0[_ms])))
-            % elif pre_ct == 'tanh':
-            ${p.name}_wsum_0[_ms] = ${_cparam(p.name, 0)} * (np.float32(1.0) + math.tanh((${p.name}_wsum_0[_ms] - ${p.name}_cfun_params[1]) / ${p.name}_cfun_params[2]))
-            % elif pre_ct == 'pre_sigmoidal':
-            ${p.name}_wsum_0[_ms] = ${_cparam(p.name, 0)} * (${p.name}_cfun_params[1] + math.tanh(${p.name}_cfun_params[2] * (${p.name}_cfun_params[3] * ${p.name}_wsum_0[_ms] - ${p.name}_cfun_params[4])))
-            % endif
-            ${p.name}_wsum_0[_ms] *= ${p.name}_scale
             % if post_ct == 'scaling':
             ${p.name}_wsum_0[_ms] = ${_cparam(p.name, 0)} * ${p.name}_wsum_0[_ms]
             % elif post_ct == 'linear':
             ${p.name}_wsum_0[_ms] = ${_cparam(p.name, 0)} * ${p.name}_wsum_0[_ms] + ${p.name}_cfun_params[1]
             % elif post_ct == 'sigmoidal':
             ${p.name}_wsum_0[_ms] = ${p.name}_cfun_params[3] + (${p.name}_cfun_params[4] - ${p.name}_cfun_params[3]) / (np.float32(1.0) + math.exp(-${_cparam(p.name, 0)} * ((${p.name}_wsum_0[_ms] - ${p.name}_cfun_params[2]) / ${p.name}_cfun_params[1])))
-            % elif post_ct == 'kuramoto':
-            ${p.name}_wsum_0[_ms] = ${_cparam(p.name, 0)} * math.sin(${p.name}_wsum_0[_ms])
+            % elif post_ct == 'kuramoto_norm':
+            # a * (1/N) * wsum — sin is now applied per-edge in pre
+            ${p.name}_wsum_0[_ms] = ${_cparam(p.name, 0)} * ${p.name}_cfun_params[1] * ${p.name}_wsum_0[_ms]
             % endif
+            ${p.name}_wsum_0[_ms] *= ${p.name}_scale
         % if p.is_inter:
         for _mt in range(${p.n_tgt_modes}):
             _contrib = np.float32(0.0)
@@ -205,23 +296,17 @@ def compute_coupling_${p.name}(
         % elif cm == '1_to_many':
         % for ic in range(n_tgt_cvar):
         for _ms in range(${p.n_src_modes}):
-            % if pre_ct == 'sigmoidal_jr':
-            ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 0)} * np.float32(2.0) * ${p.name}_cfun_params[1] / (np.float32(1.0) + math.exp(${p.name}_cfun_params[2] * (${p.name}_cfun_params[3] - ${p.name}_wsum_${ic}[_ms])))
-            % elif pre_ct == 'tanh':
-            ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 0)} * (np.float32(1.0) + math.tanh((${p.name}_wsum_${ic}[_ms] - ${p.name}_cfun_params[1]) / ${p.name}_cfun_params[2]))
-            % elif pre_ct == 'pre_sigmoidal':
-            ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 0)} * (${p.name}_cfun_params[1] + math.tanh(${p.name}_cfun_params[2] * (${p.name}_cfun_params[3] * ${p.name}_wsum_${ic}[_ms] - ${p.name}_cfun_params[4])))
-            % endif
-            ${p.name}_wsum_${ic}[_ms] *= ${p.name}_scale
             % if post_ct == 'scaling':
             ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 0)} * ${p.name}_wsum_${ic}[_ms]
             % elif post_ct == 'linear':
             ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 0)} * ${p.name}_wsum_${ic}[_ms] + ${p.name}_cfun_params[1]
             % elif post_ct == 'sigmoidal':
             ${p.name}_wsum_${ic}[_ms] = ${p.name}_cfun_params[3] + (${p.name}_cfun_params[4] - ${p.name}_cfun_params[3]) / (np.float32(1.0) + math.exp(-${_cparam(p.name, 0)} * ((${p.name}_wsum_${ic}[_ms] - ${p.name}_cfun_params[2]) / ${p.name}_cfun_params[1])))
-            % elif post_ct == 'kuramoto':
-            ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 0)} * math.sin(${p.name}_wsum_${ic}[_ms])
+            % elif post_ct == 'kuramoto_norm':
+            # a * (1/N) * wsum — sin is now applied per-edge in pre
+            ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 0)} * ${p.name}_cfun_params[1] * ${p.name}_wsum_${ic}[_ms]
             % endif
+            ${p.name}_wsum_${ic}[_ms] *= ${p.name}_scale
         % if p.is_inter:
         for _mt in range(${p.n_tgt_modes}):
             _contrib = np.float32(0.0)
@@ -599,6 +684,7 @@ def run_sweep(
 % if p.is_inter:
             ${p.name}_mode_map,
 % endif
+            ${tgt}_state,
             ${tgt}_c,
             sweep_params,
             tid,

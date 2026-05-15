@@ -57,83 +57,75 @@ from tvb.datatypes.connectivity import Connectivity
 class TestKuramotoCoupling:
     """Tests for :class:`~tvb.simulator.hybrid.coupling.Kuramoto` (sinusoidal phase coupling: ``(a/N)*sin(x)``).
 
-    Verifies sine-function behaviour, amplitude scaling, per-mode
-    normalisation (``1/N`` factor), 2π periodicity, and that ``pre()`` is
-    the identity.
+    Verifies sine-function behaviour via ``pre()``, amplitude scaling via
+    ``post()``, 2π periodicity, and that ``pre()`` computes ``sin(x_j - x_i)``
+    when both arguments are provided or ``sin(x_j)`` when only ``x_j`` is given.
     """
 
     def test_kuramoto_default_parameters(self):
-        """Test Kuramoto with default parameters."""
-        kuramoto = Kuramoto()
-        x = np.array([[0.0, np.pi / 2, np.pi, 3 * np.pi / 2, 2 * np.pi]])
-        y = kuramoto.post(x, mode=0)
-
-        expected = np.array([[0.0, 1.0, 0.0, -1.0, 0.0]])
+        """Test Kuramoto.post() applies a/N scaling with default params."""
+        kuramoto = Kuramoto(a=np.array([2.0]))
+        x = np.array([[1.0, 2.0, 3.0]])
+        y = kuramoto.post(x)
+        # a=2.0, N=1 (single cvar), so result = 2.0/1.0 * x
+        expected = np.array([[2.0, 4.0, 6.0]])
         np.testing.assert_allclose(y, expected, rtol=1e-6, atol=1e-8)
 
     def test_kuramoto_amplitude_scaling(self):
         """Test Kuramoto amplitude parameter."""
         a_values = [0.5, 1.0, 2.0]
-        x = np.array([[np.pi / 2]])
+        x = np.array([[1.0]])
 
         for a_val in a_values:
             kuramoto = Kuramoto(a=np.array([a_val]))
-            y = kuramoto.post(x, mode=0)
+            y = kuramoto.post(x)
             expected = np.array([[a_val * 1.0]])
             np.testing.assert_allclose(y, expected, rtol=1e-6, atol=1e-8)
 
-    def test_kuramoto_mode_normalization(self):
-        """Test Kuramoto normalization with multiple modes."""
+    def test_kuramoto_pre_sin_periodicity(self):
+        """Test Kuramoto pre() sin is periodic with 2π."""
         kuramoto = Kuramoto(a=np.array([1.0]))
-        x = np.array([[np.pi / 2]])
+        x_base = np.array([0.5])
+        x_shifted = np.array([0.5 + 2 * np.pi])
 
-        y1 = kuramoto.post(x, mode=1)
-        y2 = kuramoto.post(x, mode=2)
-        y5 = kuramoto.post(x, mode=5)
+        y_base = kuramoto.pre(x_base)
+        y_shifted = kuramoto.pre(x_shifted)
 
-        expected1 = np.array([[1.0]])
-        expected2 = np.array([[0.5]])
-        expected5 = np.array([[0.2]])
-
-        np.testing.assert_allclose(y1, expected1, rtol=1e-6, atol=1e-8)
-        np.testing.assert_allclose(y2, expected2, rtol=1e-6, atol=1e-8)
-        np.testing.assert_allclose(y5, expected5, rtol=1e-6, atol=1e-8)
-
-    def test_kuramoto_periodicity(self):
-        """Test Kuramoto periodicity (2π period)."""
-        kuramoto = Kuramoto(a=np.array([1.0]))
-        x1 = np.array([[0.0]])
-        x2 = np.array([[2 * np.pi]])
-        x3 = np.array([[4 * np.pi]])
-
-        y1 = kuramoto.post(x1, mode=0)
-        y2 = kuramoto.post(x2, mode=0)
-        y3 = kuramoto.post(x3, mode=0)
-
-        np.testing.assert_allclose(y1, y2, rtol=1e-6, atol=1e-8)
-        np.testing.assert_allclose(y2, y3, rtol=1e-6, atol=1e-8)
+        np.testing.assert_allclose(y_base, y_shifted, rtol=1e-6, atol=1e-8)
 
     def test_kuramoto_multidimensional(self):
-        """Test Kuramoto handles multidimensional arrays."""
+        """Test Kuramoto handles multidimensional arrays with 1/N normalization."""
         kuramoto = Kuramoto(a=np.array([0.5]))
         x = np.random.randn(2, 5, 3)
-        y = kuramoto.post(x, mode=0)
-        expected = 0.5 * np.sin(x)
+        y = kuramoto.post(x)
+        N = x.shape[0]
+        expected = 0.5 / N * x
         np.testing.assert_allclose(y, expected, rtol=1e-6, atol=1e-8)
 
-    def test_kuramoto_pre_identity(self):
-        """Test Kuramoto.pre() returns input unchanged."""
+    def test_kuramoto_pre_sin_of_difference(self):
+        """Test Kuramoto.pre() returns sin(x_j - x_i) with both args."""
         kuramoto = Kuramoto(a=np.array([2.0]))
-        x = np.array([1.0, 2.0, 3.0])
-        result = kuramoto.pre(x)
-        np.testing.assert_array_equal(result, x)
+        x_j = np.array([np.pi / 2, np.pi])
+        x_i = np.array([0.0, np.pi / 2])
+        result = kuramoto.pre(x_j, x_i)
+        expected = np.sin(x_j - x_i)
+        np.testing.assert_array_almost_equal(result, expected)
+
+    def test_kuramoto_pre_sin_without_x_i(self):
+        """Test Kuramoto.pre() returns sin(x_j) when x_i is not provided."""
+        kuramoto = Kuramoto(a=np.array([2.0]))
+        x_j = np.array([0.0, np.pi / 2, np.pi, 3 * np.pi / 2, 2 * np.pi])
+        result = kuramoto.pre(x_j)
+        expected = np.sin(x_j)
+        np.testing.assert_array_almost_equal(result, expected)
 
     def test_kuramoto_formula(self):
-        """Verify Kuramoto implements correct formula: (a/N)*sin(x)."""
+        """Verify Kuramoto post() implements: a[:, None] / N * gx."""
         kuramoto = Kuramoto(a=np.array([2.0]))
-        x = np.array([[0.0, np.pi / 2, np.pi]])
-        result = kuramoto.post(x, mode=1)
-        expected = 2.0 * np.sin(x)
+        x = np.array([[1.0, 2.0, 3.0]])
+        result = kuramoto.post(x)
+        N = x.shape[0]  # = 1
+        expected = 2.0 / N * x
         np.testing.assert_array_almost_equal(result, expected)
 
 
@@ -141,15 +133,15 @@ class TestDifferenceCoupling:
     """Tests for :class:`~tvb.simulator.hybrid.coupling.Difference` (diffusive coupling: ``a*x``).
 
     Verifies various coupling strengths including zero and negative values,
-    and that ``pre()`` is the identity.
+    and that ``pre()`` computes ``x_j - x_i`` when both args provided.
     """
 
     def test_difference_default_parameters(self):
-        """Test Difference with default parameters (identity)."""
+        """Test Difference with default parameters (a=0.1)."""
         diff = Difference()
         x = np.array([[1.0, 2.0, 3.0]])
-        y = diff.post(x, mode=0)
-        expected = x
+        y = diff.post(x)
+        expected = 0.1 * x
         np.testing.assert_array_equal(y, expected)
 
     def test_difference_coupling_strength(self):
@@ -159,7 +151,7 @@ class TestDifferenceCoupling:
 
         for a_val in a_values:
             diff = Difference(a=np.array([a_val]))
-            y = diff.post(x, mode=0)
+            y = diff.post(x)
             expected = a_val * x
             np.testing.assert_allclose(y, expected, rtol=1e-6, atol=1e-8)
 
@@ -167,7 +159,7 @@ class TestDifferenceCoupling:
         """Test Difference with a=0 (should produce zeros)."""
         diff = Difference(a=np.array([0.0]))
         x = np.array([[1.0, 2.0, 3.0]])
-        y = diff.post(x, mode=0)
+        y = diff.post(x)
         expected = np.zeros_like(x)
         np.testing.assert_array_equal(y, expected)
 
@@ -175,7 +167,7 @@ class TestDifferenceCoupling:
         """Test Difference with negative coupling strength."""
         diff = Difference(a=np.array([-1.5]))
         x = np.array([[1.0, 2.0, 3.0]])
-        y = diff.post(x, mode=0)
+        y = diff.post(x)
         expected = -1.5 * x
         np.testing.assert_allclose(y, expected, rtol=1e-6, atol=1e-8)
 
@@ -183,22 +175,31 @@ class TestDifferenceCoupling:
         """Test Difference handles multidimensional arrays."""
         diff = Difference(a=np.array([2.0]))
         x = np.random.randn(3, 4, 5)
-        y = diff.post(x, mode=0)
+        y = diff.post(x)
         expected = 2.0 * x
         np.testing.assert_allclose(y, expected, rtol=1e-6, atol=1e-8)
 
-    def test_difference_pre_identity(self):
-        """Test Difference.pre() returns input unchanged."""
+    def test_difference_pre_with_both_args(self):
+        """Test Difference.pre() computes x_j - x_i when both args provided."""
         diff = Difference(a=np.array([2.0]))
-        x = np.array([1.0, 2.0, 3.0])
-        result = diff.pre(x)
-        np.testing.assert_array_equal(result, x)
+        x_j = np.array([4.0, 5.0, 6.0])
+        x_i = np.array([1.0, 2.0, 3.0])
+        result = diff.pre(x_j, x_i)
+        expected = x_j - x_i
+        np.testing.assert_array_equal(result, expected)
+
+    def test_difference_pre_x_j_only(self):
+        """Test Difference.pre() returns x_j when x_i is not provided."""
+        diff = Difference(a=np.array([2.0]))
+        x_j = np.array([1.0, 2.0, 3.0])
+        result = diff.pre(x_j)
+        np.testing.assert_array_equal(result, x_j)
 
     def test_difference_formula(self):
-        """Verify Difference implements correct formula: a*x."""
+        """Verify Difference post() implements: a[:, None] * gx."""
         diff = Difference(a=np.array([3.0]))
         x = np.array([[1.0, 2.0, 3.0]])
-        result = diff.post(x, mode=0)
+        result = diff.post(x)
         expected = 3.0 * x
         np.testing.assert_array_almost_equal(result, expected)
 
@@ -324,7 +325,7 @@ class TestSigmoidalJansenRitCoupling:
 
     def test_jansen_rit_default_parameters(self):
         """Test SigmoidalJansenRit with default parameters."""
-        jr_sigmoid = SigmoidalJansenRit()
+        jr_sigmoid = SigmoidalJansenRit(use_classic=0)
         x = np.array([[-10.0, 6.0, 20.0]])
         y = jr_sigmoid.pre(x, mode=0)
 
@@ -339,6 +340,7 @@ class TestSigmoidalJansenRitCoupling:
             e0=np.array([2.5]),
             r=np.array([0.56]),
             v0=np.array([6.0]),
+            use_classic=0,
         )
         x = np.array([[6.0]])
         y = jr_sigmoid.pre(x, mode=0)
@@ -351,7 +353,7 @@ class TestSigmoidalJansenRitCoupling:
         x = np.array([[20.0]])
 
         for a_val in a_values:
-            jr_sigmoid = SigmoidalJansenRit(a=np.array([a_val]))
+            jr_sigmoid = SigmoidalJansenRit(a=np.array([a_val]), use_classic=0)
             y = jr_sigmoid.pre(x, mode=0)
             expected = np.array([[5.0 * a_val]])  # Near 2*a*e0
             np.testing.assert_allclose(y, expected, rtol=1e-2, atol=1e-2)
@@ -362,7 +364,7 @@ class TestSigmoidalJansenRitCoupling:
         x = np.array([[20.0]])
 
         for e0_val in e0_values:
-            jr_sigmoid = SigmoidalJansenRit(e0=np.array([e0_val]))
+            jr_sigmoid = SigmoidalJansenRit(e0=np.array([e0_val]), use_classic=0)
             y = jr_sigmoid.pre(x, mode=0)
             expected = np.array([[2.0 * e0_val]])  # Near 2*e0
             np.testing.assert_allclose(y, expected, rtol=1e-2, atol=1e-2)
@@ -373,24 +375,30 @@ class TestSigmoidalJansenRitCoupling:
         x = np.array([[6.0, 7.0]])
 
         for r_val in r_values:
-            jr_sigmoid = SigmoidalJansenRit(r=np.array([r_val]))
+            jr_sigmoid = SigmoidalJansenRit(r=np.array([r_val]), use_classic=0)
             y = jr_sigmoid.pre(x, mode=0)
             assert y.shape == x.shape
+
+        # Value check for r=0.56: at x=v0=6.0 output should be ~2.5
+        jr_sigmoid = SigmoidalJansenRit(r=np.array([0.56]), use_classic=0)
+        y = jr_sigmoid.pre(x, mode=0)
+        expected = np.array([[2.5, 5.0 / (1.0 + np.exp(-0.56))]])
+        np.testing.assert_allclose(y, expected, rtol=1e-6, atol=1e-8)
 
     def test_jansen_rit_v0_parameter(self):
         """Test SigmoidalJansenRit v0 parameter (threshold)."""
         v0_values = [0.0, 6.0, 10.0]
 
         for v0_val in v0_values:
-            jr_sigmoid = SigmoidalJansenRit(v0=np.array([v0_val]))
+            jr_sigmoid = SigmoidalJansenRit(v0=np.array([v0_val]), use_classic=0)
             x = np.array([[v0_val]])
             y = jr_sigmoid.pre(x, mode=0)
             expected = np.array([[2.5]])  # At threshold, output = e0
             np.testing.assert_allclose(y, expected, rtol=1e-6, atol=1e-8)
 
     def test_jansen_rit_multidimensional(self):
-        """Test SigmoidalJansenRit handles multidimensional arrays."""
-        jr_sigmoid = SigmoidalJansenRit()
+        """Test SigmoidalJansenRit handles multidimensional arrays (legacy mode)."""
+        jr_sigmoid = SigmoidalJansenRit(use_classic=0)
         x = np.random.randn(2, 3, 4)
         y = jr_sigmoid.pre(x, mode=0)
         assert y.shape == x.shape
@@ -398,8 +406,8 @@ class TestSigmoidalJansenRitCoupling:
         assert np.all(y <= 5.0)  # Output <= 2*e0
 
     def test_jansen_rit_post_identity(self):
-        """Test SigmoidalJansenRit.post() returns input unchanged."""
-        jr_sigmoid = SigmoidalJansenRit()
+        """Test SigmoidalJansenRit.post() returns input unchanged (legacy mode)."""
+        jr_sigmoid = SigmoidalJansenRit(use_classic=0)
         x = np.array([1.0, 2.0, 3.0])
         result = jr_sigmoid.post(x)
         np.testing.assert_array_equal(result, x)
@@ -407,7 +415,8 @@ class TestSigmoidalJansenRitCoupling:
     def test_jansen_rit_formula(self):
         """Verify SigmoidalJansenRit implements correct formula."""
         jr_sigmoid = SigmoidalJansenRit(
-            a=np.array([2.0]), e0=np.array([3.0]), r=np.array([0.5]), v0=np.array([5.0])
+            a=np.array([2.0]), e0=np.array([3.0]), r=np.array([0.5]), v0=np.array([5.0]),
+            use_classic=0,
         )
         x = np.array([5.0])
         result = jr_sigmoid.pre(x.reshape(1, -1), mode=0)[0, :]
@@ -425,7 +434,10 @@ class TestPreSigmoidalCoupling:
 
     def test_pre_sigmoidal_default_parameters(self):
         """Test PreSigmoidal with default parameters."""
-        pre_sigmoid = PreSigmoidal()
+        pre_sigmoid = PreSigmoidal(dynamic=False,
+            H=np.array([1.0]), Q=np.array([0.0]), G=np.array([1.0]),
+            P=np.array([1.0]), theta=np.array([0.0]),
+        )
         x = np.array([[-10.0, 0.0, 10.0]])
         y = pre_sigmoid.pre(x, mode=0)
 
@@ -435,7 +447,7 @@ class TestPreSigmoidalCoupling:
 
     def test_pre_sigmoidal_at_threshold(self):
         """Test PreSigmoidal at threshold (x = theta)."""
-        pre_sigmoid = PreSigmoidal(
+        pre_sigmoid = PreSigmoidal(dynamic=False, 
             H=np.array([1.0]),
             Q=np.array([0.0]),
             G=np.array([1.0]),
@@ -449,7 +461,7 @@ class TestPreSigmoidalCoupling:
 
     def test_pre_sigmoidal_large_positive(self):
         """Test PreSigmoidal at large positive values."""
-        pre_sigmoid = PreSigmoidal(
+        pre_sigmoid = PreSigmoidal(dynamic=False, 
             H=np.array([1.0]),
             Q=np.array([0.0]),
             G=np.array([1.0]),
@@ -467,7 +479,7 @@ class TestPreSigmoidalCoupling:
         x = np.array([[10.0]])
 
         for q_val in q_values:
-            pre_sigmoid = PreSigmoidal(Q=np.array([q_val]))
+            pre_sigmoid = PreSigmoidal(dynamic=False, H=np.array([1.0]), Q=np.array([q_val]))
             y = pre_sigmoid.pre(x, mode=0)
             expected = np.array([[1.0 + q_val]])  # tanh(+inf) = 1
             np.testing.assert_allclose(y, expected, rtol=1e-2, atol=1e-2)
@@ -478,7 +490,7 @@ class TestPreSigmoidalCoupling:
         x = np.array([[10.0]])
 
         for h_val in h_values:
-            pre_sigmoid = PreSigmoidal(H=np.array([h_val]))
+            pre_sigmoid = PreSigmoidal(dynamic=False, Q=np.array([0.0]), H=np.array([h_val]))
             y = pre_sigmoid.pre(x, mode=0)
             expected = np.array([[h_val]])  # tanh(+inf) = 1, Q=0
             np.testing.assert_allclose(y, expected, rtol=1e-2, atol=1e-2)
@@ -489,9 +501,15 @@ class TestPreSigmoidalCoupling:
         x = np.array([[5.0]])
 
         for g_val in g_values:
-            pre_sigmoid = PreSigmoidal(G=np.array([g_val]))
+            pre_sigmoid = PreSigmoidal(dynamic=False, H=np.array([1.0]), Q=np.array([0.0]), G=np.array([g_val]))
             y = pre_sigmoid.pre(x, mode=0)
             assert y.shape == x.shape
+
+        # Value check for g=1.0: H*(Q+tanh(G*(P*x-theta))) at x=5.0 (default theta=0.5)
+        pre_sigmoid = PreSigmoidal(dynamic=False, H=np.array([1.0]), Q=np.array([0.0]), G=np.array([1.0]))
+        y = pre_sigmoid.pre(x, mode=0)
+        expected = np.array([[np.tanh(1.0 * (1.0 * 5.0 - 0.5))]])
+        np.testing.assert_allclose(y, expected, rtol=1e-6, atol=1e-8)
 
     def test_pre_sigmoidal_projection_p(self):
         """Test PreSigmoidal projection parameter (P)."""
@@ -499,16 +517,22 @@ class TestPreSigmoidalCoupling:
         x = np.array([[5.0]])
 
         for p_val in p_values:
-            pre_sigmoid = PreSigmoidal(P=np.array([p_val]))
+            pre_sigmoid = PreSigmoidal(dynamic=False, H=np.array([1.0]), Q=np.array([0.0]), G=np.array([1.0]), P=np.array([p_val]))
             y = pre_sigmoid.pre(x, mode=0)
             assert y.shape == x.shape
+
+        # Value check for P=1.0: H*(Q+tanh(G*(P*x-theta))) at x=5.0 (default theta=0.5)
+        pre_sigmoid = PreSigmoidal(dynamic=False, H=np.array([1.0]), Q=np.array([0.0]), G=np.array([1.0]), P=np.array([1.0]))
+        y = pre_sigmoid.pre(x, mode=0)
+        expected = np.array([[np.tanh(1.0 * (1.0 * 5.0 - 0.5))]])
+        np.testing.assert_allclose(y, expected, rtol=1e-6, atol=1e-8)
 
     def test_pre_sigmoidal_threshold_theta(self):
         """Test PreSigmoidal threshold parameter (theta)."""
         theta_values = [0.0, 5.0, 10.0]
 
         for theta_val in theta_values:
-            pre_sigmoid = PreSigmoidal(theta=np.array([theta_val]))
+            pre_sigmoid = PreSigmoidal(dynamic=False, H=np.array([1.0]), Q=np.array([0.0]), G=np.array([1.0]), P=np.array([1.0]), theta=np.array([theta_val]))
             x = np.array([[theta_val]])
             y = pre_sigmoid.pre(x, mode=0)
             expected = np.array([[0.0]])  # At threshold, tanh(0) = 0
@@ -516,21 +540,24 @@ class TestPreSigmoidalCoupling:
 
     def test_pre_sigmoidal_multidimensional(self):
         """Test PreSigmoidal handles multidimensional arrays."""
-        pre_sigmoid = PreSigmoidal()
+        pre_sigmoid = PreSigmoidal(dynamic=False,
+            H=np.array([1.0]), Q=np.array([0.0]), G=np.array([1.0]),
+            P=np.array([1.0]), theta=np.array([0.0]),
+        )
         x = np.random.randn(2, 3, 4)
         y = pre_sigmoid.pre(x, mode=0)
         assert y.shape == x.shape
 
     def test_pre_sigmoidal_post_identity(self):
         """Test PreSigmoidal.post() returns input unchanged."""
-        pre_sigmoid = PreSigmoidal()
+        pre_sigmoid = PreSigmoidal(dynamic=False)
         x = np.array([1.0, 2.0, 3.0])
         result = pre_sigmoid.post(x)
         np.testing.assert_array_equal(result, x)
 
     def test_pre_sigmoidal_formula(self):
         """Verify PreSigmoidal implements correct formula."""
-        pre_sigmoid = PreSigmoidal(
+        pre_sigmoid = PreSigmoidal(dynamic=False, 
             H=np.array([2.0]),
             Q=np.array([1.0]),
             G=np.array([0.5]),
@@ -621,7 +648,7 @@ class TestCouplingIntegrationExtended:
         from tvb.simulator.hybrid.projection_utils import create_intra_projection
 
         weights = sp.csr_matrix(np.eye(2))
-        coupling = SigmoidalJansenRit()
+        coupling = SigmoidalJansenRit(use_classic=0)
         proj = create_intra_projection(
             subnet=simple_subnet,
             source_cvar=[0],
@@ -637,7 +664,7 @@ class TestCouplingIntegrationExtended:
         from tvb.simulator.hybrid.projection_utils import create_intra_projection
 
         weights = sp.csr_matrix(np.eye(2))
-        coupling = PreSigmoidal()
+        coupling = PreSigmoidal(dynamic=False, H=np.array([1.0]), Q=np.array([0.0]), G=np.array([1.0]), P=np.array([1.0]), theta=np.array([0.0]))
         proj = create_intra_projection(
             subnet=simple_subnet,
             source_cvar=[0],
@@ -712,7 +739,7 @@ class TestCouplingEdgeCases:
         """Test Kuramoto with zero strength."""
         kuramoto = Kuramoto(a=np.array([0.0]))
         x = np.array([[1.0, 2.0, 3.0]])
-        y = kuramoto.post(x, mode=0)
+        y = kuramoto.post(x)
         expected = np.zeros_like(x)
         np.testing.assert_array_equal(y, expected)
 
@@ -720,7 +747,7 @@ class TestCouplingEdgeCases:
         """Test Difference with zero strength."""
         diff = Difference(a=np.array([0.0]))
         x = np.array([[1.0, 2.0, 3.0]])
-        y = diff.post(x, mode=0)
+        y = diff.post(x)
         expected = np.zeros_like(x)
         np.testing.assert_array_equal(y, expected)
 
@@ -734,7 +761,7 @@ class TestCouplingEdgeCases:
 
     def test_jansen_rit_zero_amplitude(self):
         """Test SigmoidalJansenRit with zero amplitude."""
-        jr_sigmoid = SigmoidalJansenRit(a=np.array([0.0]))
+        jr_sigmoid = SigmoidalJansenRit(a=np.array([0.0]), use_classic=0)
         x = np.array([[1.0, 2.0, 3.0]])
         y = jr_sigmoid.pre(x, mode=0)
         expected = np.zeros_like(x)
@@ -742,7 +769,7 @@ class TestCouplingEdgeCases:
 
     def test_pre_sigmoidal_zero_amplitude(self):
         """Test PreSigmoidal with zero amplitude."""
-        pre_sigmoid = PreSigmoidal(H=np.array([0.0]))
+        pre_sigmoid = PreSigmoidal(dynamic=False, Q=np.array([0.0]), H=np.array([0.0]))
         x = np.array([[1.0, 2.0, 3.0]])
         y = pre_sigmoid.pre(x, mode=0)
         expected = np.zeros_like(x)
@@ -757,7 +784,7 @@ class TestCouplingEdgeCases:
 
     def test_pre_sigmoidal_zero_gain(self):
         """Test PreSigmoidal with zero gain."""
-        pre_sigmoid = PreSigmoidal(G=np.array([0.0]))
+        pre_sigmoid = PreSigmoidal(dynamic=False, H=np.array([1.0]), Q=np.array([0.0]), G=np.array([0.0]))
         x = np.array([[1.0, 2.0, 3.0]])
         y = pre_sigmoid.pre(x, mode=0)
         expected = np.array([[0.0, 0.0, 0.0]])  # Q=0, tanh(-theta) ~ 0 for theta>0

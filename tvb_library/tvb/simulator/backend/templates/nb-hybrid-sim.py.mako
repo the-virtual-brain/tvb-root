@@ -17,7 +17,7 @@ import numba as nb
 sin, cos, exp, log = math.sin, math.cos, math.exp, math.log
 
 <%
-from tvb.simulator.backend.nb_hybrid import NetworkAnalysis, _cfun_type, _cvar_mapping_mode
+from tvb.simulator.backend.nb_hybrid import NetworkAnalysis, _cfun_type, _cvar_mapping_mode, _needs_xi, _n_src_cvar_pre
 from tvb.simulator.integrators import HeunDeterministic, EulerDeterministic
 subnets = analysis.subnetworks
 inter_projs = analysis.inter_projections
@@ -39,8 +39,24 @@ source_horizons_map = analysis.source_horizons
     is_inter = p.is_inter
     mono_src = (nsrc_m == 1)
     mono_tgt = (ntgt_m == 1)
-    pre_ct = ct if ct in ('sigmoidal_jr', 'tanh', 'pre_sigmoidal') else 'none'
-    post_ct = ct if ct not in ('sigmoidal_jr', 'tanh', 'pre_sigmoidal', 'none') else 'none'
+    # pre_ct: coupling functions that apply PER-EDGE before weighting
+    if ct in ('sigmoidal_jr', 'sigmoidal_jr_legacy', 'tanh', 'pre_sigmoidal', 'pre_sigmoidal_dynamic', 'difference', 'kuramoto'):
+        pre_ct = ct
+    else:
+        pre_ct = 'none'
+    # post_ct: coupling functions that apply AFTER weighted sum
+    if ct == 'linear':
+        post_ct = 'linear'
+    elif ct in ('scaling', 'difference'):
+        post_ct = 'scaling'
+    elif ct == 'sigmoidal':
+        post_ct = 'sigmoidal'
+    elif ct == 'kuramoto':
+        post_ct = 'kuramoto_norm'  # a * (1/N) * wsum — sin is now in pre
+    else:
+        post_ct = 'none'
+    needs_xi = _needs_xi(p)
+    is_multi_cvar = (ct in ('sigmoidal_jr', 'pre_sigmoidal_dynamic'))
 %>
 
 ${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
@@ -56,6 +72,7 @@ def compute_coupling_${p.name}(
     scale,
     target_scales,
     cfun_params,
+    tgt_state,
     t,
     tgt,
 ):
@@ -79,24 +96,49 @@ def compute_coupling_${p.name}(
                 edge_val = srcbuf[cv, src_node, 0, buf_idx]
                 # Apply pre() PER-EDGE before weighting
                 % if pre_ct == 'sigmoidal_jr':
+                # Classic: cmin + (cmax-cmin)/(1+exp(r*(midpoint-diff)))
+                # cfun_params: [0]=a, [1]=cmin, [2]=cmax, [3]=r, [4]=midpoint
+                cv0 = source_cvar[0]
+                cv1 = source_cvar[1]
+                x0 = srcbuf[cv0, src_node, 0, buf_idx]
+                x1 = srcbuf[cv1, src_node, 0, buf_idx]
+                edge_val = cfun_params[1] + (cfun_params[2] - cfun_params[1]) / (nb.float32(1.0) + exp(cfun_params[3] * (cfun_params[4] - (x0 - x1))))
+                % elif pre_ct == 'sigmoidal_jr_legacy':
+                # Legacy: a * 2*e0 / (1+exp(r*(v0-x)))
+                # cfun_params: [0]=a, [1]=e0, [2]=r, [3]=v0
                 edge_val = cfun_params[0] * nb.float32(2.0) * cfun_params[1] / (nb.float32(1.0) + exp(cfun_params[2] * (cfun_params[3] - edge_val)))
                 % elif pre_ct == 'tanh':
-                edge_val = cfun_params[0] * (nb.float32(1.0) + nb.float32(math.tanh((edge_val - cfun_params[1]) / cfun_params[2])))
+                edge_val = cfun_params[0] * (nb.float32(1.0) + nb.float32(math.tanh((cfun_params[1] * edge_val - cfun_params[2]) / cfun_params[3])))
                 % elif pre_ct == 'pre_sigmoidal':
                 edge_val = cfun_params[0] * (cfun_params[1] + nb.float32(math.tanh(cfun_params[2] * (cfun_params[3] * edge_val - cfun_params[4]))))
+                % elif pre_ct == 'pre_sigmoidal_dynamic':
+                # Dynamic: H*(Q + tanh(G*(P*x_j[0] - x_j[1])))
+                # cfun_params: [0]=H, [1]=Q, [2]=G, [3]=P
+                cv0 = source_cvar[0]
+                cv1 = source_cvar[1]
+                x0 = srcbuf[cv0, src_node, 0, buf_idx]
+                x1 = srcbuf[cv1, src_node, 0, buf_idx]
+                edge_val = cfun_params[0] * (cfun_params[1] + nb.float32(math.tanh(cfun_params[2] * (cfun_params[3] * x0 - x1))))
+                % elif pre_ct == 'difference':
+                xi_val = tgt_state[target_cvar[ic], j, 0]
+                edge_val = edge_val - xi_val
+                % elif pre_ct == 'kuramoto':
+                xi_val = tgt_state[target_cvar[ic], j, 0]
+                edge_val = sin(edge_val - xi_val)
                 % endif
                 wsum += w * edge_val
-            # pre already applied per-edge; now scale and post
-            wsum *= scale
+            # pre already applied per-edge; now post then scale
             % if post_ct == "linear":
             wsum = cfun_params[0] * wsum + cfun_params[1]
             % elif post_ct == "scaling":
             wsum = cfun_params[0] * wsum
             % elif post_ct == "sigmoidal":
             wsum = cfun_params[3] + (cfun_params[4] - cfun_params[3]) / (nb.float32(1.0) + exp(-cfun_params[0] * ((wsum - cfun_params[2]) / cfun_params[1])))
-            % elif post_ct == "kuramoto":
-            wsum = cfun_params[0] * sin(wsum)
+            % elif post_ct == "kuramoto_norm":
+            # a * (1/N) * wsum — sin is now applied per-edge in pre
+            wsum = cfun_params[0] * cfun_params[1] * wsum
             % endif
+            wsum *= scale
 
             ## accumulate into target (mono_src)
             % if is_inter:
@@ -155,16 +197,38 @@ def compute_coupling_${p.name}(
                     edge_val = srcbuf[cv, src_node, m, buf_idx]
                     # Apply pre() per-edge
                     % if pre_ct == 'sigmoidal_jr':
+                    # Classic: cmin + (cmax-cmin)/(1+exp(r*(midpoint-diff)))
+                    # cfun_params: [0]=a, [1]=cmin, [2]=cmax, [3]=r, [4]=midpoint
+                    cv0 = source_cvar[0]
+                    cv1 = source_cvar[1]
+                    x0 = srcbuf[cv0, src_node, m, buf_idx]
+                    x1 = srcbuf[cv1, src_node, m, buf_idx]
+                    edge_val = cfun_params[1] + (cfun_params[2] - cfun_params[1]) / (nb.float32(1.0) + exp(cfun_params[3] * (cfun_params[4] - (x0 - x1))))
+                    % elif pre_ct == 'sigmoidal_jr_legacy':
+                    # Legacy: a * 2*e0 / (1+exp(r*(v0-x)))
+                    # cfun_params: [0]=a, [1]=e0, [2]=r, [3]=v0
                     edge_val = cfun_params[0] * nb.float32(2.0) * cfun_params[1] / (nb.float32(1.0) + exp(cfun_params[2] * (cfun_params[3] - edge_val)))
                     % elif pre_ct == 'tanh':
-                    edge_val = cfun_params[0] * (nb.float32(1.0) + nb.float32(math.tanh((edge_val - cfun_params[1]) / cfun_params[2])))
+                    edge_val = cfun_params[0] * (nb.float32(1.0) + nb.float32(math.tanh((cfun_params[1] * edge_val - cfun_params[2]) / cfun_params[3])))
                     % elif pre_ct == 'pre_sigmoidal':
                     edge_val = cfun_params[0] * (cfun_params[1] + nb.float32(math.tanh(cfun_params[2] * (cfun_params[3] * edge_val - cfun_params[4]))))
+                    % elif pre_ct == 'pre_sigmoidal_dynamic':
+                    # Dynamic: H*(Q + tanh(G*(P*x_j[0] - x_j[1])))
+                    # cfun_params: [0]=H, [1]=Q, [2]=G, [3]=P
+                    cv0 = source_cvar[0]
+                    cv1 = source_cvar[1]
+                    x0 = srcbuf[cv0, src_node, m, buf_idx]
+                    x1 = srcbuf[cv1, src_node, m, buf_idx]
+                    edge_val = cfun_params[0] * (cfun_params[1] + nb.float32(math.tanh(cfun_params[2] * (cfun_params[3] * x0 - x1))))
+                    % elif pre_ct == 'difference':
+                    xi_val = tgt_state[target_cvar[ic], j, m]
+                    edge_val = edge_val - xi_val
+                    % elif pre_ct == 'kuramoto':
+                    xi_val = tgt_state[target_cvar[ic], j, m]
+                    edge_val = sin(edge_val - xi_val)
                     % endif
                     wsum[m] += w * edge_val
-            # pre already applied per-edge; scale and post
-            for m in range(${nsrc_m}):
-                wsum[m] *= scale
+            # pre already applied per-edge; post then scale
             % if post_ct == "linear":
             for m in range(${nsrc_m}):
                 wsum[m] = cfun_params[0] * wsum[m] + cfun_params[1]
@@ -174,10 +238,13 @@ def compute_coupling_${p.name}(
             % elif post_ct == "sigmoidal":
             for m in range(${nsrc_m}):
                 wsum[m] = cfun_params[3] + (cfun_params[4] - cfun_params[3]) / (nb.float32(1.0) + exp(-cfun_params[0] * ((wsum[m] - cfun_params[2]) / cfun_params[1])))
-            % elif post_ct == "kuramoto":
+            % elif post_ct == "kuramoto_norm":
             for m in range(${nsrc_m}):
-                wsum[m] = cfun_params[0] * sin(wsum[m])
+                # a * (1/N) * wsum — sin is now applied per-edge in pre
+                wsum[m] = cfun_params[0] * cfun_params[1] * wsum[m]
             % endif
+            for m in range(${nsrc_m}):
+                wsum[m] *= scale
 
             ## accumulate into target (general)
             % if is_inter:
@@ -719,6 +786,7 @@ def network_chunk(
             ${p.name}_source_cvar, ${p.name}_target_cvar,
             ${p.name}_scale, ${p.name}_target_scales,
             ${p.name}_cfun_params,
+            ${p.target_subnet}_state,
             t,
             ${p.target_subnet}_c,
         )
@@ -733,6 +801,7 @@ def network_chunk(
             ${p.name}_source_cvar, ${p.name}_target_cvar,
             ${p.name}_scale, ${p.name}_target_scales,
             ${p.name}_cfun_params,
+            ${p.target_subnet}_state,
             t,
             ${p.target_subnet}_c,
         )

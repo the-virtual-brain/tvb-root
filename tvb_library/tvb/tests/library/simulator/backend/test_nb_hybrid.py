@@ -644,6 +644,28 @@ class TestNbHybridCfunExtended(unittest.TestCase):
             err_msg="Difference cfun: Numba differs from Python",
         )
 
+    def test_difference_cfun_per_edge(self):
+        """Difference cfun: Numba computes x_j - x_i per-edge matching Python."""
+        from tvb.simulator.hybrid.coupling import Difference
+        cfun = Difference(a=np.array([0.3]))
+        py, nb = self._run_both(cfun)
+        self.assertEqual(py.shape, nb.shape)
+        np.testing.assert_allclose(
+            nb, py, rtol=1e-3, atol=1e-4,
+            err_msg="Difference cfun: Numba per-edge differs from Python",
+        )
+
+    def test_kuramoto_cfun_per_edge(self):
+        """Kuramoto cfun: Numba computes sin(x_j-x_i) per-edge matching Python."""
+        from tvb.simulator.hybrid.coupling import Kuramoto as KuramotoCfun
+        cfun = KuramotoCfun(a=np.array([0.3]))
+        py, nb = self._run_both(cfun)
+        self.assertEqual(py.shape, nb.shape)
+        np.testing.assert_allclose(
+            nb, py, rtol=1e-3, atol=1e-4,
+            err_msg="Kuramoto cfun: Numba per-edge differs from Python",
+        )
+
     def test_tanh_cfun(self):
         from tvb.simulator.hybrid.coupling import HyperbolicTangent
         cfun = HyperbolicTangent(a=np.array([0.5]), midpoint=np.array([0.0]), sigma=np.array([1.0]))
@@ -659,6 +681,7 @@ class TestNbHybridCfunExtended(unittest.TestCase):
         cfun = PreSigmoidal(
             H=np.array([0.5]), Q=np.array([0.0]), G=np.array([1.0]),
             P=np.array([1.0]), theta=np.array([0.0]),
+            dynamic=False,
         )
         py, nb = self._run_both(cfun)
         self.assertEqual(py.shape, nb.shape)

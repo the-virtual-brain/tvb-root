@@ -267,7 +267,7 @@ class Subnetwork(t.HasTraits):
         # Buffer updates happen AFTER integration in NetworkSet.step()
         # to match classic TVB which stores post-integration state.
         for p in self.projections:
-            p.apply(internal_c, step, self.model.number_of_modes)
+            p.apply(internal_c, step, self.model.number_of_modes, x_i=x)
 
         return internal_c
 

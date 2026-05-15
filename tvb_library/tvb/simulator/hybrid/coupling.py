@@ -41,24 +41,32 @@ For a projection from source subnetwork to target subnetwork, the
 ``BaseProjection.apply()`` pipeline is:
 
 1. Extract delayed states from source: x_j(t - τ_ij)
-2. Multiply by sparse weights: w_ij * x_j
-3. Sum afferents per target node: s_i = Σ_j w_ij * x_j
-4. Apply pre-scaling coupling:  s_i ← cfun.pre(s_i)   [optional]
-5. Apply projection scale:      s_i ← scale * s_i
-6. Apply post-scaling coupling: s_i ← cfun.post(s_i)  [optional]
+2. Apply pre-scaling coupling:       cfun.pre(x_j, x_i) [optional]
+   - x_i is the current target state (when available)
+   - For Difference/Kuramoto, pre computes x_j - x_i / sin(x_j - x_i)
+   - When x_i is unavailable, pre falls back to identity / sin(x_j)
+3. Multiply by sparse weights:       w_ij * pre(x_j, x_i)
+4. Sum afferents per target node:    s_i = Σ_j w_ij * pre(x_j, x_i)
+5. Apply projection scale:           s_i ← scale * s_i
+6. Apply post-scaling coupling:      s_i ← cfun.post(s_i)  [optional]
 
 The labels ``pre`` and ``post`` therefore refer to whether the
 transformation is applied *before* or *after* the scalar ``scale``
-factor, not relative to the weighted summation.  All coupling classes
-currently implement their main logic in ``post()``; ``pre()`` is the
-identity in every concrete subclass and is provided as an extension point.
+factor, not relative to the weighted summation.  ``post()`` is the
+main hook for most coupling classes.  ``pre()`` is used by coupling
+functions that require access to both source and target activity
+(e.g., Difference, Kuramoto) to compute relative quantities.
 
-The base Coupling class provides pre() and post() methods that can be
-overridden to implement specific coupling behaviors.
+The base ``Coupling`` class provides default ``pre(x_j, x_i=None)``
+and ``post(x)`` methods.  ``pre()`` accepts an optional second argument
+``x_i`` for coupling functions that depend on both source and target
+states.  When ``x_i`` is not provided, ``pre()`` returns ``x_j``
+unchanged.
 
 """
 
 import numpy as np
+import warnings
 import tvb.basic.neotraits.api as t
 
 
@@ -69,8 +77,9 @@ class Coupling(t.HasTraits):
     hooks that ``BaseProjection.apply()`` calls around the scalar ``scale``
     factor:
 
-    * ``pre(x)``  — called on the *already-summed* weighted afferent, before
-      multiplication by ``scale``.
+    * ``pre(x_j, x_i=None)`` — called on the source (afferent) activity,
+      optionally using the target state to compute relative quantities.
+      Applied before multiplication by ``scale``.
     * ``post(x)`` — called on the scaled afferent, immediately before the
       result is accumulated into the target coupling array.
 
@@ -80,10 +89,12 @@ class Coupling(t.HasTraits):
 
     Methods
     -------
-    pre(x) : ndarray
+    pre(x_j, x_i=None) : ndarray
         Apply pre-synaptic coupling transformation to afferent activity.
-        Default: returns input unchanged (identity).
-
+        When ``x_i`` is provided, coupling functions like Difference and
+        Kuramoto can compute relative quantities (e.g., ``x_j - x_i``,
+        ``sin(x_j - x_i)``).  Default: returns ``x_j`` unchanged.
+    
     post(x) : ndarray
         Apply post-synaptic coupling transformation to summed afferent activity.
         Default: returns input unchanged (identity).
@@ -120,20 +131,24 @@ class Coupling(t.HasTraits):
     tvb.simulator.coupling : Classic TVB coupling functions for reference
     """
 
-    def pre(self, x):
+    def pre(self, x_j, x_i=None):
         """Apply pre-synaptic coupling transformation.
 
         Parameters
         ----------
-        x : ndarray
-            Afferent activity from source nodes. Shape depends on projection.
+        x_j : ndarray
+            Afferent (source) activity. Shape depends on projection.
+        x_i : ndarray, optional
+            Target (local) activity. Required for Difference and Kuramoto
+            coupling where the transformation depends on both source and
+            target states.
 
         Returns
         -------
         ndarray
             Transformed afferent activity. Same shape as input.
         """
-        return x
+        return x_j
 
     def post(self, x):
         """Apply post-synaptic coupling transformation.
@@ -453,17 +468,21 @@ class Kuramoto(Coupling):
     The sine function provides a smooth, periodic interaction that tends to
     synchronize oscillators.
 
-    The transformation is applied post-summation:
+    In the classic TVB framework, the pre-synaptic transformation computes
+    the sine of the phase difference between source and target:
 
     .. math::
-        y = \\frac{a}{N} \\cdot \\sin(x)
+        \\mathrm{pre}(x_j, x_i) = \\sin(x_j - x_i)
 
-    where N is the number of modes (typically 1 for hybrid models).
+    After weighted summation, the post-synaptic transformation applies scaling:
+
+    .. math::
+        \\mathrm{post}(gx) = a \\cdot gx
 
     Parameters
     ----------
     a : float or ndarray, default=1.0
-        Coupling strength. Multiplies the sine of the summed afferent activity.
+        Coupling strength. Multiplies the summed afferent activity.
 
     Attributes
     ----------
@@ -474,19 +493,27 @@ class Kuramoto(Coupling):
     --------
     >>> # Default coupling
     >>> kuramoto = Kuramoto()
-    >>> kuramoto.post(np.array([0.0, np.pi/2, np.pi]))
-    array([0., 1., 0.])
+    >>> kuramoto.post(np.array([0.0, 0.5]))
+    array([0., 0.5])
 
     >>> # Custom coupling strength
     >>> kuramoto = Kuramoto(a=np.array([0.5]))
-    >>> kuramoto.post(np.array([np.pi/2]))
-    array([0.5])
+    >>> kuramoto.post(np.array([0.0, 0.5]))
+    array([0. , 0.25])
+
+    >>> # With both source and target activity
+    >>> kuramoto = Kuramoto()
+    >>> kuramoto.pre(np.array([np.pi/2, np.pi]), np.array([0.0, 0.0]))
+    array([1., 0.])
 
     Notes
     -----
-    - This is a post-synaptic coupling function (applied after summation).
-    - The Kuramoto coupling is widely used in synchronization studies.
-    - For N modes > 1, the coupling is normalized by 1/N.
+    - The ``pre()`` method requires both ``x_j`` (source) and ``x_i`` (target)
+      to compute the phase difference.  When only ``x_j`` is provided,
+      ``pre()`` returns ``sin(x_j)``.
+    - The ``post()`` method applies ``a[:, None] / N * gx`` with
+      ``N = gx.shape[0]``, matching classic TVB's normalization by the
+      number of coupling variables.
 
     References
     ----------
@@ -506,40 +533,53 @@ class Kuramoto(Coupling):
         doc="Coupling strength for the sine function.",
     )
 
-    def pre(self, x):
-        """Apply pre-synaptic coupling (identity for Kuramoto).
+    def pre(self, x_j, x_i=None):
+        """Compute the sine of the phase difference between source and target.
 
         Parameters
         ----------
-        x : ndarray
-            Input afferent activity.
+        x_j : ndarray
+            Afferent (source) activity.
+        x_i : ndarray, optional
+            Target (local) activity.  When provided, returns
+            ``sin(x_j - x_i)``.  When *None*, returns ``sin(x_j)``.
 
         Returns
         -------
         ndarray
-            Unchanged input.
+            ``sin(x_j - x_i)`` when ``x_i`` is provided, otherwise
+            ``sin(x_j)``.
         """
-        return x
+        if x_i is None:
+            return np.sin(x_j)
+        return np.sin(x_j - x_i)
 
-    def post(self, x, mode=0):
-        """Apply post-synaptic Kuramoto coupling: (a/N) * sin(x).
+    def post(self, gx):
+        """Apply post-synaptic Kuramoto coupling: a / N * gx.
 
         Parameters
         ----------
-        x : ndarray
-            Input summed afferent activity.
-        mode : int, default=0
-            Number of modes for normalization. If mode > 1, coupling is
-            normalized by 1/mode.
+        gx : ndarray
+            Input summed afferent activity.  Shape
+            ``(n_cvar, n_nodes, n_modes)`` where ``n_cvar`` is the
+            number of coupling variables.
 
         Returns
         -------
         ndarray
-            Transformed activity: (a / mode) * sin(x).
+            Transformed activity: ``a[:, None] / N * gx`` where
+            ``N = gx.shape[0]`` is the number of coupling variables.
+
+        Notes
+        -----
+        This matches classic TVB's ``Kuramoto.post(gx)`` which
+        normalizes by ``gx.shape[0]`` (the number of coupling
+        variables).  In the common case ``N = 1`` so the normalization
+        has no effect, but for multi-mode or multi-cvar projections
+        it ensures the coupling strength is correctly distributed.
         """
-        if mode is not None and mode > 1:
-            return self.a[:, None] * np.sin(x) / mode
-        return self.a[:, None] * np.sin(x)
+        N = gx.shape[0]
+        return self.a[:, None] / N * gx
 
 
 class Difference(Coupling):
@@ -549,42 +589,56 @@ class Difference(Coupling):
     It tends to equalize values across nodes, leading to diffusion-like
     dynamics.
 
-    The transformation is applied post-summation:
+    In the classic TVB framework, the pre-synaptic transformation computes
+    the difference between source and target activity:
 
     .. math::
-        y = a \\cdot (x_j - x_i) = a \\cdot x
+        \\mathrm{pre}(x_j, x_i) = x_j - x_i
 
-    where in the hybrid framework, x represents the weighted sum of
-    differences from incoming connections.
+    After weighted summation, the post-synaptic transformation applies scaling:
+
+    .. math::
+        \\mathrm{post}(gx) = a \\cdot gx
+
+    .. versionchanged:: 2.8
+        The default coupling strength ``a`` changed from ``1.0`` to ``0.1``
+        to match the classic TVB ``Difference`` coupling.
 
     Parameters
     ----------
-    a : float or ndarray, default=1.0
+    a : float or ndarray, default=0.1
         Coupling strength. Multiplies the summed afferent activity.
 
     Attributes
     ----------
     a : NArray
-        Coupling strength with domain [0.0, 10.0] and default 1.0.
+        Coupling strength with domain [0.0, 10.0] and default 0.1.
 
     Examples
     --------
-    >>> # Default coupling (identity-like)
+    >>> # Default coupling
     >>> diff = Difference()
     >>> diff.post(np.array([1.0, 2.0, 3.0]))
-    array([1., 2., 3.])
+    array([0.1, 0.2, 0.3])
 
     >>> # Custom coupling strength
     >>> diff = Difference(a=np.array([0.5]))
     >>> diff.post(np.array([1.0, 2.0, 3.0]))
     array([0.5, 1. , 1.5])
 
+    >>> # With both source and target activity
+    >>> diff = Difference()
+    >>> diff.pre(np.array([2.0, 3.0]), np.array([1.0, 1.0]))
+    array([1., 2.])
+
     Notes
     -----
-    - This is a post-synaptic coupling function (applied after summation).
-    - Diffusive coupling is widely used in wave propagation studies.
-    - In the hybrid framework, the weighted sum already represents
-      the difference between incoming afferent and local state.
+    - The ``pre()`` method requires both ``x_j`` (source) and ``x_i`` (target)
+      to compute the difference.  When only ``x_j`` is provided, ``pre()``
+      returns ``x_j`` unchanged (identity), which is only correct if the
+      weighted summation already encodes the difference.
+    - This matches the classic TVB ``Difference`` coupling semantics where
+      ``pre(x_i, x_j) = x_j - x_i`` followed by ``post(gx) = a * gx``.
 
     See Also
     --------
@@ -594,42 +648,45 @@ class Difference(Coupling):
 
     a = t.NArray(
         label=r":math:`a`",
-        default=np.array([1.0]),
+        default=np.array([0.1]),
         domain=t.Range(lo=0.0, hi=10.0, step=0.01),
         doc="Coupling strength for diffusive coupling.",
     )
 
-    def pre(self, x):
-        """Apply pre-synaptic coupling (identity for Difference).
+    def pre(self, x_j, x_i=None):
+        """Compute the difference between source and target activity.
 
         Parameters
         ----------
-        x : ndarray
-            Input afferent activity.
+        x_j : ndarray
+            Afferent (source) activity.
+        x_i : ndarray, optional
+            Target (local) activity.  When provided, returns ``x_j - x_i``.
+            When *None*, returns ``x_j`` unchanged (identity).
 
         Returns
         -------
         ndarray
-            Unchanged input.
+            ``x_j - x_i`` when ``x_i`` is provided, otherwise ``x_j``.
         """
-        return x
+        if x_i is None:
+            return x_j
+        return x_j - x_i
 
-    def post(self, x, mode=0):
-        """Apply post-synaptic diffusive coupling: a * x.
+    def post(self, gx):
+        """Apply post-synaptic diffusive coupling: a * gx.
 
         Parameters
         ----------
-        x : ndarray
+        gx : ndarray
             Input summed afferent activity (weighted sum of differences).
-        mode : int, default=0
-            Number of modes (not used in diffusive coupling).
 
         Returns
         -------
         ndarray
-            Transformed activity: a * x.
+            Transformed activity: a[:, None] * gx.
         """
-        return self.a[:, None] * x
+        return self.a[:, None] * gx
 
 
 class HyperbolicTangent(Coupling):
@@ -642,12 +699,14 @@ class HyperbolicTangent(Coupling):
     The transformation is applied pre-summation:
 
     .. math::
-        y = a \\cdot \\left(1 + \\tanh\\left(\\frac{x - \\text{midpoint}}{\\sigma}\\right)\\right)
+        y = a \\cdot \\left(1 + \\tanh\\left(\\frac{b \\cdot x - \\text{midpoint}}{\\sigma}\\right)\\right)
 
     Parameters
     ----------
     a : float or ndarray, default=1.0
         Amplitude. Multiplies the tanh function.
+    b : float or ndarray, default=1.0
+        Input scaling factor. Scales the input before applying tanh.
     midpoint : float or ndarray, default=0.0
         Center of the tanh function (inflection point).
     sigma : float or ndarray, default=1.0
@@ -657,6 +716,8 @@ class HyperbolicTangent(Coupling):
     ----------
     a : NArray
         Amplitude with domain [0.0, 10.0] and default 1.0.
+    b : NArray
+        Input scaling factor with domain [-1.0, 10.0] and default 1.0.
     midpoint : NArray
         Center of the tanh, domain [-1000.0, 1000.0], default 0.0.
     sigma : NArray
@@ -714,6 +775,23 @@ class HyperbolicTangent(Coupling):
         doc="Width/slope of the tanh function.",
     )
 
+    b = t.NArray(
+        label=r":math:`b`",
+        default=np.array([1.0]),
+        domain=t.Range(lo=-1.0, hi=10.0, step=0.01),
+        doc="Input scaling factor.",
+    )
+
+    def __init__(self, a=None, b=None, midpoint=None, sigma=None, **kwargs):
+        """Initialize HyperbolicTangent coupling with scalar or array parameters."""
+        converted = {}
+        for name, val in [('a', a), ('b', b), ('midpoint', midpoint), ('sigma', sigma)]:
+            if val is not None:
+                if not isinstance(val, np.ndarray):
+                    val = np.array([float(val)])
+                converted[name] = val
+        super().__init__(**converted, **kwargs)
+
     def pre(self, x, mode=0):
         """Apply pre-synaptic tanh coupling.
 
@@ -727,10 +805,10 @@ class HyperbolicTangent(Coupling):
         Returns
         -------
         ndarray
-            Transformed activity: a * (1 + tanh((x - midpoint) / sigma)).
+            Transformed activity: a * (1 + tanh((b*x - midpoint) / sigma)).
         """
         return self.a[:, None] * (
-            1.0 + np.tanh((x - self.midpoint[:, None]) / self.sigma[:, None])
+            1.0 + np.tanh((self.b[:, None] * x - self.midpoint[:, None]) / self.sigma[:, None])
         )
 
     def post(self, x, mode=0):
@@ -758,23 +836,45 @@ class SigmoidalJansenRit(Coupling):
     mass model. It applies sigmoidal transformation to inputs from
     excitatory pyramidal populations.
 
-    Formula (pre-summation):
+    When ``use_classic`` is ``1`` (default), this class matches the
+    classic TVB ``SigmoidalJansenRit`` coupling: it expects two source
+    state variables, computes their difference, and applies a logistic
+    sigmoid using ``cmin``, ``cmax``, and ``midpoint``.
+
+    Formula (classic mode, pre-summation):
+
+    .. math::
+        y = c_{min} + \\frac{c_{max} - c_{min}}{1 + \\exp(r \\cdot (midpoint - (x_0 - x_1)))}
+
+    Post-summation, the result is multiplied by amplitude ``a``.
+
+    When ``use_classic`` is ``0``, the legacy hybrid formula is used:
 
     .. math::
         y = a \\cdot \\frac{2 e_0}{1 + \\exp(r \\cdot (v_0 - x))}
 
-    where e0, r, v0 are JansenRit model parameters.
-
     Parameters
     ----------
     a : float or ndarray, default=1.0
-        Amplitude. Multiplies the sigmoidal function.
+        Amplitude. In classic mode this is applied in post(); in legacy
+        mode it is folded into pre().
     e0 : float or ndarray, default=2.5
-        Maximum firing rate (Hz).
+        Maximum firing rate (Hz). **Deprecated**: only used when
+        ``use_classic=0``.
     r : float or ndarray, default=0.56
         Slope of sigmoid.
     v0 : float or ndarray, default=6.0
-        Firing threshold (mV).
+        Firing threshold (mV). **Deprecated**: only used when
+        ``use_classic=0``.
+    cmin : float or ndarray, default=0.0
+        Minimum value of the sigmoid (classic mode).
+    cmax : float or ndarray, default=0.005
+        Maximum value of the sigmoid (classic mode).
+    midpoint : float or ndarray, default=6.0
+        Inflection point of the sigmoid (classic mode).
+    use_classic : int, default=1
+        If 1, use the classic TVB formula with cmin/cmax/midpoint.
+        If 0, use the legacy e0/v0 formula.
 
     Attributes
     ----------
@@ -786,43 +886,42 @@ class SigmoidalJansenRit(Coupling):
         Slope parameter, domain [0.01, 10.0], default 0.56.
     v0 : NArray
         Threshold parameter, domain [-100.0, 100.0], default 6.0.
+    cmin : NArray
+        Minimum sigmoid value, domain [0.0, 1.0], default 0.0.
+    cmax : NArray
+        Maximum sigmoid value, domain [0.0, 0.1], default 0.005.
+    midpoint : NArray
+        Inflection point, domain [0.0, 100.0], default 6.0.
+    use_classic : Int
+        Flag selecting classic (1) or legacy (0) behaviour.
 
     Examples
     --------
-    >>> # Default JansenRit parameters
-    >>> jr_sigmoid = SigmoidalJansenRit()
-    >>> jr_sigmoid.pre(np.array([6.0]))
-    array([2.5])
+    >>> # Classic mode (default) — expects 2 source variables
+    >>> jr = SigmoidalJansenRit()
+    >>> x = np.zeros((2, 5, 1))
+    >>> x[0] = 12.0
+    >>> jr.pre(x).shape
+    (1, 5, 1)
 
-    >>> # At threshold (x = v0), output = a * e0 = 2.5
-    >>> jr_sigmoid.pre(np.array([6.0]))
-    array([2.5])
-
-    >>> # At high input, output approaches 2*a*e0 = 5.0
-    >>> jr_sigmoid.pre(np.array([20.0]))
-    array([4.99...])
-
-    >>> # At low input, output approaches 0
-    >>> jr_sigmoid.pre(np.array([-10.0]))
-    array([0.00...])
+    >>> # Legacy mode — single source variable
+    >>> jr_legacy = SigmoidalJansenRit(use_classic=0)
+    >>> jr_legacy.pre(np.array([[6.0]])).round(2)
+    array([[2.5]])
 
     Notes
     -----
-    - This is a pre-synaptic coupling function (applied before summation).
-    - Model-specific: should only be used with JansenRit or compatible models.
-    - Typically used for coupling between pyramidal populations (y0, y5).
-    - The sigmoidal function models the firing rate transformation.
-
-    References
-    ----------
-    Jansen, B. H., & Rit, V. G. (1995). Electroencephalogram and visual
-    evoked potential generation in a mathematical model of coupled cortical
-    columns. Biological Cybernetics, 73(4), 357-366.
+    - Classic mode collapses 2 source cvars into 1 coupling term.
+    - In classic mode ``post()`` multiplies by ``a``; in legacy mode
+      ``post()`` is the identity because ``a`` is already in ``pre()``.
+    - Set ``use_classic=0`` only for backward compatibility with older
+      hybrid scripts.
 
     See Also
     --------
     Sigmoidal : General sigmoidal coupling
     HyperbolicTangent : Tanh-based coupling
+    tvb.simulator.coupling.SigmoidalJansenRit : Classic TVB reference
     """
 
     a = t.NArray(
@@ -836,7 +935,7 @@ class SigmoidalJansenRit(Coupling):
         label=r":math:`e_0`",
         default=np.array([2.5]),
         domain=t.Range(lo=0.0, hi=100.0, step=0.1),
-        doc="Maximum firing rate (Hz).",
+        doc="Maximum firing rate (Hz). Deprecated: only used in legacy mode (use_classic=0).",
     )
 
     r = t.NArray(
@@ -850,32 +949,104 @@ class SigmoidalJansenRit(Coupling):
         label=r":math:`v_0`",
         default=np.array([6.0]),
         domain=t.Range(lo=-100.0, hi=100.0, step=1.0),
-        doc="Firing threshold (mV).",
+        doc="Firing threshold (mV). Deprecated: only used in legacy mode (use_classic=0).",
     )
 
-    def pre(self, x, mode=0):
+    cmin = t.NArray(
+        label=r":math:`c_{min}`",
+        default=np.array([0.0]),
+        domain=t.Range(lo=-1000.0, hi=1000.0, step=10.0),
+        doc="Minimum value of the sigmoid (classic mode).",
+    )
+
+    cmax = t.NArray(
+        label=r":math:`c_{max}`",
+        default=np.array([0.005]),
+        domain=t.Range(lo=-1000.0, hi=1000.0, step=10.0),
+        doc="Maximum value of the sigmoid (classic mode).",
+    )
+
+    midpoint = t.NArray(
+        label=r":math:`midpoint`",
+        default=np.array([6.0]),
+        domain=t.Range(lo=0.0, hi=100.0, step=1.0),
+        doc="Inflection point of the sigmoid (classic mode).",
+    )
+
+    use_classic = t.Int(
+        default=1,
+        doc="If 1 (default), use the classic TVB formula with cmin/cmax/midpoint. If 0, use the legacy e0/v0 formula.",
+        label="use_classic",
+    )
+
+    @property
+    def n_cvar_in(self):
+        """Number of source state variables required by this coupling."""
+        return 2 if self.use_classic else 1
+
+    def _is_classic(self, x_j):
+        """Determine whether the input should be treated as classic 2-cvar.
+
+        In classic mode, when ``x_j`` has a leading dimension of 2 (i.e.
+        shape ``(2, nnz, modes)``), we compute the difference
+        ``x_j[0] - x_j[1]`` before applying the sigmoid.
+
+        When ``use_classic=1`` but the data shape disagrees, a warning
+        is emitted and we fall back to the legacy formula so the
+        simulation can continue, but the results will NOT match classic
+        TVB.
+        """
+        if not self.use_classic:
+            return False
+        shape_matches = getattr(x_j, 'ndim', 0) >= 1 and x_j.shape[0] == 2
+        if not shape_matches:
+            warnings.warn(
+                f"{type(self).__name__}: use_classic=1 but input has "
+                f"shape {getattr(x_j, 'shape', '?')} (leading dim != 2). "
+                f"Falling back to legacy single-cvar formula. "
+                f"Results will NOT match classic TVB.",
+                RuntimeWarning, stacklevel=2,
+            )
+        return shape_matches
+
+    def pre(self, x_j, x_i=None, mode=0):
         """Apply pre-synaptic JansenRit sigmoidal coupling.
 
         Parameters
         ----------
-        x : ndarray
-            Input afferent activity (membrane potential).
-        mode : int, default=0
-            Number of modes (not used in pre-synaptic coupling).
+        x_j : ndarray
+            Input afferent activity.  In classic mode with two source
+            state variables this has shape ``(2, nnz, modes)``; otherwise
+            it is a 2-D or 3-D array of membrane potentials.
+        x_i : ndarray, optional
+            Target (local) activity. Not used by this coupling.
 
         Returns
         -------
         ndarray
-            Transformed activity: a * (2*e0) / (1 + exp(r * (v0 - x))).
+            Transformed activity.  In classic 2-cvar mode the returned
+            array has shape ``(1, nnz, modes)``.  In legacy mode the
+            shape is the same as ``x_j``.
         """
+        if self._is_classic(x_j):
+            # x_j shape: (2, nnz, modes)
+            diff = x_j[0] - x_j[1]   # shape: (nnz, modes)
+            sig = (
+                self.cmin[:, None]
+                + (self.cmax[:, None] - self.cmin[:, None])
+                / (1.0 + np.exp(self.r[:, None] * (self.midpoint[:, None] - diff)))
+            )
+            # Return shape: (1, nnz, modes)
+            return sig[np.newaxis, ...]
+        # Legacy mode — single input, a folded into pre()
         return (
             self.a[:, None]
             * (2 * self.e0[:, None])
-            / (1.0 + np.exp(self.r[:, None] * (self.v0[:, None] - x)))
+            / (1.0 + np.exp(self.r[:, None] * (self.v0[:, None] - x_j)))
         )
 
     def post(self, x, mode=0):
-        """Apply post-synaptic coupling (identity for pre-summation).
+        """Apply post-synaptic coupling.
 
         Parameters
         ----------
@@ -887,103 +1058,123 @@ class SigmoidalJansenRit(Coupling):
         Returns
         -------
         ndarray
-            Unchanged input.
+            In classic mode: ``a * x``.  In legacy mode: identity.
         """
+        if self.use_classic:
+            return self.a[:, None] * x
         return x
 
 
 class PreSigmoidal(Coupling):
-    """Pre-summation sigmoidal coupling with dynamic threshold.
+    """Pre-summation sigmoidal coupling with static or dynamic threshold.
 
-    Implements a more general sigmoidal coupling function that allows
-    for dynamic thresholds and input projections.
+    Implements a sigmoidal coupling function using ``tanh`` that supports
+    both static and dynamic threshold modes, matching the classic TVB
+    ``PreSigmoidal`` coupling.
 
-    Formula (pre-summation):
+    **Static threshold** (``dynamic=0``) — operates on a single source
+    coupling variable:
 
     .. math::
         y = H \\cdot \\left(Q + \\tanh(G \\cdot (P \\cdot x - \\theta))\\right)
 
+    **Dynamic threshold** (``dynamic=True``) — uses two source state
+    variables.  The first carries the afferent signal and the second
+    provides a per-node threshold:
+
+    .. math::
+        y = H \\cdot \\left(Q + \\tanh(G \\cdot (P \\cdot x_0 - x_1))\\right)
+
+    where ``x_0 = x_j[0]`` and ``x_1 = x_j[1]``.
+
+    When ``globalT=1``, the second state variable is averaged across all
+    source nodes to form a single global threshold.
+
     Parameters
     ----------
-    H : float or ndarray, default=1.0
-        Amplitude scale. Multiplies the entire expression.
-    Q : float or ndarray, default=0.0
-        Baseline offset. Added to the tanh output.
-    G : float or ndarray, default=1.0
-        Input sensitivity (gain). Controls the steepness of tanh.
+    H : float or ndarray, default=0.5
+        Amplitude scale.  Matches classic TVB default.
+    Q : float or ndarray, default=1.0
+        Baseline offset.  Matches classic TVB default.
+    G : float or ndarray, default=60.0
+        Input sensitivity (gain).  Matches classic TVB default.
     P : float or ndarray, default=1.0
-        Input projection. Scales the input before thresholding.
-    theta : float or ndarray, default=0.0
-        Activation threshold. Subtracted from scaled input.
-    dynamic : bool, default=False
-        Whether threshold is dynamic (not currently implemented).
+        Input projection.
+    theta : float or ndarray, default=0.5
+        Activation threshold (static mode).  Matches classic TVB default.
+    dynamic : int, default=1
+        If 1, use dynamic threshold (two source cvars).  If 0, use
+        static threshold (single source cvar).  Matches classic TVB
+        default of ``dynamic=True``.
+    globalT : int, default=0
+        If 1, average the dynamic threshold across all source nodes
+        (global threshold).  If 0, use per-node threshold (local).
 
     Attributes
     ----------
     H : NArray
-        Amplitude with domain [0.0, 10.0] and default 1.0.
+        Amplitude with domain [0.0, 10.0] and default 0.5.
     Q : NArray
-        Baseline offset, domain [-10.0, 10.0], default 0.0.
+        Baseline offset, domain [-10.0, 10.0], default 1.0.
     G : NArray
-        Input sensitivity, domain [0.01, 100.0], default 1.0.
+        Input sensitivity, domain [0.01, 100.0], default 60.0.
     P : NArray
         Input projection, domain [-10.0, 10.0], default 1.0.
     theta : NArray
-        Threshold, domain [-100.0, 100.0], default 0.0.
-    dynamic : Bool
-        Whether threshold is dynamic.
+        Threshold, domain [-100.0, 100.0], default 0.5.
+    dynamic : Int
+        Whether threshold is dynamic (default 1).
+    globalT : Int
+        Whether threshold is global (default 0).
 
     Examples
     --------
-    >>> # Default parameters: reduces to tanh(x)
-    >>> pre_sigmoid = PreSigmoidal()
-    >>> pre_sigmoid.pre(np.array([0.0]))
-    array([0.])
+    >>> # Static threshold (single source cvar)
+    >>> ps = PreSigmoidal(dynamic=0)
+    >>> ps.pre(np.array([0.5])).round(2)
+    array([0.5])
 
-    >>> # At threshold (x = theta = 0), tanh(0) = 0
-    >>> pre_sigmoid.pre(np.array([0.0]))
-    array([0.])
-
-    >>> # At large positive, tanh(+inf) = 1, output = H * (Q + 1) = 1
-    >>> pre_sigmoid.pre(np.array([10.0]))
-    array([1.])
-
-    >>> # With baseline Q = 1, output shifts upward
-    >>> pre_sigmoid = PreSigmoidal(Q=np.array([1.0]))
-    >>> pre_sigmoid.pre(np.array([10.0]))
-    array([2.])
+    >>> # Dynamic threshold (two source cvars)
+    >>> ps_dyn = PreSigmoidal(dynamic=True)
+    >>> x = np.zeros((2, 5, 1)); x[0] = 1.0
+    >>> ps_dyn.pre(x).shape
+    (1, 5, 1)
 
     Notes
     -----
-    - This is a pre-synaptic coupling function (applied before summation).
-    - The dynamic parameter is reserved for future implementation.
-    - Provides more flexibility than simple sigmoidal functions.
+    - In dynamic mode, ``pre()`` collapses 2 source cvars into 1 output
+      (same pattern as ``SigmoidalJansenRit``).
+    - The ``c_1`` diagonal self-connection term from classic TVB is not
+      yet implemented in the projection pipeline; see the TODO in
+      ``post()``.
 
     See Also
     --------
+    SigmoidalJansenRit : Another 2-cvar pre-summation coupling
     Sigmoidal : Post-synaptic sigmoidal coupling
     HyperbolicTangent : Simpler tanh-based coupling
+    tvb.simulator.coupling.PreSigmoidal : Classic TVB reference
     """
 
     H = t.NArray(
         label=r":math:`H`",
-        default=np.array([1.0]),
+        default=np.array([0.5]),
         domain=t.Range(lo=0.0, hi=10.0, step=0.01),
-        doc="Amplitude scale.",
+        doc="Amplitude scale.  Classic TVB default is 0.5.",
     )
 
     Q = t.NArray(
         label=r":math:`Q`",
-        default=np.array([0.0]),
+        default=np.array([1.0]),
         domain=t.Range(lo=-10.0, hi=10.0, step=0.1),
-        doc="Baseline offset.",
+        doc="Baseline offset.  Classic TVB default is 1.0.",
     )
 
     G = t.NArray(
         label=r":math:`G`",
-        default=np.array([1.0]),
+        default=np.array([60.0]),
         domain=t.Range(lo=0.01, hi=100.0, step=0.1),
-        doc="Input sensitivity (gain).",
+        doc="Input sensitivity (gain).  Classic TVB default is 60.0.",
     )
 
     P = t.NArray(
@@ -995,36 +1186,99 @@ class PreSigmoidal(Coupling):
 
     theta = t.NArray(
         label=r":math:`\theta`",
-        default=np.array([0.0]),
+        default=np.array([0.5]),
         domain=t.Range(lo=-100.0, hi=100.0, step=1.0),
-        doc="Activation threshold.",
+        doc="Activation threshold (static mode).  Classic TVB default is 0.5.",
     )
 
-    dynamic = t.NArray(
+    dynamic = t.Attr(
+        field_type=bool,
         label="dynamic",
-        dtype=bool,
-        default=np.array([False]),
-        doc="Whether threshold is dynamic (reserved for future use).",
+        default=True,
+        doc="If True (default), use dynamic threshold (two source cvars). "
+            "If False, use static threshold (single source cvar). "
+            "Matches classic TVB default of dynamic=True.",
     )
 
-    def pre(self, x, mode=0):
-        """Apply pre-synaptic sigmoidal coupling.
+    globalT = t.Attr(
+        field_type=bool,
+        label=r":math:`global_{\theta}`",
+        default=False,
+        doc="If True, average dynamic threshold across source nodes "
+            "(global threshold). If False, use per-node threshold (local).",
+    )
+
+    @property
+    def n_cvar_in(self):
+        """Number of source state variables required by this coupling."""
+        return 2 if self.dynamic else 1
+
+    def _is_dynamic(self, x_j):
+        """Determine whether the input should be treated as dynamic 2-cvar.
+
+        In dynamic mode, when ``x_j`` has a leading dimension of 2
+        (i.e. shape ``(2, nnz, modes)``), we compute
+        ``P * x_j[0] - x_j[1]`` before applying tanh.
+
+        When ``dynamic=1`` but the data shape disagrees, a warning
+        is emitted and we fall back to the static formula so the
+        simulation can continue, but the results will NOT match classic
+        TVB.
+        """
+        if not self.dynamic:
+            return False
+        shape_matches = getattr(x_j, 'ndim', 0) >= 1 and x_j.shape[0] == 2
+        if not shape_matches:
+            warnings.warn(
+                f"{type(self).__name__}: dynamic is {self.dynamic} but input has "
+                f"shape {getattr(x_j, 'shape', '?')} (leading dim != 2). "
+                f"Falling back to static single-cvar formula. "
+                f"Results will NOT match classic TVB.",
+                RuntimeWarning, stacklevel=2,
+            )
+        return shape_matches
+
+    def pre(self, x_j, x_i=None, mode=0):
+        """Apply pre-synaptic sigmoidal coupling (PreSigmoidal).
 
         Parameters
         ----------
-        x : ndarray
-            Input afferent activity.
-        mode : int, default=0
-            Number of modes (not used in pre-synaptic coupling).
+        x_j : ndarray
+            Input afferent activity.  In dynamic mode with two source
+            state variables this has shape ``(2, nnz, modes)``; in static
+            mode it is a 2-D or 3-D array.
+        x_i : ndarray, optional
+            Target (local) activity. Not used by this coupling.
 
         Returns
         -------
         ndarray
-            Transformed activity: H * (Q + tanh(G * (P * x - theta))).
+            Transformed activity.  In dynamic 2-cvar mode the returned
+            array has shape ``(1, nnz, modes)``.  In static mode the
+            shape matches ``x_j``.
         """
+        if self._is_dynamic(x_j):
+            # Dynamic threshold: use second source cvar as threshold
+            # x_j shape: (2, nnz, modes)
+            # x_j[0] = afferent signal, x_j[1] = dynamic threshold
+            if self.globalT:
+                # Global threshold: average x_j[1] across all source nodes
+                threshold = x_j[1].mean(axis=0, keepdims=True)
+            else:
+                threshold = x_j[1]
+            arg = self.P[:, None] * x_j[0] - threshold
+            result = self.H[:, None] * (
+                self.Q[:, None] + np.tanh(self.G[:, None] * arg)
+            )
+            # Return shape: (1, nnz, modes)
+            return result[np.newaxis, ...]
+
+        # Static threshold mode
         return self.H[:, None] * (
             self.Q[:, None]
-            + np.tanh(self.G[:, None] * (self.P[:, None] * x - self.theta[:, None]))
+            + np.tanh(
+                self.G[:, None] * (self.P[:, None] * x_j - self.theta[:, None])
+            )
         )
 
     def post(self, x, mode=0):
@@ -1041,5 +1295,16 @@ class PreSigmoidal(Coupling):
         -------
         ndarray
             Unchanged input.
+
+        TODO
+        ----
+        Classic TVB PreSigmoidal in dynamic mode also returns a ``c_1``
+        term (diagonal self-connection ``A_j[i,i]``) that provides a
+        local feedback signal.  The hybrid projection pipeline currently
+        has no mechanism for injecting a per-node diagonal term back
+        into the coupling array.  This will require extending
+        ``BaseProjection.apply()`` with a post-hook for diagonal
+        contributions.
         """
         return x
+

@@ -257,8 +257,12 @@ class NetworkSet(t.HasTraits):
         buffer and accumulates them into per-subnetwork coupling arrays.
 
         Note that ``eff`` (the current states) is accepted for API symmetry but
-        is not used here: coupling is read exclusively from the pre-filled
-        history buffers so that delays are honoured correctly.
+        is not used here for delayed source lookups: coupling is read
+        exclusively from the pre-filled history buffers so that delays are
+        honoured correctly.  However, ``eff`` is forwarded as ``x_i`` to
+        projections so that coupling functions like ``Difference`` and
+        ``Kuramoto`` can compute expressions that depend on both source and
+        target activity.
 
         Parameters
         ----------
@@ -266,8 +270,10 @@ class NetworkSet(t.HasTraits):
             Current simulation step index.  Used to look up the correct
             position in each projection's delay buffer.
         eff : States
-            Current states of all subnetworks.  Not used directly; coupling
-            comes from the buffered history rather than the instantaneous state.
+            Current states of all subnetworks.  Not used for delayed source
+            lookups (those come from history buffers).  Forwarded to
+            projections as ``x_i`` when the coupling function needs target
+            state.
 
         Returns
         -------
@@ -285,7 +291,8 @@ class NetworkSet(t.HasTraits):
             if isinstance(p, IntraProjection):
                 continue
             tgt = getattr(aff, p.target.name)
-            p.apply(tgt, step)
+            x_i = getattr(eff, p.target.name)
+            p.apply(tgt, step, x_i=x_i)
 
         return aff
 

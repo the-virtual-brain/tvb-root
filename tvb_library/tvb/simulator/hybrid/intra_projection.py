@@ -192,7 +192,7 @@ class IntraProjection(BaseProjection):
             self._identity_mode_map = np.eye(n_modes, dtype=np.int_)
         return self._identity_mode_map
 
-    def apply(self, tgt: np.ndarray, t: int, n_modes: int):
+    def apply(self, tgt: np.ndarray, t: int, n_modes: int, x_i=None):
         """Apply the intra-subnetwork projection using an identity mode map.
 
         Constructs (or retrieves from cache) an ``n_modes × n_modes`` identity
@@ -210,8 +210,10 @@ class IntraProjection(BaseProjection):
         n_modes : int
             Number of modes in the subnetwork, used to build the identity
             mode map.
+        x_i : ndarray, shape (n_vars, n_nodes, n_modes), optional
+            Current target subnetwork state, forwarded to
+            ``BaseProjection.apply()`` for coupling functions that need
+            both source and target activity.
         """
         identity_map = self._get_identity_mode_map(n_modes)
-        # Call BaseProjection.apply with the identity map
-        # BaseProjection.apply now uses its internal buffer
-        super().apply(tgt, t, identity_map)
+        super().apply(tgt, t, identity_map, x_i=x_i)
