@@ -834,7 +834,8 @@ class ProjectionInfo:
     source_subnet: str
     target_subnet: str
     source_cvar: np.ndarray  # (n_src_cvar,)
-    target_cvar: np.ndarray  # (n_tgt_cvar,)
+    target_cvar: np.ndarray  # (n_tgt_cvar,) state-variable indices
+    target_cvar_cpl: np.ndarray  # (n_tgt_cvar,) coupling-variable indices (for tgt array)
     weights_data: np.ndarray  # (nnz,) float32
     weights_indices: np.ndarray  # (nnz,) int
     weights_indptr: np.ndarray  # (n_tgt+1,) int
@@ -1430,6 +1431,7 @@ class NbHybridBackend(MakoUtilMix):
                 args.append(p.mode_map.astype(np.float32))
             args.append(p.source_cvar.astype(np.int32))
             args.append(p.target_cvar.astype(np.int32))
+            args.append(p.target_cvar_cpl.astype(np.int32))
             args.append(np.float32(p.scale))
             ts = (
                 p.target_scales.astype(np.float32)
@@ -1465,7 +1467,7 @@ class NbHybridBackend(MakoUtilMix):
         #   See _compute_stimulus_lazy() for the planned implementation.
         for sn_info in analysis.subnetworks:
             if sn_info.has_stimulus:
-                n_cvar = len(sn_info.model.coupling_terms)
+                n_cvar = len(sn_info.model.cvar)
                 stim_arr = np.zeros(
                     (n_cvar, sn_info.n_nodes, sn_info.n_modes, nstep),
                     dtype=np.float32,
@@ -1641,7 +1643,7 @@ class NbHybridBackend(MakoUtilMix):
             so that chunk-sized stim views can be passed without out-of-bounds
             access on the second and subsequent chunks.
         """
-        n_cvar = len(sn_info.model.coupling_terms)
+        n_cvar = len(sn_info.model.cvar)
         window_size = step_end - step_start + 1
         stim_arr = np.zeros(
             (n_cvar, sn_info.n_nodes, sn_info.n_modes, window_size),
@@ -1667,7 +1669,7 @@ class NbHybridBackend(MakoUtilMix):
         """Estimate the memory (in MiB) that the pre-computed stim array would use."""
         import os
 
-        n_cvar = len(sn_info.model.coupling_terms)
+        n_cvar = len(sn_info.model.cvar)
         n_bytes = n_cvar * sn_info.n_nodes * sn_info.n_modes * nstep * 4  # float32
         return n_bytes / (1024 * 1024)
 
@@ -1796,6 +1798,14 @@ class NbHybridBackend(MakoUtilMix):
                 # For intra, source and target are the same subnetwork
                 pi.source_subnet = sn_obj.name
                 pi.target_subnet = sn_obj.name
+                # Compute target_cvar_cpl: map state-var → coupling-var indices
+                tgt_model_cvar = list(sn_obj.model.cvar.astype(int))
+                for ic in range(len(pi.target_cvar)):
+                    sv = int(pi.target_cvar[ic])
+                    if sv in tgt_model_cvar:
+                        pi.target_cvar_cpl[ic] = tgt_model_cvar.index(sv)
+                    else:
+                        pi.target_cvar_cpl[ic] = 0
                 intra_projs.append(pi)
 
         # Assign unique names to avoid collisions
@@ -1862,12 +1872,25 @@ class NbHybridBackend(MakoUtilMix):
             n_tgt_nodes = p.target.nnodes
         else:
             n_tgt_nodes = p.weights.shape[1]  # number of target nodes in intra-projection
+        # Compute target_cvar_cpl: map target state-variable indices to coupling-variable indices.
+        # The coupling scratch array (tgt) is indexed by coupling variable,
+        # but target_cvar uses state variable indices.  We need the reverse
+        # mapping: for each target_cvar[ic], find its position in the target
+        # model's cvar array.
+        target_cvar_arr = np.atleast_1d(p.target_cvar).astype(np.int32)
+        if is_inter:
+            tgt_model_cvar = list(p.target.model.cvar.astype(int))
+        else:
+            # intra: target model is the same as source; cvar available from p
+            # Caller will fix src_name/tgt_name later; for now try to get model cvar
+            tgt_model_cvar = None  # filled below
         pi = ProjectionInfo(
             name=proj_name,
             source_subnet=src_name,
             target_subnet=tgt_name,
             source_cvar=np.atleast_1d(p.source_cvar).astype(np.int32),
-            target_cvar=np.atleast_1d(p.target_cvar).astype(np.int32),
+            target_cvar=target_cvar_arr,
+            target_cvar_cpl=np.zeros(len(target_cvar_arr), dtype=np.int32),  # placeholder
             weights_data=weights_csr.data.astype(np.float32),
             weights_indices=weights_csr.indices.astype(np.int32),
             weights_indptr=weights_csr.indptr.astype(np.int32),
@@ -1882,6 +1905,15 @@ class NbHybridBackend(MakoUtilMix):
             n_tgt_nodes=n_tgt_nodes,
             mode_map=mode_map,
         )
+        if is_inter and tgt_model_cvar is not None:
+            # Map state-var indices → coupling-var indices
+            for ic in range(len(target_cvar_arr)):
+                sv = int(target_cvar_arr[ic])
+                if sv in tgt_model_cvar:
+                    pi.target_cvar_cpl[ic] = tgt_model_cvar.index(sv)
+                else:
+                    # State var not in cvar: default to coupling index 0
+                    pi.target_cvar_cpl[ic] = 0
         if not is_inter:
             pi.n_src_modes = n_src_modes  # placeholder; filled per-subnetwork
         return pi

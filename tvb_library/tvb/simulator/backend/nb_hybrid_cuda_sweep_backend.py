@@ -439,6 +439,7 @@ class CompiledCUDASweepKernel:
                     args.append(pd['mode_map'])
                 args.append(pd['source_cvar'])
                 args.append(pd['target_cvar'])
+                args.append(pd['target_cvar_cpl'])
                 args.append(pd['scale'])
                 args.append(pd['target_scales'])
                 args.append(pd['cfun_params'])
@@ -957,6 +958,7 @@ class CompiledCUDASweepKernel:
                 'idelays': cuda.to_device(p.idelays.astype(np.int32)),
                 'source_cvar': cuda.to_device(p.source_cvar.astype(np.int32)),
                 'target_cvar': cuda.to_device(p.target_cvar.astype(np.int32)),
+                'target_cvar_cpl': cuda.to_device(p.target_cvar_cpl.astype(np.int32)),
                 'scale': np.float32(p.scale),
                 'target_scales': cuda.to_device(p.target_scales.astype(np.float32)),
                 'cfun_params': cuda.to_device(proj_cfun_params[analysis.all_projections.index(p)]),

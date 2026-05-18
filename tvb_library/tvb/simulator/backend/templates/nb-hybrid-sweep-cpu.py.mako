@@ -25,7 +25,7 @@ inter_projs = analysis.inter_projections
 intra_projs = analysis.intra_projections
 all_projs = analysis.all_projections
 source_horizons_map = analysis.source_horizons
-sn_ncvar_dict = {sn.name: len(sn.model.coupling_terms) for sn in subnets}
+sn_ncvar_dict = {sn.name: len(sn.model.cvar) for sn in subnets}
 sn_nnodes_dict = {sn.name: sn.n_nodes for sn in subnets}
 sn_nmodes_dict = {sn.name: sn.n_modes for sn in subnets}
 sn_nvoi_dict = {sn.name: len(sn.model.variables_of_interest) for sn in subnets}
@@ -51,7 +51,7 @@ def sweep_kernel(
     % if p.is_inter:
     ${p.name}_mode_map,
     % endif
-    ${p.name}_source_cvar, ${p.name}_target_cvar,
+    ${p.name}_source_cvar, ${p.name}_target_cvar, ${p.name}_target_cvar_cpl,
     ${p.name}_scale, ${p.name}_target_scales,
     ${p.name}_cfun_params_all,  # (n_sweeps, n_params) float32 — per-sweep copies
     % endfor
@@ -143,7 +143,7 @@ def sweep_kernel(
             % if p.is_inter:
             ${p.name}_mode_map,
             % endif
-            ${p.name}_source_cvar, ${p.name}_target_cvar,
+            ${p.name}_source_cvar, ${p.name}_target_cvar, ${p.name}_target_cvar_cpl,
             ${p.name}_scale, ${p.name}_target_scales,
             ${p.name}_cfun_params,
             % endfor

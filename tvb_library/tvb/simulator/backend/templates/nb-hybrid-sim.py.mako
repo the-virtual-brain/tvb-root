@@ -69,6 +69,7 @@ def compute_coupling_${p.name}(
     % endif
     source_cvar,
     target_cvar,
+    target_cvar_cpl,
     scale,
     target_scales,
     cfun_params,
@@ -146,14 +147,14 @@ def compute_coupling_${p.name}(
             contrib = wsum * mode_map[0, 0]
             % if cm in ("1_to_1", "n_to_n"):
             ts = target_scales[ic] if has_ts else nb.float32(1.0)
-            tgt[target_cvar[ic], j, 0] += ts * contrib
+            tgt[target_cvar_cpl[ic], j, 0] += ts * contrib
             % elif cm == "many_to_1":
             ts = target_scales[0] if has_ts else nb.float32(1.0)
-            tgt[target_cvar[0], j, 0] += ts * contrib
+            tgt[target_cvar_cpl[0], j, 0] += ts * contrib
             % elif cm == "1_to_many":
             for itc in range(n_tgt_cvar):
                 ts = target_scales[itc] if has_ts else nb.float32(1.0)
-                tgt[target_cvar[itc], j, 0] += ts * contrib
+                tgt[target_cvar_cpl[itc], j, 0] += ts * contrib
             % endif
             % else:
             for m_tgt in range(${ntgt_m}):
@@ -162,28 +163,28 @@ def compute_coupling_${p.name}(
                     contrib += wsum * mode_map[0, m_tgt]
                 % if cm in ("1_to_1", "n_to_n"):
                 ts = target_scales[ic] if has_ts else np.float32(1.0)
-                tgt[target_cvar[ic], j, m_tgt] += ts * contrib
+                tgt[target_cvar_cpl[ic], j, m_tgt] += ts * contrib
                 % elif cm == "many_to_1":
                 ts = target_scales[0] if has_ts else np.float32(1.0)
-                tgt[target_cvar[0], j, m_tgt] += ts * contrib
+                tgt[target_cvar_cpl[0], j, m_tgt] += ts * contrib
                 % elif cm == "1_to_many":
                 for itc in range(n_tgt_cvar):
                     ts = target_scales[itc] if has_ts else np.float32(1.0)
-                    tgt[target_cvar[itc], j, m_tgt] += ts * contrib
+                    tgt[target_cvar_cpl[itc], j, m_tgt] += ts * contrib
                 % endif
             % endif
             % else:
             contrib = wsum
             % if cm in ("1_to_1", "n_to_n"):
             ts = target_scales[ic] if has_ts else nb.float32(1.0)
-            tgt[target_cvar[ic], j, 0] += ts * contrib
+            tgt[target_cvar_cpl[ic], j, 0] += ts * contrib
             % elif cm == "many_to_1":
             ts = target_scales[0] if has_ts else nb.float32(1.0)
-            tgt[target_cvar[0], j, 0] += ts * contrib
+            tgt[target_cvar_cpl[0], j, 0] += ts * contrib
             % elif cm == "1_to_many":
             for itc in range(n_tgt_cvar):
                 ts = target_scales[itc] if has_ts else nb.float32(1.0)
-                tgt[target_cvar[itc], j, 0] += ts * contrib
+                tgt[target_cvar_cpl[itc], j, 0] += ts * contrib
             % endif
             % endif
             % else:
@@ -254,28 +255,28 @@ def compute_coupling_${p.name}(
                     contrib += wsum[m_src] * mode_map[m_src, m_tgt]
                 % if cm in ("1_to_1", "n_to_n"):
                 ts = target_scales[ic] if has_ts else np.float32(1.0)
-                tgt[target_cvar[ic], j, m_tgt] += ts * contrib
+                tgt[target_cvar_cpl[ic], j, m_tgt] += ts * contrib
                 % elif cm == "many_to_1":
                 ts = target_scales[0] if has_ts else np.float32(1.0)
-                tgt[target_cvar[0], j, m_tgt] += ts * contrib
+                tgt[target_cvar_cpl[0], j, m_tgt] += ts * contrib
                 % elif cm == "1_to_many":
                 for itc in range(n_tgt_cvar):
                     ts = target_scales[itc] if has_ts else np.float32(1.0)
-                    tgt[target_cvar[itc], j, m_tgt] += ts * contrib
+                    tgt[target_cvar_cpl[itc], j, m_tgt] += ts * contrib
                 % endif
             % else:
             for m in range(${nsrc_m}):
                 contrib = wsum[m]
                 % if cm in ("1_to_1", "n_to_n"):
                 ts = target_scales[ic] if has_ts else np.float32(1.0)
-                tgt[target_cvar[ic], j, m] += ts * contrib
+                tgt[target_cvar_cpl[ic], j, m] += ts * contrib
                 % elif cm == "many_to_1":
                 ts = target_scales[0] if has_ts else np.float32(1.0)
-                tgt[target_cvar[0], j, m] += ts * contrib
+                tgt[target_cvar_cpl[0], j, m] += ts * contrib
                 % elif cm == "1_to_many":
                 for itc in range(n_tgt_cvar):
                     ts = target_scales[itc] if has_ts else np.float32(1.0)
-                    tgt[target_cvar[itc], j, m] += ts * contrib
+                    tgt[target_cvar_cpl[itc], j, m] += ts * contrib
                 % endif
             % endif
             % endif
@@ -703,7 +704,7 @@ def network_chunk(
     % if p.is_inter:
     ${p.name}_mode_map,
     % endif
-    ${p.name}_source_cvar, ${p.name}_target_cvar,
+    ${p.name}_source_cvar, ${p.name}_target_cvar, ${p.name}_target_cvar_cpl,
     ${p.name}_scale, ${p.name}_target_scales,
     ${p.name}_cfun_params,
     % endfor
@@ -753,11 +754,11 @@ def network_chunk(
 ):
 <%
     all_sn_names = [sn.name for sn in subnets]
-    all_sn_ncvars = [len(sn.model.coupling_terms) for sn in subnets]
+    all_sn_ncvars = [len(sn.model.cvar) for sn in subnets]
     all_sn_nnodes = [sn.n_nodes for sn in subnets]
     all_sn_nmodes = [sn.n_modes for sn in subnets]
     all_sn_nvoi = [len(sn.model.variables_of_interest) for sn in subnets]
-    sn_ncvar_dict = {sn.name: len(sn.model.coupling_terms) for sn in subnets}
+    sn_ncvar_dict = {sn.name: len(sn.model.cvar) for sn in subnets}
     sn_nnodes_dict = {sn.name: sn.n_nodes for sn in subnets}
     sn_nmodes_dict = {sn.name: sn.n_modes for sn in subnets}
     sn_nvoi_dict = {sn.name: len(sn.model.variables_of_interest) for sn in subnets}
@@ -783,7 +784,7 @@ def network_chunk(
             ${p.name}_w_data, ${p.name}_w_indices, ${p.name}_w_indptr,
             ${p.name}_idelays,
             ${p.name}_mode_map,
-            ${p.name}_source_cvar, ${p.name}_target_cvar,
+            ${p.name}_source_cvar, ${p.name}_target_cvar, ${p.name}_target_cvar_cpl,
             ${p.name}_scale, ${p.name}_target_scales,
             ${p.name}_cfun_params,
             ${p.target_subnet}_state,
@@ -798,7 +799,7 @@ def network_chunk(
             ${p.source_subnet}_srcbuf,
             ${p.name}_w_data, ${p.name}_w_indices, ${p.name}_w_indptr,
             ${p.name}_idelays,
-            ${p.name}_source_cvar, ${p.name}_target_cvar,
+            ${p.name}_source_cvar, ${p.name}_target_cvar, ${p.name}_target_cvar_cpl,
             ${p.name}_scale, ${p.name}_target_scales,
             ${p.name}_cfun_params,
             ${p.target_subnet}_state,
@@ -937,7 +938,7 @@ def run_network(
     % if p.is_inter:
     ${p.name}_mode_map,
     % endif
-    ${p.name}_source_cvar, ${p.name}_target_cvar,
+    ${p.name}_source_cvar, ${p.name}_target_cvar, ${p.name}_target_cvar_cpl,
     ${p.name}_scale, ${p.name}_target_scales,
     ${p.name}_cfun_params,
     % endfor
@@ -1038,7 +1039,7 @@ def run_network(
             % if p.is_inter:
             ${p.name}_mode_map,
             % endif
-            ${p.name}_source_cvar, ${p.name}_target_cvar,
+            ${p.name}_source_cvar, ${p.name}_target_cvar, ${p.name}_target_cvar_cpl,
             ${p.name}_scale, ${p.name}_target_scales,
             ${p.name}_cfun_params,
             % endfor

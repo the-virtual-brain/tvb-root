@@ -69,7 +69,7 @@ def compute_coupling_${p.name}(
     t,
     tidy,
     ${p.name}_source_cvar,
-    ${p.name}_target_cvar,
+    ${p.name}_target_cvar, ${p.name}_target_cvar_cpl,
     ${p.name}_scale,
     ${p.name}_target_scales,
     ${p.name}_cfun_params,
@@ -567,7 +567,7 @@ def run_sweep(
     ${p.name}_mode_map,   # (${p.n_src_modes}, ${p.n_tgt_modes}) float32
     % endif
     ${p.name}_source_cvar,
-    ${p.name}_target_cvar,
+    ${p.name}_target_cvar, ${p.name}_target_cvar_cpl,
     ${p.name}_scale,
     ${p.name}_target_scales,
     ${p.name}_cfun_params,
@@ -576,7 +576,7 @@ def run_sweep(
     ## per-subnet coupling temporal average accumulators  [tid, ncvar, nnodes, n_modes]
     % for sn in subnets:
 <%
-    n_cvar_sn = len(sn.model.coupling_terms)
+    n_cvar_sn = len(sn.model.cvar)
 %>
     ${sn.name}_ctavg,     # (n_sweeps, ${n_cvar_sn}, ${sn.n_nodes}, ${sn.n_modes}) float32
     % endfor
@@ -610,7 +610,7 @@ def run_sweep(
     % for sn in subnets:
     % if sn.has_stimulus:
 <%
-    n_cvar_sn = len(sn.model.coupling_terms)
+    n_cvar_sn = len(sn.model.cvar)
 %>
     ${sn.name}_stim,       # (n_sweeps, ${n_cvar_sn}, ${sn.n_nodes}, ${sn.n_modes}, nstep) float32
     % endif
@@ -639,7 +639,7 @@ def run_sweep(
     ## ---- Per-subnet coupling scratch (cuda.local.array) ----
     % for sn in subnets:
 <%
-    n_cvar_sn = len(sn.model.coupling_terms)
+    n_cvar_sn = len(sn.model.cvar)
 %>
     % if n_cvar_sn > 0:
     ${sn.name}_c = cuda.local.array((${n_cvar_sn}, ${sn.n_nodes}, ${sn.n_modes}), dtype=numba.float32)
@@ -652,7 +652,7 @@ def run_sweep(
         ## ---- 1. Zero coupling scratch ----
         % for sn in subnets:
 <%
-    n_cvar_sn = len(sn.model.coupling_terms)
+    n_cvar_sn = len(sn.model.cvar)
 %>
         % if n_cvar_sn > 0:
         for _ic in range(${n_cvar_sn}):
@@ -678,7 +678,7 @@ def run_sweep(
 % endif
             ${'N_' + tgt},
             t, tid,
-            ${p.name}_source_cvar, ${p.name}_target_cvar,
+            ${p.name}_source_cvar, ${p.name}_target_cvar, ${p.name}_target_cvar_cpl,
             ${p.name}_scale, ${p.name}_target_scales,
             ${p.name}_cfun_params,
 % if p.is_inter:
@@ -694,7 +694,7 @@ def run_sweep(
         ## ---- 2b. Inject stimulus into coupling scratch ----
         % for sn in subnets:
 <%
-    n_cvar_sn = len(sn.model.coupling_terms)
+    n_cvar_sn = len(sn.model.cvar)
 %>
         % if sn.has_stimulus:
         for _ic in range(${n_cvar_sn}):
@@ -707,7 +707,7 @@ def run_sweep(
         ## ---- 2c. Accumulate coupling temporal average ----
         % for sn in subnets:
 <%
-    n_cvar_sn = len(sn.model.coupling_terms)
+    n_cvar_sn = len(sn.model.cvar)
 %>
         % if n_cvar_sn > 0:
         for _ci in range(${n_cvar_sn}):

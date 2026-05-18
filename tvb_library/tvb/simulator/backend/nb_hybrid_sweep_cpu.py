@@ -191,7 +191,7 @@ def run_sweep_prange(kernel_fn, analysis, network_set, sweep_descriptor,
     for p in all_projs:
         base = _cfun_params(p)
         cfun_params_all[p.name] = np.broadcast_to(
-            base[np.newaxis], (n_sweeps, 8)
+            base[np.newaxis], (n_sweeps, len(base))
         ).copy().astype(np.float32)
 
         # Override swept entries
@@ -211,6 +211,7 @@ def run_sweep_prange(kernel_fn, analysis, network_set, sweep_descriptor,
             proj_arrays[f'{p.name}_mode_map'] = p.mode_map.astype(np.float32)
         proj_arrays[f'{p.name}_source_cvar'] = p.source_cvar.astype(np.int32)
         proj_arrays[f'{p.name}_target_cvar'] = p.target_cvar.astype(np.int32)
+        proj_arrays[f'{p.name}_target_cvar_cpl'] = p.target_cvar_cpl.astype(np.int32)
         proj_arrays[f'{p.name}_scale'] = np.float32(p.scale)
         if p.target_scales.size > 0:
             proj_arrays[f'{p.name}_target_scales'] = p.target_scales.astype(np.float32)
@@ -283,9 +284,10 @@ def run_sweep_prange(kernel_fn, analysis, network_set, sweep_descriptor,
             args.append(proj_arrays[f'{p.name}_mode_map'])
         args.append(proj_arrays[f'{p.name}_source_cvar'])
         args.append(proj_arrays[f'{p.name}_target_cvar'])
+        args.append(proj_arrays[f'{p.name}_target_cvar_cpl'])
         args.append(proj_arrays[f'{p.name}_scale'])
         args.append(proj_arrays[f'{p.name}_target_scales'])
-        args.append(cfun_params_all[p.name])  # (n_sweeps, 8) per-sweep
+        args.append(cfun_params_all[p.name])  # (n_sweeps, len(cfun_params)) per-sweep
 
     # Per-sweep accumulators
     for sn in subnets:
