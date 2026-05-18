@@ -1806,6 +1806,12 @@ class NbHybridBackend(MakoUtilMix):
                         pi.target_cvar_cpl[ic] = tgt_model_cvar.index(sv)
                     else:
                         pi.target_cvar_cpl[ic] = 0
+                # Expand source_cvar for multi-cvar coupling functions
+                n_src_cvar_needed = _n_src_cvar_pre(pi)
+                if pi.source_cvar.shape[0] < n_src_cvar_needed:
+                    src_model_cvar = list(sn_obj.model.cvar.astype(int))
+                    if len(src_model_cvar) >= n_src_cvar_needed:
+                        pi.source_cvar = np.array(src_model_cvar[:n_src_cvar_needed], dtype=np.int32)
                 intra_projs.append(pi)
 
         # Assign unique names to avoid collisions
@@ -1905,6 +1911,19 @@ class NbHybridBackend(MakoUtilMix):
             n_tgt_nodes=n_tgt_nodes,
             mode_map=mode_map,
         )
+        # Expand source_cvar for multi-cvar coupling functions.
+        # If the cfun needs 2 source cvars (SJR classic, PreSigmoidal dynamic)
+        # but source_cvar has only 1 element, expand it from the source model's cvar.
+        n_src_cvar_needed = _n_src_cvar_pre(pi)
+        if pi.source_cvar.shape[0] < n_src_cvar_needed:
+            if is_inter:
+                src_model_cvar = list(p.source.model.cvar.astype(int))
+            else:
+                # intra: will be fixed when caller sets src_name/tgt_name
+                src_model_cvar = None
+            if src_model_cvar is not None and len(src_model_cvar) >= n_src_cvar_needed:
+                pi.source_cvar = np.array(src_model_cvar[:n_src_cvar_needed], dtype=np.int32)
+
         if is_inter and tgt_model_cvar is not None:
             # Map state-var indices → coupling-var indices
             for ic in range(len(target_cvar_arr)):

@@ -19,6 +19,8 @@ import numba
         if pidx in d:
             return f"sweep_params[tid, {d[pidx]}]"
         return f"{pname}_cfun_params[{pidx}]"
+
+    from tvb.simulator.backend.nb_hybrid import _cfun_type, _cvar_mapping_mode, _needs_xi, _n_src_cvar_pre
 %>
 
 ##
