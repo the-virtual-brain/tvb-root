@@ -502,6 +502,7 @@ class Kuramoto(Model):
     state_variable_dfuns = Final(
         label="Drift functions for numba codegen",
         default={
+            # local_coupling is deprecated for hybrid; the linear substitute is intentional for the codegen path.
             "theta": "omega + Coupling_Term",
         },
     )
@@ -554,7 +555,6 @@ class Kuramoto(Model):
         """
 
         theta = state_variables[0, :]
-        # import pdb; pdb.set_trace()
 
         # A) Distribution of phases according to the local connectivity kernel
         local_range_coupling = numpy.sin(local_coupling * theta)

@@ -161,7 +161,7 @@ class EpileptorCodim3(ModelNumbaDfun):
     parameter_names = List(
         of=str,
         label="List of parameters for this model",
-        default=["b", "R", "c", "dstar", "Ks",
+        default=["b", "R", "c", "dstar", "Ks", "modification",
                  "E0", "E1", "E2", "F0", "F1", "F2"],
     )
 
@@ -187,7 +187,7 @@ class EpileptorCodim3(ModelNumbaDfun):
         default={
             "x": "-y",
             "y": "x**3 - mu2 * x - mu1 - y * (nu + b * x + x**2)",
-            "z": "-c * (dist - dstar + 0.1 * (z - 0.5)**7 + Ks * Coupling_Term)",
+            "z": "-c * (dist - dstar + modification * 0.1 * (z - 0.5)**7 + Ks * Coupling_Term)",
         },
     )
 
@@ -618,7 +618,7 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
     parameter_names = List(
         of=str,
         label="List of parameters for this model",
-        default=["b", "R", "c", "cA", "cB", "dstar", "Ks",
+        default=["b", "R", "c", "cA", "cB", "dstar", "Ks", "modification",
                  "G0", "G1", "G2", "H0", "H1", "H2",
                  "L0", "L1", "L2", "M0", "M1", "M2"],
     )
@@ -669,7 +669,7 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
         default={
             "x": "-y",
             "y": "x**3 - mu2 * x - mu1 - y * (nu + b * x + x**2)",
-            "z": "-c * (dist - dstar + 0.1 * (z - 0.5)**7 + Ks * Coupling_Term)",
+            "z": "-c * (dist - dstar + modification * 0.1 * (z - 0.5)**7 + Ks * Coupling_Term)",
             "uA": "cA",
             "uB": "cB",
         },
