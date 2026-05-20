@@ -358,7 +358,7 @@ class WilsonCowan(ModelNumbaDfun):
         label="List of parameters for this model",
         default=(
             'c_ee c_ei c_ie c_ii tau_e tau_i a_e b_e c_e theta_e '
-            'a_i b_i c_i theta_i r_e r_i k_e k_i P Q alpha_e alpha_i'
+            'a_i b_i c_i theta_i r_e r_i k_e k_i P Q alpha_e alpha_i shift_sigmoid'
         ).split()
     )
 
@@ -367,6 +367,9 @@ class WilsonCowan(ModelNumbaDfun):
         default=[
             ('x_e', 'alpha_e * (c_ee * E - c_ei * I + P - theta_e + Coupling_Term_E)'),
             ('x_i', 'alpha_i * (c_ie * E - c_ii * I + Q - theta_i)'),
+            # NOTE: s_e and s_i encode only the shift_sigmoid=True branch.
+            # The shift_sigmoid=False case is not supported by the hybrid codegen path
+            # (see nb_hybrid.py guard on WilsonCowan.shift_sigmoid).
             ('s_e', 'c_e * (nb.float32(1.0)/(nb.float32(1.0)+exp(-a_e*(x_e - b_e))) - nb.float32(1.0)/(nb.float32(1.0)+exp(a_e * b_e)))'),
             ('s_i', 'c_i * (nb.float32(1.0)/(nb.float32(1.0)+exp(-a_i*(x_i - b_i))) - nb.float32(1.0)/(nb.float32(1.0)+exp(a_i * b_i)))'),
         ]
