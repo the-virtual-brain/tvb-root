@@ -5,6 +5,10 @@
 ## Generates per-subnetwork dfun + Heun/Euler integration step as an
 ## @nb.njit(inline="always") function.
 ##
+## Precision policy: GPU and Numba JIT paths use float32; Python paths use float64.
+## All emitted arithmetic is float32 to maintain consistency with the coupling
+## template (nb-hybrid-coupling.py.mako).
+##
 ## Required template variables (via <%def> invocation):
 ##   sn_name       : str  — unique subnetwork name suffix
 ##   svars         : list[str]  — state variable names, e.g. ["r", "V"]
