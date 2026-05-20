@@ -623,6 +623,8 @@ class Epileptor2D(ModelNumbaDfun):
                 "zterm",
                 "(nb.float32(-0.1) * z**7) if z < nb.float32(0.0) else nb.float32(0.0)",
             ),
+            # NOTE: h encodes only the non-modification case; modification=True is
+            # not supported by the hybrid codegen path (see nb_hybrid.py guard).
             ("h", "nb.float32(4.0) * (x1 - x0) + zterm"),
         ],
     )
