@@ -1713,12 +1713,35 @@ class NbHybridBackend(MakoUtilMix):
             # Model-specific validation (look up classes from lazy cache)
             _model_cls_by_name = {m.__name__: m for m in _supported_models}
             Epileptor_ = _model_cls_by_name.get('Epileptor')
+            Epileptor2D_ = _model_cls_by_name.get('Epileptor2D')
+            EpileptorRestingState_ = _model_cls_by_name.get('EpileptorRestingState')
             WilsonCowan_ = _model_cls_by_name.get('WilsonCowan')
+            Hopfield_ = _model_cls_by_name.get('Hopfield')
             if Epileptor_ and isinstance(sn.model, Epileptor_):
                 if sn.model.modification[0]:
                     raise NotImplementedError(
                         "NbHybridBackend: Epileptor with modification=True is not supported. "
                         "Set model.modification = numpy.array([False])."
+                    )
+            if Epileptor2D_ and isinstance(sn.model, Epileptor2D_):
+                if sn.model.modification[0]:
+                    raise NotImplementedError(
+                        "NbHybridBackend: Epileptor2D with modification=True is not supported. "
+                        "The dfun_intermediates for 'h' only encodes the non-modification case. "
+                        "Set model.modification = numpy.array([False])."
+                    )
+            if EpileptorRestingState_ and isinstance(sn.model, EpileptorRestingState_):
+                if sn.model.modification[0]:
+                    raise NotImplementedError(
+                        "NbHybridBackend: EpileptorRestingState with modification=True is not supported. "
+                        "Set model.modification = numpy.array([False])."
+                    )
+            if Hopfield_ and isinstance(sn.model, Hopfield_):
+                if sn.model.dynamic[0]:
+                    raise NotImplementedError(
+                        "NbHybridBackend: Hopfield with dynamic=True is not supported. "
+                        "The hybrid codegen path only supports static threshold (dynamic=False). "
+                        "Set model.dynamic = numpy.array([False])."
                     )
             if WilsonCowan_ and isinstance(sn.model, WilsonCowan_):
                 if not sn.model.shift_sigmoid[0]:
