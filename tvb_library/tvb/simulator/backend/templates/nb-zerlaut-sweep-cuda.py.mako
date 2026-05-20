@@ -45,8 +45,12 @@
                     'tau_w_e', 'tau_w_i', 'b_e', 'a_e', 'b_i', 'a_i',
                     'E_L_e', 'E_L_i', 'tau_OU', 'K_ext_e']
 
-    _df = "np.float32(1e-7)"
+    # 1e-7 is near the float32 noise floor for second derivatives;
+    # 1e-4 gives a reasonable accuracy/stability trade-off.
+    _df = "np.float32(1e-4)"
     _df_scale = "np.float32(1e3)"
+    # NOTE: local_coupling is deprecated for hybrid subnetworks; coupling is
+    # handled exclusively through the projection/cfun pipeline.
 %>
 
 ## ------------------------------------------------------------------
