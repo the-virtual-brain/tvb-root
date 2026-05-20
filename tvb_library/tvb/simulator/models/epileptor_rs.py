@@ -308,12 +308,16 @@ class EpileptorRestingState(ModelNumbaDfun):
     parameter_names = List(
         of=str,
         label="List of parameters for this model",
-        default="x0 Iext Iext2 a b slope tt Kvf c d r Ks Kf aa bb tau tau_rs I_rs a_rs b_rs d_rs e_rs f_rs alpha_rs beta_rs gamma_rs K_rs".split(),
+        default="x0 Iext Iext2 a b slope tt Kvf c d r Ks Kf aa bb tau tau_rs I_rs a_rs b_rs d_rs e_rs f_rs alpha_rs beta_rs gamma_rs K_rs modification".split(),
     )
 
     state_variable_dfuns = Final(
         label="Drift functions for numba codegen",
         default={
+            # NOTE: local_coupling terms present in the numpy/numba dfuns (Iext += local_coupling * y[0],
+            # lc_1 = local_coupling * y[6]) are omitted from x1 and x_rs here. This is intentional:
+            # local_coupling is deprecated for the hybrid codegen path. The hybrid backend handles
+            # local coupling separately via projection weights.
             "x1": "tt * (y1 - z + Iext + Kvf * Coupling_Term_x1 + ((-a * x1**2 + b * x1) if x1 < 0.0 else (slope - x2 + 0.6 * (z - 4.0)**2)) * x1)",
             "y1": "tt * (c - d * x1**2 - y1)",
             "z": "tt * (r * (4 * (x1 - x0) + (-0.1 * z**7 if z < 0.0 else 0.0) - z + Ks * Coupling_Term_x1))",
