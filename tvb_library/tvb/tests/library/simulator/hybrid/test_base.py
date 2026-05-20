@@ -149,8 +149,8 @@ class BaseHybridTest(BaseTestCase):
         thalamus_indices = np.where(ix == AtlasPart.THALAMUS)[0]
 
         # Use valid coupling variable indices for each model
-        # JansenRit has 2 coupling variables (0,1)
-        # ReducedSetFitzHughNagumo has 2 coupling variables (0,1)
+        # JansenRit cvar=[1,2] → state-variable indices 1 (y1) and 2 (y2)
+        # ReducedSetFitzHughNagumo cvar=[0,2] → state-variable indices 0 (xi) and 2 (alpha)
 
         # Prepare sparse weights and dummy lengths/params for projections
         weights_c_t_dense = conn.weights[thalamus_indices][:, cortex_indices]
@@ -179,14 +179,14 @@ class BaseHybridTest(BaseTestCase):
             projections=[
                 InterProjection(
                     source=cortex, target=thalamus,
-                    source_cvar=np.r_[0], target_cvar=np.r_[1],
+                    source_cvar=np.r_[1], target_cvar=np.r_[1],
                     weights=weights_c_t_sparse,
                     scale=1e-4,
                     lengths=lengths_c_t_sparse, cv=default_cv, dt=default_dt, # Use sparse lengths
                 ),
                 InterProjection(
                     source=cortex, target=thalamus,
-                    source_cvar=np.r_[1], target_cvar=np.r_[0],
+                    source_cvar=np.r_[2], target_cvar=np.r_[0],
                     weights=weights_c_t_sparse,
                     scale=1e-4,
                      # Reusing weights, so must reuse sparse lengths for consistency

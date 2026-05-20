@@ -106,6 +106,21 @@ def run_sweep_prange(kernel_fn, analysis, network_set, sweep_descriptor,
     subnets = analysis.subnetworks
     all_projs = analysis.all_projections
     n_sweeps = sweep_values.shape[0]
+    n_sweep_dims = sweep_values.shape[1] if sweep_values.ndim > 1 else 0
+
+    # ---- Guard: model-parameter sweeps not yet supported on CPU prange path ----
+    # _sweep_params is accepted by the kernel but never forwarded to network_chunk
+    # or the dfun templates. cfun-parameter sweeps work correctly (applied below).
+    # TODO: thread _sweep_params through network_chunk → state_update → dfun, then
+    #       remove this guard.
+    for dim, desc in enumerate(sweep_descriptor):
+        if desc.get('type', '') not in ('cfun',):
+            raise NotImplementedError(
+                f"CPU sweep dimension {dim} ({desc.get('name', '?')}) has type "
+                f"'{desc.get('type', '?')}' — model-parameter sweeps are not yet "
+                f"supported on the CPU prange path. Use the Python sequential path "
+                f"(backend='numba', parallel=False) or the CUDA sweep backend instead."
+            )
 
     t_start = 1  # 1-based time step (matching single-sim)
 

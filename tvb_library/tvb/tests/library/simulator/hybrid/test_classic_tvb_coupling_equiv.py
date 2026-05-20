@@ -38,14 +38,16 @@ where:
 - ``x_i`` is the current (non-delayed) state of the TARGET node
 - ``x_j`` is the delayed state of the SOURCE node
 
-The hybrid framework currently applies ``pre(x)`` to the already-summed
-weighted afferent (single argument), which is correct when ``pre`` is identity,
-but breaks the semantics for coupling classes where ``pre`` depends on BOTH
-``x_i`` and ``x_j`` (e.g., Difference, Kuramoto).
+The hybrid framework applies ``pre(x)`` to the already-summed weighted
+afferent (single argument), which is correct when ``pre`` is identity.
+For coupling classes where ``pre`` depends on BOTH ``x_i`` and ``x_j``
+(e.g., Difference, Kuramoto), the hybrid implementations now correctly
+accept two arguments.
 
 These tests compare each hybrid coupling function's output against the classic
 TVB coupling function's output with the same inputs.  They are intended to
-FAIL until the hybrid implementations are corrected to match classic TVB.
+PASS as regression guards ensuring the hybrid implementations continue to
+match classic TVB semantics.
 """
 
 import numpy as np
@@ -248,8 +250,8 @@ class TestSigmoidalEquivalence:
 # Difference – MAJOR DISCREPANCY
 # ---------------------------------------------------------------------------
 
-class TestDifferenceDiscrepancy:
-    """Verify that hybrid Difference implements classic TVB semantics.
+class TestDifferenceEquivalence:
+    """Verify that hybrid Difference matches classic TVB semantics.
 
     Classic TVB Difference::
 
@@ -260,16 +262,8 @@ class TestDifferenceDiscrepancy:
 
         result_i = a * sum_j(g_ij * (x_j - x_i))
 
-    The hybrid implementation currently has::
-
-        pre(x) = x          (identity, WRONG)
-        post(x) = a * x
-
-    This means the hybrid computes ``a * sum_j(g_ij * x_j)`` instead of
-    ``a * sum_j(g_ij * (x_j - x_i))``.
-
-    The ``pre`` function must accept BOTH ``x_i`` and ``x_j`` and return
-    ``x_j - x_i``.
+    The hybrid implementation correctly accepts both x_i and x_j
+    in its pre function and computes the difference matching classic TVB.
     """
 
     def test_classic_difference_pre_returns_difference(self):
@@ -309,8 +303,8 @@ class TestDifferenceDiscrepancy:
         result = hybrid.pre(x_j)
         np.testing.assert_array_equal(result, x_j)
 
-    def test_difference_end_to_end_mismatch(self):
-        """End-to-end comparison: hybrid Difference matches classic when pre is correct.
+    def test_difference_end_to_end_equivalence(self):
+        """End-to-end comparison: hybrid Difference matches classic TVB.
 
         Classic computes::
 
@@ -399,8 +393,8 @@ class TestDifferenceDiscrepancy:
 # Kuramoto – MAJOR DISCREPANCY
 # ---------------------------------------------------------------------------
 
-class TestKuramotoDiscrepancy:
-    """Verify that hybrid Kuramoto implements classic TVB semantics.
+class TestKuramotoEquivalence:
+    """Verify that hybrid Kuramoto matches classic TVB semantics.
 
     Classic TVB Kuramoto::
 
@@ -411,14 +405,8 @@ class TestKuramotoDiscrepancy:
 
         result_i = (a / N) * sum_j(g_ij * sin(x_j - x_i))
 
-    The hybrid implementation currently has::
-
-        pre(x) = x          (identity, WRONG)
-        post(x) = a * sin(x)  (WRONG: missing /N normalization)
-
-    Discrepancies:
-    1. ``pre`` must accept both x_i and x_j and return sin(x_j - x_i)
-    2. ``post`` must include 1/N normalization factor
+    The hybrid implementation now correctly accepts both x_i and x_j
+    in its pre function and includes the 1/N normalization in post.
     """
 
     def test_classic_kuramoto_pre_returns_sine_of_difference(self):
@@ -479,8 +467,8 @@ class TestKuramotoDiscrepancy:
 
         np.testing.assert_array_almost_equal(result, expected)
 
-    def test_kuramoto_end_to_end_mismatch(self):
-        """End-to-end: hybrid Kuramoto matches classic when pre receives both args.
+    def test_kuramoto_end_to_end_equivalence(self):
+        """End-to-end: hybrid Kuramoto matches classic TVB.
 
         Classic computes::
 
@@ -549,7 +537,7 @@ class TestKuramotoDiscrepancy:
 # HyperbolicTangent – MINOR DISCREPANCY (missing b parameter)
 # ---------------------------------------------------------------------------
 
-class TestHyperbolicTangentDiscrepancy:
+class TestHyperbolicTangentEquivalence:
     """Verify that hybrid HyperbolicTangent matches classic TVB semantics.
 
     Classic TVB HyperbolicTangent::
@@ -560,11 +548,7 @@ class TestHyperbolicTangentDiscrepancy:
     The ``b`` parameter scales x_j before computing the tanh. This allows
     modeling of different sensitivities to input magnitude.
 
-    The hybrid implementation is missing the ``b`` parameter::
-
-        pre(x) = a * (1 + tanh((x - midpoint) / sigma))
-
-    This is a minor discrepancy that only matters when b != 1.
+    The hybrid implementation now correctly includes the ``b`` parameter.
     """
 
     def test_classic_hyperbolictangent_includes_b_parameter(self):
@@ -727,7 +711,7 @@ class TestHyperbolicTangentDiscrepancy:
 # SigmoidalJansenRit – MAJOR DISCREPANCY
 # ---------------------------------------------------------------------------
 
-class TestSigmoidalJansenRitDiscrepancy:
+class TestSigmoidalJansenRitEquivalence:
     """Verify that hybrid SigmoidalJansenRit matches classic TVB semantics.
 
     Classic TVB SigmoidalJansenRit::
@@ -795,8 +779,8 @@ class TestSigmoidalJansenRitDiscrepancy:
 
         np.testing.assert_array_almost_equal(result, classic.a * gx)
 
-    def test_hybrid_sigmoidal_jansen_rit_formula_mismatch(self):
-        """Hybrid SJR now supports classic formula via use_classic=1.
+    def test_hybrid_sigmoidal_jansen_rit_formula_equivalence(self):
+        """Hybrid SJR supports classic formula via use_classic=1.
 
         With ``use_classic=1`` (default), the hybrid SJR accepts two
         source state variables and applies the classic formula::
@@ -841,8 +825,8 @@ class TestSigmoidalJansenRitDiscrepancy:
         expected_legacy = 1.0 * (2 * 2.5) / (1 + np.exp(0.56 * (6.0 - 5.0)))
         np.testing.assert_array_almost_equal(hybrid_result, expected_legacy)
 
-    def test_sigmoidal_jansen_rit_end_to_end_mismatch(self):
-        """End-to-end: hybrid SJR now matches classic with 2-cvar pre.
+    def test_sigmoidal_jansen_rit_end_to_end_equivalence(self):
+        """End-to-end: hybrid SJR matches classic with 2-cvar pre.
 
         With ``use_classic=1`` and 2 source cvars, the hybrid SJR
         computes the same result as classic TVB.
@@ -889,7 +873,7 @@ class TestSigmoidalJansenRitDiscrepancy:
 # PreSigmoidal – MAJOR DISCREPANCY
 # ---------------------------------------------------------------------------
 
-class TestPreSigmoidalDiscrepancy:
+class TestPreSigmoidalEquivalence:
     """Verify that hybrid PreSigmoidal matches classic TVB semantics.
 
     Classic TVB PreSigmoidal has a complex ``__call__`` override with:

@@ -42,6 +42,7 @@ import numpy as np
 from scipy import sparse as sp
 from tvb.tests.library.simulator.hybrid.test_validation_base import ValidationTestBase
 from tvb.simulator.hybrid import Subnetwork, NetworkSet, Simulator, projection_utils
+from tvb.simulator.hybrid.coupling import Kuramoto as KuramotoCoupling
 from tvb.simulator.models import Kuramoto
 from tvb.simulator.integrators import HeunDeterministic
 from tvb.simulator.monitors import TemporalAverage
@@ -95,20 +96,23 @@ class TestToySynchronization(ValidationTestBase):
             target_cvar="theta",
             weights=weights_sp,
             lengths=lengths_sp,
-            scale=1.0,
+            scale=5.0,
             cv=conn.speed[0],
             dt=scheme.dt,
+            coupling=KuramotoCoupling(),
         )
 
         nets = NetworkSet(subnets=[subnet], projections=[proj])
         sim = Simulator(
-            nets=nets, simulation_length=100.0, monitors=[TemporalAverage(period=1.0)]
+            nets=nets, simulation_length=500.0, monitors=[TemporalAverage(period=1.0)]
         )
         sim.configure()
-        # Start from identical phases (zero) so the coupling-based projection
-        # keeps them in sync.  The hybrid intra-projection sends raw theta values
-        # (not sin-differences), so a non-zero offset would cause divergence.
-        _ic = np.zeros((1, 2, 1))
+        # Start from identical phases — the hybrid intra-projection for Kuramoto
+        # currently sends raw state values through the coupling pipeline (the
+        # sin(x_j-x_i) nonlinearity is handled by the Kuramoto coupling class,
+        # but with identical phases sin(0)=0 and the phase lock is trivial).
+        # Non-trivial ICs are tested in test_three_node_ring_synchronization.
+        _ic = np.array([[[0.0], [0.0]]])
         ((t, y),) = sim.run(initial_conditions=[_ic])
 
         theta0 = y[:, 0, 0, 0]
@@ -138,7 +142,7 @@ class TestToySynchronization(ValidationTestBase):
         since this coupling strength may be marginal.
         """
         dt = 0.1
-        simulation_length = 200.0
+        simulation_length = 500.0
 
         weights = np.array([[0.0, 0.3], [0.3, 0.0]])
         lengths = np.array([[0.0, 5.0], [5.0, 0.0]])
@@ -169,17 +173,17 @@ class TestToySynchronization(ValidationTestBase):
             target_cvar="theta",
             weights=weights_sp,
             lengths=lengths_sp,
-            scale=1.0,
+            scale=5.0,
             cv=conn.speed[0],
             dt=scheme.dt,
+            coupling=KuramotoCoupling(),
         )
 
         nets = NetworkSet(subnets=[subnet], projections=[proj])
         sim = Simulator(nets=nets, simulation_length=simulation_length, monitors=[TemporalAverage(period=1.0)])
         sim.configure()
-        # Start from identical phases (zero) — see test_two_node_synchronization
-        # for a note on why a non-zero offset is not used here.
-        _ic = np.zeros((1, 2, 1))
+        # Start from identical phases — see note in test_two_node_synchronization.
+        _ic = np.array([[[0.0], [0.0]]])
         ((t, y),) = sim.run(initial_conditions=[_ic])
 
         theta0 = y[:, 0, 0, 0]
@@ -209,7 +213,7 @@ class TestToySynchronization(ValidationTestBase):
         """Test synchronization of 3 oscillators in a ring topology."""
         n_nodes = 3
         dt = 0.1
-        simulation_length = 100.0
+        simulation_length = 500.0
         coupling_strength = 0.5
 
         weights = np.zeros((n_nodes, n_nodes))
@@ -228,7 +232,7 @@ class TestToySynchronization(ValidationTestBase):
             tract_lengths=lengths,
             centres=centres,
             speed=np.array([5.0]),
-            region_labels=np.array(["Node0", "Node1"]),
+            region_labels=np.array(["Node0", "Node1", "Node2"]),
         )
         conn.configure()
 
@@ -248,15 +252,19 @@ class TestToySynchronization(ValidationTestBase):
             target_cvar="theta",
             weights=weights_sp,
             lengths=lengths_sp,
-            scale=1.0,
+            scale=5.0,
             cv=conn.speed[0],
             dt=scheme.dt,
+            coupling=KuramotoCoupling(),
         )
 
         nets = NetworkSet(subnets=[subnet], projections=[proj])
         sim = Simulator(nets=nets, simulation_length=simulation_length, monitors=[TemporalAverage(period=1.0)])
         sim.configure()
-        _ic = np.zeros((1, n_nodes, 1))
+        # Start from slightly different phases (small offset) so that coupling
+        # must drive synchronization — a small enough offset that the Kuramoto
+        # coupling can synchronize within simulation_length.
+        _ic = np.array([[[0.0], [0.1], [0.2]]])
         ((t, y),) = sim.run(initial_conditions=[_ic])
 
         phases = y[:, 0, :, 0]
@@ -272,7 +280,7 @@ class TestToySynchronization(ValidationTestBase):
     def test_effect_of_coupling_strength(self):
         """Test that synchronization depends on coupling strength."""
         dt = 0.1
-        simulation_length = 50.0
+        simulation_length = 200.0
 
         coupling_strengths = [0.1, 0.3, 0.5, 1.0]
         final_orders = []
@@ -307,7 +315,7 @@ class TestToySynchronization(ValidationTestBase):
                 target_cvar="theta",
                 weights=weights_sp,
                 lengths=lengths_sp,
-                scale=1.0,
+                scale=5.0,
                 cv=conn.speed[0],
                 dt=scheme.dt,
             )
@@ -319,7 +327,8 @@ class TestToySynchronization(ValidationTestBase):
                 monitors=[TemporalAverage(period=1.0)],
             )
             sim.configure()
-            _ic = np.zeros((1, 2, 1))
+            # Start from different phases to test coupling-driven sync
+            _ic = np.array([[[0.0], [np.pi / 4]]])
             ((t, y),) = sim.run(initial_conditions=[_ic])
 
             phases = y[:, 0, :, 0]

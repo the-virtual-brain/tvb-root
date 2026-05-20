@@ -1181,7 +1181,7 @@ class TestStimulusParity(unittest.TestCase):
         sn = _make_subnet("ctx", m, n, HeunDeterministic)
         # Intra-projection: weak local coupling with zero delay
         w = sp.csr_matrix(np.ones((n, n)) * 0.005)
-        np.fill_diagonal(w.toarray(), 0.0)
+        w.setdiag(0.0)
         intra = IntraProjection(
             source_cvar=np.array([0], dtype=np.int_),
             target_cvar=np.array([0], dtype=np.int_),
@@ -1376,7 +1376,7 @@ class TestStimulusParity(unittest.TestCase):
         sn1.node_indices = np.arange(n1)
         # Intra-projection on source
         w_intra = sp.csr_matrix(np.ones((n1, n1)) * 0.005)
-        np.fill_diagonal(w_intra.toarray(), 0.0)
+        w_intra.setdiag(0.0)
         intra = IntraProjection(
             source_cvar=np.array([0], dtype=np.int_),
             target_cvar=np.array([0], dtype=np.int_),

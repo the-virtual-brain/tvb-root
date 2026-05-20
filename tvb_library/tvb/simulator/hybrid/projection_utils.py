@@ -340,7 +340,20 @@ def create_intra_projection(
     if weights is None and connectivity is None:
         raise ValueError("Must provide either connectivity or explicit weights")
 
-    # Validate sparse matrices if provided
+    # Extract weights/lengths from connectivity if provided
+    if connectivity is not None:
+        source_indices = subnet.node_indices
+        target_indices = subnet.node_indices
+        if source_indices is None:
+            raise ValueError(
+                "subnet.node_indices must be set when using connectivity for "
+                "intra-projection extraction"
+            )
+        subset = extract_connectivity_subset(connectivity, source_indices, target_indices)
+        weights = subset["weights"]
+        lengths = subset["lengths"]
+
+    # Validate sparse matrices if provided/extracted
     if weights is not None and not isinstance(weights, sp.csr_matrix):
         raise TypeError(f"Weights must be scipy.sparse.csr_matrix, got {type(weights)}")
     if lengths is not None and not isinstance(lengths, sp.csr_matrix):

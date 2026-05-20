@@ -122,6 +122,7 @@ class InterProjection(BaseProjection):
         # Resolve target cvar names if target model is available
         if target_cvar is not None and 'target' in kwargs and hasattr(kwargs['target'], 'model'):
             target_cvar = resolve_target_cvar(kwargs['target'].model, target_cvar)
+            validate_cvar_indices(kwargs['target'].model, target_cvar)
 
         # Pass resolved cvars to parent
         if source_cvar is not None:

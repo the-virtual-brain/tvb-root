@@ -591,7 +591,7 @@ class ZetterbergJansen(Model):
             "v4": "y4",
             "y4": "Heke * (gamma_3 * sigm_v2_v3 + gamma_3T * (Q + coupled_input)) - ke_2 * y4 - keke * v4",
             "v5": "y5",
-            "y5": "Hiki * (gamma_5 * sigm_v4_v5) - ki_2 * y5 - keke * v5",
+            "y5": "Hiki * (gamma_5 * sigm_v4_v5) - ki_2 * y5 - kiki * v5",
             "v6": "y2 - y3",
             "v7": "y4 - y5",
         },
@@ -729,7 +729,7 @@ class ZetterbergJansen(Model):
         derivative[9] = (
             self.Hiki * (self.gamma_5 * self.sigma_fun(v4 - v5))
             - self.ki_2 * y5
-            - self.keke * v5
+            - self.kiki * v5
         )
         # aux variables (the sum gathering the postsynaptic inh & exc potentials)
         # pyramidal cells

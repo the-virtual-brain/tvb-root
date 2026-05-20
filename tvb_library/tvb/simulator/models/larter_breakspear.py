@@ -456,12 +456,20 @@ class LarterBreakspear(Model):
             ("m_K", "0.5 * (1.0 + math.tanh((V - TK) / d_K))"),
             ("QV", "0.5 * QV_max * (1.0 + math.tanh((V - VT) / d_V))"),
             ("QZ", "0.5 * QZ_max * (1.0 + math.tanh((Z - ZT) / d_Z))"),
+            # lc_0 = local_coupling * QV
+            # NOTE: local_coupling is omitted from state_variable_dfuns because
+            # the hybrid backend does not current pass it to the dfun.  When
+            # support is added, QV in the V expression should become (QV + lc_0)
+            # in both the Ca-current and Na-current terms.  See np dfun for ref.
         ],
     )
 
     state_variable_dfuns = Final(
         label="Drift functions for numba codegen",
         default={
+            # NOTE: local_coupling (lc_0 = local_coupling * QV) is omitted from
+            # the V expression.  When the hybrid backend supports local_coupling,
+            # replace QV with (QV + lc_0) in the two (1 - C) terms below.
             "V": (
                 "t_scale * (-(gCa + (1.0 - C) * rNMDA * aee * QV + C * rNMDA * aee * Coupling_Term) * m_Ca * (V - VCa)"
                 " - gK * W * (V - VK)"

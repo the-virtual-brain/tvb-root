@@ -277,7 +277,6 @@ class CompiledCUDASweepKernel:
         analysis: NetworkAnalysis,
         network_set: object,
         dt: float,
-        horizon: int,
         chunk_size: Optional[int],
         monitor_type: int,
         monitor_period: int,
@@ -475,7 +474,6 @@ class CompiledCUDASweepKernel:
 
             # Scalar parameters
             args.append(np.int32(this_offset))
-            args.append(np.int32(horizon))
             args.append(np.float32(dt))
             args.append(np.int32(this_nstep))
             args.append(np.int32(monitor_type))
@@ -517,9 +515,12 @@ class CompiledCUDASweepKernel:
                 results_raw.append(d_raws[sn_info.name].copy_to_host())
 
         results_bold = []
+        final_bold_states = {}
         for sn_info in analysis.subnetworks:
             if sn_info.name in d_bold_outs:
                 results_bold.append(d_bold_outs[sn_info.name].copy_to_host())
+            if sn_info.name in d_bold_states:
+                final_bold_states[sn_info.name] = d_bold_states[sn_info.name].copy_to_host()
 
         # ---- Copy final states / srcbufs for snapshot ----
         final_states = {}
@@ -543,6 +544,7 @@ class CompiledCUDASweepKernel:
                 'states': final_states,
                 'srcbufs': final_srcbufs,
                 'step_offset': final_step_offset,
+                'bold_states': final_bold_states,
             },
         }
         if results_raw:
@@ -990,6 +992,7 @@ class CompiledCUDASweepKernel:
         total_elapsed = 0.0
         snapshot_states = {}
         snapshot_srcbufs = {}
+        snapshot_bold_states = {}
 
         for batch_idx in range(n_batches):
             batch_start = batch_idx * max_batch_sweeps
@@ -1063,7 +1066,6 @@ class CompiledCUDASweepKernel:
                 analysis=analysis,
                 network_set=network_set,
                 dt=dt,
-                horizon=horizon,
                 chunk_size=chunk_size,
                 monitor_type=monitor_type,
                 monitor_period=monitor_period,
@@ -1133,6 +1135,13 @@ class CompiledCUDASweepKernel:
                     )
                 snapshot_states[sn_info.name][batch_start:batch_end] = batch_result['snapshot']['states'][sn_info.name]
                 snapshot_srcbufs[sn_info.name][batch_start:batch_end] = batch_result['snapshot']['srcbufs'][sn_info.name]
+                if sn_info.name in batch_result['snapshot'].get('bold_states', {}):
+                    if batch_idx == 0:
+                        snapshot_bold_states[sn_info.name] = np.zeros(
+                            (n_sweeps,) + batch_result['snapshot']['bold_states'][sn_info.name].shape[1:],
+                            dtype=np.float32
+                        )
+                    snapshot_bold_states[sn_info.name][batch_start:batch_end] = batch_result['snapshot']['bold_states'][sn_info.name]
 
         merged_tavg = self._merge_subnet_outputs(result_tavg, analysis.subnetworks, node_indices)
 
@@ -1165,7 +1174,7 @@ class CompiledCUDASweepKernel:
         }
         # Add Bold state to snapshot if Bold was enabled
         if bold_period is not None:
-            result['snapshot']['bold_states'] = bold_states_h
+            result['snapshot']['bold_states'] = snapshot_bold_states
         if ga_avg is not None:
             result['ga_avg'] = ga_avg
         if result_raw is not None:

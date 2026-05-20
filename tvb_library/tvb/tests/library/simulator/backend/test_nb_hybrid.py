@@ -2982,9 +2982,14 @@ def test_ralph_model_matches_python(mod_path, cls_name):
         if v in svars:
             py_voi_chunks.append(py[0][:, svars.index(v), :, :])
         else:
-            # Derived voi — replace svar names with state slicing and eval
+            # Derived voi — replace svar names with state slicing and eval.
+            # Sort replacements by name length descending so that longer names
+            # (e.g. "x1") are replaced before shorter ones (e.g. "x") to avoid
+            # corrupting substrings.
             expr = v
-            for sv_name, sv_idx in zip(svars, range(len(svars))):
+            for sv_name, sv_idx in sorted(
+                zip(svars, range(len(svars))), key=lambda pair: -len(pair[0])
+            ):
                 expr = expr.replace(sv_name, f'py[0][:, {sv_idx}, :, :]')
             py_voi_chunks.append(eval(expr))
     py_voi = np.stack(py_voi_chunks, axis=1).astype(np.float32)

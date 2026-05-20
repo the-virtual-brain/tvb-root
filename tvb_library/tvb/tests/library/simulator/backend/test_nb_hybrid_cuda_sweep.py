@@ -41,6 +41,7 @@ def cuda_available():
         import numba.cuda
         if not numba.cuda.is_available():
             pytest.skip("CUDA not available")
+        return True
     except ImportError:
         pytest.skip("numba.cuda not available")
 
@@ -513,8 +514,6 @@ def test_spatial_proj_shape(cuda_available):
 
 
 def test_stimulus_api(cuda_available):
-    if not cuda_available:
-        pytest.skip("CUDA not available")
     """Verify stimulus via Subnetwork.add_stimulus() works on CUDA (post-refactor API)."""
     _CUDA_COMPILED_CACHE.clear()
 

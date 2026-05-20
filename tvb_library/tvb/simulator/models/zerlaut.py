@@ -392,6 +392,10 @@ class ZerlautAdaptationFirstOrder(Model):
     _nb_hybrid_custom_template = "nb-zerlaut-dfun.py.mako"
     # nb-hybrid: coupling_terms needed by backend infrastructure for array sizing
     coupling_terms = ['Coupling_Term']
+    # NOTE: local_coupling (lc_E, lc_I) is used in the Python dfun but not yet
+    # passed to the Mako template.  When local_coupling support is added to the
+    # hybrid backend, lc_E and lc_I must be injected into Fe_ext and Fi_ext in the
+    # template (see Python dfun for reference).
 
     def dfun(self, state_variables, coupling, local_coupling=0.00):
         r"""

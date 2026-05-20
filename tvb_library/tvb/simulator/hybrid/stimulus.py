@@ -37,7 +37,7 @@ from scipy import sparse as sp
 import tvb.basic.neotraits.api as t
 from tvb.datatypes.patterns import SpatioTemporalPattern
 
-from .cvar_utils import resolve_cvar_names
+from .cvar_utils import resolve_target_cvar
 from .projection_utils import create_all_to_all_weights
 
 # Import here to avoid circular dependency
@@ -102,7 +102,7 @@ class Stim(t.HasTraits):
                     raise ValueError(
                         "target must be provided to resolve cvar names"
                     )
-                target_cvar_resolved = resolve_cvar_names(
+                target_cvar_resolved = resolve_target_cvar(
                     target_subnet.model, target_cvar_input
                 )
             else:

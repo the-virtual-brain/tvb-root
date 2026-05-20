@@ -73,6 +73,10 @@ def resolve_cvar_names(model, cvar_spec):
     >>> resolve_cvar_names(model, ['y0', 'y0', 'y1'])
     array([0, 0, 1])
     """
+    # Handle bare integer (promised by docstring)
+    if isinstance(cvar_spec, (int, np.integer)):
+        return np.atleast_1d(np.array([int(cvar_spec)], dtype=np.int_))
+
     # If already an integer array, return as-is
     if isinstance(cvar_spec, (np.ndarray, list, tuple)):
         # Check if it's already integer indices

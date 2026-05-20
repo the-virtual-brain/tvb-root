@@ -232,29 +232,65 @@ class TestSubnetwork(BaseHybridTest):
 
 class TestStim(BaseHybridTest):
     """
-    Smoke tests for :class:`~tvb.simulator.hybrid.Stim` integration.
+    Smoke tests for :class:`tvb.simulator.hybrid.Stim` integration.
     """
 
     def test_stim(self):
         """
-        A custom ``StimuliRegion`` subclass returns an array of the correct
-        length (one value per region) when called with a time argument.
+        A :class:`~tvb.simulator.hybrid.Stim` returns a coupling array of
+        the correct shape ``(n_cvar, n_nodes, n_modes)`` when its
+        :meth:`get_coupling` method is called.
 
-        This is a basic shape check that confirms the stimulus callable
-        protocol is respected; detailed validation of stimulus waveforms is
-        covered by dedicated stimulus integration tests.
+        This test constructs a ``Stim`` wrapping a ``StimuliRegion`` pattern,
+        attaches it to a ``Subnetwork``, and verifies that the hybrid stimulus
+        object produces output consistent with the subnetwork's dimensions.
         """
-        conn = Connectivity.from_file()
-        nn = conn.weights.shape[0]
-        conn.configure()
-        
-        class MyStim(StimuliRegion):
-            def __call__(self, t):
-                return np.random.randn(self.connectivity.weights.shape[0])
-                
-        stim = MyStim(connectivity=conn)
-        I = stim(5)
-        self.assert_equal((nn,), I.shape)
+        from tvb.datatypes import equations
+
+        nnodes = 5
         model = JansenRit()
+        scheme = EulerDeterministic(dt=0.1)
         model.configure()
-        # TODO: Add more stimulus tests
+        scheme.configure()
+
+        sub = Subnetwork(
+            name='stim_test_subnet',
+            model=model,
+            scheme=scheme,
+            nnodes=nnodes,
+        )
+        sub.configure()
+
+        # Build a simple constant stimulus via StimuliRegion
+        temporal = equations.Linear()
+        temporal.parameters['a'] = 0.0
+        temporal.parameters['b'] = 1.0
+        weight = np.zeros(nnodes)
+        weight[0] = 1.0
+        pattern = StimuliRegion.from_weights(
+            weight=weight, temporal=temporal,
+        )
+        pattern.configure()
+
+        # Use the hybrid Stim class (not StimuliRegion directly)
+        stim = Stim(
+            target=sub,
+            stimulus=pattern,
+            target_cvar=np.array([0]),
+            projection_scale=1.0,
+        )
+        stim.configure(simulation_length=100.0)
+
+        coupling = stim.get_coupling(step=0)
+
+        # Stim.get_coupling returns shape (n_cvar, n_nodes, n_modes)
+        n_cvar = len(stim.target_cvar)
+        n_modes = sub.nmodes if hasattr(sub, 'nmodes') else 1
+        expected_shape = (n_cvar, nnodes, n_modes)
+        self.assert_equal(expected_shape, coupling.shape)
+
+        # The stimulus should be non-zero for the target node
+        assert not np.allclose(coupling, 0.0, atol=1e-10), \
+            "Stim coupling should not be identically zero"
+        assert np.all(np.isfinite(coupling)), \
+            "Stim coupling contains non-finite values"

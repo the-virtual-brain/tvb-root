@@ -236,7 +236,7 @@ class CoombesByrne(Model):
     The equations of the model read
     
     .. math::
-            \dot{r} &= \Delta/\pi + 2 V r - g r^2 \\
+            \dot{r} &= \Delta/\pi + 2 V r - g r \\
             \dot{V} &= V^2 - \pi^2 r^2 + \eta + (v_{syn} - V) g \\
             \dot{g} &= \alpha q  \\
             \dot{q} &= \alpha (\kappa \pi r - g - 2 q)
@@ -342,7 +342,7 @@ class CoombesByrne(Model):
             The equations of the model read
 
             .. math::
-                    \dot{r} &= \Delta/\pi + 2 V r - g r^2 \\
+                    \dot{r} &= \Delta/\pi + 2 V r - g r \\
                     \dot{V} &= V^2 - \pi^2 r^2 + \eta + (v_{syn} - V) g \\
                     \dot{g} &= \alpha q  \\
                     \dot{q} &= \alpha (\kappa \pi r - g - 2 q)
@@ -384,7 +384,7 @@ class CoombesByrne2D(Model):
     The equations of the model read
     
     .. math::
-            \dot{r} &= \Delta/\pi + 2 V r - g r^2\\
+            \dot{r} &= \Delta/\pi + 2 V r - g r\\
             \dot{V} &= V^2 - \pi^2 r^2 + \eta + (v_{syn} - V) g \\
             g &= \kappa \pi r
     .. [Coombes_Byrne_2019] Coombes, S., & Byrne, Á. (2019). Next generation neural mass models. In *Nonlinear Dynamics in Computational Neuroscience* (pp. 1-16). Springer, Cham.
@@ -482,7 +482,7 @@ class CoombesByrne2D(Model):
            The equations of the model read
 
            .. math::
-                   \dot{r} &= \Delta/\pi + 2 V r - g r^2\\
+                   \dot{r} &= \Delta/\pi + 2 V r - g r\\
                    \dot{V} &= V^2 - \pi^2 r^2 + \eta + (v_{syn} - V) g \\
                    g &= \kappa \pi r
         """
@@ -746,7 +746,7 @@ class GastSchmidtKnosche_SF(Model):
 
     alpha = NArray(
         label=r":math:`\alpha`",
-        default=numpy.array([10.0]),
+        default=numpy.array([1.0]),
         domain=Range(lo=0.0, hi=1.0, step=0.1),
         doc="""adaptation rate""",
     )

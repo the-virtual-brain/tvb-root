@@ -63,7 +63,6 @@ def compute_coupling_${p.name}(
     ${p.name}_w_indices,
     ${p.name}_w_indptr,
     ${p.name}_idelays,
-    horizon,
 % if src != tgt:
     N_${src},
 % endif
@@ -111,7 +110,7 @@ def compute_coupling_${p.name}(
             src_node = ${p.name}_w_indices[ptr]
             w = ${p.name}_w_data[ptr]
             d = ${p.name}_idelays[ptr]
-            slot = (t - 1 - d + horizon) % horizon
+            slot = (t - 1 - d + ${analysis.source_horizons[p.source_subnet]}) % ${analysis.source_horizons[p.source_subnet]}
 
             ## cvar accumulation with per-edge pre-cfun and source-mode loop
             % if cm in ('1_to_1', 'n_to_n'):
@@ -535,7 +534,7 @@ def run_sweep(
 
     ## per-subnetwork source history buffers  [tid, nvar, nnodes, n_modes, horizon]
     % for sn in subnets:
-    ${sn.name}_srcbuf,     # (n_sweeps, ${sn.model.nvar}, ${sn.n_nodes}, ${sn.n_modes}, horizon) float32
+    ${sn.name}_srcbuf,     # (n_sweeps, ${sn.model.nvar}, ${sn.n_nodes}, ${sn.n_modes}, source_horizon) float32
     % endfor
 
     ## per-subnetwork tavg output  [tid, nvoi, nnodes, n_modes]
@@ -620,7 +619,6 @@ def run_sweep(
 
     ## scalar parameters
     t_offset,
-    horizon,
     dt,
     nstep,
     monitor_type,          # 0=tavg, 1=raw, 2=subsample
@@ -674,7 +672,6 @@ def run_sweep(
             ${src}_srcbuf,
             ${p.name}_w_data, ${p.name}_w_indices, ${p.name}_w_indptr,
             ${p.name}_idelays,
-            horizon,
 % if src != tgt:
             ${'N_' + src},
 % endif
@@ -1204,7 +1201,7 @@ def run_sweep(
     svar_list = list(sn.model.state_variables)
 %>
         % if analysis.source_horizons.get(sn.name, 1) > 1:
-        _slot_${sn.name} = t % horizon
+        _slot_${sn.name} = t % ${analysis.source_horizons[sn.name]}
         for i in range(N_${sn.name}):
             % for k, sv in enumerate(svar_list):
             for _m in range(${sn.n_modes}):
