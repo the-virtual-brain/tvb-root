@@ -300,6 +300,14 @@ class EpileptorRestingState(ModelNumbaDfun):
         doc="Linear coefficient.",
     )
 
+    modification = NArray(
+        dtype=bool,
+        label=":math:`modification`",
+        default=numpy.array([False]),
+        doc="When modification is True, then use nonlinear influence on z. "
+             "The default value is False. Not supported by the hybrid codegen path.",
+    )
+
     coupling_terms = Final(
         label="Coupling terms",
         default=["Coupling_Term_x1", "Coupling_Term_x2", "Coupling_Term_x_rs"],
