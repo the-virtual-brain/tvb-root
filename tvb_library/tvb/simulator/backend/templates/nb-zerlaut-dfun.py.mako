@@ -219,17 +219,11 @@ def _zerlaut_diff2_fi_fi_${sn.name}(TF_fn, fe, fi, fe_ext, fi_ext, W, TF_base):
             + TF_fn(fe, fi - df, fe_ext, fi_ext, W)) / (df * ${_df_scale}) ** 2
 
 
-${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
-def _zerlaut_diff2_fe_fi_${sn.name}(TF_fn, fe, fi, fe_ext, fi_ext, W):
-    df = ${_df}
-    dfe_plus = (TF_fn(fe, fi + df, fe_ext, fi_ext, W) - TF_fn(fe, fi - df, fe_ext, fi_ext, W)) / (nb.float32(2.0) * df * ${_df_scale})
-    ## Evaluate _diff_fe at fi+df and fi-df — but we approximate via _diff_fi at fe+df and fe-df
-    return ((TF_fn(fe + df, fi, fe_ext, fi_ext, W) - TF_fn(fe - df, fi, fe_ext, fi_ext, W)) / (nb.float32(2.0) * df * ${_df_scale})
-            - (TF_fn(fe + df, fi, fe_ext, fi_ext, W) - TF_fn(fe - df, fi, fe_ext, fi_ext, W)) / (nb.float32(2.0) * df * ${_df_scale}))
-
-
-## Actually, the cross-derivatives match the original more faithfully
-## using the _diff_fi(fe+df) - _diff_fi(fe-df) pattern:
+## NOTE: The former _zerlaut_diff2_fe_fi function was removed because it always
+## returned zero — both sub-expressions were identical.  Use
+## _zerlaut_diff2_fe_fi_correct (below) for the mixed second derivative.
+## NOTE: local_coupling is deprecated for hybrid subnetworks; coupling is handled
+## exclusively through the projection/cfun pipeline.
 ${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
 def _zerlaut_diff2_fi_fe_${sn.name}(TF_fn, fe, fi, fe_ext, fi_ext, W):
     df = ${_df}
