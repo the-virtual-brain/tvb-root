@@ -17,6 +17,9 @@
 ##   - intra: pass has_mode_map=False  (identity; n_src_modes == n_tgt_modes)
 ##   - inter: pass has_mode_map=True   (explicit mode_map argument)
 
+## Precision policy: GPU and Numba JIT paths use float32; Python paths use float64.
+## This template targets @nb.njit code, so all accumulations are float32.
+
 import numba as nb
 import numpy as np
 
@@ -57,9 +60,9 @@ def compute_coupling_${proj_name}(
             % if has_mode_map:
             # Accumulate weighted-delayed sum in src-mode space: (n_src_modes,)
             # then apply mode_map to get (n_tgt_modes,)
-            wsum = np.zeros(${n_src_modes})
+            wsum = np.zeros(${n_src_modes}, dtype=np.float32)
             % else:
-            wsum = np.zeros(${n_src_modes})
+            wsum = np.zeros(${n_src_modes}, dtype=np.float32)
             % endif
 
             for ptr in range(row_start, row_end):
