@@ -27,8 +27,6 @@ Usage::
 
 from __future__ import annotations
 
-import sys
-import os
 import time
 
 import numpy as np
@@ -75,7 +73,7 @@ def _sweep_kernel(
     horizon,         # int32 — history buffer depth
     dt,              # float32 — integration time step (ms)
     nstep,           # int32 — number of integration steps
-    N,               # int32 — number of nodes (=76)
+    N,               # int32 — number of nodes (must be <= MAX_NODES)
 ):
     """
     GPU kernel: one thread = one complete simulation at a given scaling value.
@@ -112,8 +110,9 @@ def _sweep_kernel(
     pi = np.float32(3.141592653589793)
 
     # ---- scratch per-node coupling array for target B ----
-    # cuda.local.array is limited; use a float32 array up to 76 elements
-    c_B = cuda.local.array(76, dtype=numba.float32)
+    # Sized to MAX_NODES; host code MUST assert N <= MAX_NODES
+    MAX_NODES = 1024
+    c_B = cuda.local.array(MAX_NODES, dtype=numba.float32)
 
     for t in range(1, nstep + 1):
         # ------------------------------------------------------------
@@ -324,6 +323,10 @@ def run_cuda_sweep(
 
     if verbose:
         print(f"[cuda_sweep] n_sweeps={n_sweeps}, nstep={nstep}, N={N}")
+
+    MAX_NODES = 1024  # must match kernel cuda.local.array size for c_B
+    if N > MAX_NODES:
+        raise ValueError(f"N={N} exceeds MAX_NODES={MAX_NODES}; increase MAX_NODES in _sweep_kernel and here")
 
     # ---- Extract CSR data from the inter-projection ----
     proj = network_set.projections[0]
