@@ -332,7 +332,8 @@ class TestStimulusEquationParity(unittest.TestCase):
         temporal_eq = eq_factory()
         stim = _build_stim(sn, temporal_eq, weight, nstep)
 
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=seed)
@@ -388,7 +389,7 @@ class TestStimulusEquationEdgeCases(unittest.TestCase):
         _configure_all(m, sn)
 
         # No stimulus baseline
-        ns_base = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns_base = NetworkSet(subnets=[sn], projections=[])
         ns_base.configure()
         ic = _seeded_ic(m, self.N, 1, seed=6001)
         py_base = _run_python(ns_base, self.NSTEP, [ic])
@@ -399,7 +400,8 @@ class TestStimulusEquationEdgeCases(unittest.TestCase):
         _configure_all(m, sn2)
         weight = np.ones(self.N)
         stim = _build_stim(sn2, _linear_eq(0.0, 0.0), weight, self.NSTEP)
-        ns_stim = NetworkSet(subnets=[sn2], projections=[], stimuli=[stim])
+        sn2.stimuli = [stim]
+        ns_stim = NetworkSet(subnets=[sn2], projections=[])
         ns_stim.configure()
 
         py_stim = _run_python(ns_stim, self.NSTEP, [ic])
@@ -424,7 +426,7 @@ class TestStimulusEquationEdgeCases(unittest.TestCase):
         _configure_all(m, sn)
 
         # Baseline no stim
-        ns_base = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns_base = NetworkSet(subnets=[sn], projections=[])
         ns_base.configure()
         ic = _seeded_ic(m, self.N, 1, seed=6002)
         py_base = _run_python(ns_base, nstep, [ic])
@@ -437,7 +439,8 @@ class TestStimulusEquationEdgeCases(unittest.TestCase):
         stim = _build_stim(sn2, _pulsetrain_eq(onset=50.0, T=100.0, tau=10.0,
                                                 amp=1.0),
                            weight, nstep)
-        ns_stim = NetworkSet(subnets=[sn2], projections=[], stimuli=[stim])
+        sn2.stimuli = [stim]
+        ns_stim = NetworkSet(subnets=[sn2], projections=[])
         ns_stim.configure()
 
         py_stim = _run_python(ns_stim, nstep, [ic])
@@ -462,7 +465,8 @@ class TestStimulusEquationEdgeCases(unittest.TestCase):
         weight = np.ones(self.N)
         stim = _build_stim(sn, _sinusoid_eq(amp=0.04, frequency=0.05),
                            weight, self.NSTEP)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=6003)
@@ -486,7 +490,8 @@ class TestStimulusEquationEdgeCases(unittest.TestCase):
             sn, _linear_eq(0.0, 0.03), weight, self.NSTEP,
             target_cvar=np.array([0, 1], dtype=np.int_),
         )
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=6004)
@@ -510,7 +515,8 @@ class TestStimulusEquationEdgeCases(unittest.TestCase):
             sn, _linear_eq(0.0, 0.01), weight, self.NSTEP,
             projection_scale=5.0,
         )
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=6005)
@@ -541,7 +547,8 @@ class TestStimulusEquationEdgeCases(unittest.TestCase):
         stim_sin = _build_stim(
             sn_sin, _sinusoid_eq(amp=0.1, frequency=0.05), weight, nstep,
         )
-        ns_sin = NetworkSet(subnets=[sn_sin], projections=[], stimuli=[stim_sin])
+        sn_sin.stimuli = [stim_sin]
+        ns_sin = NetworkSet(subnets=[sn_sin], projections=[])
         ns_sin.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=6006)
@@ -553,7 +560,8 @@ class TestStimulusEquationEdgeCases(unittest.TestCase):
         stim_cos = _build_stim(
             sn_cos, _cosine_eq(amp=0.1, frequency=0.05), weight, nstep,
         )
-        ns_cos = NetworkSet(subnets=[sn_cos], projections=[], stimuli=[stim_cos])
+        sn_cos.stimuli = [stim_cos]
+        ns_cos = NetworkSet(subnets=[sn_cos], projections=[])
         ns_cos.configure()
 
         py_cos = _run_python(ns_cos, nstep, [ic])[0]
@@ -614,7 +622,8 @@ class TestStimulusCouplingValues(unittest.TestCase):
         weight = np.zeros(self.N)
         weight[0] = 1.0
         stim = _build_stim(sn, _linear_eq(0.0, 0.05), weight, self.NSTEP)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=7001)
@@ -638,7 +647,8 @@ class TestStimulusCouplingValues(unittest.TestCase):
         weight[0] = 1.0
         stim = _build_stim(sn, _sinusoid_eq(amp=0.05, frequency=0.1),
                            weight, self.NSTEP)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=7002)
@@ -660,7 +670,8 @@ class TestStimulusCouplingValues(unittest.TestCase):
         weight[0] = 1.0
         stim = _build_stim(sn, _pulsetrain_eq(onset=1.0, T=5.0, tau=1.0, amp=0.1),
                            weight, self.NSTEP)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=7003)
@@ -682,7 +693,8 @@ class TestStimulusCouplingValues(unittest.TestCase):
         weight[0] = 1.0
         stim = _build_stim(sn, _cosine_eq(amp=0.05, frequency=0.1),
                            weight, self.NSTEP)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=7004)
@@ -704,7 +716,8 @@ class TestStimulusCouplingValues(unittest.TestCase):
         weight[0] = 1.0
         stim = _build_stim(sn, _alpha_eq(onset=0.5, alpha=13.0, beta=42.0),
                            weight, self.NSTEP)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=7005)
@@ -756,7 +769,8 @@ class TestStimulusPerStepParity(unittest.TestCase):
         weight[0] = 1.0
         stim = _build_stim(sn, _sinusoid_eq(amp=0.04, frequency=0.05),
                            weight, nstep)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=8001)
@@ -785,7 +799,8 @@ class TestStimulusPerStepParity(unittest.TestCase):
         weight[0] = 1.0
         stim = _build_stim(sn, _pulsetrain_eq(onset=2.0, T=8.0, tau=2.0, amp=0.05),
                            weight, nstep)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=8002)
@@ -813,7 +828,8 @@ class TestStimulusPerStepParity(unittest.TestCase):
         weight = np.zeros(self.N)
         weight[0] = 1.0
         stim = _build_stim(sn, _linear_eq(0.0, 0.04), weight, nstep)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=8003)
@@ -865,7 +881,8 @@ class TestStimulusStochasticParity(unittest.TestCase):
         weight = np.zeros(self.N)
         weight[0] = 1.0
         stim_py = _build_stim(sn_py, _linear_eq(0.0, 0.03), weight, self.NSTEP)
-        ns_py = NetworkSet(subnets=[sn_py], projections=[], stimuli=[stim_py])
+        sn_py.stimuli = [stim_py]
+        ns_py = NetworkSet(subnets=[sn_py], projections=[])
         ns_py.configure()
         ic = _seeded_ic(m, self.N, 1, seed=9001)
         py = _run_python(ns_py, self.NSTEP, [ic])
@@ -875,7 +892,8 @@ class TestStimulusStochasticParity(unittest.TestCase):
         sn_nb = _make_subnet("ctx", m, self.N, HeunStochastic, noise=noise_nb)
         _configure_all(sn_nb)
         stim_nb = _build_stim(sn_nb, _linear_eq(0.0, 0.03), weight, self.NSTEP)
-        ns_nb = NetworkSet(subnets=[sn_nb], projections=[], stimuli=[stim_nb])
+        sn_nb.stimuli = [stim_nb]
+        ns_nb = NetworkSet(subnets=[sn_nb], projections=[])
         ns_nb.configure()
         nb = _run_numba(ns_nb, self.NSTEP, [ic])
 
@@ -899,7 +917,8 @@ class TestStimulusStochasticParity(unittest.TestCase):
         weight[0] = 1.0
         stim_py = _build_stim(sn_py, _sinusoid_eq(amp=0.05, frequency=0.05),
                               weight, self.NSTEP)
-        ns_py = NetworkSet(subnets=[sn_py], projections=[], stimuli=[stim_py])
+        sn_py.stimuli = [stim_py]
+        ns_py = NetworkSet(subnets=[sn_py], projections=[])
         ns_py.configure()
         ic = _seeded_ic(m, self.N, 1, seed=9002)
         py = _run_python(ns_py, self.NSTEP, [ic])
@@ -910,7 +929,8 @@ class TestStimulusStochasticParity(unittest.TestCase):
         _configure_all(sn_nb)
         stim_nb = _build_stim(sn_nb, _sinusoid_eq(amp=0.05, frequency=0.05),
                               weight, self.NSTEP)
-        ns_nb = NetworkSet(subnets=[sn_nb], projections=[], stimuli=[stim_nb])
+        sn_nb.stimuli = [stim_nb]
+        ns_nb = NetworkSet(subnets=[sn_nb], projections=[])
         ns_nb.configure()
         nb = _run_numba(ns_nb, self.NSTEP, [ic])
 
@@ -941,7 +961,8 @@ class TestStimulusLongRunDivergence(unittest.TestCase):
         weight[0] = 1.0
         stim = _build_stim(sn, _sinusoid_eq(amp=0.03, frequency=0.02),
                            weight, self.NSTEP)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=10001)
@@ -962,7 +983,8 @@ class TestStimulusLongRunDivergence(unittest.TestCase):
         weight = np.zeros(self.N)
         weight[0] = 1.0
         stim = _build_stim(sn, _linear_eq(0.0, 0.03), weight, self.NSTEP)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=10002)
@@ -1015,10 +1037,11 @@ class TestStimulusMultiSubnet(unittest.TestCase):
         # Stimulus on thalamus node 0
         w2 = np.zeros(n2); w2[0] = 1.0
         stim2 = _build_stim(sn2, _sinusoid_eq(amp=0.04, frequency=0.05), w2, nstep)
+        sn1.stimuli = [stim1]
+        sn2.stimuli = [stim2]
 
         ns = NetworkSet(
             subnets=[sn1, sn2], projections=[proj],
-            stimuli=[stim1, stim2],
         )
         ns.configure()
 
@@ -1062,10 +1085,10 @@ class TestStimulusMultiSubnet(unittest.TestCase):
         # Stimulus ONLY on cortex
         w1 = np.zeros(n1); w1[0] = 1.0
         stim1 = _build_stim(sn1, _linear_eq(0.0, 0.05), w1, nstep)
+        sn1.stimuli = [stim1]
 
         ns = NetworkSet(
             subnets=[sn1, sn2], projections=[proj],
-            stimuli=[stim1],
         )
         ns.configure()
 
@@ -1101,7 +1124,8 @@ class TestStimulusDifferentModels(unittest.TestCase):
         weight[0] = 1.0
         stim = _build_stim(sn, _sinusoid_eq(amp=0.05, frequency=0.05),
                            weight, nstep)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, n, 1, seed=12001)
@@ -1125,7 +1149,8 @@ class TestStimulusDifferentModels(unittest.TestCase):
         weight[0] = 1.0
         stim = _build_stim(sn, _pulsetrain_eq(onset=2.0, T=8.0, tau=2.0, amp=0.1),
                            weight, nstep)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, n, 1, seed=12002)
