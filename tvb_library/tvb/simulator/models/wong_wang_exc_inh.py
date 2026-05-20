@@ -516,6 +516,37 @@ class DecoBalancedExcInh(ReducedWongWangExcInh):
         doc="""Effective gain within a region.""",
     )
 
+    coupling_terms = Final(label="Coupling terms", default=["Coupling_Term"])
+
+    # Override parameter_names to include M_i from this subclass
+    parameter_names = List(
+        of=str,
+        label="List of parameters for this model",
+        default="a_e b_e d_e gamma_e tau_e w_p W_e J_N a_i b_i d_i gamma_i tau_i J_i W_i I_o I_ext G lamda M_i".split(),
+    )
+
+    # Override dfun_intermediates to include M_i scaling
+    dfun_intermediates = Final(
+        label="Shared intermediates for dfun code generation",
+        default=[
+            ("cc", "G * J_N * Coupling_Term"),
+            ("jnSe", "J_N * S_e"),
+            ("x_e", "M_i * (a_e * (w_p * jnSe - J_i * S_i + W_e * I_o + cc + I_ext) - b_e)"),
+            ("H_e", "x_e / (1.0 - math.exp(-d_e * x_e))"),
+            ("x_i", "M_i * (a_i * (jnSe - S_i + W_i * I_o + lamda * cc) - b_i)"),
+            ("H_i", "x_i / (1.0 - math.exp(-d_i * x_i))"),
+        ],
+    )
+
+    # Override state_variable_dfuns with M_i-scaled transfer functions
+    state_variable_dfuns = Final(
+        label="Drift functions for numba codegen",
+        default={
+            "S_e": "-(S_e / tau_e) + (1.0 - S_e) * H_e * gamma_e",
+            "S_i": "-(S_i / tau_i) + H_i * gamma_i",
+        },
+    )
+
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
         Numpy dfun for transcriptional model presented in [Deco_2020],
