@@ -126,6 +126,14 @@ class Recorder(t.HasTraits):
         """
         ty = self.monitor.record(step, state)
         if ty is not None:
+            if self._current_idx >= self.num_samples:
+                raise IndexError(
+                    f"Recorder.write index {self._current_idx} exceeds pre-allocated "
+                    f"array size {self.num_samples}. This typically means "
+                    f"simulation_length / monitor.period underestimates the "
+                    f"number of monitor samples. Increase simulation_length or "
+                    f"decrease monitor.period."
+                )
             t, y = ty
             # Lazy allocation on first sample
             if self.samples is None:
