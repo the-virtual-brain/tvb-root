@@ -135,7 +135,11 @@ class Simulator(t.HasTraits):
         """
         self._dt0 = self.nets.subnets[0].scheme.dt
         for sn in self.nets.subnets[1:]:
-            assert self._dt0 == sn.scheme.dt
+            if self._dt0 != sn.scheme.dt:
+                raise ValueError(
+                    f"dt mismatch across subnetworks: expected {self._dt0}, "
+                    f"got {sn.scheme.dt} for subnetwork '{sn.name}'"
+                )
         for monitor in self.monitors:
             monitor: Monitor
             monitor._config_dt(self._dt0)
@@ -269,16 +273,32 @@ class Simulator(t.HasTraits):
                 initial_states=ics,
             )
             # raw is list[list[tuple(times, data)]] indexed by [monitor][subnet]
+            # Merged monitors (GlobalAverage, SpatialAverage, Projection)
+            # return a single-element list from _apply_monitors.
             result = []
             for mon_idx in range(len(self.monitors)):
-                # Concatenate across subnets
-                all_t = []
-                all_d = []
-                for sn_idx in range(len(self.nets.subnets)):
-                    t, d = raw[mon_idx][sn_idx]
-                    all_t.append(t)
-                    all_d.append(d)
-                result.append((np.concatenate(all_t), np.concatenate(all_d, axis=1)))
+                mon_raw = raw[mon_idx]
+                # Merged monitor: single-element list, use directly
+                if len(mon_raw) == 1:
+                    result.append(mon_raw[0])
+                else:
+                    # Per-subnet data: reassemble into merged or flat layout
+                    t = mon_raw[0][0]  # all subnets share the same time grid
+                    total_nodes = sum(sn.nnodes for sn in self.nets.subnets)
+                    total_vois = len(self.nets.subnets[0].model.variables_of_interest)
+                    n_modes = self.nets.subnets[0].model.number_of_modes
+                    # Determine if merged mode (node_indices set)
+                    if self.nets._is_merged_mode():
+                        data = np.zeros((len(t), total_vois, total_nodes, n_modes),
+                                        dtype=np.float64)
+                        for sn_idx, sn in enumerate(self.nets.subnets):
+                            _, d = mon_raw[sn_idx]
+                            data[:, :, sn.node_indices, :] = d
+                    else:
+                        data = np.concatenate(
+                            [d for _, d in mon_raw], axis=1
+                        )
+                    result.append((t, data))
             return result
         else:
             # No monitors: run and return empty list (matching Python path)

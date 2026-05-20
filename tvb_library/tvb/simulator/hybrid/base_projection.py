@@ -195,6 +195,10 @@ class BaseProjection(t.HasTraits):
                 f"Lengths shape {self.lengths.shape} must match weights shape {self.weights.shape}"
             )
 
+        # If lengths is None, default to zero-lengths matrix (no conduction delays)
+        if self.lengths is None:
+            self.lengths = sp.csr_matrix(self.weights.shape, dtype=np.float64)
+
         r, c = self.weights.shape
         eps_val = 2 * np.finfo(self.weights.dtype).eps
         eps_data = np.full(r, eps_val, dtype=self.weights.dtype)
@@ -232,9 +236,10 @@ class BaseProjection(t.HasTraits):
                 shape=self.weights.shape,
             )
 
-        assert self.weights.nnz == self.lengths.nnz, (
-            f"Mismatch nnz: weights {self.weights.nnz}, lengths {self.lengths.nnz}"
-        )
+        if self.weights.nnz != self.lengths.nnz:
+            raise ValueError(
+                f"Mismatch nnz: weights {self.weights.nnz}, lengths {self.lengths.nnz}"
+            )
 
         # Modify idelays calculation to match original TVB simulator (round, no +2)
         if self.cv is not None and self.dt is not None and self.lengths.nnz > 0:

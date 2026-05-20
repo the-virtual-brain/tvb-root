@@ -234,7 +234,7 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
     state_variable_dfuns = {
         "xi": "tau * (xi_{m} - e_i_{m} * xi_{m}**3 / nb.float32(3.0) - eta_{m}) + K11 * (Axi_{m} - xi_{m}) - K12 * (Balpha_{m} - xi_{m}) + tau * (IE_i_{m} + c_xi_{m})",
         "eta": "nb.float32(1.0) / tau * (xi_{m} - b * eta_{m} + m_i_{m})",
-        "alpha": "tau * (alpha_{m} - f_i_{m} * alpha_{m}**3 / nb.float32(3.0) - beta_{m}) + K21 * (Cxi_{m} - alpha_{m}) + tau * (II_i_{m} + c_alpha_{m} * mu)",
+        "alpha": "tau * (alpha_{m} - f_i_{m} * alpha_{m}**3 / nb.float32(3.0) - beta_{m}) + K21 * (Cxi_{m} - alpha_{m}) + tau * (II_i_{m} + c_xi_{m})",
         "beta": "nb.float32(1.0) / tau * (alpha_{m} - b * beta_{m} + n_i_{m})",
     }
 
@@ -594,7 +594,7 @@ class ReducedSetHindmarshRose(ReducedSetBase):
         "xi": "eta_{m} - a_i_{m} * xi_{m}**3 + b_i_{m} * xi_{m}**2 - tau_{m} + K11 * (Axi_{m} - xi_{m}) - K12 * (Balpha_{m} - xi_{m}) + IE_i_{m} + c_xi_{m}",
         "eta": "c_i_{m} - d_i_{m} * xi_{m}**2 - eta_{m}",
         "tau": "r * s * xi_{m} - r * tau_{m} - m_i_{m}",
-        "alpha": "beta_{m} - e_i_{m} * alpha_{m}**3 + f_i_{m} * alpha_{m}**2 - gamma_{m} + K21 * (Cxi_{m} - alpha_{m}) + II_i_{m} + c_alpha_{m}",
+        "alpha": "beta_{m} - e_i_{m} * alpha_{m}**3 + f_i_{m} * alpha_{m}**2 - gamma_{m} + K21 * (Cxi_{m} - alpha_{m}) + II_i_{m} + c_xi_{m}",
         "beta": "h_i_{m} - p_i_{m} * alpha_{m}**2 - beta_{m}",
         "gamma": "r * s * alpha_{m} - r * gamma_{m} - n_i_{m}",
     }

@@ -118,14 +118,14 @@ class Hopfield(Model):
     parameter_names = List(
         of=str,
         label="List of parameters for this model",
-        default=["taux"],
+        default=["taux", "tauT"],
     )
 
     state_variable_dfuns = Final(
         label="Drift functions for numba codegen",
         default={
             "x": "(-x + Coupling_Term) / taux",
-            "theta": "(-x + Coupling_Term) / taux",
+            "theta": "(-theta + Coupling_Term) / tauT",
         },
     )
 
