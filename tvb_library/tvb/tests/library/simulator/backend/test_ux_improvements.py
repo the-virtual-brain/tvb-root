@@ -205,26 +205,26 @@ class TestSimulatorBackend(unittest.TestCase):
 
     def test_default_backend_is_python(self):
         sn = _make_subnet(n=4)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         sim = Simulator(nets=ns, simulation_length=1.0)
         self.assertEqual(sim.backend, "python")
 
     def test_backend_numba_accepted(self):
         sn = _make_subnet(n=4)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         sim = Simulator(nets=ns, simulation_length=1.0, backend="numba")
         self.assertEqual(sim.backend, "numba")
 
     def test_backend_invalid_raises(self):
         sn = _make_subnet(n=4)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         with self.assertRaises((ValueError, AssertionError)):
             Simulator(nets=ns, simulation_length=1.0, backend="julia")
 
     def test_python_backend_runs_python_loop(self):
         """backend='python' should use NetworkSet.step internally."""
         sn = _make_subnet(n=4)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         sim = Simulator(nets=ns, simulation_length=1.0, backend="python")
         sim.configure()
         result = sim.run(random_state=42)
@@ -234,7 +234,7 @@ class TestSimulatorBackend(unittest.TestCase):
     def test_numba_backend_produces_output(self):
         """backend='numba' should delegate to NbHybridBackend."""
         sn = _make_subnet(n=4)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         tavg = TemporalAverage(period=1.0)
         sim = Simulator(nets=ns, simulation_length=10.0, monitors=[tavg],
                         backend="numba")
@@ -249,8 +249,8 @@ class TestSimulatorBackend(unittest.TestCase):
     def test_numba_and_python_agree(self):
         """Python and Numba backends produce numerically similar results."""
         sn = _make_subnet(n=4)
-        ns_py = NetworkSet(subnets=[_make_subnet(n=4)], projections=[], stimuli=[])
-        ns_nb = NetworkSet(subnets=[_make_subnet(n=4)], projections=[], stimuli=[])
+        ns_py = NetworkSet(subnets=[_make_subnet(n=4)], projections=[])
+        ns_nb = NetworkSet(subnets=[_make_subnet(n=4)], projections=[])
 
         tavg_py = TemporalAverage(period=1.0)
         tavg_nb = TemporalAverage(period=1.0)
@@ -289,7 +289,8 @@ class TestSimulatorBackend(unittest.TestCase):
         stim = Stim(target=sn, stimulus=stim_pattern,
                     target_cvar=np.array([0], dtype=np.int_))
         stim.configure(simulation_length=10.0)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         tavg = TemporalAverage(period=1.0)
         sim = Simulator(nets=ns, simulation_length=10.0,
                         monitors=[tavg], backend="numba")

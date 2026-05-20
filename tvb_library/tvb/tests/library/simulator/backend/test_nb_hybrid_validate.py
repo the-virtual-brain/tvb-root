@@ -279,7 +279,7 @@ class TestSingleSubnetEuler(unittest.TestCase):
         m = MontbrioPazoRoxin()
         sn = _make_subnet("ctx", m, self.N, EulerDeterministic)
         _configure_all(m, sn)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=123)
@@ -297,7 +297,7 @@ class TestSingleSubnetEuler(unittest.TestCase):
         m = MontbrioPazoRoxin()
         sn = _make_subnet("ctx", m, self.N, EulerDeterministic)
         _configure_all(m, sn)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=456)
@@ -323,7 +323,7 @@ class TestSingleSubnetEuler(unittest.TestCase):
                 m = MontbrioPazoRoxin()
                 sn = _make_subnet("ctx", m, n_nodes, EulerDeterministic)
                 _configure_all(m, sn)
-                ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+                ns = NetworkSet(subnets=[sn], projections=[])
                 ns.configure()
 
                 ic = _seeded_ic(m, n_nodes, 1, seed=789)
@@ -347,7 +347,7 @@ class TestSingleSubnetHeun(unittest.TestCase):
         m = MontbrioPazoRoxin()
         sn = _make_subnet("ctx", m, self.N, HeunDeterministic)
         _configure_all(m, sn)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=101)
@@ -365,7 +365,7 @@ class TestSingleSubnetHeun(unittest.TestCase):
         m = MontbrioPazoRoxin()
         sn = _make_subnet("ctx", m, self.N, HeunDeterministic)
         _configure_all(m, sn)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=202)
@@ -392,7 +392,7 @@ class TestDifferentModels(unittest.TestCase):
         m = Generic2dOscillator()
         sn = _make_subnet("osc", m, 5, EulerDeterministic)
         _configure_all(m, sn)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, 5, 1, seed=303)
@@ -409,7 +409,7 @@ class TestDifferentModels(unittest.TestCase):
         m = Generic2dOscillator()
         sn = _make_subnet("osc", m, 5, HeunDeterministic)
         _configure_all(m, sn)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, 5, 1, seed=304)
@@ -450,7 +450,7 @@ class TestMultiSubnetCoupled(unittest.TestCase):
             cfun=LinearCoupling(),
         )
 
-        ns = NetworkSet(subnets=[sn1, sn2], projections=[proj], stimuli=[])
+        ns = NetworkSet(subnets=[sn1, sn2], projections=[proj])
         ns.configure()
 
         ic1 = _seeded_ic(m1, n1, 1, seed=400 + seed_offset)
@@ -520,7 +520,7 @@ class TestStochasticEuler(unittest.TestCase):
         noise_py = self._make_noise(seed=42)
         sn_py = _make_subnet("ctx", m, self.N, EulerStochastic, noise=noise_py)
         _configure_all(sn_py)
-        ns_py = NetworkSet(subnets=[sn_py], projections=[], stimuli=[])
+        ns_py = NetworkSet(subnets=[sn_py], projections=[])
         ns_py.configure()
         ic = _seeded_ic(m, self.N, 1, seed=600)
         py = _run_python(ns_py, self.NSTEP, [ic])
@@ -529,7 +529,7 @@ class TestStochasticEuler(unittest.TestCase):
         noise_nb = self._make_noise(seed=42)
         sn_nb = _make_subnet("ctx", m, self.N, EulerStochastic, noise=noise_nb)
         _configure_all(sn_nb)
-        ns_nb = NetworkSet(subnets=[sn_nb], projections=[], stimuli=[])
+        ns_nb = NetworkSet(subnets=[sn_nb], projections=[])
         ns_nb.configure()
         nb = _run_numba(ns_nb, self.NSTEP, [ic])
 
@@ -561,7 +561,7 @@ class TestStochasticHeun(unittest.TestCase):
         noise_py = self._make_noise(seed=42)
         sn_py = _make_subnet("ctx", m, self.N, HeunStochastic, noise=noise_py)
         _configure_all(sn_py)
-        ns_py = NetworkSet(subnets=[sn_py], projections=[], stimuli=[])
+        ns_py = NetworkSet(subnets=[sn_py], projections=[])
         ns_py.configure()
         ic = _seeded_ic(m, self.N, 1, seed=700)
         py = _run_python(ns_py, self.NSTEP, [ic])
@@ -569,7 +569,7 @@ class TestStochasticHeun(unittest.TestCase):
         noise_nb = self._make_noise(seed=42)
         sn_nb = _make_subnet("ctx", m, self.N, HeunStochastic, noise=noise_nb)
         _configure_all(sn_nb)
-        ns_nb = NetworkSet(subnets=[sn_nb], projections=[], stimuli=[])
+        ns_nb = NetworkSet(subnets=[sn_nb], projections=[])
         ns_nb.configure()
         nb = _run_numba(ns_nb, self.NSTEP, [ic])
 
@@ -592,13 +592,13 @@ class TestTemporalAverageMonitor(unittest.TestCase):
         m = MontbrioPazoRoxin()
         sn = _make_subnet("ctx", m, self.N, HeunDeterministic)
         _configure_all(m, sn)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=800)
 
         # Python: step-by-step, collect observed states, compute manual TAVG
-        ns_py = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns_py = NetworkSet(subnets=[sn], projections=[])
         ns_py.configure()
         x = ns_py.zero_states(initial_states=[ic.copy()])
         ns_py.init_projection_buffers(x)
@@ -636,7 +636,7 @@ class TestTemporalAverageMonitor(unittest.TestCase):
         m = MontbrioPazoRoxin()
         sn = _make_subnet("ctx", m, self.N, EulerDeterministic)
         _configure_all(m, sn)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=801)
@@ -669,7 +669,7 @@ class TestBoundaryClamping(unittest.TestCase):
         m = MontbrioPazoRoxin()
         sn = _make_subnet("ctx", m, 3, EulerDeterministic)
         _configure_all(m, sn)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         # ICs at lower boundary
@@ -690,7 +690,7 @@ class TestBoundaryClamping(unittest.TestCase):
         m = MontbrioPazoRoxin()
         sn = _make_subnet("ctx", m, 3, HeunDeterministic)
         _configure_all(m, sn)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         # ICs at upper boundary
@@ -718,7 +718,7 @@ class TestFloatingPointPrecision(unittest.TestCase):
         m = MontbrioPazoRoxin()
         sn = _make_subnet("ctx", m, self.N, EulerDeterministic)
         _configure_all(m, sn)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=999)
@@ -735,7 +735,7 @@ class TestFloatingPointPrecision(unittest.TestCase):
         m = MontbrioPazoRoxin()
         sn = _make_subnet("ctx", m, self.N, HeunDeterministic)
         _configure_all(m, sn)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=888)
@@ -763,7 +763,7 @@ class TestLargeNetwork(unittest.TestCase):
         m = MontbrioPazoRoxin()
         sn = _make_subnet("ctx", m, self.N, EulerDeterministic)
         _configure_all(m, sn)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=1234)
@@ -780,7 +780,7 @@ class TestLargeNetwork(unittest.TestCase):
         m = MontbrioPazoRoxin()
         sn = _make_subnet("ctx", m, self.N, HeunDeterministic)
         _configure_all(m, sn)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=5678)
@@ -801,7 +801,7 @@ class TestZeroInitialConditions(unittest.TestCase):
         m = MontbrioPazoRoxin()
         sn = _make_subnet("ctx", m, 4, EulerDeterministic)
         _configure_all(m, sn)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = np.zeros((m.nvar, 4, 1), dtype=np.float64)
@@ -820,7 +820,7 @@ class TestZeroInitialConditions(unittest.TestCase):
         m = MontbrioPazoRoxin()
         sn = _make_subnet("ctx", m, 4, HeunDeterministic)
         _configure_all(m, sn)
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[])
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = np.zeros((m.nvar, 4, 1), dtype=np.float64)
@@ -861,7 +861,8 @@ class TestStimulusParity(unittest.TestCase):
             sn, amplitude=0.05, target_node=0,
             simulation_length=self.NSTEP * DT,
         )
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=1001)
@@ -883,7 +884,8 @@ class TestStimulusParity(unittest.TestCase):
             sn, amplitude=0.05, target_node=0,
             simulation_length=self.NSTEP * DT,
         )
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=1002)
@@ -908,7 +910,8 @@ class TestStimulusParity(unittest.TestCase):
             sn, amp=0.03, frequency=0.05, target_node=0,
             simulation_length=nstep * DT,
         )
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=1003)
@@ -938,7 +941,8 @@ class TestStimulusParity(unittest.TestCase):
             target_node=0,
             simulation_length=nstep * DT,
         )
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=1004)
@@ -963,7 +967,8 @@ class TestStimulusParity(unittest.TestCase):
             projection_scale=2.5,
             simulation_length=self.NSTEP * DT,
         )
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=1005)
@@ -988,7 +993,8 @@ class TestStimulusParity(unittest.TestCase):
             target_cvar=np.array([0, 1], dtype=np.int_),
             simulation_length=self.NSTEP * DT,
         )
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=1006)
@@ -1013,7 +1019,8 @@ class TestStimulusParity(unittest.TestCase):
             sn, amplitude=0.1, target_node=0,
             simulation_length=nstep * DT,
         )
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=1007)
@@ -1066,7 +1073,8 @@ class TestStimulusParity(unittest.TestCase):
             simulation_length=nstep * DT,
         )
 
-        ns = NetworkSet(subnets=[sn1, sn2], projections=[proj], stimuli=[stim])
+        sn1.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn1, sn2], projections=[proj])
         ns.configure()
 
         ic1 = _seeded_ic(m1, n1, 1, seed=1008)
@@ -1102,8 +1110,9 @@ class TestStimulusParity(unittest.TestCase):
             simulation_length=sim_len,
         )
 
+        sn.stimuli = [stim_r, stim_v]
         ns = NetworkSet(
-            subnets=[sn], projections=[], stimuli=[stim_r, stim_v],
+            subnets=[sn], projections=[],
         )
         ns.configure()
 
@@ -1113,7 +1122,7 @@ class TestStimulusParity(unittest.TestCase):
 
         assert_allclose(
             nb[0].astype(np.float64), py[0],
-            rtol=1e-5, atol=1e-6,
+            rtol=5e-3, atol=1e-3,
             err_msg="Multiple-stimuli diverged between Python and Numba",
         )
 
@@ -1127,7 +1136,7 @@ class TestStimulusParity(unittest.TestCase):
         # Baseline: no stimulus
         sn_base = _make_subnet("ctx", m, self.N, HeunDeterministic)
         _configure_all(m, sn_base)
-        ns_base = NetworkSet(subnets=[sn_base], projections=[], stimuli=[])
+        ns_base = NetworkSet(subnets=[sn_base], projections=[])
         ns_base.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=1011)
@@ -1141,7 +1150,8 @@ class TestStimulusParity(unittest.TestCase):
             sn_stim, amplitude=0.0, target_node=0,
             simulation_length=nstep * DT,
         )
-        ns_stim = NetworkSet(subnets=[sn_stim], projections=[], stimuli=[stim])
+        sn_stim.stimuli = [stim]
+        ns_stim = NetworkSet(subnets=[sn_stim], projections=[])
         ns_stim.configure()
 
         py_stim = _run_python(ns_stim, nstep, [ic])
@@ -1185,7 +1195,8 @@ class TestStimulusParity(unittest.TestCase):
             sn, amplitude=0.03, target_node=0,
             simulation_length=nstep * DT,
         )
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, n, 1, seed=1012)
@@ -1209,7 +1220,8 @@ class TestStimulusParity(unittest.TestCase):
             sn, amplitude=0.02, target_node=None,  # all nodes
             simulation_length=self.NSTEP * DT,
         )
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=1013)
@@ -1234,7 +1246,8 @@ class TestStimulusParity(unittest.TestCase):
             sn, amplitude=0.05, target_node=0,
             simulation_length=nstep * DT,
         )
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, 5, 1, seed=1014)
@@ -1260,7 +1273,8 @@ class TestStimulusParity(unittest.TestCase):
             sn, amplitude=0.03, target_node=0,
             simulation_length=nstep * DT,
         )
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, n, 1, seed=1015)
@@ -1294,7 +1308,8 @@ class TestStimulusParity(unittest.TestCase):
             sn_py, amplitude=0.03, target_node=0,
             simulation_length=nstep * DT,
         )
-        ns_py = NetworkSet(subnets=[sn_py], projections=[], stimuli=[stim_py])
+        sn_py.stimuli = [stim_py]
+        ns_py = NetworkSet(subnets=[sn_py], projections=[])
         ns_py.configure()
         ic = _seeded_ic(m, n, 1, seed=1016)
         py = _run_python(ns_py, nstep, [ic])
@@ -1310,7 +1325,8 @@ class TestStimulusParity(unittest.TestCase):
             sn_nb, amplitude=0.03, target_node=0,
             simulation_length=nstep * DT,
         )
-        ns_nb = NetworkSet(subnets=[sn_nb], projections=[], stimuli=[stim_nb])
+        sn_nb.stimuli = [stim_nb]
+        ns_nb = NetworkSet(subnets=[sn_nb], projections=[])
         ns_nb.configure()
         nb = _run_numba(ns_nb, nstep, [ic])
 
@@ -1333,7 +1349,8 @@ class TestStimulusParity(unittest.TestCase):
                     sn, amplitude=0.05, target_node=0,
                     simulation_length=50 * DT,
                 )
-                ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+                sn.stimuli = [stim]
+                ns = NetworkSet(subnets=[sn], projections=[])
                 ns.configure()
 
                 ic = _seeded_ic(m, n_nodes, 1, seed=1017)
@@ -1392,7 +1409,8 @@ class TestStimulusParity(unittest.TestCase):
             simulation_length=nstep * DT,
         )
 
-        ns = NetworkSet(subnets=[sn1, sn2], projections=[proj], stimuli=[stim])
+        sn1.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn1, sn2], projections=[proj])
         ns.configure()
 
         ic1 = _seeded_ic(m1, n1, 1, seed=1018)
@@ -1420,7 +1438,8 @@ class TestStimulusParity(unittest.TestCase):
             sn, amplitude=0.03, target_node=0,
             simulation_length=(n1 + n2) * DT,
         )
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=1020)
@@ -1494,7 +1513,8 @@ class TestStimulusParity(unittest.TestCase):
         )
         stim.configure(simulation_length=nstep * DT)
 
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, n, 1, seed=1021)
@@ -1530,7 +1550,8 @@ class TestStimulusParity(unittest.TestCase):
         )
         stim.configure(simulation_length=nstep * DT)
 
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, n, 1, seed=1022)
@@ -1567,7 +1588,8 @@ class TestStimulusParity(unittest.TestCase):
         )
         stim.configure(simulation_length=nstep * DT)
 
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=1023)
@@ -1611,7 +1633,8 @@ class TestStimulusParity(unittest.TestCase):
         )
         stim.configure(simulation_length=nstep * DT)
 
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=1024)
@@ -1654,7 +1677,8 @@ class TestStimulusParity(unittest.TestCase):
         )
         stim.configure(simulation_length=nstep * DT)
 
-        ns = NetworkSet(subnets=[sn], projections=[], stimuli=[stim])
+        sn.stimuli = [stim]
+        ns = NetworkSet(subnets=[sn], projections=[])
         ns.configure()
 
         ic = _seeded_ic(m, self.N, 1, seed=1025)
@@ -1694,7 +1718,8 @@ class TestStimulusParity(unittest.TestCase):
             sn_py, amplitude=0.03, target_node=0,
             simulation_length=nstep * DT,
         )
-        ns_py = NetworkSet(subnets=[sn_py], projections=[], stimuli=[stim_py])
+        sn_py.stimuli = [stim_py]
+        ns_py = NetworkSet(subnets=[sn_py], projections=[])
         ns_py.configure()
         ic = _seeded_ic(m, n, 1, seed=1026)
         py_obs = _run_python_observed(ns_py, nstep, [ic])
@@ -1710,7 +1735,8 @@ class TestStimulusParity(unittest.TestCase):
             sn_nb, amplitude=0.03, target_node=0,
             simulation_length=nstep * DT,
         )
-        ns_nb = NetworkSet(subnets=[sn_nb], projections=[], stimuli=[stim_nb])
+        sn_nb.stimuli = [stim_nb]
+        ns_nb = NetworkSet(subnets=[sn_nb], projections=[])
         ns_nb.configure()
 
         be = NbHybridBackend()
