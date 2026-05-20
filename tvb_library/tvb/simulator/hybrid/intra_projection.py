@@ -215,5 +215,23 @@ class IntraProjection(BaseProjection):
             ``BaseProjection.apply()`` for coupling functions that need
             both source and target activity.
         """
+        # Guard: ensure cvar indices have been resolved (not still strings)
+        for attr_name, cvar_val in [('source_cvar', self.source_cvar),
+                                      ('target_cvar', self.target_cvar)]:
+            if isinstance(cvar_val, (list, tuple, np.ndarray)) and len(cvar_val) > 0:
+                if any(isinstance(v, str) for v in cvar_val):
+                    raise ValueError(
+                        f"IntraProjection.{attr_name} contains unresolved string "
+                        f"values {cvar_val!r}. Call "
+                        f"set_model_for_cvar_resolution() during subnetwork "
+                        f"configure() to resolve cvar names to integer indices."
+                    )
+            elif isinstance(cvar_val, str):
+                raise ValueError(
+                    f"IntraProjection.{attr_name} is an unresolved string "
+                    f"'{cvar_val}'. Call set_model_for_cvar_resolution() during "
+                    f"subnetwork configure() to resolve cvar names to integer indices."
+                )
+
         identity_map = self._get_identity_mode_map(n_modes)
         super().apply(tgt, t, identity_map, x_i=x_i)
