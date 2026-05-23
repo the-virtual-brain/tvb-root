@@ -37,6 +37,8 @@ from tvb.interfaces.web.controllers.project.project_controller import ProjectCon
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 
+VIEWALL_URL = '/project/viewall'
+
 
 class TestProjectController(BaseTransactionalControllerTest):
     """ Unit tests for ProjectController """
@@ -58,7 +60,7 @@ class TestProjectController(BaseTransactionalControllerTest):
         Index with no project selected should redirect to viewall page.
         """
         del cherrypy.session[common.KEY_PROJECT]
-        self._expect_redirect('/project/viewall', self.project_c.index)
+        self._expect_redirect(VIEWALL_URL, self.project_c.index)
 
     def test_index(self):
         """
@@ -111,7 +113,7 @@ class TestProjectController(BaseTransactionalControllerTest):
         Test that a project is indeed deleted.
         """
         cherrypy.request.method = "POST"
-        self._expect_redirect('/project/viewall', self.project_c.editone,
+        self._expect_redirect(VIEWALL_URL, self.project_c.editone,
                               self.test_project.id, delete=True)
         with pytest.raises(NoResultFound):
             dao.get_project_by_id(self.test_project.id)
@@ -129,7 +131,7 @@ class TestProjectController(BaseTransactionalControllerTest):
                     disable_imports=False,
                     search_pattern=None)
         cherrypy.request.method = "POST"
-        self._expect_redirect('/project/viewall', self.project_c.editone, save=True, **data)
+        self._expect_redirect(VIEWALL_URL, self.project_c.editone, save=True, **data)
         projects = dao.get_projects_for_user(self.test_user.id)
         assert len(projects) == 2
 

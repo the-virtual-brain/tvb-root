@@ -42,6 +42,11 @@ from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.core.services.algorithm_service_test import TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS
 
+DT_NOT_VISIBLE_ERROR = "The data type should not be visible."
+DT_VISIBLE_ERROR = "The data type should be visible."
+NOT_VISIBLE_ERROR = "The operation should not be visible."
+VISIBLE_ERROR = "The operation should be visible."
+
 
 class TestProjectStructure(TransactionalTestCase):
     """
@@ -74,10 +79,10 @@ class TestProjectStructure(TransactionalTestCase):
         self.__init_algorithmn()
         op1 = Operation(None, self.test_user.id, self.test_project.id, self.algo_inst.id)
         op1 = dao.store_entity(op1)
-        assert op1.visible, "The operation should be visible."
+        assert op1.visible, VISIBLE_ERROR
         self.project_service.set_operation_and_group_visibility(op1.gid, False)
         updated_op = dao.get_operation_by_id(op1.id)
-        assert not updated_op.visible, "The operation should not be visible."
+        assert not updated_op.visible, NOT_VISIBLE_ERROR
 
     def test_set_op_and_group_visibility(self, datatype_group_factory):
         """
@@ -87,11 +92,11 @@ class TestProjectStructure(TransactionalTestCase):
         group, _ = datatype_group_factory()
         list_of_operations = dao.get_operations_in_group(group.id)
         for operation in list_of_operations:
-            assert operation.visible, "The operation should be visible."
+            assert operation.visible, VISIBLE_ERROR
         self.project_service.set_operation_and_group_visibility(list_of_operations[0].gid, False)
         operations = dao.get_operations_in_group(group.id)
         for operation in operations:
-            assert not operation.visible, "The operation should not be visible."
+            assert not operation.visible, NOT_VISIBLE_ERROR
 
     def test_set_op_group_visibility(self, datatype_group_factory):
         """
@@ -100,12 +105,12 @@ class TestProjectStructure(TransactionalTestCase):
         group, _ = datatype_group_factory()
         list_of_operations = dao.get_operations_in_group(group.id)
         for operation in list_of_operations:
-            assert operation.visible, "The operation should be visible."
+            assert operation.visible, VISIBLE_ERROR
         op_group = dao.get_operationgroup_by_id(group.id)
         self.project_service.set_operation_and_group_visibility(op_group.gid, False, True)
         operations = dao.get_operations_in_group(group.id)
         for operation in operations:
-            assert not operation.visible, "The operation should not be visible."
+            assert not operation.visible, NOT_VISIBLE_ERROR
 
     def test_is_upload_operation(self):
         """
@@ -177,11 +182,11 @@ class TestProjectStructure(TransactionalTestCase):
         # it's a list of 3 elem.
         dummy_dt_index = dummy_datatype_index_factory()
         is_visible = dummy_dt_index.visible
-        assert is_visible, "The data type should be visible."
+        assert is_visible, DT_VISIBLE_ERROR
 
         self.project_service.set_datatype_visibility(dummy_dt_index.gid, False)
         is_visible = dao.get_datatype_by_id(dummy_dt_index.id).visible
-        assert not is_visible, "The data type should not be visible."
+        assert not is_visible, DT_NOT_VISIBLE_ERROR
 
     def test_set_visibility_for_dt_in_group(self, datatype_group_factory):
         """
@@ -189,17 +194,17 @@ class TestProjectStructure(TransactionalTestCase):
         """
         group, _ = datatype_group_factory()
         datatypes = dao.get_datatypes_from_datatype_group(group.id)
-        assert datatypes[0].visible, "The data type should be visible."
-        assert datatypes[1].visible, "The data type should be visible."
+        assert datatypes[0].visible, DT_VISIBLE_ERROR
+        assert datatypes[1].visible, DT_VISIBLE_ERROR
         self.project_service.set_datatype_visibility(datatypes[0].gid, False)
 
         db_dt_group = self.project_service.get_datatype_by_id(group.id)
         db_first_dt = self.project_service.get_datatype_by_id(datatypes[0].id)
         db_second_dt = self.project_service.get_datatype_by_id(datatypes[1].id)
 
-        assert not db_dt_group.visible, "The data type should be visible."
-        assert not db_first_dt.visible, "The data type should not be visible."
-        assert not db_second_dt.visible, "The data type should be visible."
+        assert not db_dt_group.visible, DT_VISIBLE_ERROR
+        assert not db_first_dt.visible, DT_NOT_VISIBLE_ERROR
+        assert not db_second_dt.visible, DT_VISIBLE_ERROR
 
     def test_set_visibility_for_group(self, datatype_group_factory):
         """
@@ -210,8 +215,8 @@ class TestProjectStructure(TransactionalTestCase):
         datatypes = dao.get_datatypes_from_datatype_group(dt_group.id)
 
         assert dt_group.visible, "The data type group should be visible."
-        assert datatypes[0].visible, "The data type should be visible."
-        assert datatypes[1].visible, "The data type should be visible."
+        assert datatypes[0].visible, DT_VISIBLE_ERROR
+        assert datatypes[1].visible, DT_VISIBLE_ERROR
         self.project_service.set_datatype_visibility(dt_group.gid, False)
 
         updated_dt_group = self.project_service.get_datatype_by_id(dt_group.id)
@@ -219,8 +224,8 @@ class TestProjectStructure(TransactionalTestCase):
         updated_second_dt = self.project_service.get_datatype_by_id(datatypes[1].id)
 
         assert not updated_dt_group.visible, "The data type group should be visible."
-        assert not updated_first_dt.visible, "The data type should be visible."
-        assert not updated_second_dt.visible, "The data type should be visible."
+        assert not updated_first_dt.visible, DT_VISIBLE_ERROR
+        assert not updated_second_dt.visible, DT_VISIBLE_ERROR
 
     def test_getdatatypes_from_dtgroup(self, datatype_group_factory):
         """

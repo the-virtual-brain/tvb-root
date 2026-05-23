@@ -44,6 +44,10 @@ from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
 from tvb.tests.framework.datatypes.datatype2 import Datatype2
 
+BURST_ERROR = "Incorrect bursts retrieved for project %s."
+H5_FILE_NAME = "Time_Series_{}.h5"
+STATUS_ERROR = "Statuses not equal for bursts."
+
 
 class TestBurstService(BaseTestCase):
     """
@@ -100,9 +104,9 @@ class TestBurstService(BaseTestCase):
         """
         assert first_burst.name == second_burst.name, "Names not equal for bursts."
         assert first_burst.fk_project == second_burst.fk_project, "Projects not equal for bursts."
-        assert first_burst.status == second_burst.status, "Statuses not equal for bursts."
-        assert first_burst.range1 == second_burst.range1, "Statuses not equal for bursts."
-        assert first_burst.range2 == second_burst.range2, "Statuses not equal for bursts."
+        assert first_burst.status == second_burst.status, STATUS_ERROR
+        assert first_burst.range1 == second_burst.range1, STATUS_ERROR
+        assert first_burst.range2 == second_burst.range2, STATUS_ERROR
 
     def test_getavailablebursts_none(self):
         """
@@ -123,14 +127,10 @@ class TestBurstService(BaseTestCase):
                                         self.burst_service.get_available_bursts(self.test_project.id)]
         returned_second_project_bursts = [burst.id for burst in
                                           self.burst_service.get_available_bursts(second_project.id)]
-        assert len(test_project_bursts) == len(returned_test_project_bursts), \
-            "Incorrect bursts retrieved for project %s." % self.test_project
-        assert len(second_project_bursts) == len(returned_second_project_bursts), \
-            "Incorrect bursts retrieved for project %s." % second_project
-        assert set(second_project_bursts) == set(returned_second_project_bursts), \
-            "Incorrect bursts retrieved for project %s." % second_project
-        assert set(test_project_bursts) == set(returned_test_project_bursts), \
-            "Incorrect bursts retrieved for project %s." % self.test_project
+        assert len(test_project_bursts) == len(returned_test_project_bursts), BURST_ERROR % self.test_project
+        assert len(second_project_bursts) == len(returned_second_project_bursts), BURST_ERROR % second_project
+        assert set(second_project_bursts) == set(returned_second_project_bursts), BURST_ERROR % second_project
+        assert set(test_project_bursts) == set(returned_test_project_bursts), BURST_ERROR % self.test_project
 
     def test_rename_burst(self, operation_factory):
         """
@@ -227,9 +227,9 @@ class TestBurstService(BaseTestCase):
         operation = operation_factory(test_user=self.test_user, test_project=self.test_project)
         sim_folder, sim_gid = simulator_factory(op=operation)
 
-        path_1 = os.path.join(sim_folder, "Time_Series_{}.h5".format(ts_1.gid.hex))
-        path_2 = os.path.join(sim_folder, "Time_Series_{}.h5".format(ts_2.gid.hex))
-        path_3 = os.path.join(sim_folder, "Time_Series_{}.h5".format(ts_3.gid.hex))
+        path_1 = os.path.join(sim_folder, H5_FILE_NAME.format(ts_1.gid.hex))
+        path_2 = os.path.join(sim_folder, H5_FILE_NAME.format(ts_2.gid.hex))
+        path_3 = os.path.join(sim_folder, H5_FILE_NAME.format(ts_3.gid.hex))
 
         with TimeSeriesH5(path_1) as f:
             f.store(ts_1)

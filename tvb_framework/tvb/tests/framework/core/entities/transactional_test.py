@@ -37,6 +37,10 @@ from tvb.core.entities.storage.session_maker import add_session, SessionMaker
 from tvb.core.entities.storage.exceptions import NestedTransactionUnsupported
 from tvb.tests.framework.core.factory import TestFactory
 
+TEST_EMAIL = 'test@test.test'
+TEST_PASS = 'pass'
+TEST_USER = 'test_user'
+
 
 class TestsTransactional(BaseTestCase):
     """
@@ -217,7 +221,7 @@ class TestsTransactional(BaseTestCase):
         """
         for idx in range(n_users):
             TestFactory.create_user('test_user_nested' + str(idx), 'test_user_nested' + str(idx),
-                                    'pass', 'test@test.test', True, 'test')
+                                    TEST_PASS, TEST_EMAIL, True, 'test')
         inner_trans_func(n_users)
         raise Exception("This is just so transactional kicks in and a rollback should be done.")
 
@@ -230,8 +234,8 @@ class TestsTransactional(BaseTestCase):
         :param n_users: number of users to be stored by this method
         """
         for idx in range(n_users):
-            TestFactory.create_user(prefix + 'test_user' + str(idx), prefix + 'test_user' + str(idx),
-                                    'pass', 'test@test.test', True, 'test')
+            TestFactory.create_user(prefix + TEST_USER + str(idx), prefix + TEST_USER + str(idx),
+                                    TEST_PASS, TEST_EMAIL, True, 'test')
 
     @transactional
     def _store_users_raises_exception(self, n_users):
@@ -242,6 +246,6 @@ class TestsTransactional(BaseTestCase):
         :param n_users: number of users to be stored by this method
         """
         for idx in range(n_users):
-            TestFactory.create_user('test_user' + str(idx), 'test_user' + str(idx),
-                                    'pass', 'test@test.test', True, 'test')
+            TestFactory.create_user(TEST_USER + str(idx), TEST_USER + str(idx),
+                                    TEST_PASS, TEST_EMAIL, True, 'test')
         raise Exception("This is just so transactional kicks in and a rollback should be done.")

@@ -508,7 +508,6 @@ body#s-user table#usersTable thead .searchTd div#searchDiv input {
 body#s-user table#usersTable thead .searchTd div#searchDiv button {
     border-radius: 0;
     background-color: rgba(255, 255, 255, 0.8);
-;
 }
 
 body#s-user table#usersTable thead .searchTd input#filterBtn {

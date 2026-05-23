@@ -40,6 +40,12 @@ from tvb.tests.framework.adapters.dummy_adapter1 import DummyAdapter1Form
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
+DUMMY_BOOL_LABEL = 'Dummy Bool'
+DUMMY_FLOAT_LABEL = 'Dummy Float'
+DUMMY_INT_LABEL = 'Dummy Int'
+DUMMY_LIST_LABEL = 'Dummy List'
+DUMMY_STR_LABEL = 'Dummy Str'
+
 
 class TestForms(BaseTestCase):
     def setup_method(self):
@@ -103,7 +109,7 @@ class TestForms(BaseTestCase):
                                                                               " TraitDataTypeSelectField"
 
     def test_bool_field(self):
-        bool_attr = Attr(field_type=bool, default=True, label='Dummy Bool')
+        bool_attr = Attr(field_type=bool, default=True, label=DUMMY_BOOL_LABEL)
         bool_field = BoolField(bool_attr, self.name)
 
         post_data = {'dummy_name': 'on'}
@@ -115,7 +121,7 @@ class TestForms(BaseTestCase):
         assert bool_field.data is False, "False (boolean) was not set correctly on BoolField!"
 
     def test_str_field_required(self):
-        str_attr = Str(label='Dummy Str', default='')
+        str_attr = Str(label=DUMMY_STR_LABEL, default='')
         str_field = StrField(str_attr, self.name)
 
         post_data = {'dummy_name': 'dummy_str'}
@@ -127,7 +133,7 @@ class TestForms(BaseTestCase):
         assert str_field.validate() is False, "Validation should have failed on StrField!"
 
     def test_str_field_optional(self):
-        str_attr = Str(label='Dummy Str', default='', required=False)
+        str_attr = Str(label=DUMMY_STR_LABEL, default='', required=False)
         str_field = StrField(str_attr, self.name)
 
         post_data = {'dummy_name': ''}
@@ -136,7 +142,7 @@ class TestForms(BaseTestCase):
         assert str_field.validate(), "Validation should not have failed on StrField!"
 
     def test_int_field_required(self):
-        int_attr = Int(label='Dummy Int', default=0)
+        int_attr = Int(label=DUMMY_INT_LABEL, default=0)
         int_field = IntField(int_attr, self.name)
 
         post_data = {'dummy_name': '10'}
@@ -145,7 +151,7 @@ class TestForms(BaseTestCase):
         assert int_field.value == int_field.data, "Int data was not set correctly on IntField!"
 
     def test_int_field_required_empty(self):
-        int_attr = Int(label='Dummy Int', default=0)
+        int_attr = Int(label=DUMMY_INT_LABEL, default=0)
         int_field = IntField(int_attr, self.name)
 
         post_data = {'dummy_name': ''}
@@ -154,7 +160,7 @@ class TestForms(BaseTestCase):
         assert int_field.value == ''
 
     def test_int_field_optinal(self):
-        int_attr = Int(label='Dummy Int', default=0, required=False)
+        int_attr = Int(label=DUMMY_INT_LABEL, default=0, required=False)
         int_field = IntField(int_attr, self.name)
 
         post_data = {'dummy_name': ''}
@@ -163,7 +169,7 @@ class TestForms(BaseTestCase):
         assert int_field.value == ''
 
     def test_float_field_required(self):
-        float_attr = Float(label='Dummy Float', default=0.)
+        float_attr = Float(label=DUMMY_FLOAT_LABEL, default=0.)
         float_field = FloatField(float_attr, self.name)
 
         post_data = {'dummy_name': '10.5'}
@@ -172,7 +178,7 @@ class TestForms(BaseTestCase):
         assert float_field.value == float_field.data
 
     def test_float_field_required_empty(self):
-        float_attr = Float(label='Dummy Float', default=0.)
+        float_attr = Float(label=DUMMY_FLOAT_LABEL, default=0.)
         float_field = FloatField(float_attr, self.name)
 
         post_data = {'dummy_name': ''}
@@ -181,7 +187,7 @@ class TestForms(BaseTestCase):
         assert float_field.value == ''
 
     def test_float_field_optional(self):
-        float_attr = Float(label='Dummy Float', default=0., required=False)
+        float_attr = Float(label=DUMMY_FLOAT_LABEL, default=0., required=False)
         float_field = FloatField(float_attr, self.name)
 
         post_data = {'dummy_name': ''}
@@ -190,7 +196,7 @@ class TestForms(BaseTestCase):
         assert float_field.value == ''
 
     def test_array_field_required(self):
-        int_attr = NArray(label='Dummy Int', default=0)
+        int_attr = NArray(label=DUMMY_INT_LABEL, default=0)
         array_field = ArrayField(int_attr, self.name)
 
         post_data = {'dummy_name': '[1, 2, 3]'}
@@ -204,7 +210,7 @@ class TestForms(BaseTestCase):
         assert array_field.value == '[]'
 
     def test_array_field_required_empty(self):
-        int_attr = NArray(label='Dummy Int', default=0)
+        int_attr = NArray(label=DUMMY_INT_LABEL, default=0)
         array_field = ArrayField(int_attr, self.name)
 
         post_data = {'dummy_name': ''}
@@ -213,7 +219,7 @@ class TestForms(BaseTestCase):
         assert array_field.value == ''
 
     def test_array_field_optional(self):
-        int_attr = NArray(label='Dummy Int', default=0, required=False)
+        int_attr = NArray(label=DUMMY_INT_LABEL, default=0, required=False)
         array_field = ArrayField(int_attr, self.name)
 
         array_str = ''
@@ -223,7 +229,7 @@ class TestForms(BaseTestCase):
         assert array_field.value == ''
 
     def test_select_field_required(self):
-        str_attr = Attr(field_type=str, default='2', label='Dummy Bool', choices=('1', '2', '3'))
+        str_attr = Attr(field_type=str, default='2', label=DUMMY_BOOL_LABEL, choices=('1', '2', '3'))
         select_field = SelectField(str_attr, self.name)
 
         post_data = {'dummy_name': '1'}
@@ -232,7 +238,7 @@ class TestForms(BaseTestCase):
         assert select_field.validate(), "Validation should have passed on SelectField!"
 
     def test_select_field_optional_none(self):
-        str_attr = Attr(field_type=str, default='2', label='Dummy Bool', choices=('1', '2', '3'), required=False)
+        str_attr = Attr(field_type=str, default='2', label=DUMMY_BOOL_LABEL, choices=('1', '2', '3'), required=False)
         select_field = SelectField(str_attr, self.name)
 
         post_data = {'dummy_name': 'explicit-None-value'}
@@ -241,7 +247,7 @@ class TestForms(BaseTestCase):
         assert select_field.validate(), "Validation should have passed on SelectField!"
 
     def test_select_field_invalid(self):
-        str_attr = Attr(field_type=str, default='2', label='Dummy Bool', choices=('1', '2', '3'))
+        str_attr = Attr(field_type=str, default='2', label=DUMMY_BOOL_LABEL, choices=('1', '2', '3'))
         select_field = SelectField(str_attr, self.name)
 
         post_data = {'dummy_name': '4'}
@@ -249,7 +255,7 @@ class TestForms(BaseTestCase):
         assert select_field.validate() is False, "Validation should have failed on SelectField!"
 
     def test_multi_select_field(self):
-        list_attr = List(of=str, label='Dummy List', choices=('1', '2', '3', '4', '5'))
+        list_attr = List(of=str, label=DUMMY_LIST_LABEL, choices=('1', '2', '3', '4', '5'))
         multi_select_field = MultiSelectField(list_attr, self.name)
 
         post_data = {'dummy_name': ['2', '3', '4']}
@@ -257,7 +263,7 @@ class TestForms(BaseTestCase):
         assert multi_select_field.data == post_data[self.name], "Data was not set correctly on the MultiSelectField!"
 
     def test_multi_select_field_invalid_data(self):
-        list_attr = List(of=str, label='Dummy List', choices=('1', '2', '3', '4', '5'))
+        list_attr = List(of=str, label=DUMMY_LIST_LABEL, choices=('1', '2', '3', '4', '5'))
         multi_select_field = MultiSelectField(list_attr, self.name)
 
         post_data = {'dummy_name': ['2', '3', '6']}
@@ -265,7 +271,7 @@ class TestForms(BaseTestCase):
         assert multi_select_field.validate() is False, "Validation should have failed on MultiSelectField!"
 
     def test_multi_select_field_no_data(self):
-        list_attr = List(of=str, label='Dummy List', choices=('1', '2', '3', '4', '5'))
+        list_attr = List(of=str, label=DUMMY_LIST_LABEL, choices=('1', '2', '3', '4', '5'))
         multi_select_field = MultiSelectField(list_attr, self.name)
 
         post_data = {}
@@ -273,7 +279,7 @@ class TestForms(BaseTestCase):
         assert multi_select_field.validate() is False, "Validation should have failed on MultiSelectField!"
 
     def test_hidden_field(self):
-        hidden_str_attr = Str(label='Dummy Str', default='')
+        hidden_str_attr = Str(label=DUMMY_STR_LABEL, default='')
         hidden_field = HiddenField(hidden_str_attr, self.name)
 
         post_data = {'dummy_name': 'Dummy Hidden Str'}

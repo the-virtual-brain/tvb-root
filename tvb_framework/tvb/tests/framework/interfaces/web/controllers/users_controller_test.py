@@ -41,6 +41,11 @@ from tvb.core.entities.model.model_project import User, ROLE_ADMINISTRATOR
 from tvb.core.entities.storage import dao
 from tvb.core.entities.model.model_project import UserPreferences
 
+DUMMY_COMMENT = "This is some dummy comment"
+TEST_EMAIL = "email@email.com"
+USER_URL = '/user'
+USER_PROFILE_URL = '/user/profile'
+
 
 class TestUsersController(BaseTransactionalControllerTest):
     """Unit test for UserController"""
@@ -67,7 +72,7 @@ class TestUsersController(BaseTransactionalControllerTest):
         dao.store_entity(user)
         login_data = {'username': 'valid_user', 'password': 'valid_pass'}
         cherrypy.request.method = "POST"
-        self._expect_redirect('/user/profile', self.user_c.index, **login_data)
+        self._expect_redirect(USER_PROFILE_URL, self.user_c.index, **login_data)
 
     def test_profile_logout(self):
         """
@@ -110,14 +115,14 @@ class TestUsersController(BaseTransactionalControllerTest):
         """
         cherrypy.request.config = {'tools.sessions.name': 'session_id'}
         cherrypy.serving.response.cookie['session_id'] = 1
-        self._expect_redirect('/user', self.user_c.logout)
+        self._expect_redirect(USER_URL, self.user_c.logout)
         assert common.KEY_USER not in cherrypy.session, "User should be removed after logout."
 
     def test_switch_online_help(self):
         """
         Test the switch_online_help method and make sure it adds corresponding entry to UserPreferences.
         """
-        self._expect_redirect('/user/profile', self.user_c.switch_online_help)
+        self._expect_redirect(USER_PROFILE_URL, self.user_c.switch_online_help)
         assert not string2bool(self.test_user.preferences[UserPreferences.ONLINE_HELP_ACTIVE]), \
             "Online help should be switched to False."
 
@@ -125,7 +130,7 @@ class TestUsersController(BaseTransactionalControllerTest):
         """
         Test cancel on registration page.
         """
-        self._expect_redirect('/user', self.user_c.register, cancel=True)
+        self._expect_redirect(USER_URL, self.user_c.register, cancel=True)
 
     def test_register_post_valid(self):
         """
@@ -136,10 +141,10 @@ class TestUsersController(BaseTransactionalControllerTest):
                     display_name="display_name",
                     password="pass",
                     password2="pass",
-                    email="email@email.com",
-                    comment="This is some dummy comment",
+                    email=TEST_EMAIL,
+                    comment=DUMMY_COMMENT,
                     role="CLINICIAN")
-        self._expect_redirect('/user', self.user_c.register, **data)
+        self._expect_redirect(USER_URL, self.user_c.register, **data)
         stored_user = dao.get_user_by_name('registered_user')
         assert stored_user is not None, "New user should be saved."
 
@@ -151,8 +156,8 @@ class TestUsersController(BaseTransactionalControllerTest):
         # Data invalid missing username
         data = dict(password="pass",
                     password2="pass",
-                    email="email@email.com",
-                    comment="This is some dummy comment",
+                    email=TEST_EMAIL,
+                    comment=DUMMY_COMMENT,
                     role="CLINICIAN")
         template_dict = self.user_c.register(**data)
         assert template_dict[common.KEY_ERRORS] != {}, "Errors should contain some data."
@@ -171,8 +176,8 @@ class TestUsersController(BaseTransactionalControllerTest):
                     display_name="display_name",
                     password="pass",
                     password2="pass",
-                    email="email@email.com",
-                    comment="This is some dummy comment",
+                    email=TEST_EMAIL,
+                    comment=DUMMY_COMMENT,
                     role="CLINICIAN")
         cherrypy.request.method = "POST"
         self._expect_redirect('/user/usermanagement', self.user_c.create_new, **data)
@@ -194,7 +199,7 @@ class TestUsersController(BaseTransactionalControllerTest):
         self.test_user.role = "ADMINISTRATOR"
         self.test_user = dao.store_entity(self.test_user)
         cherrypy.session[common.KEY_USER] = self.test_user
-        self._expect_redirect('/user/profile', self.user_c.usermanagement, cancel="true")
+        self._expect_redirect(USER_PROFILE_URL, self.user_c.usermanagement, cancel="true")
 
     def test_usermanagement_post_valid(self):
         """
@@ -224,7 +229,7 @@ class TestUsersController(BaseTransactionalControllerTest):
         Test that cancel redirects to user page.
         """
         cherrypy.request.method = "POST"
-        self._expect_redirect('/user', self.user_c.recoverpassword, cancel=True)
+        self._expect_redirect(USER_URL, self.user_c.recoverpassword, cancel=True)
 
     def test_recoverpassword_valid_post(self):
         """
@@ -234,7 +239,7 @@ class TestUsersController(BaseTransactionalControllerTest):
         data = {"email": self.test_user.email,
                 "username": self.test_user.username,
                 }
-        self._expect_redirect("/user", self.user_c.recoverpassword, **data)
+        self._expect_redirect(USER_URL, self.user_c.recoverpassword, **data)
         assert cherrypy.session[common.KEY_MESSAGE_TYPE] == common.TYPE_INFO, \
             "Info message informing successfull reset should be present"
 

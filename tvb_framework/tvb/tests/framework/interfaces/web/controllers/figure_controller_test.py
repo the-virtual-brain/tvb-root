@@ -34,6 +34,8 @@ from tvb.interfaces.web.controllers.project.figure_controller import FigureContr
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 
+DISPLAYRESULTFIGURES_URL = '/project/figure/displayresultfigures'
+
 
 class TestFigureController(BaseTransactionalControllerTest):
     """ Unit tests for FigureController """
@@ -71,8 +73,7 @@ class TestFigureController(BaseTransactionalControllerTest):
         assert len(figs['test42']) == 1
         data = {'figure_id': figure1.id}
 
-        self._expect_redirect('/project/figure/displayresultfigures', self.figure_c.editresultfigures,
-                              remove_figure=True, **data)
+        self._expect_redirect(DISPLAYRESULTFIGURES_URL, self.figure_c.editresultfigures, remove_figure=True, **data)
 
         figs, _ = dao.get_previews(self.test_project.id, self.test_user.id, "test42")
         assert len(figs['test42']) == 0
@@ -90,8 +91,7 @@ class TestFigureController(BaseTransactionalControllerTest):
         figs, _ = dao.get_previews(self.test_project.id, self.test_user.id, "test")
         assert len(figs['test']) == 2
         data = {'old_session_name': 'test', 'new_session_name': 'test_renamed'}
-        self._expect_redirect('/project/figure/displayresultfigures', self.figure_c.editresultfigures,
-                              rename_session=True, **data)
+        self._expect_redirect(DISPLAYRESULTFIGURES_URL, self.figure_c.editresultfigures, rename_session=True, **data)
         figs, previews = dao.get_previews(self.test_project.id, self.test_user.id, "test")
         assert len(figs['test']) == 0
         assert previews['test_renamed'] == 2
@@ -109,8 +109,7 @@ class TestFigureController(BaseTransactionalControllerTest):
         figs, _ = dao.get_previews(self.test_project.id, self.test_user.id, "test")
         assert len(figs['test']) == 2
         data = {'old_session_name': 'test', 'new_session_name': 'test_renamed'}
-        self._expect_redirect('/project/figure/displayresultfigures', self.figure_c.editresultfigures,
-                              remove_session=True, **data)
+        self._expect_redirect(DISPLAYRESULTFIGURES_URL, self.figure_c.editresultfigures, remove_session=True, **data)
         figs, previews = dao.get_previews(self.test_project.id, self.test_user.id, "test")
         assert len(figs['test']) == 0
         assert previews == {}

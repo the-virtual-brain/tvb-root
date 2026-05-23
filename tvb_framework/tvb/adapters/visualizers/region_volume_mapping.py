@@ -54,6 +54,10 @@ from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.region_mapping import RegionVolumeMapping
 from tvb.datatypes.structural import StructuralMRI
 
+HAS_VOLUME_MAPPING_FILTER_ATTR = '.has_volume_mapping'
+NDIM_FILTER_ATTR = '.ndim'
+REGION_MAPPING_LABEL = 'Region mapping'
+
 
 @add_metaclass(ABCMeta)
 class _MappedArrayVolumeBase(ABCDisplayer):
@@ -293,7 +297,7 @@ class VolumeVisualizerModel(BaseVolumeVisualizerModel):
     region_mapping_volume = DataTypeGidAttr(
         linked_datatype=RegionVolumeMapping,
         required=False,
-        label='Region mapping'
+        label=REGION_MAPPING_LABEL
     )
 
     data_slice = Attr(
@@ -319,8 +323,8 @@ class VolumeVisualizerForm(BaseVolumeVisualizerForm):
 
     @staticmethod
     def get_filters():
-        return FilterChain(fields=[FilterChain.datatype + '.ndim',
-                                   FilterChain.datatype + '.has_volume_mapping',
+        return FilterChain(fields=[FilterChain.datatype + NDIM_FILTER_ATTR,
+                                   FilterChain.datatype + HAS_VOLUME_MAPPING_FILTER_ATTR,
                                    FilterChain.datatype + '.subtype'],
                            operations=[">=", "==", "not in"],
                            values=[2, True, ["RegionVolumeMapping", "StructuralMRI"]])
@@ -372,7 +376,7 @@ class ConnectivityMeasureVolumeVisualizerModel(BaseVolumeVisualizerModel):
     region_mapping_volume = DataTypeGidAttr(
         linked_datatype=RegionVolumeMapping,
         required=False,
-        label='Region mapping'
+        label=REGION_MAPPING_LABEL
     )
 
 
@@ -400,7 +404,7 @@ class ConnectivityMeasureVolumeVisualizerForm(BaseVolumeVisualizerForm):
 
     @staticmethod
     def get_filters():
-        return FilterChain(fields=[FilterChain.datatype + '.ndim', FilterChain.datatype + '.has_volume_mapping'],
+        return FilterChain(fields=[FilterChain.datatype + NDIM_FILTER_ATTR, FilterChain.datatype + HAS_VOLUME_MAPPING_FILTER_ATTR],
                            operations=["==", "=="], values=[1, True])
 
 
@@ -434,7 +438,7 @@ class ConnectivityMeasureVolumeVisualizer(_MappedArrayVolumeBase):
 class RegionVolumeMappingVisualiserModel(BaseVolumeVisualizerModel):
     region_mapping_volume = DataTypeGidAttr(
         linked_datatype=RegionVolumeMapping,
-        label='Region mapping'
+        label=REGION_MAPPING_LABEL
     )
 
     connectivity_measure = DataTypeGidAttr(
@@ -454,7 +458,7 @@ class RegionVolumeMappingVisualiserForm(BaseVolumeVisualizerForm):
                                                               conditions=self.get_filters())
 
         cm_conditions = FilterChain(
-            fields=[FilterChain.datatype + '.ndim', FilterChain.datatype + '.has_volume_mapping'],
+            fields=[FilterChain.datatype + NDIM_FILTER_ATTR, FilterChain.datatype + HAS_VOLUME_MAPPING_FILTER_ATTR],
             operations=["==", "=="], values=[1, True])
         self.connectivity_measure = TraitDataTypeSelectField(RegionVolumeMappingVisualiserModel.connectivity_measure,
                                                              name='connectivity_measure', conditions=cm_conditions)

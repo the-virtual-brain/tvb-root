@@ -377,7 +377,7 @@ class TestHDF5Storage(object):
 
         # Test delete on root node
         read_meta_data = self.storage.get_metadata('', StorageInterface.ROOT_NODE_PATH)
-        assert 1, len(read_meta_data) == "There should be no metadata stored on root node, except data version"
+        assert 1 == len(read_meta_data), "There should be no metadata stored on root node, except data version"
 
     def test_delete_metadata_missing_dataset(self):
         """

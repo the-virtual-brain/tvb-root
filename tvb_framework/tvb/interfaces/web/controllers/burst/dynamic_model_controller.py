@@ -113,7 +113,6 @@ class _InputTreeFragment(ABCAdapterForm):
 @traced('fill_default_attributes', exclude=True)
 class DynamicModelController(BurstBaseController):
     KEY_CACHED_DYNAMIC_MODEL = 'cache.DynamicModelController'
-    LOGGER = get_logger(__name__)
 
     def __init__(self):
         BurstBaseController.__init__(self)
@@ -169,7 +168,7 @@ class DynamicModelController(BurstBaseController):
         dynamic.model.configure()
         self._configure_integrator_noise(dynamic.integrator, dynamic.model)
         dynamic.phase_plane = phase_space_d3(dynamic.model, dynamic.integrator)
-        mp_params = DynamicModelController._get_model_parameters_ui_model(dynamic.model)
+        mp_params = self._get_model_parameters_ui_model(dynamic.model)
         graph_params = DynamicModelController._get_graph_ui_model(dynamic)
         return {
             'params': mp_params, 'graph_params': graph_params,
@@ -297,8 +296,7 @@ class DynamicModelController(BurstBaseController):
 
             return {'trajectories': trajectories, 'signals': signals, 'finite': True}
 
-    @staticmethod
-    def _get_model_parameters_ui_model(model):
+    def _get_model_parameters_ui_model(self, model):
         """
         For each model parameter return the representation used by the ui (template & js)
         """
@@ -308,7 +306,7 @@ class DynamicModelController(BurstBaseController):
             attr = getattr(type(model), param.name)
             ranger = attr.domain
             if ranger is None:
-                DynamicModelController.LOGGER.warning("Param %s doesn't have a domain specified" % param.name)
+                self.logger.warning("Param %s doesn't have a domain specified" % param.name)
                 continue
             default = float(attr.default)
 

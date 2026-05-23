@@ -42,7 +42,7 @@ class CosimMonitor(HasTraits):
         This method provides output from TVB Monitor classes, and should be set to a TVB Monitor parent class.
         Use the original signature.
         """
-        raise NotImplemented
+        raise NotImplementedError
 
     def _get_sample(self, current_step, start_step, n_steps, history, cosim):
         end_step = start_step + n_steps
@@ -79,7 +79,7 @@ class CosimMonitor(HasTraits):
         This method provides monitor output, and should be overridden by subclasses.
         Use the original signature.
         """
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class CosimMonitorFromCoupling(CosimMonitor):
