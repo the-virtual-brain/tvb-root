@@ -40,11 +40,13 @@ warnings.filterwarnings("ignore", message="Hybrid simulation is experimental: .*
 from tvb.simulator.backend.nb_hybrid import NbHybridBackend
 from tvb.simulator.backend_cpp import CppHybridBackend
 from tvb.simulator.hybrid import NetworkSet, Subnetwork
-from tvb.simulator.integrators import HeunDeterministic
+from tvb.simulator.integrators import HeunStochastic
 from tvb.simulator.monitors import TemporalAverage
+from tvb.simulator.noise import Additive
 
 
 DT = 0.1
+NOISE_SIGMA = 0.01
 DEFAULT_NODES = 16
 DEFAULT_NSTEP = 1000
 DEFAULT_CHUNK_SIZE = 1
@@ -97,10 +99,14 @@ def make_subnet(name: str, model_name: str, n_nodes: int) -> Subnetwork:
     model_cls = load_model_class(model_name)
     model = model_cls(**MODEL_CASES[model_name]["params"])
     model.configure()
+    noise = Additive(nsig=np.array([NOISE_SIGMA]))
+    noise.configure()
+    scheme = HeunStochastic(dt=DT, noise=noise)
+    scheme.configure()
     subnet = Subnetwork(
         name=name,
         model=model,
-        scheme=HeunDeterministic(dt=DT),
+        scheme=scheme,
         nnodes=n_nodes,
     )
     subnet.node_indices = np.arange(subnet.nnodes)
@@ -281,9 +287,10 @@ def benchmark_case(
 
 
 def print_header(nstep: int, n_nodes: int, chunk_size: int, repeats: int) -> None:
-    print("=== Single-Subnetwork Hybrid Backend Benchmark ===")
+    print("=== Single-Subnetwork Hybrid Backend Benchmark (HeunStochastic) ===")
     print(f"TVB_USER_HOME = {os.environ['TVB_USER_HOME']}")
     print(f"dt            = {DT} ms")
+    print(f"noise_sigma   = {NOISE_SIGMA}")
     print(f"nodes         = {n_nodes}")
     print(f"nstep         = {nstep}")
     print(f"chunk_size    = {chunk_size}")

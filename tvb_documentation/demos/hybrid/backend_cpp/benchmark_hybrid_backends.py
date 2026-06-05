@@ -51,17 +51,20 @@ from tvb.simulator.backend.nb_hybrid import NbHybridBackend
 from tvb.simulator.backend_cpp import CppHybridBackend
 from tvb.simulator.hybrid import InterProjection, NetworkSet, Subnetwork
 from tvb.simulator.hybrid.coupling import Linear
-from tvb.simulator.integrators import HeunDeterministic
+from tvb.simulator.integrators import HeunStochastic
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
+from tvb.simulator.noise import Additive
 
 
 DT = 0.1
+NOISE_SIGMA = 0.01
 DEFAULT_NODES = 16
 DEFAULT_NSTEP = 1000
 DEFAULT_CHUNK_SIZES = (1, 10)
 DEFAULT_REPEATS = 2
-DEFAULT_SWEEPS = 1024
+DEFAULT_SWEEPS = 8192
 DEFAULT_CPU_SAMPLE_SWEEPS = 64
+DEFAULT_CPP_PARALLEL_WORKERS = (4, 8)
 OUTPUT_DIR = EXAMPLES_DIR / "outputs"
 
 
@@ -75,10 +78,14 @@ class Scenario:
 def make_subnet(name: str, n_nodes: int, node_offset: int = 0) -> Subnetwork:
     model = MontbrioPazoRoxin(I=np.array([2.0]))
     model.configure()
+    noise = Additive(nsig=np.array([NOISE_SIGMA]))
+    noise.configure()
+    scheme = HeunStochastic(dt=DT, noise=noise)
+    scheme.configure()
     subnet = Subnetwork(
         name=name,
         model=model,
-        scheme=HeunDeterministic(dt=DT),
+        scheme=scheme,
         nnodes=n_nodes,
     ).configure()
     subnet.node_indices = np.arange(node_offset, node_offset + n_nodes)
@@ -393,6 +400,60 @@ def benchmark_cpp(
     return result
 
 
+def benchmark_cpp_parallel(
+    network: NetworkSet,
+    initial_states: list[np.ndarray],
+    nstep: int,
+    chunk_size: int,
+    repeats: int,
+    plan: SweepPlan,
+    n_workers: int,
+) -> dict[str, Any]:
+    if plan.kind != "coupling":
+        return {
+            "status": "skipped",
+            "reason": "C++ parallel sweep requires a coupling/cfun parameter sweep.",
+        }
+
+    from tvb.simulator.monitors import TemporalAverage
+
+    backend = CppHybridBackend()
+    monitor = TemporalAverage(period=chunk_size * DT)
+    sweep_values = plan.values.astype(np.float32, copy=False)
+
+    t0 = time.perf_counter()
+    backend.sweep(
+        network,
+        params={"coupling_scale": sweep_values[:1]},
+        nstep=min(5, nstep),
+        monitors=[monitor],
+        initial_states=copies(initial_states),
+        n_workers=n_workers,
+    )
+    compile_time = time.perf_counter() - t0
+
+    def run_once() -> None:
+        backend.sweep(
+            network,
+            params={"coupling_scale": sweep_values},
+            nstep=nstep,
+            monitors=[monitor],
+            initial_states=copies(initial_states),
+            n_workers=n_workers,
+        )
+
+    run_time = best_of(repeats, run_once)
+    sweeps = plan.values.size
+    return {
+        "status": "ok",
+        "backend": f"cpp-par-{n_workers}",
+        "workers": n_workers,
+        "compile_s": compile_time,
+        "run_s": run_time,
+        "per_sim_s": run_time / sweeps,
+    }
+
+
 def cuda_available() -> tuple[bool, str | None]:
     try:
         from numba import cuda
@@ -492,6 +553,7 @@ def benchmark_case(
     cpu_sample_sweeps: int | None,
     max_batch_sweeps: int | None,
     cpp_scale_proxy: bool,
+    cpp_parallel_workers: tuple[int, ...],
     sweep_start: float,
     sweep_stop: float,
     strict: bool,
@@ -538,11 +600,27 @@ def benchmark_case(
     )
     cpp = extrapolate_result(cpp, measured_cpu_sweeps, sweeps)
 
+    cpp_parallel = {
+        f"cpp_parallel_{n_workers}": try_benchmark(
+            lambda n_workers=n_workers: benchmark_cpp_parallel(
+                network,
+                initial_states,
+                nstep,
+                chunk_size,
+                repeats,
+                plan,
+                n_workers,
+            ),
+            strict,
+        )
+        for n_workers in cpp_parallel_workers
+    }
+
     py_per = ok_time(py, "per_sim_s")
     py_total = ok_time(py, "run_s")
     cuda_total = ok_time(cuda, "run_s")
     cpp_per = ok_time(cpp, "per_sim_s")
-    return {
+    row = {
         "scenario": scenario.label,
         "nodes_per_subnet": n_nodes,
         "nstep": nstep,
@@ -562,6 +640,7 @@ def benchmark_case(
         "numba": nb,
         "numba_cuda": cuda,
         "cpp": cpp,
+        **cpp_parallel,
         "speedups_per_sim": {
             "python_vs_numba": ratio(py_per, ok_time(nb, "per_sim_s")),
             "python_vs_numba_cuda": ratio(py_per, ok_time(cuda, "per_sim_s")),
@@ -577,17 +656,37 @@ def benchmark_case(
             "cpp_vs_numba_cuda": ratio(ok_time(cpp, "run_s"), cuda_total),
         },
     }
+    for key, result in cpp_parallel.items():
+        row["speedups_per_sim"][f"python_vs_{key}"] = ratio(
+            py_per, ok_time(result, "per_sim_s")
+        )
+        row["speedups_total_sweep"][f"python_vs_{key}"] = ratio(
+            py_total, ok_time(result, "run_s")
+        )
+        row["speedups_total_sweep"][f"{key}_vs_numba_cuda"] = ratio(
+            ok_time(result, "run_s"), cuda_total
+        )
+    return row
 
 
 def print_header(args: argparse.Namespace) -> None:
-    print("=== Hybrid Backend Scenario Benchmark ===")
+    print("=== Hybrid Backend Scenario Benchmark (HeunStochastic) ===")
     print(f"TVB_USER_HOME = {os.environ['TVB_USER_HOME']}")
     print(f"dt            = {DT} ms")
+    print(f"noise_sigma   = {NOISE_SIGMA}")
     print(f"nodes/subnet  = {args.nodes}")
     print(f"nstep         = {args.nstep}")
     print(f"chunk_sizes   = {', '.join(str(v) for v in args.chunk_sizes)}")
     print(f"sweeps        = {args.sweeps}")
     print(f"cpu_sample    = {args.cpu_sample_sweeps or args.sweeps}")
+    print(
+        "cpp workers   = "
+        + (
+            ", ".join(str(v) for v in args.cpp_parallel_workers)
+            if args.cpp_parallel_workers
+            else "disabled"
+        )
+    )
     print(f"sweep_range   = {args.sweep_start:g} .. {args.sweep_stop:g}")
     print(f"repeats       = {args.repeats}")
     print()
@@ -614,6 +713,9 @@ def print_row(row: dict[str, Any]) -> None:
     ):
         if row[key]["status"] != "ok":
             reasons.append(f"{label}: {row[key]['reason']}")
+    for key in sorted(k for k in row if k.startswith("cpp_parallel_")):
+        if row[key]["status"] != "ok":
+            reasons.append(f"{key}: {row[key]['reason']}")
     if row["cpu_times_extrapolated"]:
         reasons.append(
             f"cpu estimated from {row['cpu_sample_sweeps']}/{row['sweeps']} sweep points"
@@ -685,6 +787,16 @@ def parse_args() -> argparse.Namespace:
         help="Optional CUDA batch cap. Default lets the CUDA backend choose from GPU memory.",
     )
     parser.add_argument(
+        "--cpp-parallel-workers",
+        type=int,
+        nargs="*",
+        default=list(DEFAULT_CPP_PARALLEL_WORKERS),
+        help=(
+            "C++ n_workers values to benchmark through CppHybridBackend.sweep "
+            "for coupling sweeps. Use no values to disable."
+        ),
+    )
+    parser.add_argument(
         "--cpp-scale-proxy",
         action="store_true",
         default=True,
@@ -721,6 +833,8 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("all chunk sizes must be >= 1.")
     if args.max_batch_sweeps is not None and args.max_batch_sweeps < 1:
         raise ValueError("max-batch-sweeps must be >= 1 when provided.")
+    if any(n_workers < 2 for n_workers in args.cpp_parallel_workers):
+        raise ValueError("cpp-parallel-workers values must be >= 2.")
 
 
 def main() -> None:
@@ -742,6 +856,7 @@ def main() -> None:
                 cpu_sample_sweeps=args.cpu_sample_sweeps,
                 max_batch_sweeps=args.max_batch_sweeps,
                 cpp_scale_proxy=args.cpp_scale_proxy,
+                cpp_parallel_workers=tuple(dict.fromkeys(args.cpp_parallel_workers)),
                 sweep_start=args.sweep_start,
                 sweep_stop=args.sweep_stop,
                 strict=args.strict,
