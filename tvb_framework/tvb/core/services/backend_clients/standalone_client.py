@@ -61,9 +61,11 @@ def get_host_current_host_ip():
     """
     :return: current host ip address
     """
-    hostname = socket.gethostname()
-    ip_addr = "socket.gethostbyname(hostname)"
-    return ip_addr
+    try:
+        hostname = socket.gethostname()
+        return socket.gethostbyname(hostname)
+    except socket.gaierror:
+        return "127.0.0.1"
 
 
 class OperationExecutor(Thread):
