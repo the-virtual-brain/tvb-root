@@ -74,6 +74,7 @@
 # - **Goldman et al. (2023)** *Front Comp Neurosci* — Construction pipeline inspiration
 
 # %%
+%pylab inline
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -81,9 +82,6 @@ import time
 import numpy as np
 import scipy.sparse as sp
 import scipy.signal
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 
 from tvb.simulator.models import ReducedWongWangExcInh
 from tvb.simulator.integrators import HeunStochastic
