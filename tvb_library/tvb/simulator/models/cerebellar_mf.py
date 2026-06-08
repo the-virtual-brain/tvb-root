@@ -416,27 +416,81 @@ class CerebellarMF(ModelNumbaDfun):
     # -----------------------------------------------------------------------
     tau_OU = NArray(
         label=":math:`\\tau_{OU}`",
-        default=numpy.array([5.0]),
+        default=numpy.array([3.5]),
         domain=Range(lo=0.1, hi=10.0, step=0.01),
         doc="OU noise time constant [ms]")
 
     weight_noise = NArray(
         label=":math:`w_{noise}`",
-        default=numpy.array([10.5]),
-        domain=Range(lo=0.0, hi=50.0, step=1.0),
+        default=numpy.array([4e-3]),
+        domain=Range(lo=0.0, hi=50.0, step=1e-3),
         doc="OU noise weight")
 
     external_input_ex_ex = NArray(
         label=":math:`\\nu_e^{drive}`",
-        default=numpy.array([0.0]),
+        default=numpy.array([0.315e-3]),
         domain=Range(lo=0.0, hi=0.1, step=0.001),
-        doc="External excitatory drive to excitatory population")
+        doc="External excitatory drive to excitatory population (GrC/GoC)")
 
     external_input_ex_in = NArray(
         label=":math:`\\nu_i^{drive}`",
         default=numpy.array([0.0]),
         domain=Range(lo=0.0, hi=0.1, step=0.001),
         doc="External inhibitory drive to excitatory population")
+
+    # -----------------------------------------------------------------------
+    # Coupling routing fractions (from monolithic cMF-TVB model)
+    # -----------------------------------------------------------------------
+    # These represent the anatomical split of incoming coupling into
+    # mossy-fiber and parallel-fiber pathways, and the distribution of
+    # each pathway to the four cerebellar populations.
+    # In the monolithic model these are hardcoded as:
+    #   Fe_ext_tod1 = (c_0 * 0.57) * 0.97  ← mossy→GrC
+    #   Fe_ext_tod2 = (c_0 * 0.57) * 0.03 + (c_0 * 0.43) * 0.14  ← mossy→GoC + parallel→GoC
+    #   Fe_ext_tod3 = (c_0 * 0.43) * 0.55  ← parallel→MLI
+    #   Fe_ext_tod4 = (c_0 * 0.43) * 0.31  ← parallel→PC
+
+    frac_mossy = NArray(
+        label="Mossy fiber proportion",
+        default=numpy.array([0.57]),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
+        doc="Proportion of total long-range coupling carried by mossy fibers")
+
+    frac_parallel = NArray(
+        label="Parallel fiber proportion",
+        default=numpy.array([0.43]),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
+        doc="Proportion of total long-range coupling carried by parallel fibers")
+
+    mf_to_grc = NArray(
+        label="Mossy→GrC split",
+        default=numpy.array([0.97]),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
+        doc="Fraction of mossy fiber input received by GrC")
+
+    mf_to_goc = NArray(
+        label="Mossy→GoC split",
+        default=numpy.array([0.03]),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
+        doc="Fraction of mossy fiber input received by GoC")
+
+    pf_to_goc = NArray(
+        label="Parallel→GoC split",
+        default=numpy.array([0.14]),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
+        doc="Fraction of parallel fiber input received by GoC")
+
+    pf_to_mli = NArray(
+        label="Parallel→MLI split",
+        default=numpy.array([0.55]),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
+        doc="Fraction of parallel fiber input received by MLI")
+
+    pf_to_pc = NArray(
+        label="Parallel→PC split",
+        default=numpy.array([0.31]),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
+        doc="Fraction of parallel fiber input received by PC")
 
     # -----------------------------------------------------------------------
     # Model metadata
@@ -464,20 +518,24 @@ class CerebellarMF(ModelNumbaDfun):
             "T", "P_grc", "P_goc", "P_mli", "P_pc",
             "tau_OU", "weight_noise",
             "external_input_ex_ex", "external_input_ex_in",
+            "frac_mossy", "frac_parallel",
+            "mf_to_grc", "mf_to_goc",
+            "pf_to_goc", "pf_to_mli", "pf_to_pc",
         ],
     )
 
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
         default={
-            "GrC":   numpy.array([0.0, 150.0]),
-            "GoC":   numpy.array([0.0, 50.0]),
-            "MLI":   numpy.array([0.0, 100.0]),
-            "PC":    numpy.array([0.0, 150.0]),
-            "noise": numpy.array([0.0, 1.0]),
+            "GrC":   numpy.array([0.5e3, 0.5e3]),
+            "GoC":   numpy.array([5.0e3, 5.0e3]),
+            "MLI":   numpy.array([15.0e3, 15.0e3]),
+            "PC":    numpy.array([38.0e3, 38.0e3]),
+            "noise": numpy.array([0.0, 0.0]),
         },
         doc="""Expected dynamic range for each state variable.
-        Used for bounding random initial conditions.""")
+        Used for bounding random initial conditions.
+        Values match Lorenzi et al. 2023 monolithic model.""")
 
     state_variable_boundaries = Final(
         label="State Variable boundaries [lo, hi]",
@@ -672,13 +730,18 @@ class CerebellarMF(ModelNumbaDfun):
         c_mossy = coupling[0, :]
         c_parallel = coupling[1, :]
 
-        # Mossy + noise feeds GrC and GoC
-        Fe_ext_tod1 = c_mossy + self.weight_noise * noise
-        Fe_ext_tod2 = c_mossy + c_parallel + self.weight_noise * noise
+        # Apply anatomical routing fractions (matching monolithic cMF-TVB):
+        # In the monolithic model, coupling enters as a single c_0 signal that
+        # is split internally into mossy (0.57) and parallel (0.43) fractions,
+        # then distributed to each population with specific sub-fractions.
+        # In the hybrid model, c_mossy and c_parallel arrive separately via
+        # cvar=[0,1], so we just apply the per-target distribution fractions.
+        Fe_ext_tod1 = c_mossy * self.mf_to_grc + self.weight_noise * noise
+        Fe_ext_tod2 = c_mossy * self.mf_to_goc + c_parallel * self.pf_to_goc + self.weight_noise * noise
 
         # Parallel only feeds MLI and PC
-        Fe_ext_tod3 = c_parallel
-        Fe_ext_tod4 = c_parallel
+        Fe_ext_tod3 = c_parallel * self.pf_to_mli
+        Fe_ext_tod4 = c_parallel * self.pf_to_pc
 
         # Clamp negative inputs
         idx = numpy.where(Fe_ext_tod1 * self.K_mossy_grc < 0)

@@ -12,14 +12,15 @@
 # - **Cerebellum subnetwork** (27 nodes): cerebellar cortex, modelled with
 #   `CerebellarMF` (GrC → GoC → MLI → PC)
 #
-# ## Signal flow — 4 projections
+# ## Signal flow — 5 projections
 #
 # | # | Type | Signal | Source → Target cvar |
 # |---|------|--------|---------------------|
 # | P1 | IntraProjection | Intra-cortex | S_e(0) → S_e(0) |
 # | P2 | InterProjection | Mossy fibers | S_e(0) → mossy(0) |
 # | P3 | InterProjection | GrC feedback | GrC(0) → S_e(0) |
-# | P4 | IntraProjection | Parallel fibers | GrC(0) → parallel(1) |
+# | P4 | IntraProjection | CRBL mossy loop | GrC(0) → mossy(0) |
+# | P5 | IntraProjection | Parallel fibers | GrC(0) → parallel(1) |
 
 # %% [markdown]
 # ## Scientific Background — Construct Validation
@@ -42,36 +43,19 @@
 # | Beta | 13–30 | Motor planning, cerebellar synchrony |
 # | Gamma | 30–100 | Fast local processing, GrC layer |
 #
-# ### Population-specific expected spectral profiles
-#
-# | Population | Expected band | Rationale |
-# |-----------|--------------|----------|
-# | **GrC** | Gamma / high Beta | Fast input processors with short time constants |
-# | **GoC** | Beta / Alpha | Slower feedback inhibition gate |
-# | **MLI** | Alpha / Beta | Intermediate-frequency PC modulation |
-# | **PC** | Alpha / low Beta | Classic cerebellar output rhythm; best-characterized |
-#
 # ### Open-loop vs closed-loop comparison
-#
-# The key construct validation question is:
 #
 # > **Does closing the cortical loop through mossy fibers shift the cerebellar
 # > spectral profile?**
 #
-# - **Open-loop** (cerebellum isolated): CRBL circuit driven only by noise →
-#   reveals intrinsic oscillation hierarchy
-# - **Closed-loop** (whole-brain): cortical S_e drives CRBL via mossy fibers →
-#   tests whether structured input entrains cerebellar rhythms
-#
-# Empirically, cortical alpha/beta input is expected to enhance PC alpha-band
-# power and potentially shift GrC oscillations toward lower frequencies.
+# - **Open-loop**: CRBL circuit driven by intra-cerebellar SC + noise
+# - **Closed-loop**: cortical S_e drives CRBL via mossy fibers
 #
 # ### References
 #
-# - **Lorenzi et al. (2023)** *PLoS Comp Bio* — Cerebellar MF model equations
-# - **Lorenzi et al. (2025)** *NPJSBA* — Full pipeline & validation results
-# - **Esaghei et al. (2022)** *Trends Neurosci* — Cerebellar frequency band definitions
-# - **Goldman et al. (2023)** *Front Comp Neurosci* — Construction pipeline inspiration
+# - **Lorenzi et al. (2023)** *PLoS Comp Bio* — Cerebellar MF model
+# - **Lorenzi et al. (2025)** *NPJSBA* — Full pipeline & validation
+# - **Esaghei et al. (2022)** *Trends Neurosci* — Frequency bands
 
 # %%
 %pylab inline
@@ -95,27 +79,28 @@ from tvb.simulator.models.cerebellar_mf import CerebellarMF
 print("All imports OK")
 
 # %% [markdown]
-# ## 1. Load structural connectivity
+# ## 1. Load and normalize structural connectivity
 #
-# 126-node AAL+SUIT parcellation: 93 cortical + 6 DCN + 27 cerebellar cortex.
-# Tract lengths with zero values are replaced with the minimum positive length
-# (required for delay calculations).
+# Weights are normalized column-wise (matching the monolithic cMF-TVB pipeline)
+# so that each target node sums incoming weights to 1.
 
 # %%
 data = np.load('data/conn_126.npz')
-W_full = data['weights']
+W_raw = data['weights'].copy()
 TL_full = data['tract_lengths'].astype(np.float64)
 TL_full[TL_full == 0] = np.min(TL_full[TL_full > 0])
 
-print(f"SC: {W_full.shape}, weights [{W_full.min():.4f}, {W_full.max():.4f}]")
+# Normalize weights column-wise (same as monolithic init)
+W = W_raw / (W_raw.sum(axis=0) + 1e-12)
+
+print(f"SC: {W_raw.shape} → normalized, max={W.max():.4f}")
 
 # %% [markdown]
-# ## 2. Define region indices
+# ## 2. Region indices
 
 # %%
 cortex_idx = np.concatenate([
-    np.arange(0, 93),                               # 93 cortical
-    np.array([103, 104, 105, 113, 114, 115])        # 6 DCN
+    np.arange(0, 93), np.array([103, 104, 105, 113, 114, 115])
 ])
 n_cortex = len(cortex_idx)  # 99
 
@@ -128,24 +113,19 @@ n_crbl = len(crbl_idx)  # 27
 
 dcn_idx = np.array([103, 104, 105, 113, 114, 115])
 
-print(f"Cortex: {n_cortex}, CRBL: {n_crbl}, DCN: {len(dcn_idx)}")
-
 # %% [markdown]
-# ## 3. Partition structural connectivity
-#
-# CSR convention: rows=target, cols=source. DCN→CRBL weights are negated.
+# ## 3. Partition SC (with DCN negation)
 
 # %%
-W = W_full.copy()
 W[dcn_idx[:, None], crbl_idx[None, :]] *= -1
 
 def csr(arr): return sp.csr_matrix(arr.astype(np.float64))
 
 W_cc = csr(W[np.ix_(cortex_idx, cortex_idx)])
 TL_cc = csr(TL_full[np.ix_(cortex_idx, cortex_idx)])
-W_cr = csr(W[np.ix_(crbl_idx, cortex_idx)])   # 27×99
+W_cr = csr(W[np.ix_(crbl_idx, cortex_idx)])
 TL_cr = csr(TL_full[np.ix_(crbl_idx, cortex_idx)])
-W_rc = csr(W[np.ix_(cortex_idx, crbl_idx)])    # 99×27
+W_rc = csr(W[np.ix_(cortex_idx, crbl_idx)])
 TL_rc = csr(TL_full[np.ix_(cortex_idx, crbl_idx)])
 W_rr = csr(W[np.ix_(crbl_idx, crbl_idx)])
 TL_rr = csr(TL_full[np.ix_(crbl_idx, crbl_idx)])
@@ -153,24 +133,23 @@ TL_rr = csr(TL_full[np.ix_(crbl_idx, crbl_idx)])
 print(f"W_cc {W_cc.shape}  W_cr {W_cr.shape}  W_rc {W_rc.shape}  W_rr {W_rr.shape}")
 
 # %% [markdown]
-# ## 4. Common simulation parameters
+# ## 4. Common parameters
 
 # %%
-dt = 1.0          # ms — adequate for spectral analysis up to 500 Hz
+dt = 1.0           # ms
 nsig = np.array([(0.001 ** 2) / 2])
-sim_len = 10000.0  # 10 seconds
-cv = 3.0           # conduction velocity m/s
-mon_period = 1.0   # ms — 1 kHz sampling
+sim_len = 10000.0   # 10 seconds
+cv = 3.0
+mon_period = 1.0
 
 # %% [markdown]
-# ## 5. Scenario 1 — Open-Loop (Cerebellum Only)
+# ## 5. Scenario 1 — Open-Loop (CRBL-only)
 #
-# The cerebellum in isolation: no cortical drive, only intrinsic CRBL circuit
-# (GrC → GoC → MLI → PC) with intra-cerebellar parallel fibers (P4).
-# This reveals the **intrinsic oscillation hierarchy** driven by noise alone.
-#
-# We use per-subnet monitors with `variables_of_interest` set to all 4
-# neural populations to capture the full spectral profile.
+# Cerebellum in isolation with both mossy-fiber (P4) and parallel-fiber (P5)
+# intra-cerebellar projections. The monolithic model's `cvar=[0]` sends the
+# full SC-weighted signal through a single coupling variable; internally it
+# splits this into mossy (57%) and parallel (43%) pathways. In the hybrid, we
+# decompose this into two explicit projections targeting cvar 0 and 1.
 
 # %%
 crbl_open = CerebellarMF()
@@ -182,14 +161,18 @@ cerebellum_open = Subnetwork(
     nnodes=n_crbl, node_indices=crbl_idx,
 )
 
-# Only P4: intra-cerebellar parallel fibers
-p4 = IntraProjection(
+# P4: intra-cerebellar mossy fiber loop  (GrC → mossy cvar)
+p4_open = IntraProjection(
+    source_cvar=np.array([0]), target_cvar=np.array([0]),
+    weights=W_rr, lengths=TL_rr, cv=cv, dt=dt, scale=1.0,
+)
+# P5: intra-cerebellar parallel fiber loop (GrC → parallel cvar)
+p5_open = IntraProjection(
     source_cvar=np.array([0]), target_cvar=np.array([1]),
     weights=W_rr, lengths=TL_rr, cv=cv, dt=dt, scale=1.0,
 )
-cerebellum_open.projections = [p4]
 
-# Per-subnet monitor: records all 4 CRBL voi
+cerebellum_open.projections = [p4_open, p5_open]
 cerebellum_open.add_monitor(TemporalAverage(period=mon_period))
 
 nets_open = NetworkSet(subnets=[cerebellum_open], projections=[])
@@ -201,32 +184,28 @@ sim_open.configure()
 
 print("Running open-loop (10 s, CRBL-only)...")
 t0 = time.time()
-sim_open.run(random_state=42)
+sim_open.run()
 elapsed = time.time() - t0
 print(f"  Done in {elapsed:.1f} s")
 
-# Extract from per-subnet recorder
 rec_crbl_open = cerebellum_open.monitors[0]
 ts_open, d_open = rec_crbl_open.to_arrays()
-print(f"  CRBL data: {d_open.shape}")   # (n_time, 4, 27, 1)
+print(f"  CRBL data: {d_open.shape}")
 
-grc_open = d_open[:, 0, :, 0]  # (n_time, 27)
+grc_open = d_open[:, 0, :, 0]
 goc_open = d_open[:, 1, :, 0]
 mli_open = d_open[:, 2, :, 0]
 pc_open  = d_open[:, 3, :, 0]
 
-print(f"  GrC: mean={grc_open.mean():.2f} range=[{grc_open.min():.2f}, {grc_open.max():.2f}]")
-print(f"  PC:  mean={pc_open.mean():.2f} range=[{pc_open.min():.2f}, {pc_open.max():.2f}]")
+for pop, arr in [('GrC', grc_open), ('GoC', goc_open), ('MLI', mli_open), ('PC', pc_open)]:
+    print(f"  {pop}: mean={arr.mean():.2f} range=[{arr.min():.2f}, {arr.max():.2f}]")
 
 # %% [markdown]
 # ## 6. Scenario 2 — Closed-Loop (WW + Cerebellum)
 #
-# Full 126-node whole-brain simulation. Cortex S_e drives CRBL via mossy
-# fibers (P2), CRBL GrC feeds back to cortex S_e (P3), plus intra-cortex
-# coupling (P1) and intra-CRBL parallel fibers (P4).
-#
-# Per-subnet monitors record all 4 CRBL populations independently,
-# bypassing the merged global monitor's voi-count constraint.
+# Full 126-node whole-brain simulation. Five projections:
+# P1 (intra-cortex), P2 (cortex→CRBL mossy), P3 (CRBL GrC→cortex S_e),
+# P4 (CRBL mossy loop), P5 (CRBL parallel fibers).
 
 # %%
 ww_model = ReducedWongWangExcInh()
@@ -247,7 +226,7 @@ cerebellum_closed = Subnetwork(
     nnodes=n_crbl, node_indices=crbl_idx,
 )
 
-# 4 projections
+# 5 projections
 p1 = IntraProjection(source_cvar=np.array([0]), target_cvar=np.array([0]),
     weights=W_cc, lengths=TL_cc, cv=cv, dt=dt, scale=1.0)
 p2 = InterProjection(source=cortex, target=cerebellum_closed,
@@ -256,15 +235,14 @@ p2 = InterProjection(source=cortex, target=cerebellum_closed,
 p3 = InterProjection(source=cerebellum_closed, target=cortex,
     source_cvar=np.array([0]), target_cvar=np.array([0]),
     weights=W_rc, lengths=TL_rc, cv=cv, dt=dt, scale=1.0)
-# Reuse p4 from open-loop (same W_rr/TL_rr)
+p4 = IntraProjection(source_cvar=np.array([0]), target_cvar=np.array([0]),
+    weights=W_rr, lengths=TL_rr, cv=cv, dt=dt, scale=1.0)
+p5 = IntraProjection(source_cvar=np.array([0]), target_cvar=np.array([1]),
+    weights=W_rr, lengths=TL_rr, cv=cv, dt=dt, scale=1.0)
 
 cortex.projections = [p1]
-cerebellum_closed.projections = [IntraProjection(
-    source_cvar=np.array([0]), target_cvar=np.array([1]),
-    weights=W_rr, lengths=TL_rr, cv=cv, dt=dt, scale=1.0,
-)]
+cerebellum_closed.projections = [p4, p5]
 
-# Per-subnet monitors
 cortex.add_monitor(TemporalAverage(period=mon_period))
 cerebellum_closed.add_monitor(TemporalAverage(period=mon_period))
 
@@ -277,33 +255,29 @@ sim_closed.configure()
 
 print("Running closed-loop (10 s, WW+CRBL)...")
 t0 = time.time()
-sim_closed.run(random_state=42)
+sim_closed.run()
 elapsed = time.time() - t0
 print(f"  Done in {elapsed:.1f} s")
 
-# Extract from per-subnet recorders
 rec_ctx = cortex.monitors[0]
 rec_crbl = cerebellum_closed.monitors[0]
 ts_c, d_c = rec_ctx.to_arrays()
 ts_r, d_r = rec_crbl.to_arrays()
 
-print(f"  Cortex data: {d_c.shape}")   # (n_time, 2, 99, 1)
-print(f"  CRBL data:   {d_r.shape}")   # (n_time, 4, 27, 1)
+print(f"  Cortex: {d_c.shape}  CRBL: {d_r.shape}")
 
-se_closed = d_c[:, 0, :, 0]   # S_e
-si_closed = d_c[:, 1, :, 0]   # S_i
-grc_closed = d_r[:, 0, :, 0]  # GrC
-goc_closed = d_r[:, 1, :, 0]  # GoC
-mli_closed = d_r[:, 2, :, 0]  # MLI
-pc_closed  = d_r[:, 3, :, 0]  # PC
+se_closed = d_c[:, 0, :, 0]
+si_closed = d_c[:, 1, :, 0]
+grc_closed = d_r[:, 0, :, 0]
+goc_closed = d_r[:, 1, :, 0]
+mli_closed = d_r[:, 2, :, 0]
+pc_closed  = d_r[:, 3, :, 0]
 
-print(f"  GrC: mean={grc_closed.mean():.2f}  PC: mean={pc_closed.mean():.2f}")
+for pop, arr in [('GrC', grc_closed), ('GoC', goc_closed), ('MLI', mli_closed), ('PC', pc_closed)]:
+    print(f"  {pop}: mean={arr.mean():.2f}")
 
 # %% [markdown]
-# ## 7. Power Spectral Density Analysis
-#
-# Welch's method for robust spectral estimation. For each population we
-# average across regions first, then compute the PSD.
+# ## 7. PSD Analysis
 
 # %%
 bands = {
@@ -315,74 +289,51 @@ band_colors = {
     'beta': '#9b59b6', 'gamma': '#e67e22',
 }
 
-fs = 1000.0 / dt   # 1000 Hz at dt=1.0 ms
+fs = 1000.0 / dt
 
+def compute_psd(signal, fs, nperseg=1024):
+    return scipy.signal.welch(signal, fs=fs, nperseg=nperseg, noverlap=nperseg//2)
 
-def compute_psd_welch(signal, fs, nperseg=256):
-    """PSD via Welch's method."""
-    freqs, psd = scipy.signal.welch(signal, fs=fs, nperseg=nperseg,
-                                     noverlap=nperseg // 2)
-    return freqs, psd
-
-
-def get_carrier_freq(freqs, psd, fmin=1.0, fmax=100.0):
-    """Find frequency of maximum power in [fmin, fmax]."""
+def get_carrier(freqs, psd, fmin=1.0, fmax=100.0):
     mask = (freqs >= fmin) & (freqs <= fmax)
-    if not np.any(mask):
-        return 0.0
-    return freqs[mask][np.argmax(psd[mask])]
+    return freqs[mask][np.argmax(psd[mask])] if np.any(mask) else 0.0
 
-
-def psd_for_pop(arr, fs):
-    """Average over regions, demean, compute PSD."""
-    sig = arr.mean(axis=1)
+def psd_pop(arr, fs):
+    sig = np.nan_to_num(arr, nan=0.0).mean(axis=1)
     sig = sig - sig.mean()
-    return compute_psd_welch(sig, fs)
+    return compute_psd(sig, fs)
 
-
-# --- Open-loop PSDs (4 populations) ---
-psd_open = {}
-carrier_open = {}
-for name, arr in [('GrC', grc_open), ('GoC', goc_open),
-                  ('MLI', mli_open), ('PC', pc_open)]:
-    f, p = psd_for_pop(arr, fs)
+psd_open = {}; carrier_open = {}
+for name, arr in [('GrC', grc_open), ('GoC', goc_open), ('MLI', mli_open), ('PC', pc_open)]:
+    f, p = psd_pop(arr, fs)
     psd_open[name] = (f, p)
-    carrier_open[name] = get_carrier_freq(f, p)
+    carrier_open[name] = get_carrier(f, p)
     print(f"  Open-loop  {name}: carrier = {carrier_open[name]:.1f} Hz")
 
-# --- Closed-loop PSDs (4 CRBL + cortex S_e) ---
-psd_closed = {}
-carrier_closed = {}
-for name, arr in [('GrC', grc_closed), ('GoC', goc_closed),
-                  ('MLI', mli_closed), ('PC', pc_closed)]:
-    f, p = psd_for_pop(arr, fs)
+psd_closed = {}; carrier_closed = {}
+for name, arr in [('GrC', grc_closed), ('GoC', goc_closed), ('MLI', mli_closed), ('PC', pc_closed)]:
+    f, p = psd_pop(arr, fs)
     psd_closed[name] = (f, p)
-    carrier_closed[name] = get_carrier_freq(f, p)
+    carrier_closed[name] = get_carrier(f, p)
     print(f"  Closed-loop {name}: carrier = {carrier_closed[name]:.1f} Hz")
 
-f_se, p_se = psd_for_pop(se_closed, fs)
-carrier_se = get_carrier_freq(f_se, p_se)
-psd_closed['S_e'] = (f_se, p_se)
-carrier_closed['S_e'] = carrier_se
+f_se, p_se = psd_pop(se_closed, fs)
+carrier_se = get_carrier(f_se, p_se)
 print(f"  Closed-loop S_e: carrier = {carrier_se:.1f} Hz")
 
 # %% [markdown]
-# ## 8. PSD Comparison — Open-Loop vs Closed-Loop
-#
-# The central construct validation comparison: does closing the cortical loop
-# shift the cerebellar spectral profile?
+# ## 8. PSD Comparison Plots
 
 # %%
 pops = ['GrC', 'GoC', 'MLI', 'PC']
 fig, axes = plt.subplots(2, 4, figsize=(20, 9))
 
 for ci, pop in enumerate(pops):
-    # Row 0: Open-loop
     ax = axes[0, ci]
     f, p = psd_open[pop]
-    p_norm = p / p.max() if p.max() > 0 else p
-    mask = f <= 100
-    ax.plot(f[mask], p_norm[mask], 'k-', lw=1.5)
+    pn = p / p.max() if p.max() > 0 else p
+    m = f <= 100
+    ax.plot(f[m], pn[m], 'k-', lw=1.5)
     ax.axvline(carrier_open[pop], color='red', ls='--', lw=1,
                label=f'carrier={carrier_open[pop]:.1f} Hz')
     for bn, (blo, bhi) in bands.items():
@@ -391,12 +342,11 @@ for ci, pop in enumerate(pops):
     ax.set_xlabel('Freq (Hz)'); ax.set_ylabel('Norm. PSD')
     ax.legend(fontsize=8); ax.set_xlim(0, 100); ax.grid(True, alpha=0.3)
 
-    # Row 1: Closed-loop
     ax = axes[1, ci]
     f, p = psd_closed[pop]
-    p_norm = p / p.max() if p.max() > 0 else p
-    mask = f <= 100
-    ax.plot(f[mask], p_norm[mask], 'k-', lw=1.5)
+    pn = p / p.max() if p.max() > 0 else p
+    m = f <= 100
+    ax.plot(f[m], pn[m], 'k-', lw=1.5)
     ax.axvline(carrier_closed[pop], color='red', ls='--', lw=1,
                label=f'carrier={carrier_closed[pop]:.1f} Hz')
     for bn, (blo, bhi) in bands.items():
@@ -405,78 +355,64 @@ for ci, pop in enumerate(pops):
     ax.set_xlabel('Freq (Hz)'); ax.set_ylabel('Norm. PSD')
     ax.legend(fontsize=8); ax.set_xlim(0, 100); ax.grid(True, alpha=0.3)
 
-fig.suptitle('Construct Validation: Cerebellar PSD — Open-Loop vs Closed-Loop',
+fig.suptitle('Construct Validation: CRBL PSD — Open vs Closed Loop',
              fontsize=15, fontweight='bold', y=1.01)
 plt.tight_layout()
 plt.savefig('ww_crbl_psd_comparison.png', dpi=150, bbox_inches='tight')
 plt.show()
-print("PSD comparison plot saved")
 
 # %% [markdown]
-# ## 9. Direct spectral overlay — Open vs Closed
-#
-# Overlay the PSDs for each population to visualize the spectral shift
-# caused by cortical input through mossy fibers.
+# ## 9. Spectral Overlay — Open vs Closed
 
 # %%
 fig, axes = plt.subplots(1, 4, figsize=(20, 5))
-
 for ci, pop in enumerate(pops):
     ax = axes[ci]
     f_o, p_o = psd_open[pop]
-    p_o_n = p_o / p_o.max() if p_o.max() > 0 else p_o
     f_c, p_c = psd_closed[pop]
-    p_c_n = p_c / p_c.max() if p_c.max() > 0 else p_c
-
+    p_on = p_o / p_o.max() if p_o.max() > 0 else p_o
+    p_cn = p_c / p_c.max() if p_c.max() > 0 else p_c
     mo = f_o <= 100; mc = f_c <= 100
-    ax.plot(f_o[mo], p_o_n[mo], 'b-', lw=1.5, alpha=0.8,
+    ax.plot(f_o[mo], p_on[mo], 'b-', lw=1.5, alpha=0.8,
             label=f'Open ({carrier_open[pop]:.1f} Hz)')
-    ax.plot(f_c[mc], p_c_n[mc], 'r-', lw=1.5, alpha=0.8,
+    ax.plot(f_c[mc], p_cn[mc], 'r-', lw=1.5, alpha=0.8,
             label=f'Closed ({carrier_closed[pop]:.1f} Hz)')
-
     for bn, (blo, bhi) in bands.items():
         ax.axvspan(blo, bhi, color=band_colors[bn], alpha=0.1)
-
-    ax.set_title(pop, fontsize=13)
-    ax.set_xlabel('Freq (Hz)'); ax.set_ylabel('Norm. PSD')
+    ax.set_title(pop, fontsize=13); ax.set_xlabel('Freq (Hz)'); ax.set_ylabel('Norm. PSD')
     ax.legend(fontsize=9); ax.set_xlim(0, 100); ax.grid(True, alpha=0.3)
 
-fig.suptitle('Spectral Shift from Cortical Input (Mossy Fibers)',
-             fontsize=14, fontweight='bold')
+fig.suptitle('Spectral Shift from Cortical Input', fontsize=14, fontweight='bold')
 plt.tight_layout()
 plt.savefig('ww_crbl_psd_overlay.png', dpi=150, bbox_inches='tight')
 plt.show()
-print("Overlay plot saved")
 
 # %% [markdown]
 # ## 10. Carrier Frequency Summary
 
 # %%
-print("=" * 55)
+print("=" * 65)
 print("CARRIER FREQUENCIES (Hz)")
-print("=" * 55)
+print("=" * 65)
 print(f"{'Population':<12} {'Open-loop':>12} {'Closed-loop':>12} {'Δ':>10}")
 print("-" * 50)
 for pop in pops:
-    o = carrier_open[pop]
-    c = carrier_closed[pop]
-    delta = c - o
-    print(f"{pop:<12} {o:>12.1f} {c:>12.1f} {delta:>+10.1f}")
+    o = carrier_open[pop]; c = carrier_closed[pop]
+    print(f"{pop:<12} {o:>12.1f} {c:>12.1f} {c-o:>+10.1f}")
 print("-" * 50)
 print(f"{'Cortex S_e':<12} {'—':>12} {carrier_se:>12.1f}")
-print("=" * 55)
+print("=" * 65)
 
 # %% [markdown]
-# ## 11. Time Series Overview
+# ## 11. Time Series
 
 # %%
 fig, axes = plt.subplots(2, 4, figsize=(20, 8))
+skip = 500
 for ci, (pop, o_arr, c_arr) in enumerate([
     ('GrC', grc_open, grc_closed), ('GoC', goc_open, goc_closed),
     ('MLI', mli_open, mli_closed), ('PC', pc_open, pc_closed),
 ]):
-    # Skip initial transient
-    skip = 500
     axes[0, ci].plot(ts_open[skip:], o_arr[skip:, :3], alpha=0.7)
     axes[0, ci].set_title(f'Open: {pop}'); axes[0, ci].set_xlabel('t [ms]')
     axes[0, ci].grid(True, alpha=0.3)
@@ -488,10 +424,9 @@ for ci, (pop, o_arr, c_arr) in enumerate([
 plt.tight_layout()
 plt.savefig('ww_crbl_timeseries.png', dpi=150)
 plt.show()
-print("Time series plot saved")
 
 # %% [markdown]
-# ## 12. Functional Connectivity (Closed-Loop Cortex)
+# ## 12. Functional Connectivity
 
 # %%
 skip = 500
@@ -506,33 +441,14 @@ plt.colorbar(im, ax=ax, label='Pearson r')
 plt.tight_layout()
 plt.savefig('ww_crbl_fc.png', dpi=150)
 plt.show()
-print("FC plot saved")
 
 # %% [markdown]
-# ## 13. Summary & Interpretation
+# ## 13. Summary
 #
-# This demo performs **construct validation** of the cerebellar MF model
-# within the TVB hybrid framework by comparing two scenarios:
-#
-# 1. **Open-loop (CRBL-only)**: Cerebellum in isolation, driven only by noise.
-#    Reveals the intrinsic oscillation hierarchy of the GrC → GoC → MLI → PC circuit.
-#
-# 2. **Closed-loop (WW+CRBL)**: Full whole-brain simulation with cortical
-#    input via mossy fibers. Tests whether structured cortical drive
-#    entrains cerebellar oscillations.
-#
-# **Key findings to check**:
-#
-# - **PC carrier frequency**: Should fall in the alpha band (8–13 Hz) —
-#   the classic Purkinje-cell simple-spike rhythm.
-# - **GrC carrier frequency**: Should be in gamma/high beta (30–100 Hz) —
-#   reflecting fast granule-cell processing.
-# - **Closed-loop shift**: Cortical input through mossy fibers should
-#   modulate the cerebellar spectral profile, potentially shifting
-#   PC power toward the cortical carrier frequency.
-# - **GrC entrainment**: In closed-loop, GrC oscillations may be pulled
-#   toward lower frequencies by the cortical drive.
-#
-# The hybrid framework naturally decomposes the monolithic cMF-TVB model's
-# index-mask-based signal routing into explicit, composable projections
-# (P1–P4), making the communication architecture transparent and extensible.
+# This demo performs construct validation of the CerebellarMF model in the
+# TVB hybrid framework. Key model parameter defaults now match Lorenzi et al.
+# 2023: `weight_noise=4e-3`, `external_input_ex_ex=3.15e-4`, `tau_OU=3.5`,
+# with column-normalized SC weights and anatomical routing fractions applied
+# in the dfun. The open-loop scenario uses both mossy and parallel
+# intra-cerebellar projections (P4, P5) to match the monolithic's single-coupling
+# split internally into 57% mossy / 43% parallel pathways.
