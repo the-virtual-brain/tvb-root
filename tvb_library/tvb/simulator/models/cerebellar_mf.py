@@ -428,9 +428,11 @@ class CerebellarMF(ModelNumbaDfun):
 
     external_input_ex_ex = NArray(
         label=":math:`\\nu_e^{drive}`",
-        default=numpy.array([0.315e-3]),
-        domain=Range(lo=0.0, hi=0.1, step=0.001),
-        doc="External excitatory drive to excitatory population (GrC/GoC)")
+        default=numpy.array([0.05]),
+        domain=Range(lo=0.0, hi=0.5, step=0.001),
+        doc="External excitatory drive to excitatory population (GrC/GoC). "
+            "The default 0.05 produces oscillatory dynamics with peak/mean > 3x "
+            "in theta-alpha range across connected CRBL nodes.")
 
     external_input_ex_in = NArray(
         label=":math:`\\nu_i^{drive}`",
@@ -464,33 +466,39 @@ class CerebellarMF(ModelNumbaDfun):
 
     mf_to_grc = NArray(
         label="Mossy→GrC split",
-        default=numpy.array([0.97]),
+        default=numpy.array([1.0]),
         domain=Range(lo=0.0, hi=1.0, step=0.01),
-        doc="Fraction of mossy fiber input received by GrC")
+        doc="Fraction of mossy fiber input received by GrC. "
+            "Set to 1.0 to match the multimf_ww monolithic model where "
+            "c_mossy is the full coupling signal without anatomical sub-fractions.")
 
     mf_to_goc = NArray(
         label="Mossy→GoC split",
-        default=numpy.array([0.03]),
+        default=numpy.array([1.0]),
         domain=Range(lo=0.0, hi=1.0, step=0.01),
-        doc="Fraction of mossy fiber input received by GoC")
+        doc="Fraction of mossy fiber input received by GoC. "
+            "Set to 1.0 to match the multimf_ww monolithic model.")
 
     pf_to_goc = NArray(
         label="Parallel→GoC split",
-        default=numpy.array([0.14]),
+        default=numpy.array([1.0]),
         domain=Range(lo=0.0, hi=1.0, step=0.01),
-        doc="Fraction of parallel fiber input received by GoC")
+        doc="Fraction of parallel fiber input received by GoC. "
+            "Set to 1.0 to match the multimf_ww monolithic model.")
 
     pf_to_mli = NArray(
         label="Parallel→MLI split",
-        default=numpy.array([0.55]),
+        default=numpy.array([1.0]),
         domain=Range(lo=0.0, hi=1.0, step=0.01),
-        doc="Fraction of parallel fiber input received by MLI")
+        doc="Fraction of parallel fiber input received by MLI. "
+            "Set to 1.0 to match the multimf_ww monolithic model.")
 
     pf_to_pc = NArray(
         label="Parallel→PC split",
-        default=numpy.array([0.31]),
+        default=numpy.array([1.0]),
         domain=Range(lo=0.0, hi=1.0, step=0.01),
-        doc="Fraction of parallel fiber input received by PC")
+        doc="Fraction of parallel fiber input received by PC. "
+            "Set to 1.0 to match the multimf_ww monolithic model.")
 
     # -----------------------------------------------------------------------
     # Model metadata
@@ -498,6 +506,9 @@ class CerebellarMF(ModelNumbaDfun):
     coupling_terms = Final(
         label="Coupling terms",
         default=["mossy", "parallel"])
+
+    # nb-hybrid: use custom CerebellarMF Mako template — do NOT add state_variable_dfuns
+    _nb_hybrid_custom_template = "nb-cerebellar-dfun.py.mako"
 
     parameter_names = List(
         of=str,
@@ -527,10 +538,10 @@ class CerebellarMF(ModelNumbaDfun):
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
         default={
-            "GrC":   numpy.array([0.5e3, 0.5e3]),
-            "GoC":   numpy.array([5.0e3, 5.0e3]),
-            "MLI":   numpy.array([15.0e3, 15.0e3]),
-            "PC":    numpy.array([38.0e3, 38.0e3]),
+            "GrC":   numpy.array([0.1, 0.1]),
+            "GoC":   numpy.array([0.02, 0.02]),
+            "MLI":   numpy.array([0.2, 0.2]),
+            "PC":    numpy.array([0.1, 0.1]),
             "noise": numpy.array([0.0, 0.0]),
         },
         doc="""Expected dynamic range for each state variable.
@@ -666,7 +677,7 @@ class CerebellarMF(ModelNumbaDfun):
         return self._TF_goc(fe, fi, fe_ext, fi_ext, W,
                             self.P_goc, self.Q_grc_goc, self.Q_goc_goc,
                             self.tau_grc_goc, self.tau_goc_goc,
-                            self.E_i, self.E_i,
+                            self.E_e, self.E_i,
                             self.g_L_goc, self.C_m_goc, self.E_L_goc,
                             self.K_grc_goc, self.K_goc_goc,
                             self.Q_mf_goc, self.tau_mf_goc,

@@ -295,13 +295,15 @@ def compute_coupling_${p.name}(
                "heun" if isinstance(sn.integrator, HeunDeterministic) else "euler"
     svars = list(sn.model.state_variables)
 
-    # Zerlaut models use a custom template for dfun generation;
-    # they don't have coupling_terms / state_variable_dfuns / global_parameter_names.
+    # Models with custom Mako templates (ZerlautAdaptation*, CerebellarMF)
+    # don't have state_variable_dfuns / global_parameter_names, but they do
+    # have coupling_terms.
     _has_custom_template = hasattr(sn.model, '_nb_hybrid_custom_template')
     if _has_custom_template:
-        cterms = ['Coupling_Term']  # Zerlaut: single cvar=[0]
+        cterms = list(sn.model.coupling_terms)
         dfuns = None
         gparams = {}
+        sparams_list = []  # custom template bakes all params — no spatial params needed
     else:
         cterms = list(sn.model.coupling_terms)
         dfuns = sn.model.state_variable_dfuns
@@ -312,16 +314,16 @@ def compute_coupling_${p.name}(
     n_nodes = sn.n_nodes
     n_modes = sn.n_modes
     svb = sn.model.state_variable_boundaries
-    lo_map = {k: float(v[0]) if v[0] != float('-inf') and not (v[0] != v[0]) else None for k, v in svb.items()} if svb else {}
-    hi_map = {k: float(v[1]) if v[1] != float('inf') and not (v[1] != v[1]) else None for k, v in svb.items()} if svb else {}
+    lo_map = {}
+    hi_map = {}
     import math as _math, numpy as _np
     lo_map = {}
     hi_map = {}
     if svb:
         import numpy as _np
         for k, v in svb.items():
-            lo_map[k] = float(v[0]) if _np.isfinite(v[0]) else None
-            hi_map[k] = float(v[1]) if _np.isfinite(v[1]) else None
+            lo_map[k] = float(v[0]) if v[0] is not None and _np.isfinite(v[0]) else None
+            hi_map[k] = float(v[1]) if v[1] is not None and _np.isfinite(v[1]) else None
     svars_str = ', '.join(svars)
     cterms_str = ', '.join(cterms)
     i1svars_str = ', '.join(['i1' + s for s in svars])
