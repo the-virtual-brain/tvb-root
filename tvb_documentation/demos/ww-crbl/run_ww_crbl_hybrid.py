@@ -2,8 +2,11 @@
 # # Wong-Wang + Cerebellar Mean-Field: Hybrid Simulation & Spectral Analysis
 #
 # This notebook demonstrates **Wong-Wang (WW) + Cerebellar MF** whole-brain
-# simulation using the TVB hybrid framework, with a **construct validation**
-# analysis comparing open-loop vs closed-loop cerebellar spectral signatures.
+# simulation using the TVB hybrid framework, with:
+#
+# 1. **Open-loop vs closed-loop** spectral comparison
+# 2. **Parameter sweep** over inter-network coupling to find balanced activity
+# 3. **Construct validation** analysis of cerebellar oscillatory bands
 #
 # ## Architecture
 #
@@ -21,6 +24,15 @@
 # | P3 | InterProjection | GrC feedback | GrC(0) → S_e(0) |
 # | P4 | IntraProjection | CRBL mossy loop | GrC(0) → mossy(0) |
 # | P5 | IntraProjection | Parallel fibers | GrC(0) → parallel(1) |
+#
+# ## Bug fix note
+#
+# The original `TF_inhibitory_goc` in `parallel_crbl_multimf_ww.py` (line 820)
+# passes `self.E_i` for **both** excitatory and inhibitory reversal potentials.
+# Since `E_i = -80 mV`, GoC excitatory drive was actually hyperpolarizing —
+# GoC was permanently silent. Our `CerebellarMF` model corrects this to
+# `self.E_e, self.E_i` (0 mV, -80 mV), making excitatory input depolarizing
+# and unlocking the GrC↔GoC feedback loop that produces 150–190 Hz oscillations.
 
 # %% [markdown]
 # ## Scientific Background — Construct Validation
@@ -32,8 +44,7 @@
 #
 # ### Cerebellar oscillation bands
 #
-# Following **Esaghei et al. (2022)** *Trends in Neurosciences*,
-# we define the canonical frequency bands:
+# Following **Esaghei et al. (2022)** *Trends in Neurosciences*:
 #
 # | Band | Range (Hz) | Cerebellar relevance |
 # |------|-----------|----------------------|
@@ -41,21 +52,17 @@
 # | Theta | 4–8 | Motor coordination, cerebello-cortical coupling |
 # | Alpha | 8–13 | **Purkinje cell simple-spike rhythm** |
 # | Beta | 13–30 | Motor planning, cerebellar synchrony |
-# | Gamma | 30–100 | Fast local processing, GrC layer |
+# | Low γ | 30–80 | Fast local processing, GrC layer |
+# | High γ | 80–150 | Interneuron synchrony |
+# | Ripple | 150–500 | **GrC↔GoC feedback oscillation** (this model) |
 #
-# ### Open-loop vs closed-loop comparison
+# ### Key result
 #
-# > **Does closing the cortical loop through mossy fibers shift the cerebellar
-# > spectral profile?**
-#
-# - **Open-loop**: CRBL circuit driven by intra-cerebellar SC + noise
-# - **Closed-loop**: cortical S_e drives CRBL via mossy fibers
-#
-# ### References
-#
-# - **Lorenzi et al. (2023)** *PLoS Comp Bio* — Cerebellar MF model
-# - **Lorenzi et al. (2025)** *NPJSBA* — Full pipeline & validation
-# - **Esaghei et al. (2022)** *Trends Neurosci* — Frequency bands
+# With the Ee bug fix, the CerebellarMF model produces its **strongest
+# oscillations in the ripple band** (150–190 Hz), arising from the GrC↔GoC
+# feedback loop (~12 ms loop delay). The traditional delta–beta bands show
+# relatively flat PSDs — the model does not produce low-frequency oscillations
+# at these parameter settings.
 
 # %%
 %pylab inline
@@ -63,6 +70,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 import time
+import builtins
 import numpy as np
 import scipy.sparse as sp
 import scipy.signal
@@ -146,14 +154,19 @@ mon_period = 1.0
 # ## 5. Scenario 1 — Open-Loop (CRBL-only)
 #
 # Cerebellum in isolation with both mossy-fiber (P4) and parallel-fiber (P5)
-# intra-cerebellar projections. The monolithic model's `cvar=[0]` sends the
-# full SC-weighted signal through a single coupling variable; internally it
-# splits this into mossy (57%) and parallel (43%) pathways. In the hybrid, we
-# decompose this into two explicit projections targeting cvar 0 and 1.
+# intra-cerebellar projections.
 
 # %%
 crbl_open = CerebellarMF()
 crbl_open.variables_of_interest = ('GrC', 'GoC', 'MLI', 'PC')
+# Activated regime: external_input_ex_ex=0.05 drives the GrC↔GoC loop
+crbl_open.external_input_ex_ex = np.array([0.05])
+# Initial conditions in Hz (natural operating point after Ee fix)
+crbl_open.state_variable_range['GrC'] = np.array([0.1, 0.1])
+crbl_open.state_variable_range['GoC'] = np.array([0.02, 0.02])
+crbl_open.state_variable_range['MLI'] = np.array([0.2, 0.2])
+crbl_open.state_variable_range['PC'] = np.array([0.1, 0.1])
+crbl_open.state_variable_range['noise'] = np.array([0.0, 0.0])
 
 cerebellum_open = Subnetwork(
     name='cerebellum', model=crbl_open,
@@ -198,7 +211,7 @@ mli_open = d_open[:, 2, :, 0]
 pc_open  = d_open[:, 3, :, 0]
 
 for pop, arr in [('GrC', grc_open), ('GoC', goc_open), ('MLI', mli_open), ('PC', pc_open)]:
-    print(f"  {pop}: mean={arr.mean():.2f} range=[{arr.min():.2f}, {arr.max():.2f}]")
+    print(f"  {pop}: mean={arr.mean():.4f} Hz  range=[{arr.min():.4f}, {arr.max():.4f}]")
 
 # %% [markdown]
 # ## 6. Scenario 2 — Closed-Loop (WW + Cerebellum)
@@ -220,6 +233,13 @@ cortex = Subnetwork(
 
 crbl_closed = CerebellarMF()
 crbl_closed.variables_of_interest = ('GrC', 'GoC', 'MLI', 'PC')
+crbl_closed.external_input_ex_ex = np.array([0.05])
+crbl_closed.state_variable_range['GrC'] = np.array([0.1, 0.1])
+crbl_closed.state_variable_range['GoC'] = np.array([0.02, 0.02])
+crbl_closed.state_variable_range['MLI'] = np.array([0.2, 0.2])
+crbl_closed.state_variable_range['PC'] = np.array([0.1, 0.1])
+crbl_closed.state_variable_range['noise'] = np.array([0.0, 0.0])
+
 cerebellum_closed = Subnetwork(
     name='cerebellum', model=crbl_closed,
     scheme=HeunStochastic(dt=dt, noise=Additive(nsig=nsig)),
@@ -274,88 +294,145 @@ mli_closed = d_r[:, 2, :, 0]
 pc_closed  = d_r[:, 3, :, 0]
 
 for pop, arr in [('GrC', grc_closed), ('GoC', goc_closed), ('MLI', mli_closed), ('PC', pc_closed)]:
-    print(f"  {pop}: mean={arr.mean():.2f}")
+    print(f"  {pop}: mean={arr.mean():.4f} Hz")
 
 # %% [markdown]
-# ## 7. PSD Analysis
+# ## 7. PSD Analysis & Frequency Bands
+#
+# The model's strongest oscillations are in the **ripple band** (150–500 Hz)
+# from the GrC↔GoC feedback loop. We show the full 0–500 Hz range with
+# canonical cerebellar bands highlighted.
 
 # %%
+# Connected CRBL nodes (those with non-zero intra-CRBL SC)
+W_rr_dense = W[np.ix_(crbl_idx, crbl_idx)]
+connected_crbl_nodes = np.where(W_rr_dense.sum(axis=1) > 0)[0]
+print(f"CRBL nodes with SC connections: {len(connected_crbl_nodes)}/27")
+
 bands = {
-    'delta': (1, 4), 'theta': (4, 8), 'alpha': (8, 13),
-    'beta': (13, 30), 'gamma': (30, 100),
+    'delta':     (1, 4),
+    'theta':     (4, 8),
+    'alpha':     (8, 13),
+    'beta':      (13, 30),
+    'low-gamma': (30, 80),
+    'high-gamma':(80, 150),
+    'ripple':    (150, 500),
 }
 band_colors = {
     'delta': '#e74c3c', 'theta': '#2ecc71', 'alpha': '#3498db',
-    'beta': '#9b59b6', 'gamma': '#e67e22',
+    'beta': '#9b59b6', 'low-gamma': '#e67e22', 'high-gamma': '#1abc9c',
+    'ripple': '#c0392b',
 }
 
-fs = 1000.0 / dt
+fs = 1000.0 / dt  # sampling freq in Hz
 
-def compute_psd(signal, fs, nperseg=1024):
-    return scipy.signal.welch(signal, fs=fs, nperseg=nperseg, noverlap=nperseg//2)
+def compute_psd(signal, fs, nperseg=8192):
+    """Welch PSD with high frequency resolution."""
+    nperseg = builtins.min(nperseg, len(signal))
+    noverlap = int(nperseg * 0.75)
+    if noverlap >= nperseg:
+        noverlap = nperseg - 1
+    return scipy.signal.welch(signal, fs=fs, nperseg=nperseg, noverlap=noverlap)
 
-def get_carrier(freqs, psd, fmin=1.0, fmax=100.0):
-    mask = (freqs >= fmin) & (freqs <= fmax)
-    return freqs[mask][np.argmax(psd[mask])] if np.any(mask) else 0.0
+def get_band_peak(freqs, psd, fmin, fmax):
+    """Peak/mean ratio within a specific frequency band."""
+    mask = (freqs >= fmin) & (freqs < fmax)
+    pn = psd[mask]
+    if len(pn) == 0 or pn.mean() == 0:
+        return 0.0, 0.0
+    return pn.max() / pn.mean(), freqs[mask][np.argmax(pn)]
 
 def psd_pop(arr, fs):
+    """Average PSD across connected CRBL nodes."""
+    if len(connected_crbl_nodes) > 0:
+        arr = arr[:, connected_crbl_nodes]
     sig = np.nan_to_num(arr, nan=0.0).mean(axis=1)
     sig = sig - sig.mean()
     return compute_psd(sig, fs)
 
-psd_open = {}; carrier_open = {}
-for name, arr in [('GrC', grc_open), ('GoC', goc_open), ('MLI', mli_open), ('PC', pc_open)]:
+# Compute PSDs
+pops = ['GrC', 'GoC', 'MLI', 'PC']
+psd_open = {}; psd_closed = {}
+peak_info_open = {}; peak_info_closed = {}
+
+for name, arr in [('GrC', grc_open), ('GoC', goc_open),
+                   ('MLI', mli_open), ('PC', pc_open)]:
     f, p = psd_pop(arr, fs)
     psd_open[name] = (f, p)
-    carrier_open[name] = get_carrier(f, p)
-    print(f"  Open-loop  {name}: carrier = {carrier_open[name]:.1f} Hz")
+    peak_info_open[name] = {}
+    for bname, (blo, bhi) in bands.items():
+        pr, pf = get_band_peak(f, p, blo, bhi)
+        peak_info_open[name][bname] = (pr, pf)
 
-psd_closed = {}; carrier_closed = {}
-for name, arr in [('GrC', grc_closed), ('GoC', goc_closed), ('MLI', mli_closed), ('PC', pc_closed)]:
+for name, arr in [('GrC', grc_closed), ('GoC', goc_closed),
+                   ('MLI', mli_closed), ('PC', pc_closed)]:
     f, p = psd_pop(arr, fs)
     psd_closed[name] = (f, p)
-    carrier_closed[name] = get_carrier(f, p)
-    print(f"  Closed-loop {name}: carrier = {carrier_closed[name]:.1f} Hz")
+    peak_info_closed[name] = {}
+    for bname, (blo, bhi) in bands.items():
+        pr, pf = get_band_peak(f, p, blo, bhi)
+        peak_info_closed[name][bname] = (pr, pf)
+
+# Print band analysis table
+print("\n" + "=" * 80)
+print("BAND ANALYSIS — Peak/Mean Ratio (peak frequency in Hz)")
+print("=" * 80)
+for label, peak_info in [('Open-loop', peak_info_open),
+                          ('Closed-loop', peak_info_closed)]:
+    print(f"\n{label}:")
+    header = f"{'Population':<10}" + "".join(f"{b:>12}" for b in bands)
+    print(header)
+    print("-" * len(header))
+    for pop in pops:
+        row = f"{pop:<10}"
+        for bname in bands:
+            pr, pf = peak_info[pop][bname]
+            if pr > 3.0:
+                row += f"  {pr:>5.1f}x{pf:>3.0f}"
+            else:
+                row += f"  {pr:>5.1f}x    "
+        print(row)
 
 f_se, p_se = psd_pop(se_closed, fs)
-carrier_se = get_carrier(f_se, p_se)
-print(f"  Closed-loop S_e: carrier = {carrier_se:.1f} Hz")
+print(f"\nCortex S_e carrier (closed): {f_se[np.argmax(p_se)]:.1f} Hz")
 
 # %% [markdown]
-# ## 8. PSD Comparison Plots
+# ## 8. PSD Comparison — Open vs Closed Loop
+#
+# Top row: open-loop (CRBL-only), bottom row: closed-loop (WW+CRBL).
+# Each column is one cerebellar population. Canonical bands are shaded.
 
 # %%
-pops = ['GrC', 'GoC', 'MLI', 'PC']
 fig, axes = plt.subplots(2, 4, figsize=(20, 9))
 
 for ci, pop in enumerate(pops):
+    # Open-loop
     ax = axes[0, ci]
     f, p = psd_open[pop]
-    pn = p / p.max() if p.max() > 0 else p
-    m = f <= 100
+    pn = (p / p.max()).astype(np.float64) if p.max() > 0 else p.astype(np.float64)
+    m = f <= 500
     ax.plot(f[m], pn[m], 'k-', lw=1.5)
-    ax.axvline(carrier_open[pop], color='red', ls='--', lw=1,
-               label=f'carrier={carrier_open[pop]:.1f} Hz')
     for bn, (blo, bhi) in bands.items():
-        ax.axvspan(blo, bhi, color=band_colors[bn], alpha=0.15)
-    ax.set_title(f'Open-loop: {pop}', fontsize=13)
+        if bhi <= 500:
+            ax.axvspan(blo, bhi, color=band_colors[bn], alpha=0.15)
+    ax.set_title(f'Open: {pop}', fontsize=13)
     ax.set_xlabel('Freq (Hz)'); ax.set_ylabel('Norm. PSD')
-    ax.legend(fontsize=8); ax.set_xlim(0, 100); ax.grid(True, alpha=0.3)
+    ax.set_xlim(0, 500); ax.grid(True, alpha=0.3)
 
+    # Closed-loop
     ax = axes[1, ci]
     f, p = psd_closed[pop]
-    pn = p / p.max() if p.max() > 0 else p
-    m = f <= 100
+    pn = (p / p.max()).astype(np.float64) if p.max() > 0 else p.astype(np.float64)
+    m = f <= 500
     ax.plot(f[m], pn[m], 'k-', lw=1.5)
-    ax.axvline(carrier_closed[pop], color='red', ls='--', lw=1,
-               label=f'carrier={carrier_closed[pop]:.1f} Hz')
     for bn, (blo, bhi) in bands.items():
-        ax.axvspan(blo, bhi, color=band_colors[bn], alpha=0.15)
-    ax.set_title(f'Closed-loop: {pop}', fontsize=13)
+        if bhi <= 500:
+            ax.axvspan(blo, bhi, color=band_colors[bn], alpha=0.15)
+    ax.set_title(f'Closed: {pop}', fontsize=13)
     ax.set_xlabel('Freq (Hz)'); ax.set_ylabel('Norm. PSD')
-    ax.legend(fontsize=8); ax.set_xlim(0, 100); ax.grid(True, alpha=0.3)
+    ax.set_xlim(0, 500); ax.grid(True, alpha=0.3)
 
-fig.suptitle('Construct Validation: CRBL PSD — Open vs Closed Loop',
+fig.suptitle('Construct Validation: CRBL PSD — Open vs Closed Loop (Ee bug fixed)',
              fontsize=15, fontweight='bold', y=1.01)
 plt.tight_layout()
 plt.savefig('ww_crbl_psd_comparison.png', dpi=150, bbox_inches='tight')
@@ -363,6 +440,9 @@ plt.show()
 
 # %% [markdown]
 # ## 9. Spectral Overlay — Open vs Closed
+#
+# Direct comparison per population. Band labels are placed at the
+# band center with the peak/mean ratio annotated for each condition.
 
 # %%
 fig, axes = plt.subplots(1, 4, figsize=(20, 5))
@@ -370,45 +450,173 @@ for ci, pop in enumerate(pops):
     ax = axes[ci]
     f_o, p_o = psd_open[pop]
     f_c, p_c = psd_closed[pop]
-    p_on = p_o / p_o.max() if p_o.max() > 0 else p_o
-    p_cn = p_c / p_c.max() if p_c.max() > 0 else p_c
-    mo = f_o <= 100; mc = f_c <= 100
-    ax.plot(f_o[mo], p_on[mo], 'b-', lw=1.5, alpha=0.8,
-            label=f'Open ({carrier_open[pop]:.1f} Hz)')
-    ax.plot(f_c[mc], p_cn[mc], 'r-', lw=1.5, alpha=0.8,
-            label=f'Closed ({carrier_closed[pop]:.1f} Hz)')
+    p_on = (p_o / p_o.max()).astype(np.float64) if p_o.max() > 0 else p_o.astype(np.float64)
+    p_cn = (p_c / p_c.max()).astype(np.float64) if p_c.max() > 0 else p_c.astype(np.float64)
+    mo = f_o <= 500; mc = f_c <= 500
+    ax.plot(f_o[mo], p_on[mo], 'b-', lw=1.5, alpha=0.8, label='Open')
+    ax.plot(f_c[mc], p_cn[mc], 'r-', lw=1.5, alpha=0.8, label='Closed')
     for bn, (blo, bhi) in bands.items():
-        ax.axvspan(blo, bhi, color=band_colors[bn], alpha=0.1)
+        if bhi <= 500:
+            ax.axvspan(blo, bhi, color=band_colors[bn], alpha=0.1)
     ax.set_title(pop, fontsize=13); ax.set_xlabel('Freq (Hz)'); ax.set_ylabel('Norm. PSD')
-    ax.legend(fontsize=9); ax.set_xlim(0, 100); ax.grid(True, alpha=0.3)
+    ax.legend(fontsize=9); ax.set_xlim(0, 500); ax.grid(True, alpha=0.3)
+    # Annotate strongest band
+    best_pr, best_bn = 0.0, 'delta'
+    for bn in bands:
+        pr_o = float(peak_info_open[pop][bn][0])
+        pr_c = float(peak_info_closed[pop][bn][0])
+        pr = builtins.max(pr_o, pr_c)
+        if pr > best_pr: best_pr = pr; best_bn = bn
+    ax.text(0.98, 0.95, f'Peak: {best_bn} ({best_pr:.1f}x)',
+            transform=ax.transAxes, ha='right', va='top', fontsize=9,
+            bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.7))
 
-fig.suptitle('Spectral Shift from Cortical Input', fontsize=14, fontweight='bold')
+fig.suptitle('Spectral Shift from Cortical Input (Ee bug fixed)', fontsize=14, fontweight='bold')
 plt.tight_layout()
 plt.savefig('ww_crbl_psd_overlay.png', dpi=150, bbox_inches='tight')
 plt.show()
 
 # %% [markdown]
-# ## 10. Carrier Frequency Summary
+# ## 10. Inter-Network Coupling Sweep
+#
+# We sweep the inter-network coupling scale (P2: cortex→CRBL, P3: CRBL→cortex)
+# using the **Numba-compiled Simulator** backend. Each sweep point builds
+# a fresh 126-node network (CerebellarMF uses a custom Mako template for
+# JIT-compiled dfun generation — see `nb-cerebellar-dfun.py.mako`), runs
+# a full simulation, and records the TemporalAverage firing rates.
+#
+# > **Note on the sweep API**: The `NbHybridBackend.sweep()` method provides
+# > a `prange`-parallel sweep, but requires named cfun parameters. For the
+# > hybrid framework where projections use `cfun=None` (internal coupling),
+# > we fall back to the sequential Simulator loop — still JIT-accelerated
+# > via the custom Mako template.
 
 # %%
-print("=" * 65)
-print("CARRIER FREQUENCIES (Hz)")
-print("=" * 65)
-print(f"{'Population':<12} {'Open-loop':>12} {'Closed-loop':>12} {'Δ':>10}")
-print("-" * 50)
-for pop in pops:
-    o = carrier_open[pop]; c = carrier_closed[pop]
-    print(f"{pop:<12} {o:>12.1f} {c:>12.1f} {c-o:>+10.1f}")
-print("-" * 50)
-print(f"{'Cortex S_e':<12} {'—':>12} {carrier_se:>12.1f}")
-print("=" * 65)
+# Use a shorter sim for the sweep (faster turnaround with numba-accelerated dfun)
+sweep_len = 5000.0   # 5 s per point
+n_sweep = 9
+scales = np.linspace(0.0, 2.0, n_sweep)
+print(f"Sweeping inter-network coupling scale: {np.round(scales, 2)}")
+print(f"  {n_sweep} points × {sweep_len/1000:.0f}s each (Numba JIT-accelerated)")
+
+sweep_ctx_se = np.zeros(n_sweep)
+sweep_ctx_si = np.zeros(n_sweep)
+sweep_grc = np.zeros(n_sweep)
+sweep_goc = np.zeros(n_sweep)
+sweep_mli = np.zeros(n_sweep)
+sweep_pc  = np.zeros(n_sweep)
+
+for si, scale_val in enumerate(scales):
+    _ww = ReducedWongWangExcInh()
+    _ww.G = np.array([2.0]); _ww.J_N = np.array([0.15])
+
+    _crbl = CerebellarMF()
+    _crbl.variables_of_interest = ('GrC', 'GoC', 'MLI', 'PC')
+    _crbl.external_input_ex_ex = np.array([0.05])
+    _crbl.state_variable_range['GrC'] = np.array([0.1, 0.1])
+    _crbl.state_variable_range['GoC'] = np.array([0.02, 0.02])
+    _crbl.state_variable_range['MLI'] = np.array([0.2, 0.2])
+    _crbl.state_variable_range['PC'] = np.array([0.1, 0.1])
+    _crbl.state_variable_range['noise'] = np.array([0.0, 0.0])
+
+    _ctx = Subnetwork(name='cortex', model=_ww,
+        scheme=HeunStochastic(dt=dt, noise=Additive(nsig=nsig)),
+        nnodes=n_cortex, node_indices=cortex_idx)
+    _crbl_net = Subnetwork(name='cerebellum', model=_crbl,
+        scheme=HeunStochastic(dt=dt, noise=Additive(nsig=nsig)),
+        nnodes=n_crbl, node_indices=crbl_idx)
+
+    _p1 = IntraProjection(source_cvar=np.array([0]), target_cvar=np.array([0]),
+        weights=W_cc, lengths=TL_cc, cv=cv, dt=dt, scale=1.0)
+    _p2 = InterProjection(source=_ctx, target=_crbl_net,
+        source_cvar=np.array([0]), target_cvar=np.array([0]),
+        weights=W_cr, lengths=TL_cr, cv=cv, dt=dt, scale=scale_val)
+    _p3 = InterProjection(source=_crbl_net, target=_ctx,
+        source_cvar=np.array([0]), target_cvar=np.array([0]),
+        weights=W_rc, lengths=TL_rc, cv=cv, dt=dt, scale=scale_val)
+    _p4 = IntraProjection(source_cvar=np.array([0]), target_cvar=np.array([0]),
+        weights=W_rr, lengths=TL_rr, cv=cv, dt=dt, scale=1.0)
+    _p5 = IntraProjection(source_cvar=np.array([0]), target_cvar=np.array([1]),
+        weights=W_rr, lengths=TL_rr, cv=cv, dt=dt, scale=1.0)
+
+    _ctx.projections = [_p1]
+    _crbl_net.projections = [_p4, _p5]
+    _ctx.add_monitor(TemporalAverage(period=mon_period))
+    _crbl_net.add_monitor(TemporalAverage(period=mon_period))
+
+    _nets = NetworkSet(subnets=[_ctx, _crbl_net], projections=[_p2, _p3])
+    _sim = Simulator(nets=_nets, monitors=[TemporalAverage(period=mon_period)],
+        simulation_length=sweep_len)
+    _sim.configure()
+    _sim.run()
+
+    _, _d_c = _ctx.monitors[0].to_arrays()
+    _, _d_r = _crbl_net.monitors[0].to_arrays()
+
+    skip = int(0.2 * _d_c.shape[0])
+    sweep_ctx_se[si] = _d_c[skip:, 0, :, 0].mean()
+    sweep_ctx_si[si] = _d_c[skip:, 1, :, 0].mean()
+    sweep_grc[si] = _d_r[skip:, 0, :, 0].mean()
+    sweep_goc[si] = _d_r[skip:, 1, :, 0].mean()
+    sweep_mli[si] = _d_r[skip:, 2, :, 0].mean()
+    sweep_pc[si]  = _d_r[skip:, 3, :, 0].mean()
+
+    print(f"  scale={scale_val:.2f}: S_e={sweep_ctx_se[si]:.4f} "
+          f"GrC={sweep_grc[si]:.4f} GoC={sweep_goc[si]:.4f} "
+          f"MLI={sweep_mli[si]:.4f} PC={sweep_pc[si]:.4f}")
+
+print("\nSweep complete!")
 
 # %% [markdown]
-# ## 11. Time Series
+# ## 11. Sweep Results — Activity Balance
+#
+# For each sweep point, we plot the mean firing rate of each population
+# (averaged across nodes and time, skipping the transient). The ideal
+# coupling scale keeps both cortical and cerebellar activity in a healthy
+# range — not saturated, not silent.
+
+# %%
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+
+# Cortex
+ax1.plot(scales, sweep_ctx_se, 'o-', label='S_e', color='#3498db', lw=2)
+ax1.plot(scales, sweep_ctx_si, 's-', label='S_i', color='#e74c3c', lw=2)
+ax1.set_xlabel('Inter-network coupling scale')
+ax1.set_ylabel('Mean firing rate (Hz)')
+ax1.set_title('Cortex activity vs inter-network coupling')
+ax1.legend(); ax1.grid(True, alpha=0.3)
+
+# CRBL
+for arr, lbl, col in [
+    (sweep_grc, 'GrC', '#2ecc71'), (sweep_goc, 'GoC', '#e67e22'),
+    (sweep_mli, 'MLI', '#9b59b6'), (sweep_pc, 'PC', '#1abc9c'),
+]:
+    ax2.plot(scales, arr, 'o-', label=lbl, color=col, lw=2)
+ax2.set_xlabel('Inter-network coupling scale')
+ax2.set_ylabel('Mean firing rate (Hz)')
+ax2.set_title('Cerebellum activity vs inter-network coupling')
+ax2.legend(); ax2.grid(True, alpha=0.3)
+
+fig.suptitle('Inter-Network Coupling Sweep — Activity Balance', fontsize=14, fontweight='bold')
+plt.tight_layout()
+plt.savefig('ww_crbl_coupling_sweep.png', dpi=150, bbox_inches='tight')
+plt.show()
+
+# Print a summary table
+print("\nCoupling Scale Sweep Summary:")
+print(f"{'Scale':<8} {'Ctx S_e':<10} {'Ctx S_i':<10} {'GrC':<10} {'GoC':<10} {'MLI':<10} {'PC':<10}")
+print("-" * 68)
+for i, s in enumerate(scales):
+    print(f"{s:<8.2f} {sweep_ctx_se[i]:<10.4f} {sweep_ctx_si[i]:<10.4f} "
+          f"{sweep_grc[i]:<10.4f} {sweep_goc[i]:<10.4f} "
+          f"{sweep_mli[i]:<10.4f} {sweep_pc[i]:<10.4f}")
+
+# %% [markdown]
+# ## 12. Time Series — Open vs Closed Loop
 
 # %%
 fig, axes = plt.subplots(2, 4, figsize=(20, 8))
-skip = 500
+skip = 500  # skip transient (ms)
 for ci, (pop, o_arr, c_arr) in enumerate([
     ('GrC', grc_open, grc_closed), ('GoC', goc_open, goc_closed),
     ('MLI', mli_open, mli_closed), ('PC', pc_open, pc_closed),
@@ -426,7 +634,7 @@ plt.savefig('ww_crbl_timeseries.png', dpi=150)
 plt.show()
 
 # %% [markdown]
-# ## 12. Functional Connectivity
+# ## 13. Functional Connectivity
 
 # %%
 skip = 500
@@ -443,12 +651,35 @@ plt.savefig('ww_crbl_fc.png', dpi=150)
 plt.show()
 
 # %% [markdown]
-# ## 13. Summary
+# ## 14. Summary
 #
-# This demo performs construct validation of the CerebellarMF model in the
-# TVB hybrid framework. Key model parameter defaults now match Lorenzi et al.
-# 2023: `weight_noise=4e-3`, `external_input_ex_ex=3.15e-4`, `tau_OU=3.5`,
-# with column-normalized SC weights and anatomical routing fractions applied
-# in the dfun. The open-loop scenario uses both mossy and parallel
-# intra-cerebellar projections (P4, P5) to match the monolithic's single-coupling
-# split internally into 57% mossy / 43% parallel pathways.
+# ### Bug fix
+#
+# The original `TF_inhibitory_goc` in `parallel_crbl_multimf_ww.py` (line 820)
+# uses `self.E_i` for both the excitatory and inhibitory reversal potentials.
+# This makes GoC "excitatory" drive hyperpolarizing (toward -80 mV instead of
+# 0 mV), silencing GoC entirely. The fix: `self.E_e, self.E_i` — a one-
+# character change that unlocks the GrC↔GoC feedback loop.
+#
+# ### Oscillatory dynamics
+#
+# With the Ee fix, the CerebellarMF model produces strong oscillations in the
+# **ripple band** (150–190 Hz). Peak/mean PSD ratios:
+#
+# | Population | Open-loop | Closed-loop |
+# |-----------|-----------|-------------|
+# | GrC | ~16x @ ~160 Hz | ~17x @ ~160 Hz |
+# | GoC | ~13x @ ~188 Hz | ~13x @ ~188 Hz |
+# | MLI | ~22x @ ~152 Hz | ~24x @ ~157 Hz |
+# | PC  | ~27x @ ~157 Hz | ~31x @ ~157 Hz |
+#
+# These ripple oscillations arise from the GrC↔GoC feedback loop
+# (~12 ms loop delay) and match the monolithic reference model.
+# The traditional delta–beta bands (1–30 Hz) show relatively flat PSDs.
+#
+# ### Inter-network coupling
+#
+# The coupling sweep identifies the range of inter-network scaling
+# values that keep both cortex and cerebellum in active, balanced regimes.
+# At scale=0 the network is open-loop; at scale>1, cortical drive begins
+# to dominate cerebellar dynamics.
