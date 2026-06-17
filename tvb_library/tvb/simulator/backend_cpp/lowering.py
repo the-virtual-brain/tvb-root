@@ -51,23 +51,38 @@ def _check_scope_compatibility(network_set) -> None:
 
     def _check_supported_model_branch(model) -> None:
         name = type(model).__name__
-        if name in {"Epileptor", "Epileptor2D", "EpileptorRestingState"}:
+        if name in {"Epileptor", "Epileptor2D"}:
             if _truthy_first(getattr(model, "modification", False)):
                 raise NotImplementedError(
                     f"CppHybridBackend: {name} with modification=True is not supported. "
-                    "The expression metadata only encodes the non-modification branch."
+                    "The dfun_intermediates 'h' encodes only the modification=False branch. "
+                    "To fix: add 'modification' to the model's parameter_names and rewrite "
+                    "the 'h' intermediate as a ternary over both branches. "
+                    "Set model.modification = numpy.array([False]) to use the current path."
+                )
+        if name == "EpileptorRestingState":
+            if _truthy_first(getattr(model, "modification", False)):
+                raise NotImplementedError(
+                    "CppHybridBackend: EpileptorRestingState with modification=True is not supported. "
+                    "The modification branch is not implemented in any dfun path for this model "
+                    "(numpy, Numba, or C++). Set model.modification = numpy.array([False])."
                 )
         if name == "WilsonCowan":
             if not _truthy_first(getattr(model, "shift_sigmoid", True)):
                 raise NotImplementedError(
                     "CppHybridBackend: WilsonCowan with shift_sigmoid=False is not supported. "
-                    "The expression metadata only encodes the default shift_sigmoid=True branch."
+                    "The dfun_intermediates 's_e'/'s_i' encode only the shift_sigmoid=True branch. "
+                    "To fix: replace the hardcoded nb.float32(1.0) subtraction coefficient "
+                    "with the 'shift_sigmoid' parameter in both s_e and s_i expressions. "
+                    "Set model.shift_sigmoid = numpy.array([True]) to use the current path."
                 )
         if name == "Hopfield":
             if _truthy_first(getattr(model, "dynamic", False)):
                 raise NotImplementedError(
                     "CppHybridBackend: Hopfield with dynamic=True is not supported. "
-                    "The expression metadata only encodes the static threshold branch."
+                    "The dynamic=True branch changes both the coupling variables (cvar) and the dfun, "
+                    "which cannot be encoded in the expression-based codegen. "
+                    "Set model.dynamic = numpy.array([0])."
                 )
 
     def _check_supported_expressions(model) -> None:
