@@ -81,6 +81,8 @@ PYBIND11_MODULE(${module_name}, m) {
          py::list intra_proj_source_svars,
          py::list intra_proj_target_cvars,
          py::list intra_proj_scales,
+         py::list intra_proj_cfun_types,
+         py::list intra_proj_cfun_params,
          // --- inter-projection arrays ---
          py::list inter_proj_weights_data,
          py::list inter_proj_weights_indices,
@@ -89,6 +91,8 @@ PYBIND11_MODULE(${module_name}, m) {
          py::list inter_proj_source_svars,
          py::list inter_proj_target_cvars,
          py::list inter_proj_scales,
+         py::list inter_proj_cfun_types,
+         py::list inter_proj_cfun_params,
          // --- per-subnet noise arrays (empty array for deterministic subnets) ---
          py::list noise_data_list,
          // --- per-subnet stimulus arrays (empty array for no-stimulus subnets) ---
@@ -119,19 +123,29 @@ PYBIND11_MODULE(${module_name}, m) {
         auto build_projections = [](
             py::list& wd, py::list& wi, py::list& wp, py::list& dl,
             py::list& ss, py::list& tc, py::list& sc_,
+            py::list& ct, py::list& cp,
             std::vector<py::array_t<double,  py::array::c_style | py::array::forcecast>>& p_data,
             std::vector<py::array_t<int32_t, py::array::c_style | py::array::forcecast>>& p_idx,
             std::vector<py::array_t<int32_t, py::array::c_style | py::array::forcecast>>& p_ptr,
-            std::vector<py::array_t<int32_t, py::array::c_style | py::array::forcecast>>& p_del)
+            std::vector<py::array_t<int32_t, py::array::c_style | py::array::forcecast>>& p_del,
+            std::vector<py::array_t<float,   py::array::c_style | py::array::forcecast>>& p_cfun)
             -> std::vector<ProjectionArrays>
         {
           const std::size_t n = wd.size();
           p_data.resize(n); p_idx.resize(n); p_ptr.resize(n); p_del.resize(n);
+          p_cfun.resize(n);
           for (std::size_t i = 0; i < n; ++i) {
             p_data[i] = wd[i].cast<py::array_t<double,  py::array::c_style | py::array::forcecast>>();
             p_idx[i]  = wi[i].cast<py::array_t<int32_t, py::array::c_style | py::array::forcecast>>();
             p_ptr[i]  = wp[i].cast<py::array_t<int32_t, py::array::c_style | py::array::forcecast>>();
             p_del[i]  = dl[i].cast<py::array_t<int32_t, py::array::c_style | py::array::forcecast>>();
+          }
+          // cfun arrays only populated when lists are non-empty (backward compat)
+          const bool has_cfun = (ct.size() == n) && (cp.size() == n);
+          if (has_cfun) {
+            for (std::size_t i = 0; i < n; ++i) {
+              p_cfun[i] = cp[i].cast<py::array_t<float, py::array::c_style | py::array::forcecast>>();
+            }
           }
           std::vector<ProjectionArrays> projections(n);
           for (std::size_t i = 0; i < n; ++i) {
@@ -143,6 +157,18 @@ PYBIND11_MODULE(${module_name}, m) {
             projections[i].source_svar     = ss[i].cast<std::size_t>();
             projections[i].target_cvar_slot = tc[i].cast<std::size_t>();
             projections[i].scale           = sc_[i].cast<double>();
+            if (has_cfun) {
+              projections[i].cfun_type = static_cast<uint8_t>(ct[i].cast<int>());
+              const float* cfun_data = p_cfun[i].data();
+              for (int k = 0; k < 8; ++k) {
+                projections[i].cfun_params[k] = cfun_data[k];
+              }
+            } else {
+              projections[i].cfun_type = 0;  // kCfunNone
+              for (int k = 0; k < 8; ++k) {
+                projections[i].cfun_params[k] = (k == 0) ? 1.0f : 0.0f;
+              }
+            }
           }
           return projections;
         };
@@ -153,18 +179,22 @@ PYBIND11_MODULE(${module_name}, m) {
         std::vector<py::array_t<int32_t, py::array::c_style | py::array::forcecast>>
             intra_p_idx, intra_p_ptr, intra_p_del,
             inter_p_idx,  inter_p_ptr,  inter_p_del;
+        std::vector<py::array_t<float,   py::array::c_style | py::array::forcecast>>
+            intra_p_cfun, inter_p_cfun;
 
         const auto intra_projections = build_projections(
             intra_proj_weights_data, intra_proj_weights_indices,
             intra_proj_weights_indptr, intra_proj_idelays,
             intra_proj_source_svars, intra_proj_target_cvars, intra_proj_scales,
-            intra_p_data, intra_p_idx, intra_p_ptr, intra_p_del);
+            intra_proj_cfun_types, intra_proj_cfun_params,
+            intra_p_data, intra_p_idx, intra_p_ptr, intra_p_del, intra_p_cfun);
 
         const auto inter_projections = build_projections(
             inter_proj_weights_data, inter_proj_weights_indices,
             inter_proj_weights_indptr, inter_proj_idelays,
             inter_proj_source_svars, inter_proj_target_cvars, inter_proj_scales,
-            inter_p_data, inter_p_idx, inter_p_ptr, inter_p_del);
+            inter_proj_cfun_types, inter_proj_cfun_params,
+            inter_p_data, inter_p_idx, inter_p_ptr, inter_p_del, inter_p_cfun);
 
         // ---- noise arrays (one float64 array per subnet; empty for deterministic) ----
         const std::size_t n_sn = ${num_subnetworks};
@@ -276,6 +306,8 @@ PYBIND11_MODULE(${module_name}, m) {
       py::arg("intra_proj_source_svars")       = py::list(),
       py::arg("intra_proj_target_cvars")       = py::list(),
       py::arg("intra_proj_scales")             = py::list(),
+      py::arg("intra_proj_cfun_types")         = py::list(),
+      py::arg("intra_proj_cfun_params")        = py::list(),
       py::arg("inter_proj_weights_data")       = py::list(),
       py::arg("inter_proj_weights_indices")    = py::list(),
       py::arg("inter_proj_weights_indptr")     = py::list(),
@@ -283,6 +315,8 @@ PYBIND11_MODULE(${module_name}, m) {
       py::arg("inter_proj_source_svars")       = py::list(),
       py::arg("inter_proj_target_cvars")       = py::list(),
       py::arg("inter_proj_scales")             = py::list(),
+      py::arg("inter_proj_cfun_types")         = py::list(),
+      py::arg("inter_proj_cfun_params")        = py::list(),
       py::arg("noise_data_list")               = py::list(),
       py::arg("stim_data_list")                = py::list());
 }

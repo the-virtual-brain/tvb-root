@@ -17,6 +17,7 @@ from .codegen import (
     build_generated_extension,
     generate_cpp_source,
 )
+from ._network_analysis import _CFUN_TYPE_TO_INT
 from .lowering import SpecLoweringResult, lower_network_set
 from .spec import ProjectionSpec, SimulationSpec
 
@@ -120,6 +121,8 @@ def _projection_arrays(proj: ProjectionSpec) -> dict[str, Any]:
         "source_svar": int(proj.source_cvar[0]),
         "target_cvar_slot": int(proj.target_cvar[0]),
         "scale": float(proj.scale),
+        "cfun_type": int(_CFUN_TYPE_TO_INT.get(proj.cfun_type, 0)),
+        "cfun_params": np.ascontiguousarray(proj.cfun_params, dtype=np.float32),
     }
 
 
@@ -298,6 +301,8 @@ def _inter_projection_arrays(proj: ProjectionSpec) -> dict[str, Any]:
         "source_svar": int(proj.source_cvar[0]),
         "target_cvar_slot": int(proj.target_cvar[0]),
         "scale": effective_scale,
+        "cfun_type": int(_CFUN_TYPE_TO_INT.get(proj.cfun_type, 0)),
+        "cfun_params": np.ascontiguousarray(proj.cfun_params, dtype=np.float32),
     }
 
 
@@ -402,6 +407,8 @@ class CompiledCppNetwork:
             [p["source_svar"]      for p in intra_data],
             [p["target_cvar_slot"] for p in intra_data],
             [p["scale"]            for p in intra_data],
+            [p["cfun_type"]        for p in intra_data],
+            [p["cfun_params"]      for p in intra_data],
             # --- inter projections ---
             [p["weights_data"]     for p in inter_data],
             [p["weights_indices"]  for p in inter_data],
@@ -410,6 +417,8 @@ class CompiledCppNetwork:
             [p["source_svar"]      for p in inter_data],
             [p["target_cvar_slot"] for p in inter_data],
             [p["scale"]            for p in inter_data],
+            [p["cfun_type"]        for p in inter_data],
+            [p["cfun_params"]      for p in inter_data],
             noise_arrays,
             stim_arrays,
         )
@@ -769,10 +778,13 @@ class CppHybridBackend:
             import concurrent.futures
 
             def _run_point(sv):
-                intra_scales, inter_scales = self._compute_sweep_scales(
+                intra_scales, inter_scales, intra_cp, inter_cp = self._compute_sweep_scales(
                     compiled, sweep_descriptor, sv
                 )
-                return self._run_for_sweep(compiled, nstep, flat_states, intra_scales, inter_scales)
+                return self._run_for_sweep(
+                    compiled, nstep, flat_states, intra_scales, inter_scales,
+                    intra_cp, inter_cp,
+                )
 
             with concurrent.futures.ThreadPoolExecutor(max_workers=n_workers) as pool:
                 futures = [pool.submit(_run_point, sweep_values[tid]) for tid in range(n_sweeps)]
@@ -802,11 +814,12 @@ class CppHybridBackend:
                         network_set, monitors=monitors, verbose=verbose
                     )
 
-                intra_scales, inter_scales = self._compute_sweep_scales(
+                intra_scales, inter_scales, intra_cp, inter_cp = self._compute_sweep_scales(
                     compiled, sweep_descriptor, sv
                 )
                 result = self._run_for_sweep(
-                    compiled, nstep, flat_states, intra_scales, inter_scales
+                    compiled, nstep, flat_states, intra_scales, inter_scales,
+                    intra_cp, inter_cp,
                 )
                 raw_results.append(result)
 
@@ -827,18 +840,25 @@ class CppHybridBackend:
         compiled,
         sweep_descriptor: list[dict],
         sv: np.ndarray,
-    ) -> tuple[list[float], list[float]]:
-        """Return (intra_scales, inter_scales) with cfun.a folded in for this sweep point.
+    ) -> tuple[list[float], list[float], list[np.ndarray], list[np.ndarray]]:
+        """Return (intra_scales, inter_scales, intra_cfun_params, inter_cfun_params).
 
-        For a ``Linear`` cfun with ``a=x`` and ``proj.scale=s``, the C++
-        ``accumulate_projection`` only applies ``scale``, so we fold:
-        ``effective_scale = x * s``.  Only ``param_idx=0`` (the linear
-        multiplier ``a``) is supported; ``param_idx=1`` (additive ``b``) cannot
-        be expressed as a pure scale and raises ``NotImplementedError``.
+        For cfun parameter sweeps (param_idx=0, the 'a' multiplier), update
+        cfun_params[0] with the sweep value.  The scale is NOT modified (unlike
+        the previous fold-into-scale approach) because cfun_params are now passed
+        to the C++ runtime directly.
         """
         intra_scales = [float(p.scale) for p in compiled.spec.intra_projections]
         inter_scales = [
             float(p.scale) * (float(p.mode_map.flat[0]) if p.mode_map is not None else 1.0)
+            for p in compiled.spec.inter_projections
+        ]
+        intra_cfun_params = [
+            np.ascontiguousarray(p.cfun_params, dtype=np.float32).copy()
+            for p in compiled.spec.intra_projections
+        ]
+        inter_cfun_params = [
+            np.ascontiguousarray(p.cfun_params, dtype=np.float32).copy()
             for p in compiled.spec.inter_projections
         ]
 
@@ -849,28 +869,16 @@ class CppHybridBackend:
             param_idx = desc.get("param_idx", 0)
             sweep_val = float(sv[dim_idx])
 
-            if param_idx != 0:
-                raise NotImplementedError(
-                    f"C++ sweep: only param_idx=0 (linear multiplier 'a') can be "
-                    f"folded into scale; got param_idx={param_idx} for '{proj_name}'. "
-                    f"Additive offsets (b) are not representable as a runtime scale."
-                )
-
             found = False
             for i, p in enumerate(compiled.spec.intra_projections):
                 if p.name == proj_name:
-                    intra_scales[i] = sweep_val * float(p.scale)
+                    intra_cfun_params[i][param_idx] = np.float32(sweep_val)
                     found = True
                     break
             if not found:
                 for i, p in enumerate(compiled.spec.inter_projections):
                     if p.name == proj_name:
-                        mode_factor = (
-                            float(p.mode_map.flat[0])
-                            if p.mode_map is not None
-                            else 1.0
-                        )
-                        inter_scales[i] = sweep_val * float(p.scale) * mode_factor
+                        inter_cfun_params[i][param_idx] = np.float32(sweep_val)
                         found = True
                         break
             if not found:
@@ -880,7 +888,7 @@ class CppHybridBackend:
                     f"inter: {[p.name for p in compiled.spec.inter_projections]}."
                 )
 
-        return intra_scales, inter_scales
+        return intra_scales, inter_scales, intra_cfun_params, inter_cfun_params
 
     def _run_for_sweep(
         self,
@@ -889,6 +897,8 @@ class CppHybridBackend:
         flat_states: list[np.ndarray],
         intra_scales: list[float],
         inter_scales: list[float],
+        intra_cfun_params: list[np.ndarray] | None = None,
+        inter_cfun_params: list[np.ndarray] | None = None,
     ) -> list[tuple[np.ndarray, np.ndarray, np.ndarray]]:
         """Run one sweep point; return ``[(times, data, ctavg), ...]`` per subnet."""
         monitor_type = (
@@ -926,11 +936,17 @@ class CppHybridBackend:
         intra_data = [_projection_arrays(p) for p in compiled.spec.intra_projections]
         inter_data = [_inter_projection_arrays(p) for p in compiled.spec.inter_projections]
 
-        # Override projection scales for this sweep point.
+        # Override projection scales and cfun_params for this sweep point.
         for i, s in enumerate(intra_scales):
             intra_data[i]["scale"] = s
         for i, s in enumerate(inter_scales):
             inter_data[i]["scale"] = s
+        if intra_cfun_params is not None:
+            for i, cp in enumerate(intra_cfun_params):
+                intra_data[i]["cfun_params"] = cp
+        if inter_cfun_params is not None:
+            for i, cp in enumerate(inter_cfun_params):
+                inter_data[i]["cfun_params"] = cp
 
         noise_arrays = _build_noise_arrays(compiled.spec, compiled.lowering, int(nstep))
         stim_arrays = _build_stimulus_arrays(compiled.spec, compiled.lowering, int(nstep))
@@ -946,6 +962,8 @@ class CppHybridBackend:
             [p["source_svar"]      for p in intra_data],
             [p["target_cvar_slot"] for p in intra_data],
             [p["scale"]            for p in intra_data],
+            [p["cfun_type"]        for p in intra_data],
+            [p["cfun_params"]      for p in intra_data],
             [p["weights_data"]     for p in inter_data],
             [p["weights_indices"]  for p in inter_data],
             [p["weights_indptr"]   for p in inter_data],
@@ -953,6 +971,8 @@ class CppHybridBackend:
             [p["source_svar"]      for p in inter_data],
             [p["target_cvar_slot"] for p in inter_data],
             [p["scale"]            for p in inter_data],
+            [p["cfun_type"]        for p in inter_data],
+            [p["cfun_params"]      for p in inter_data],
             noise_arrays,
             stim_arrays,
         )

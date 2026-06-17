@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <stdexcept>
@@ -33,6 +34,19 @@ struct SimulationResult {
 };
 
 // ---------------------------------------------------------------------------
+// Coupling function type codes — must stay in sync with _CFUN_TYPE_TO_INT in Python
+// ---------------------------------------------------------------------------
+
+static constexpr uint8_t kCfunNone         = 0;
+static constexpr uint8_t kCfunLinear       = 1;
+static constexpr uint8_t kCfunScaling      = 2;
+static constexpr uint8_t kCfunSigmoidal    = 3;
+static constexpr uint8_t kCfunSigmoidalJr  = 4;  // legacy single-cvar
+static constexpr uint8_t kCfunTanh         = 5;
+static constexpr uint8_t kCfunPreSigmoidal = 6;  // static threshold single-cvar
+static constexpr uint8_t kCfunKuramoto     = 7;
+
+// ---------------------------------------------------------------------------
 // ProjectionArrays — lightweight view over CSR projection data owned by Python
 // ---------------------------------------------------------------------------
 
@@ -48,7 +62,57 @@ struct ProjectionArrays {
   std::size_t     source_svar;      // state-variable index to read from source history
   std::size_t     target_cvar_slot; // index into target subnet's coupling array
   double          scale;            // global projection scale
+  uint8_t         cfun_type;        // one of kCfun* constants
+  float           cfun_params[8];   // layout per cfun_type (see _cfun_params in Python)
 };
+
+// Apply per-edge pre-summation coupling to a single source value x_j.
+// For cfun types whose pre() is the identity, returns x_j unchanged.
+// Parameter layout:
+//   kCfunTanh:         [a, midpoint, sigma, b]  →  a*(1+tanh((b*x-midpoint)/sigma))
+//   kCfunSigmoidalJr:  [a, e0, r, v0]           →  a*2*e0/(1+exp(r*(v0-x)))
+//   kCfunPreSigmoidal: [H, Q, G, P, theta]       →  H*(Q+tanh(G*(P*x-theta)))
+inline double cfun_pre_single(uint8_t type, const float* p, double x_j) noexcept {
+  switch (type) {
+    case kCfunTanh: {
+      const double a = p[0], midpoint = p[1], sigma = p[2], b = p[3];
+      return a * (1.0 + std::tanh((b * x_j - midpoint) / sigma));
+    }
+    case kCfunSigmoidalJr: {
+      const double a = p[0], e0 = p[1], r = p[2], v0 = p[3];
+      return a * 2.0 * e0 / (1.0 + std::exp(r * (v0 - x_j)));
+    }
+    case kCfunPreSigmoidal: {
+      const double H = p[0], Q = p[1], G = p[2], P = p[3], theta = p[4];
+      return H * (Q + std::tanh(G * (P * x_j - theta)));
+    }
+    default:
+      return x_j;
+  }
+}
+
+// Apply post-summation coupling to the already-scaled weighted sum.
+// Parameter layout:
+//   kCfunLinear:    [a, b]                        →  a*x + b
+//   kCfunScaling:   [a]                            →  a*x
+//   kCfunKuramoto:  [a]                            →  a*x
+//   kCfunSigmoidal: [a, sigma, midpoint, cmin, cmax] → cmin+(cmax-cmin)/(1+exp(-a*(x-midpoint)/sigma))
+//   others: identity (pre-only cfuns)
+inline double cfun_post(uint8_t type, const float* p, double wsum) noexcept {
+  switch (type) {
+    case kCfunLinear:
+      return double(p[0]) * wsum + double(p[1]);
+    case kCfunScaling:
+    case kCfunKuramoto:
+      return double(p[0]) * wsum;
+    case kCfunSigmoidal: {
+      const double a = p[0], sigma = p[1], midpoint = p[2], cmin = p[3], cmax = p[4];
+      return cmin + (cmax - cmin) / (1.0 + std::exp(-a * (wsum - midpoint) / sigma));
+    }
+    default:
+      return wsum;  // kCfunNone, kCfunTanh, kCfunSigmoidalJr, kCfunPreSigmoidal
+  }
+}
 
 // Accumulate one CSR projection into a flat coupling buffer.
 // coupling layout: coupling[cvar_slot * coupling_n_nodes + target_node]
@@ -261,6 +325,8 @@ inline void accumulate_projection(
     const HistoryBuffer& src_history,
     double* coupling,
     std::size_t coupling_n_nodes) {
+  const uint8_t  type = proj.cfun_type;
+  const float*   p    = proj.cfun_params;
   for (std::size_t j = 0; j < proj.n_target_nodes; ++j) {
     double wsum = 0.0;
     for (std::ptrdiff_t ptr = proj.weights_indptr[j];
@@ -270,11 +336,12 @@ inline void accumulate_projection(
           static_cast<std::size_t>(proj.weights_indices[ptr]);
       const std::size_t delay =
           static_cast<std::size_t>(proj.idelays[ptr]);
-      wsum += proj.weights_data[ptr] *
-              src_history.read_value(delay, proj.source_svar, src_node, 0);
+      const double x_j =
+          src_history.read_value(delay, proj.source_svar, src_node, 0);
+      wsum += proj.weights_data[ptr] * cfun_pre_single(type, p, x_j);
     }
     coupling[proj.target_cvar_slot * coupling_n_nodes + j] +=
-        proj.scale * wsum;
+        cfun_post(type, p, proj.scale * wsum);
   }
 }
 

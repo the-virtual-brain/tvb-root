@@ -78,6 +78,19 @@ class _NetworkAnalysis:
 # Coupling-function helpers
 # ---------------------------------------------------------------------------
 
+# Integer codes must match the kCfun* constants in runtime/runtime.hpp
+_CFUN_TYPE_TO_INT: dict[str, int] = {
+    "none":          0,
+    "linear":        1,
+    "scaling":       2,
+    "sigmoidal":     3,
+    "sigmoidal_jr":  4,
+    "tanh":          5,
+    "pre_sigmoidal": 6,
+    "kuramoto":      7,
+}
+
+
 def _cfun_type(p: _ProjInfo) -> str:
     from tvb.simulator.hybrid.coupling import (
         Linear, Scaling, Sigmoidal, SigmoidalJansenRit,
@@ -102,6 +115,11 @@ def _cfun_type(p: _ProjInfo) -> str:
     if isinstance(p.cfun, PreSigmoidal):
         return "pre_sigmoidal"
     return "none"
+
+
+def _cfun_type_int(p: _ProjInfo) -> int:
+    """Return integer coupling function type code for C++ dispatch."""
+    return _CFUN_TYPE_TO_INT.get(_cfun_type(p), 0)
 
 
 def _cfun_params(p: _ProjInfo) -> np.ndarray:
@@ -138,7 +156,7 @@ def _cfun_params(p: _ProjInfo) -> np.ndarray:
         arr[2] = float(p.cfun.r[0]); arr[3] = float(p.cfun.v0[0])
     elif isinstance(p.cfun, HyperbolicTangent):
         arr[0] = float(p.cfun.a[0]); arr[1] = float(p.cfun.midpoint[0])
-        arr[2] = float(p.cfun.sigma[0])
+        arr[2] = float(p.cfun.sigma[0]); arr[3] = float(p.cfun.b[0])
     elif isinstance(p.cfun, PreSigmoidal):
         arr[0] = float(p.cfun.H[0]); arr[1] = float(p.cfun.Q[0])
         arr[2] = float(p.cfun.G[0]); arr[3] = float(p.cfun.P[0])
