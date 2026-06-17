@@ -209,6 +209,7 @@ def _get_supported_models_classes() -> tuple:
         ReducedSetFitzHughNagumo,
         ReducedSetHindmarshRose,
     )
+    from tvb.simulator.models.cerebellar_mf import CerebellarMF
     from tvb.simulator.models.linear import Linear
     _SUPPORTED_MODELS_CACHE = (
         MontbrioPazoRoxin,
@@ -236,6 +237,7 @@ def _get_supported_models_classes() -> tuple:
         ZetterbergJansen,
         ReducedSetFitzHughNagumo,
         ReducedSetHindmarshRose,
+        CerebellarMF,
         Linear,
     )
     return _SUPPORTED_MODELS_CACHE
@@ -1486,8 +1488,14 @@ class NbHybridBackend(MakoUtilMix):
                 args.append(stim_arr)
 
         # Per-subnetwork spatial parameter arrays (heterogeneous per-node parameters)
+        # Custom-template models bake all params into generated code, so skip
+        # spatial_parameter_names auto-detection (which may pick up non-spatial
+        # arrays like P_grc[5] that can't broadcast to n_nodes).
         for sn_info in analysis.subnetworks:
-            sp_names = list(getattr(sn_info.model, 'spatial_parameter_names', []))
+            if hasattr(sn_info.model, '_nb_hybrid_custom_template'):
+                sp_names = []
+            else:
+                sp_names = list(getattr(sn_info.model, 'spatial_parameter_names', []))
             if sp_names:
                 sp_arr = np.array(
                     [np.broadcast_to(getattr(sn_info.model, n), (sn_info.n_nodes,)).ravel()
