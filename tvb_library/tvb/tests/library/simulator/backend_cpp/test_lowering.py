@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import importlib
 import tempfile
 import unittest
 
@@ -561,3 +562,114 @@ class TestModelDiversity(unittest.TestCase):
         spec = result.spec.subnetworks[0]
         ctx = _build_dfun_context(spec)
         self.assertEqual(len(ctx["dfun_dx_assignments"]), 2)
+
+
+class TestUpstreamModelFixes(unittest.TestCase):
+    """C4: upstream model metadata changes still lower/render for C++ codegen."""
+
+    def _lower_model(
+        self,
+        mod_path: str,
+        cls_name: str,
+        configure_model=None,
+    ) -> SpecLoweringResult:
+        cls = getattr(importlib.import_module(mod_path), cls_name)
+        model = cls()
+        if configure_model is not None:
+            configure_model(model)
+        model.configure()
+        subnet = Subnetwork(
+            name="sn",
+            model=model,
+            scheme=HeunDeterministic(dt=DT),
+            nnodes=2,
+        ).configure()
+        subnet.node_indices = np.arange(2)
+        network = NetworkSet(subnets=[subnet], projections=[])
+        network.configure()
+        return lower_network_set(network, monitors=[TemporalAverage(period=0.2)])
+
+    def _assert_model_renders(self, mod_path: str, cls_name: str) -> SubnetworkSpec:
+        from tvb.simulator.backend_cpp.codegen import _build_dfun_context, render_cpp_template
+
+        result = self._lower_model(mod_path, cls_name)
+        subnet = result.spec.subnetworks[0]
+        ctx = _build_dfun_context(subnet)
+        self.assertEqual(
+            len(ctx["dfun_dx_assignments"]),
+            len(subnet.state_variables),
+            msg=cls_name,
+        )
+        source = render_cpp_template(result.spec, module_name=f"test_{cls_name.lower()}")
+        self.assertIn("compute_dfun", source)
+        return subnet
+
+    def test_epileptor2d_non_modification_path_renders(self):
+        subnet = self._assert_model_renders(
+            "tvb.simulator.models.epileptor",
+            "Epileptor2D",
+        )
+        self.assertIn("Kvf", subnet.parameter_values)
+        self.assertIn("Ks", subnet.parameter_values)
+        self.assertNotIn("modification", subnet.parameter_values)
+
+    def test_epileptor_resting_state_modification_parameter_renders(self):
+        subnet = self._assert_model_renders(
+            "tvb.simulator.models.epileptor_rs",
+            "EpileptorRestingState",
+        )
+        self.assertIn("modification", subnet.parameter_values)
+
+    def test_wilson_cowan_shift_sigmoid_parameter_renders(self):
+        subnet = self._assert_model_renders(
+            "tvb.simulator.models.wilson_cowan",
+            "WilsonCowan",
+        )
+        self.assertIn("shift_sigmoid", subnet.parameter_values)
+
+    def test_deco_balanced_exc_inh_subclass_parameter_renders(self):
+        subnet = self._assert_model_renders(
+            "tvb.simulator.models.wong_wang_exc_inh",
+            "DecoBalancedExcInh",
+        )
+        self.assertIn("M_i", subnet.parameter_values)
+
+    def test_zerlaut_custom_template_models_are_rejected_cleanly(self):
+        cases = (
+            ("tvb.simulator.models.zerlaut", "ZerlautAdaptationFirstOrder"),
+            ("tvb.simulator.models.zerlaut", "ZerlautAdaptationSecondOrder"),
+        )
+        for mod_path, cls_name in cases:
+            with self.subTest(model=cls_name):
+                with self.assertRaisesRegex(NotImplementedError, "state_variable_dfuns"):
+                    self._lower_model(mod_path, cls_name)
+
+    def test_codim3_complex_dfun_models_are_rejected_cleanly(self):
+        cases = (
+            ("tvb.simulator.models.epileptorcodim3", "EpileptorCodim3"),
+            ("tvb.simulator.models.epileptorcodim3", "EpileptorCodim3SlowMod"),
+        )
+        for mod_path, cls_name in cases:
+            with self.subTest(model=cls_name):
+                with self.assertRaisesRegex(NotImplementedError, "complex-valued"):
+                    self._lower_model(mod_path, cls_name)
+
+    def test_epileptor2d_modification_branch_is_rejected_cleanly(self):
+        with self.assertRaisesRegex(NotImplementedError, "modification=True"):
+            self._lower_model(
+                "tvb.simulator.models.epileptor",
+                "Epileptor2D",
+                configure_model=lambda model: setattr(
+                    model, "modification", np.array([True])
+                ),
+            )
+
+    def test_wilson_cowan_shift_sigmoid_false_is_rejected_cleanly(self):
+        with self.assertRaisesRegex(NotImplementedError, "shift_sigmoid=False"):
+            self._lower_model(
+                "tvb.simulator.models.wilson_cowan",
+                "WilsonCowan",
+                configure_model=lambda model: setattr(
+                    model, "shift_sigmoid", np.array([False])
+                ),
+            )

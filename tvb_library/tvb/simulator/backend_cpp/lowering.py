@@ -45,6 +45,43 @@ def _check_scope_compatibility(network_set) -> None:
     if not network_set.subnets:
         raise ValueError("NetworkSet must contain at least one subnetwork.")
 
+    def _truthy_first(value) -> bool:
+        arr = np.atleast_1d(value)
+        return bool(arr[0])
+
+    def _check_supported_model_branch(model) -> None:
+        name = type(model).__name__
+        if name in {"Epileptor", "Epileptor2D", "EpileptorRestingState"}:
+            if _truthy_first(getattr(model, "modification", False)):
+                raise NotImplementedError(
+                    f"CppHybridBackend: {name} with modification=True is not supported. "
+                    "The expression metadata only encodes the non-modification branch."
+                )
+        if name == "WilsonCowan":
+            if not _truthy_first(getattr(model, "shift_sigmoid", True)):
+                raise NotImplementedError(
+                    "CppHybridBackend: WilsonCowan with shift_sigmoid=False is not supported. "
+                    "The expression metadata only encodes the default shift_sigmoid=True branch."
+                )
+        if name == "Hopfield":
+            if _truthy_first(getattr(model, "dynamic", False)):
+                raise NotImplementedError(
+                    "CppHybridBackend: Hopfield with dynamic=True is not supported. "
+                    "The expression metadata only encodes the static threshold branch."
+                )
+
+    def _check_supported_expressions(model) -> None:
+        expressions = []
+        expressions.extend(expr for _name, expr in (getattr(model, "dfun_intermediates", None) or []))
+        expressions.extend((getattr(model, "state_variable_dfuns", None) or {}).values())
+        expressions.extend(body for _name, _args, body in (getattr(model, "dfun_helpers", None) or []))
+        for expr in expressions:
+            if "0j" in expr or ".real" in expr:
+                raise NotImplementedError(
+                    f"CppHybridBackend: {type(model).__name__} uses complex-valued "
+                    "dfun expressions, which the C++ expression code generator does not support."
+                )
+
     dt0 = float(network_set.subnets[0].scheme.dt)
     for subnet in network_set.subnets:
         dfuns = getattr(subnet.model, "state_variable_dfuns", None)
@@ -67,6 +104,8 @@ def _check_scope_compatibility(network_set) -> None:
             raise ValueError(
                 "All subnetworks must share the same dt."
             )
+        _check_supported_model_branch(subnet.model)
+        _check_supported_expressions(subnet.model)
 
 
 def _collect_model_parameters(model: object) -> dict[str, np.ndarray]:
