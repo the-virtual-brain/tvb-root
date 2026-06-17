@@ -37,14 +37,16 @@ struct SimulationResult {
 // Coupling function type codes — must stay in sync with _CFUN_TYPE_TO_INT in Python
 // ---------------------------------------------------------------------------
 
-static constexpr uint8_t kCfunNone         = 0;
-static constexpr uint8_t kCfunLinear       = 1;
-static constexpr uint8_t kCfunScaling      = 2;
-static constexpr uint8_t kCfunSigmoidal    = 3;
-static constexpr uint8_t kCfunSigmoidalJr  = 4;  // legacy single-cvar
-static constexpr uint8_t kCfunTanh         = 5;
-static constexpr uint8_t kCfunPreSigmoidal = 6;  // static threshold single-cvar
-static constexpr uint8_t kCfunKuramoto     = 7;
+static constexpr uint8_t kCfunNone          = 0;
+static constexpr uint8_t kCfunLinear        = 1;
+static constexpr uint8_t kCfunScaling       = 2;
+static constexpr uint8_t kCfunSigmoidal     = 3;
+static constexpr uint8_t kCfunSigmoidalJr   = 4;  // legacy single-cvar: a*2*e0/(1+exp(r*(v0-x)))
+static constexpr uint8_t kCfunTanh          = 5;
+static constexpr uint8_t kCfunPreSigmoidal  = 6;  // static threshold single-cvar
+static constexpr uint8_t kCfunKuramoto      = 7;
+static constexpr uint8_t kCfunSigmoidalJr2  = 8;  // classic 2-cvar: cmin+(cmax-cmin)/(1+exp(r*(midpoint-(x0-x1))))
+static constexpr uint8_t kCfunPreSigmoidal2 = 9;  // dynamic threshold 2-cvar: H*(Q+tanh(G*(P*x0-x1)))
 
 // ---------------------------------------------------------------------------
 // ProjectionArrays — lightweight view over CSR projection data owned by Python
@@ -59,7 +61,9 @@ struct ProjectionArrays {
   const int32_t*  weights_indptr;   // row pointer (target nodes)
   const int32_t*  idelays;          // delay in steps per edge (0 = previous step)
   std::size_t     n_target_nodes;
-  std::size_t     source_svar;      // state-variable index to read from source history
+  std::size_t     source_svar;      // primary source state-variable index
+  std::size_t     source_svar_2;    // secondary source svar (only used when n_source_svars == 2)
+  uint8_t         n_source_svars;   // 1 for standard, 2 for multi-cvar cfuns
   std::size_t     target_cvar_slot; // index into target subnet's coupling array
   double          scale;            // global projection scale
   uint8_t         cfun_type;        // one of kCfun* constants
@@ -91,12 +95,32 @@ inline double cfun_pre_single(uint8_t type, const float* p, double x_j) noexcept
   }
 }
 
+// Apply 2-cvar per-edge pre-summation coupling (x0 from source_svar, x1 from source_svar_2).
+// Parameter layout:
+//   kCfunSigmoidalJr2:  [a, r, cmin, cmax, midpoint]  →  cmin+(cmax-cmin)/(1+exp(r*(midpoint-(x0-x1))))
+//   kCfunPreSigmoidal2: [H, Q, G, P, ...]              →  H*(Q+tanh(G*(P*x0-x1)))
+inline double cfun_pre_double(uint8_t type, const float* p, double x0, double x1) noexcept {
+  switch (type) {
+    case kCfunSigmoidalJr2: {
+      const double r = p[1], cmin = p[2], cmax = p[3], midpoint = p[4];
+      return cmin + (cmax - cmin) / (1.0 + std::exp(r * (midpoint - (x0 - x1))));
+    }
+    case kCfunPreSigmoidal2: {
+      const double H = p[0], Q = p[1], G = p[2], P = p[3];
+      return H * (Q + std::tanh(G * (P * x0 - x1)));
+    }
+    default:
+      return x0;
+  }
+}
+
 // Apply post-summation coupling to the already-scaled weighted sum.
 // Parameter layout:
-//   kCfunLinear:    [a, b]                        →  a*x + b
-//   kCfunScaling:   [a]                            →  a*x
-//   kCfunKuramoto:  [a]                            →  a*x
-//   kCfunSigmoidal: [a, sigma, midpoint, cmin, cmax] → cmin+(cmax-cmin)/(1+exp(-a*(x-midpoint)/sigma))
+//   kCfunLinear:       [a, b]                           →  a*x + b
+//   kCfunScaling:      [a]                              →  a*x
+//   kCfunKuramoto:     [a]                              →  a*x
+//   kCfunSigmoidalJr2: [a, ...]                         →  a*x  (classic post)
+//   kCfunSigmoidal:    [a, sigma, midpoint, cmin, cmax] →  cmin+(cmax-cmin)/(1+exp(-a*(x-midpoint)/sigma))
 //   others: identity (pre-only cfuns)
 inline double cfun_post(uint8_t type, const float* p, double wsum) noexcept {
   switch (type) {
@@ -104,13 +128,14 @@ inline double cfun_post(uint8_t type, const float* p, double wsum) noexcept {
       return double(p[0]) * wsum + double(p[1]);
     case kCfunScaling:
     case kCfunKuramoto:
+    case kCfunSigmoidalJr2:
       return double(p[0]) * wsum;
     case kCfunSigmoidal: {
       const double a = p[0], sigma = p[1], midpoint = p[2], cmin = p[3], cmax = p[4];
       return cmin + (cmax - cmin) / (1.0 + std::exp(-a * (wsum - midpoint) / sigma));
     }
     default:
-      return wsum;  // kCfunNone, kCfunTanh, kCfunSigmoidalJr, kCfunPreSigmoidal
+      return wsum;  // kCfunNone, kCfunTanh, kCfunSigmoidalJr, kCfunPreSigmoidal, kCfunPreSigmoidal2
   }
 }
 
@@ -325,8 +350,9 @@ inline void accumulate_projection(
     const HistoryBuffer& src_history,
     double* coupling,
     std::size_t coupling_n_nodes) {
-  const uint8_t  type = proj.cfun_type;
-  const float*   p    = proj.cfun_params;
+  const uint8_t  type     = proj.cfun_type;
+  const float*   p        = proj.cfun_params;
+  const bool     is_2cvar = (proj.n_source_svars == 2);
   for (std::size_t j = 0; j < proj.n_target_nodes; ++j) {
     double wsum = 0.0;
     for (std::ptrdiff_t ptr = proj.weights_indptr[j];
@@ -336,12 +362,22 @@ inline void accumulate_projection(
           static_cast<std::size_t>(proj.weights_indices[ptr]);
       const std::size_t delay =
           static_cast<std::size_t>(proj.idelays[ptr]);
-      const double x_j =
+      const double x0 =
           src_history.read_value(delay, proj.source_svar, src_node, 0);
-      wsum += proj.weights_data[ptr] * cfun_pre_single(type, p, x_j);
+      if (is_2cvar) {
+        const double x1 =
+            src_history.read_value(delay, proj.source_svar_2, src_node, 0);
+        wsum += proj.weights_data[ptr] * cfun_pre_double(type, p, x0, x1);
+      } else {
+        wsum += proj.weights_data[ptr] * cfun_pre_single(type, p, x0);
+      }
     }
+    // The Numba template loops `for ic in range(n_src_cvar)` and for combined
+    // 2-cvar cfuns (sigmoidal_jr_2, pre_sigmoidal_2) re-computes the same
+    // formula on every iteration, so the contribution is accumulated
+    // n_source_svars times.  Replicate that behaviour for numerical parity.
     coupling[proj.target_cvar_slot * coupling_n_nodes + j] +=
-        cfun_post(type, p, proj.scale * wsum);
+        static_cast<double>(proj.n_source_svars) * cfun_post(type, p, proj.scale * wsum);
   }
 }
 

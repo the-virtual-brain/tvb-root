@@ -1007,3 +1007,122 @@ class TestCppHybridBackend(unittest.TestCase):
         # Node 0 received stimulus — its trajectory must diverge from the baseline.
         diff_node0 = float(np.max(np.abs(data_stim[:, :, 0, :] - data_no[:, :, 0, :])))
         self.assertGreater(diff_node0, 1e-6, "stimulus had no effect on node 0")
+
+
+# ---------------------------------------------------------------------------
+# C1/C2: Coupling-function parity tests (C++ vs Numba)
+# ---------------------------------------------------------------------------
+
+def _make_cfun_network(
+    model,
+    cfun,
+    n_nodes: int,
+    n_src_cvars: int,
+    weight: float = 0.1,
+) -> tuple:
+    """Build a single-subnet NetworkSet with the given cfun and return (network, x0)."""
+    model.configure()
+    src_cvars = np.array([int(model.cvar[i]) for i in range(n_src_cvars)])
+    proj = IntraProjection(
+        source_cvar=src_cvars,
+        target_cvar=np.array([0]),
+        weights=sp.eye(n_nodes, format="csr") * weight,
+        lengths=sp.csr_matrix((n_nodes, n_nodes)),
+        cv=7.0,
+        dt=DT,
+        scale=1.0,
+        cfun=cfun,
+    )
+    subnet = Subnetwork(
+        name="sn",
+        model=model,
+        scheme=EulerDeterministic(dt=DT),
+        nnodes=n_nodes,
+        projections=[proj],
+    ).configure()
+    subnet.node_indices = np.arange(n_nodes)
+    network = NetworkSet(subnets=[subnet], projections=[])
+    network.configure()
+    x0 = np.zeros((model.nvar, n_nodes, 1), dtype=np.float64)
+    for i, sv in enumerate(model.state_variables):
+        rng = model.state_variable_range.get(sv)
+        if rng is not None:
+            x0[i] = (float(rng[0]) + float(rng[1])) / 2.0
+    return network, x0
+
+
+def _cpp_vs_numba_max_diff(network, x0, nstep=5):
+    """Return max |C++ output - Numba output| over nstep steps."""
+    nb = NbHybridBackend()
+    r_nb = nb.run_network(network, nstep=nstep, chunk_size=1, initial_states=[x0.copy()])
+    nb_data = np.asarray(r_nb[0][1])[:, :, :, 0]
+
+    with tempfile.TemporaryDirectory(prefix="tvb-cpp-cfun-") as bd:
+        backend = CppHybridBackend(build_root=bd)
+        compiled = backend.compile(network, verbose=False)
+        r_cpp = compiled.run(initial_states=[x0.copy()], nstep=nstep)
+    cpp_data = r_cpp[0][1][:, :, :, 0]
+    return float(np.max(np.abs(cpp_data - nb_data)))
+
+
+class TestCouplingFunctionParity(unittest.TestCase):
+    """C1: Single-cvar post-only coupling functions match Numba within float32 precision."""
+
+    NSTEP = 5
+    N_NODES = 3
+    TOL = 1e-4
+
+    def _assert_matches_numba(self, model, cfun, n_src=1, weight=0.1):
+        network, x0 = _make_cfun_network(model, cfun, self.N_NODES, n_src, weight)
+        diff = _cpp_vs_numba_max_diff(network, x0, self.NSTEP)
+        self.assertLess(diff, self.TOL,
+            f"{type(cfun).__name__} (n_src={n_src}): max|C++-Numba|={diff:.3e}")
+
+    # --- C1: post-only cfuns (Linear, Scaling, Sigmoidal, HyperbolicTangent, Kuramoto) ---
+
+    def test_linear_cfun_matches_numba(self):
+        from tvb.simulator.hybrid.coupling import Linear
+        model = MontbrioPazoRoxin(I=np.array([2.0]))
+        self._assert_matches_numba(model, Linear())
+
+    def test_scaling_cfun_matches_numba(self):
+        from tvb.simulator.hybrid.coupling import Scaling
+        model = MontbrioPazoRoxin(I=np.array([2.0]))
+        self._assert_matches_numba(model, Scaling())
+
+    def test_sigmoidal_cfun_matches_numba(self):
+        from tvb.simulator.hybrid.coupling import Sigmoidal
+        model = MontbrioPazoRoxin(I=np.array([2.0]))
+        self._assert_matches_numba(model, Sigmoidal())
+
+    def test_hyperbolic_tangent_cfun_matches_numba(self):
+        from tvb.simulator.hybrid.coupling import HyperbolicTangent
+        model = MontbrioPazoRoxin(I=np.array([2.0]))
+        self._assert_matches_numba(model, HyperbolicTangent())
+
+    # --- C1: pre-only cfuns (SigmoidalJansenRit legacy, PreSigmoidal static) ---
+
+    def test_sigmoidal_jr_legacy_cfun_matches_numba(self):
+        from tvb.simulator.models.jansen_rit import JansenRit
+        from tvb.simulator.hybrid.coupling import SigmoidalJansenRit
+        model = JansenRit()
+        # Legacy single-cvar mode (use_classic=0): reads only first source cvar
+        self._assert_matches_numba(model, SigmoidalJansenRit(use_classic=False), n_src=1)
+
+    def test_pre_sigmoidal_static_cfun_matches_numba(self):
+        from tvb.simulator.hybrid.coupling import PreSigmoidal
+        model = MontbrioPazoRoxin(I=np.array([2.0]))
+        self._assert_matches_numba(model, PreSigmoidal(dynamic=False), n_src=1)
+
+    # --- C2: 2-cvar cfuns (SigmoidalJansenRit classic, PreSigmoidal dynamic) ---
+
+    def test_sigmoidal_jr_classic_2cvar_matches_numba(self):
+        from tvb.simulator.models.jansen_rit import JansenRit
+        from tvb.simulator.hybrid.coupling import SigmoidalJansenRit
+        model = JansenRit()
+        self._assert_matches_numba(model, SigmoidalJansenRit(), n_src=2)
+
+    def test_pre_sigmoidal_dynamic_2cvar_matches_numba(self):
+        from tvb.simulator.hybrid.coupling import PreSigmoidal
+        model = MontbrioPazoRoxin(I=np.array([2.0]))
+        self._assert_matches_numba(model, PreSigmoidal(dynamic=True), n_src=2)

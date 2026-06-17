@@ -79,6 +79,8 @@ PYBIND11_MODULE(${module_name}, m) {
          py::list intra_proj_weights_indptr,
          py::list intra_proj_idelays,
          py::list intra_proj_source_svars,
+         py::list intra_proj_source_svars_2,
+         py::list intra_proj_n_source_svars,
          py::list intra_proj_target_cvars,
          py::list intra_proj_scales,
          py::list intra_proj_cfun_types,
@@ -89,6 +91,8 @@ PYBIND11_MODULE(${module_name}, m) {
          py::list inter_proj_weights_indptr,
          py::list inter_proj_idelays,
          py::list inter_proj_source_svars,
+         py::list inter_proj_source_svars_2,
+         py::list inter_proj_n_source_svars,
          py::list inter_proj_target_cvars,
          py::list inter_proj_scales,
          py::list inter_proj_cfun_types,
@@ -122,7 +126,7 @@ PYBIND11_MODULE(${module_name}, m) {
         // ---- helper: build ProjectionArrays vector from parallel python lists ----
         auto build_projections = [](
             py::list& wd, py::list& wi, py::list& wp, py::list& dl,
-            py::list& ss, py::list& tc, py::list& sc_,
+            py::list& ss, py::list& ss2, py::list& nss, py::list& tc, py::list& sc_,
             py::list& ct, py::list& cp,
             std::vector<py::array_t<double,  py::array::c_style | py::array::forcecast>>& p_data,
             std::vector<py::array_t<int32_t, py::array::c_style | py::array::forcecast>>& p_idx,
@@ -147,6 +151,7 @@ PYBIND11_MODULE(${module_name}, m) {
               p_cfun[i] = cp[i].cast<py::array_t<float, py::array::c_style | py::array::forcecast>>();
             }
           }
+          const bool has_multicvar = (ss2.size() == n) && (nss.size() == n);
           std::vector<ProjectionArrays> projections(n);
           for (std::size_t i = 0; i < n; ++i) {
             projections[i].weights_data    = p_data[i].data();
@@ -155,6 +160,9 @@ PYBIND11_MODULE(${module_name}, m) {
             projections[i].idelays         = p_del[i].data();
             projections[i].n_target_nodes  = static_cast<std::size_t>(p_ptr[i].size() - 1);
             projections[i].source_svar     = ss[i].cast<std::size_t>();
+            projections[i].source_svar_2   = has_multicvar ? ss2[i].cast<std::size_t>() : 0;
+            projections[i].n_source_svars  = has_multicvar
+                ? static_cast<uint8_t>(nss[i].cast<int>()) : uint8_t{1};
             projections[i].target_cvar_slot = tc[i].cast<std::size_t>();
             projections[i].scale           = sc_[i].cast<double>();
             if (has_cfun) {
@@ -185,14 +193,16 @@ PYBIND11_MODULE(${module_name}, m) {
         const auto intra_projections = build_projections(
             intra_proj_weights_data, intra_proj_weights_indices,
             intra_proj_weights_indptr, intra_proj_idelays,
-            intra_proj_source_svars, intra_proj_target_cvars, intra_proj_scales,
+            intra_proj_source_svars, intra_proj_source_svars_2, intra_proj_n_source_svars,
+            intra_proj_target_cvars, intra_proj_scales,
             intra_proj_cfun_types, intra_proj_cfun_params,
             intra_p_data, intra_p_idx, intra_p_ptr, intra_p_del, intra_p_cfun);
 
         const auto inter_projections = build_projections(
             inter_proj_weights_data, inter_proj_weights_indices,
             inter_proj_weights_indptr, inter_proj_idelays,
-            inter_proj_source_svars, inter_proj_target_cvars, inter_proj_scales,
+            inter_proj_source_svars, inter_proj_source_svars_2, inter_proj_n_source_svars,
+            inter_proj_target_cvars, inter_proj_scales,
             inter_proj_cfun_types, inter_proj_cfun_params,
             inter_p_data, inter_p_idx, inter_p_ptr, inter_p_del, inter_p_cfun);
 
@@ -304,6 +314,8 @@ PYBIND11_MODULE(${module_name}, m) {
       py::arg("intra_proj_weights_indptr")     = py::list(),
       py::arg("intra_proj_idelays")            = py::list(),
       py::arg("intra_proj_source_svars")       = py::list(),
+      py::arg("intra_proj_source_svars_2")     = py::list(),
+      py::arg("intra_proj_n_source_svars")     = py::list(),
       py::arg("intra_proj_target_cvars")       = py::list(),
       py::arg("intra_proj_scales")             = py::list(),
       py::arg("intra_proj_cfun_types")         = py::list(),
@@ -313,6 +325,8 @@ PYBIND11_MODULE(${module_name}, m) {
       py::arg("inter_proj_weights_indptr")     = py::list(),
       py::arg("inter_proj_idelays")            = py::list(),
       py::arg("inter_proj_source_svars")       = py::list(),
+      py::arg("inter_proj_source_svars_2")     = py::list(),
+      py::arg("inter_proj_n_source_svars")     = py::list(),
       py::arg("inter_proj_target_cvars")       = py::list(),
       py::arg("inter_proj_scales")             = py::list(),
       py::arg("inter_proj_cfun_types")         = py::list(),

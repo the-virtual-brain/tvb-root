@@ -80,14 +80,16 @@ class _NetworkAnalysis:
 
 # Integer codes must match the kCfun* constants in runtime/runtime.hpp
 _CFUN_TYPE_TO_INT: dict[str, int] = {
-    "none":          0,
-    "linear":        1,
-    "scaling":       2,
-    "sigmoidal":     3,
-    "sigmoidal_jr":  4,
-    "tanh":          5,
-    "pre_sigmoidal": 6,
-    "kuramoto":      7,
+    "none":            0,
+    "linear":          1,
+    "scaling":         2,
+    "sigmoidal":       3,
+    "sigmoidal_jr":    4,   # legacy single-cvar
+    "tanh":            5,
+    "pre_sigmoidal":   6,   # static threshold single-cvar
+    "kuramoto":        7,
+    "sigmoidal_jr_2":  8,   # classic 2-cvar
+    "pre_sigmoidal_2": 9,   # dynamic threshold 2-cvar
 }
 
 
@@ -105,7 +107,10 @@ def _cfun_type(p: _ProjInfo) -> str:
     if isinstance(p.cfun, Sigmoidal):
         return "sigmoidal"
     if isinstance(p.cfun, SigmoidalJansenRit):
-        return "sigmoidal_jr"
+        # 2 source cvars → classic mode (cmin/cmax/midpoint formula)
+        if p.source_cvar.shape[0] == 2:
+            return "sigmoidal_jr_2"
+        return "sigmoidal_jr"  # legacy single-cvar (e0/v0 formula)
     if isinstance(p.cfun, KuramotoCfun):
         return "kuramoto"
     if isinstance(p.cfun, Difference):
@@ -113,7 +118,10 @@ def _cfun_type(p: _ProjInfo) -> str:
     if isinstance(p.cfun, HyperbolicTangent):
         return "tanh"
     if isinstance(p.cfun, PreSigmoidal):
-        return "pre_sigmoidal"
+        # 2 source cvars → dynamic threshold mode
+        if p.source_cvar.shape[0] == 2:
+            return "pre_sigmoidal_2"
+        return "pre_sigmoidal"  # static threshold single-cvar
     return "none"
 
 
@@ -152,8 +160,15 @@ def _cfun_params(p: _ProjInfo) -> np.ndarray:
         arr[2] = float(p.cfun.midpoint[0]); arr[3] = float(p.cfun.cmin[0])
         arr[4] = float(p.cfun.cmax[0])
     elif isinstance(p.cfun, SigmoidalJansenRit):
-        arr[0] = float(p.cfun.a[0]); arr[1] = float(p.cfun.e0[0])
-        arr[2] = float(p.cfun.r[0]); arr[3] = float(p.cfun.v0[0])
+        if p.source_cvar.shape[0] == 2:
+            # classic 2-cvar: [a, r, cmin, cmax, midpoint]
+            arr[0] = float(p.cfun.a[0]); arr[1] = float(p.cfun.r[0])
+            arr[2] = float(p.cfun.cmin[0]); arr[3] = float(p.cfun.cmax[0])
+            arr[4] = float(p.cfun.midpoint[0])
+        else:
+            # legacy single-cvar: [a, e0, r, v0]
+            arr[0] = float(p.cfun.a[0]); arr[1] = float(p.cfun.e0[0])
+            arr[2] = float(p.cfun.r[0]); arr[3] = float(p.cfun.v0[0])
     elif isinstance(p.cfun, HyperbolicTangent):
         arr[0] = float(p.cfun.a[0]); arr[1] = float(p.cfun.midpoint[0])
         arr[2] = float(p.cfun.sigma[0]); arr[3] = float(p.cfun.b[0])

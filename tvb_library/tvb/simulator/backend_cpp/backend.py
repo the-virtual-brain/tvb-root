@@ -113,12 +113,15 @@ def _default_initial_states(network_set) -> list[np.ndarray]:
 
 def _projection_arrays(proj: ProjectionSpec) -> dict[str, Any]:
     """Extract numpy arrays from a ProjectionSpec for the native binding."""
+    sc = proj.source_cvar
     return {
         "weights_data": np.ascontiguousarray(proj.weights_data, dtype=np.float64),
         "weights_indices": np.ascontiguousarray(proj.weights_indices, dtype=np.int32),
         "weights_indptr": np.ascontiguousarray(proj.weights_indptr, dtype=np.int32),
         "idelays": np.ascontiguousarray(proj.idelays, dtype=np.int32),
-        "source_svar": int(proj.source_cvar[0]),
+        "source_svar": int(sc[0]),
+        "source_svar_2": int(sc[1]) if len(sc) > 1 else 0,
+        "n_source_svars": int(len(sc)),
         "target_cvar_slot": int(proj.target_cvar[0]),
         "scale": float(proj.scale),
         "cfun_type": int(_CFUN_TYPE_TO_INT.get(proj.cfun_type, 0)),
@@ -293,12 +296,15 @@ def _inter_projection_arrays(proj: ProjectionSpec) -> dict[str, Any]:
     effective_scale = float(proj.scale)
     if proj.mode_map is not None:
         effective_scale *= float(proj.mode_map.flat[0])
+    sc = proj.source_cvar
     return {
         "weights_data": np.ascontiguousarray(proj.weights_data, dtype=np.float64),
         "weights_indices": np.ascontiguousarray(proj.weights_indices, dtype=np.int32),
         "weights_indptr": np.ascontiguousarray(proj.weights_indptr, dtype=np.int32),
         "idelays": np.ascontiguousarray(proj.idelays, dtype=np.int32),
-        "source_svar": int(proj.source_cvar[0]),
+        "source_svar": int(sc[0]),
+        "source_svar_2": int(sc[1]) if len(sc) > 1 else 0,
+        "n_source_svars": int(len(sc)),
         "target_cvar_slot": int(proj.target_cvar[0]),
         "scale": effective_scale,
         "cfun_type": int(_CFUN_TYPE_TO_INT.get(proj.cfun_type, 0)),
@@ -405,6 +411,8 @@ class CompiledCppNetwork:
             [p["weights_indptr"]   for p in intra_data],
             [p["idelays"]          for p in intra_data],
             [p["source_svar"]      for p in intra_data],
+            [p["source_svar_2"]    for p in intra_data],
+            [p["n_source_svars"]   for p in intra_data],
             [p["target_cvar_slot"] for p in intra_data],
             [p["scale"]            for p in intra_data],
             [p["cfun_type"]        for p in intra_data],
@@ -415,6 +423,8 @@ class CompiledCppNetwork:
             [p["weights_indptr"]   for p in inter_data],
             [p["idelays"]          for p in inter_data],
             [p["source_svar"]      for p in inter_data],
+            [p["source_svar_2"]    for p in inter_data],
+            [p["n_source_svars"]   for p in inter_data],
             [p["target_cvar_slot"] for p in inter_data],
             [p["scale"]            for p in inter_data],
             [p["cfun_type"]        for p in inter_data],
@@ -960,6 +970,8 @@ class CppHybridBackend:
             [p["weights_indptr"]   for p in intra_data],
             [p["idelays"]          for p in intra_data],
             [p["source_svar"]      for p in intra_data],
+            [p["source_svar_2"]    for p in intra_data],
+            [p["n_source_svars"]   for p in intra_data],
             [p["target_cvar_slot"] for p in intra_data],
             [p["scale"]            for p in intra_data],
             [p["cfun_type"]        for p in intra_data],
@@ -969,6 +981,8 @@ class CppHybridBackend:
             [p["weights_indptr"]   for p in inter_data],
             [p["idelays"]          for p in inter_data],
             [p["source_svar"]      for p in inter_data],
+            [p["source_svar_2"]    for p in inter_data],
+            [p["n_source_svars"]   for p in inter_data],
             [p["target_cvar_slot"] for p in inter_data],
             [p["scale"]            for p in inter_data],
             [p["cfun_type"]        for p in inter_data],
