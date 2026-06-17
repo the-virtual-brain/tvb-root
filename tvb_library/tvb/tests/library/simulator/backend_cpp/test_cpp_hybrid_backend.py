@@ -1065,6 +1065,85 @@ def _cpp_vs_numba_max_diff(network, x0, nstep=5):
     return float(np.max(np.abs(cpp_data - nb_data)))
 
 
+class TestCouplingFunctionLowering(unittest.TestCase):
+    """lowering checks that do not require compiling a native extension."""
+
+    def _lower_intra_projection(self, model, cfun, n_src=1):
+        from tvb.simulator.backend_cpp.backend import _projection_arrays
+        from tvb.simulator.backend_cpp.lowering import lower_network_set
+
+        network, _x0 = _make_cfun_network(model, cfun, n_nodes=2, n_src_cvars=n_src)
+        lowering = lower_network_set(network)
+        projection = lowering.spec.intra_projections[0]
+        return projection, _projection_arrays(projection)
+
+    def test_c1_single_cvar_cfun_runtime_codes_and_source_metadata(self):
+        from tvb.simulator.hybrid.coupling import (
+            HyperbolicTangent,
+            Linear,
+            PreSigmoidal,
+            Scaling,
+            Sigmoidal,
+        )
+
+        cases = (
+            (Linear(), "linear", 1),
+            (Scaling(), "scaling", 2),
+            (Sigmoidal(), "sigmoidal", 3),
+            (HyperbolicTangent(), "tanh", 5),
+            (PreSigmoidal(dynamic=False), "pre_sigmoidal", 6),
+        )
+        for cfun, expected_type, expected_code in cases:
+            with self.subTest(cfun=type(cfun).__name__):
+                model = MontbrioPazoRoxin(I=np.array([2.0]))
+                projection, arrays = self._lower_intra_projection(model, cfun, n_src=1)
+
+                self.assertEqual(projection.cfun_type, expected_type)
+                self.assertEqual(arrays["cfun_type"], expected_code)
+                self.assertEqual(arrays["source_svar"], int(model.cvar[0]))
+                self.assertEqual(arrays["source_svar_2"], 0)
+                self.assertEqual(arrays["n_source_svars"], 1)
+
+    def test_c1_legacy_sigmoidal_jr_lowers_as_single_cvar(self):
+        from tvb.simulator.hybrid.coupling import SigmoidalJansenRit
+        from tvb.simulator.models.jansen_rit import JansenRit
+
+        model = JansenRit()
+        projection, arrays = self._lower_intra_projection(
+            model, SigmoidalJansenRit(use_classic=False), n_src=1
+        )
+
+        self.assertEqual(projection.cfun_type, "sigmoidal_jr")
+        self.assertEqual(arrays["cfun_type"], 4)
+        self.assertEqual(arrays["source_svar"], int(model.cvar[0]))
+        self.assertEqual(arrays["source_svar_2"], 0)
+        self.assertEqual(arrays["n_source_svars"], 1)
+
+    def test_c2_two_cvar_cfun_runtime_codes_and_source_metadata(self):
+        from tvb.simulator.hybrid.coupling import PreSigmoidal, SigmoidalJansenRit
+        from tvb.simulator.models.jansen_rit import JansenRit
+
+        cases = (
+            (JansenRit(), SigmoidalJansenRit(), "sigmoidal_jr_2", 8),
+            (
+                MontbrioPazoRoxin(I=np.array([2.0])),
+                PreSigmoidal(dynamic=True),
+                "pre_sigmoidal_2",
+                9,
+            ),
+        )
+        for model, cfun, expected_type, expected_code in cases:
+            with self.subTest(cfun=type(cfun).__name__):
+                projection, arrays = self._lower_intra_projection(model, cfun, n_src=2)
+
+                self.assertEqual(projection.cfun_type, expected_type)
+                self.assertEqual(projection.cvar_mapping_mode, "many_to_1")
+                self.assertEqual(arrays["cfun_type"], expected_code)
+                self.assertEqual(arrays["source_svar"], int(model.cvar[0]))
+                self.assertEqual(arrays["source_svar_2"], int(model.cvar[1]))
+                self.assertEqual(arrays["n_source_svars"], 2)
+
+
 class TestCouplingFunctionParity(unittest.TestCase):
     """C1: Single-cvar post-only coupling functions match Numba within float32 precision."""
 
