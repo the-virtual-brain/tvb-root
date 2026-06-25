@@ -15,8 +15,8 @@ From: debian:bookworm-slim
     export TVB_STORAGE=/tmp/tvb_storage
 
 %files
-    tvb_library /opt/tvb-root/tvb_library
-    tvb_bin /opt/tvb-root/tvb_bin
+    ./ /opt/tvb-root/tvb_library
+    ../tvb_bin /opt/tvb-root/tvb_bin
 
 %post
     # --- system deps ---
