@@ -1382,21 +1382,6 @@ class NbHybridBackend(MakoUtilMix):
         _bold_states: Optional[dict] = None,
     ) -> tuple:
         """Build the argument list and call the pre-compiled kernel."""
-        # Guard: chunk_size must be a multiple of every projection's horizon so
-        # that the circular buffer slot used by the last step of each chunk
-        # ((chunk_size-1) % horizon == horizon-1) matches the slot that the
-        # first step of the next chunk reads ((horizon-1) % horizon).
-        # horizon=1 always satisfies this (chunk_size % 1 == 0), so zero-delay
-        # projections are never blocked regardless of chunk_size.
-        if analysis.all_projections:
-            for p in analysis.all_projections:
-                if chunk_size % p.horizon != 0:
-                    raise ValueError(
-                        f"chunk_size={chunk_size} is not a multiple of projection "
-                        f"horizon {p.horizon} (= min_delay/dt + 1). "
-                        f"Use a chunk_size that is a multiple of {p.horizon}, "
-                        "or increase tract lengths / reduce dt."
-                    )
         # Build argument list matching the generated run_network() signature
         args = [nstep]
 
