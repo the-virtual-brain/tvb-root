@@ -43,7 +43,7 @@
         'alpha_grc', 'alpha_goc', 'alpha_mli', 'alpha_pc',
         # Time scale & noise
         'T', 'tau_OU', 'weight_noise',
-        'external_input_ex_ex', 'external_input_ex_in',
+        'external_input_ex_ex', 'external_input_ex_in', 'external_input_in_ex',
         # Coupling routing fractions
         'frac_mossy', 'frac_parallel',
         'mf_to_grc', 'mf_to_goc',
@@ -51,6 +51,13 @@
     ]
     for _pn in _cp_names:
         _cp[_pn] = float(getattr(sn.model, _pn)[0])
+
+    # Legacy mode flags (baked as compile-time conditionals)
+    _use_legacy_goc_e_e = bool(getattr(sn.model, 'use_legacy_goc_e_e')[0])
+    _add_noise_mli_pc = bool(getattr(sn.model, 'add_noise_mli_pc')[0])
+
+    # When legacy mode is active, GoC uses E_i for both Ee and Ei
+    _goc_ee = float(sn.model.E_i[0]) if _use_legacy_goc_e_e else float(sn.model.E_e[0])
 
     # Polynomial coefficients — 5 each for the 4 populations
     import numpy as _np
@@ -66,6 +73,13 @@
 % for _pn, _pv in _cp.items():
 _cp_${sn.name}_${_pn} = nb.float32(${_pv})
 % endfor
+
+## GoC excitatory reversal: E_i when legacy bug, E_e when fixed
+_cp_${sn.name}_goc_Ee = nb.float32(${_goc_ee})
+
+## Legacy mode flags (compile-time)
+_USE_LEGACY_GOC_EE_${sn.name} = ${_use_legacy_goc_e_e}
+_ADD_NOISE_MLI_PC_${sn.name} = ${_add_noise_mli_pc}
 
 ## Polynomial coefficients for threshold function
 % for _k in range(5):
@@ -227,10 +241,11 @@ def _crbl_TF_grc_${sn.name}(fe_ext, fi, fe, fi_ext):
 
 
 ## GoC — inhibitory, 3-input
+## Uses _cp_${sn.name}_goc_Ee which is E_i when legacy bug, E_e when fixed
 ${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
 def _crbl_TF_goc_${sn.name}(fe, fi, fe_ext):
     return _crbl_TF_3d_${sn.name}(fe, fi, fe_ext, nb.float32(0.0),
-        _cp_${sn.name}_Q_grc_goc, _cp_${sn.name}_tau_grc_goc, _cp_${sn.name}_E_e,
+        _cp_${sn.name}_Q_grc_goc, _cp_${sn.name}_tau_grc_goc, _cp_${sn.name}_goc_Ee,
         _cp_${sn.name}_Q_goc_goc, _cp_${sn.name}_tau_goc_goc, _cp_${sn.name}_E_i,
         _cp_${sn.name}_g_L_goc, _cp_${sn.name}_C_m_goc, _cp_${sn.name}_E_L_goc,
         _cp_${sn.name}_K_grc_goc, _cp_${sn.name}_K_goc_goc,
@@ -279,7 +294,10 @@ def dfun_${sn.name}(GrC, GoC, MLI, PC, noise, mossy, parallel, _sp, ni):
     weight_noise = _cp_${sn.name}_weight_noise
     ext_ex_ex = _cp_${sn.name}_external_input_ex_ex
     ext_ex_in = _cp_${sn.name}_external_input_ex_in
+    ext_in_ex = _cp_${sn.name}_external_input_in_ex
     tau_OU = _cp_${sn.name}_tau_OU
+    frac_mossy = _cp_${sn.name}_frac_mossy
+    frac_parallel = _cp_${sn.name}_frac_parallel
     mf_to_grc = _cp_${sn.name}_mf_to_grc
     mf_to_goc = _cp_${sn.name}_mf_to_goc
     pf_to_goc = _cp_${sn.name}_pf_to_goc
@@ -291,10 +309,18 @@ def dfun_${sn.name}(GrC, GoC, MLI, PC, noise, mossy, parallel, _sp, ni):
     K_grc_pc = _cp_${sn.name}_K_grc_pc
 
     ## Anatomical routing of coupling signals
-    Fe_ext_tod1 = mossy * mf_to_grc + weight_noise * noise
-    Fe_ext_tod2 = mossy * mf_to_goc + parallel * pf_to_goc + weight_noise * noise
-    Fe_ext_tod3 = parallel * pf_to_mli
-    Fe_ext_tod4 = parallel * pf_to_pc
+    ## frac_mossy / frac_parallel split the coupling into pathways,
+    ## then mf_to_* / pf_to_* distribute to each population.
+    Fe_ext_tod1 = mossy * frac_mossy * mf_to_grc + weight_noise * noise
+    Fe_ext_tod2 = mossy * frac_mossy * mf_to_goc + parallel * frac_parallel * pf_to_goc + weight_noise * noise
+
+    % if _add_noise_mli_pc:
+    Fe_ext_tod3 = parallel * frac_parallel * pf_to_mli + weight_noise * noise
+    Fe_ext_tod4 = parallel * frac_parallel * pf_to_pc + weight_noise * noise
+    % else:
+    Fe_ext_tod3 = parallel * frac_parallel * pf_to_mli
+    Fe_ext_tod4 = parallel * frac_parallel * pf_to_pc
+    % endif
 
     ## Clamp negative inputs
     if Fe_ext_tod1 * K_mossy_grc < nb.float32(0.0):
@@ -314,8 +340,9 @@ def dfun_${sn.name}(GrC, GoC, MLI, PC, noise, mossy, parallel, _sp, ni):
         Fi_ext + ext_ex_in) - GrC) / T
 
     ## GoC — inhibitory TF (3-input: GrC, GoC, external)
+    ## GoC uses ext_in_ex (matching monolithic external_input_in_ex)
     d_GoC = (_crbl_TF_goc_${sn.name}(
-        GrC, GoC, Fe_ext_tod2 + ext_ex_ex) - GoC) / T
+        GrC, GoC, Fe_ext_tod2 + ext_in_ex) - GoC) / T
 
     ## MLI — inhibitory TF
     d_MLI = (_crbl_TF_mli_${sn.name}(

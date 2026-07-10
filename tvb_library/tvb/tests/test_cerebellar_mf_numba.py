@@ -32,8 +32,10 @@ def test_cerebellar_mf_numpy_dfun_reasonable_output():
     from tvb.simulator.models.cerebellar_mf import CerebellarMF
     m = CerebellarMF()
     m.external_input_ex_ex = np.array([0.05])
+    m.use_legacy_goc_e_e = np.array([False])  # Use fixed GoC for oscillatory drive
 
-    # Test with fixed-point-like initial conditions
+    # Test with fixed-point-like initial conditions (Hz scale for this test)
+    # Do NOT modify state_variable_range — it's Final and shared across instances
     x = np.array([[0.1], [0.02], [0.2], [0.1], [0.0]])
     # Zero coupling
     c = np.array([[0.0], [0.0]])
@@ -60,6 +62,7 @@ def test_cerebellar_mf_tf_electrotonic_units():
     from tvb.simulator.models.cerebellar_mf import CerebellarMF
     m = CerebellarMF()
     m.external_input_ex_ex = np.array([0.05])
+    m.use_legacy_goc_e_e = np.array([False])  # Use fixed GoC for non-zero rates
 
     # GrC TF with typical operating-point inputs
     grc_rate = m.TF_excitatory_grc(
@@ -67,7 +70,7 @@ def test_cerebellar_mf_tf_electrotonic_units():
     assert np.isfinite(grc_rate), "GrC TF returned non-finite"
     assert grc_rate >= 0, "GrC TF returned negative rate"
 
-    # GoC TF
+    # GoC TF (with E_e fix, should produce non-zero rates)
     goc_rate = m.TF_inhibitory_goc(
         fe=0.1, fi=0.02, fe_ext=0.05, fi_ext=0.0)
     assert np.isfinite(goc_rate), "GoC TF returned non-finite"
@@ -84,21 +87,58 @@ def test_cerebellar_mf_tf_electrotonic_units():
     assert np.isfinite(pc_rate), "PC TF returned non-finite"
 
 
-def test_cerebellar_mf_goc_ee_fix():
-    """GoC excitatory reversal potential should be E_e (0 mV), not E_i (-80 mV).
+def test_cerebellar_mf_goc_ee_legacy_and_fixed():
+    """GoC excitatory reversal potential follows use_legacy_goc_e_e flag.
 
-    This test verifies the bug fix where TF_inhibitory_goc was passing
-    self.E_i for both excitatory and inhibitory reversal potentials.
-    With E_e=0 mV, GoC should produce non-zero firing rates when driven.
+    When use_legacy_goc_e_e=True (default): GoC TF uses E_i=-80mV for both
+    Ee and Ei (replicating the bug in parallel_crbl.py:583).
+
+    When use_legacy_goc_e_e=False: GoC TF uses E_e=0mV for Ee (the fix),
+    making excitatory input depolarizing and unlocking GrC↔GoC feedback.
     """
     from tvb.simulator.models.cerebellar_mf import CerebellarMF
-    m = CerebellarMF()
-    assert float(m.E_e[0]) == 0.0, "E_e should be 0 mV"
-    assert float(m.E_i[0]) == -80.0, "E_i should be -80 mV"
 
-    # GoC must produce non-zero rates when given excitatory drive
-    rate = m.TF_inhibitory_goc(fe=0.1, fi=0.02, fe_ext=0.05, fi_ext=0.0)
-    assert rate > 0, f"GoC rate is {rate} — expected > 0 with excitatory drive"
+    # Legacy mode (bug): GoC should be effectively silent
+    m_legacy = CerebellarMF()
+    assert bool(m_legacy.use_legacy_goc_e_e[0]) == True, "Default should be legacy mode"
+    rate_legacy = m_legacy.TF_inhibitory_goc(fe=0.1, fi=0.02, fe_ext=0.05, fi_ext=0.0)
+    assert np.isfinite(rate_legacy), "Legacy GoC TF returned non-finite"
+
+    # Fixed mode: GoC should produce non-zero rates with excitatory drive
+    m_fixed = CerebellarMF()
+    m_fixed.use_legacy_goc_e_e = np.array([False])
+    assert float(m_fixed.E_e[0]) == 0.0, "E_e should be 0 mV"
+    assert float(m_fixed.E_i[0]) == -80.0, "E_i should be -80 mV"
+    rate_fixed = m_fixed.TF_inhibitory_goc(fe=0.1, fi=0.02, fe_ext=0.05, fi_ext=0.0)
+    assert np.isfinite(rate_fixed), "Fixed GoC TF returned non-finite"
+    assert rate_fixed > 0, f"Fixed GoC rate is {rate_fixed} — expected > 0 with excitatory drive"
+
+    # Legacy rate should be lower than fixed rate (GoC silenced by bug)
+    assert rate_legacy < rate_fixed, \
+        f"Legacy rate ({rate_legacy}) should be < fixed rate ({rate_fixed})"
+
+
+def test_cerebellar_mf_production_defaults():
+    """Default parameters match parallel_crbl_params.py production values."""
+    from tvb.simulator.models.cerebellar_mf import CerebellarMF
+    m = CerebellarMF()
+
+    assert float(m.alpha_mli[0]) == 5.0, f"alpha_mli should be 5.0, got {m.alpha_mli}"
+    assert float(m.alpha_grc[0]) == 2.0
+    assert float(m.alpha_goc[0]) == 1.3
+    assert float(m.alpha_pc[0]) == 5.0
+    assert float(m.tau_OU[0]) == 3.5
+    assert float(m.weight_noise[0]) == 4e-3
+    assert float(m.external_input_ex_ex[0]) == 0.0
+    assert float(m.external_input_in_ex[0]) == 0.0
+    assert float(m.frac_mossy[0]) == 1.0
+    assert float(m.frac_parallel[0]) == 1.0
+
+    # Initial conditions in kHz (matching production)
+    assert float(m.state_variable_range['GrC'][0]) == 500.0
+    assert float(m.state_variable_range['GoC'][0]) == 5000.0
+    assert float(m.state_variable_range['MLI'][0]) == 15000.0
+    assert float(m.state_variable_range['PC'][0]) == 38000.0
 
 
 @pytest.mark.skipif(
@@ -124,6 +164,7 @@ def test_cerebellar_mf_numba_vs_python_dfun():
     # --- Single-step Python (Euler) ---
     m_py = CerebellarMF()
     m_py.external_input_ex_ex = np.array([0.05])
+    m_py.use_legacy_goc_e_e = np.array([False])
 
     # Initial state: (nvar, n_nodes, 1)
     state_py = np.zeros((5, n_nodes, 1), dtype=np.float64)
@@ -144,11 +185,9 @@ def test_cerebellar_mf_numba_vs_python_dfun():
     # --- Single-step Numba ---
     m_nb = CerebellarMF()
     m_nb.external_input_ex_ex = np.array([0.05])
+    m_nb.use_legacy_goc_e_e = np.array([False])
     m_nb.variables_of_interest = ('GrC', 'GoC', 'MLI', 'PC')
-    for sv, rng in [('GrC', [0.1, 0.1]), ('GoC', [0.02, 0.02]),
-                     ('MLI', [0.2, 0.2]), ('PC', [0.1, 0.1]),
-                     ('noise', [0.0, 0.0])]:
-        m_nb.state_variable_range[sv] = np.array(rng)
+    # Do NOT modify state_variable_range — Final trait shares default across instances
 
     cereb = Subnetwork(
         name='cerebellum', model=m_nb,

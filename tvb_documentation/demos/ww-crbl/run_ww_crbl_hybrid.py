@@ -159,13 +159,15 @@ mon_period = 1.0
 # %%
 crbl_open = CerebellarMF()
 crbl_open.variables_of_interest = ('GrC', 'GoC', 'MLI', 'PC')
-# Activated regime: external_input_ex_ex=0.05 drives the GrC↔GoC loop
-crbl_open.external_input_ex_ex = np.array([0.05])
-# Initial conditions in Hz (natural operating point after Ee fix)
-crbl_open.state_variable_range['GrC'] = np.array([0.1, 0.1])
-crbl_open.state_variable_range['GoC'] = np.array([0.02, 0.02])
-crbl_open.state_variable_range['MLI'] = np.array([0.2, 0.2])
-crbl_open.state_variable_range['PC'] = np.array([0.1, 0.1])
+# Legacy mode: match published cMF-TVB results (GoC E_e bug)
+crbl_open.use_legacy_goc_e_e = np.array([True])
+# Production: no external drive (overridden by run script)
+crbl_open.external_input_ex_ex = np.array([0.0])
+# kHz initial conditions (matching parallel_crbl_params.py)
+crbl_open.state_variable_range['GrC'] = np.array([500.0, 500.0])
+crbl_open.state_variable_range['GoC'] = np.array([5000.0, 5000.0])
+crbl_open.state_variable_range['MLI'] = np.array([15000.0, 15000.0])
+crbl_open.state_variable_range['PC'] = np.array([38000.0, 38000.0])
 crbl_open.state_variable_range['noise'] = np.array([0.0, 0.0])
 
 cerebellum_open = Subnetwork(
@@ -233,11 +235,12 @@ cortex = Subnetwork(
 
 crbl_closed = CerebellarMF()
 crbl_closed.variables_of_interest = ('GrC', 'GoC', 'MLI', 'PC')
-crbl_closed.external_input_ex_ex = np.array([0.05])
-crbl_closed.state_variable_range['GrC'] = np.array([0.1, 0.1])
-crbl_closed.state_variable_range['GoC'] = np.array([0.02, 0.02])
-crbl_closed.state_variable_range['MLI'] = np.array([0.2, 0.2])
-crbl_closed.state_variable_range['PC'] = np.array([0.1, 0.1])
+crbl_closed.use_legacy_goc_e_e = np.array([True])
+crbl_closed.external_input_ex_ex = np.array([0.0])
+crbl_closed.state_variable_range['GrC'] = np.array([500.0, 500.0])
+crbl_closed.state_variable_range['GoC'] = np.array([5000.0, 5000.0])
+crbl_closed.state_variable_range['MLI'] = np.array([15000.0, 15000.0])
+crbl_closed.state_variable_range['PC'] = np.array([38000.0, 38000.0])
 crbl_closed.state_variable_range['noise'] = np.array([0.0, 0.0])
 
 cerebellum_closed = Subnetwork(
@@ -512,11 +515,12 @@ for si, scale_val in enumerate(scales):
 
     _crbl = CerebellarMF()
     _crbl.variables_of_interest = ('GrC', 'GoC', 'MLI', 'PC')
-    _crbl.external_input_ex_ex = np.array([0.05])
-    _crbl.state_variable_range['GrC'] = np.array([0.1, 0.1])
-    _crbl.state_variable_range['GoC'] = np.array([0.02, 0.02])
-    _crbl.state_variable_range['MLI'] = np.array([0.2, 0.2])
-    _crbl.state_variable_range['PC'] = np.array([0.1, 0.1])
+    _crbl.use_legacy_goc_e_e = np.array([True])
+    _crbl.external_input_ex_ex = np.array([0.0])
+    _crbl.state_variable_range['GrC'] = np.array([500.0, 500.0])
+    _crbl.state_variable_range['GoC'] = np.array([5000.0, 5000.0])
+    _crbl.state_variable_range['MLI'] = np.array([15000.0, 15000.0])
+    _crbl.state_variable_range['PC'] = np.array([38000.0, 38000.0])
     _crbl.state_variable_range['noise'] = np.array([0.0, 0.0])
 
     _ctx = Subnetwork(name='cortex', model=_ww,

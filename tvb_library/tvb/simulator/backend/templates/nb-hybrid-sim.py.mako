@@ -423,7 +423,7 @@ def dfun_${sn.name}(${svars_str}, ${cterms_str}, _sp, ni):
 
 % if _is_combined:
 ${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
-def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'noise, t_abs' if sn.is_stochastic else ''}, _sp):
+def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'_nsig_arr, t_abs' if sn.is_stochastic else ''}, _sp):
     dt = nb.float32(${dt_val})
 
     for i in range(${n_nodes}):
@@ -454,7 +454,7 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'no
             % endfor
             % if int_type == "euler_stochastic":
             % for k2, svar in enumerate(svars):
-            n${svar} = n${svar} + noise[${k2}, i, m, t_abs]
+            n${svar} = n${svar} + _nsig_arr[${k2}, i, m, t_abs]
             % endfor
             % endif
             % for k, svar in enumerate(svars):
@@ -507,7 +507,7 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'no
             % endfor
             % if int_type == "heun_stochastic":
             % for k2, svar in enumerate(svars):
-            _i1_${svar}[m] = _i1_${svar}[m] + noise[${k2}, i, m, t_abs]
+            _i1_${svar}[m] = _i1_${svar}[m] + _nsig_arr[${k2}, i, m, t_abs]
             % endfor
             % endif
 
@@ -538,7 +538,7 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'no
             % endfor
             % if int_type == "heun_stochastic":
             % for k2, svar in enumerate(svars):
-            n${svar} = n${svar} + noise[${k2}, i, m, t_abs]
+            n${svar} = n${svar} + _nsig_arr[${k2}, i, m, t_abs]
             % endfor
             % endif
             % for k, svar in enumerate(svars):
@@ -562,7 +562,7 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'no
 
 % else:
 ${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
-def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'noise, t_abs' if sn.is_stochastic else ''}, _sp):
+def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'_nsig_arr, t_abs' if sn.is_stochastic else ''}, _sp):
     dt = nb.float32(${dt_val})
 
     for i in range(${n_nodes}):
@@ -583,7 +583,7 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'no
         % endfor
         % elif int_type == "euler_stochastic":
         % for k2, svar in enumerate(svars):
-        n${svar} = ${svar} + dt * d0_${svar} + noise[${k2}, i, 0, t_abs]
+        n${svar} = ${svar} + dt * d0_${svar} + _nsig_arr[${k2}, i, 0, t_abs]
         % endfor
         % elif int_type == "heun":
         % for svar in svars:
@@ -595,11 +595,11 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'no
         % endfor
         % elif int_type == "heun_stochastic":
         % for k2, svar in enumerate(svars):
-        i1${svar} = ${svar} + dt * d0_${svar} + noise[${k2}, i, 0, t_abs]
+        i1${svar} = ${svar} + dt * d0_${svar} + _nsig_arr[${k2}, i, 0, t_abs]
         % endfor
         (${', '.join(['d1_' + s for s in svars])},) = dfun_${sn.name}(${i1svars_str}, ${cterms_str}, _sp, i)
         % for k2, svar in enumerate(svars):
-        n${svar} = ${svar} + dt * nb.float32(0.5) * (d0_${svar} + d1_${svar}) + noise[${k2}, i, 0, t_abs]
+        n${svar} = ${svar} + dt * nb.float32(0.5) * (d0_${svar} + d1_${svar}) + _nsig_arr[${k2}, i, 0, t_abs]
         % endfor
         % endif
 
@@ -638,7 +638,7 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'no
             % endfor
             % elif int_type == "euler_stochastic":
             % for k2, svar in enumerate(svars):
-            n${svar} = ${svar} + dt * d0_${svar} + noise[${k2}, i, m, t_abs]
+            n${svar} = ${svar} + dt * d0_${svar} + _nsig_arr[${k2}, i, m, t_abs]
             % endfor
             % elif int_type == "heun":
             % for svar in svars:
@@ -650,11 +650,11 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'no
             % endfor
             % elif int_type == "heun_stochastic":
             % for k2, svar in enumerate(svars):
-            i1${svar} = ${svar} + dt * d0_${svar} + noise[${k2}, i, m, t_abs]
+            i1${svar} = ${svar} + dt * d0_${svar} + _nsig_arr[${k2}, i, m, t_abs]
             % endfor
             (${', '.join(['d1_' + s for s in svars])},) = dfun_${sn.name}(${i1svars_str}, ${cterms_str}, _sp, i)
             % for k2, svar in enumerate(svars):
-            n${svar} = ${svar} + dt * nb.float32(0.5) * (d0_${svar} + d1_${svar}) + noise[${k2}, i, m, t_abs]
+            n${svar} = ${svar} + dt * nb.float32(0.5) * (d0_${svar} + d1_${svar}) + _nsig_arr[${k2}, i, m, t_abs]
             % endfor
             % endif
 

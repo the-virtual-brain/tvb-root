@@ -374,7 +374,7 @@ class CerebellarMF(ModelNumbaDfun):
 
     alpha_mli = NArray(
         label=":math:`\\alpha_{MLI}`",
-        default=numpy.array([1.8]),
+        default=numpy.array([5.0]),
         doc="MLI alpha gain [-]")
 
     alpha_pc = NArray(
@@ -428,17 +428,23 @@ class CerebellarMF(ModelNumbaDfun):
 
     external_input_ex_ex = NArray(
         label=":math:`\\nu_e^{drive}`",
-        default=numpy.array([0.05]),
+        default=numpy.array([0.0]),
         domain=Range(lo=0.0, hi=0.5, step=0.001),
-        doc="External excitatory drive to excitatory population (GrC/GoC). "
-            "The default 0.05 produces oscillatory dynamics with peak/mean > 3x "
-            "in theta-alpha range across connected CRBL nodes.")
+        doc="External excitatory drive to GrC. "
+            "Set to 0.05 for oscillatory dynamics with the GoC Ee bug fixed.")
 
     external_input_ex_in = NArray(
         label=":math:`\\nu_i^{drive}`",
         default=numpy.array([0.0]),
         domain=Range(lo=0.0, hi=0.1, step=0.001),
-        doc="External inhibitory drive to excitatory population")
+        doc="External inhibitory drive to GrC")
+
+    external_input_in_ex = NArray(
+        label=":math:`\\nu_{in,ex}^{drive}`",
+        default=numpy.array([0.0]),
+        domain=Range(lo=0.0, hi=0.1, step=0.001),
+        doc="External drive to GoC (inhibitory population, excitatory input). "
+            "Matches the monolithic model's external_input_in_ex parameter.")
 
     # -----------------------------------------------------------------------
     # Coupling routing fractions (from monolithic cMF-TVB model)
@@ -454,15 +460,17 @@ class CerebellarMF(ModelNumbaDfun):
 
     frac_mossy = NArray(
         label="Mossy fiber proportion",
-        default=numpy.array([0.57]),
+        default=numpy.array([1.0]),
         domain=Range(lo=0.0, hi=1.0, step=0.01),
-        doc="Proportion of total long-range coupling carried by mossy fibers")
+        doc="Proportion of total long-range coupling carried by mossy fibers. "
+            "Set to 0.57 to match the CRBL-only monolithic model.")
 
     frac_parallel = NArray(
         label="Parallel fiber proportion",
-        default=numpy.array([0.43]),
+        default=numpy.array([1.0]),
         domain=Range(lo=0.0, hi=1.0, step=0.01),
-        doc="Proportion of total long-range coupling carried by parallel fibers")
+        doc="Proportion of total long-range coupling carried by parallel fibers. "
+            "Set to 0.43 to match the CRBL-only monolithic model.")
 
     mf_to_grc = NArray(
         label="Mossy→GrC split",
@@ -501,6 +509,29 @@ class CerebellarMF(ModelNumbaDfun):
             "Set to 1.0 to match the multimf_ww monolithic model.")
 
     # -----------------------------------------------------------------------
+    # Legacy mode flags
+    # -----------------------------------------------------------------------
+    use_legacy_goc_e_e = NArray(
+        dtype=bool,
+        label="Legacy GoC Ee",
+        default=numpy.array([True]),
+        doc="When True, GoC transfer function uses E_i for both excitatory "
+            "and inhibitory reversal potentials, replicating the bug in "
+            "parallel_crbl.py / parallel_crbl_multimf_ww.py (line 583/820). "
+            "This makes GoC excitatory drive hyperpolarizing (toward -80 mV), "
+            "silencing GoC. Published cMF-TVB results were generated with "
+            "this bug. Set to False to use E_e=0 mV for GoC excitatory input.")
+
+    add_noise_mli_pc = NArray(
+        dtype=bool,
+        label="Noise on MLI/PC",
+        default=numpy.array([False]),
+        doc="When True, add weight_noise*noise to Fe_ext for MLI and PC, "
+            "matching the CRBL-only monolithic model (parallel_crbl.py). "
+            "The multi-model (parallel_crbl_multimf_ww.py) does not add "
+            "noise to MLI/PC.")
+
+    # -----------------------------------------------------------------------
     # Model metadata
     # -----------------------------------------------------------------------
     coupling_terms = Final(
@@ -528,25 +559,27 @@ class CerebellarMF(ModelNumbaDfun):
             "alpha_grc", "alpha_goc", "alpha_mli", "alpha_pc",
             "T", "P_grc", "P_goc", "P_mli", "P_pc",
             "tau_OU", "weight_noise",
-            "external_input_ex_ex", "external_input_ex_in",
+            "external_input_ex_ex", "external_input_ex_in", "external_input_in_ex",
             "frac_mossy", "frac_parallel",
             "mf_to_grc", "mf_to_goc",
             "pf_to_goc", "pf_to_mli", "pf_to_pc",
+            "use_legacy_goc_e_e", "add_noise_mli_pc",
         ],
     )
 
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
         default={
-            "GrC":   numpy.array([0.1, 0.1]),
-            "GoC":   numpy.array([0.02, 0.02]),
-            "MLI":   numpy.array([0.2, 0.2]),
-            "PC":    numpy.array([0.1, 0.1]),
+            "GrC":   numpy.array([500.0, 500.0]),
+            "GoC":   numpy.array([5000.0, 5000.0]),
+            "MLI":   numpy.array([15000.0, 15000.0]),
+            "PC":    numpy.array([38000.0, 38000.0]),
             "noise": numpy.array([0.0, 0.0]),
         },
         doc="""Expected dynamic range for each state variable.
         Used for bounding random initial conditions.
-        Values match Lorenzi et al. 2023 monolithic model.""")
+        Values match Lorenzi et al. 2023 monolithic model production parameters
+        (parallel_crbl_params.py) — firing rates in kHz scale.""")
 
     state_variable_boundaries = Final(
         label="State Variable boundaries [lo, hi]",
@@ -674,10 +707,14 @@ class CerebellarMF(ModelNumbaDfun):
                         self.K_mossy_grc, self.K_mossy_goc, self.alpha_grc)
 
     def TF_inhibitory_goc(self, fe, fi, fe_ext, fi_ext, W=0):
+        # When use_legacy_goc_e_e=True, pass E_i for both Ee and Ei,
+        # replicating the bug in parallel_crbl.py:583 / parallel_crbl_multimf_ww.py:820.
+        # This makes GoC excitatory drive hyperpolarizing (toward -80 mV).
+        ee = self.E_i if bool(self.use_legacy_goc_e_e[0]) else self.E_e
         return self._TF_goc(fe, fi, fe_ext, fi_ext, W,
                             self.P_goc, self.Q_grc_goc, self.Q_goc_goc,
                             self.tau_grc_goc, self.tau_goc_goc,
-                            self.E_e, self.E_i,
+                            ee, self.E_i,
                             self.g_L_goc, self.C_m_goc, self.E_L_goc,
                             self.K_grc_goc, self.K_goc_goc,
                             self.Q_mf_goc, self.tau_mf_goc,
@@ -741,20 +778,24 @@ class CerebellarMF(ModelNumbaDfun):
         c_mossy = coupling[0, :]
         c_parallel = coupling[1, :]
 
-        # Apply anatomical routing fractions (matching monolithic cMF-TVB):
-        # In the monolithic model, coupling enters as a single c_0 signal that
-        # is split internally into mossy (0.57) and parallel (0.43) fractions,
-        # then distributed to each population with specific sub-fractions.
-        # In the hybrid model, c_mossy and c_parallel arrive separately via
-        # cvar=[0,1], so we just apply the per-target distribution fractions.
-        Fe_ext_tod1 = c_mossy * self.mf_to_grc + self.weight_noise * noise
-        Fe_ext_tod2 = c_mossy * self.mf_to_goc + c_parallel * self.pf_to_goc + self.weight_noise * noise
+        # Apply anatomical routing fractions.
+        # In the monolithic CRBL-only model (parallel_crbl.py), coupling c_0
+        # is split into mossy (frac_mossy=0.57) and parallel (frac_parallel=0.43),
+        # then distributed to each population with sub-fractions.
+        # In the multi-model (parallel_crbl_multimf_ww.py), c_mossy/c_parallel
+        # arrive separately and all fractions are 1.0.
+        # The frac_* and sub-fraction parameters allow matching either model.
+        fm = self.frac_mossy
+        fp = self.frac_parallel
 
-        # Parallel only feeds MLI and PC
-        Fe_ext_tod3 = c_parallel * self.pf_to_mli
-        Fe_ext_tod4 = c_parallel * self.pf_to_pc
+        Fe_ext_tod1 = c_mossy * fm * self.mf_to_grc + self.weight_noise * noise
+        Fe_ext_tod2 = c_mossy * fm * self.mf_to_goc + c_parallel * fp * self.pf_to_goc + self.weight_noise * noise
 
-        # Clamp negative inputs
+        noise_mli_pc = (self.weight_noise * noise) if bool(self.add_noise_mli_pc[0]) else 0.0
+        Fe_ext_tod3 = c_parallel * fp * self.pf_to_mli + noise_mli_pc
+        Fe_ext_tod4 = c_parallel * fp * self.pf_to_pc + noise_mli_pc
+
+        # Clamp negative inputs (matching monolithic behaviour)
         idx = numpy.where(Fe_ext_tod1 * self.K_mossy_grc < 0)
         Fe_ext_tod1[idx] = 0.0
         idx = numpy.where(Fe_ext_tod2 * self.K_mossy_goc < 0)
@@ -766,16 +807,16 @@ class CerebellarMF(ModelNumbaDfun):
 
         Fi_ext = 0.0
 
-        # GrC
+        # GrC — external_input_ex_ex drives GrC (mossy input)
         derivative[0] = (self.TF_excitatory_grc(
             Fe_ext_tod1 + self.external_input_ex_ex,
             d2, 0.0,
             Fi_ext + self.external_input_ex_in, 0.0) - d1) / self.T
 
-        # GoC
+        # GoC — external_input_in_ex drives GoC (matches monolithic param name)
         derivative[1] = (self.TF_inhibitory_goc(
             d1, d2,
-            Fe_ext_tod2 + self.external_input_ex_ex,
+            Fe_ext_tod2 + self.external_input_in_ex,
             Fi_ext, 0.0) - d2) / self.T
 
         # MLI
