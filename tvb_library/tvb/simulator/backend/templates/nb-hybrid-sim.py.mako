@@ -723,10 +723,10 @@ def network_chunk(
     % for sn in subnets:
     ${sn.name}_c,  # (n_cvar, n_nodes, n_modes) — scratch for coupling dispatch
     % endfor
-    ## per-subnetwork noise arrays (stochastic only)
+    ## per-subnetwork noise arrays (stochastic only) — chunk-sized, regenerated each outer iteration
     % for sn in subnets:
     % if sn.is_stochastic:
-    ${sn.name}_noise,  # (n_vars, n_nodes, n_modes, nstep_total) float32
+    ${sn.name}_noise,  # (n_vars, n_nodes, n_modes, chunk_size) float32
     % endif
     % endfor
     ## per-subnetwork stimulus arrays (stimulus subnetworks only)
@@ -840,9 +840,9 @@ def network_chunk(
         % endif
         % endfor
 
-        ## integrate each subnetwork in-place
+        ## integrate each subnetwork in-place (noise indexed by t_local = chunk-relative step)
         % for sn in subnets:
-        integrate_${sn.name}(${sn.name}_state, ${sn.name}_c${',' if sn.is_stochastic else ''} ${'%s_noise, t - 1' % sn.name if sn.is_stochastic else ''}, ${sn.name}_sp)
+        integrate_${sn.name}(${sn.name}_state, ${sn.name}_c${',' if sn.is_stochastic else ''} ${'%s_noise, t_local' % sn.name if sn.is_stochastic else ''}, ${sn.name}_sp)
         % endfor
 
         ## update shared source buffers (one write per source subnet)
@@ -944,10 +944,11 @@ def run_network(
     ${p.name}_scale, ${p.name}_target_scales,
     ${p.name}_cfun_params,
     % endfor
-    ## noise arrays (stochastic subnetworks only)
+    ## noise sources (stochastic subnetworks only); noise is generated per-chunk
     % for sn in subnets:
     % if sn.is_stochastic:
-    ${sn.name}_noise,
+    ${sn.name}_rng,        # numpy RandomState/Generator
+    ${sn.name}_noise_std,  # (n_vars,) float64 = sqrt(2*nsig*dt)
     % endif
     % endfor
     ## stimulus arrays (stimulus subnetworks only)
@@ -1025,6 +1026,15 @@ def run_network(
         ${sn.name}_proj_tavg[:] = np.float32(0.0)
         % endfor
         tavg_count[0] = 0
+
+        ## generate chunk-sized noise for each stochastic subnet (avoids allocating nstep-sized arrays)
+        % for sn in subnets:
+        % if sn.is_stochastic:
+        _dw_${sn.name} = ${sn.name}_rng.randn(this_chunk, ${sn.model.nvar}, ${sn.n_nodes}, ${sn.n_modes})
+        _dw_${sn.name} *= ${sn.name}_noise_std[np.newaxis, :, np.newaxis, np.newaxis]
+        ${sn.name}_noise = np.ascontiguousarray(np.transpose(_dw_${sn.name}, (1, 2, 3, 0))).astype(np.float32)
+        % endif
+        % endfor
 
         network_chunk(
             this_chunk,

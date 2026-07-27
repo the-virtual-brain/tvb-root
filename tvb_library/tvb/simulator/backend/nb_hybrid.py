@@ -1382,16 +1382,6 @@ class NbHybridBackend(MakoUtilMix):
         _bold_states: Optional[dict] = None,
     ) -> tuple:
         """Build the argument list and call the pre-compiled kernel."""
-        # Guard: chunk_size must not exceed the minimum horizon
-        if analysis.all_projections:
-            min_horizon = min(p.horizon for p in analysis.all_projections)
-            if chunk_size > min_horizon:
-                raise ValueError(
-                    f"chunk_size={chunk_size} exceeds the minimum projection horizon "
-                    f"({min_horizon} steps = min_delay / dt). "
-                    f"Reduce chunk_size to at most {min_horizon}, or increase tract "
-                    "lengths / reduce dt."
-                )
         # Build argument list matching the generated run_network() signature
         args = [nstep]
 
@@ -1444,24 +1434,17 @@ class NbHybridBackend(MakoUtilMix):
             cfun_params = _cfun_params(p)
             args.append(cfun_params)
 
-        # Per-subnetwork noise arrays (stochastic integrators)
+        # Per-subnetwork noise sources (stochastic integrators).
+        # Noise is generated per-chunk inside the outer Python loop (run_network template)
+        # to avoid allocating an nstep-sized array that would OOM for long simulations.
         for sn_info in analysis.subnetworks:
             if sn_info.is_stochastic:
                 sn_obj = next(s for s in network_set.subnets if s.name == sn_info.name)
                 dt = sn_obj.scheme.dt
                 rng = sn_obj.scheme.noise.random_stream
-                # Draw in (nstep, n_vars, n_nodes, n_modes) order so that
-                # transposed [:, :, :, t] == t-th sequential randn(n_vars, n_nodes, n_modes) call
-                dw = rng.randn(
-                    nstep, sn_info.model.nvar, sn_info.n_nodes, sn_info.n_modes
-                )
-                noise_std = np.sqrt(2.0 * sn_info.noise_nsig * dt)  # (n_vars,)
-                dw *= noise_std[np.newaxis, :, np.newaxis, np.newaxis]
-                # Transpose to (n_vars, n_nodes, n_modes, nstep)
-                dw = np.ascontiguousarray(np.transpose(dw, (1, 2, 3, 0))).astype(
-                    np.float32
-                )
-                args.append(dw)
+                noise_std = np.sqrt(2.0 * sn_info.noise_nsig * dt)  # (n_vars,) float64
+                args.append(rng)
+                args.append(noise_std)
 
         # Per-subnetwork stimulus arrays (pre-computed batch)
         # TODO §8.4: use lazy chunk-by-chunk path when estimated stim_arr_mb

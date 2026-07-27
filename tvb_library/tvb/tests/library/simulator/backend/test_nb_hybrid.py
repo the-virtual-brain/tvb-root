@@ -481,13 +481,16 @@ class TestNbHybridCompatibilityCheck(unittest.TestCase):
         with self.assertRaises(ValueError):
             NbHybridBackend().run_network(nets, nstep=5)
 
-    def test_rejects_chunk_size_gt_horizon(self):
+    def test_chunk_size_gt_horizon_is_valid(self):
+        # tract_length=0.2 mm, cv=1 mm/ms → delay=0.2 ms → horizon=ceil(0.2/0.1)+1=3 steps
+        # chunk_size=10 > horizon=3: the buffer wraps within a single chunk, but
+        # global step indexing + read-before-write guarantees correctness.
+        # Verified by comparing final states from chunk_size=1 vs chunk_size=10.
         m = MontbrioPazoRoxin()
         m.configure()
         integ = HeunDeterministic(dt=0.1)
         sn = Subnetwork(name="sn", model=m, scheme=integ, nnodes=3)
         sn.configure()
-        # tract_length=0.2 mm, cv=1 mm/ms → delay=0.2 ms → horizon=ceil(0.2/0.1)+1=3 steps
         W = sp.csr_matrix(np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]], dtype=np.float32))
         L = sp.csr_matrix(np.full((3, 3), 0.2))
         proj = IntraProjection(
@@ -504,8 +507,24 @@ class TestNbHybridCompatibilityCheck(unittest.TestCase):
         sn.configure()
         nets = NetworkSet(subnets=[sn], projections=[])
         nets.configure()
-        with self.assertRaises(ValueError):
-            NbHybridBackend().run_network(nets, nstep=100, chunk_size=10)
+
+        rng = np.random.RandomState(42)
+        x0 = rng.uniform(0.0, 0.2, (m.nvar, 3, 1)).astype(np.float64)
+
+        compiled = NbHybridBackend().compile(nets)
+        _, snap_ref = compiled.run(
+            nstep=30, chunk_size=1, initial_states=[x0.copy()], return_snapshot=True
+        )
+        _, snap_chunked = compiled.run(
+            nstep=30, chunk_size=10, initial_states=[x0.copy()], return_snapshot=True
+        )
+
+        np.testing.assert_allclose(
+            snap_chunked["states"][0],
+            snap_ref["states"][0],
+            rtol=1e-5, atol=1e-6,
+            err_msg="chunk_size=10 final state diverges from chunk_size=1 with horizon=3",
+        )
 
     def test_rejects_subsample_with_chunk_size_gt_1(self):
         """SubSample monitor must not be used with chunk_size > 1."""
