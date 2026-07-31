@@ -43,7 +43,12 @@ import tvb.basic.neotraits.api as t
 
 from .base_projection import BaseProjection
 from .subnetwork import Subnetwork
-from .cvar_utils import resolve_source_cvar, resolve_target_cvar, validate_cvar_indices
+from .cvar_utils import (
+    resolve_source_cvar,
+    resolve_target_cvar,
+    validate_cvar_indices,
+    validate_target_cvar_indices,
+)
 
 
 class InterProjection(BaseProjection):
@@ -122,7 +127,6 @@ class InterProjection(BaseProjection):
         # Resolve target cvar names if target model is available
         if target_cvar is not None and 'target' in kwargs and hasattr(kwargs['target'], 'model'):
             target_cvar = resolve_target_cvar(kwargs['target'].model, target_cvar)
-            validate_cvar_indices(kwargs['target'].model, target_cvar)
 
         # Pass resolved cvars to parent
         if source_cvar is not None:
@@ -200,4 +204,9 @@ class InterProjection(BaseProjection):
             ``BaseProjection.apply()`` for coupling functions that need
             both source and target activity.
         """
-        super().apply(tgt, step, self.mode_map, x_i=x_i)
+        validate_target_cvar_indices(self.target.model, self.target_cvar)
+        target_state_cvar = self.target.model.cvar[self.target_cvar]
+        super().apply(
+            tgt, step, self.mode_map, x_i=x_i,
+            target_state_cvar=target_state_cvar,
+        )

@@ -1,5 +1,17 @@
 ## -*- coding: utf-8 -*-
 ##
+## TheVirtualBrain-Scientific Package. This package holds all simulators, and
+## analysers necessary to run brain-simulations. You can use it stand alone or
+## in conjunction with TheVirtualBrain-Framework Package.
+##
+## (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
+##
+## This program is free software: you can redistribute it and/or modify it under the
+## terms of the GNU General Public License as published by the Free Software Foundation,
+## either version 3 of the License, or (at your option) any later version.
+##
+## Status: active
+##
 ## nb-hybrid-sweep-cuda.py.mako
 ##
 ## Generates a @cuda.jit parameter-sweep kernel: one GPU thread per sweep point,
@@ -15,12 +27,9 @@ import numba
 
 <%
     def _cparam(pname, pidx):
-        d = sweep_cfun_dims.get(pname, {})
-        if pidx in d:
-            return f"sweep_params[tid, {d[pidx]}]"
-        return f"{pname}_cfun_params[{pidx}]"
+        return f"{pname}_cfun_params[tidy, {pidx}]"
 
-    from tvb.simulator.backend.nb_hybrid import _cfun_type, _cvar_mapping_mode, _needs_xi, _n_src_cvar_pre
+    from tvb.simulator.backend.nb_hybrid import _cfun_type, _cvar_mapping_mode, _needs_xi
 %>
 
 ##
@@ -43,7 +52,7 @@ import numba
     # post_ct: coupling functions that apply AFTER weighted sum
     if ct == 'linear':
         post_ct = 'linear'
-    elif ct in ('scaling', 'difference'):
+    elif ct in ('scaling', 'difference', 'sigmoidal_jr'):
         post_ct = 'scaling'
     elif ct == 'sigmoidal':
         post_ct = 'sigmoidal'
@@ -53,6 +62,7 @@ import numba
         post_ct = 'none'
     needs_xi = _needs_xi(p)
     is_multi_cvar = (ct in ('sigmoidal_jr', 'pre_sigmoidal_dynamic'))
+    cvar_loop_count = 1 if is_multi_cvar else n_src_cvar
     has_ts = p.target_scales.shape[0] > 0
 %>
 
@@ -70,7 +80,7 @@ def compute_coupling_${p.name}(
     t,
     tidy,
     ${p.name}_source_cvar,
-    ${p.name}_target_cvar, ${p.name}_target_cvar_cpl,
+    ${p.name}_target_cvar, ${p.name}_target_state_cvar,
     ${p.name}_scale,
     ${p.name}_target_scales,
     ${p.name}_cfun_params,
@@ -94,6 +104,24 @@ def compute_coupling_${p.name}(
     % for ic in range(n_tgt_cvar):
     ${p.name}_wsum_${ic} = cuda.local.array((${p.n_src_modes},), dtype=numba.float32)
     % endfor
+    % endif
+
+    % if pre_ct == 'pre_sigmoidal_dynamic':
+    ## globalT uses the unweighted mean of all delayed threshold edge values.
+    ${p.name}_global_threshold = cuda.local.array((${p.n_src_modes},), dtype=numba.float32)
+    for _ms in range(${p.n_src_modes}):
+        ${p.name}_global_threshold[_ms] = np.float32(0.0)
+    if ${_cparam(p.name, 5)} != np.float32(0.0):
+        cv1 = ${p.name}_source_cvar[1]
+        for ptr in range(${p.name}_w_data.shape[0]):
+            src_node = ${p.name}_w_indices[ptr]
+            d = ${p.name}_idelays[ptr]
+            slot = (t - 1 - d + ${analysis.source_horizons[p.source_subnet]}) % ${analysis.source_horizons[p.source_subnet]}
+            for _ms in range(${p.n_src_modes}):
+                ${p.name}_global_threshold[_ms] += ${src}_srcbuf[tidy, cv1, src_node, _ms, slot]
+        if ${p.name}_w_data.shape[0] > 0:
+            for _ms in range(${p.n_src_modes}):
+                ${p.name}_global_threshold[_ms] /= np.float32(${p.name}_w_data.shape[0])
     % endif
 
     for j in range(N_${tgt}):
@@ -124,15 +152,15 @@ def compute_coupling_${p.name}(
                 cv1 = ${p.name}_source_cvar[1]
                 x0 = ${src}_srcbuf[tidy, cv0, src_node, _ms, slot]
                 x1 = ${src}_srcbuf[tidy, cv1, src_node, _ms, slot]
-                _edge_val = ${p.name}_cfun_params[1] + (${p.name}_cfun_params[2] - ${p.name}_cfun_params[1]) / (np.float32(1.0) + math.exp(${p.name}_cfun_params[3] * (${p.name}_cfun_params[4] - (x0 - x1))))
+                _edge_val = ${_cparam(p.name, 1)} + (${_cparam(p.name, 2)} - ${_cparam(p.name, 1)}) / (np.float32(1.0) + math.exp(${_cparam(p.name, 3)} * (${_cparam(p.name, 4)} - (x0 - x1))))
                 % elif pre_ct == 'sigmoidal_jr_legacy':
                 # Legacy: a * 2*e0 / (1+exp(r*(v0-x)))
                 # cfun_params: [0]=a, [1]=e0, [2]=r, [3]=v0
-                _edge_val = ${_cparam(p.name, 0)} * np.float32(2.0) * ${p.name}_cfun_params[1] / (np.float32(1.0) + math.exp(${p.name}_cfun_params[2] * (${p.name}_cfun_params[3] - _edge_val)))
+                _edge_val = ${_cparam(p.name, 0)} * np.float32(2.0) * ${_cparam(p.name, 1)} / (np.float32(1.0) + math.exp(${_cparam(p.name, 2)} * (${_cparam(p.name, 3)} - _edge_val)))
                 % elif pre_ct == 'tanh':
-                _edge_val = ${_cparam(p.name, 0)} * (np.float32(1.0) + math.tanh((${p.name}_cfun_params[1] * _edge_val - ${p.name}_cfun_params[2]) / ${p.name}_cfun_params[3]))
+                _edge_val = ${_cparam(p.name, 0)} * (np.float32(1.0) + math.tanh((${_cparam(p.name, 1)} * _edge_val - ${_cparam(p.name, 2)}) / ${_cparam(p.name, 3)}))
                 % elif pre_ct == 'pre_sigmoidal':
-                _edge_val = ${_cparam(p.name, 0)} * (${p.name}_cfun_params[1] + math.tanh(${p.name}_cfun_params[2] * (${p.name}_cfun_params[3] * _edge_val - ${p.name}_cfun_params[4])))
+                _edge_val = ${_cparam(p.name, 0)} * (${_cparam(p.name, 1)} + math.tanh(${_cparam(p.name, 2)} * (${_cparam(p.name, 3)} * _edge_val - ${_cparam(p.name, 4)})))
                 % elif pre_ct == 'pre_sigmoidal_dynamic':
                 # Dynamic: H*(Q + tanh(G*(P*x_j[0] - x_j[1])))
                 # cfun_params: [0]=H, [1]=Q, [2]=G, [3]=P
@@ -140,19 +168,21 @@ def compute_coupling_${p.name}(
                 cv1 = ${p.name}_source_cvar[1]
                 x0 = ${src}_srcbuf[tidy, cv0, src_node, _ms, slot]
                 x1 = ${src}_srcbuf[tidy, cv1, src_node, _ms, slot]
-                _edge_val = ${p.name}_cfun_params[0] * (${p.name}_cfun_params[1] + math.tanh(${p.name}_cfun_params[2] * (${p.name}_cfun_params[3] * x0 - x1)))
+                if ${_cparam(p.name, 5)} != np.float32(0.0):
+                    x1 = ${p.name}_global_threshold[_ms]
+                _edge_val = ${_cparam(p.name, 0)} * (${_cparam(p.name, 1)} + math.tanh(${_cparam(p.name, 2)} * (${_cparam(p.name, 3)} * x0 - x1)))
                 % elif pre_ct == 'difference':
-                xi_val = ${tgt}_state[tidy, ${p.name}_target_cvar[ic], j, _ms]
+                xi_val = ${tgt}_state[tidy, ${p.name}_target_state_cvar[${ic}], j, _ms]
                 _edge_val = _edge_val - xi_val
                 % elif pre_ct == 'kuramoto':
-                xi_val = ${tgt}_state[tidy, ${p.name}_target_cvar[ic], j, _ms]
+                xi_val = ${tgt}_state[tidy, ${p.name}_target_state_cvar[${ic}], j, _ms]
                 _edge_val = math.sin(_edge_val - xi_val)
                 % endif
                 ${p.name}_wsum_${ic}[_ms] += w * _edge_val
             % endfor
             % elif cm == 'many_to_1':
             for _ms in range(${p.n_src_modes}):
-                % for ic in range(n_src_cvar):
+                % for ic in range(cvar_loop_count):
                 _edge_val = ${src}_srcbuf[tidy, ${p.source_cvar[ic]}, src_node, _ms, slot]
                 % if pre_ct == 'sigmoidal_jr':
                 # Classic: cmin + (cmax-cmin)/(1+exp(r*(midpoint-diff)))
@@ -161,15 +191,15 @@ def compute_coupling_${p.name}(
                 cv1 = ${p.name}_source_cvar[1]
                 x0 = ${src}_srcbuf[tidy, cv0, src_node, _ms, slot]
                 x1 = ${src}_srcbuf[tidy, cv1, src_node, _ms, slot]
-                _edge_val = ${p.name}_cfun_params[1] + (${p.name}_cfun_params[2] - ${p.name}_cfun_params[1]) / (np.float32(1.0) + math.exp(${p.name}_cfun_params[3] * (${p.name}_cfun_params[4] - (x0 - x1))))
+                _edge_val = ${_cparam(p.name, 1)} + (${_cparam(p.name, 2)} - ${_cparam(p.name, 1)}) / (np.float32(1.0) + math.exp(${_cparam(p.name, 3)} * (${_cparam(p.name, 4)} - (x0 - x1))))
                 % elif pre_ct == 'sigmoidal_jr_legacy':
                 # Legacy: a * 2*e0 / (1+exp(r*(v0-x)))
                 # cfun_params: [0]=a, [1]=e0, [2]=r, [3]=v0
-                _edge_val = ${_cparam(p.name, 0)} * np.float32(2.0) * ${p.name}_cfun_params[1] / (np.float32(1.0) + math.exp(${p.name}_cfun_params[2] * (${p.name}_cfun_params[3] - _edge_val)))
+                _edge_val = ${_cparam(p.name, 0)} * np.float32(2.0) * ${_cparam(p.name, 1)} / (np.float32(1.0) + math.exp(${_cparam(p.name, 2)} * (${_cparam(p.name, 3)} - _edge_val)))
                 % elif pre_ct == 'tanh':
-                _edge_val = ${_cparam(p.name, 0)} * (np.float32(1.0) + math.tanh((${p.name}_cfun_params[1] * _edge_val - ${p.name}_cfun_params[2]) / ${p.name}_cfun_params[3]))
+                _edge_val = ${_cparam(p.name, 0)} * (np.float32(1.0) + math.tanh((${_cparam(p.name, 1)} * _edge_val - ${_cparam(p.name, 2)}) / ${_cparam(p.name, 3)}))
                 % elif pre_ct == 'pre_sigmoidal':
-                _edge_val = ${_cparam(p.name, 0)} * (${p.name}_cfun_params[1] + math.tanh(${p.name}_cfun_params[2] * (${p.name}_cfun_params[3] * _edge_val - ${p.name}_cfun_params[4])))
+                _edge_val = ${_cparam(p.name, 0)} * (${_cparam(p.name, 1)} + math.tanh(${_cparam(p.name, 2)} * (${_cparam(p.name, 3)} * _edge_val - ${_cparam(p.name, 4)})))
                 % elif pre_ct == 'pre_sigmoidal_dynamic':
                 # Dynamic: H*(Q + tanh(G*(P*x_j[0] - x_j[1])))
                 # cfun_params: [0]=H, [1]=Q, [2]=G, [3]=P
@@ -177,17 +207,20 @@ def compute_coupling_${p.name}(
                 cv1 = ${p.name}_source_cvar[1]
                 x0 = ${src}_srcbuf[tidy, cv0, src_node, _ms, slot]
                 x1 = ${src}_srcbuf[tidy, cv1, src_node, _ms, slot]
-                _edge_val = ${p.name}_cfun_params[0] * (${p.name}_cfun_params[1] + math.tanh(${p.name}_cfun_params[2] * (${p.name}_cfun_params[3] * x0 - x1)))
+                if ${_cparam(p.name, 5)} != np.float32(0.0):
+                    x1 = ${p.name}_global_threshold[_ms]
+                _edge_val = ${_cparam(p.name, 0)} * (${_cparam(p.name, 1)} + math.tanh(${_cparam(p.name, 2)} * (${_cparam(p.name, 3)} * x0 - x1)))
                 % elif pre_ct == 'difference':
-                xi_val = ${tgt}_state[tidy, ${p.name}_target_cvar[0], j, _ms]
+                xi_val = ${tgt}_state[tidy, ${p.name}_target_state_cvar[0], j, _ms]
                 _edge_val = _edge_val - xi_val
                 % elif pre_ct == 'kuramoto':
-                xi_val = ${tgt}_state[tidy, ${p.name}_target_cvar[0], j, _ms]
+                xi_val = ${tgt}_state[tidy, ${p.name}_target_state_cvar[0], j, _ms]
                 _edge_val = math.sin(_edge_val - xi_val)
                 % endif
                 ${p.name}_wsum_0[_ms] += w * _edge_val
                 % endfor
             % elif cm == '1_to_many':
+            % for ic in range(n_tgt_cvar):
             for _ms in range(${p.n_src_modes}):
                 _edge_val = ${src}_srcbuf[tidy, ${p.source_cvar[0]}, src_node, _ms, slot]
                 % if pre_ct == 'sigmoidal_jr':
@@ -197,15 +230,15 @@ def compute_coupling_${p.name}(
                 cv1 = ${p.name}_source_cvar[1]
                 x0 = ${src}_srcbuf[tidy, cv0, src_node, _ms, slot]
                 x1 = ${src}_srcbuf[tidy, cv1, src_node, _ms, slot]
-                _edge_val = ${p.name}_cfun_params[1] + (${p.name}_cfun_params[2] - ${p.name}_cfun_params[1]) / (np.float32(1.0) + math.exp(${p.name}_cfun_params[3] * (${p.name}_cfun_params[4] - (x0 - x1))))
+                _edge_val = ${_cparam(p.name, 1)} + (${_cparam(p.name, 2)} - ${_cparam(p.name, 1)}) / (np.float32(1.0) + math.exp(${_cparam(p.name, 3)} * (${_cparam(p.name, 4)} - (x0 - x1))))
                 % elif pre_ct == 'sigmoidal_jr_legacy':
                 # Legacy: a * 2*e0 / (1+exp(r*(v0-x)))
                 # cfun_params: [0]=a, [1]=e0, [2]=r, [3]=v0
-                _edge_val = ${_cparam(p.name, 0)} * np.float32(2.0) * ${p.name}_cfun_params[1] / (np.float32(1.0) + math.exp(${p.name}_cfun_params[2] * (${p.name}_cfun_params[3] - _edge_val)))
+                _edge_val = ${_cparam(p.name, 0)} * np.float32(2.0) * ${_cparam(p.name, 1)} / (np.float32(1.0) + math.exp(${_cparam(p.name, 2)} * (${_cparam(p.name, 3)} - _edge_val)))
                 % elif pre_ct == 'tanh':
-                _edge_val = ${_cparam(p.name, 0)} * (np.float32(1.0) + math.tanh((${p.name}_cfun_params[1] * _edge_val - ${p.name}_cfun_params[2]) / ${p.name}_cfun_params[3]))
+                _edge_val = ${_cparam(p.name, 0)} * (np.float32(1.0) + math.tanh((${_cparam(p.name, 1)} * _edge_val - ${_cparam(p.name, 2)}) / ${_cparam(p.name, 3)}))
                 % elif pre_ct == 'pre_sigmoidal':
-                _edge_val = ${_cparam(p.name, 0)} * (${p.name}_cfun_params[1] + math.tanh(${p.name}_cfun_params[2] * (${p.name}_cfun_params[3] * _edge_val - ${p.name}_cfun_params[4])))
+                _edge_val = ${_cparam(p.name, 0)} * (${_cparam(p.name, 1)} + math.tanh(${_cparam(p.name, 2)} * (${_cparam(p.name, 3)} * _edge_val - ${_cparam(p.name, 4)})))
                 % elif pre_ct == 'pre_sigmoidal_dynamic':
                 # Dynamic: H*(Q + tanh(G*(P*x_j[0] - x_j[1])))
                 # cfun_params: [0]=H, [1]=Q, [2]=G, [3]=P
@@ -213,17 +246,18 @@ def compute_coupling_${p.name}(
                 cv1 = ${p.name}_source_cvar[1]
                 x0 = ${src}_srcbuf[tidy, cv0, src_node, _ms, slot]
                 x1 = ${src}_srcbuf[tidy, cv1, src_node, _ms, slot]
-                _edge_val = ${p.name}_cfun_params[0] * (${p.name}_cfun_params[1] + math.tanh(${p.name}_cfun_params[2] * (${p.name}_cfun_params[3] * x0 - x1)))
+                if ${_cparam(p.name, 5)} != np.float32(0.0):
+                    x1 = ${p.name}_global_threshold[_ms]
+                _edge_val = ${_cparam(p.name, 0)} * (${_cparam(p.name, 1)} + math.tanh(${_cparam(p.name, 2)} * (${_cparam(p.name, 3)} * x0 - x1)))
                 % elif pre_ct == 'difference':
-                xi_val = ${tgt}_state[tidy, ${p.name}_target_cvar[0], j, _ms]
+                xi_val = ${tgt}_state[tidy, ${p.name}_target_state_cvar[${ic}], j, _ms]
                 _edge_val = _edge_val - xi_val
                 % elif pre_ct == 'kuramoto':
-                xi_val = ${tgt}_state[tidy, ${p.name}_target_cvar[0], j, _ms]
+                xi_val = ${tgt}_state[tidy, ${p.name}_target_state_cvar[${ic}], j, _ms]
                 _edge_val = math.sin(_edge_val - xi_val)
                 % endif
-                % for ic in range(n_tgt_cvar):
                 ${p.name}_wsum_${ic}[_ms] += w * _edge_val
-                % endfor
+            % endfor
             % endif
 
         ## pre-cfun already applied per-edge; now post-cfun then scale
@@ -233,12 +267,12 @@ def compute_coupling_${p.name}(
             % if post_ct == 'scaling':
             ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 0)} * ${p.name}_wsum_${ic}[_ms]
             % elif post_ct == 'linear':
-            ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 0)} * ${p.name}_wsum_${ic}[_ms] + ${p.name}_cfun_params[1]
+            ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 0)} * ${p.name}_wsum_${ic}[_ms] + ${_cparam(p.name, 1)}
             % elif post_ct == 'sigmoidal':
-            ${p.name}_wsum_${ic}[_ms] = ${p.name}_cfun_params[3] + (${p.name}_cfun_params[4] - ${p.name}_cfun_params[3]) / (np.float32(1.0) + math.exp(-${_cparam(p.name, 0)} * ((${p.name}_wsum_${ic}[_ms] - ${p.name}_cfun_params[2]) / ${p.name}_cfun_params[1])))
+            ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 3)} + (${_cparam(p.name, 4)} - ${_cparam(p.name, 3)}) / (np.float32(1.0) + math.exp(-${_cparam(p.name, 0)} * ((${p.name}_wsum_${ic}[_ms] - ${_cparam(p.name, 2)}) / ${_cparam(p.name, 1)})))
             % elif post_ct == 'kuramoto_norm':
             # a * (1/N) * wsum — sin is now applied per-edge in pre
-            ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 0)} * ${p.name}_cfun_params[1] * ${p.name}_wsum_${ic}[_ms]
+            ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 0)} * ${_cparam(p.name, 1)} * ${p.name}_wsum_${ic}[_ms]
             % endif
             ${p.name}_wsum_${ic}[_ms] *= ${p.name}_scale
         ## target_scales and mode_map → accumulate into tgt_c
@@ -248,16 +282,16 @@ def compute_coupling_${p.name}(
             for _ms in range(${p.n_src_modes}):
                 _contrib += ${p.name}_wsum_${ic}[_ms] * ${p.name}_mode_map[_ms, _mt]
             % if has_ts:
-            ${tgt}_c[${ic}, j, _mt] += ${p.name}_target_scales[ic] * _contrib
+            ${tgt}_c[${p.name}_target_cvar[${ic}], j, _mt] += ${p.name}_target_scales[${ic}] * _contrib
             % else:
-            ${tgt}_c[${ic}, j, _mt] += _contrib
+            ${tgt}_c[${p.name}_target_cvar[${ic}], j, _mt] += _contrib
             % endif
         % else:
         for _ms in range(${p.n_src_modes}):
             % if has_ts:
-            ${tgt}_c[${ic}, j, _ms] += ${p.name}_target_scales[ic] * ${p.name}_wsum_${ic}[_ms]
+            ${tgt}_c[${p.name}_target_cvar[${ic}], j, _ms] += ${p.name}_target_scales[${ic}] * ${p.name}_wsum_${ic}[_ms]
             % else:
-            ${tgt}_c[${ic}, j, _ms] += ${p.name}_wsum_${ic}[_ms]
+            ${tgt}_c[${p.name}_target_cvar[${ic}], j, _ms] += ${p.name}_wsum_${ic}[_ms]
             % endif
         % endif
         % endfor
@@ -267,12 +301,12 @@ def compute_coupling_${p.name}(
             % if post_ct == 'scaling':
             ${p.name}_wsum_0[_ms] = ${_cparam(p.name, 0)} * ${p.name}_wsum_0[_ms]
             % elif post_ct == 'linear':
-            ${p.name}_wsum_0[_ms] = ${_cparam(p.name, 0)} * ${p.name}_wsum_0[_ms] + ${p.name}_cfun_params[1]
+            ${p.name}_wsum_0[_ms] = ${_cparam(p.name, 0)} * ${p.name}_wsum_0[_ms] + ${_cparam(p.name, 1)}
             % elif post_ct == 'sigmoidal':
-            ${p.name}_wsum_0[_ms] = ${p.name}_cfun_params[3] + (${p.name}_cfun_params[4] - ${p.name}_cfun_params[3]) / (np.float32(1.0) + math.exp(-${_cparam(p.name, 0)} * ((${p.name}_wsum_0[_ms] - ${p.name}_cfun_params[2]) / ${p.name}_cfun_params[1])))
+            ${p.name}_wsum_0[_ms] = ${_cparam(p.name, 3)} + (${_cparam(p.name, 4)} - ${_cparam(p.name, 3)}) / (np.float32(1.0) + math.exp(-${_cparam(p.name, 0)} * ((${p.name}_wsum_0[_ms] - ${_cparam(p.name, 2)}) / ${_cparam(p.name, 1)})))
             % elif post_ct == 'kuramoto_norm':
             # a * (1/N) * wsum — sin is now applied per-edge in pre
-            ${p.name}_wsum_0[_ms] = ${_cparam(p.name, 0)} * ${p.name}_cfun_params[1] * ${p.name}_wsum_0[_ms]
+            ${p.name}_wsum_0[_ms] = ${_cparam(p.name, 0)} * ${_cparam(p.name, 1)} * ${p.name}_wsum_0[_ms]
             % endif
             ${p.name}_wsum_0[_ms] *= ${p.name}_scale
         % if p.is_inter:
@@ -281,16 +315,16 @@ def compute_coupling_${p.name}(
             for _ms in range(${p.n_src_modes}):
                 _contrib += ${p.name}_wsum_0[_ms] * ${p.name}_mode_map[_ms, _mt]
             % if has_ts:
-            ${tgt}_c[0, j, _mt] += ${p.name}_target_scales[0] * _contrib
+            ${tgt}_c[${p.name}_target_cvar[0], j, _mt] += ${p.name}_target_scales[0] * _contrib
             % else:
-            ${tgt}_c[0, j, _mt] += _contrib
+            ${tgt}_c[${p.name}_target_cvar[0], j, _mt] += _contrib
             % endif
         % else:
         for _ms in range(${p.n_src_modes}):
             % if has_ts:
-            ${tgt}_c[0, j, _ms] += ${p.name}_target_scales[0] * ${p.name}_wsum_0[_ms]
+            ${tgt}_c[${p.name}_target_cvar[0], j, _ms] += ${p.name}_target_scales[0] * ${p.name}_wsum_0[_ms]
             % else:
-            ${tgt}_c[0, j, _ms] += ${p.name}_wsum_0[_ms]
+            ${tgt}_c[${p.name}_target_cvar[0], j, _ms] += ${p.name}_wsum_0[_ms]
             % endif
         % endif
 
@@ -300,12 +334,12 @@ def compute_coupling_${p.name}(
             % if post_ct == 'scaling':
             ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 0)} * ${p.name}_wsum_${ic}[_ms]
             % elif post_ct == 'linear':
-            ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 0)} * ${p.name}_wsum_${ic}[_ms] + ${p.name}_cfun_params[1]
+            ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 0)} * ${p.name}_wsum_${ic}[_ms] + ${_cparam(p.name, 1)}
             % elif post_ct == 'sigmoidal':
-            ${p.name}_wsum_${ic}[_ms] = ${p.name}_cfun_params[3] + (${p.name}_cfun_params[4] - ${p.name}_cfun_params[3]) / (np.float32(1.0) + math.exp(-${_cparam(p.name, 0)} * ((${p.name}_wsum_${ic}[_ms] - ${p.name}_cfun_params[2]) / ${p.name}_cfun_params[1])))
+            ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 3)} + (${_cparam(p.name, 4)} - ${_cparam(p.name, 3)}) / (np.float32(1.0) + math.exp(-${_cparam(p.name, 0)} * ((${p.name}_wsum_${ic}[_ms] - ${_cparam(p.name, 2)}) / ${_cparam(p.name, 1)})))
             % elif post_ct == 'kuramoto_norm':
             # a * (1/N) * wsum — sin is now applied per-edge in pre
-            ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 0)} * ${p.name}_cfun_params[1] * ${p.name}_wsum_${ic}[_ms]
+            ${p.name}_wsum_${ic}[_ms] = ${_cparam(p.name, 0)} * ${_cparam(p.name, 1)} * ${p.name}_wsum_${ic}[_ms]
             % endif
             ${p.name}_wsum_${ic}[_ms] *= ${p.name}_scale
         % if p.is_inter:
@@ -314,16 +348,16 @@ def compute_coupling_${p.name}(
             for _ms in range(${p.n_src_modes}):
                 _contrib += ${p.name}_wsum_${ic}[_ms] * ${p.name}_mode_map[_ms, _mt]
             % if has_ts:
-            ${tgt}_c[${ic}, j, _mt] += ${p.name}_target_scales[ic] * _contrib
+            ${tgt}_c[${p.name}_target_cvar[${ic}], j, _mt] += ${p.name}_target_scales[${ic}] * _contrib
             % else:
-            ${tgt}_c[${ic}, j, _mt] += _contrib
+            ${tgt}_c[${p.name}_target_cvar[${ic}], j, _mt] += _contrib
             % endif
         % else:
         for _ms in range(${p.n_src_modes}):
             % if has_ts:
-            ${tgt}_c[${ic}, j, _ms] += ${p.name}_target_scales[ic] * ${p.name}_wsum_${ic}[_ms]
+            ${tgt}_c[${p.name}_target_cvar[${ic}], j, _ms] += ${p.name}_target_scales[${ic}] * ${p.name}_wsum_${ic}[_ms]
             % else:
-            ${tgt}_c[${ic}, j, _ms] += ${p.name}_wsum_${ic}[_ms]
+            ${tgt}_c[${p.name}_target_cvar[${ic}], j, _ms] += ${p.name}_wsum_${ic}[_ms]
             % endif
         % endif
         % endfor
@@ -547,6 +581,14 @@ def run_sweep(
     ${sn.name}_raw,        # (n_sweeps, nstep, ${len(sn.model.variables_of_interest)}, ${sn.n_nodes}, ${sn.n_modes}) float32
     % endfor
 
+    ## optional per-subnetwork raw coupling [tid, nstep, ncvar, nnodes, n_modes]
+    % for sn in subnets:
+<%
+    n_cvar_sn = len(sn.model.cvar)
+%>
+    ${sn.name}_ctraw,      # (n_sweeps, nstep or 0, ${n_cvar_sn}, ${sn.n_nodes}, ${sn.n_modes}) float32
+    % endfor
+
     ## per-subnetwork Bold Balloon model arrays
     % for sn in subnets:
     ${sn.name}_bold_state,  # (n_sweeps, ${len(sn.model.variables_of_interest)}, 4, ${sn.n_nodes}) float32
@@ -568,7 +610,7 @@ def run_sweep(
     ${p.name}_mode_map,   # (${p.n_src_modes}, ${p.n_tgt_modes}) float32
     % endif
     ${p.name}_source_cvar,
-    ${p.name}_target_cvar, ${p.name}_target_cvar_cpl,
+    ${p.name}_target_cvar, ${p.name}_target_state_cvar,
     ${p.name}_scale,
     ${p.name}_target_scales,
     ${p.name}_cfun_params,
@@ -619,6 +661,7 @@ def run_sweep(
 
     ## scalar parameters
     t_offset,
+    data_offset,
     dt,
     nstep,
     monitor_type,          # 0=tavg, 1=raw, 2=subsample
@@ -648,6 +691,7 @@ def run_sweep(
 
     for t_local in range(1, nstep + 1):
         t = t_local + t_offset
+        data_t = t_local + data_offset
 
         ## ---- 1. Zero coupling scratch ----
         % for sn in subnets:
@@ -677,7 +721,7 @@ def run_sweep(
 % endif
             ${'N_' + tgt},
             t, tid,
-            ${p.name}_source_cvar, ${p.name}_target_cvar, ${p.name}_target_cvar_cpl,
+            ${p.name}_source_cvar, ${p.name}_target_cvar, ${p.name}_target_state_cvar,
             ${p.name}_scale, ${p.name}_target_scales,
             ${p.name}_cfun_params,
 % if p.is_inter:
@@ -699,7 +743,7 @@ def run_sweep(
         for _ic in range(${n_cvar_sn}):
             for _j in range(${sn.n_nodes}):
                 for _m in range(${sn.n_modes}):
-                    ${sn.name}_c[_ic, _j, _m] += ${sn.name}_stim[tid, _ic, _j, _m, t - 1]
+                    ${sn.name}_c[_ic, _j, _m] += ${sn.name}_stim[tid, _ic, _j, _m, data_t - 1]
         % endif
         % endfor
 
@@ -713,9 +757,13 @@ def run_sweep(
             for _j in range(${sn.n_nodes}):
                 % if sn.n_modes == 1:
                 ${sn.name}_ctavg[tid, _ci, _j, 0] += ${sn.name}_c[_ci, _j, 0]
+                if monitor_type == 1 and ${sn.name}_ctraw.shape[1] > 0:
+                    ${sn.name}_ctraw[tid, data_t - 1, _ci, _j, 0] = ${sn.name}_c[_ci, _j, 0]
                 % else:
                 for _m in range(${sn.n_modes}):
-                    ${sn.name}_ctavg[tid, _ci, _j, 0] += ${sn.name}_c[_ci, _j, _m]
+                    ${sn.name}_ctavg[tid, _ci, _j, _m] += ${sn.name}_c[_ci, _j, _m]
+                    if monitor_type == 1 and ${sn.name}_ctraw.shape[1] > 0:
+                        ${sn.name}_ctraw[tid, data_t - 1, _ci, _j, _m] = ${sn.name}_c[_ci, _j, _m]
                 % endif
         % endif
         % endfor
@@ -792,7 +840,7 @@ def run_sweep(
             for _mi in range(${n_modes}):
                 _${_op_name}[_mi] = np.float32(0.0)
                 for _mk in range(${n_modes}):
-                    _${_op_name}[_mi] += _${sn.name}_${_op_mat}[_mi, _mk] * ${sn.name}_state[tid, ${svars.index(_op_svar)}, i, _mk]
+                    _${_op_name}[_mi] += _${sn.name}_${_op_mat}[_mk, _mi] * ${sn.name}_state[tid, ${svars.index(_op_svar)}, i, _mk]
             % endfor
 
 % if is_heun:
@@ -810,7 +858,9 @@ def run_sweep(
 
                 ## load coupling terms
                 % for k, ct in enumerate(cterms):
-                ${ct} = ${sn.name}_c[${k}, i, m] if ${n_cvar} > 0 else np.float32(0.0)
+                ${ct} = np.float32(0.0)
+                for _cm in range(${n_modes}):
+                    ${ct} += ${sn.name}_c[${k}, i, _cm]
                 % endfor
 
                 ## dfun at current state (k1)
@@ -827,7 +877,7 @@ def run_sweep(
                 ## compute i1 intermediate for this mode
                 % if is_stochastic:
                 % for k2, sv in enumerate(svars):
-                _i1_${sv}[m] = ${sv} + dt_f * d0_${sv} + ${sn.name}_noise[tid, ${k2}, i, m, t - 1]
+                _i1_${sv}[m] = ${sv} + dt_f * d0_${sv} + ${sn.name}_noise[tid, ${k2}, i, m, data_t - 1]
                 % endfor
                 % else:
                 % for sv in svars:
@@ -835,13 +885,25 @@ def run_sweep(
                 % endfor
                 % endif
 
+                ## clamp intermediate state before the Heun correction
+                % for sv in svars:
+                % if sv in lo_map and lo_map[sv] != float('-inf'):
+                if _i1_${sv}[m] < np.float32(${lo_map[sv]}):
+                    _i1_${sv}[m] = np.float32(${lo_map[sv]})
+                % endif
+                % if sv in hi_map and hi_map[sv] != float('inf'):
+                if _i1_${sv}[m] > np.float32(${hi_map[sv]}):
+                    _i1_${sv}[m] = np.float32(${hi_map[sv]})
+                % endif
+                % endfor
+
             ## Recompute cross-mode intermediates from i1 arrays (correct per-mk indexing)
             % for _op_name, _op_mat, _op_svar in _dm_ops:
             _${_op_name}_i1 = cuda.local.array((${n_modes},), dtype=numba.float32)
             for _mi in range(${n_modes}):
                 _${_op_name}_i1[_mi] = np.float32(0.0)
                 for _mk in range(${n_modes}):
-                    _${_op_name}_i1[_mi] += _${sn.name}_${_op_mat}[_mi, _mk] * _i1_${_op_svar}[_mk]
+                    _${_op_name}_i1[_mi] += _${sn.name}_${_op_mat}[_mk, _mi] * _i1_${_op_svar}[_mk]
             % endfor
 
             ## Pass 2: compute k2 and update state for all modes
@@ -851,7 +913,9 @@ def run_sweep(
                 ${sv} = ${sn.name}_state[tid, ${k}, i, m]
                 % endfor
                 % for k, ct in enumerate(cterms):
-                ${ct} = ${sn.name}_c[${k}, i, m] if ${n_cvar} > 0 else np.float32(0.0)
+                ${ct} = np.float32(0.0)
+                for _cm in range(${n_modes}):
+                    ${ct} += ${sn.name}_c[${k}, i, _cm]
                 % endfor
 
                 ## load i1 state for mode m
@@ -870,7 +934,7 @@ def run_sweep(
                 ## Heun update
                 % if is_stochastic:
                 % for k2, sv in enumerate(svars):
-                n_${sv} = ${sv} + dt_f * np.float32(0.5) * (_k1_${sv}[m] + d1_${sv}) + ${sn.name}_noise[tid, ${k2}, i, m, t - 1]
+                n_${sv} = ${sv} + dt_f * np.float32(0.5) * (_k1_${sv}[m] + d1_${sv}) + ${sn.name}_noise[tid, ${k2}, i, m, data_t - 1]
                 % endfor
                 % else:
                 % for sv in svars:
@@ -905,7 +969,9 @@ def run_sweep(
 
                 ## load coupling terms
                 % for k, ct in enumerate(cterms):
-                ${ct} = ${sn.name}_c[${k}, i, m] if ${n_cvar} > 0 else np.float32(0.0)
+                ${ct} = np.float32(0.0)
+                for _cm in range(${n_modes}):
+                    ${ct} += ${sn.name}_c[${k}, i, _cm]
                 % endfor
 
                 (d0_${', d0_'.join(svars)},) = dfun_${sn.name}(
@@ -918,7 +984,7 @@ def run_sweep(
                 ## Euler update
                 % if is_stochastic:
                 % for k2, sv in enumerate(svars):
-                n_${sv} = ${sv} + dt_f * d0_${sv} + ${sn.name}_noise[tid, ${k2}, i, m, t - 1]
+                n_${sv} = ${sv} + dt_f * d0_${sv} + ${sn.name}_noise[tid, ${k2}, i, m, data_t - 1]
                 % endfor
                 % else:
                 % for sv in svars:
@@ -964,7 +1030,7 @@ def run_sweep(
                 % if is_heun:
                 % if is_stochastic:
                 % for k2, sv in enumerate(svars):
-                i1_${sv} = ${sv} + dt_f * d0_${sv} + ${sn.name}_noise[tid, ${k2}, i, m, t - 1]
+                i1_${sv} = ${sv} + dt_f * d0_${sv} + ${sn.name}_noise[tid, ${k2}, i, m, data_t - 1]
                 % endfor
                 % else:
                 % for sv in svars:
@@ -990,7 +1056,7 @@ def run_sweep(
                 ## Heun update
                 % if is_stochastic:
                 % for k2, sv in enumerate(svars):
-                n_${sv} = ${sv} + dt_f * np.float32(0.5) * (d0_${sv} + d1_${sv}) + ${sn.name}_noise[tid, ${k2}, i, m, t - 1]
+                n_${sv} = ${sv} + dt_f * np.float32(0.5) * (d0_${sv} + d1_${sv}) + ${sn.name}_noise[tid, ${k2}, i, m, data_t - 1]
                 % endfor
                 % else:
                 % for sv in svars:
@@ -1002,7 +1068,7 @@ def run_sweep(
                 ## ---- Euler update ----
                 % if is_stochastic:
                 % for k2, sv in enumerate(svars):
-                n_${sv} = ${sv} + dt_f * d0_${sv} + ${sn.name}_noise[tid, ${k2}, i, m, t - 1]
+                n_${sv} = ${sv} + dt_f * d0_${sv} + ${sn.name}_noise[tid, ${k2}, i, m, data_t - 1]
                 % endfor
                 % else:
                 % for sv in svars:
@@ -1105,7 +1171,7 @@ def run_sweep(
                 _sv = np.float32(0.0)
                 for _m in range(${n_modes}):
                     _sv += ${sn.name}_state[tid, ${voi_idx_val}, i, _m]
-                ${sn.name}_raw[tid, t - 1, ${vi}, i, 0] = _sv
+                ${sn.name}_raw[tid, data_t - 1, ${vi}, i, 0] = _sv
 % else:
 <%
     import re
@@ -1122,7 +1188,7 @@ def run_sweep(
                 _sv = np.float32(0.0)
                 for _m in range(${n_modes}):
                     _sv += ${expr}
-                ${sn.name}_raw[tid, t - 1, ${vi}, i, 0] = _sv
+                ${sn.name}_raw[tid, data_t - 1, ${vi}, i, 0] = _sv
 % endif
                 % endfor
             elif monitor_type == 2:
@@ -1200,14 +1266,12 @@ def run_sweep(
 <%
     svar_list = list(sn.model.state_variables)
 %>
-        % if analysis.source_horizons.get(sn.name, 1) > 1:
         _slot_${sn.name} = t % ${analysis.source_horizons[sn.name]}
         for i in range(N_${sn.name}):
             % for k, sv in enumerate(svar_list):
             for _m in range(${sn.n_modes}):
                 ${sn.name}_srcbuf[tid, ${k}, i, _m, _slot_${sn.name}] = ${sn.name}_state[tid, ${k}, i, _m]
             % endfor
-        % endif
         % endfor
 
     ## end for t in range(1, nstep + 1)

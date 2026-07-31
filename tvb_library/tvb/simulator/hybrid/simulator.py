@@ -278,12 +278,20 @@ class Simulator(t.HasTraits):
             result = []
             for mon_idx in range(len(self.monitors)):
                 mon_raw = raw[mon_idx]
+                times, subnet_data = zip(*mon_raw)
+                times = tuple(
+                    (np.rint(np.asarray(t, dtype=np.float64) / self._dt0 * 2.0) / 2.0)
+                    * self._dt0
+                    for t in times
+                )
                 # Merged monitor: single-element list, use directly
                 if len(mon_raw) == 1:
-                    result.append(mon_raw[0])
+                    result.append((times[0], subnet_data[0]))
                 else:
                     # Per-subnet data: reassemble into merged or flat layout
-                    t = mon_raw[0][0]  # all subnets share the same time grid
+                    t = times[0]
+                    if not all(np.array_equal(t, other) for other in times[1:]):
+                        raise ValueError("Monitor time grids differ across subnetworks")
                     total_nodes = sum(sn.nnodes for sn in self.nets.subnets)
                     total_vois = len(self.nets.subnets[0].model.variables_of_interest)
                     n_modes = self.nets.subnets[0].model.number_of_modes
@@ -292,12 +300,9 @@ class Simulator(t.HasTraits):
                         data = np.zeros((len(t), total_vois, total_nodes, n_modes),
                                         dtype=np.float64)
                         for sn_idx, sn in enumerate(self.nets.subnets):
-                            _, d = mon_raw[sn_idx]
-                            data[:, :, sn.node_indices, :] = d
+                            data[:, :, sn.node_indices, :] = subnet_data[sn_idx]
                     else:
-                        data = np.concatenate(
-                            [d for _, d in mon_raw], axis=1
-                        )
+                        data = np.concatenate(subnet_data, axis=2)
                     result.append((t, data))
             return result
         else:

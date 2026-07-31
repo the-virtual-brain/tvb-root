@@ -324,7 +324,10 @@ class BaseProjection(t.HasTraits):
         # Extraction happens in apply() when reading from buffer
         self._history_buffer[..., buffer_idx] = current_src_state
 
-    def apply(self, tgt: np.ndarray, t: int, mode_map: np.ndarray, x_i=None):
+    def apply(
+        self, tgt: np.ndarray, t: int, mode_map: np.ndarray, x_i=None,
+        target_state_cvar=None,
+    ):
         """Compute delayed weighted coupling and accumulate into the target array.
 
         Reads delayed source states from the internal history buffer,
@@ -400,9 +403,9 @@ class BaseProjection(t.HasTraits):
                     # Extract target state at the coupling variables for each
                     # target node, giving per-edge x_i with shape
                     # (n_tgt_cvar, nnz, n_modes_tgt).
-                    x_i_per_edge = x_i[
-                        self.target_cvar[:, np.newaxis], row_indices, :
-                    ]
+                    state_cvar = (self.target_cvar if target_state_cvar is None
+                                  else target_state_cvar)
+                    x_i_per_edge = x_i[state_cvar[:, np.newaxis], row_indices, :]
                     # Handle shape mismatch between source and target cvar dims.
                     # When cvar counts match, expand x_i_per_edge to align with
                     # delayed_states along axis 0 for element-wise pre().

@@ -1,5 +1,7 @@
 ## -*- coding: utf-8 -*-
 ##
+## Status: active
+##
 ## nb-hybrid-sim.py.mako
 ##
 ## Generates the full hybrid simulation kernel: per-projection coupling
@@ -17,7 +19,7 @@ import numba as nb
 sin, cos, exp, log = math.sin, math.cos, math.exp, math.log
 
 <%
-from tvb.simulator.backend.nb_hybrid import NetworkAnalysis, _cfun_type, _cvar_mapping_mode, _needs_xi, _n_src_cvar_pre
+from tvb.simulator.backend.nb_hybrid import NetworkAnalysis, _cfun_type, _cvar_mapping_mode, _needs_xi
 from tvb.simulator.integrators import HeunDeterministic, EulerDeterministic
 subnets = analysis.subnetworks
 inter_projs = analysis.inter_projections
@@ -47,7 +49,7 @@ source_horizons_map = analysis.source_horizons
     # post_ct: coupling functions that apply AFTER weighted sum
     if ct == 'linear':
         post_ct = 'linear'
-    elif ct in ('scaling', 'difference'):
+    elif ct in ('scaling', 'difference', 'sigmoidal_jr'):
         post_ct = 'scaling'
     elif ct == 'sigmoidal':
         post_ct = 'sigmoidal'
@@ -57,6 +59,9 @@ source_horizons_map = analysis.source_horizons
         post_ct = 'none'
     needs_xi = _needs_xi(p)
     is_multi_cvar = (ct in ('sigmoidal_jr', 'pre_sigmoidal_dynamic'))
+    cvar_loop_count = ('n_tgt_cvar' if needs_xi and cm == '1_to_many'
+                       else ('1' if is_multi_cvar else 'n_src_cvar'))
+    accum_cm = 'n_to_n' if needs_xi and cm == '1_to_many' else cm
 %>
 
 ${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
@@ -69,7 +74,7 @@ def compute_coupling_${p.name}(
     % endif
     source_cvar,
     target_cvar,
-    target_cvar_cpl,
+    target_state_cvar,
     scale,
     target_scales,
     cfun_params,
@@ -81,12 +86,38 @@ def compute_coupling_${p.name}(
     n_tgt_cvar = target_cvar.shape[0]
     has_ts = target_scales.shape[0] > 0
 
+    % if pre_ct == 'pre_sigmoidal_dynamic':
+    # Python pre() averages the delayed threshold values presented by every
+    # projection edge, once per mode, before transforming any source signal.
+    % if mono_src:
+    global_threshold = nb.float32(0.0)
+    if cfun_params[5] != nb.float32(0.0):
+        cv1 = source_cvar[1]
+        for ptr in range(w_data.shape[0]):
+            src_node = w_indices[ptr]
+            buf_idx = (t - 1 - idelays[ptr] + ${source_horizons_map[p.source_subnet]}) % ${source_horizons_map[p.source_subnet]}
+            global_threshold += srcbuf[cv1, src_node, 0, buf_idx]
+        global_threshold /= nb.float32(w_data.shape[0])
+    % else:
+    global_threshold = np.zeros(${nsrc_m}, dtype=np.float32)
+    if cfun_params[5] != nb.float32(0.0):
+        cv1 = source_cvar[1]
+        for ptr in range(w_data.shape[0]):
+            src_node = w_indices[ptr]
+            buf_idx = (t - 1 - idelays[ptr] + ${source_horizons_map[p.source_subnet]}) % ${source_horizons_map[p.source_subnet]}
+            for m in range(${nsrc_m}):
+                global_threshold[m] += srcbuf[cv1, src_node, m, buf_idx]
+        for m in range(${nsrc_m}):
+            global_threshold[m] /= nb.float32(w_data.shape[0])
+    % endif
+    % endif
+
     for j in range(${p.n_tgt_nodes}):
         row_start = w_indptr[j]
         row_end = w_indptr[j + 1]
 
-        for ic in range(n_src_cvar):
-            cv = source_cvar[ic]
+        for ic in range(${cvar_loop_count}):
+            cv = source_cvar[${'0' if needs_xi and cm == '1_to_many' else 'ic'}]
             % if mono_src:
             ## n_modes == 1: scalar wsum, no inner mode loop
             wsum = nb.float32(0.0)
@@ -114,17 +145,19 @@ def compute_coupling_${p.name}(
                 edge_val = cfun_params[0] * (cfun_params[1] + nb.float32(math.tanh(cfun_params[2] * (cfun_params[3] * edge_val - cfun_params[4]))))
                 % elif pre_ct == 'pre_sigmoidal_dynamic':
                 # Dynamic: H*(Q + tanh(G*(P*x_j[0] - x_j[1])))
-                # cfun_params: [0]=H, [1]=Q, [2]=G, [3]=P
+                # cfun_params: [0]=H, [1]=Q, [2]=G, [3]=P, [5]=globalT
                 cv0 = source_cvar[0]
                 cv1 = source_cvar[1]
                 x0 = srcbuf[cv0, src_node, 0, buf_idx]
                 x1 = srcbuf[cv1, src_node, 0, buf_idx]
+                if cfun_params[5] != nb.float32(0.0):
+                    x1 = global_threshold
                 edge_val = cfun_params[0] * (cfun_params[1] + nb.float32(math.tanh(cfun_params[2] * (cfun_params[3] * x0 - x1))))
                 % elif pre_ct == 'difference':
-                xi_val = tgt_state[target_cvar[ic], j, 0]
+                xi_val = tgt_state[target_state_cvar[${'0' if cm == 'many_to_1' else 'ic'}], j, 0]
                 edge_val = edge_val - xi_val
                 % elif pre_ct == 'kuramoto':
-                xi_val = tgt_state[target_cvar[ic], j, 0]
+                xi_val = tgt_state[target_state_cvar[${'0' if cm == 'many_to_1' else 'ic'}], j, 0]
                 edge_val = sin(edge_val - xi_val)
                 % endif
                 wsum += w * edge_val
@@ -145,46 +178,46 @@ def compute_coupling_${p.name}(
             % if is_inter:
             % if mono_tgt:
             contrib = wsum * mode_map[0, 0]
-            % if cm in ("1_to_1", "n_to_n"):
+            % if accum_cm in ("1_to_1", "n_to_n"):
             ts = target_scales[ic] if has_ts else nb.float32(1.0)
-            tgt[target_cvar_cpl[ic], j, 0] += ts * contrib
-            % elif cm == "many_to_1":
+            tgt[target_cvar[ic], j, 0] += ts * contrib
+            % elif accum_cm == "many_to_1":
             ts = target_scales[0] if has_ts else nb.float32(1.0)
-            tgt[target_cvar_cpl[0], j, 0] += ts * contrib
-            % elif cm == "1_to_many":
+            tgt[target_cvar[0], j, 0] += ts * contrib
+            % elif accum_cm == "1_to_many":
             for itc in range(n_tgt_cvar):
                 ts = target_scales[itc] if has_ts else nb.float32(1.0)
-                tgt[target_cvar_cpl[itc], j, 0] += ts * contrib
+                tgt[target_cvar[itc], j, 0] += ts * contrib
             % endif
             % else:
             for m_tgt in range(${ntgt_m}):
                 contrib = np.float32(0.0)
                 for m_src in range(${nsrc_m}):
                     contrib += wsum * mode_map[0, m_tgt]
-                % if cm in ("1_to_1", "n_to_n"):
+                % if accum_cm in ("1_to_1", "n_to_n"):
                 ts = target_scales[ic] if has_ts else np.float32(1.0)
-                tgt[target_cvar_cpl[ic], j, m_tgt] += ts * contrib
-                % elif cm == "many_to_1":
+                tgt[target_cvar[ic], j, m_tgt] += ts * contrib
+                % elif accum_cm == "many_to_1":
                 ts = target_scales[0] if has_ts else np.float32(1.0)
-                tgt[target_cvar_cpl[0], j, m_tgt] += ts * contrib
-                % elif cm == "1_to_many":
+                tgt[target_cvar[0], j, m_tgt] += ts * contrib
+                % elif accum_cm == "1_to_many":
                 for itc in range(n_tgt_cvar):
                     ts = target_scales[itc] if has_ts else np.float32(1.0)
-                    tgt[target_cvar_cpl[itc], j, m_tgt] += ts * contrib
+                    tgt[target_cvar[itc], j, m_tgt] += ts * contrib
                 % endif
             % endif
             % else:
             contrib = wsum
-            % if cm in ("1_to_1", "n_to_n"):
+            % if accum_cm in ("1_to_1", "n_to_n"):
             ts = target_scales[ic] if has_ts else nb.float32(1.0)
-            tgt[target_cvar_cpl[ic], j, 0] += ts * contrib
-            % elif cm == "many_to_1":
+            tgt[target_cvar[ic], j, 0] += ts * contrib
+            % elif accum_cm == "many_to_1":
             ts = target_scales[0] if has_ts else nb.float32(1.0)
-            tgt[target_cvar_cpl[0], j, 0] += ts * contrib
-            % elif cm == "1_to_many":
+            tgt[target_cvar[0], j, 0] += ts * contrib
+            % elif accum_cm == "1_to_many":
             for itc in range(n_tgt_cvar):
                 ts = target_scales[itc] if has_ts else nb.float32(1.0)
-                tgt[target_cvar_cpl[itc], j, 0] += ts * contrib
+                tgt[target_cvar[itc], j, 0] += ts * contrib
             % endif
             % endif
             % else:
@@ -215,17 +248,19 @@ def compute_coupling_${p.name}(
                     edge_val = cfun_params[0] * (cfun_params[1] + nb.float32(math.tanh(cfun_params[2] * (cfun_params[3] * edge_val - cfun_params[4]))))
                     % elif pre_ct == 'pre_sigmoidal_dynamic':
                     # Dynamic: H*(Q + tanh(G*(P*x_j[0] - x_j[1])))
-                    # cfun_params: [0]=H, [1]=Q, [2]=G, [3]=P
+                    # cfun_params: [0]=H, [1]=Q, [2]=G, [3]=P, [5]=globalT
                     cv0 = source_cvar[0]
                     cv1 = source_cvar[1]
                     x0 = srcbuf[cv0, src_node, m, buf_idx]
                     x1 = srcbuf[cv1, src_node, m, buf_idx]
+                    if cfun_params[5] != nb.float32(0.0):
+                        x1 = global_threshold[m]
                     edge_val = cfun_params[0] * (cfun_params[1] + nb.float32(math.tanh(cfun_params[2] * (cfun_params[3] * x0 - x1))))
                     % elif pre_ct == 'difference':
-                    xi_val = tgt_state[target_cvar[ic], j, m]
+                    xi_val = tgt_state[target_state_cvar[${'0' if cm == 'many_to_1' else 'ic'}], j, m]
                     edge_val = edge_val - xi_val
                     % elif pre_ct == 'kuramoto':
-                    xi_val = tgt_state[target_cvar[ic], j, m]
+                    xi_val = tgt_state[target_state_cvar[${'0' if cm == 'many_to_1' else 'ic'}], j, m]
                     edge_val = sin(edge_val - xi_val)
                     % endif
                     wsum[m] += w * edge_val
@@ -253,30 +288,30 @@ def compute_coupling_${p.name}(
                 contrib = np.float32(0.0)
                 for m_src in range(${nsrc_m}):
                     contrib += wsum[m_src] * mode_map[m_src, m_tgt]
-                % if cm in ("1_to_1", "n_to_n"):
+                % if accum_cm in ("1_to_1", "n_to_n"):
                 ts = target_scales[ic] if has_ts else np.float32(1.0)
-                tgt[target_cvar_cpl[ic], j, m_tgt] += ts * contrib
-                % elif cm == "many_to_1":
+                tgt[target_cvar[ic], j, m_tgt] += ts * contrib
+                % elif accum_cm == "many_to_1":
                 ts = target_scales[0] if has_ts else np.float32(1.0)
-                tgt[target_cvar_cpl[0], j, m_tgt] += ts * contrib
-                % elif cm == "1_to_many":
+                tgt[target_cvar[0], j, m_tgt] += ts * contrib
+                % elif accum_cm == "1_to_many":
                 for itc in range(n_tgt_cvar):
                     ts = target_scales[itc] if has_ts else np.float32(1.0)
-                    tgt[target_cvar_cpl[itc], j, m_tgt] += ts * contrib
+                    tgt[target_cvar[itc], j, m_tgt] += ts * contrib
                 % endif
             % else:
             for m in range(${nsrc_m}):
                 contrib = wsum[m]
-                % if cm in ("1_to_1", "n_to_n"):
+                % if accum_cm in ("1_to_1", "n_to_n"):
                 ts = target_scales[ic] if has_ts else np.float32(1.0)
-                tgt[target_cvar_cpl[ic], j, m] += ts * contrib
-                % elif cm == "many_to_1":
+                tgt[target_cvar[ic], j, m] += ts * contrib
+                % elif accum_cm == "many_to_1":
                 ts = target_scales[0] if has_ts else np.float32(1.0)
-                tgt[target_cvar_cpl[0], j, m] += ts * contrib
-                % elif cm == "1_to_many":
+                tgt[target_cvar[0], j, m] += ts * contrib
+                % elif accum_cm == "1_to_many":
                 for itc in range(n_tgt_cvar):
                     ts = target_scales[itc] if has_ts else np.float32(1.0)
-                    tgt[target_cvar_cpl[itc], j, m] += ts * contrib
+                    tgt[target_cvar[itc], j, m] += ts * contrib
                 % endif
             % endif
             % endif
@@ -303,7 +338,7 @@ def compute_coupling_${p.name}(
         cterms = list(sn.model.coupling_terms)
         dfuns = None
         gparams = {}
-        sparams_list = []  # custom template bakes all params — no spatial params needed
+        sparams_list = list(getattr(sn.model, '_nb_hybrid_runtime_parameter_names', []))
     else:
         cterms = list(sn.model.coupling_terms)
         dfuns = sn.model.state_variable_dfuns
@@ -328,6 +363,8 @@ def compute_coupling_${p.name}(
     cterms_str = ', '.join(cterms)
     i1svars_str = ', '.join(['i1' + s for s in svars])
     n_svars = len(svars)
+    clamp_indices = [] if sn.clamp_indices is None else sn.clamp_indices.tolist()
+    clamp_pos = {int(sv): pos for pos, sv in enumerate(clamp_indices)}
     _intermediates = list(getattr(sn.model, 'dfun_intermediates', None) or [])
     _is_combined = getattr(sn.model, 'dfun_mode', None) == 'combined'
     if _is_combined:
@@ -358,6 +395,10 @@ def compute_coupling_${p.name}(
         _dm_data = {}
         _dm_ops = []
 %>
+
+% if clamp_indices:
+_${sn.name}_clamp_values = np.array(${repr(sn.clamp_values.tolist())}, dtype=np.float32)
+% endif
 
 % if _has_custom_template:
 ## ---- Custom dfun generation for ${type(sn.model).__name__} ----
@@ -432,7 +473,7 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'_n
         _${_op_name} = np.zeros(${n_modes}, dtype=np.float32)
         for _mi in range(${n_modes}):
             for _mk in range(${n_modes}):
-                _${_op_name}[_mi] += _${sn.name}_${_op_mat}[_mi, _mk] * state[${svars.index(_op_svar)}, i, _mk]
+                _${_op_name}[_mi] += _${sn.name}_${_op_mat}[_mk, _mi] * state[${svars.index(_op_svar)}, i, _mk]
         % endfor
 
         % if int_type in ("euler", "euler_stochastic"):
@@ -442,7 +483,9 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'_n
             ${svar} = state[${k}, i, m]
             % endfor
             % for k, ct in enumerate(cterms):
-            ${ct} = coupling[${k}, i, m]
+            ${ct} = nb.float32(0.0)
+            for _cm in range(${n_modes}):
+                ${ct} += coupling[${k}, i, _cm]
             % endfor
             (${', '.join(['d0_' + s for s in svars])},) = dfun_${sn.name}(
                 ${svars_str}, ${cterms_str}, m,
@@ -470,6 +513,9 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'_n
             if n${svar} > nb.float32(${hi}):
                 n${svar} = nb.float32(${hi})
             % endif
+            % if k in clamp_pos:
+            n${svar} = _${sn.name}_clamp_values[${clamp_pos[k]}, i, m]
+            % endif
             % endfor
             % for k, svar in enumerate(svars):
             state[${k}, i, m] = n${svar}
@@ -486,7 +532,9 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'_n
             ${svar} = state[${k}, i, m]
             % endfor
             % for k, ct in enumerate(cterms):
-            ${ct} = coupling[${k}, i, m]
+            ${ct} = nb.float32(0.0)
+            for _cm in range(${n_modes}):
+                ${ct} += coupling[${k}, i, _cm]
             % endfor
             (${', '.join(['d0_' + s for s in svars])},) = dfun_${sn.name}(
                 ${svars_str}, ${cterms_str}, m,
@@ -510,19 +558,38 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'_n
             _i1_${svar}[m] = _i1_${svar}[m] + _nsig_arr[${k2}, i, m, t_abs]
             % endfor
             % endif
+            % for k, svar in enumerate(svars):
+            <%
+                lo = lo_map.get(svar)
+                hi = hi_map.get(svar)
+            %>
+            % if lo is not None:
+            if _i1_${svar}[m] < nb.float32(${lo}):
+                _i1_${svar}[m] = nb.float32(${lo})
+            % endif
+            % if hi is not None:
+            if _i1_${svar}[m] > nb.float32(${hi}):
+                _i1_${svar}[m] = nb.float32(${hi})
+            % endif
+            % if k in clamp_pos:
+            _i1_${svar}[m] = _${sn.name}_clamp_values[${clamp_pos[k]}, i, m]
+            % endif
+            % endfor
 
         ## Recompute cross-mode intermediates from i1 states
         % for _op_name, _op_mat, _op_svar in _dm_ops:
         _${_op_name}_i1 = np.zeros(${n_modes}, dtype=np.float32)
         for _mi in range(${n_modes}):
             for _mk in range(${n_modes}):
-                _${_op_name}_i1[_mi] += _${sn.name}_${_op_mat}[_mi, _mk] * _i1_${_op_svar}[_mk]
+                _${_op_name}_i1[_mi] += _${sn.name}_${_op_mat}[_mk, _mi] * _i1_${_op_svar}[_mk]
         % endfor
 
         ## Pass 2: compute k2 and update state
         for m in range(${n_modes}):
             % for k, ct in enumerate(cterms):
-            ${ct} = coupling[${k}, i, m]
+            ${ct} = nb.float32(0.0)
+            for _cm in range(${n_modes}):
+                ${ct} += coupling[${k}, i, _cm]
             % endfor
             % for k, svar in enumerate(svars):
             ${svar} = state[${k}, i, m]
@@ -553,6 +620,9 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'_n
             % if hi is not None:
             if n${svar} > nb.float32(${hi}):
                 n${svar} = nb.float32(${hi})
+            % endif
+            % if k in clamp_pos:
+            n${svar} = _${sn.name}_clamp_values[${clamp_pos[k]}, i, m]
             % endif
             % endfor
             % for k, svar in enumerate(svars):
@@ -589,6 +659,23 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'_n
         % for svar in svars:
         i1${svar} = ${svar} + dt * d0_${svar}
         % endfor
+        % for k, svar in enumerate(svars):
+        <%
+            lo = lo_map.get(svar)
+            hi = hi_map.get(svar)
+        %>
+        % if lo is not None:
+        if i1${svar} < nb.float32(${lo}):
+            i1${svar} = nb.float32(${lo})
+        % endif
+        % if hi is not None:
+        if i1${svar} > nb.float32(${hi}):
+            i1${svar} = nb.float32(${hi})
+        % endif
+        % if k in clamp_pos:
+        i1${svar} = _${sn.name}_clamp_values[${clamp_pos[k]}, i, 0]
+        % endif
+        % endfor
         (${', '.join(['d1_' + s for s in svars])},) = dfun_${sn.name}(${i1svars_str}, ${cterms_str}, _sp, i)
         % for svar in svars:
         n${svar} = ${svar} + dt * nb.float32(0.5) * (d0_${svar} + d1_${svar})
@@ -596,6 +683,23 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'_n
         % elif int_type == "heun_stochastic":
         % for k2, svar in enumerate(svars):
         i1${svar} = ${svar} + dt * d0_${svar} + _nsig_arr[${k2}, i, 0, t_abs]
+        % endfor
+        % for k, svar in enumerate(svars):
+        <%
+            lo = lo_map.get(svar)
+            hi = hi_map.get(svar)
+        %>
+        % if lo is not None:
+        if i1${svar} < nb.float32(${lo}):
+            i1${svar} = nb.float32(${lo})
+        % endif
+        % if hi is not None:
+        if i1${svar} > nb.float32(${hi}):
+            i1${svar} = nb.float32(${hi})
+        % endif
+        % if k in clamp_pos:
+        i1${svar} = _${sn.name}_clamp_values[${clamp_pos[k]}, i, 0]
+        % endif
         % endfor
         (${', '.join(['d1_' + s for s in svars])},) = dfun_${sn.name}(${i1svars_str}, ${cterms_str}, _sp, i)
         % for k2, svar in enumerate(svars):
@@ -615,6 +719,9 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'_n
         % if hi is not None:
         if n${svar} > nb.float32(${hi}):
             n${svar} = nb.float32(${hi})
+        % endif
+        % if k in clamp_pos:
+        n${svar} = _${sn.name}_clamp_values[${clamp_pos[k]}, i, 0]
         % endif
         % endfor
 
@@ -644,6 +751,23 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'_n
             % for svar in svars:
             i1${svar} = ${svar} + dt * d0_${svar}
             % endfor
+            % for k, svar in enumerate(svars):
+            <%
+                lo = lo_map.get(svar)
+                hi = hi_map.get(svar)
+            %>
+            % if lo is not None:
+            if i1${svar} < nb.float32(${lo}):
+                i1${svar} = nb.float32(${lo})
+            % endif
+            % if hi is not None:
+            if i1${svar} > nb.float32(${hi}):
+                i1${svar} = nb.float32(${hi})
+            % endif
+            % if k in clamp_pos:
+            i1${svar} = _${sn.name}_clamp_values[${clamp_pos[k]}, i, m]
+            % endif
+            % endfor
             (${', '.join(['d1_' + s for s in svars])},) = dfun_${sn.name}(${i1svars_str}, ${cterms_str}, _sp, i)
             % for svar in svars:
             n${svar} = ${svar} + dt * nb.float32(0.5) * (d0_${svar} + d1_${svar})
@@ -651,6 +775,23 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'_n
             % elif int_type == "heun_stochastic":
             % for k2, svar in enumerate(svars):
             i1${svar} = ${svar} + dt * d0_${svar} + _nsig_arr[${k2}, i, m, t_abs]
+            % endfor
+            % for k, svar in enumerate(svars):
+            <%
+                lo = lo_map.get(svar)
+                hi = hi_map.get(svar)
+            %>
+            % if lo is not None:
+            if i1${svar} < nb.float32(${lo}):
+                i1${svar} = nb.float32(${lo})
+            % endif
+            % if hi is not None:
+            if i1${svar} > nb.float32(${hi}):
+                i1${svar} = nb.float32(${hi})
+            % endif
+            % if k in clamp_pos:
+            i1${svar} = _${sn.name}_clamp_values[${clamp_pos[k]}, i, m]
+            % endif
             % endfor
             (${', '.join(['d1_' + s for s in svars])},) = dfun_${sn.name}(${i1svars_str}, ${cterms_str}, _sp, i)
             % for k2, svar in enumerate(svars):
@@ -672,6 +813,9 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'_n
             if n${svar} > nb.float32(${hi}):
                 n${svar} = nb.float32(${hi})
             % endif
+            % if k in clamp_pos:
+            n${svar} = _${sn.name}_clamp_values[${clamp_pos[k]}, i, m]
+            % endif
             % endfor
 
             % for k, svar in enumerate(svars):
@@ -691,6 +835,7 @@ ${'' if debug_nojit else '@nb.njit(cache=True)'}
 def network_chunk(
     nstep,
     t_start,
+    data_offset,
     ## per-subnetwork state arrays
     % for sn in subnets:
     ${sn.name}_state,   # (n_svars, n_nodes, n_modes) float32 — updated in-place
@@ -706,7 +851,7 @@ def network_chunk(
     % if p.is_inter:
     ${p.name}_mode_map,
     % endif
-    ${p.name}_source_cvar, ${p.name}_target_cvar, ${p.name}_target_cvar_cpl,
+    ${p.name}_source_cvar, ${p.name}_target_cvar, ${p.name}_target_state_cvar,
     ${p.name}_scale, ${p.name}_target_scales,
     ${p.name}_cfun_params,
     % endfor
@@ -786,7 +931,7 @@ def network_chunk(
             ${p.name}_w_data, ${p.name}_w_indices, ${p.name}_w_indptr,
             ${p.name}_idelays,
             ${p.name}_mode_map,
-            ${p.name}_source_cvar, ${p.name}_target_cvar, ${p.name}_target_cvar_cpl,
+            ${p.name}_source_cvar, ${p.name}_target_cvar, ${p.name}_target_state_cvar,
             ${p.name}_scale, ${p.name}_target_scales,
             ${p.name}_cfun_params,
             ${p.target_subnet}_state,
@@ -801,7 +946,7 @@ def network_chunk(
             ${p.source_subnet}_srcbuf,
             ${p.name}_w_data, ${p.name}_w_indices, ${p.name}_w_indptr,
             ${p.name}_idelays,
-            ${p.name}_source_cvar, ${p.name}_target_cvar, ${p.name}_target_cvar_cpl,
+            ${p.name}_source_cvar, ${p.name}_target_cvar, ${p.name}_target_state_cvar,
             ${p.name}_scale, ${p.name}_target_scales,
             ${p.name}_cfun_params,
             ${p.target_subnet}_state,
@@ -816,12 +961,12 @@ def network_chunk(
         % if sn_nmodes_dict[sn.name] == 1:
         for _sc in range(${sn_ncvar_dict[sn.name]}):
             for _sn in range(${sn_nnodes_dict[sn.name]}):
-                ${sn.name}_c[_sc, _sn, 0] += ${sn.name}_stim[_sc, _sn, 0, t - 1]
+                ${sn.name}_c[_sc, _sn, 0] += ${sn.name}_stim[_sc, _sn, 0, t - data_offset - 1]
         % else:
         for _sc in range(${sn_ncvar_dict[sn.name]}):
             for _sn in range(${sn_nnodes_dict[sn.name]}):
                 for _sm in range(${sn_nmodes_dict[sn.name]}):
-                    ${sn.name}_c[_sc, _sn, _sm] += ${sn.name}_stim[_sc, _sn, _sm, t - 1]
+                    ${sn.name}_c[_sc, _sn, _sm] += ${sn.name}_stim[_sc, _sn, _sm, t - data_offset - 1]
         % endif
         % endif
         % endfor
@@ -842,7 +987,7 @@ def network_chunk(
 
         ## integrate each subnetwork in-place
         % for sn in subnets:
-        integrate_${sn.name}(${sn.name}_state, ${sn.name}_c${',' if sn.is_stochastic else ''} ${'%s_noise, t - 1' % sn.name if sn.is_stochastic else ''}, ${sn.name}_sp)
+        integrate_${sn.name}(${sn.name}_state, ${sn.name}_c${',' if sn.is_stochastic else ''} ${'%s_noise, t - data_offset - 1' % sn.name if sn.is_stochastic else ''}, ${sn.name}_sp)
         % endfor
 
         ## update shared source buffers (one write per source subnet)
@@ -928,6 +1073,7 @@ def network_chunk(
 
 def run_network(
     nstep,
+    step_offset,
     % for sn in subnets:
     ${sn.name}_state,
     % endfor
@@ -940,7 +1086,7 @@ def run_network(
     % if p.is_inter:
     ${p.name}_mode_map,
     % endif
-    ${p.name}_source_cvar, ${p.name}_target_cvar, ${p.name}_target_cvar_cpl,
+    ${p.name}_source_cvar, ${p.name}_target_cvar, ${p.name}_target_state_cvar,
     ${p.name}_scale, ${p.name}_target_scales,
     ${p.name}_cfun_params,
     % endfor
@@ -1013,9 +1159,10 @@ def run_network(
     % endfor
     time_step = np.float32(${subnets[0].integrator.dt})
 
-    t_global = 1
-    while t_global <= nstep:
-        this_chunk = min(chunk_size, nstep - t_global + 1)
+    t_global = step_offset + 1
+    end_step = step_offset + nstep
+    while t_global <= end_step:
+        this_chunk = min(chunk_size, end_step - t_global + 1)
 
         ## reset accumulators
         % for sn in subnets:
@@ -1029,6 +1176,7 @@ def run_network(
         network_chunk(
             this_chunk,
             t_global,
+            step_offset,
             % for sn in subnets:
             ${sn.name}_state,
             % endfor
@@ -1041,7 +1189,7 @@ def run_network(
             % if p.is_inter:
             ${p.name}_mode_map,
             % endif
-            ${p.name}_source_cvar, ${p.name}_target_cvar, ${p.name}_target_cvar_cpl,
+            ${p.name}_source_cvar, ${p.name}_target_cvar, ${p.name}_target_state_cvar,
             ${p.name}_scale, ${p.name}_target_scales,
             ${p.name}_cfun_params,
             % endfor

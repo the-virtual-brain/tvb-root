@@ -122,6 +122,12 @@ class Subnetwork(t.HasTraits):
                 f"{len(self.node_indices)} does not match nnodes={self.nnodes}."
             )
         self.model.configure()
+        self.scheme._clamped_integration_state_variable_indices = (
+            self.scheme.clamped_state_variable_indices
+        )
+        self.scheme._clamped_integration_state_variable_values = (
+            self.scheme.clamped_state_variable_values
+        )
         self.scheme.configure_boundaries(self.model)
         if self.model.has_nonint_vars:
             self.scheme.reconfigure_boundaries_and_clamping_for_integration_state_variables(

@@ -1,5 +1,7 @@
 ## -*- coding: utf-8 -*-
 ##
+## Status: deprecated
+##
 ## nb-hybrid-state-update.py.mako
 ##
 ## Generates per-subnetwork dfun + Heun/Euler integration step as an

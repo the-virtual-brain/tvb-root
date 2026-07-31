@@ -541,6 +541,13 @@ class CerebellarMF(ModelNumbaDfun):
     # nb-hybrid: use custom CerebellarMF Mako template — do NOT add state_variable_dfuns
     _nb_hybrid_custom_template = "nb-cerebellar-dfun.py.mako"
 
+    @property
+    def _nb_hybrid_runtime_parameter_names(self):
+        """Parameters that the custom Numba dfun indexes per node."""
+        static = {"P_grc", "P_goc", "P_mli", "P_pc",
+                  "use_legacy_goc_e_e", "add_noise_mli_pc"}
+        return [name for name in self.parameter_names if name not in static]
+
     parameter_names = List(
         of=str,
         label="List of parameters for this model",
@@ -717,8 +724,8 @@ class CerebellarMF(ModelNumbaDfun):
                             ee, self.E_i,
                             self.g_L_goc, self.C_m_goc, self.E_L_goc,
                             self.K_grc_goc, self.K_goc_goc,
-                            self.Q_mf_goc, self.tau_mf_goc,
-                            self.K_mossy_goc, self.alpha_goc)
+                            self.K_mossy_goc, self.Q_mf_goc,
+                            self.tau_mf_goc, self.alpha_goc)
 
     def TF_inhibitory_mli(self, fe, fi, fe_ext, fi_ext, W=0):
         return self._TF(fe, fi, fe_ext, fi_ext, W,

@@ -1,5 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+#
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# analysers necessary to run brain-simulations. You can use it stand alone or
+# in conjunction with TheVirtualBrain-Framework Package.
+#
+# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+#
 """
 Numba-CUDA parameter sweep backend for the Hybrid Numba framework.
 
@@ -18,6 +29,7 @@ Usage::
 
 from __future__ import annotations
 
+import copy
 import dataclasses
 import hashlib
 import importlib.util
@@ -87,6 +99,18 @@ class NbHybridCUDASweepBackend(MakoUtilMix):
         # Check model/feature compatibility before code generation
         NbHybridBackend()._check_compatibility(network_set)
 
+        for subnet in network_set.subnets:
+            custom_template = getattr(subnet.model, '_nb_hybrid_custom_template', None)
+            if custom_template is not None and 'zerlaut' not in custom_template.lower():
+                raise NotImplementedError(
+                    f"CUDA sweeps do not support the custom model template for "
+                    f"{type(subnet.model).__name__}: {custom_template}"
+                )
+            if subnet.scheme.clamped_state_variable_values is not None:
+                raise NotImplementedError(
+                    "CUDA sweeps do not support explicit integrator state clamps"
+                )
+
         analysis = self._build_sweep_analysis(network_set)
 
         # Process sweep_descriptor
@@ -96,6 +120,56 @@ class NbHybridCUDASweepBackend(MakoUtilMix):
                 sweep_descriptor = [{'type': 'cfun', 'projection': first_proj.name, 'param_idx': 0}]
             else:
                 sweep_descriptor = []
+
+        projection_by_name = {p.name: p for p in analysis.all_projections}
+        subnet_by_name = {sn.name: sn for sn in analysis.subnetworks}
+        for desc in sweep_descriptor:
+            if not isinstance(desc, dict):
+                raise ValueError("Each sweep descriptor must be a dictionary")
+            desc_type = desc.get('type')
+            if desc_type == 'cfun':
+                projection_name = desc.get('projection')
+                if (not isinstance(projection_name, str)
+                        or projection_name not in projection_by_name):
+                    raise ValueError(
+                        f"Unknown projection in sweep descriptor: {projection_name!r}"
+                    )
+                param_idx = desc.get('param_idx', 0)
+                if (isinstance(param_idx, (bool, np.bool_))
+                        or not isinstance(param_idx, (int, np.integer))
+                        or param_idx < 0):
+                    raise ValueError(
+                        f"cfun param_idx must be a non-negative integer, got {param_idx!r}"
+                    )
+                try:
+                    NbHybridBackend._cfun_get_param(
+                        projection_by_name[projection_name].cfun, int(param_idx)
+                    )
+                except (IndexError, TypeError, AssertionError) as exc:
+                    raise ValueError(
+                        f"Invalid cfun param_idx {param_idx} for projection "
+                        f"{projection_name!r}"
+                    ) from exc
+            elif desc_type == 'model':
+                subnet_name = desc.get('subnet')
+                if not isinstance(subnet_name, str) or subnet_name not in subnet_by_name:
+                    raise ValueError(
+                        f"Unknown subnetwork in sweep descriptor: {subnet_name!r}"
+                    )
+                param = desc.get('param')
+                subnet = subnet_by_name[subnet_name]
+                if getattr(subnet.model, '_nb_hybrid_custom_template', None) is not None:
+                    raise ValueError(
+                        f"CUDA custom template for {type(subnet.model).__name__} "
+                        "does not consume model sweep parameters"
+                    )
+                model_params = set(getattr(subnet.model, 'global_parameter_names', ()))
+                if not isinstance(param, str) or param not in model_params:
+                    raise ValueError(
+                        f"Unknown model parameter {param!r} for subnetwork {subnet_name!r}"
+                    )
+            else:
+                raise ValueError(f"Unknown sweep descriptor type: {desc_type!r}")
 
         n_sweep_dims = len(sweep_descriptor)
 
@@ -114,8 +188,8 @@ class NbHybridCUDASweepBackend(MakoUtilMix):
                 if sname not in sweep_model_dims:
                     sweep_model_dims[sname] = {}
                 sweep_model_dims[sname][param] = dim_idx
-            else:
-                raise ValueError(f"Unknown sweep descriptor type: {desc['type']}")
+            else:  # validated above
+                raise AssertionError("unreachable sweep descriptor type")
 
         # Render template
         # Import cfun helpers for the template
@@ -162,14 +236,40 @@ class NbHybridCUDASweepBackend(MakoUtilMix):
             print(self.insert_line_numbers(source))
 
         # Write source to file so Numba can cache PTX
-        cache_dir = Path(os.environ.get("TVB_CUDA_CACHE_DIR", "/tmp/tvb_cuda_sweep_cache"))
-        cache_dir.mkdir(exist_ok=True)
-        mod_name = f"cuda_sweep_{cache_key[:16]}"
+        configured_cache_dir = os.environ.get("TVB_CUDA_CACHE_DIR")
+        if configured_cache_dir is not None:
+            if not configured_cache_dir:
+                raise OSError(
+                    "TVB_CUDA_CACHE_DIR configures an empty CUDA sweep cache "
+                    "directory path; provide a writable directory."
+                )
+            cache_dir = Path(configured_cache_dir).expanduser()
+        else:
+            cache_home = os.environ.get("XDG_CACHE_HOME")
+            cache_dir = ((Path(cache_home).expanduser() if cache_home else Path.home() / ".cache")
+                         / "tvb" / "nb_hybrid_cuda")
+        mod_name = f"cuda_sweep_{cache_key}"
         mod_path = cache_dir / f"{mod_name}.py"
-        if not mod_path.exists():
-            tmp_path = mod_path.with_suffix(".tmp")
-            tmp_path.write_text(source, encoding="utf-8")
-            os.replace(tmp_path, mod_path)
+        tmp_path = None
+        try:
+            cache_dir.mkdir(parents=True, exist_ok=True)
+            if not mod_path.exists():
+                tmp_path = mod_path.with_name(
+                    f".{mod_path.name}.{os.getpid()}.{time.time_ns()}.tmp"
+                )
+                tmp_path.write_text(source, encoding="utf-8")
+                os.replace(tmp_path, mod_path)
+        except OSError as exc:
+            if tmp_path is not None:
+                try:
+                    tmp_path.unlink(missing_ok=True)
+                except OSError:
+                    pass
+            raise OSError(
+                "Unable to create or write the CUDA sweep cache directory "
+                f"at '{cache_dir}' configured by TVB_CUDA_CACHE_DIR; "
+                "ensure the cache directory is writable."
+            ) from exc
 
         # Import module to trigger CUDA compilation
         spec = importlib.util.spec_from_file_location(mod_name, mod_path)
@@ -240,6 +340,10 @@ class CompiledCUDASweepKernel:
         """
         if not tavg_list:
             return np.array([])
+        if any(tavg.ndim != 4 for tavg in tavg_list):
+            return None
+        if len({(tavg.shape[1], tavg.shape[3]) for tavg in tavg_list}) != 1:
+            return None
         if node_indices is not None and len(node_indices) > 0:
             n_global = max(max(idxs) for idxs in node_indices.values()) + 1
             n_sweeps = tavg_list[0].shape[0]
@@ -266,6 +370,7 @@ class CompiledCUDASweepKernel:
         src_bufs_h: dict,
         tavg_h: dict,
         raw_h: dict,
+        ctraw_h: dict,
         noise_h: dict,
         stim_h: dict,
         voi_idx_h: dict,
@@ -331,7 +436,14 @@ class CompiledCUDASweepKernel:
             if sn_info.name in raw_h:
                 d_raws[sn_info.name] = cuda.to_device(raw_h[sn_info.name])
 
+        d_ctraws = {}
+        for sn_info in analysis.subnetworks:
+            if sn_info.name in ctraw_h:
+                d_ctraws[sn_info.name] = cuda.to_device(ctraw_h[sn_info.name])
+
         d_sweep_params = cuda.to_device(sweep_values_batch)
+
+        d_proj_cfun_params = [cuda.to_device(params) for params in proj_cfun_params]
 
         d_noises = {}
         for sn_info in analysis.subnetworks:
@@ -406,6 +518,18 @@ class CompiledCUDASweepKernel:
                         )
                     )
 
+            # Per-step coupling outputs (only allocated when requested with raw output)
+            for sn_info in analysis.subnetworks:
+                if sn_info.name in d_ctraws:
+                    args.append(d_ctraws[sn_info.name])
+                else:
+                    ncvar = len(sn_info.model.cvar)
+                    args.append(
+                        cuda.to_device(
+                            np.empty((n_sweeps, 0, ncvar, sn_info.n_nodes, sn_info.n_modes), dtype=np.float32)
+                        )
+                    )
+
             # Bold arrays
             for sn_info in analysis.subnetworks:
                 if sn_info.name in d_bold_states:
@@ -428,7 +552,7 @@ class CompiledCUDASweepKernel:
             args.append(d_sweep_params)
 
             # per-projection data
-            for p in analysis.all_projections:
+            for p_idx, p in enumerate(analysis.all_projections):
                 pd = d_proj_data[p.name]
                 args.append(pd['w_data'])
                 args.append(pd['w_indices'])
@@ -438,10 +562,10 @@ class CompiledCUDASweepKernel:
                     args.append(pd['mode_map'])
                 args.append(pd['source_cvar'])
                 args.append(pd['target_cvar'])
-                args.append(pd['target_cvar_cpl'])
+                args.append(pd['target_state_cvar'])
                 args.append(pd['scale'])
                 args.append(pd['target_scales'])
-                args.append(pd['cfun_params'])
+                args.append(d_proj_cfun_params[p_idx])
 
             # per-subnet ctavg
             for sn_info in analysis.subnetworks:
@@ -474,6 +598,7 @@ class CompiledCUDASweepKernel:
 
             # Scalar parameters
             args.append(np.int32(this_offset))
+            args.append(np.int32(chunk_idx * chunk_size))
             args.append(np.float32(dt))
             args.append(np.int32(this_nstep))
             args.append(np.int32(monitor_type))
@@ -514,6 +639,11 @@ class CompiledCUDASweepKernel:
             if sn_info.name in d_raws:
                 results_raw.append(d_raws[sn_info.name].copy_to_host())
 
+        results_ctraw = []
+        for sn_info in analysis.subnetworks:
+            if sn_info.name in d_ctraws:
+                results_ctraw.append(d_ctraws[sn_info.name].copy_to_host())
+
         results_bold = []
         final_bold_states = {}
         for sn_info in analysis.subnetworks:
@@ -549,6 +679,8 @@ class CompiledCUDASweepKernel:
         }
         if results_raw:
             result['raw'] = results_raw
+        if results_ctraw:
+            result['ctraw'] = results_ctraw
         if results_bold:
             result['bold'] = results_bold
         return result
@@ -567,6 +699,7 @@ class CompiledCUDASweepKernel:
         monitors: Optional[dict] = None,
         node_indices: Optional[dict] = None,
         global_average: bool = False,
+        record_coupling: bool = False,
         verbose: bool = False,
     ):
         """Execute the parameter sweep on GPU with automatic batching.
@@ -603,6 +736,9 @@ class CompiledCUDASweepKernel:
             is connectome-ordered instead of naively concatenated.
         global_average : bool
             If True, compute mean across nodes in the 'ga_avg' output key.
+        record_coupling : bool
+            If True with ``monitor_type='raw'``, return per-step coupling under
+            ``'ctraw'``. The existing ``'ctavg'`` remains the run-wide average.
         verbose : bool
             Print timing information.
 
@@ -616,22 +752,77 @@ class CompiledCUDASweepKernel:
             'proj_tavg': list of ndarray — projection output per subnetwork
             'ga_avg': dict — global average (if global_average=True)
             'raw': list of ndarray — optional raw output per subnetwork
+            'ctraw': list of ndarray — optional per-step coupling per subnetwork
             'bold': list of ndarray — optional BOLD output per subnetwork
             'elapsed': float — GPU kernel wall-clock seconds
             'snapshot': dict — final states, srcbufs, step_offset, bold_states
         """
+        def _positive_integer(value, name, allow_none=False):
+            if allow_none and value is None:
+                return None
+            if (isinstance(value, (bool, np.bool_))
+                    or not isinstance(value, (int, np.integer))
+                    or value <= 0):
+                suffix = " or None" if allow_none else ""
+                raise ValueError(f"{name} must be a positive integer{suffix}")
+            return int(value)
+
+        nstep = _positive_integer(nstep, "nstep")
+        chunk_size = _positive_integer(chunk_size, "chunk_size", allow_none=True)
+        monitor_period = _positive_integer(monitor_period, "monitor_period")
+        max_batch_sweeps = _positive_integer(
+            max_batch_sweeps, "max_batch_sweeps", allow_none=True
+        )
+        monitor_map = {'tavg': 0, 'raw': 1, 'subsample': 2}
+        if isinstance(monitor_type, str):
+            if monitor_type not in monitor_map:
+                raise ValueError(
+                    "monitor_type must be exactly 'tavg', 'raw', 'subsample', 0, 1, or 2"
+                )
+            monitor_type = monitor_map[monitor_type]
+        elif (isinstance(monitor_type, (bool, np.bool_))
+              or not isinstance(monitor_type, (int, np.integer))
+              or int(monitor_type) not in (0, 1, 2)):
+            raise ValueError(
+                "monitor_type must be exactly 'tavg', 'raw', 'subsample', 0, 1, or 2"
+            )
+        else:
+            monitor_type = int(monitor_type)
+        if not isinstance(record_coupling, (bool, np.bool_)):
+            raise ValueError("record_coupling must be a boolean")
+        record_coupling = bool(record_coupling and monitor_type == 1)
+        if bold_period is not None:
+            if (isinstance(bold_period, (bool, np.bool_))
+                    or not isinstance(
+                        bold_period, (int, float, np.integer, np.floating)
+                    )):
+                raise ValueError("bold_period must be finite and positive or None")
+            try:
+                bold_period = float(bold_period)
+            except (TypeError, ValueError, OverflowError) as exc:
+                raise ValueError("bold_period must be finite and positive or None") from exc
+            if not np.isfinite(bold_period) or bold_period <= 0:
+                raise ValueError("bold_period must be finite and positive or None")
+
         sweep_values = np.asarray(sweep_values, dtype=np.float32)
         if sweep_values.ndim == 1:
             sweep_values = sweep_values.reshape(-1, 1)
         if sweep_values.ndim != 2:
             raise ValueError(f"sweep_values must be 1D or 2D, got shape {sweep_values.shape}")
         n_sweeps, n_dims = sweep_values.shape
+        if n_sweeps == 0:
+            raise ValueError("sweep_values must contain at least one sweep point")
         if n_dims != self.n_sweep_dims:
             raise ValueError(f"Expected sweep_values with {self.n_sweep_dims} dimensions, got {n_dims}")
-        # Convert string monitor_type to int
-        _monitor_map = {'tavg': 0, 'raw': 1, 'subsample': 2}
-        if isinstance(monitor_type, str):
-            monitor_type = _monitor_map.get(monitor_type.lower(), 0)
+
+        if snapshot is not None and bold_period is not None:
+            raise NotImplementedError(
+                "CUDA snapshot resume with bold_period is not supported"
+            )
+        if snapshot is not None and monitor_type == 2:
+            raise NotImplementedError(
+                "CUDA snapshot resume with monitor_type='subsample' is not supported"
+            )
 
         # Normalize monitors dict
         if monitors is None:
@@ -710,37 +901,89 @@ class CompiledCUDASweepKernel:
             sn_states_h = {}
             src_bufs_h = {}
             for sn_info in analysis.subnetworks:
-                sn_states_h[sn_info.name] = snapshot['states'][sn_info.name].astype(np.float32)
-                src_bufs_h[sn_info.name] = snapshot['srcbufs'][sn_info.name].astype(np.float32)
+                try:
+                    state = np.asarray(snapshot['states'][sn_info.name])
+                    srcbuf = np.asarray(snapshot['srcbufs'][sn_info.name])
+                except KeyError as exc:
+                    raise ValueError(
+                        f"CUDA snapshot is missing state for subnetwork '{sn_info.name}'"
+                    ) from exc
+                expected_state = (
+                    n_sweeps, sn_info.model.nvar, sn_info.n_nodes, sn_info.n_modes
+                )
+                expected_srcbuf = expected_state + (
+                    analysis.source_horizons.get(sn_info.name, 1),
+                )
+                if state.shape != expected_state or srcbuf.shape != expected_srcbuf:
+                    raise ValueError(
+                        f"CUDA snapshot topology for '{sn_info.name}' does not match: "
+                        f"expected state {expected_state} and srcbuf {expected_srcbuf}, "
+                        f"got {state.shape} and {srcbuf.shape}"
+                    )
+                sn_states_h[sn_info.name] = state.astype(np.float32)
+                src_bufs_h[sn_info.name] = srcbuf.astype(np.float32)
             # Restore Bold state from snapshot if available
             if bold_period is not None and 'bold_states' in snapshot:
                 for sn_info in analysis.subnetworks:
                     if sn_info.name in snapshot['bold_states']:
                         bold_states_h[sn_info.name] = snapshot['bold_states'][sn_info.name].astype(np.float32)
+
+            stochastic = [sn for sn in analysis.subnetworks if sn.is_stochastic]
+            if stochastic:
+                rng_states = snapshot.get('rng_states')
+                rng_dimensions = snapshot.get('rng_dimensions')
+                if rng_states is None or rng_dimensions is None:
+                    raise ValueError(
+                        "A stochastic CUDA snapshot must contain rng_states and rng_dimensions"
+                    )
+                expected_names = {sn.name for sn in stochastic}
+                if set(rng_states) != expected_names or set(rng_dimensions) != expected_names:
+                    raise ValueError("CUDA snapshot stochastic subnetwork topology does not match")
+                for sn_info in stochastic:
+                    expected = (
+                        n_sweeps,
+                        sn_info.model.nvar,
+                        sn_info.n_nodes,
+                        sn_info.n_modes,
+                    )
+                    if tuple(rng_dimensions[sn_info.name]) != expected:
+                        raise ValueError(
+                            f"CUDA snapshot RNG dimensions for '{sn_info.name}' do not match "
+                            f"the current sweep/topology: expected {expected}, got "
+                            f"{tuple(rng_dimensions[sn_info.name])}"
+                        )
+                for sn_info in stochastic:
+                    sn_info.integrator.noise.random_stream.set_state(
+                        copy.deepcopy(rng_states[sn_info.name])
+                    )
         else:
             # Build per-subnet initial states
             sn_states_h = {}
+            network_subnets = {sn.name: sn for sn in network_set.subnets}
+            if initial_states is not None and len(initial_states) != len(analysis.subnetworks):
+                raise ValueError(
+                    f"initial_states must contain one array per subnetwork; expected "
+                    f"{len(analysis.subnetworks)}, got {len(initial_states)}"
+                )
             for i, sn_info in enumerate(analysis.subnetworks):
                 if initial_states is not None:
-                    x0 = initial_states[i].astype(np.float32)
-                    if x0.ndim == 3:
+                    x0 = np.asarray(initial_states[i], dtype=np.float32)
+                    expected = (sn_info.model.nvar, sn_info.n_nodes, sn_info.n_modes)
+                    if x0.shape == expected:
                         # (nvar, nnodes, nmodes) — add sweep dimension
                         sn_states_h[sn_info.name] = np.broadcast_to(
                             x0[np.newaxis], (n_sweeps,) + x0.shape
                         ).copy()
-                    elif x0.ndim == 4 and x0.shape[0] == n_sweeps:
+                    elif x0.shape == (n_sweeps,) + expected:
                         # (n_sweeps, nvar, nnodes, nmodes) — already has sweep dimension
                         sn_states_h[sn_info.name] = x0.copy()
                     else:
                         raise ValueError(
-                            f"initial_states[{i}] must have shape (nvar, nnodes, nmodes) "
-                            f"or (n_sweeps, nvar, nnodes, nmodes), got {x0.shape}"
+                            f"initial_states[{i}] must have shape {expected} or "
+                            f"{(n_sweeps,) + expected}, got {x0.shape}"
                         )
                 else:
-                    rng = np.random.RandomState(42 + i)
-                    x0 = np.abs(rng.uniform(0.01, 0.05,
-                                 (sn_info.model.nvar, sn_info.n_nodes, sn_info.n_modes))
-                                 ).astype(np.float32)
+                    x0 = network_subnets[sn_info.name].zero_states().astype(np.float32)
                     sn_states_h[sn_info.name] = np.broadcast_to(
                         x0[np.newaxis], (n_sweeps,) + x0.shape
                     ).copy()
@@ -766,7 +1009,7 @@ class CompiledCUDASweepKernel:
         # ---- Build per-subnet ctavg accumulators (zeroed) ----
         ctavg_h = {}
         for sn_info in analysis.subnetworks:
-            ncvar = len(sn_info.model.coupling_terms)
+            ncvar = len(sn_info.model.cvar)
             nnodes = sn_info.n_nodes
             nmodes = sn_info.n_modes
             ctavg_h[sn_info.name] = np.zeros((n_sweeps, ncvar, nnodes, nmodes), dtype=np.float32)
@@ -817,6 +1060,17 @@ class CompiledCUDASweepKernel:
                 nmodes = sn_info.n_modes
                 raw_h[sn_info.name] = np.zeros((n_sweeps, n_raw_steps, nvoi, nnodes, nmodes), dtype=np.float32)
 
+        # Per-step coupling is internal to unified raw sweeps and opt-in because
+        # it can be as large as the raw state output.
+        ctraw_h = {}
+        if record_coupling:
+            for sn_info in analysis.subnetworks:
+                ncvar = len(sn_info.model.cvar)
+                ctraw_h[sn_info.name] = np.zeros(
+                    (n_sweeps, nstep, ncvar, sn_info.n_nodes, sn_info.n_modes),
+                    dtype=np.float32,
+                )
+
         # ---- Build per-subnet voi index arrays ----
         voi_idx_h = {}
         for sn_info in analysis.subnetworks:
@@ -827,34 +1081,40 @@ class CompiledCUDASweepKernel:
 
         # ---- Build per-subnet noise arrays (stochastic subnets only) ----
         noise_h = {}
+        rng_states = {}
+        rng_dimensions = {}
         for sn_info in analysis.subnetworks:
             if sn_info.is_stochastic:
                 rng = sn_info.integrator.noise.random_stream
                 nvar = sn_info.model.nvar
                 nnodes = sn_info.n_nodes
                 nmodes = sn_info.n_modes
-                # Cast to float32 early to avoid doubling memory during transpose
-                dw = rng.randn(n_sweeps, nstep, nvar, nnodes, nmodes).astype(np.float32, copy=False)
+                # Step-major draws make a snapshot split consume the same RNG
+                # sequence as an uninterrupted run, including multiple sweeps.
+                dw = rng.randn(nstep, n_sweeps, nvar, nnodes, nmodes).astype(np.float32, copy=False)
                 noise_std = np.float32(np.sqrt(2.0 * sn_info.noise_nsig * dt))
                 dw *= noise_std[np.newaxis, np.newaxis, :, np.newaxis, np.newaxis]
-                dw = np.ascontiguousarray(np.transpose(dw, (0, 2, 3, 4, 1)))
+                dw = np.ascontiguousarray(np.transpose(dw, (1, 2, 3, 4, 0)))
                 noise_h[sn_info.name] = dw
+                rng_states[sn_info.name] = copy.deepcopy(rng.get_state())
+                rng_dimensions[sn_info.name] = (
+                    n_sweeps, nvar, nnodes, nmodes
+                )
 
         # ---- Build per-subnet stimulus arrays (stimulus subnets only) ----
         stim_h = {}
         for sn_info in analysis.subnetworks:
             if sn_info.has_stimulus:
-                # Stimulus indexing: CPU backend uses stim.get_coupling(step_idx) with
-                # step_idx in [1, nstep]; CUDA kernel uses stim[tid, ic, j, m, t - 1]
-                # with t = t_local + t_offset. Both produce 0-based indexing into the
-                # stimulus array. The last dimension is step index in [0, nstep).
-                n_cvar = len(sn_info.model.coupling_terms)
+                # The device receives the full invocation stimulus array. data_t
+                # includes the chunk offset, so data_t - 1 selects its local sample.
+                n_cvar = len(sn_info.model.cvar)
                 stim_arr = np.zeros(
                     (n_cvar, sn_info.n_nodes, sn_info.n_modes, nstep),
                     dtype=np.float32,
                 )
                 for stim in analysis.stimuli_by_subnet[sn_info.name]:
-                    for step_idx in range(1, nstep + 1):
+                    target_slots = np.asarray(stim.target_cvar, dtype=np.intp)
+                    for step_idx in range(step_offset + 1, step_offset + nstep + 1):
                         sc = np.asarray(stim.get_coupling(step_idx), dtype=np.float32)
                         if sc.ndim == 2:
                             sc = sc[:, :, np.newaxis]
@@ -862,7 +1122,7 @@ class CompiledCUDASweepKernel:
                             sc = np.broadcast_to(
                                 sc, (sc.shape[0], sn_info.n_nodes, sn_info.n_modes)
                             ).copy()
-                        stim_arr[:, :, :, step_idx - 1] += sc
+                        stim_arr[target_slots, :, :, step_idx - step_offset - 1] += sc
                 stim_broadcast = np.broadcast_to(
                     stim_arr[np.newaxis], (n_sweeps, n_cvar, sn_info.n_nodes, sn_info.n_modes, nstep)
                 ).copy()
@@ -885,8 +1145,24 @@ class CompiledCUDASweepKernel:
         # ---- Build per-projection cfun params ----
         proj_cfun_params = []
         for p in analysis.all_projections:
-            cp = _cfun_params(p)
-            proj_cfun_params.append(cp)
+            base = _cfun_params(p)
+            params = np.broadcast_to(base[np.newaxis], (n_sweeps, len(base))).copy()
+            projection_dims = [
+                (dim, desc)
+                for dim, desc in enumerate(self.sweep_descriptor)
+                if desc['type'] == 'cfun' and desc['projection'] == p.name
+            ]
+            for row in range(n_sweeps):
+                row_projection = copy.copy(p)
+                row_projection.cfun = copy.copy(p.cfun)
+                for dim, desc in projection_dims:
+                    NbHybridBackend._cfun_set_param(
+                        row_projection.cfun,
+                        desc.get('param_idx', 0),
+                        sweep_values[row, dim],
+                    )
+                params[row] = _cfun_params(row_projection)
+            proj_cfun_params.append(params)
 
         # ---- Memory estimation ----
         bytes_per_sweep = 0
@@ -899,6 +1175,10 @@ class CompiledCUDASweepKernel:
             bytes_per_sweep += nvar * nnodes * nmodes * hz * 4
             nvoi = len(sn_info.model.variables_of_interest)
             bytes_per_sweep += nvoi * nnodes * nmodes * 4
+            ncvar = len(sn_info.model.cvar)
+            bytes_per_sweep += ncvar * nnodes * nmodes * 4
+            bytes_per_sweep += spatial_tavg_h[sn_info.name][0].nbytes
+            bytes_per_sweep += proj_tavg_h[sn_info.name][0].nbytes
 
         for sn_info in analysis.subnetworks:
             if sn_info.is_stochastic:
@@ -909,10 +1189,13 @@ class CompiledCUDASweepKernel:
 
         for sn_info in analysis.subnetworks:
             if sn_info.has_stimulus:
-                n_cvar = len(sn_info.model.coupling_terms)
+                n_cvar = len(sn_info.model.cvar)
                 nnodes = sn_info.n_nodes
                 nmodes = sn_info.n_modes
                 bytes_per_sweep += n_cvar * nnodes * nmodes * nstep * 4
+
+        for params in proj_cfun_params:
+            bytes_per_sweep += params.shape[1] * params.dtype.itemsize
 
         if monitor_type > 0:
             n_raw_steps = nstep if monitor_type == 1 else (nstep + monitor_period - 1) // monitor_period
@@ -921,6 +1204,11 @@ class CompiledCUDASweepKernel:
                 nnodes = sn_info.n_nodes
                 nmodes = sn_info.n_modes
                 bytes_per_sweep += nvoi * nnodes * nmodes * n_raw_steps * 4
+
+        if record_coupling:
+            for sn_info in analysis.subnetworks:
+                ncvar = len(sn_info.model.cvar)
+                bytes_per_sweep += ncvar * sn_info.n_nodes * sn_info.n_modes * nstep * 4
 
         if bold_period is not None:
             for sn_info in analysis.subnetworks:
@@ -960,10 +1248,9 @@ class CompiledCUDASweepKernel:
                 'idelays': cuda.to_device(p.idelays.astype(np.int32)),
                 'source_cvar': cuda.to_device(p.source_cvar.astype(np.int32)),
                 'target_cvar': cuda.to_device(p.target_cvar.astype(np.int32)),
-                'target_cvar_cpl': cuda.to_device(p.target_cvar_cpl.astype(np.int32)),
+                'target_state_cvar': cuda.to_device(p.target_state_cvar.astype(np.int32)),
                 'scale': np.float32(p.scale),
                 'target_scales': cuda.to_device(p.target_scales.astype(np.float32)),
-                'cfun_params': cuda.to_device(proj_cfun_params[analysis.all_projections.index(p)]),
             }
             if p.is_inter:
                 if p.mode_map is not None:
@@ -988,6 +1275,7 @@ class CompiledCUDASweepKernel:
         result_spatial = []
         result_proj = []
         result_raw = None
+        result_ctraw = None
         result_bold = None
         total_elapsed = 0.0
         snapshot_states = {}
@@ -1001,6 +1289,9 @@ class CompiledCUDASweepKernel:
 
             # ---- Slice sweep-dependent host arrays ----
             batch_sv = sweep_values[batch_start:batch_end]
+            batch_proj_cfun_params = [
+                params[batch_start:batch_end] for params in proj_cfun_params
+            ]
 
             batch_sn_states = {}
             batch_src_bufs = {}
@@ -1016,6 +1307,11 @@ class CompiledCUDASweepKernel:
             for sn_info in analysis.subnetworks:
                 if sn_info.name in raw_h:
                     batch_raw[sn_info.name] = raw_h[sn_info.name][batch_start:batch_end]
+
+            batch_ctraw = {}
+            for sn_info in analysis.subnetworks:
+                if sn_info.name in ctraw_h:
+                    batch_ctraw[sn_info.name] = ctraw_h[sn_info.name][batch_start:batch_end]
 
             batch_noise = {}
             for sn_info in analysis.subnetworks:
@@ -1055,11 +1351,12 @@ class CompiledCUDASweepKernel:
                 src_bufs_h=batch_src_bufs,
                 tavg_h=batch_tavg,
                 raw_h=batch_raw,
+                ctraw_h=batch_ctraw,
                 noise_h=batch_noise,
                 stim_h=batch_stim,
                 voi_idx_h=voi_idx_h,
                 sp_h=sp_h,
-                proj_cfun_params=proj_cfun_params,
+                proj_cfun_params=batch_proj_cfun_params,
                 d_proj_data=d_proj_data,
                 d_voi_idxs=d_voi_idxs,
                 d_sps=d_sps,
@@ -1112,6 +1409,16 @@ class CompiledCUDASweepKernel:
                     if batch_idx == 0:
                         result_raw.append(np.zeros((n_sweeps,) + raw_arr.shape[1:], dtype=np.float32))
                     result_raw[i][batch_start:batch_end] = raw_arr
+
+            if batch_result.get('ctraw') is not None:
+                if result_ctraw is None:
+                    result_ctraw = []
+                for i, ctraw_arr in enumerate(batch_result['ctraw']):
+                    if batch_idx == 0:
+                        result_ctraw.append(np.zeros(
+                            (n_sweeps,) + ctraw_arr.shape[1:], dtype=np.float32
+                        ))
+                    result_ctraw[i][batch_start:batch_end] = ctraw_arr
 
             if batch_result.get('bold') is not None:
                 if result_bold is None:
@@ -1170,6 +1477,8 @@ class CompiledCUDASweepKernel:
                 'states': snapshot_states,
                 'srcbufs': snapshot_srcbufs,
                 'step_offset': final_step_offset,
+                'rng_states': rng_states,
+                'rng_dimensions': rng_dimensions,
             },
         }
         # Add Bold state to snapshot if Bold was enabled
@@ -1179,6 +1488,8 @@ class CompiledCUDASweepKernel:
             result['ga_avg'] = ga_avg
         if result_raw is not None:
             result['raw'] = result_raw
+        if result_ctraw is not None:
+            result['ctraw'] = result_ctraw
         if result_bold is not None:
             result['bold'] = result_bold
         return result

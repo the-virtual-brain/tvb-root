@@ -1,4 +1,14 @@
 ##
+## TheVirtualBrain-Scientific Package. This package holds all simulators, and
+## analysers necessary to run brain-simulations. You can use it stand alone or
+## in conjunction with TheVirtualBrain-Framework Package.
+##
+## (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
+##
+## This program is free software: you can redistribute it and/or modify it under the
+## terms of the GNU General Public License as published by the Free Software Foundation,
+## either version 3 of the License, or (at your option) any later version.
+##
 ## nb-zerlaut-sweep-cuda.py.mako
 ##
 ## CUDA custom dfun generation for ZerlautAdaptationFirstOrder and

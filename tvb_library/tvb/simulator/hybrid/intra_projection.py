@@ -44,7 +44,12 @@ during the subnetwork's ``configure()`` phase.
 import numpy as np
 
 from .base_projection import BaseProjection
-from .cvar_utils import resolve_cvar_names, resolve_source_cvar, resolve_target_cvar, validate_cvar_indices
+from .cvar_utils import (
+    resolve_source_cvar,
+    resolve_target_cvar,
+    validate_cvar_indices,
+    validate_target_cvar_indices,
+)
 
 
 class IntraProjection(BaseProjection):
@@ -109,7 +114,7 @@ class IntraProjection(BaseProjection):
         cvar_source = getattr(self, "source_cvar", None)
         if cvar_source is not None and hasattr(self, "_source_model"):
             try:
-                self.source_cvar = resolve_cvar_names(self._source_model, cvar_source)
+                self.source_cvar = resolve_source_cvar(self._source_model, cvar_source)
                 validate_cvar_indices(self._source_model, self.source_cvar)
                 self._source_cvar_resolved = True
             except (AttributeError, TypeError, ValueError):
@@ -120,8 +125,8 @@ class IntraProjection(BaseProjection):
         cvar_target = getattr(self, "target_cvar", None)
         if cvar_target is not None and hasattr(self, "_target_model"):
             try:
-                self.target_cvar = resolve_cvar_names(self._target_model, cvar_target)
-                validate_cvar_indices(self._target_model, self.target_cvar)
+                self.target_cvar = resolve_target_cvar(self._target_model, cvar_target)
+                validate_target_cvar_indices(self._target_model, self.target_cvar)
                 self._target_cvar_resolved = True
             except (AttributeError, TypeError, ValueError):
                 # Model not yet configured, defer resolution
@@ -158,6 +163,7 @@ class IntraProjection(BaseProjection):
             cvar_target = getattr(self, "target_cvar", None)
             if cvar_target is not None:
                 self.target_cvar = resolve_target_cvar(model, cvar_target)
+                validate_target_cvar_indices(model, self.target_cvar)
                 self._target_cvar_resolved = True
 
     def initialize_history_buffer(self, initial_state: np.ndarray):
@@ -234,4 +240,11 @@ class IntraProjection(BaseProjection):
                 )
 
         identity_map = self._get_identity_mode_map(n_modes)
-        super().apply(tgt, t, identity_map, x_i=x_i)
+        target_model = getattr(self, "_target_model", None)
+        target_state_cvar = (
+            target_model.cvar[self.target_cvar] if target_model is not None else None
+        )
+        super().apply(
+            tgt, t, identity_map, x_i=x_i,
+            target_state_cvar=target_state_cvar,
+        )

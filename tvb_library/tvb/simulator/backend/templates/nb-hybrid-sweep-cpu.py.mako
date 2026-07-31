@@ -1,5 +1,17 @@
 ## -*- coding: utf-8 -*-
 ##
+## TheVirtualBrain-Scientific Package. This package holds all simulators, and
+## analysers necessary to run brain-simulations. You can use it stand alone or
+## in conjunction with TheVirtualBrain-Framework Package.
+##
+## (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
+##
+## This program is free software: you can redistribute it and/or modify it under the
+## terms of the GNU General Public License as published by the Free Software Foundation,
+## either version 3 of the License, or (at your option) any later version.
+##
+## Status: active
+##
 ## nb-hybrid-sweep-cpu.py.mako
 ##
 ## Generates a @nb.njit(parallel=True) sweep kernel that wraps the
@@ -51,7 +63,7 @@ def sweep_kernel(
     % if p.is_inter:
     ${p.name}_mode_map,
     % endif
-    ${p.name}_source_cvar, ${p.name}_target_cvar, ${p.name}_target_cvar_cpl,
+    ${p.name}_source_cvar, ${p.name}_target_cvar, ${p.name}_target_state_cvar,
     ${p.name}_scale, ${p.name}_target_scales,
     ${p.name}_cfun_params_all,  # (n_sweeps, n_params) float32 — per-sweep copies
     % endfor
@@ -62,10 +74,10 @@ def sweep_kernel(
     ${sn.name}_c_all,        # (n_sweeps, n_cvar, n_nodes, n_modes) — coupling scratch
     % endfor
     _tavg_count_all,  # (n_sweeps,) int32 — shared tavg counter
-    ## per-subnet noise arrays (stochastic only — shared across sweeps)
+    ## per-subnet noise arrays (stochastic only, one realization per sweep)
     % for sn in subnets:
     % if sn.is_stochastic:
-    ${sn.name}_noise,  # (n_vars, n_nodes, n_modes, nstep_total) float32
+    ${sn.name}_noise_all,  # (n_sweeps, n_vars, n_nodes, n_modes, nstep_total) float32
     % endif
     % endfor
     ## per-subnet stimulus arrays (shared)
@@ -98,9 +110,10 @@ def sweep_kernel(
         % for sn in subnets:
         ${sn.name}_state = ${sn.name}_state_all[_tid]
         ${sn.name}_srcbuf = ${sn.name}_srcbuf_all[_tid]
-        ${sn.name}_tavg = ${sn.name}_tavg_all[_tid]
-        ${sn.name}_ctavg = ${sn.name}_ctavg_all[_tid]
         ${sn.name}_c = ${sn.name}_c_all[_tid]
+        % if sn.is_stochastic:
+        ${sn.name}_noise = ${sn.name}_noise_all[_tid]
+        % endif
         % endfor
         ## Per-sweep cfun_params views
         % for p in all_projs:
@@ -113,21 +126,24 @@ def sweep_kernel(
         ${sn.name}_bold_state = ${sn.name}_bold_state_all[_tid]
         % endfor
 
-        ## Zero accumulators for this sweep point
-        % for sn in subnets:
-        ${sn.name}_tavg[:, :, :] = np.float32(0.0)
-        ${sn.name}_ctavg[:, :, :] = np.float32(0.0)
-        ${sn.name}_c[:, :, :] = np.float32(0.0)
-        ${sn.name}_spatial_tavg[:, :, :] = np.float32(0.0)
-        ${sn.name}_proj_tavg[:, :, :] = np.float32(0.0)
-        % endfor
-        _tavg_count_all[_tid] = 0
-        tavg_count = _tavg_count_all[_tid:_tid+1]  ## 1-element view, no heap allocation
+        for _step in range(_nstep):
+            % for sn in subnets:
+            ${sn.name}_tavg = ${sn.name}_tavg_all[_tid, _step]
+            ${sn.name}_ctavg = ${sn.name}_ctavg_all[_tid, _step]
+            ${sn.name}_tavg[:, :, :] = np.float32(0.0)
+            ${sn.name}_ctavg[:, :, :] = np.float32(0.0)
+            ${sn.name}_c[:, :, :] = np.float32(0.0)
+            ${sn.name}_spatial_tavg[:, :, :] = np.float32(0.0)
+            ${sn.name}_proj_tavg[:, :, :] = np.float32(0.0)
+            % endfor
+            _tavg_count_all[_tid, _step] = 0
+            tavg_count = _tavg_count_all[_tid, _step:_step+1]
 
-        ## Call network_chunk for this sweep point
-        network_chunk(
-            _nstep,
-            _t_start,
+            ## Keep every integration sample; Python applies the requested monitors.
+            network_chunk(
+            1,
+            _t_start + _step,
+            0,
             ## per-subnet states
             % for sn in subnets:
             ${sn.name}_state,
@@ -143,7 +159,7 @@ def sweep_kernel(
             % if p.is_inter:
             ${p.name}_mode_map,
             % endif
-            ${p.name}_source_cvar, ${p.name}_target_cvar, ${p.name}_target_cvar_cpl,
+            ${p.name}_source_cvar, ${p.name}_target_cvar, ${p.name}_target_state_cvar,
             ${p.name}_scale, ${p.name}_target_scales,
             ${p.name}_cfun_params,
             % endfor
@@ -190,6 +206,6 @@ def sweep_kernel(
             ${sn.name}_bold_voi_idx,
             % endfor
             _bold_dt,
-        )
+            )
 
         ## tavg_count is already a view into _tavg_count_all — no writeback needed

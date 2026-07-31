@@ -159,10 +159,10 @@ class TestResolveNamedParams:
         sn1 = Subnetwork(name="ctx", model=mpr, scheme=HeunDeterministic(dt=DT), nnodes=68)
         sn2 = Subnetwork(name="sub", model=jr, scheme=HeunDeterministic(dt=DT), nnodes=8)
         sn1.projections = [_make_intra(conn.weights[:68, :68], [0], [0])]
-        sn2.projections = [_make_intra(conn.weights[68:76, 68:76], [0], [2])]
+        sn2.projections = [_make_intra(conn.weights[68:76, 68:76], [0], [0])]
         sn1.configure(); sn2.configure()
         inter = _make_inter(sn1, sn2, conn.weights[:68, 68:76],
-                           conn.tract_lengths[:68, 68:76], [0], [2], cfun=Linear())
+                           conn.tract_lengths[:68, 68:76], [0], [0], cfun=Linear())
         ns = NetworkSet(subnets=[sn1, sn2], projections=[inter]); ns.configure()
 
         backend = NbHybridBackend()
@@ -217,7 +217,7 @@ class TestCPUSweep:
         assert result.tavg["ctx"].shape[0] == 5   # n_sweeps
         assert result.tavg["ctx"].shape[2] == 2   # n_voi
         assert result.tavg["ctx"].shape[3] == 76  # N
-        # merged_tavg may have chunk dim depending on backend path
+        # All backends preserve the sample axis.
         if result.merged_tavg is not None:
             assert result.merged_tavg.shape[0] == 5
 
@@ -229,10 +229,10 @@ class TestCPUSweep:
         sn1 = Subnetwork(name="ctx", model=mpr, scheme=HeunDeterministic(dt=DT), nnodes=68)
         sn2 = Subnetwork(name="sub", model=jr, scheme=HeunDeterministic(dt=DT), nnodes=8)
         sn1.projections = [_make_intra(conn.weights[:68, :68], [0], [0])]
-        sn2.projections = [_make_intra(conn.weights[68:76, 68:76], [0], [2])]
+        sn2.projections = [_make_intra(conn.weights[68:76, 68:76], [0], [0])]
         sn1.configure(); sn2.configure()
         inter = _make_inter(sn1, sn2, conn.weights[:68, 68:76],
-                           conn.tract_lengths[:68, 68:76], [0], [2], cfun=Linear())
+                           conn.tract_lengths[:68, 68:76], [0], [0], cfun=Linear())
         ns = NetworkSet(subnets=[sn1, sn2], projections=[inter]); ns.configure()
 
         backend = NbHybridBackend()
@@ -275,12 +275,8 @@ class TestCPUMultiCore:
             ns, params={"coupling_scale": sweep_vals},
             nstep=50, backend="cpu", n_workers=4)
 
-        # Sequential has chunk dim, prange has single accumulated chunk.
-        # Shapes differ: seq=(n_sweeps, n_chunks, ...), par=(n_sweeps, ...)
-        # Collapse seq chunk dim for comparison.
-        seq_collapsed = result_seq.merged_tavg.mean(axis=1)
         np.testing.assert_allclose(
-            seq_collapsed, result_par.merged_tavg,
+            result_seq.merged_tavg, result_par.merged_tavg,
             atol=1e-5, rtol=1e-5
         )
 
@@ -333,8 +329,7 @@ class TestGPUSweep:
             nstep=100, backend="auto")
 
         assert result.backend == "cuda"
-        assert result.merged_tavg.shape[0] == 20
-        assert result.merged_tavg.shape[2] == 76
+        assert result.merged_tavg.shape == (20, 100, 2, 76, 1)
 
     def test_gpu_vs_cpu_shapes(self):
         """GPU and CPU produce same-shaped output for the same sweep."""

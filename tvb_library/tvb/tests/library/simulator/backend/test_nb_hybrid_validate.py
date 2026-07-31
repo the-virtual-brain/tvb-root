@@ -644,14 +644,11 @@ class TestTemporalAverageMonitor(unittest.TestCase):
         nb_results = _run_numba_tavg(ns, self.NSTEP, [ic], self.PERIOD)
         nb_times, _ = nb_results[0]
 
-        # Numba backend computes mid_t = (2*t_start + chunk_size - 1) * 0.5 * dt
-        # where t_start is 1-indexed step of chunk start.
-        # For period=1.0, dt=0.1, chunk_size=10:
-        # First period: t_start=1, mid_t = (2 + 9) * 0.05 = 0.55
-        # Second period: t_start=11, mid_t = (22 + 9) * 0.05 = 1.55
+        # Match TemporalAverage.sample(): time = (step - istep / 2) * dt.
+        # For period=1.0, dt=0.1, the first two samples are 0.5 and 1.5.
         istep = int(round(self.PERIOD / DT))
         expected_times = [
-            (2 * (k * istep + 1) + istep - 1) * 0.5 * DT
+            ((k + 1) * istep - istep / 2.0) * DT
             for k in range(len(nb_times))
         ]
         assert_allclose(

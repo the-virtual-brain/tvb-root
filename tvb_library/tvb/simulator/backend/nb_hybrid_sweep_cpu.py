@@ -1,3 +1,15 @@
+# -*- coding: utf-8 -*-
+#
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# analysers necessary to run brain-simulations. You can use it stand alone or
+# in conjunction with TheVirtualBrain-Framework Package.
+#
+# (c) 2012-2025, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+#
 """
 CPU parameter sweep using Numba prange for thread-level parallelism.
 
@@ -17,13 +29,12 @@ values overridden per sweep point, stored as ``cfun_params_all[p.name]``
 with shape ``(n_sweeps, 8)``.
 """
 
+import copy
 import hashlib
 import importlib.util
 import os
 import sys
-import tempfile
 import time
-from pathlib import Path
 from typing import Optional
 
 import numpy as np
@@ -70,15 +81,22 @@ def compile_sweep_kernel(backend, analysis):
         return _SWEEP_KERNEL_CACHE[cache_key]
 
     # Write to disk for Numba caching
-    cache_dir = Path(tempfile.gettempdir()) / "tvb_nb_hybrid_cache"
-    cache_dir.mkdir(exist_ok=True)
-    mod_name = f"nbhybrid_sweep_{cache_key[:16]}"
+    cache_dir = backend.get_cache_dir()
+    mod_name = f"nbhybrid_sweep_{cache_key}"
     mod_path = cache_dir / f"{mod_name}.py"
 
-    if not mod_path.exists():
-        tmp_path = mod_path.with_suffix(".tmp")
-        tmp_path.write_text(full_source, encoding="utf-8")
-        os.replace(tmp_path, mod_path)
+    try:
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        if not mod_path.exists():
+            tmp_path = mod_path.with_suffix(".tmp")
+            tmp_path.write_text(full_source, encoding="utf-8")
+            os.replace(tmp_path, mod_path)
+    except OSError as exc:
+        raise OSError(
+            "Unable to create or write the Numba hybrid cache directory "
+            f"at '{cache_dir}' configured by TVB_NHYBRID_CACHE_DIR; "
+            "ensure the cache directory is writable."
+        ) from exc
 
     spec = importlib.util.spec_from_file_location(mod_name, mod_path)
     mod = importlib.util.module_from_spec(spec)
@@ -101,7 +119,11 @@ def run_sweep_prange(kernel_fn, analysis, network_set, sweep_descriptor,
     -------
     SweepResult
     """
-    from tvb.simulator.backend.nb_hybrid import SweepResult, _cfun_params
+    from tvb.simulator.backend.nb_hybrid import (
+        NbHybridBackend,
+        SweepResult,
+        _cfun_params,
+    )
 
     subnets = analysis.subnetworks
     all_projs = analysis.all_projections
@@ -145,7 +167,7 @@ def run_sweep_prange(kernel_fn, analysis, network_set, sweep_descriptor,
         n_nodes = sn.n_nodes
         n_modes = sn.n_modes
         nvoi = len(sn.model.variables_of_interest)
-        ncvar = len(sn.model.coupling_terms)
+        ncvar = len(sn.model.cvar)
         horizon = analysis.source_horizons.get(sn.name, 1)
 
         # Initial state
@@ -167,8 +189,10 @@ def run_sweep_prange(kernel_fn, analysis, network_set, sweep_descriptor,
             ).copy(), dtype=np.float32)
 
         # Output/scratch accumulators
-        tavg_all[sn.name] = np.zeros((n_sweeps, nvoi, n_nodes, n_modes), dtype=np.float32)
-        ctavg_all[sn.name] = np.zeros((n_sweeps, ncvar, n_nodes, n_modes), dtype=np.float32)
+        tavg_all[sn.name] = np.zeros(
+            (n_sweeps, nstep, nvoi, n_nodes, n_modes), dtype=np.float32)
+        ctavg_all[sn.name] = np.zeros(
+            (n_sweeps, nstep, ncvar, n_nodes, n_modes), dtype=np.float32)
         c_all[sn.name] = np.zeros((n_sweeps, ncvar, n_nodes, n_modes), dtype=np.float32)
 
         # Monitor accumulators (zeros — no monitors in sweep for now)
@@ -197,7 +221,7 @@ def run_sweep_prange(kernel_fn, analysis, network_set, sweep_descriptor,
         bold_voi_idx[sn.name] = np.array(voi_idx, dtype=np.int32)
 
     # Single shared tavg counter for all subnets
-    tavg_count_all = np.zeros(n_sweeps, dtype=np.int32)
+    tavg_count_all = np.zeros((n_sweeps, nstep), dtype=np.int32)
 
     # ---- Build per-projection cfun_params with swept entries ----
     cfun_params_all = {}
@@ -209,13 +233,22 @@ def run_sweep_prange(kernel_fn, analysis, network_set, sweep_descriptor,
             base[np.newaxis], (n_sweeps, len(base))
         ).copy().astype(np.float32)
 
-        # Override swept entries
-        for dim, desc in enumerate(sweep_descriptor):
-            if desc['type'] == 'cfun':
-                pname = desc['projection']
-                pidx = desc.get('param_idx', 0)
-                if p.name == pname:
-                    cfun_params_all[p.name][:, pidx] = sweep_values[:, dim]
+        projection_dims = [
+            (dim, desc)
+            for dim, desc in enumerate(sweep_descriptor)
+            if desc['type'] == 'cfun' and desc['projection'] == p.name
+        ]
+        if projection_dims:
+            for row in range(n_sweeps):
+                row_projection = copy.copy(p)
+                row_projection.cfun = copy.copy(p.cfun)
+                for dim, desc in projection_dims:
+                    NbHybridBackend._cfun_set_param(
+                        row_projection.cfun,
+                        desc.get('param_idx', 0),
+                        sweep_values[row, dim],
+                    )
+                cfun_params_all[p.name][row] = _cfun_params(row_projection)
 
         # Shared projection arrays
         proj_arrays[f'{p.name}_w_data'] = p.weights_data.astype(np.float32)
@@ -226,7 +259,7 @@ def run_sweep_prange(kernel_fn, analysis, network_set, sweep_descriptor,
             proj_arrays[f'{p.name}_mode_map'] = p.mode_map.astype(np.float32)
         proj_arrays[f'{p.name}_source_cvar'] = p.source_cvar.astype(np.int32)
         proj_arrays[f'{p.name}_target_cvar'] = p.target_cvar.astype(np.int32)
-        proj_arrays[f'{p.name}_target_cvar_cpl'] = p.target_cvar_cpl.astype(np.int32)
+        proj_arrays[f'{p.name}_target_state_cvar'] = p.target_state_cvar.astype(np.int32)
         proj_arrays[f'{p.name}_scale'] = np.float32(p.scale)
         if p.target_scales.size > 0:
             proj_arrays[f'{p.name}_target_scales'] = p.target_scales.astype(np.float32)
@@ -237,37 +270,81 @@ def run_sweep_prange(kernel_fn, analysis, network_set, sweep_descriptor,
     noise_arrays = {}
     stim_arrays = {}
     for sn in subnets:
-        sn_obj = next(s for s in network_set.subnets if s.name == sn.name)
         if sn.is_stochastic:
+            noise_arrays[sn.name] = np.empty(
+                (n_sweeps, sn.model.nvar, sn.n_nodes, sn.n_modes, nstep),
+                dtype=np.float32,
+            )
+
+    # Draw outside prange in the same sweep-major order as run_sweep(). Each
+    # row then owns an immutable realization and resetting the RNG replays the
+    # complete batch independently of thread scheduling.
+    for row in range(n_sweeps):
+        for sn in subnets:
+            if not sn.is_stochastic:
+                continue
+            sn_obj = next(s for s in network_set.subnets if s.name == sn.name)
             dt = sn_obj.scheme.dt
             rng = sn_obj.scheme.noise.random_stream
             dw = rng.randn(nstep, sn.model.nvar, sn.n_nodes, sn.n_modes)
             noise_std = np.sqrt(2.0 * sn.noise_nsig * dt)
             dw *= noise_std[np.newaxis, :, np.newaxis, np.newaxis]
-            noise_arrays[sn.name] = np.ascontiguousarray(
-                np.transpose(dw, (1, 2, 3, 0))).astype(np.float32)
+            noise_arrays[sn.name][row] = np.transpose(dw, (1, 2, 3, 0))
+
+    for sn in subnets:
+        sn_obj = next(s for s in network_set.subnets if s.name == sn.name)
         if sn.has_stimulus:
-            n_cvar = len(sn.model.coupling_terms)
+            n_cvar = len(sn.model.cvar)
             stim_arr = np.zeros(
                 (n_cvar, sn.n_nodes, sn.n_modes, nstep), dtype=np.float32)
             for stim in analysis.stimuli_by_subnet.get(sn.name, []):
+                target_slots = np.asarray(stim.target_cvar)
+                if target_slots.ndim != 1 or target_slots.size == 0:
+                    raise ValueError(
+                        f"Stimulus for subnetwork '{sn.name}' must have a non-empty "
+                        "one-dimensional target_cvar array"
+                    )
+                if target_slots.dtype.kind not in "iu":
+                    raise ValueError(
+                        f"Stimulus for subnetwork '{sn.name}' has non-integer target_cvar"
+                    )
+                target_slots = target_slots.astype(np.intp, copy=False)
+                if np.any(target_slots < 0) or np.any(target_slots >= n_cvar):
+                    raise ValueError(
+                        f"Stimulus for subnetwork '{sn.name}' has target coupling slots "
+                        f"{target_slots.tolist()} outside [0, {n_cvar - 1}]"
+                    )
+                target_shape = (target_slots.size, sn.n_nodes, sn.n_modes)
                 for step_idx in range(1, nstep + 1):
                     sc = np.asarray(stim.get_coupling(step_idx), dtype=np.float32)
                     if sc.ndim == 2:
                         sc = sc[:, :, np.newaxis]
-                    if sc.shape[2] == 1 and sn.n_modes > 1:
-                        sc = np.broadcast_to(
-                            sc, (sc.shape[0], sn.n_nodes, sn.n_modes)).copy()
-                    stim_arr[:, :, :, step_idx - 1] += sc
+                    if sc.ndim != 3 or any(
+                        actual not in (1, expected)
+                        for actual, expected in zip(sc.shape, target_shape)
+                    ):
+                        raise ValueError(
+                            f"Stimulus for subnetwork '{sn.name}' returned shape "
+                            f"{sc.shape}; expected a shape broadcastable to {target_shape}"
+                        )
+                    stim_arr[target_slots, :, :, step_idx - 1] += np.broadcast_to(
+                        sc, target_shape
+                    )
             stim_arrays[sn.name] = stim_arr
 
     # ---- Build spatial params ----
     sp_arrays = {}
     for sn in subnets:
-        sp_names = list(getattr(sn.model, 'spatial_parameter_names', []))
+        if hasattr(sn.model, '_nb_hybrid_runtime_parameter_names'):
+            sp_names = list(sn.model._nb_hybrid_runtime_parameter_names)
+        elif hasattr(sn.model, '_nb_hybrid_custom_template'):
+            sp_names = []
+        else:
+            sp_names = list(getattr(sn.model, 'spatial_parameter_names', []))
         if sp_names:
             sp_arrays[sn.name] = np.array(
-                [np.broadcast_to(getattr(sn.model, n), (sn.n_nodes,)).ravel()
+                [np.broadcast_to(np.asarray(getattr(sn.model, n)).ravel(),
+                                 (sn.n_nodes,))
                  for n in sp_names],
                 dtype=np.float32)
         else:
@@ -299,7 +376,7 @@ def run_sweep_prange(kernel_fn, analysis, network_set, sweep_descriptor,
             args.append(proj_arrays[f'{p.name}_mode_map'])
         args.append(proj_arrays[f'{p.name}_source_cvar'])
         args.append(proj_arrays[f'{p.name}_target_cvar'])
-        args.append(proj_arrays[f'{p.name}_target_cvar_cpl'])
+        args.append(proj_arrays[f'{p.name}_target_state_cvar'])
         args.append(proj_arrays[f'{p.name}_scale'])
         args.append(proj_arrays[f'{p.name}_target_scales'])
         args.append(cfun_params_all[p.name])  # (n_sweeps, len(cfun_params)) per-sweep
@@ -351,28 +428,23 @@ def run_sweep_prange(kernel_fn, analysis, network_set, sweep_descriptor,
     for sn in subnets:
         count = tavg_count_all.astype(np.float32)
         count = np.where(count > 0, count, np.float32(1.0))
-        count_4d = count[:, np.newaxis, np.newaxis, np.newaxis]
-        result_tavg[sn.name] = tavg_all[sn.name] / count_4d
-        result_ctavg[sn.name] = ctavg_all[sn.name] / count_4d
-
-        # Mode-0 selection: sum modes into mode-0 (matching CPU backend)
-        if result_tavg[sn.name].shape[-1] > 1:
-            result_tavg[sn.name] = result_tavg[sn.name].sum(axis=-1, keepdims=True)
-            result_ctavg[sn.name] = result_ctavg[sn.name].sum(axis=-1, keepdims=True)
+        count_5d = count[:, :, np.newaxis, np.newaxis, np.newaxis]
+        result_tavg[sn.name] = tavg_all[sn.name] / count_5d
+        result_ctavg[sn.name] = ctavg_all[sn.name] / count_5d
 
     # Build SweepResult
     subnet_names = [sn.name for sn in network_set.subnets]
-    n_vois = set(v.shape[1] for v in result_tavg.values())
+    n_vois = set(v.shape[2] for v in result_tavg.values())
     if len(n_vois) == 1 and len(subnet_names) > 1:
-        n_global = sum(result_tavg[sn.name].shape[2] for sn in subnets)
+        n_global = sum(result_tavg[sn.name].shape[3] for sn in subnets)
         ref = list(result_tavg.values())[0]
         merged = np.zeros(
-            (ref.shape[0], ref.shape[1], n_global, ref.shape[3]),
+            (ref.shape[0], ref.shape[1], ref.shape[2], n_global, ref.shape[4]),
             dtype=np.float32)
         offset = 0
         for sn_info in subnets:
-            n = result_tavg[sn_info.name].shape[2]
-            merged[:, :, offset:offset + n, :] = result_tavg[sn_info.name]
+            n = result_tavg[sn_info.name].shape[3]
+            merged[:, :, :, offset:offset + n, :] = result_tavg[sn_info.name]
             offset += n
         merged_tavg = merged
     elif len(subnet_names) == 1:
@@ -380,7 +452,8 @@ def run_sweep_prange(kernel_fn, analysis, network_set, sweep_descriptor,
     else:
         merged_tavg = None
 
-    times = np.array([0.0], dtype=np.float64)
+    dt = float(network_set.subnets[0].scheme.dt)
+    times = np.arange(1, nstep + 1, dtype=np.float64) * dt
 
     return SweepResult(
         tavg=result_tavg,

@@ -8,7 +8,7 @@
 ##
 ## The transfer-function pipeline (get_fluct_regime_vars → threshold_func →
 ## estimate_firing_rate → TF) is emitted as composed @njit helper functions
-## with all model parameters baked in as constants.
+## with scalar and per-node model parameters read from the runtime parameter matrix.
 ##
 <%page args="sn, debug_nojit, svars, cterms, svars_str, cterms_str, n_svars, dt_val, n_nodes, n_modes, int_type, lo_map, hi_map, i1svars_str"/>
 ## Expected template-level variables (set by the including template):
@@ -20,44 +20,12 @@
 ##   i1svars_str — for Heun predictor step
 
 <%
-    # Extract all parameters as float scalars for baking into generated code.
-    _cp = {}
-    _cp_names = [
-        # Membrane / passive
-        'g_L_grc', 'g_L_goc', 'g_L_mli', 'g_L_pc',
-        'E_L_grc', 'E_L_goc', 'E_L_mli', 'E_L_pc',
-        'C_m_grc', 'C_m_goc', 'C_m_mli', 'C_m_pc',
-        'E_e', 'E_i',
-        # Synaptic quantal conductances
-        'Q_mf_grc', 'Q_mf_goc', 'Q_grc_goc', 'Q_grc_mli', 'Q_grc_pc',
-        'Q_goc_grc', 'Q_goc_goc', 'Q_mli_mli', 'Q_mli_pc',
-        # Synaptic time constants
-        'tau_mf_grc', 'tau_mf_goc', 'tau_grc_goc', 'tau_grc_mli', 'tau_grc_pc',
-        'tau_goc_grc', 'tau_goc_goc', 'tau_mli_mli', 'tau_mli_pc',
-        # Synaptic convergence
-        'K_mossy_grc', 'K_mossy_goc', 'K_grc_goc', 'K_grc_mli', 'K_grc_pc',
-        'K_goc_goc', 'K_mli_mli', 'K_mli_pc',
-        # Population sizes (used in firing-rate normalisation?)
-        'N_grc', 'N_goc', 'N_mli', 'N_pc', 'N_mossy',
-        # Alpha (effective gain in firing rate estimation)
-        'alpha_grc', 'alpha_goc', 'alpha_mli', 'alpha_pc',
-        # Time scale & noise
-        'T', 'tau_OU', 'weight_noise',
-        'external_input_ex_ex', 'external_input_ex_in', 'external_input_in_ex',
-        # Coupling routing fractions
-        'frac_mossy', 'frac_parallel',
-        'mf_to_grc', 'mf_to_goc',
-        'pf_to_goc', 'pf_to_mli', 'pf_to_pc',
-    ]
-    for _pn in _cp_names:
-        _cp[_pn] = float(getattr(sn.model, _pn)[0])
+    _cp_names = list(sn.model._nb_hybrid_runtime_parameter_names)
+    _cp_indices = {name: index for index, name in enumerate(_cp_names)}
 
     # Legacy mode flags (baked as compile-time conditionals)
     _use_legacy_goc_e_e = bool(getattr(sn.model, 'use_legacy_goc_e_e')[0])
     _add_noise_mli_pc = bool(getattr(sn.model, 'add_noise_mli_pc')[0])
-
-    # When legacy mode is active, GoC uses E_i for both Ee and Ei
-    _goc_ee = float(sn.model.E_i[0]) if _use_legacy_goc_e_e else float(sn.model.E_e[0])
 
     # Polynomial coefficients — 5 each for the 4 populations
     import numpy as _np
@@ -66,16 +34,6 @@
     _P_mli = [float(x) for x in _np.asarray(sn.model.P_mli).ravel()[:5]]
     _P_pc  = [float(x) for x in _np.asarray(sn.model.P_pc).ravel()[:5]]
 %>
-
-## ------------------------------------------------------------------
-## Baked scalar parameters
-## ------------------------------------------------------------------
-% for _pn, _pv in _cp.items():
-_cp_${sn.name}_${_pn} = nb.float32(${_pv})
-% endfor
-
-## GoC excitatory reversal: E_i when legacy bug, E_e when fixed
-_cp_${sn.name}_goc_Ee = nb.float32(${_goc_ee})
 
 ## Legacy mode flags (compile-time)
 _USE_LEGACY_GOC_EE_${sn.name} = ${_use_legacy_goc_e_e}
@@ -224,65 +182,6 @@ def _crbl_TF_3d_${sn.name}(Fe, Fi, Fe_ext, W, Qe_gr, Te_gr, Ee, Qi, Ti, Ei, Gl, 
 
 
 ## ------------------------------------------------------------------
-## Population-specific TF wrappers with baked parameters
-## ------------------------------------------------------------------
-
-## GrC — excitatory, 2-input
-${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
-def _crbl_TF_grc_${sn.name}(fe_ext, fi, fe, fi_ext):
-    return _crbl_TF_2d_${sn.name}(fe_ext, fi, fe, fi_ext, nb.float32(0.0),
-        _cp_${sn.name}_Q_mf_grc, _cp_${sn.name}_tau_mf_grc, _cp_${sn.name}_E_e,
-        _cp_${sn.name}_Q_goc_grc, _cp_${sn.name}_tau_goc_grc, _cp_${sn.name}_E_i,
-        _cp_${sn.name}_g_L_grc, _cp_${sn.name}_C_m_grc, _cp_${sn.name}_E_L_grc,
-        _cp_${sn.name}_K_mossy_grc, _cp_${sn.name}_K_mossy_goc,
-        _cp_${sn.name}_alpha_grc,
-        _cp_${sn.name}_P_grc_0, _cp_${sn.name}_P_grc_1, _cp_${sn.name}_P_grc_2,
-        _cp_${sn.name}_P_grc_3, _cp_${sn.name}_P_grc_4)
-
-
-## GoC — inhibitory, 3-input
-## Uses _cp_${sn.name}_goc_Ee which is E_i when legacy bug, E_e when fixed
-${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
-def _crbl_TF_goc_${sn.name}(fe, fi, fe_ext):
-    return _crbl_TF_3d_${sn.name}(fe, fi, fe_ext, nb.float32(0.0),
-        _cp_${sn.name}_Q_grc_goc, _cp_${sn.name}_tau_grc_goc, _cp_${sn.name}_goc_Ee,
-        _cp_${sn.name}_Q_goc_goc, _cp_${sn.name}_tau_goc_goc, _cp_${sn.name}_E_i,
-        _cp_${sn.name}_g_L_goc, _cp_${sn.name}_C_m_goc, _cp_${sn.name}_E_L_goc,
-        _cp_${sn.name}_K_grc_goc, _cp_${sn.name}_K_goc_goc,
-        _cp_${sn.name}_K_mossy_goc,
-        _cp_${sn.name}_Q_mf_goc, _cp_${sn.name}_tau_mf_goc,
-        _cp_${sn.name}_alpha_goc,
-        _cp_${sn.name}_P_goc_0, _cp_${sn.name}_P_goc_1, _cp_${sn.name}_P_goc_2,
-        _cp_${sn.name}_P_goc_3, _cp_${sn.name}_P_goc_4)
-
-
-## MLI — inhibitory, 2-input
-${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
-def _crbl_TF_mli_${sn.name}(fe, fi, fe_ext, fi_ext):
-    return _crbl_TF_2d_${sn.name}(fe, fi, fe_ext, fi_ext, nb.float32(0.0),
-        _cp_${sn.name}_Q_grc_mli, _cp_${sn.name}_tau_grc_mli, _cp_${sn.name}_E_e,
-        _cp_${sn.name}_Q_mli_mli, _cp_${sn.name}_tau_mli_mli, _cp_${sn.name}_E_i,
-        _cp_${sn.name}_g_L_mli, _cp_${sn.name}_C_m_mli, _cp_${sn.name}_E_L_mli,
-        _cp_${sn.name}_K_grc_mli, _cp_${sn.name}_K_mli_mli,
-        _cp_${sn.name}_alpha_mli,
-        _cp_${sn.name}_P_mli_0, _cp_${sn.name}_P_mli_1, _cp_${sn.name}_P_mli_2,
-        _cp_${sn.name}_P_mli_3, _cp_${sn.name}_P_mli_4)
-
-
-## PC — inhibitory, 2-input
-${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
-def _crbl_TF_pc_${sn.name}(fe, fi, fe_ext, fi_ext):
-    return _crbl_TF_2d_${sn.name}(fe, fi, fe_ext, fi_ext, nb.float32(0.0),
-        _cp_${sn.name}_Q_grc_pc, _cp_${sn.name}_tau_grc_pc, _cp_${sn.name}_E_e,
-        _cp_${sn.name}_Q_mli_pc, _cp_${sn.name}_tau_mli_pc, _cp_${sn.name}_E_i,
-        _cp_${sn.name}_g_L_pc, _cp_${sn.name}_C_m_pc, _cp_${sn.name}_E_L_pc,
-        _cp_${sn.name}_K_grc_pc, _cp_${sn.name}_K_mli_pc,
-        _cp_${sn.name}_alpha_pc,
-        _cp_${sn.name}_P_pc_0, _cp_${sn.name}_P_pc_1, _cp_${sn.name}_P_pc_2,
-        _cp_${sn.name}_P_pc_3, _cp_${sn.name}_P_pc_4)
-
-
-## ------------------------------------------------------------------
 ## dfun — the actual derivative function
 ##
 ## Signature matches the non-combined integrate function call:
@@ -290,23 +189,10 @@ def _crbl_TF_pc_${sn.name}(fe, fi, fe_ext, fi_ext):
 ## ------------------------------------------------------------------
 ${'' if debug_nojit else '@nb.njit(inline="always", cache=True)'}
 def dfun_${sn.name}(GrC, GoC, MLI, PC, noise, mossy, parallel, _sp, ni):
-    T = _cp_${sn.name}_T
-    weight_noise = _cp_${sn.name}_weight_noise
-    ext_ex_ex = _cp_${sn.name}_external_input_ex_ex
-    ext_ex_in = _cp_${sn.name}_external_input_ex_in
-    ext_in_ex = _cp_${sn.name}_external_input_in_ex
-    tau_OU = _cp_${sn.name}_tau_OU
-    frac_mossy = _cp_${sn.name}_frac_mossy
-    frac_parallel = _cp_${sn.name}_frac_parallel
-    mf_to_grc = _cp_${sn.name}_mf_to_grc
-    mf_to_goc = _cp_${sn.name}_mf_to_goc
-    pf_to_goc = _cp_${sn.name}_pf_to_goc
-    pf_to_mli = _cp_${sn.name}_pf_to_mli
-    pf_to_pc = _cp_${sn.name}_pf_to_pc
-    K_mossy_grc = _cp_${sn.name}_K_mossy_grc
-    K_mossy_goc = _cp_${sn.name}_K_mossy_goc
-    K_grc_mli = _cp_${sn.name}_K_grc_mli
-    K_grc_pc = _cp_${sn.name}_K_grc_pc
+% for _pn, _pi in _cp_indices.items():
+    ${_pn} = _sp[${_pi}, ni]
+% endfor
+    goc_Ee = E_i if _USE_LEGACY_GOC_EE_${sn.name} else E_e
 
     ## Anatomical routing of coupling signals
     ## frac_mossy / frac_parallel split the coupling into pathways,
@@ -335,22 +221,39 @@ def dfun_${sn.name}(GrC, GoC, MLI, PC, noise, mossy, parallel, _sp, ni):
     Fi_ext = nb.float32(0.0)
 
     ## GrC — excitatory TF
-    d_GrC = (_crbl_TF_grc_${sn.name}(
-        Fe_ext_tod1 + ext_ex_ex, GoC, nb.float32(0.0),
-        Fi_ext + ext_ex_in) - GrC) / T
+    d_GrC = (_crbl_TF_2d_${sn.name}(
+        Fe_ext_tod1 + external_input_ex_ex, GoC, nb.float32(0.0),
+        Fi_ext + external_input_ex_in, nb.float32(0.0),
+        Q_mf_grc, tau_mf_grc, E_e, Q_goc_grc, tau_goc_grc, E_i,
+        g_L_grc, C_m_grc, E_L_grc, K_mossy_grc, K_mossy_goc, alpha_grc,
+        _cp_${sn.name}_P_grc_0, _cp_${sn.name}_P_grc_1, _cp_${sn.name}_P_grc_2,
+        _cp_${sn.name}_P_grc_3, _cp_${sn.name}_P_grc_4) - GrC) / T
 
     ## GoC — inhibitory TF (3-input: GrC, GoC, external)
-    ## GoC uses ext_in_ex (matching monolithic external_input_in_ex)
-    d_GoC = (_crbl_TF_goc_${sn.name}(
-        GrC, GoC, Fe_ext_tod2 + ext_in_ex) - GoC) / T
+    ## GoC uses external_input_in_ex (matching the monolithic model)
+    d_GoC = (_crbl_TF_3d_${sn.name}(
+        GrC, GoC, Fe_ext_tod2 + external_input_in_ex, nb.float32(0.0),
+        Q_grc_goc, tau_grc_goc, goc_Ee, Q_goc_goc, tau_goc_goc, E_i,
+        g_L_goc, C_m_goc, E_L_goc, K_grc_goc, K_goc_goc,
+        K_mossy_goc, Q_mf_goc, tau_mf_goc, alpha_goc,
+        _cp_${sn.name}_P_goc_0, _cp_${sn.name}_P_goc_1, _cp_${sn.name}_P_goc_2,
+        _cp_${sn.name}_P_goc_3, _cp_${sn.name}_P_goc_4) - GoC) / T
 
     ## MLI — inhibitory TF
-    d_MLI = (_crbl_TF_mli_${sn.name}(
-        GrC, MLI, Fe_ext_tod3, Fi_ext) - MLI) / T
+    d_MLI = (_crbl_TF_2d_${sn.name}(
+        GrC, MLI, Fe_ext_tod3, Fi_ext, nb.float32(0.0),
+        Q_grc_mli, tau_grc_mli, E_e, Q_mli_mli, tau_mli_mli, E_i,
+        g_L_mli, C_m_mli, E_L_mli, K_grc_mli, K_mli_mli, alpha_mli,
+        _cp_${sn.name}_P_mli_0, _cp_${sn.name}_P_mli_1, _cp_${sn.name}_P_mli_2,
+        _cp_${sn.name}_P_mli_3, _cp_${sn.name}_P_mli_4) - MLI) / T
 
     ## PC — inhibitory TF
-    d_PC = (_crbl_TF_pc_${sn.name}(
-        GrC, MLI, Fe_ext_tod4, Fi_ext) - PC) / T
+    d_PC = (_crbl_TF_2d_${sn.name}(
+        GrC, MLI, Fe_ext_tod4, Fi_ext, nb.float32(0.0),
+        Q_grc_pc, tau_grc_pc, E_e, Q_mli_pc, tau_mli_pc, E_i,
+        g_L_pc, C_m_pc, E_L_pc, K_grc_pc, K_mli_pc, alpha_pc,
+        _cp_${sn.name}_P_pc_0, _cp_${sn.name}_P_pc_1, _cp_${sn.name}_P_pc_2,
+        _cp_${sn.name}_P_pc_3, _cp_${sn.name}_P_pc_4) - PC) / T
 
     ## OU noise
     d_noise = -noise / tau_OU

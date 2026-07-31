@@ -46,6 +46,7 @@ Design and implementation plan: ``nb_hybrid_plan.md`` (same directory).
 
 from __future__ import annotations
 
+import copy
 import dataclasses
 import hashlib
 import numpy as np
@@ -92,12 +93,12 @@ class SweepResult:
     ----------
     tavg : dict[str, np.ndarray]
         Per-subnet temporal-average arrays with shape
-        ``(n_sweeps, n_voi, N_subnet, n_modes)``.
+        ``(n_sweeps, n_samples, n_voi, N_subnet, n_modes)``.
     merged_tavg : np.ndarray
         All subnets concatenated / reordered along the node axis,
-        shape ``(n_sweeps, n_voi, N_total, n_modes)``.
+        shape ``(n_sweeps, n_samples, n_voi, N_total, n_modes)``.
     ctavg : dict[str, np.ndarray]
-        Per-subnet coupling temporal-average (same shape as tavg).
+        Per-subnet coupling temporal-average with the same sample axis as tavg.
     times : np.ndarray
         Mid-point time vector, shape ``(n_chunks,)``.
     sweep_values : np.ndarray
@@ -105,7 +106,7 @@ class SweepResult:
     snapshot : dict or None
         Final execution state for resume (GPU-only for now).
     backend : str
-        ``'cpu-seq'``, ``'cpu-4c'``, ``'cpu-8c'``, etc., or ``'cuda'``.
+        ``'cpu-seq'``, ``'cpu-prange'``, or ``'cuda'``.
     elapsed : float
         Wall-clock seconds for the sweep execution (excludes compile).
     raw : dict[str, np.ndarray] or None
@@ -358,6 +359,36 @@ def _aggregate_chunks_to_period(times, data, period, dt, chunk_size):
     return new_times, avg_data
 
 
+def _aggregate_raw_outputs(raw_outputs, chunk_size):
+    """Restore the requested chunk view after a per-step BOLD run."""
+    if chunk_size == 1:
+        return raw_outputs
+    aggregated = []
+    for times, data, ctavg in raw_outputs:
+        slices = [slice(start, min(start + chunk_size, len(times)))
+                  for start in range(0, len(times), chunk_size)]
+        aggregated.append((
+            np.asarray([(times[part.start] + times[part.stop - 1]) * 0.5
+                        for part in slices]),
+            np.stack([data[part].mean(axis=0) for part in slices]),
+            np.stack([ctavg[part].mean(axis=0) for part in slices]),
+        ))
+    return aggregated
+
+
+def _copy_monitor_states(states):
+    """Copy configured monitor runtimes without losing transient TVB fields."""
+    if states is None:
+        return None
+    copied = {}
+    for key, runtime in states.items():
+        monitor = copy.copy(runtime["monitor"])
+        for name, value in vars(runtime["monitor"]).items():
+            setattr(monitor, name, value.copy() if isinstance(value, np.ndarray) else value)
+        copied[key] = {**runtime, "monitor": monitor}
+    return copied
+
+
 def _apply_monitors(
     raw_outputs: list,
     monitors: list,
@@ -365,6 +396,9 @@ def _apply_monitors(
     chunk_size: int = 1,
     monitor_data: Optional[dict] = None,
     subnet_infos: Optional[list] = None,
+    bold_states: Optional[dict] = None,
+    bold_raw_outputs: Optional[list] = None,
+    temporal_raw_outputs: Optional[list] = None,
 ) -> list:
     """Transform per-subnet (times, data, ctavg) tuples into monitor-dispatched output.
 
@@ -428,10 +462,9 @@ def _apply_monitors(
     # Extract pre-computed JIT monitor data if available
     spatial_per_sn = monitor_data.get('spatial', []) if monitor_data else []
     proj_per_sn = monitor_data.get('proj', []) if monitor_data else []
-    bold_per_sn = monitor_data.get('bold', []) if monitor_data else []
 
     results: list = []
-    for m in monitors:
+    for monitor_index, m in enumerate(monitors):
         per_subnet: list = []
         for si, (times, data, ctavg) in enumerate(raw_outputs):
             if isinstance(m, AfferentCoupling):
@@ -466,22 +499,49 @@ def _apply_monitors(
                 else:
                     per_subnet.append((times, data.mean(axis=-2, keepdims=True)))
             elif isinstance(m, Bold):
-                # Use JIT-computed Balloon model BOLD signal
-                if si < len(bold_per_sn):
-                    bold_times, bold_data = bold_per_sn[si]
-                    if bold_data.ndim >= 3 and bold_data.shape[0] > 0:
-                        per_subnet.append((bold_times, bold_data))
+                # Keep the mutable HRF stocks outside the topology-specific
+                # compiled kernel and drive TVB's monitor with every state.
+                if bold_raw_outputs is not None:
+                    _, data, _ = bold_raw_outputs[si]
+                state_key = ("bold", monitor_index, si)
+                runtime = bold_states.get(state_key) if bold_states is not None else None
+                if runtime is None:
+                    bold = copy.deepcopy(m)
+                    bold._config_dt(dt)
+                    if bold.variables_of_interest is None or bold.variables_of_interest.size == 0:
+                        bold.voi = np.arange(data.shape[1], dtype=int)
                     else:
-                        n_chunks, n_voi, n_nodes, n_modes = data.shape
-                        per_subnet.append((
-                            np.array([], dtype=np.float64),
-                            np.empty((0, n_voi, n_nodes, n_modes), dtype=np.float32),
-                        ))
+                        bold.voi = np.asarray(bold.variables_of_interest, dtype=int)
+                    bold.compute_hrf()
+                    bold._config_stock(
+                        num_vars=len(bold.voi),
+                        num_nodes=data.shape[2],
+                        num_modes=data.shape[3],
+                    )
+                    runtime = {"monitor": bold, "step": 0}
+                    if bold_states is not None:
+                        bold_states[state_key] = runtime
                 else:
-                    n_chunks, n_voi, n_nodes, n_modes = data.shape
+                    bold = runtime["monitor"]
+
+                samples = [
+                    sample
+                    for step, state in enumerate(data, start=runtime["step"] + 1)
+                    if (sample := bold.sample(step, state)) is not None
+                ]
+                runtime["step"] += len(data)
+                if samples:
+                    per_subnet.append((
+                        np.asarray([sample[0] for sample in samples]),
+                        np.stack([sample[1] for sample in samples]),
+                    ))
+                else:
                     per_subnet.append((
                         np.array([], dtype=np.float64),
-                        np.empty((0, n_voi, n_nodes, n_modes), dtype=np.float32),
+                        np.empty(
+                            (0, len(bold.voi), data.shape[2], data.shape[3]),
+                            dtype=np.float64,
+                        ),
                     ))
             elif isinstance(m, SpatialAverage):
                 # In merged mode, spatial_mean covers all connectome nodes,
@@ -521,7 +581,49 @@ def _apply_monitors(
                         np.empty((0,) + data.shape[1:], dtype=data.dtype),
                     ))
             elif isinstance(m, TemporalAverage):
-                per_subnet.append((times, data))
+                if temporal_raw_outputs is None:
+                    per_subnet.append((times, data))
+                    continue
+                _, sample_data, _ = temporal_raw_outputs[si]
+                state_key = ("temporal_average", monitor_index, si)
+                runtime = bold_states.get(state_key) if bold_states is not None else None
+                if runtime is None:
+                    temporal_average = copy.deepcopy(m)
+                    temporal_average._config_dt(dt)
+                    if (temporal_average.variables_of_interest is None or
+                            temporal_average.variables_of_interest.size == 0):
+                        temporal_average.voi = np.arange(sample_data.shape[1], dtype=int)
+                    else:
+                        temporal_average.voi = np.asarray(
+                            temporal_average.variables_of_interest, dtype=int
+                        )
+                    temporal_average._config_stock(
+                        len(temporal_average.voi), sample_data.shape[2],
+                        sample_data.shape[3]
+                    )
+                    runtime = {"monitor": temporal_average, "step": 0}
+                    if bold_states is not None:
+                        bold_states[state_key] = runtime
+                else:
+                    temporal_average = runtime["monitor"]
+                samples = [
+                    sample
+                    for step, state in enumerate(
+                        sample_data, start=runtime["step"] + 1
+                    )
+                    if (sample := temporal_average.sample(step, state)) is not None
+                ]
+                runtime["step"] += len(sample_data)
+                if samples:
+                    per_subnet.append((
+                        np.asarray([sample[0] for sample in samples]),
+                        np.stack([sample[1] for sample in samples]),
+                    ))
+                else:
+                    per_subnet.append((
+                        np.array([], dtype=np.float64),
+                        np.empty((0,) + sample_data.shape[1:], dtype=np.float64),
+                    ))
             elif isinstance(m, Raw):
                 per_subnet.append((times, data))
             else:
@@ -644,7 +746,7 @@ def _merge_and_spatial_average(
 
 
 def _cfun_type(p: "ProjectionInfo") -> str:
-    """Return the string coupling-function type for a ProjectionInfo."""
+    """Return the supported coupling type, rejecting unimplemented behavior."""
     from tvb.simulator.hybrid.coupling import (
         Linear,
         Scaling,
@@ -656,29 +758,38 @@ def _cfun_type(p: "ProjectionInfo") -> str:
         PreSigmoidal,
     )
 
-    if p.cfun is None:
+    cfun = p.cfun
+    if cfun is None:
         return "none"
-    if isinstance(p.cfun, Linear):
+    cfun_class = type(cfun)
+    if cfun_class is Linear:
         return "linear"
-    if isinstance(p.cfun, Scaling):
+    if cfun_class is Scaling:
         return "scaling"
-    if isinstance(p.cfun, Sigmoidal):
+    if cfun_class is Sigmoidal:
         return "sigmoidal"
-    if isinstance(p.cfun, SigmoidalJansenRit):
-        if getattr(p.cfun, 'use_classic', 1):
+    if cfun_class is SigmoidalJansenRit:
+        if (getattr(cfun, 'use_classic', 1)
+                and p.source_cvar.shape[0] == 2):
             return "sigmoidal_jr"
         return "sigmoidal_jr_legacy"
-    if isinstance(p.cfun, KuramotoCfun):
+    if cfun_class is KuramotoCfun:
         return "kuramoto"
-    if isinstance(p.cfun, Difference):
+    if cfun_class is Difference:
         return "difference"
-    if isinstance(p.cfun, HyperbolicTangent):
+    if cfun_class is HyperbolicTangent:
         return "tanh"
-    if isinstance(p.cfun, PreSigmoidal):
-        if getattr(p.cfun, 'dynamic', 0):
+    if cfun_class is PreSigmoidal:
+        if (getattr(cfun, 'dynamic', 0)
+                and p.source_cvar.shape[0] == 2):
             return "pre_sigmoidal_dynamic"
         return "pre_sigmoidal"
-    return "none"
+    raise NotImplementedError(
+        f"NbHybridBackend does not support coupling {cfun_class.__name__}. "
+        "Use one of the explicitly supported hybrid coupling classes: Linear, "
+        "Scaling, Sigmoidal, SigmoidalJansenRit, Kuramoto, Difference, "
+        "HyperbolicTangent, PreSigmoidal, or None."
+    )
 
 
 def _cfun_params(p: "ProjectionInfo") -> "np.ndarray":
@@ -695,7 +806,7 @@ def _cfun_params(p: "ProjectionInfo") -> "np.ndarray":
       difference:            [a, 0, 0, 0, 0, 0, 0, 0, ...]
       tanh:                  [a, b, midpoint, sigma, 0, 0, 0, 0, ...]
       pre_sigmoidal:         [H, Q, G, P, theta, 0, 0, 0, ...]          (static)
-      pre_sigmoidal_dynamic: [H, Q, G, P, 0, 0, 0, 0, ...]              (dynamic)
+      pre_sigmoidal_dynamic: [H, Q, G, P, 0, globalT, 0, 0, ...]        (dynamic)
     """
     from tvb.simulator.hybrid.coupling import (
         Linear,
@@ -708,6 +819,7 @@ def _cfun_params(p: "ProjectionInfo") -> "np.ndarray":
         PreSigmoidal,
     )
 
+    _cfun_type(p)
     arr = np.zeros(16, dtype=np.float32)
     arr[0] = 1.0  # default: identity scale
     if p.cfun is None:
@@ -730,7 +842,7 @@ def _cfun_params(p: "ProjectionInfo") -> "np.ndarray":
         arr[4] = float(p.cfun.cmax[0])
         return arr
     if isinstance(p.cfun, SigmoidalJansenRit):
-        if getattr(p.cfun, 'use_classic', 1):
+        if _cfun_type(p) == "sigmoidal_jr":
             # Classic mode: [a, cmin, cmax, r, midpoint]
             arr[0] = float(p.cfun.a[0])
             arr[1] = float(p.cfun.cmin[0])
@@ -740,6 +852,10 @@ def _cfun_params(p: "ProjectionInfo") -> "np.ndarray":
         else:
             # Legacy mode: [a, e0, r, v0]
             arr[0] = float(p.cfun.a[0])
+            if getattr(p.cfun, 'use_classic', 1):
+                # A classic cfun with one source cvar falls back in pre(), but
+                # its post() still applies a second amplitude factor.
+                arr[0] *= float(p.cfun.a[0])
             arr[1] = float(p.cfun.e0[0])
             arr[2] = float(p.cfun.r[0])
             arr[3] = float(p.cfun.v0[0])
@@ -761,9 +877,10 @@ def _cfun_params(p: "ProjectionInfo") -> "np.ndarray":
         arr[1] = float(p.cfun.Q[0])
         arr[2] = float(p.cfun.G[0])
         arr[3] = float(p.cfun.P[0])
-        if getattr(p.cfun, 'dynamic', 0):
+        if _cfun_type(p) == "pre_sigmoidal_dynamic":
             # Dynamic mode: theta not used, threshold from x_j[1]
             arr[4] = 0.0
+            arr[5] = float(bool(getattr(p.cfun, 'globalT', False)))
         else:
             # Static mode: theta
             arr[4] = float(p.cfun.theta[0])
@@ -779,20 +896,6 @@ def _needs_xi(p: "ProjectionInfo") -> bool:
     """
     ct = _cfun_type(p)
     return ct in ("difference", "kuramoto")
-
-
-def _n_src_cvar_pre(p: "ProjectionInfo") -> int:
-    """Return the number of source coupling variables consumed by pre().
-
-    Most coupling functions read one source cvar per projection edge.
-    SigmoidalJansenRit (classic) and PreSigmoidal (dynamic) read two.
-    """
-    ct = _cfun_type(p)
-    if ct == "sigmoidal_jr":
-        return 2
-    if ct == "pre_sigmoidal_dynamic":
-        return 2
-    return p.source_cvar.shape[0]
 
 
 def _cvar_mapping_mode(p: "ProjectionInfo") -> str:
@@ -828,6 +931,8 @@ class SubnetworkInfo:
     noise_nsig: Optional[np.ndarray] = None  # shape (n_vars,), only when is_stochastic
     has_stimulus: bool = False
     node_indices: Optional[np.ndarray] = None  # connectome positions, shape (n_nodes,)
+    clamp_indices: Optional[np.ndarray] = None  # configured state-variable indices
+    clamp_values: Optional[np.ndarray] = None  # shape (n_clamps, n_nodes, n_modes)
 
 
 @dataclasses.dataclass
@@ -836,8 +941,8 @@ class ProjectionInfo:
     source_subnet: str
     target_subnet: str
     source_cvar: np.ndarray  # (n_src_cvar,)
-    target_cvar: np.ndarray  # (n_tgt_cvar,) state-variable indices
-    target_cvar_cpl: np.ndarray  # (n_tgt_cvar,) coupling-variable indices (for tgt array)
+    target_cvar: np.ndarray  # (n_tgt_cvar,) coupling-slot indices
+    target_state_cvar: np.ndarray  # model.cvar[target_cvar], used only for x_i
     weights_data: np.ndarray  # (nnz,) float32
     weights_indices: np.ndarray  # (nnz,) int
     weights_indptr: np.ndarray  # (n_tgt+1,) int
@@ -919,18 +1024,23 @@ def _build_as_module(source: str, cache_key: str):
     import importlib.util
     import os
     import sys
-    import tempfile
-    from pathlib import Path
 
-    cache_dir = Path(tempfile.gettempdir()) / "tvb_nb_hybrid_cache"
-    cache_dir.mkdir(exist_ok=True)
-    mod_name = f"nbhybrid_{cache_key[:16]}"
+    cache_dir = NbHybridBackend.get_cache_dir()
+    mod_name = f"nbhybrid_{cache_key}"
     mod_path = cache_dir / f"{mod_name}.py"
-    if not mod_path.exists():
-        # Atomic write: write to .tmp then os.replace to avoid partial reads.
-        tmp_path = mod_path.with_suffix(".tmp")
-        tmp_path.write_text(source, encoding="utf-8")
-        os.replace(tmp_path, mod_path)
+    try:
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        if not mod_path.exists():
+            # Atomic write: write to .tmp then os.replace to avoid partial reads.
+            tmp_path = mod_path.with_suffix(".tmp")
+            tmp_path.write_text(source, encoding="utf-8")
+            os.replace(tmp_path, mod_path)
+    except OSError as exc:
+        raise OSError(
+            "Unable to create or write the Numba hybrid cache directory "
+            f"at '{cache_dir}' configured by TVB_NHYBRID_CACHE_DIR; "
+            "ensure the cache directory is writable."
+        ) from exc
     spec = importlib.util.spec_from_file_location(mod_name, mod_path)
     mod = importlib.util.module_from_spec(spec)
     # Register in sys.modules so Numba can find it for cache lookup.
@@ -958,7 +1068,7 @@ class CompiledNetworkFn:
     _analysis: "NetworkAnalysis"
     _run_network_fn: object  # the exec'd Python callable
     _network_set: NetworkSet
-    _bold_states: Optional[dict]  # per-subnetwork Bold Balloon state, persisted across calls
+    _bold_states: Optional[dict]  # per-monitor/subnetwork HRF monitor state
     _compiled: bool = False  # True after Numba JIT warmup has completed
 
     def warmup(self) -> float:
@@ -1002,8 +1112,7 @@ class CompiledNetworkFn:
             rng.set_state(saved_state)
 
         self._compiled = True
-        # Reset Bold state — the warmup step was purely to trigger JIT;
-        # real simulations should start from a clean Bold ODE state.
+        # The warmup has no monitors; real runs start with clean monitor state.
         self._bold_states = None
         return elapsed
 
@@ -1015,6 +1124,9 @@ class CompiledNetworkFn:
         return_snapshot: bool = False,
         _initial_buffers: Optional[dict] = None,
         monitors: Optional[list] = None,
+        _step_offset: int = 0,
+        _rng_states: Optional[list] = None,
+        _monitor_states: Optional[dict] = None,
     ) -> list:
         """Execute the pre-compiled kernel for *nstep* integration steps.
 
@@ -1052,8 +1164,8 @@ class CompiledNetworkFn:
               - If *monitors* is provided: list per monitor of list per subnetwork
                 of (times, data).
             When *return_snapshot* is True: ``(outputs, snapshot)`` where *snapshot*
-            is a dict with keys ``'states'`` and ``'buffers'`` suitable for passing
-            to :meth:`resume`.
+            contains integration states, history buffers, absolute step, RNG
+            positions, and monitor runtime state for :meth:`resume`.
         """
         # Resolve chunk_size: auto-compute from monitor periods when not specified
         dt = self._network_set.subnets[0].scheme.dt
@@ -1080,24 +1192,47 @@ class CompiledNetworkFn:
                         "The step-based selection mask assumes one step per chunk. "
                         "Pass chunk_size=1 or use TemporalAverage instead."
                     )
+        execution_chunk_size = chunk_size
+        kernel_monitors = monitors
+        has_bold = False
+        has_temporal_average = False
+        if monitors is not None:
+            from tvb.simulator.monitors import Bold, TemporalAverage
+
+            has_bold = any(isinstance(m, Bold) for m in monitors)
+            has_temporal_average = any(isinstance(m, TemporalAverage) for m in monitors)
+            if has_bold or has_temporal_average:
+                # Stateful Python monitors consume every observed integration state.
+                execution_chunk_size = 1
+                kernel_monitors = []
+                if self._bold_states is None:
+                    self._bold_states = {}
+        if _monitor_states is not None:
+            self._bold_states = _copy_monitor_states(_monitor_states)
+
         outputs, final_states, final_bufs, monitor_data = self._backend._run_compiled(
             self._run_network_fn,
             self._analysis,
             self._network_set,
             nstep,
-            chunk_size,
+            execution_chunk_size,
             initial_states,
             _initial_buffers=_initial_buffers,
-            monitors=monitors,
-            _bold_states=self._bold_states,
+            monitors=kernel_monitors,
+            step_offset=_step_offset,
+            rng_states=_rng_states,
         )
-        # Persist Bold state across calls (Balloon model needs continuity)
-        if monitor_data.get('bold_states'):
-            self._bold_states = monitor_data['bold_states']
         if monitors is not None:
+            bold_raw_outputs = outputs if has_bold else None
+            temporal_raw_outputs = outputs if has_temporal_average else None
+            if has_bold or has_temporal_average:
+                outputs = _aggregate_raw_outputs(outputs, chunk_size)
             outputs = _apply_monitors(outputs, monitors, dt, chunk_size=chunk_size,
                                       monitor_data=monitor_data,
-                                      subnet_infos=self._analysis.subnetworks)
+                                      subnet_infos=self._analysis.subnetworks,
+                                      bold_states=self._bold_states,
+                                      bold_raw_outputs=bold_raw_outputs,
+                                      temporal_raw_outputs=temporal_raw_outputs)
         if not return_snapshot:
             return outputs
         snapshot = {
@@ -1105,6 +1240,11 @@ class CompiledNetworkFn:
                 final_states[sn.name].copy() for sn in self._analysis.subnetworks
             ],
             "buffers": {name: buf.copy() for name, buf in final_bufs.items()},
+            "step": _step_offset + nstep,
+            "rng_states": self._backend._get_rng_states(
+                self._analysis, self._network_set
+            ),
+            "monitor_states": _copy_monitor_states(self._bold_states),
         }
         return outputs, snapshot
 
@@ -1114,6 +1254,7 @@ class CompiledNetworkFn:
         nstep: int,
         chunk_size: int = None,
         return_snapshot: bool = False,
+        monitors: Optional[list] = None,
     ) -> list:
         """Resume a simulation from a snapshot returned by :meth:`run`.
 
@@ -1129,20 +1270,25 @@ class CompiledNetworkFn:
             Steps per temporal-average chunk.  When *None*, defaults to 1.
         return_snapshot : bool
             If True, also return a new snapshot of the final state.
+        monitors : list of Monitor, optional
+            Monitors to continue. Their runtime stock and sample phase are
+            restored from the snapshot by monitor position.
 
         Returns
         -------
         list or (list, dict)
             Same format as :meth:`run`.
         """
-        if chunk_size is None:
-            chunk_size = 1
         return self.run(
             nstep,
             chunk_size,
             initial_states=snapshot["states"],
             return_snapshot=return_snapshot,
             _initial_buffers=snapshot["buffers"],
+            monitors=monitors,
+            _step_offset=snapshot.get("step", 0),
+            _rng_states=snapshot.get("rng_states"),
+            _monitor_states=snapshot.get("monitor_states"),
         )
 
 
@@ -1166,10 +1312,22 @@ class NbHybridBackend(MakoUtilMix):
     @staticmethod
     def get_cache_dir():
         """Return the directory where disk cache files are written."""
-        import tempfile
+        import os
         from pathlib import Path
 
-        return Path(tempfile.gettempdir()) / "tvb_nb_hybrid_cache"
+        configured = os.environ.get("TVB_NHYBRID_CACHE_DIR")
+        if configured is not None:
+            if not configured:
+                raise OSError(
+                    "TVB_NHYBRID_CACHE_DIR configures an empty Numba hybrid "
+                    "cache directory path; provide a writable directory."
+                )
+            return Path(configured).expanduser()
+
+        cache_home = os.environ.get("XDG_CACHE_HOME")
+        if cache_home:
+            return Path(cache_home).expanduser() / "tvb" / "nb_hybrid"
+        return Path.home() / ".cache" / "tvb" / "nb_hybrid"
 
     @classmethod
     def clear_cache(cls):
@@ -1198,9 +1356,9 @@ class NbHybridBackend(MakoUtilMix):
         ``network_chunk`` kernel (~1-3 s depending on model complexity).  When
         *eager* is True (default), this compilation happens here, avoiding a
         surprise latency spike on the first :meth:`CompiledNetworkFn.run` call.
-        The compiled kernel is also saved to a Numba disk cache
-        (``/tmp/tvb_nb_hybrid_cache/``) so that subsequent Python processes
-        skip JIT entirely (~5 ms instead of ~1.7 s).
+        The compiled kernel is also saved to a user-configurable Numba disk
+        cache so subsequent Python processes skip JIT entirely (~5 ms instead
+        of ~1.7 s). Set ``TVB_NHYBRID_CACHE_DIR`` to override its location.
 
         Parameters
         ----------
@@ -1380,6 +1538,8 @@ class NbHybridBackend(MakoUtilMix):
         _initial_buffers: Optional[dict] = None,
         monitors: Optional[list] = None,
         _bold_states: Optional[dict] = None,
+        step_offset: int = 0,
+        rng_states: Optional[list] = None,
     ) -> tuple:
         """Build the argument list and call the pre-compiled kernel."""
         # Guard: chunk_size must not exceed the minimum horizon
@@ -1393,7 +1553,19 @@ class NbHybridBackend(MakoUtilMix):
                     "lengths / reduce dt."
                 )
         # Build argument list matching the generated run_network() signature
-        args = [nstep]
+        args = [nstep, step_offset]
+
+        if rng_states is not None:
+            stochastic_index = 0
+            for sn_info in analysis.subnetworks:
+                if sn_info.is_stochastic:
+                    sn_obj = next(
+                        s for s in network_set.subnets if s.name == sn_info.name
+                    )
+                    sn_obj.scheme.noise.random_stream.set_state(
+                        rng_states[stochastic_index]
+                    )
+                    stochastic_index += 1
 
         # Per-subnetwork initial states (from provided list or zero)
         sn_states = {}
@@ -1433,7 +1605,7 @@ class NbHybridBackend(MakoUtilMix):
                 args.append(p.mode_map.astype(np.float32))
             args.append(p.source_cvar.astype(np.int32))
             args.append(p.target_cvar.astype(np.int32))
-            args.append(p.target_cvar_cpl.astype(np.int32))
+            args.append(p.target_state_cvar.astype(np.int32))
             args.append(np.float32(p.scale))
             ts = (
                 p.target_scales.astype(np.float32)
@@ -1475,30 +1647,60 @@ class NbHybridBackend(MakoUtilMix):
                     dtype=np.float32,
                 )
                 for stim in analysis.stimuli_by_subnet[sn_info.name]:
-                    for step_idx in range(1, nstep + 1):
+                    target_slots = np.asarray(stim.target_cvar)
+                    if target_slots.ndim != 1 or target_slots.size == 0:
+                        raise ValueError(
+                            f"Stimulus for subnetwork '{sn_info.name}' must have a "
+                            "non-empty one-dimensional target_cvar array of coupling slots; "
+                            f"got shape {target_slots.shape}."
+                        )
+                    if target_slots.dtype.kind not in "iu":
+                        raise ValueError(
+                            f"Stimulus for subnetwork '{sn_info.name}' has non-integer "
+                            f"target_cvar values {target_slots.tolist()}."
+                        )
+                    target_slots = target_slots.astype(np.intp, copy=False)
+                    if np.any(target_slots < 0) or np.any(target_slots >= n_cvar):
+                        raise ValueError(
+                            f"Stimulus for subnetwork '{sn_info.name}' has target coupling "
+                            f"slots {target_slots.tolist()} outside [0, {n_cvar - 1}]."
+                        )
+                    target_shape = (
+                        target_slots.size,
+                        sn_info.n_nodes,
+                        sn_info.n_modes,
+                    )
+                    for step_idx in range(step_offset + 1, step_offset + nstep + 1):
                         sc = np.asarray(stim.get_coupling(step_idx), dtype=np.float32)
                         if sc.ndim == 2:
                             sc = sc[:, :, np.newaxis]
-                        if sc.shape[2] == 1 and sn_info.n_modes > 1:
-                            sc = np.broadcast_to(
-                                sc, (sc.shape[0], sn_info.n_nodes, sn_info.n_modes)
-                            ).copy()
-                        # broadcast += matches Python path (tgt += stim.get_coupling(step))
-                        stim_arr[:, :, :, step_idx - 1] += sc
+                        if sc.ndim != 3 or any(
+                            actual not in (1, expected)
+                            for actual, expected in zip(sc.shape, target_shape)
+                        ):
+                            raise ValueError(
+                                f"Stimulus for subnetwork '{sn_info.name}' targeting coupling "
+                                f"slots {target_slots.tolist()} returned shape {sc.shape} at "
+                                f"step {step_idx}; expected a shape broadcastable to "
+                                f"{target_shape} as (target_cvar, nodes, modes)."
+                            )
+                        sc = np.broadcast_to(sc, target_shape)
+                        # target_cvar contains coupling-slot indices, not state indices.
+                        stim_arr[target_slots, :, :, step_idx - step_offset - 1] += sc
                 args.append(stim_arr)
 
         # Per-subnetwork spatial parameter arrays (heterogeneous per-node parameters)
-        # Custom-template models bake all params into generated code, so skip
-        # spatial_parameter_names auto-detection (which may pick up non-spatial
-        # arrays like P_grc[5] that can't broadcast to n_nodes).
         for sn_info in analysis.subnetworks:
-            if hasattr(sn_info.model, '_nb_hybrid_custom_template'):
+            if hasattr(sn_info.model, '_nb_hybrid_runtime_parameter_names'):
+                sp_names = list(sn_info.model._nb_hybrid_runtime_parameter_names)
+            elif hasattr(sn_info.model, '_nb_hybrid_custom_template'):
                 sp_names = []
             else:
                 sp_names = list(getattr(sn_info.model, 'spatial_parameter_names', []))
             if sp_names:
                 sp_arr = np.array(
-                    [np.broadcast_to(getattr(sn_info.model, n), (sn_info.n_nodes,)).ravel()
+                    [np.broadcast_to(np.asarray(getattr(sn_info.model, n)).ravel(),
+                                     (sn_info.n_nodes,))
                      for n in sp_names],
                     dtype=np.float32,
                 )
@@ -1625,6 +1827,18 @@ class NbHybridBackend(MakoUtilMix):
         return raw_outputs, sn_states, src_bufs, monitor_data
 
     @staticmethod
+    def _get_rng_states(analysis, network_set):
+        """Return stochastic stream positions in subnetwork order."""
+        states = []
+        for sn_info in analysis.subnetworks:
+            if sn_info.is_stochastic:
+                sn_obj = next(
+                    s for s in network_set.subnets if s.name == sn_info.name
+                )
+                states.append(sn_obj.scheme.noise.random_stream.get_state())
+        return states
+
+    @staticmethod
     def _compute_stimulus_lazy(
         analysis: "NetworkAnalysis",
         sn_info: "SubnetworkInfo",
@@ -1696,7 +1910,18 @@ class NbHybridBackend(MakoUtilMix):
             EulerStochastic,
         )
         dt0 = network_set.subnets[0].scheme.dt
+        for projection in network_set.projections:
+            _cfun_type(projection)
         for sn in network_set.subnets:
+            for projection in sn.projections:
+                _cfun_type(projection)
+        for sn in network_set.subnets:
+            model_local_coupling = getattr(sn.scheme, "model_local_coupling", 0.0)
+            if np.any(np.asarray(model_local_coupling) != 0.0):
+                raise NotImplementedError(
+                    "NbHybridBackend does not support nonzero local_coupling; "
+                    "the generated model dynamics currently assume local_coupling=0."
+                )
             if not isinstance(sn.model, _supported_models):
                 raise NotImplementedError(
                     f"NbHybridBackend does not support {type(sn.model).__name__}. "
@@ -1802,6 +2027,19 @@ class NbHybridBackend(MakoUtilMix):
                         f"by the Numba backend; got {type(noise_obj).__name__}. "
                         "Use HeunDeterministic or EulerDeterministic for deterministic integration."
                     )
+            clamp_indices = None
+            clamp_values = None
+            if sn.scheme.clamped_state_variable_values is not None:
+                clamp_indices = np.asarray(
+                    sn.scheme.clamped_state_variable_indices, dtype=np.int32
+                ).ravel()
+                values = np.asarray(
+                    sn.scheme.clamped_state_variable_values, dtype=np.float32
+                )
+                clamp_values = np.broadcast_to(
+                    values,
+                    (len(clamp_indices), sn.nnodes, sn.model.number_of_modes),
+                ).copy()
             subnets.append(
                 SubnetworkInfo(
                     name=sn.name,
@@ -1813,6 +2051,8 @@ class NbHybridBackend(MakoUtilMix):
                     noise_nsig=noise_nsig,
                     has_stimulus=bool(stims_by_subnet[sn.name]),
                     node_indices=getattr(sn, 'node_indices', None),
+                    clamp_indices=clamp_indices,
+                    clamp_values=clamp_values,
                 )
             )
 
@@ -1829,20 +2069,15 @@ class NbHybridBackend(MakoUtilMix):
                 # For intra, source and target are the same subnetwork
                 pi.source_subnet = sn_obj.name
                 pi.target_subnet = sn_obj.name
-                # Compute target_cvar_cpl: map state-var → coupling-var indices
-                tgt_model_cvar = list(sn_obj.model.cvar.astype(int))
-                for ic in range(len(pi.target_cvar)):
-                    sv = int(pi.target_cvar[ic])
-                    if sv in tgt_model_cvar:
-                        pi.target_cvar_cpl[ic] = tgt_model_cvar.index(sv)
-                    else:
-                        pi.target_cvar_cpl[ic] = 0
-                # Expand source_cvar for multi-cvar coupling functions
-                n_src_cvar_needed = _n_src_cvar_pre(pi)
-                if pi.source_cvar.shape[0] < n_src_cvar_needed:
-                    src_model_cvar = list(sn_obj.model.cvar.astype(int))
-                    if len(src_model_cvar) >= n_src_cvar_needed:
-                        pi.source_cvar = np.array(src_model_cvar[:n_src_cvar_needed], dtype=np.int32)
+                pi.n_src_modes = sn_obj.model.number_of_modes
+                target_model_cvar = np.asarray(sn_obj.model.cvar, dtype=np.int32)
+                if np.any(pi.target_cvar < 0) or np.any(pi.target_cvar >= len(target_model_cvar)):
+                    raise ValueError(
+                        f"Projection '{pi.name}' has target coupling slots "
+                        f"{pi.target_cvar.tolist()} outside "
+                        f"[0, {len(target_model_cvar) - 1}]"
+                    )
+                pi.target_state_cvar = target_model_cvar[pi.target_cvar]
                 intra_projs.append(pi)
 
         # Assign unique names to avoid collisions
@@ -1875,6 +2110,7 @@ class NbHybridBackend(MakoUtilMix):
         )
 
     def _build_projection_info(self, p, is_inter: bool) -> "ProjectionInfo":
+        _cfun_type(p)
         ts = (
             p.target_scales
             if p.target_scales is not None
@@ -1909,25 +2145,25 @@ class NbHybridBackend(MakoUtilMix):
             n_tgt_nodes = p.target.nnodes
         else:
             n_tgt_nodes = p.weights.shape[1]  # number of target nodes in intra-projection
-        # Compute target_cvar_cpl: map target state-variable indices to coupling-variable indices.
-        # The coupling scratch array (tgt) is indexed by coupling variable,
-        # but target_cvar uses state variable indices.  We need the reverse
-        # mapping: for each target_cvar[ic], find its position in the target
-        # model's cvar array.
         target_cvar_arr = np.atleast_1d(p.target_cvar).astype(np.int32)
         if is_inter:
-            tgt_model_cvar = list(p.target.model.cvar.astype(int))
+            target_model_cvar = np.asarray(p.target.model.cvar, dtype=np.int32)
+            if np.any(target_cvar_arr < 0) or np.any(target_cvar_arr >= len(target_model_cvar)):
+                raise ValueError(
+                    f"Projection '{proj_name}' has target coupling slots "
+                    f"{target_cvar_arr.tolist()} outside "
+                    f"[0, {len(target_model_cvar) - 1}]"
+                )
+            target_state_cvar = target_model_cvar[target_cvar_arr]
         else:
-            # intra: target model is the same as source; cvar available from p
-            # Caller will fix src_name/tgt_name later; for now try to get model cvar
-            tgt_model_cvar = None  # filled below
+            target_state_cvar = np.zeros(len(target_cvar_arr), dtype=np.int32)
         pi = ProjectionInfo(
             name=proj_name,
             source_subnet=src_name,
             target_subnet=tgt_name,
             source_cvar=np.atleast_1d(p.source_cvar).astype(np.int32),
             target_cvar=target_cvar_arr,
-            target_cvar_cpl=np.zeros(len(target_cvar_arr), dtype=np.int32),  # placeholder
+            target_state_cvar=target_state_cvar,
             weights_data=weights_csr.data.astype(np.float32),
             weights_indices=weights_csr.indices.astype(np.int32),
             weights_indptr=weights_csr.indptr.astype(np.int32),
@@ -1942,28 +2178,6 @@ class NbHybridBackend(MakoUtilMix):
             n_tgt_nodes=n_tgt_nodes,
             mode_map=mode_map,
         )
-        # Expand source_cvar for multi-cvar coupling functions.
-        # If the cfun needs 2 source cvars (SJR classic, PreSigmoidal dynamic)
-        # but source_cvar has only 1 element, expand it from the source model's cvar.
-        n_src_cvar_needed = _n_src_cvar_pre(pi)
-        if pi.source_cvar.shape[0] < n_src_cvar_needed:
-            if is_inter:
-                src_model_cvar = list(p.source.model.cvar.astype(int))
-            else:
-                # intra: will be fixed when caller sets src_name/tgt_name
-                src_model_cvar = None
-            if src_model_cvar is not None and len(src_model_cvar) >= n_src_cvar_needed:
-                pi.source_cvar = np.array(src_model_cvar[:n_src_cvar_needed], dtype=np.int32)
-
-        if is_inter and tgt_model_cvar is not None:
-            # Map state-var indices → coupling-var indices
-            for ic in range(len(target_cvar_arr)):
-                sv = int(target_cvar_arr[ic])
-                if sv in tgt_model_cvar:
-                    pi.target_cvar_cpl[ic] = tgt_model_cvar.index(sv)
-                else:
-                    # State var not in cvar: default to coupling index 0
-                    pi.target_cvar_cpl[ic] = 0
         if not is_inter:
             pi.n_src_modes = n_src_modes  # placeholder; filled per-subnetwork
         return pi
@@ -2033,7 +2247,7 @@ class NbHybridBackend(MakoUtilMix):
           difference:             [a]
           tanh:                  [a, b, midpoint, sigma]
           pre_sigmoidal:         [H, Q, G, P, theta]
-          pre_sigmoidal_dynamic: [H, Q, G, P, 0]
+          pre_sigmoidal_dynamic: [H, Q, G, P, 0, globalT]
         """
         from tvb.simulator.hybrid.coupling import (
             Linear, Scaling, Sigmoidal, SigmoidalJansenRit,
@@ -2103,15 +2317,11 @@ class NbHybridBackend(MakoUtilMix):
             HyperbolicTangent, PreSigmoidal,
         )
         if isinstance(cfun, Linear):
-            for i, attr in enumerate(['a', 'b']):
-                setattr(cfun, attr, np.array([float(value)])) if i == pidx else None
             setattr(cfun, ['a', 'b'][pidx], np.array([float(value)]))
         elif isinstance(cfun, Scaling):
             assert pidx == 0, f"Scaling: only param_idx=0, got {pidx}"
             cfun.a = np.array([float(value)])
         elif isinstance(cfun, Sigmoidal):
-            setattr(cfun, ['a', 'sigma', 'midpoint', 'cmin', 'cmax'][pidx],
-                    np.array([float(value)]))
             setattr(cfun, ['a', 'sigma', 'midpoint', 'cmin', 'cmax'][pidx],
                     np.array([float(value)]))
         elif isinstance(cfun, SigmoidalJansenRit):
@@ -2266,6 +2476,18 @@ class NbHybridBackend(MakoUtilMix):
         """
         import time as _time_mod
 
+        self._validate_sweep_monitor_options(
+            monitor, monitor_period, bold_period, chunk_size
+        )
+        if backend not in ("auto", "cpu", "cuda"):
+            raise ValueError(
+                f"Unsupported sweep backend {backend!r}; expected 'auto', 'cpu', or 'cuda'."
+            )
+        if (isinstance(nstep, (bool, np.bool_))
+                or not isinstance(nstep, (int, np.integer))
+                or nstep <= 0):
+            raise ValueError("nstep must be a positive integer")
+        self._check_compatibility(network_set)
         sweep_descriptor, sweep_values = self._resolve_named_params(network_set, params)
 
         use_cuda = False
@@ -2279,14 +2501,19 @@ class NbHybridBackend(MakoUtilMix):
                 pass
 
         if use_cuda:
-            return self._sweep_cuda(
-                network_set, sweep_descriptor, sweep_values, nstep,
-                monitor, monitor_period, bold_period, chunk_size,
-                initial_states, node_indices)
-        else:
-            return self._sweep_cpu(
-                network_set, sweep_descriptor, sweep_values, nstep,
-                n_workers, initial_states, node_indices)
+            try:
+                return self._sweep_cuda(
+                    network_set, sweep_descriptor, sweep_values, nstep,
+                    monitor, monitor_period, bold_period, chunk_size,
+                    initial_states, node_indices)
+            except NotImplementedError:
+                if backend == "cuda":
+                    raise
+
+        return self._sweep_cpu(
+            network_set, sweep_descriptor, sweep_values, nstep,
+            n_workers, monitor, monitor_period, bold_period, chunk_size,
+            initial_states, node_indices)
 
     def _sweep_cuda(self, network_set, sweep_descriptor, sweep_values,
                      nstep, monitor, monitor_period, bold_period,
@@ -2296,10 +2523,10 @@ class NbHybridBackend(MakoUtilMix):
 
         cuda_backend = NbHybridCUDASweepBackend()
         compiled = cuda_backend.compile_sweep(network_set, sweep_descriptor=sweep_descriptor)
-        kwargs = dict(sweep_values=sweep_values, nstep=nstep, monitor_type=monitor,
-                     monitor_period=monitor_period, node_indices=node_indices)
+        kwargs = dict(sweep_values=sweep_values, nstep=nstep, monitor_type="raw",
+                      monitor_period=1, node_indices=node_indices,
+                      record_coupling=True)
         if initial_states is not None: kwargs["initial_states"] = initial_states
-        if bold_period is not None: kwargs["bold_period"] = bold_period
         if chunk_size is not None: kwargs["chunk_size"] = chunk_size
 
         t0 = _time_mod.perf_counter()
@@ -2307,34 +2534,18 @@ class NbHybridBackend(MakoUtilMix):
         elapsed = _time_mod.perf_counter() - t0
 
         subnet_names = [sn.name for sn in network_set.subnets]
-        result = SweepResult(sweep_values=sweep_values, backend="cuda", elapsed=elapsed,
-                            snapshot=raw.get("snapshot"))
-        if raw.get("tavg"):
-            result.tavg = {}
-            for si, sname in enumerate(subnet_names):
-                arr = raw["tavg"][si]
-                # GPU may return shape (n_sweeps, n_voi, N, n_modes) where n_modes > 1;
-                # only mode-0 contains the summed signal.  Squeeze to match CPU format.
-                if arr.ndim == 4 and arr.shape[3] > 1:
-                    arr = arr[:, :, :, 0:1]  # keep dim but select mode 0
-                result.tavg[sname] = arr
-        if raw.get("merged_tavg") is not None:
-            arr = raw["merged_tavg"]
-            if arr.ndim == 4 and arr.shape[3] > 1:
-                arr = arr[:, :, :, 0:1]
-            result.merged_tavg = arr
-        elif result.tavg:
-            result.merged_tavg = np.concatenate(list(result.tavg.values()), axis=2)
-        if raw.get("ctavg"):
-            result.ctavg = dict(zip(subnet_names, raw["ctavg"]))
-        if raw.get("raw"):
-            result.raw = dict(zip(subnet_names, raw["raw"]))
-        if raw.get("bold"):
-            result.bold = dict(zip(subnet_names, raw["bold"]))
-        dt = network_set.subnets[0].scheme.dt
-        nc = raw["tavg"][0].shape[0] if raw.get("tavg") else nstep
-        result.times = np.arange(0.5, nc + 0.5) * dt * nstep / nc if nc > 0 else np.array([])
-        return result
+        result = SweepResult(
+            tavg=dict(zip(subnet_names, raw["raw"])),
+            ctavg=dict(zip(subnet_names, raw["ctraw"])),
+            sweep_values=sweep_values,
+            backend="cuda",
+            elapsed=elapsed,
+            snapshot=raw.get("snapshot"),
+        )
+        return self._finalize_sweep(
+            result, network_set, monitor, monitor_period, bold_period,
+            chunk_size, node_indices
+        )
 
     def _stack_cpu_results(self, raw_results, network_set, node_indices, sweep_values, backend_label, elapsed):
         """Stack CPU list-of-tuples into SweepResult.
@@ -2373,19 +2584,154 @@ class NbHybridBackend(MakoUtilMix):
         return SweepResult(tavg=tavg_dict, merged_tavg=merged_tavg, ctavg=ctavg_dict,
                           times=times, sweep_values=sweep_values, backend=backend_label, elapsed=elapsed)
 
+    @staticmethod
+    def _validate_sweep_monitor_options(monitor, monitor_period, bold_period,
+                                        chunk_size):
+        if monitor not in ("tavg", "raw", "subsample"):
+            raise ValueError(
+                f"Unsupported sweep monitor {monitor!r}; expected "
+                "'tavg', 'raw', or 'subsample'."
+            )
+        if chunk_size is not None and (
+            isinstance(chunk_size, (bool, np.bool_))
+            or not isinstance(chunk_size, (int, np.integer))
+            or chunk_size <= 0
+        ):
+            raise ValueError("chunk_size must be a positive integer")
+        if (isinstance(monitor_period, (bool, np.bool_))
+                or not isinstance(monitor_period, (int, np.integer))
+                or monitor_period <= 0):
+            raise ValueError("monitor_period must be a positive integer number of steps")
+        if bold_period is not None:
+            try:
+                valid_bold_period = (
+                    not isinstance(bold_period, (bool, np.bool_))
+                    and np.isfinite(float(bold_period))
+                    and float(bold_period) > 0
+                )
+            except (TypeError, ValueError):
+                valid_bold_period = False
+            if not valid_bold_period:
+                raise ValueError("bold_period must be positive")
+
+    def _finalize_sweep(self, result, network_set, monitor, monitor_period,
+                        bold_period, chunk_size, node_indices):
+        """Apply the common time-preserving sweep monitor contract."""
+        if chunk_size is None:
+            chunk_size = 1
+
+        per_step_tavg = result.tavg
+        per_step_ctavg = result.ctavg
+        scheme = getattr(network_set.subnets[0], 'scheme', None)
+        if scheme is not None:
+            dt = float(scheme.dt)
+        else:
+            returned_times = np.asarray(result.times)
+            if returned_times.size > 1:
+                dt = float(returned_times[1] - returned_times[0])
+            elif returned_times.size == 1:
+                dt = float(returned_times[0])
+            else:
+                dt = 1.0
+        per_step_times = np.arange(
+            1, next(iter(per_step_tavg.values())).shape[1] + 1,
+            dtype=np.float64,
+        ) * dt
+        slices = [slice(start, min(start + chunk_size, len(per_step_times)))
+                  for start in range(0, len(per_step_times), chunk_size)]
+        result.times = np.asarray([
+            (per_step_times[part.start] + per_step_times[part.stop - 1]) * 0.5
+            for part in slices
+        ], dtype=np.float64)
+        result.tavg = {
+            name: np.stack([values[:, part].mean(axis=1) for part in slices], axis=1)
+            for name, values in per_step_tavg.items()
+        }
+        result.ctavg = {
+            name: np.stack([values[:, part].mean(axis=1) for part in slices], axis=1)
+            for name, values in per_step_ctavg.items()
+        }
+
+        subnet_names = [sn.name for sn in network_set.subnets]
+        compatible = len({(values.shape[2], values.shape[4])
+                          for values in result.tavg.values()}) == 1
+        if not compatible:
+            result.merged_tavg = None
+        elif node_indices:
+            n_global = max(max(indices) for indices in node_indices.values()) + 1
+            ref = next(iter(result.tavg.values()))
+            merged = np.zeros(
+                (ref.shape[0], ref.shape[1], ref.shape[2], n_global, ref.shape[4]),
+                dtype=ref.dtype,
+            )
+            for name in subnet_names:
+                if name in node_indices:
+                    merged[:, :, :, node_indices[name], :] = result.tavg[name]
+            result.merged_tavg = merged
+        else:
+            result.merged_tavg = np.concatenate(
+                [result.tavg[name] for name in subnet_names], axis=3
+            )
+
+        if monitor in ("raw", "subsample"):
+            if monitor == "raw":
+                selected = np.arange(len(per_step_times))
+            else:
+                selected = np.arange(monitor_period - 1, len(per_step_times), monitor_period)
+            result.raw = {
+                name: values[:, selected].copy() for name, values in per_step_tavg.items()
+            }
+
+        if bold_period is not None:
+            from tvb.simulator.monitors import Bold
+
+            bold = {}
+            for name, values in per_step_tavg.items():
+                sweep_samples = []
+                for sweep_data in values:
+                    monitor_instance = Bold(period=float(bold_period))
+                    monitor_instance._config_dt(dt)
+                    monitor_instance.voi = np.arange(sweep_data.shape[1], dtype=int)
+                    monitor_instance.compute_hrf()
+                    monitor_instance._config_stock(*sweep_data.shape[1:])
+                    samples = [
+                        sample for step, state in enumerate(sweep_data, 1)
+                        if (sample := monitor_instance.sample(step, state)) is not None
+                    ]
+                    sweep_samples.append(
+                        np.stack([sample[1] for sample in samples])
+                        if samples else np.empty((0,) + sweep_data.shape[1:])
+                    )
+                bold[name] = np.stack(sweep_samples)
+            result.bold = bold
+        return result
+
     def _sweep_cpu(self, network_set, sweep_descriptor, sweep_values,
-                    nstep, n_workers, initial_states, node_indices):
+                    nstep, n_workers, monitor, monitor_period, bold_period,
+                    chunk_size, initial_states, node_indices):
         import time as _time_mod
-        if n_workers > 1:
+        if n_workers > 1 and all(
+            desc.get("type") == "cfun" for desc in sweep_descriptor
+        ):
             # Use prange-based parallel sweep instead of fork
-            return self._sweep_cpu_prange(
+            result = self._sweep_cpu_prange(
                 network_set, sweep_descriptor, sweep_values,
                 nstep, initial_states, node_indices)
-        t0 = _time_mod.perf_counter()
-        raw = self.run_sweep(network_set, sweep_values=sweep_values, nstep=nstep,
-                             sweep_descriptor=sweep_descriptor, initial_states=initial_states)
-        elapsed = _time_mod.perf_counter() - t0
-        return self._stack_cpu_results(raw, network_set, node_indices, sweep_values, "cpu-seq", elapsed)
+        else:
+            t0 = _time_mod.perf_counter()
+            raw = self.run_sweep(
+                network_set, sweep_values=sweep_values, nstep=nstep,
+                sweep_descriptor=sweep_descriptor, initial_states=initial_states,
+                chunk_size=1,
+            )
+            elapsed = _time_mod.perf_counter() - t0
+            result = self._stack_cpu_results(
+                raw, network_set, node_indices, sweep_values, "cpu-seq", elapsed
+            )
+        return self._finalize_sweep(
+            result, network_set, monitor, monitor_period, bold_period,
+            chunk_size, node_indices
+        )
 
 
     def _sweep_cpu_prange(self, network_set, sweep_descriptor, sweep_values,
@@ -2441,6 +2787,7 @@ class NbHybridBackend(MakoUtilMix):
             [{type: 'cfun', projection: 'proj_AB', param_idx: 0},
              {type: 'model', subnet: 'A', param: 'tau_E'}]
         """
+        self._check_compatibility(network_set)
         sweep_values = np.asarray(sweep_values, dtype=np.float32)
         if sweep_values.ndim == 1:
             sweep_values = sweep_values.reshape(-1, 1)
@@ -2458,78 +2805,64 @@ class NbHybridBackend(MakoUtilMix):
         n_sweeps = sweep_values.shape[0]
         results = []
 
-        for tid in range(n_sweeps):
-            sv = sweep_values[tid]
-
-            # Apply sweep values to cfun/model params
-            restore = {}
-            for dim, desc in enumerate(sweep_descriptor):
-                if desc['type'] == 'cfun':
-                    pname = desc['projection']
-                    pidx = desc.get('param_idx', 0)
-                    # Find projection by naming convention
-                    # Inter: "{src}_to_{tgt}", Intra: "intra"
-                    matched_proj = None
-                    for proj in network_set.projections:
-                        expected_name = f"{proj.source.name}_to_{proj.target.name}"
-                        if expected_name == pname:
-                            matched_proj = proj
-                            break
-                    if matched_proj is None:
-                        for sn in network_set.subnets:
-                            for p in sn.projections:
-                                expected_name = getattr(p, 'name', None) or 'intra'
-                                if expected_name == pname:
-                                    matched_proj = p
-                                    break
-                            if matched_proj is not None:
-                                break
-                    if matched_proj is None:
-                        raise ValueError(f"Projection '{pname}' not found in sweep")
-                    key = ('cfun', pname, pidx)
-                    restore[key] = self._cfun_get_param(matched_proj.cfun, pidx)
-                    self._cfun_set_param(matched_proj.cfun, pidx, float(sv[dim]))
-                elif desc['type'] == 'model':
-                    sname = desc['subnet']
-                    param = desc['param']
+        targets = []
+        for desc in sweep_descriptor:
+            if desc['type'] == 'cfun':
+                pname = desc['projection']
+                pidx = desc.get('param_idx', 0)
+                matched_proj = None
+                for proj in network_set.projections:
+                    expected_name = f"{proj.source.name}_to_{proj.target.name}"
+                    if expected_name == pname:
+                        matched_proj = proj
+                        break
+                if matched_proj is None:
                     for sn in network_set.subnets:
-                        if sn.name == sname:
-                            key = ('model', sname, param)
-                            val = float(getattr(sn.model, param))
-                            restore[key] = val
-                            setattr(sn.model, param, np.array([float(sv[dim])]))
-
-            # Run single simulation
-            kwargs = dict(initial_states=initial_states, print_source=print_source)
-            if chunk_size is not None:
-                kwargs['chunk_size'] = chunk_size
-            result = self.run_network(network_set, nstep=nstep, **kwargs)
-            results.append(result)
-
-            # Restore original values
-            for key, orig in restore.items():
-                if key[0] == 'cfun':
-                    pname, pidx = key[1], key[2]
-                    matched_proj = None
-                    for proj in network_set.projections:
-                        expected_name = f"{proj.source.name}_to_{proj.target.name}"
-                        if expected_name == pname:
-                            matched_proj = proj
-                            break
-                    if matched_proj is None:
-                        for sn in network_set.subnets:
-                            for p in sn.projections:
-                                expected_name = getattr(p, 'name', None) or 'intra'
-                                if expected_name == pname:
-                                    matched_proj = p
-                                    break
-                            if matched_proj is not None:
+                        for proj in sn.projections:
+                            expected_name = getattr(proj, 'name', None) or 'intra'
+                            if expected_name == pname:
+                                matched_proj = proj
                                 break
-                    if matched_proj is not None:
-                        self._cfun_set_param(matched_proj.cfun, pidx, orig)
-                elif key[0] == 'model':
-                    for sn in network_set.subnets:
-                        if sn.name == key[1]:
-                            setattr(sn.model, key[2], np.array([orig]))
+                        if matched_proj is not None:
+                            break
+                if matched_proj is None:
+                    raise ValueError(f"Projection '{pname}' not found in sweep")
+                attrs = dict(_CFUN_PARAM_ATTRS.get(type(matched_proj.cfun).__name__, ()))
+                attr = next((name for name, index in attrs.items() if index == pidx), None)
+                if attr is None:
+                    raise IndexError(
+                        f"No parameter index {pidx} for "
+                        f"{type(matched_proj.cfun).__name__}"
+                    )
+                targets.append(('cfun', matched_proj.cfun, attr, pidx))
+            elif desc['type'] == 'model':
+                sname = desc['subnet']
+                subnet = next((sn for sn in network_set.subnets if sn.name == sname), None)
+                if subnet is None:
+                    raise ValueError(f"Subnetwork '{sname}' not found in sweep")
+                targets.append(('model', subnet.model, desc['param'], None))
+
+        # Sweep setters replace attributes, so retaining these object references
+        # keeps mutable arrays isolated and preserves non-contiguous layouts exactly.
+        originals = [(owner, attr, getattr(owner, attr))
+                     for _kind, owner, attr, _pidx in targets]
+        try:
+            for tid in range(n_sweeps):
+                sv = sweep_values[tid]
+                for dim, (kind, owner, attr, pidx) in enumerate(targets):
+                    if kind == 'cfun':
+                        self._cfun_set_param(owner, pidx, sv[dim])
+                    else:
+                        setattr(owner, attr, np.array([float(sv[dim])]))
+
+                kwargs = dict(initial_states=initial_states, print_source=print_source)
+                if chunk_size is not None:
+                    kwargs['chunk_size'] = chunk_size
+                results.append(self.run_network(network_set, nstep=nstep, **kwargs))
+        finally:
+            for owner, attr, original in originals:
+                # The value was already valid on this instance. Bypass NArray's
+                # copying setter so restoration retains the exact caller object.
+                vars(owner)[attr] = original
 
         return results

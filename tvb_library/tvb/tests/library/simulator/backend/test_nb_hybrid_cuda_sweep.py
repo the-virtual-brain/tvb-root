@@ -157,7 +157,7 @@ def _build_rsfhn_network(weights, lengths):
         source=sn1,
         target=sn2,
         source_cvar=np.array([0, 2], dtype=np.int_),
-        target_cvar=np.array([0, 2], dtype=np.int_),
+        target_cvar=np.array([0, 1], dtype=np.int_),
         weights=weights,
         lengths=lengths,
         cv=1.0,
@@ -527,8 +527,8 @@ def test_stimulus_api(cuda_available):
     stim_weights = np.zeros(sA.nnodes)
     stim_weights[0] = 1.0
     temporal = equations.PulseTrain()
+    temporal.parameters['onset'] = 0.0
     temporal.configure()
-    # temporal.parameters['onset'] = 0.0  # default
     stimulus = patterns.StimuliRegion(
         temporal=temporal, connectivity=conn, weight=stim_weights
     )

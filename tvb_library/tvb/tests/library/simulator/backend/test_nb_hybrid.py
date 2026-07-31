@@ -3561,7 +3561,7 @@ class TestNbHybridMonitorsIntegrative(unittest.TestCase):
     # --- Bold ---
 
     def test_bold_matches_python(self):
-        """Bold from Numba matches Python Balloon model reference."""
+        """Bold from Numba matches TVB's Python HRF monitor."""
         _, _, _, _, _, Bold = self._import_monitors()
         bold_period = 20.0  # ms
         istep = int(round(bold_period / DT))  # 2000 steps
@@ -3579,67 +3579,20 @@ class TestNbHybridMonitorsIntegrative(unittest.TestCase):
 
         nb_t, nb_d = self._numba_monitor(ns, [x0_list[0].copy()], nstep, bold)
 
-        # Python: replicate Balloon model (Euler integration)
-        # Parameters
-        tau_s, tau_f, tau_o = 0.65, 0.41, 0.98
-        alpha = 0.32
-        te, e0 = 0.04, 0.4
-        epsilon, nu_0, r_0 = 0.5, 40.3, 25.0
-        v0 = 4.0
-        k1 = 4.3 * nu_0 * e0 * te
-        k2 = epsilon * r_0 * e0 * te
-        k3 = 1.0 - epsilon
+        oracle = Bold(period=bold_period)
+        oracle._config_dt(DT)
+        oracle.voi = np.arange(py_raw.shape[1])
+        oracle.compute_hrf()
+        oracle._config_stock(*py_raw.shape[1:])
+        samples = [oracle.sample(step, state) for step, state in enumerate(py_raw, 1)]
+        samples = [sample for sample in samples if sample is not None]
+        py_t = np.asarray([sample[0] for sample in samples])
+        py_d = np.stack([sample[1] for sample in samples])
 
-        py_f32 = py_raw.astype(np.float32)
-        nvoi, nnodes, nmodes = py_f32.shape[1:]
-
-        # Balloon state: (nvoi, 4, nnodes) = [s, f, v, q]
-        bsfq = np.zeros((nvoi, 4, nnodes), dtype=np.float32)
-        bsfq[:, 1, :] = 1.0  # f=1
-        bsfq[:, 2, :] = 1.0  # v=1
-        bsfq[:, 3, :] = 1.0  # q=1
-
-        py_bold_times = []
-        py_bold_data = []
-        for step in range(1, nstep + 1):
-            # Advance Balloon ODE (Euler)
-            x = py_f32[step - 1]  # (nvoi, nnodes, nmodes)
-            for vi in range(nvoi):
-                for ni in range(nnodes):
-                    bx = float(x[vi, ni, 0])
-                    s = float(bsfq[vi, 0, ni])
-                    f = float(bsfq[vi, 1, ni])
-                    v = float(bsfq[vi, 2, ni])
-                    q = float(bsfq[vi, 3, ni])
-                    ds = bx - (1/tau_s)*s - (1/tau_f)*(f - 1)
-                    df = s
-                    dv = (1/tau_o)*(f - v**(1/alpha))
-                    dq = (1/tau_o)*(f*(1 - (1-e0)**(1/f))/e0 - v**(1/alpha)*(q/v))
-                    bsfq[vi, 0, ni] += np.float32(DT * ds)
-                    bsfq[vi, 1, ni] += np.float32(DT * df)
-                    bsfq[vi, 2, ni] += np.float32(DT * dv)
-                    bsfq[vi, 3, ni] += np.float32(DT * dq)
-
-            # Sample at Bold period
-            if step % istep == 0:
-                t = step * DT
-                bold_val = np.zeros((nvoi, nnodes, 1), dtype=np.float32)
-                for vi in range(nvoi):
-                    for ni in range(nnodes):
-                        bv = float(bsfq[vi, 2, ni])
-                        bq = float(bsfq[vi, 3, ni])
-                        bold_val[vi, ni, 0] = v0 * (k1*(1-bq) + k2*(1-bq/bv) + k3*(1-bv))
-                py_bold_times.append(t)
-                py_bold_data.append(bold_val)
-
-        py_bold_arr = np.stack(py_bold_data, axis=0)
-
-        assert nb_d.shape[0] == py_bold_arr.shape[0], (
-            f"Bold sample count: Numba={nb_d.shape[0]}, Python={py_bold_arr.shape[0]}"
-        )
+        np.testing.assert_allclose(nb_t, py_t, rtol=0.0, atol=2e-5)
         np.testing.assert_allclose(
-            nb_d, py_bold_arr, rtol=1e-2, atol=1e-2,
-            err_msg="Bold Balloon: Numba differs from Python",
+            nb_d, py_d, rtol=1e-2, atol=1e-2,
+            err_msg="Numba BOLD differs from TVB's Python HRF monitor",
         )
 
 
@@ -3788,8 +3741,8 @@ class TestJITMonitorPrecomputation(unittest.TestCase):
         self.assertEqual(ctavg.shape, (20, 1, 4, 1))
         self.assertTrue(np.all(np.isfinite(data)))
 
-    def test_bold_balloon_matches_python_reference(self):
-        """JIT Balloon BOLD matches a pure-Python Euler integration of the same ODEs."""
+    def test_bold_matches_python_hrf_reference(self):
+        """Numba BOLD matches the Python monitor's HRF convolution."""
         from tvb.simulator.monitors import Bold
 
         nets, model = self._make_net(self.N)
@@ -3804,7 +3757,6 @@ class TestJITMonitorPrecomputation(unittest.TestCase):
 
         nstep = 200  # 4 Bold samples
 
-        # Run with JIT Bold
         results = backend.run_network(
             nets, nstep=nstep, chunk_size=1, monitors=[bold], initial_states=ic,
         )
@@ -3816,64 +3768,24 @@ class TestJITMonitorPrecomputation(unittest.TestCase):
         )
         _, raw_data, _ = raw[0]
 
-        # Python Balloon reference (matching vbjax bold_dfun)
-        tau_s, tau_f, tau_o = 0.65, 0.41, 0.98
-        alpha, te, e0 = 0.32, 0.04, 0.4
-        epsilon, nu_0, r_0 = 0.5, 40.3, 25.0
-        v0 = 4.0
-        k1 = 4.3 * nu_0 * e0 * te
-        k2 = epsilon * r_0 * e0 * te
-        k3 = 1.0 - epsilon
+        oracle = Bold(period=bold_period)
+        oracle._config_dt(self.DT)
+        oracle.voi = np.arange(raw_data.shape[1])
+        oracle.compute_hrf()
+        oracle._config_stock(*raw_data.shape[1:])
+        samples = [oracle.sample(step, state) for step, state in enumerate(raw_data, 1)]
+        samples = [sample for sample in samples if sample is not None]
+        py_times = np.asarray([sample[0] for sample in samples])
+        py_data = np.stack([sample[1] for sample in samples])
 
-        istep = int(round(bold_period / self.DT))
-        nvoi = raw_data.shape[1]
-        nnodes = raw_data.shape[2]
-
-        # State: (nvoi, 4, nnodes) = [s, f, v, q]
-        state = np.zeros((nvoi, 4, nnodes), dtype=np.float32)
-        state[:, 1, :] = 1.0
-        state[:, 2, :] = 1.0
-        state[:, 3, :] = 1.0
-
-        py_bold_times = []
-        py_bold_data = []
-        for step in range(1, nstep + 1):
-            x = raw_data[step - 1].astype(np.float32)  # (nvoi, nnodes, 1)
-            for vi in range(nvoi):
-                for ni in range(nnodes):
-                    bx = float(x[vi, ni, 0])
-                    s = float(state[vi, 0, ni])
-                    f = float(state[vi, 1, ni])
-                    v = float(state[vi, 2, ni])
-                    q = float(state[vi, 3, ni])
-                    ds = bx - (1/tau_s)*s - (1/tau_f)*(f - 1)
-                    df = s
-                    dv = (1/tau_o)*(f - v**(1/alpha))
-                    dq = (1/tau_o)*(f*(1 - (1-e0)**(1/f))/e0 - v**(1/alpha)*(q/v))
-                    state[vi, 0, ni] += np.float32(self.DT * ds)
-                    state[vi, 1, ni] += np.float32(self.DT * df)
-                    state[vi, 2, ni] += np.float32(self.DT * dv)
-                    state[vi, 3, ni] += np.float32(self.DT * dq)
-            if step % istep == 0:
-                bold_val = np.zeros((nvoi, nnodes, 1), dtype=np.float32)
-                for vi in range(nvoi):
-                    for ni in range(nnodes):
-                        bv = float(state[vi, 2, ni])
-                        bq = float(state[vi, 3, ni])
-                        bold_val[vi, ni, 0] = v0 * (k1*(1-bq) + k2*(1-bq/bv) + k3*(1-bv))
-                py_bold_times.append(step * self.DT)
-                py_bold_data.append(bold_val)
-
-        py_bold_arr = np.stack(py_bold_data, axis=0)
-
-        self.assertEqual(nb_data.shape, py_bold_arr.shape)
+        np.testing.assert_array_equal(nb_times, py_times)
         np.testing.assert_allclose(
-            nb_data, py_bold_arr, rtol=1e-4, atol=1e-5,
-            err_msg="JIT Balloon BOLD differs from Python reference",
+            nb_data, py_data, rtol=1e-6, atol=1e-7,
+            err_msg="Numba BOLD differs from TVB's Python HRF monitor",
         )
 
     def test_bold_state_persists_across_calls(self):
-        """Bold Balloon state persists across multiple run() calls."""
+        """BOLD stock and absolute sampling phase persist across run calls."""
         from tvb.simulator.monitors import Bold
 
         nets, model = self._make_net(self.N)
@@ -3887,26 +3799,38 @@ class TestJITMonitorPrecomputation(unittest.TestCase):
         bold._config_dt(self.DT)
         bold.compute_hrf()
 
-        # Run 1: 100 steps (2 Bold samples)
-        r1 = compiled.run(nstep=100, chunk_size=1, monitors=[bold], initial_states=ic)
+        first_steps = 423
+        second_steps = 377
+        r1 = compiled.run(nstep=first_steps, chunk_size=1, monitors=[bold], initial_states=ic)
         t1, d1 = r1[0][0]
-        self.assertEqual(d1.shape[0], 2, f"Expected 2 Bold samples, got {d1.shape[0]}")
-
-        # Run 2: 100 more steps (2 more Bold samples)
-        r2 = compiled.run(nstep=100, chunk_size=1, monitors=[bold])
-        t2, d2 = r2[0][0]
-        self.assertEqual(d2.shape[0], 2, f"Expected 2 Bold samples, got {d2.shape[0]}")
-
-        # The second call should continue from where the first left off,
-        # so the BOLD values should evolve (not reset to initial)
-        # Check that values are different (evolving system)
-        self.assertFalse(
-            np.allclose(d1[-1], d2[0], rtol=1e-6),
-            "Bold signal should evolve between calls, not be identical"
+        r2 = compiled.run(
+            nstep=second_steps, chunk_size=1, monitors=[bold],
+            initial_states=[ic[0].copy()],
         )
+        t2, d2 = r2[0][0]
 
-        # Verify the Bold state is actually persisted by checking it's stored
-        self.assertIsNotNone(compiled._bold_states)
+        raw1 = backend.run_network(
+            nets, nstep=first_steps, chunk_size=1, initial_states=[ic[0].copy()]
+        )[0][1]
+        raw2 = backend.run_network(
+            nets, nstep=second_steps, chunk_size=1, initial_states=[ic[0].copy()]
+        )[0][1]
+        raw_data = np.concatenate((raw1, raw2))
+        oracle = Bold(period=bold_period)
+        oracle._config_dt(self.DT)
+        oracle.voi = np.arange(raw_data.shape[1])
+        oracle.compute_hrf()
+        oracle._config_stock(*raw_data.shape[1:])
+        samples = [oracle.sample(step, state) for step, state in enumerate(raw_data, 1)]
+        samples = [sample for sample in samples if sample is not None]
+        py_times = np.asarray([sample[0] for sample in samples])
+        py_data = np.stack([sample[1] for sample in samples])
+
+        np.testing.assert_array_equal(np.concatenate((t1, t2)), py_times)
+        np.testing.assert_allclose(
+            np.concatenate((d1, d2)), py_data, rtol=1e-6, atol=1e-7
+        )
+        self.assertGreater(t2[0], first_steps * self.DT)
 
 
 
@@ -3997,7 +3921,7 @@ class TestAutoChunkSize(unittest.TestCase):
                                        err_msg="TemporalAverage time spacing should match period")
 
     def test_explicit_chunk_size_not_overridden(self):
-        """Explicit chunk_size=1 is preserved even with monitors."""
+        """Explicit chunks do not change TemporalAverage sampling semantics."""
         from tvb.simulator.monitors import TemporalAverage
 
         nets, model = self._make_net(self.N)
@@ -4008,12 +3932,15 @@ class TestAutoChunkSize(unittest.TestCase):
         ta.dt = self.DT
         ta._config_dt(self.DT)
 
-        # Explicit chunk_size=1 should NOT be overridden
+        # The requested chunk is larger than and not aligned with the 50-step
+        # monitor period. TemporalAverage must still consume every state and
+        # return only complete Python-monitor windows.
         results = backend.run_network(
-            nets, nstep=20, chunk_size=1, monitors=[ta], initial_states=ic,
+            nets, nstep=200, chunk_size=75, monitors=[ta], initial_states=ic,
         )
         times, data = results[0][0]
-        self.assertEqual(data.shape[0], 20, f"Expected 20 chunks, got {data.shape[0]}")
+        self.assertEqual(data.shape[0], 4, f"Expected 4 monitor samples, got {data.shape[0]}")
+        np.testing.assert_allclose(times, [0.25, 0.75, 1.25, 1.75])
 
     def test_auto_chunk_with_no_monitors_defaults_to_1(self):
         """chunk_size=None with no monitors defaults to 1."""
@@ -4504,7 +4431,7 @@ class TestStimulusMonitorEndToEnd(unittest.TestCase):
         times, data = results[0][0]
         self.assertGreater(len(times), 0, "No output")
         self.assertTrue(np.all(np.isfinite(data)), "NaN in stimulus output")
-        self.assertEqual(data.shape[0], 100, f"Expected 100 samples, got {data.shape[0]}")
+        self.assertEqual(data.shape[0], 10, f"Expected 10 samples, got {data.shape[0]}")
 
 
 if __name__ == "__main__":
