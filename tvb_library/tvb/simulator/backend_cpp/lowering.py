@@ -1,0 +1,293 @@
+from __future__ import annotations
+
+import dataclasses
+
+import numpy as np
+
+from tvb.simulator.integrators import (
+    EulerDeterministic,
+    EulerStochastic,
+    HeunDeterministic,
+    HeunStochastic,
+)
+
+from ._network_analysis import (
+    _cfun_params,
+    _cfun_type,
+    _cvar_mapping_mode,
+    analyse_network,
+)
+from .spec import (
+    IntegratorSpec,
+    MonitorSpec,
+    ProjectionSpec,
+    SimulationSpec,
+    StimulusSpec,
+    SubnetworkSpec,
+)
+from .__version__ import BACKEND_VERSION
+
+
+@dataclasses.dataclass(frozen=True)
+class SpecLoweringResult:
+    spec: SimulationSpec
+    analysis: object
+    monitors: tuple = ()  # original monitor objects, needed by run() for Bold post-processing
+
+
+def _check_scope_compatibility(network_set) -> None:
+    """Compatibility gate for the C++ backend.
+
+    Accepts any TVB model that exposes `state_variable_dfuns` (the standard
+    expression-based dfun interface). Models using a custom Numba template
+    (e.g. Zerlaut) are rejected at this point with a clear message.
+    """
+    if not network_set.subnets:
+        raise ValueError("NetworkSet must contain at least one subnetwork.")
+
+    def _truthy_first(value) -> bool:
+        arr = np.atleast_1d(value)
+        return bool(arr[0])
+
+    def _check_supported_model_branch(model) -> None:
+        name = type(model).__name__
+        if name in {"Epileptor", "Epileptor2D"}:
+            if _truthy_first(getattr(model, "modification", False)):
+                raise NotImplementedError(
+                    f"CppHybridBackend: {name} with modification=True is not supported. "
+                    "The dfun_intermediates 'h' encodes only the modification=False branch. "
+                    "To fix: add 'modification' to the model's parameter_names and rewrite "
+                    "the 'h' intermediate as a ternary over both branches. "
+                    "Set model.modification = numpy.array([False]) to use the current path."
+                )
+        if name == "EpileptorRestingState":
+            if _truthy_first(getattr(model, "modification", False)):
+                raise NotImplementedError(
+                    "CppHybridBackend: EpileptorRestingState with modification=True is not supported. "
+                    "The modification branch is not implemented in any dfun path for this model "
+                    "(numpy, Numba, or C++). Set model.modification = numpy.array([False])."
+                )
+        if name == "WilsonCowan":
+            if not _truthy_first(getattr(model, "shift_sigmoid", True)):
+                raise NotImplementedError(
+                    "CppHybridBackend: WilsonCowan with shift_sigmoid=False is not supported. "
+                    "The dfun_intermediates 's_e'/'s_i' encode only the shift_sigmoid=True branch. "
+                    "To fix: replace the hardcoded nb.float32(1.0) subtraction coefficient "
+                    "with the 'shift_sigmoid' parameter in both s_e and s_i expressions. "
+                    "Set model.shift_sigmoid = numpy.array([True]) to use the current path."
+                )
+        if name == "Hopfield":
+            if _truthy_first(getattr(model, "dynamic", False)):
+                raise NotImplementedError(
+                    "CppHybridBackend: Hopfield with dynamic=True is not supported. "
+                    "The dynamic=True branch changes both the coupling variables (cvar) and the dfun, "
+                    "which cannot be encoded in the expression-based codegen. "
+                    "Set model.dynamic = numpy.array([0])."
+                )
+
+    def _check_supported_expressions(model) -> None:
+        expressions = []
+        expressions.extend(expr for _name, expr in (getattr(model, "dfun_intermediates", None) or []))
+        expressions.extend((getattr(model, "state_variable_dfuns", None) or {}).values())
+        expressions.extend(body for _name, _args, body in (getattr(model, "dfun_helpers", None) or []))
+        for expr in expressions:
+            if "0j" in expr or ".real" in expr:
+                raise NotImplementedError(
+                    f"CppHybridBackend: {type(model).__name__} uses complex-valued "
+                    "dfun expressions, which the C++ expression code generator does not support."
+                )
+
+    dt0 = float(network_set.subnets[0].scheme.dt)
+    for subnet in network_set.subnets:
+        dfuns = getattr(subnet.model, "state_variable_dfuns", None)
+        if not dfuns:
+            raise NotImplementedError(
+                f"CppHybridBackend requires models that expose state_variable_dfuns. "
+                f"'{type(subnet.model).__name__}' uses a custom dfun template and is "
+                f"not yet supported."
+            )
+        if not isinstance(
+            subnet.scheme,
+            (EulerDeterministic, EulerStochastic, HeunDeterministic, HeunStochastic),
+        ):
+            raise NotImplementedError(
+                "CppHybridBackend currently supports EulerDeterministic, EulerStochastic, "
+                "HeunDeterministic, and HeunStochastic integrators "
+                f"(got '{type(subnet.scheme).__name__}')."
+            )
+        if float(subnet.scheme.dt) != dt0:
+            raise ValueError(
+                "All subnetworks must share the same dt."
+            )
+        _check_supported_model_branch(subnet.model)
+        _check_supported_expressions(subnet.model)
+
+
+def _collect_model_parameters(model: object) -> dict[str, np.ndarray]:
+    parameter_values: dict[str, np.ndarray] = {}
+    for name in getattr(model, "parameter_names", ()):
+        value = getattr(model, name)
+        parameter_values[name] = np.ascontiguousarray(np.atleast_1d(value))
+    return parameter_values
+
+
+def _extract_state_bounds(
+    model: object,
+) -> tuple[dict[str, float], dict[str, float]]:
+    lo_bounds: dict[str, float] = {}
+    hi_bounds: dict[str, float] = {}
+    svb = getattr(model, "state_variable_boundaries", None) or {}
+    for svar, bounds in svb.items():
+        bounds_arr = np.atleast_1d(np.asarray(bounds, dtype=float))
+        if bounds_arr.shape[0] >= 1 and np.isfinite(bounds_arr[0]):
+            lo_bounds[str(svar)] = float(bounds_arr[0])
+        if bounds_arr.shape[0] >= 2 and np.isfinite(bounds_arr[1]):
+            hi_bounds[str(svar)] = float(bounds_arr[1])
+    return lo_bounds, hi_bounds
+
+
+def _build_integrator_spec(subnet_info) -> IntegratorSpec:
+    return IntegratorSpec(
+        type_name=type(subnet_info.integrator).__name__,
+        dt=float(subnet_info.integrator.dt),
+        is_stochastic=bool(subnet_info.is_stochastic),
+        noise_nsig=None
+        if subnet_info.noise_nsig is None
+        else np.ascontiguousarray(subnet_info.noise_nsig.astype(np.float64)),
+    )
+
+
+def _build_subnetwork_spec(subnet_info) -> SubnetworkSpec:
+    model = subnet_info.model
+    lo_bounds, hi_bounds = _extract_state_bounds(model)
+    return SubnetworkSpec(
+        name=subnet_info.name,
+        model_type=type(model).__name__,
+        integrator=_build_integrator_spec(subnet_info),
+        n_nodes=int(subnet_info.n_nodes),
+        n_modes=int(subnet_info.n_modes),
+        n_state_vars=int(model.nvar),
+        n_coupling_vars=int(len(model.cvar)),
+        variables_of_interest=tuple(str(x) for x in model.variables_of_interest),
+        state_variables=tuple(str(x) for x in model.state_variables),
+        parameter_values=_collect_model_parameters(model),
+        initial_state_shape=(int(model.nvar), int(subnet_info.n_nodes), int(subnet_info.n_modes)),
+        has_stimulus=bool(subnet_info.has_stimulus),
+        global_parameter_names=tuple(
+            str(p) for p in (getattr(model, "global_parameter_names", None) or [])
+        ),
+        coupling_terms=tuple(
+            str(ct) for ct in (getattr(model, "coupling_terms", None) or [])
+        ),
+        state_variable_dfuns={
+            str(k): str(v)
+            for k, v in (getattr(model, "state_variable_dfuns", None) or {}).items()
+        },
+        dfun_intermediates=tuple(
+            (str(name), str(expr))
+            for name, expr in (getattr(model, "dfun_intermediates", None) or [])
+        ),
+        dfun_helpers=tuple(
+            (str(name), str(args), str(expr))
+            for name, args, expr in (getattr(model, "dfun_helpers", None) or [])
+        ),
+        state_lower_bounds=lo_bounds,
+        state_upper_bounds=hi_bounds,
+        derived_matrix_names=tuple(
+            str(n) for n in (getattr(model, "derived_matrix_names", None) or [])
+        ),
+        derived_matrix_ops=tuple(
+            (str(r), str(mat), str(sv))
+            for r, mat, sv in (getattr(model, "derived_matrix_ops", None) or [])
+        ),
+        derived_matrix_values={
+            str(n): np.ascontiguousarray(getattr(model, n))
+            for n in (getattr(model, "derived_matrix_names", None) or [])
+            if hasattr(model, n)
+        },
+    )
+
+
+def _build_projection_spec(proj_info) -> ProjectionSpec:
+    mode_map = None
+    if proj_info.mode_map is not None:
+        mode_map = np.ascontiguousarray(proj_info.mode_map.astype(np.float32))
+
+    n_src_modes = None
+    if not proj_info.is_inter:
+        n_src_modes = int(proj_info.n_src_modes)
+
+    return ProjectionSpec(
+        name=proj_info.name,
+        source_subnet=proj_info.source_subnet,
+        target_subnet=proj_info.target_subnet,
+        source_cvar=np.ascontiguousarray(proj_info.source_cvar.astype(np.int32)),
+        target_cvar=np.ascontiguousarray(proj_info.target_cvar.astype(np.int32)),
+        weights_data=np.ascontiguousarray(proj_info.weights_data.astype(np.float32)),
+        weights_indices=np.ascontiguousarray(proj_info.weights_indices.astype(np.int32)),
+        weights_indptr=np.ascontiguousarray(proj_info.weights_indptr.astype(np.int32)),
+        idelays=np.ascontiguousarray(proj_info.idelays.astype(np.int32)),
+        horizon=int(proj_info.horizon),
+        scale=float(proj_info.scale),
+        target_scales=np.ascontiguousarray(proj_info.target_scales.astype(np.float32)),
+        cfun_type=_cfun_type(proj_info),
+        cfun_params=np.ascontiguousarray(_cfun_params(proj_info).astype(np.float32)),
+        cvar_mapping_mode=_cvar_mapping_mode(proj_info),
+        is_inter=bool(proj_info.is_inter),
+        mode_map=mode_map,
+        n_src_modes=n_src_modes,
+    )
+
+
+def _build_monitor_specs(monitors: list[object] | None) -> tuple[MonitorSpec, ...]:
+    if not monitors:
+        return ()
+    specs: list[MonitorSpec] = []
+    for monitor in monitors:
+        period = getattr(monitor, "period", None)
+        specs.append(MonitorSpec(type_name=type(monitor).__name__, period=period))
+    return tuple(specs)
+
+
+def _build_stimulus_specs(analysis) -> tuple[StimulusSpec, ...]:
+    items: list[StimulusSpec] = []
+    for subnet_name, stimuli in sorted(analysis.stimuli_by_subnet.items()):
+        if not stimuli:
+            continue
+        items.append(StimulusSpec(target_subnet=subnet_name, count=len(stimuli)))
+    return tuple(items)
+
+
+def lower_network_set(
+    network_set,
+    monitors: list[object] | None = None,
+    user_source_hint: str | None = None,
+) -> SpecLoweringResult:
+    """Lower a configured hybrid `NetworkSet` into a backend-neutral spec.
+
+    Reads only public attributes of NetworkSet and its subnetworks/projections.
+    No dependency on NbHybridBackend.
+    """
+    _check_scope_compatibility(network_set)
+    analysis = analyse_network(network_set)
+
+    subnetworks = tuple(_build_subnetwork_spec(sn) for sn in analysis.subnetworks)
+    inter_projections = tuple(
+        _build_projection_spec(proj) for proj in analysis.inter_projections
+    )
+    intra_projections = tuple(
+        _build_projection_spec(proj) for proj in analysis.intra_projections
+    )
+
+    spec = SimulationSpec(
+        backend_version=BACKEND_VERSION,
+        dt=float(network_set.subnets[0].scheme.dt),
+        subnetworks=subnetworks,
+        inter_projections=inter_projections,
+        intra_projections=intra_projections,
+        monitors=_build_monitor_specs(monitors),
+        stimuli=_build_stimulus_specs(analysis),
+        source_horizons={str(k): int(v) for k, v in analysis.source_horizons.items()},
+        user_source_hint=user_source_hint,
+    )
+    return SpecLoweringResult(spec=spec, analysis=analysis, monitors=tuple(monitors or []))
