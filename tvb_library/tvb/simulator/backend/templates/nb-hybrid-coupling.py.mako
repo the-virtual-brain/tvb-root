@@ -1,5 +1,7 @@
 ## -*- coding: utf-8 -*-
 ##
+## Status: deprecated
+##
 ## Numba code-generation template for a single hybrid projection (inter or intra).
 ##
 ## Required template variables (set in the <%def> caller or passed via content dict):
