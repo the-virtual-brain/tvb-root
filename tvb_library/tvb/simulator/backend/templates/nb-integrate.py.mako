@@ -45,6 +45,14 @@ import numba as nb
     any_delays = sim.connectivity.idelays.any()
     svars = ', '.join(sim.model.state_variables)
     cvars = ', '.join(sim.model.coupling_terms)
+    try:
+        _dfun_combined = bool(dfun_combined)
+    except NameError:
+        _dfun_combined = False
+    d0_unpack = ', '.join([f'd0{s}' for s in sim.model.state_variables])
+    d1_unpack = ', '.join([f'd1{s}' for s in sim.model.state_variables])
+    d2_unpack = ', '.join([f'd2{s}' for s in sim.model.state_variables])
+    d3_unpack = ', '.join([f'd3{s}' for s in sim.model.state_variables])
 %>
 
 ## TODO multiplicative noise
@@ -83,9 +91,13 @@ def integrate(t, state, weights, parmat
 % endfor
 
         # compute derivatives and next states
+% if _dfun_combined:
+        ${d0_unpack} = dfun(${svars}, ${cvars}, parmat[i])
+% else:
 % for svar in sim.model.state_variables:
         d0${svar} = dx_${svar}(${svars}, ${cvars}, parmat[i])
 % endfor
+% endif
 
 % if stochastic:
 % for svar in sim.model.state_variables:
@@ -114,9 +126,13 @@ def integrate(t, state, weights, parmat
 % for svar in sim.model.state_variables:
         i1${svar} = ${svar} + dt * d0${svar}
 % endfor
+% if _dfun_combined:
+        ${d1_unpack} = dfun(${i1svars}, ${cvars}, parmat[i])
+% else:
 % for svar in sim.model.state_variables:
         d1${svar} = dx_${svar}(${i1svars}, ${cvars}, parmat[i])
 % endfor
+% endif
 % for svar in sim.model.state_variables:
         n${svar} = ${svar} + dt / 2 * (d0${svar} + d1${svar})
 % endfor
@@ -126,9 +142,13 @@ def integrate(t, state, weights, parmat
 % for svar in sim.model.state_variables:
         i1${svar} = ${svar} + dt * d0${svar} + z${svar}
 % endfor
+% if _dfun_combined:
+        ${d1_unpack} = dfun(${i1svars}, ${cvars}, parmat[i])
+% else:
 % for svar in sim.model.state_variables:
         d1${svar} = dx_${svar}(${i1svars}, ${cvars}, parmat[i])
 % endfor
+% endif
 % for svar in sim.model.state_variables:
         n${svar} = ${svar} + dt / 2 * (d0${svar} + d1${svar}) + z${svar}
 % endfor
@@ -156,21 +176,33 @@ def integrate(t, state, weights, parmat
 % for svar in sim.model.state_variables:
         i1${svar} = ${svar} + dt / 2 * d0${svar}
 % endfor
+% if _dfun_combined:
+        ${d1_unpack} = dfun(${i1svars}, ${cvars}, parmat[i])
+% else:
 % for svar in sim.model.state_variables:
         d1${svar} = dx_${svar}(${i1svars}, ${cvars}, parmat[i])
 % endfor
+% endif
 % for svar in sim.model.state_variables:
         i2${svar} = ${svar} + dt / 2 * d1${svar}
 % endfor
+% if _dfun_combined:
+        ${d2_unpack} = dfun(${i2svars}, ${cvars}, parmat[i])
+% else:
 % for svar in sim.model.state_variables:
         d2${svar} = dx_${svar}(${i2svars}, ${cvars}, parmat[i])
 % endfor
+% endif
 % for svar in sim.model.state_variables:
         i3${svar} = ${svar} + dt * d2${svar}
 % endfor
+% if _dfun_combined:
+        ${d3_unpack} = dfun(${i3svars}, ${cvars}, parmat[i])
+% else:
 % for svar in sim.model.state_variables:
         d3${svar} = dx_${svar}(${i3svars}, ${cvars}, parmat[i])
 % endfor
+% endif
 % for svar in sim.model.state_variables:
         n${svar} = ${svar} + dt / 6 * (d0${svar} + 2*(d1${svar} + d2${svar}) + d3${svar})
 % endfor

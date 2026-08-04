@@ -32,8 +32,8 @@ jobs:
           python -m pip install --upgrade setuptools pip wheel 
           pip install -U numpy cython scikit-build pytest 
           python3 -m pip install cryptography
-          python3 -m pip install syncrypto
           python3 -m pip install lockfile
+          python3 -m pip install --no-build-isolation syncrypto
           python3 -m pip install -r tvb_build/docker/requirements_group --verbose
           pip install --no-build-isolation tvb-gdist
 

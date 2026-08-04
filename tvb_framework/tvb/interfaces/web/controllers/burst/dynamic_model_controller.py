@@ -298,6 +298,16 @@ class DynamicModelController(BurstBaseController):
             return {'trajectories': trajectories, 'signals': signals, 'finite': True}
 
     @staticmethod
+    def safe_float(value, name):
+        arr = numpy.asarray(value)
+
+        if arr.size != 1:
+            DynamicModelController.LOGGER.warning(f"Expected a single default value for {name}, got shape: {arr.shape}")
+            arr = numpy.asarray(arr[0])
+
+        return float(arr.item())
+
+    @staticmethod
     def _get_model_parameters_ui_model(model):
         """
         For each model parameter return the representation used by the ui (template & js)
@@ -310,7 +320,8 @@ class DynamicModelController(BurstBaseController):
             if ranger is None:
                 DynamicModelController.LOGGER.warning("Param %s doesn't have a domain specified" % param.name)
                 continue
-            default = float(attr.default)
+
+            default = DynamicModelController.safe_float(attr.default, param.name)
 
             ret.append({
                 'name': param.name,
