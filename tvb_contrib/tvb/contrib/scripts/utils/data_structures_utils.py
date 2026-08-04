@@ -818,7 +818,7 @@ def sort_events_by_x_and_y(events, x="senders", y="times",
     if len(ys):
         sorted_events = OrderedDict()
         for key, xlbl in zip(keys, xlabels):
-            sorted_events[key] = np.sort(ys[np.where((xs == xlbl).all(axis=-1))])
+            sorted_events[key] = np.sort(ys[(xs == xlbl).all(axis=-1)])
     else:
         sorted_events = OrderedDict(zip(keys, [np.array([])] * len(keys)))
     return sorted_events
