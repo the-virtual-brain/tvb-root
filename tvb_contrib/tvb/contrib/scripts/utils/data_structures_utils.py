@@ -818,7 +818,7 @@ def sort_events_by_x_and_y(events, x="senders", y="times",
     if len(ys):
         sorted_events = OrderedDict()
         for key, xlbl in zip(keys, xlabels):
-            sorted_events[key] = np.sort(ys[np.where((xs == xlbl).all(axis=-1))])
+            sorted_events[key] = np.sort(ys[(xs == xlbl).all(axis=-1)])
     else:
         sorted_events = OrderedDict(zip(keys, [np.array([])] * len(keys)))
     return sorted_events
@@ -882,6 +882,7 @@ def concatenate_heterogeneous_DataArrays(data, concat_dim_name,
     from pandas import Series
     from xarray import concat
     from pandas import Index
+
     if isinstance(data, (dict, Series)):
         if data_keys is None:
             data_keys = ensure_list(data.keys())
@@ -891,7 +892,20 @@ def concatenate_heterogeneous_DataArrays(data, concat_dim_name,
             if name is None:
                 name = data.name
             data = ensure_list(data.values)
-    data = concat(data, Index(data_keys, name=concat_dim_name), fill_value=fill_value)
+    # Idiomatic xarray approach: build a dict of new coords and use assign_coords
+    cleaned_data = []
+    for da in data:
+        updated_coords = {}
+        for c_name, coord in da.coords.items():
+            if "string" in str(coord.dtype).lower():
+                updated_coords[c_name] = coord.values.astype(object)
+        # assign_coords returns a new DataArray, leaving the original untouched
+        if updated_coords:
+            da = da.assign_coords(updated_coords)
+
+        cleaned_data.append(da)
+    # Pass the newly mapped list of DataArrays to concat
+    data = concat(cleaned_data, Index(data_keys, name=concat_dim_name), fill_value=fill_value, join='outer')
     data.name = name
     if transpose_dims:
         data = data.transpose(*transpose_dims)
