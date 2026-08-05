@@ -1,0 +1,18 @@
+# Session artifacts / working notes
+ralph_gaps_logs.txt
+ralph_model_logs.txt
+bold-jit-plan.md
+gap-analysis-v2.md
+gaps.md
+jit-monitors-plan.md
+wip-review.md
+
+# Parent directory artifacts
+/ITERATE.md
+/ralph_model_logs.txt
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
