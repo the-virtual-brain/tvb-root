@@ -21,144 +21,341 @@
             GVAR_pointsLabels, GVAR_interestAreaNodeIndexes, HLPR_removeByElement,
             GFUNC_updateLeftSideVisualization, GFUNC_isNodeAddedToInterestArea,
             GFUN_updateSelectionComponent, GFUNC_toggleNodeInInterestArea,
-            displayMessage,
+            displayMessage, doAjaxCall,
             CONN_getLineWidthValue, CONN_lineWidthsBins, CONN_comingInLinesIndices, CONN_comingOutLinesIndices, CONN_initLinesHistorgram,
             NO_POSITIONS, highlightedPointIndex1, highlightedPointIndex2,
-            ColSch_updateLegendColors, ColSch_updateLegendLabels
+            ColSch_getGradientColorString, ColSch_updateLegendColors, ColSch_updateLegendLabels
 */
 
 /*
- * This file handles the display and functionality of the 2d table view
+ * This file handles the display and functionality of the 2d matrix view.
+ * The matrix is rendered on a <canvas> (one per quadrant) instead of an N*N HTML table,
+ * so it stays fast for large connectivities. All editing/selection logic keeps operating
+ * on GVAR_interestAreaVariables, exactly as before.
  */
-/*
- * Used to keep track of the start and end point for each quadrant.
- */
-var startPointsX = [];
-var endPointsX = [];
-var startPointsY = [];
-var endPointsY = [];
+
+// Width in css pixels reserved for the row/column label gutters on each canvas.
+var MATRIX_LABEL_GUTTER = 66;
+// Below these cell sizes labels would be illegible, so we skip them and rely on the hover tooltip.
+var MATRIX_MIN_LABEL_CELL = 7;
+// Largest canvas height (css pixels); keeps a whole quadrant visible without a giant scroll area.
+var MATRIX_MAX_CANVAS_HEIGHT = 640;
 
 /*
- * Keep references to the last edited element, element color, and element class.
- * To be used for switching back to the original after an edit is performed.
+ * The cell currently opened for editing, as {prefix, i, j}, or null. Used to draw its highlight border.
  */
-var lastEditedElement = null;
-var lastElementColor = null;
-var lastElementClass = null;
+var MATRIX_editedCell = null;
+
 
 /**
- * Get the position of a element in the page. Used when finding out the position where the 
- * menu with information about a specific edge should be displayed.
- * 
- * @param elem - the element for which you want the absolute position in the page
- * 
- * @return {x: Number, y: Number} - a dictionary with the offset numbers
+ * @return the weights (prefix 'w') or tracts (prefix 't') matrix descriptor.
  */
-function getMenuPosition(elem, contextMenuDiv){  
-   
-    var posX = 210;  // Default offset
-    var posY = 15;
-
-    while(elem != null){
-        posX += elem.offsetLeft;
-        posY += elem.offsetTop;
-        elem = elem.offsetParent;
+function _matrixByPrefix(prefix) {
+    for (var key in GVAR_interestAreaVariables) {
+        if (GVAR_interestAreaVariables[key].prefix === prefix) {
+            return GVAR_interestAreaVariables[key];
+        }
     }
-    var $w = $("#scrollable-matrix-section");
-    posY -= $w.scrollTop();
-    if ($w[0].offsetTop > 0) {
-        posY -= $w[0].offsetTop;
-        posY -= ($("#main").scrollTop() - $w[0].offsetTop);
-    }
-    //posX -= $w.scrollLeft()
-
-    var mh = 214; //$(contextMenuDiv).height();
-    //var mw = 200; //$(contextMenuDiv).width()
-    var ww = $("body").width() - 15;
-    var wh = Math.max($(window).height(), $w.height());
-
-    var maxRight = posX;
-    if (maxRight > ww) {
-        posX -= (maxRight - ww);
-    }
-
-    var dir = "down";
-    if (posY + mh > wh) {
-        dir = "up";
-    }
-    if (dir == "up") {
-        posY -= (mh + 25);
-    }
-    return {x : posX, y : posY };
-} 
+    return null;
+}
 
 /**
- * Method called on the click event of a table box that represents a certain node from the connectivity matrix
- *
- * @param table_elem the dom element which fired the click event
- * @param i
- * @param j
+ * Truncate text with an ellipsis so it fits within maxWidth for the given canvas context.
  */
-function changeSingleCell(table_elem, i, j) {
+function _fitLabel(ctx, text, maxWidth) {
+    if (ctx.measureText(text).width <= maxWidth) {
+        return text;
+    }
+    while (text.length > 1 && ctx.measureText(text + '…').width > maxWidth) {
+        text = text.slice(0, -1);
+    }
+    return text + '…';
+}
 
-    var inputDiv = document.getElementById('editNodeValues');
+/**
+ * Read the {colStart, colEnd, rowStart, rowEnd, prefix} a canvas quadrant covers, plus its layout geometry.
+ */
+function _canvasGeometry(canvas) {
+    var d = canvas.dataset;
+    var g = {
+        prefix: d.prefix,
+        colStart: parseInt(d.colStart, 10), colEnd: parseInt(d.colEnd, 10),
+        rowStart: parseInt(d.rowStart, 10), rowEnd: parseInt(d.rowEnd, 10)
+    };
+    g.nCols = g.colEnd - g.colStart;
+    g.nRows = g.rowEnd - g.rowStart;
+    g.cssW = canvas.clientWidth;
+    g.cssH = Math.min(g.cssW, MATRIX_MAX_CANVAS_HEIGHT);
+    g.gridW = g.cssW - MATRIX_LABEL_GUTTER;
+    g.gridH = g.cssH - MATRIX_LABEL_GUTTER;
+    g.cw = g.gridW / g.nCols;
+    g.ch = g.gridH / g.nRows;
+    return g;
+}
+
+/**
+ * Draw a single quadrant canvas: cells, selection overlay, labels and the edited-cell border.
+ */
+function _drawQuadrant(canvas) {
+    var g = _canvasGeometry(canvas);
+    if (!g.cssW || g.nCols <= 0 || g.nRows <= 0) {
+        return;                                             // hidden or empty quadrant
+    }
+
+    var matrix = _matrixByPrefix(g.prefix);
+    var values = matrix.values;
+    if (!values || !values.length) {
+        return;
+    }
+    var minValue = matrix.min_val;
+    var maxValue = matrix.max_val;
+
+    var dpr = window.devicePixelRatio || 1;
+    canvas.style.height = g.cssH + 'px';
+    canvas.width = Math.round(g.cssW * dpr);
+    canvas.height = Math.round(g.cssH * dpr);
+    var ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, g.cssW, g.cssH);
+
+    // Which rows/cols are part of the interest area (computed once per axis, not per cell).
+    var rowSel = [];
+    var colSel = [];
+    var r, c, i, j, x, y;
+    for (r = 0; r < g.nRows; r++) {
+        rowSel[r] = GFUNC_isNodeAddedToInterestArea(g.rowStart + r);
+    }
+    for (c = 0; c < g.nCols; c++) {
+        colSel[c] = GFUNC_isNodeAddedToInterestArea(g.colStart + c);
+    }
+
+    // Cells. Math.ceil on the size avoids sub-pixel gaps between adjacent rects.
+    var cwCeil = Math.ceil(g.cw);
+    var chCeil = Math.ceil(g.ch);
+    for (r = 0; r < g.nRows; r++) {
+        i = g.rowStart + r;
+        y = MATRIX_LABEL_GUTTER + r * g.ch;
+        for (c = 0; c < g.nCols; c++) {
+            j = g.colStart + c;
+            ctx.fillStyle = ColSch_getGradientColorString(values[i][j], minValue, maxValue);
+            ctx.fillRect(MATRIX_LABEL_GUTTER + c * g.cw, y, cwCeil, chCeil);
+            if (rowSel[r] && colSel[c]) {                   // interest-area intersection overlay
+                ctx.fillStyle = 'rgba(250, 247, 228, 0.28)';
+                ctx.fillRect(MATRIX_LABEL_GUTTER + c * g.cw, y, cwCeil, chCeil);
+            }
+        }
+    }
+
+    ctx.font = '9px sans-serif';
+
+    // Column labels along the top gutter, rotated to read bottom-to-top (as the old table did).
+    if (g.cw >= MATRIX_MIN_LABEL_CELL) {
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        for (c = 0; c < g.nCols; c++) {
+            j = g.colStart + c;
+            ctx.save();
+            ctx.translate(MATRIX_LABEL_GUTTER + c * g.cw + g.cw / 2, MATRIX_LABEL_GUTTER - 3);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillStyle = colSel[c] ? '#2E2D26' : '#7e7b66';
+            ctx.fillText(_fitLabel(ctx, '' + GVAR_pointsLabels[j], MATRIX_LABEL_GUTTER - 6), 0, 0);
+            ctx.restore();
+        }
+    }
+
+    // Row labels along the left gutter.
+    if (g.ch >= MATRIX_MIN_LABEL_CELL) {
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (r = 0; r < g.nRows; r++) {
+            i = g.rowStart + r;
+            ctx.fillStyle = rowSel[r] ? '#2E2D26' : '#7e7b66';
+            ctx.fillText(_fitLabel(ctx, '' + GVAR_pointsLabels[i], MATRIX_LABEL_GUTTER - 6),
+                         MATRIX_LABEL_GUTTER - 4, MATRIX_LABEL_GUTTER + r * g.ch + g.ch / 2);
+        }
+    }
+
+    // Edited-cell border, if it falls inside this quadrant.
+    if (MATRIX_editedCell && MATRIX_editedCell.prefix === g.prefix &&
+            MATRIX_editedCell.i >= g.rowStart && MATRIX_editedCell.i < g.rowEnd &&
+            MATRIX_editedCell.j >= g.colStart && MATRIX_editedCell.j < g.colEnd) {
+        ctx.strokeStyle = '#0047a4';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(MATRIX_LABEL_GUTTER + (MATRIX_editedCell.j - g.colStart) * g.cw + 1,
+                       MATRIX_LABEL_GUTTER + (MATRIX_editedCell.i - g.rowStart) * g.ch + 1,
+                       g.cw - 2, g.ch - 2);
+    }
+}
+
+/**
+ * Redraw every currently visible quadrant canvas. This is the single render entry point,
+ * used after edits, selection changes, quadrant/tab switches and resizes.
+ */
+function MATRIX_drawCanvas() {
+    var canvases = document.getElementsByClassName('matrix-canvas');
+    for (var k = 0; k < canvases.length; k++) {
+        if (canvases[k].offsetWidth > 0) {                  // skip hidden quadrants
+            _drawQuadrant(canvases[k]);
+        }
+    }
+}
+
+/**
+ * Map a mouse event on a canvas to a matrix location.
+ * @return null, or {region: 'cell'|'row'|'col', prefix, i, j, cellRect} where cellRect is in viewport coords.
+ */
+function _canvasHit(canvas, ev) {
+    var g = _canvasGeometry(canvas);
+    if (g.nCols <= 0 || g.nRows <= 0) {
+        return null;
+    }
+    var rect = canvas.getBoundingClientRect();
+    var x = ev.clientX - rect.left;
+    var y = ev.clientY - rect.top;
+    var inLeftGutter = x >= 0 && x < MATRIX_LABEL_GUTTER;
+    var inTopGutter = y >= 0 && y < MATRIX_LABEL_GUTTER;
+    var inGridX = x >= MATRIX_LABEL_GUTTER && x <= g.cssW;
+    var inGridY = y >= MATRIX_LABEL_GUTTER && y <= g.cssH;
+    var c = Math.floor((x - MATRIX_LABEL_GUTTER) / g.cw);
+    var r = Math.floor((y - MATRIX_LABEL_GUTTER) / g.ch);
+    var validC = c >= 0 && c < g.nCols;
+    var validR = r >= 0 && r < g.nRows;
+
+    if (inGridX && inGridY && validC && validR) {
+        return {
+            region: 'cell', prefix: g.prefix, i: g.rowStart + r, j: g.colStart + c,
+            cellRect: {
+                left: rect.left + MATRIX_LABEL_GUTTER + c * g.cw,
+                top: rect.top + MATRIX_LABEL_GUTTER + r * g.ch,
+                width: g.cw, height: g.ch
+            }
+        };
+    }
+    if (inLeftGutter && inGridY && validR) {                // left gutter -> row header
+        return {region: 'row', prefix: g.prefix, i: g.rowStart + r, j: -1};
+    }
+    if (inTopGutter && inGridX && validC) {                 // top gutter -> column header
+        return {region: 'col', prefix: g.prefix, i: -1, j: g.colStart + c};
+    }
+    return null;
+}
+
+
+/* ----------------------------------------------------------------------------------------
+ * Tooltip shown while hovering a cell.
+ * -------------------------------------------------------------------------------------- */
+
+function _matrixTooltip() {
+    var t = document.getElementById('matrixCellTooltip');
+    if (!t) {
+        t = document.createElement('div');
+        t.id = 'matrixCellTooltip';
+        t.style.cssText = 'position:fixed;display:none;pointer-events:none;z-index:10000;' +
+            'background:rgba(46,45,38,0.92);color:#FAF7E4;font-size:11px;padding:3px 6px;' +
+            'border-radius:3px;white-space:nowrap;';
+        document.body.appendChild(t);
+    }
+    return t;
+}
+
+function _showTooltip(ev, prefix, i, j) {
+    var value = _matrixByPrefix(prefix).values[i][j];
+    var t = _matrixTooltip();
+    t.textContent = GVAR_pointsLabels[i] + ' ← ' + GVAR_pointsLabels[j] + ' = ' + value;
+    t.style.left = (ev.clientX + 14) + 'px';
+    t.style.top = (ev.clientY + 12) + 'px';
+    t.style.display = 'block';
+}
+
+function _hideTooltip() {
+    var t = document.getElementById('matrixCellTooltip');
+    if (t) {
+        t.style.display = 'none';
+    }
+}
+
+
+/* ----------------------------------------------------------------------------------------
+ * Cell editing (context menu aside a cell).
+ * -------------------------------------------------------------------------------------- */
+
+/**
+ * Position the edit menu next to the clicked cell, flipping when it would overflow the viewport.
+ * The menu is fixed-positioned, so cellRect viewport coordinates are used directly.
+ */
+function _positionEditMenu(inputDiv, cellRect) {
+    var menuWidth = 200;
+    var menuHeight = 214;
+    var pad = 6;
+
+    var x = cellRect.left + cellRect.width + pad;
+    if (x + menuWidth > $('body').width() - 15) {
+        x = cellRect.left - menuWidth - pad;                // flip to the left
+    }
+    if (x < 0) {
+        x = 5;
+    }
+    var y = cellRect.top;
+    if (y + menuHeight > $(window).height()) {
+        y = $(window).height() - menuHeight - 10;           // flip up
+    }
+    if (y < 0) {
+        y = 5;
+    }
+    inputDiv.style.position = 'fixed';
+    inputDiv.style.left = x + 'px';
+    inputDiv.style.top = y + 'px';
+}
+
+/**
+ * Open the edit menu for a single matrix cell.
+ */
+function changeSingleCell(hit) {
+    var i = hit.i;
+    var j = hit.j;
     if (!(GFUNC_isNodeAddedToInterestArea(i) && GFUNC_isNodeAddedToInterestArea(j))) {
         displayMessage("The node you selected is not in the current interest area!", "warningMessage");
     }
-    if (inputDiv.style.display == 'none') {
-        inputDiv.style.display = 'block';
-    } else {
-        lastEditedElement.className = lastElementClass;
-    }
-    lastEditedElement = table_elem;
-    lastElementClass = table_elem.className;
-    table_elem.className = "edited";
-    var element_position = getMenuPosition(table_elem, inputDiv);
-    inputDiv.style.position = 'fixed';
-    inputDiv.style.left = element_position.x + 'px';
-    inputDiv.style.top = element_position.y + 'px';
+
+    MATRIX_editedCell = {prefix: hit.prefix, i: i, j: j};
+
+    var inputDiv = document.getElementById('editNodeValues');
+    inputDiv.style.display = 'block';
+    _positionEditMenu(inputDiv, hit.cellRect);
 
     var labelInfoSource = document.getElementById('selectedSourceNodeDetails');
     var labelInfoTarget = document.getElementById('selectedTargetNodeDetails');
-    var descriptionText = GVAR_pointsLabels[i];
     if (labelInfoSource != null) {
-        labelInfoSource.innerHTML = descriptionText;
+        labelInfoSource.innerHTML = GVAR_pointsLabels[i];
     }
-    descriptionText = GVAR_pointsLabels[j];
     if (labelInfoTarget != null) {
-        labelInfoTarget.innerHTML = descriptionText;
+        labelInfoTarget.innerHTML = GVAR_pointsLabels[j];
     }
 
-    var inputText = document.getElementById('weightsValue');
-    inputText.value = GVAR_interestAreaVariables[GVAR_selectedAreaType]['values'][i][j];
+    document.getElementById('weightsValue').value = _matrixByPrefix(hit.prefix).values[i][j];
+    // Keep the "td_<prefix>_<i>_<j>" identifier the edit helpers below parse indices from.
+    document.getElementById('currentlyEditedNode').value = 'td_' + hit.prefix + '_' + i + '_' + j;
 
-    var hiddenNodeField = document.getElementById('currentlyEditedNode');
-    hiddenNodeField.value = table_elem.id;
-    MATRIX_colorTable();
+    MATRIX_drawCanvas();
 }
 
 
 /**
  * Method called when the 'Save' button from the context menu is pressed.
- * If a valid float is recieverm store the value in the weights matrix and if not
+ * If a valid float is received store the value in the weights matrix and if not
  * display an error message. Either way close the details context menu.
  */
 function saveNodeDetails() {
     var inputText = document.getElementById('weightsValue');
     var newValue = parseFloat($.trim(inputText.value));
-    var hiddenNodeField = document.getElementById('currentlyEditedNode');
-    var tableNodeID = hiddenNodeField.value;
-    var table_element = document.getElementById(tableNodeID);
-    table_element.className = lastElementClass;
+    var indexes = _getIndexes();
+    var idx = indexes[0];
+    var jdx = indexes[1];
 
     if (isNaN(newValue)) {
         displayMessage('The value you entered is not a valid float. Original value is kept.', 'warningMessage');
     } else {
-        //displayMessage('')
         var selectedMatrix = GVAR_interestAreaVariables[GVAR_selectedAreaType];
-        var indexes = tableNodeID.split("td_" + selectedMatrix.prefix + '_')[1].split("_");
-        var idx = indexes[0];
-        var jdx = indexes[1];
 
         if (newValue > selectedMatrix.max_val){
             selectedMatrix.max_val = newValue;
@@ -196,11 +393,8 @@ function saveNodeDetails() {
             CONN_lineWidthsBins[idx][jdx] = CONN_getLineWidthValue(newValue);
         }
     }
-    var inputDiv = document.getElementById('editNodeValues');
-    inputDiv.style.display = 'none';
-    lastElementClass = null;
-    lastEditedElement = null;
-    lastElementColor = null;
+    document.getElementById('editNodeValues').style.display = 'none';
+    MATRIX_editedCell = null;
 
     MATRIX_colorTable();
     GFUNC_updateLeftSideVisualization();
@@ -212,19 +406,11 @@ function saveNodeDetails() {
  * method is called when pressing the 'Cancel' button or when clicking outside the table/canvas.
  */
 function hideNodeDetails() {
-    var inputDiv = document.getElementById('editNodeValues');
     var hiddenNodeField = document.getElementById('currentlyEditedNode');
-    var tableNodeID = hiddenNodeField.value;
-    if (tableNodeID != null && tableNodeID != "") {
-        inputDiv.style.display = 'none';
-        if (lastEditedElement != null) {
-            lastEditedElement.className = lastElementClass;
-            lastEditedElement.style.backgroundColor = lastElementColor;
-        }
+    if (hiddenNodeField.value != null && hiddenNodeField.value != "") {
+        document.getElementById('editNodeValues').style.display = 'none';
         hiddenNodeField.value = null;
-        lastElementClass = null;
-        lastEditedElement = null;
-        lastElementColor = null;
+        MATRIX_editedCell = null;
         MATRIX_colorTable();
     }
 }
@@ -248,9 +434,9 @@ function _toggleCell(values, i, j){
 }
 
 /**
- * Method used to toggle between show/hide in-going lines. Used from the details context menu 
+ * Method used to toggle between show/hide in-going lines. Used from the details context menu
  * aside a edited element.
- * 
+ *
  * @param index - specified which of the two nodes is the one for which to make the toggle,
  *              0 = source node, 1 = destination node
  */
@@ -265,9 +451,9 @@ function toggleIngoingLines(index) {
 }
 
 /**
- * Method used to toggle between show/hide outgoing lines. Used from the details context menu 
+ * Method used to toggle between show/hide outgoing lines. Used from the details context menu
  * aside a edited element.
- * 
+ *
  * @param index - specified which of the two nodes is the one for which to make the toggle,
  *        0 = source node, 1 = destination node
  */
@@ -282,9 +468,9 @@ function toggleOutgoingLines(index) {
 }
 
 /**
- * Method used to cut ingoing lines. Used from the details context menu 
+ * Method used to cut ingoing lines. Used from the details context menu
  * aside a edited element.
- * 
+ *
  * @param index - specified which of the two nodes is the one for which to make the cut,
  *                0 = source node, 1 = destination node
  */
@@ -308,9 +494,9 @@ function cutIngoingLines(index) {
 }
 
 /**
- * Method used to cut outgoing lines. Used from the details context menu 
+ * Method used to cut outgoing lines. Used from the details context menu
  * aside a edited element.
- * 
+ *
  * @param index - specified which of the two nodes is the one for which to make the cut,
  *                0 = source node, 1 = destination node
  */
@@ -325,137 +511,50 @@ function cutOutgoingLines(index) {
         }
         GVAR_connectivityMatrix[idx][i] = 0;
         values[idx][i] = 0;
-    }	
+    }
     MATRIX_colorTable();
     GFUNC_updateLeftSideVisualization();
 }
 
 
-
-function refreshTableInterestArea() {
-    if ($('#div-matrix-tracts').length > 0) {  // why this check?
-        for (var i = 0; i < NO_POSITIONS; i++) {
-            _updateNodeInterest(i);
-        }
-    }
-}
-
-/**
- * Efficiently get header buttons by constructing their id's instead of searching the dom
- * This replaces $("th[id^='upper_change_" + nodeIdx + "_']"); $("td[id^='left_change_" + nodeIdx + "_']");
- */
-function _get_header_buttons(nodeIdx){
-    function addExistingEl(list, id){
-        var el = document.getElementById(id);
-        if (el != null){
-            list.push(el);
-        }
-    }
-
-    var hemisphereSuffixes = ['leftHemisphere', 'leftRightQuarter', 'rightLeftQuarter', 'rightHemisphere'];
-    var upperSideButtons = [];
-    var leftSideButtons = [];
-
-    for (var i = 0; i < hemisphereSuffixes.length; i++){
-        var wuBtnId = 'upper_change_' + nodeIdx + '_' + hemisphereSuffixes[i];
-        var wlBtnId = 'left_change_' + nodeIdx + '_' + hemisphereSuffixes[i];
-
-        addExistingEl(upperSideButtons, wuBtnId);
-        addExistingEl(leftSideButtons, wlBtnId);
-        addExistingEl(upperSideButtons, wuBtnId + 'Tracts');
-        addExistingEl(leftSideButtons, wlBtnId + 'Tracts');
-    }
-
-    return {'u': upperSideButtons, 'l': leftSideButtons};
-}
-
-/**
- * For a given node index update the style of the table correspondingly.
- * This is function is now indended for bulk table updates.
- * @private used by refreshTableInterestArea
- */
-function _updateNodeInterest(nodeIdx) {
-    var isInInterest = GFUNC_isNodeAddedToInterestArea(nodeIdx);
-    var hb = _get_header_buttons(nodeIdx);
-    var upperSideButtons = hb.u;
-    var leftSideButtons = hb.l;
-
-    var prefix = GVAR_interestAreaVariables[GVAR_selectedAreaType].prefix;
-    var k;
-
-    for (k = 0; k < upperSideButtons.length; k++) {
-        if (isInInterest) {
-            upperSideButtons[k].className = 'selected';
-        } else {
-            upperSideButtons[k].className = '';
-        }
-    }
-    
-    for (k = 0; k < leftSideButtons.length; k++) {
-        if (isInInterest) {
-            leftSideButtons[k].className = 'identifier selected';
-        } else {
-            leftSideButtons[k].className = 'identifier';
-        }
-    }    
-    
-    for (var i = 0; i < NO_POSITIONS; i++){
-        var horiz_table_data_id = 'td_' + prefix + '_' + nodeIdx + '_' + i;
-        var horiz_table_element = document.getElementById(horiz_table_data_id);
-
-        if (isInInterest && GFUNC_isNodeAddedToInterestArea(i)) {
-            horiz_table_element.className = 'selected';
-        } else {
-            horiz_table_element.className = '';
-        }
-    }
-}
+/* ----------------------------------------------------------------------------------------
+ * Interest-area selection from row/column headers.
+ * -------------------------------------------------------------------------------------- */
 
 function _toggleNode(index){
     GFUNC_toggleNodeInInterestArea(index);
-    // The selection comp will trigger a change event. We subscribe to that and do a bulk table update
+    // The selection comp will trigger a change event. We subscribe to that and do a bulk redraw.
     GFUN_updateSelectionComponent();
 }
-/**
- * Method called when clicking on a node index from the top column. Change the entire column
- * associated with that index
- *
- * @param domElem the dom element which fired the click event
- */  
-function changeEntireColumn(domElem) {
-    var index = domElem.id.split("upper_change_")[1];
-    index = parseInt(index.split('_')[0]);
-    _toggleNode(index);
-}
-
 
 /**
- * Method called when clicking on a node label from the left column. Change the entire row
- * associated with that index
- *
- * @param domElem the dom element which fired the click event
- */  
-function changeEntireRow(domElem) {
-    var index = domElem.id.split("left_change_")[1];
-    index = parseInt(index.split('_')[0]);
-    _toggleNode(index);
-}
-
-
-/**
- * Helper methods that store information used when the colorTable method is called
+ * Toggle the whole column (node j) in/out of the interest area. Called on a top-gutter click.
  */
-
-function TBL_storeHemisphereDetails(newStartPointsX, newEndPointsX, newStartPointsY, newEndPointsY) {
-    startPointsX = eval(newStartPointsX);
-    endPointsX = eval(newEndPointsX);
-    startPointsY = eval(newStartPointsY);
-    endPointsY = eval(newEndPointsY);
+function changeEntireColumn(index) {
+    _toggleNode(index);
 }
 
 /**
- * Function to update the legend colors; the gradient will be created only after the table was drawn
- * so it will have the same size as the table matrix
+ * Toggle the whole row (node i) in/out of the interest area. Called on a left-gutter click.
+ */
+function changeEntireRow(index) {
+    _toggleNode(index);
+}
+
+/**
+ * Redraw the matrix to reflect the current interest-area selection.
+ */
+function refreshTableInterestArea() {
+    MATRIX_drawCanvas();
+}
+
+
+/* ----------------------------------------------------------------------------------------
+ * Legend and full redraw.
+ * -------------------------------------------------------------------------------------- */
+
+/**
+ * Function to update the legend colors; the gradient is sized to the drawn matrix.
  * @private
  */
 function _updateLegendColors(){
@@ -471,31 +570,11 @@ function _updateLegendColors(){
 
 
 /**
- * Method that colors the entire table.
+ * Redraw the matrix and its legend. Kept under the historical name because it is the
+ * hook called from the color scheme, tab-switch and selection code.
  */
 function MATRIX_colorTable() {
-    var selectedMatrix = GVAR_interestAreaVariables[GVAR_selectedAreaType];
-    var prefix_id = selectedMatrix.prefix;
-    var dataValues = selectedMatrix.values;
-    var minValue = selectedMatrix.min_val;
-    var maxValue = selectedMatrix.max_val;
-
-    for (var hemisphereIdx=0; hemisphereIdx<startPointsX.length; hemisphereIdx++){
-        var startX = startPointsX[hemisphereIdx];
-        var endX = endPointsX[hemisphereIdx];
-        var startY = startPointsY[hemisphereIdx];
-        var endY = endPointsY[hemisphereIdx];
-
-        for (var i=startX; i<endX; i++){
-            for (var j=startY; j<endY; j++) {
-                var tableDataID = 'td_' + prefix_id + '_' + i + '_' + j;
-                var tableElement = document.getElementById(tableDataID);
-                if (dataValues){
-                    tableElement.style.backgroundColor = ColSch_getGradientColorString(dataValues[i][j], minValue, maxValue);
-                }
-            }
-        }
-    }
+    MATRIX_drawCanvas();
     _updateLegendColors();
 }
 
@@ -518,46 +597,57 @@ function saveSubConnectivity(submitUrl, originalConnectivityId,  isBranch) {
 }
 
 /**
- * Bind events for connectivity matrix tables
+ * Bind events for the connectivity matrix canvases.
  */
 function initializeMatrix(){
-    function tdInfo(el){
-        var sid = el.id.split('_');
-        var isNode = el.tagName === 'TD' && sid[1] != null && sid[2] != null && sid[3] != null;
-        var prefix = sid[1],
-                 i = parseInt(sid[2], 10),
-                 j = parseInt(sid[3], 10);
-        return { prefix : prefix, i : i, j : j, isNode : isNode};
-    }
+    _matrixTooltip();
 
-    function handle_click(el){
-        var nfo = tdInfo(el);
-        if (nfo.isNode){
-            changeSingleCell(el, nfo.i, nfo.j);
+    function onClick(ev){
+        var hit = _canvasHit(this, ev);
+        if (hit == null){
+            return;
+        }
+        if (hit.region === 'cell'){
+            changeSingleCell(hit);
+        } else if (hit.region === 'row'){
+            changeEntireRow(hit.i);
+        } else if (hit.region === 'col'){
+            changeEntireColumn(hit.j);
         }
     }
 
-    var dom = $('#div-matrix-weights').add('#div-matrix-tracts');
-    dom.click(function(ev){
-        handle_click(ev.target);
-    }).keypress(function(ev){
-        if (ev.keyCode === 13){
-            handle_click(ev.target);
-        }
-    });
-
-    // this binds quite a number of handlers
-    dom.find('td').hover(
-        function (event) {
-            var nfo = tdInfo(event.target);
-            if (nfo.isNode){
-                highlightedPointIndex1 = nfo.i;
-                highlightedPointIndex2 = nfo.j;
-            }
-        },
-        function () {
+    function onMove(ev){
+        var hit = _canvasHit(this, ev);
+        if (hit != null && hit.region === 'cell'){
+            highlightedPointIndex1 = hit.i;
+            highlightedPointIndex2 = hit.j;
+            _showTooltip(ev, hit.prefix, hit.i, hit.j);
+        } else {
             highlightedPointIndex1 = -1;
             highlightedPointIndex2 = -1;
+            _hideTooltip();
         }
-    );
+    }
+
+    function onLeave(){
+        highlightedPointIndex1 = -1;
+        highlightedPointIndex2 = -1;
+        _hideTooltip();
+    }
+
+    var canvases = document.getElementsByClassName('matrix-canvas');
+    for (var k = 0; k < canvases.length; k++){
+        canvases[k].addEventListener('click', onClick);
+        canvases[k].addEventListener('mousemove', onMove);
+        canvases[k].addEventListener('mouseleave', onLeave);
+    }
+
+    // Redraw on resize so cells keep filling the available width. Throttled to avoid thrashing.
+    var resizeTimer;
+    $(window).resize(function(){
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(MATRIX_drawCanvas, 200);
+    });
+
+    MATRIX_colorTable();
 }
