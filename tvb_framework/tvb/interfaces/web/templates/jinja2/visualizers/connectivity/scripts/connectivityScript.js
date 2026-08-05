@@ -630,6 +630,8 @@ function selectHemisphere(index) {
     $("#" + hemispheres[index]+'Tracts').show();
     var inputDiv = document.getElementById('editNodeValues');
     inputDiv.style.display = 'none';
+    // The quadrant just shown has a width now, so (re)draw its canvas.
+    MATRIX_drawCanvas();
 }
 
 

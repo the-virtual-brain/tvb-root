@@ -37,8 +37,8 @@
             if (el.hasClass('menu-cell') || el.parents('.menu-cell').length){
                 return; // clicked on the drop
             }
-            if (el[0].id.indexOf("td_") === 0) {
-                return; //clicked on another cell
+            if (el.hasClass('matrix-canvas')) {
+                return; //clicked on the matrix (may be opening another cell)
             }
             hideNodeDetails();
 		});
