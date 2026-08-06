@@ -365,8 +365,8 @@ padding-top: 5px;
 
 .ss-connectivity .matrix-canvas {
 display: block;
+width: 100%;
 cursor: pointer;
-/* width/height are set per-draw by matrixScript.js so cells stay square */
 }
 
 /* -- Arranging the "legendary" color strip with labels and the matrix */
