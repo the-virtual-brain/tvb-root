@@ -89,18 +89,12 @@ function _canvasGeometry(canvas) {
     };
     g.nCols = g.colEnd - g.colStart;
     g.nRows = g.rowEnd - g.rowStart;
-    // Available space comes from the container, not the canvas itself, so resizing the canvas to fit
-    // square cells does not feed back into the measurement.
-    var availW = canvas.parentNode.clientWidth - MATRIX_LABEL_GUTTER;
-    var availH = MATRIX_MAX_CANVAS_HEIGHT - MATRIX_LABEL_GUTTER;
-    // Square cells: pick the smaller of the width/height fits so the whole quadrant stays in the box.
-    g.cell = (g.nCols > 0 && g.nRows > 0) ? Math.min(availW / g.nCols, availH / g.nRows) : 0;
-    g.cw = g.cell;
-    g.ch = g.cell;
-    g.gridW = g.cell * g.nCols;
-    g.gridH = g.cell * g.nRows;
-    g.cssW = MATRIX_LABEL_GUTTER + g.gridW;
-    g.cssH = MATRIX_LABEL_GUTTER + g.gridH;
+    g.cssW = canvas.clientWidth;
+    g.cssH = Math.min(g.cssW, MATRIX_MAX_CANVAS_HEIGHT);
+    g.gridW = g.cssW - MATRIX_LABEL_GUTTER;
+    g.gridH = g.cssH - MATRIX_LABEL_GUTTER;
+    g.cw = g.gridW / g.nCols;
+    g.ch = g.gridH / g.nRows;
     return g;
 }
 
@@ -109,7 +103,7 @@ function _canvasGeometry(canvas) {
  */
 function _drawQuadrant(canvas) {
     var g = _canvasGeometry(canvas);
-    if (g.nCols <= 0 || g.nRows <= 0 || g.cell <= 0) {
+    if (!g.cssW || g.nCols <= 0 || g.nRows <= 0) {
         return;                                             // hidden or empty quadrant
     }
 
@@ -122,7 +116,6 @@ function _drawQuadrant(canvas) {
     var maxValue = matrix.max_val;
 
     var dpr = window.devicePixelRatio || 1;
-    canvas.style.width = g.cssW + 'px';                     // sized to the matrix aspect ratio (square cells)
     canvas.style.height = g.cssH + 'px';
     canvas.width = Math.round(g.cssW * dpr);
     canvas.height = Math.round(g.cssH * dpr);
