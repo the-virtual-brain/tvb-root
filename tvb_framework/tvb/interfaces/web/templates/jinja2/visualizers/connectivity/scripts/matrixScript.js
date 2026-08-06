@@ -36,8 +36,13 @@
 
 // Width in css pixels reserved for the row/column label gutters on each canvas.
 var MATRIX_LABEL_GUTTER = 66;
-// Below these cell sizes labels would be illegible, so we skip them and rely on the hover tooltip.
-var MATRIX_MIN_LABEL_CELL = 7;
+// Minimum on-screen spacing (css px) between two axis labels. When cells are smaller than this we
+// draw only every k-th label, so labels stay readable even for very large connectivities (e.g. 998
+// regions). The exact label for any cell is always available via the hover tooltip.
+var MATRIX_LABEL_MIN_SPACING = 11;
+// Cell contour (grid) lines are only drawn when cells are at least this big; below it the grid would
+// collapse into a solid block and hide the data.
+var MATRIX_MIN_GRID_CELL = 4;
 // Largest canvas height (css pixels); keeps a whole quadrant visible without a giant scroll area.
 var MATRIX_MAX_CANVAS_HEIGHT = 640;
 
@@ -84,12 +89,18 @@ function _canvasGeometry(canvas) {
     };
     g.nCols = g.colEnd - g.colStart;
     g.nRows = g.rowEnd - g.rowStart;
-    g.cssW = canvas.clientWidth;
-    g.cssH = Math.min(g.cssW, MATRIX_MAX_CANVAS_HEIGHT);
-    g.gridW = g.cssW - MATRIX_LABEL_GUTTER;
-    g.gridH = g.cssH - MATRIX_LABEL_GUTTER;
-    g.cw = g.gridW / g.nCols;
-    g.ch = g.gridH / g.nRows;
+    // Available space comes from the container, not the canvas itself, so resizing the canvas to fit
+    // square cells does not feed back into the measurement.
+    var availW = canvas.parentNode.clientWidth - MATRIX_LABEL_GUTTER;
+    var availH = MATRIX_MAX_CANVAS_HEIGHT - MATRIX_LABEL_GUTTER;
+    // Square cells: pick the smaller of the width/height fits so the whole quadrant stays in the box.
+    g.cell = (g.nCols > 0 && g.nRows > 0) ? Math.min(availW / g.nCols, availH / g.nRows) : 0;
+    g.cw = g.cell;
+    g.ch = g.cell;
+    g.gridW = g.cell * g.nCols;
+    g.gridH = g.cell * g.nRows;
+    g.cssW = MATRIX_LABEL_GUTTER + g.gridW;
+    g.cssH = MATRIX_LABEL_GUTTER + g.gridH;
     return g;
 }
 
@@ -98,7 +109,7 @@ function _canvasGeometry(canvas) {
  */
 function _drawQuadrant(canvas) {
     var g = _canvasGeometry(canvas);
-    if (!g.cssW || g.nCols <= 0 || g.nRows <= 0) {
+    if (g.nCols <= 0 || g.nRows <= 0 || g.cell <= 0) {
         return;                                             // hidden or empty quadrant
     }
 
@@ -111,6 +122,7 @@ function _drawQuadrant(canvas) {
     var maxValue = matrix.max_val;
 
     var dpr = window.devicePixelRatio || 1;
+    canvas.style.width = g.cssW + 'px';                     // sized to the matrix aspect ratio (square cells)
     canvas.style.height = g.cssH + 'px';
     canvas.width = Math.round(g.cssW * dpr);
     canvas.height = Math.round(g.cssH * dpr);
@@ -146,33 +158,51 @@ function _drawQuadrant(canvas) {
         }
     }
 
+    // Cell contour: a grid outlining every cell. Drawn as nRows+nCols lines (not a stroke per cell)
+    // and only when cells are large enough that the grid does not swamp the colors.
+    if (g.cw >= MATRIX_MIN_GRID_CELL && g.ch >= MATRIX_MIN_GRID_CELL) {
+        ctx.strokeStyle = 'rgba(46, 45, 38, 0.35)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (c = 0; c <= g.nCols; c++) {
+            var lineX = Math.round(MATRIX_LABEL_GUTTER + c * g.cw) + 0.5;   // half-pixel => crisp 1px line
+            ctx.moveTo(lineX, MATRIX_LABEL_GUTTER);
+            ctx.lineTo(lineX, MATRIX_LABEL_GUTTER + g.nRows * g.ch);
+        }
+        for (r = 0; r <= g.nRows; r++) {
+            var lineY = Math.round(MATRIX_LABEL_GUTTER + r * g.ch) + 0.5;
+            ctx.moveTo(MATRIX_LABEL_GUTTER, lineY);
+            ctx.lineTo(MATRIX_LABEL_GUTTER + g.nCols * g.cw, lineY);
+        }
+        ctx.stroke();
+    }
+
     ctx.font = '9px sans-serif';
 
     // Column labels along the top gutter, rotated to read bottom-to-top (as the old table did).
-    if (g.cw >= MATRIX_MIN_LABEL_CELL) {
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        for (c = 0; c < g.nCols; c++) {
-            j = g.colStart + c;
-            ctx.save();
-            ctx.translate(MATRIX_LABEL_GUTTER + c * g.cw + g.cw / 2, MATRIX_LABEL_GUTTER - 3);
-            ctx.rotate(-Math.PI / 2);
-            ctx.fillStyle = colSel[c] ? '#2E2D26' : '#7e7b66';
-            ctx.fillText(_fitLabel(ctx, '' + GVAR_pointsLabels[j], MATRIX_LABEL_GUTTER - 6), 0, 0);
-            ctx.restore();
-        }
+    // When cells are narrower than the label spacing we draw every colStep-th label to avoid overlap.
+    var colStep = Math.max(1, Math.ceil(MATRIX_LABEL_MIN_SPACING / g.cw));
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    for (c = 0; c < g.nCols; c += colStep) {
+        j = g.colStart + c;
+        ctx.save();
+        ctx.translate(MATRIX_LABEL_GUTTER + c * g.cw + g.cw / 2, MATRIX_LABEL_GUTTER - 3);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillStyle = colSel[c] ? '#2E2D26' : '#7e7b66';
+        ctx.fillText(_fitLabel(ctx, '' + GVAR_pointsLabels[j], MATRIX_LABEL_GUTTER - 6), 0, 0);
+        ctx.restore();
     }
 
     // Row labels along the left gutter.
-    if (g.ch >= MATRIX_MIN_LABEL_CELL) {
-        ctx.textAlign = 'right';
-        ctx.textBaseline = 'middle';
-        for (r = 0; r < g.nRows; r++) {
-            i = g.rowStart + r;
-            ctx.fillStyle = rowSel[r] ? '#2E2D26' : '#7e7b66';
-            ctx.fillText(_fitLabel(ctx, '' + GVAR_pointsLabels[i], MATRIX_LABEL_GUTTER - 6),
-                         MATRIX_LABEL_GUTTER - 4, MATRIX_LABEL_GUTTER + r * g.ch + g.ch / 2);
-        }
+    var rowStep = Math.max(1, Math.ceil(MATRIX_LABEL_MIN_SPACING / g.ch));
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (r = 0; r < g.nRows; r += rowStep) {
+        i = g.rowStart + r;
+        ctx.fillStyle = rowSel[r] ? '#2E2D26' : '#7e7b66';
+        ctx.fillText(_fitLabel(ctx, '' + GVAR_pointsLabels[i], MATRIX_LABEL_GUTTER - 6),
+                     MATRIX_LABEL_GUTTER - 4, MATRIX_LABEL_GUTTER + r * g.ch + g.ch / 2);
     }
 
     // Edited-cell border, if it falls inside this quadrant.
