@@ -56,6 +56,7 @@ class WebStructure(object):
     SUB_SECTION_MODEL_SURFACE = "surfacemodel"
     SUB_SECTION_NOISE_CONFIGURATION = "noiseconfig"
     SUB_SECTION_PHASE_PLANE = "phaseplane"
+    SUB_SECTION_HYBRID_SIMULATION = "hybridsimulation"
 
     ### Subsections for ANALYZE section.
     ### These subsections can extends, and depend on existing analyzers in the system.
@@ -151,6 +152,7 @@ class WebStructure(object):
         SUB_SECTION_MODEL_SURFACE: "Surface Model Parameters",
         SUB_SECTION_NOISE_CONFIGURATION: "Noise dispersion configuration",
         SUB_SECTION_PHASE_PLANE: "Phase plane",
+        SUB_SECTION_HYBRID_SIMULATION: "Hybrid Simulation",
 
         SUB_SECTION_ANALYZE_MENU: "",
         SUB_SECTION_ANALYZE_1: "Cross Correlation",

@@ -1,0 +1,10 @@
+.hybrid-page { padding: 0 1rem 1rem; }
+.hybrid-steps { display: flex; gap: 1rem; margin: 0 1rem 1rem; padding-top: 1rem; }
+.hybrid-steps .active { font-weight: bold; }
+.hybrid-page textarea { display: block; width: 100%; font-family: monospace; margin-bottom: 1rem; }
+#hybrid-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 1rem; margin: 1rem 0; }
+.hybrid-node { display: block; }
+.hybrid-matrix { max-width: 100%; overflow: auto; margin-bottom: 1rem; }
+.hybrid-matrix table { border-collapse: collapse; }
+.hybrid-matrix th, .hybrid-matrix td { border: 1px solid #aaa; padding: .2rem; }
+.hybrid-matrix input { width: 6rem; }

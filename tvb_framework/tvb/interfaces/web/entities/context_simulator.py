@@ -144,10 +144,14 @@ class SimulatorContext(object):
         common.set_warning_message(message)
 
     def clean_project_data_from_session(self, remove_project=True):
+        from tvb.interfaces.web.entities.context_hybrid_simulator import HybridSimulatorContext
+
         common.remove_from_session(self.KEY_SIMULATOR_CONFIG)
         common.remove_from_session(self.KEY_LAST_LOADED_FORM_URL)
         common.remove_from_session(self.KEY_BURST_CONFIG)
         common.remove_from_session(self.KEY_IS_SIMULATOR_BRANCH)
         common.add2session(self.KEY_IS_SIMULATOR_LOAD, False)
+        HybridSimulatorContext().reset()
+        common.remove_from_session("hybrid_simulation_name")
         if remove_project:
             common.remove_project_from_session()

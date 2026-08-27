@@ -1,0 +1,16 @@
+<link rel="stylesheet" href="{{ deploy_context | safe }}/static/style/hybrid_simulator.css?{{ currentVersionJS }}">
+<div id="main">
+{% include 'burst/hybrid/steps.html' %}
+<section class="hybrid-page">
+    <h3>Configure monitors and run length</h3>
+    <form method="post"><dl>
+        <dt><label for="simulation_name">Simulation name</label></dt><dd><input id="simulation_name" name="simulation_name" value="{{ simulation_name }}" required></dd>
+        <dt><label for="simulation_length">Simulation length (ms)</label></dt><dd><input type="number" step="any" min="0" id="simulation_length" name="simulation_length" value="{{ configuration.simulation_length }}" required></dd>
+        <dt><label for="raw">Raw</label></dt><dd><input type="checkbox" id="raw" name="raw" value="1" {{ 'checked' if 'RawViewModel' in selected else '' }}> <input type="number" step="any" min="0" name="raw_period" value="{{ selected['RawViewModel'].period if 'RawViewModel' in selected else 0.1 }}"></dd>
+        <dt><label for="temporal_average">Temporal average</label></dt><dd><input type="checkbox" id="temporal_average" name="temporal_average" value="1" {{ 'checked' if 'TemporalAverageViewModel' in selected else '' }}> <input type="number" step="any" min="0" name="temporal_average_period" value="{{ selected['TemporalAverageViewModel'].period if 'TemporalAverageViewModel' in selected else 1.0 }}"></dd>
+    </dl>
+        <a class="button" href="{{ deploy_context | safe }}/burst/hybrid/dynamics">Previous</a>
+        <button type="submit">Save and review</button>
+    </form>
+</section>
+</div>

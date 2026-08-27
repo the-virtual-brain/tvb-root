@@ -1,0 +1,15 @@
+<link rel="stylesheet" href="{{ deploy_context | safe }}/static/style/hybrid_simulator.css?{{ currentVersionJS }}">
+<div id="main">
+{% include 'burst/hybrid/steps.html' %}
+<section class="hybrid-page">
+    <h3>Review {{ simulation_name }}</h3>
+    {% if validation_errors %}<p class="errorMessage">{{ validation_errors | join(' ') }}</p>{% endif %}
+    <h4>Subnetworks</h4><ul>{% for subnet in configuration.subnetworks %}<li>{{ subnet.name }}: {{ subnet.node_indices | length }} nodes, {{ subnet.model.__class__.__name__ }}, {{ subnet.integrator.__class__.__name__ }}, dt {{ subnet.integrator.dt }}, observable {{ subnet.observable }}</li>{% endfor %}</ul>
+    <h4>Projections</h4><p>{{ configuration.projections | length }} projections; Linear coupling; conduction velocity 3.0.</p>
+    <h4>Run</h4><p>{{ configuration.simulation_length }} ms; {% for monitor in configuration.monitors %}{{ monitor.__class__.__name__ }} ({{ monitor.period }} ms) {% endfor %}</p>
+    <a class="button" href="{{ deploy_context | safe }}/burst/hybrid/run_settings">Previous</a>
+    <button type="button" id="hybrid-launch" data-launch-url="{{ deploy_context | safe }}/burst/hybrid/launch"
+            data-burst-url="{{ deploy_context | safe }}/burst/" {{ 'disabled' if validation_errors else '' }}>Launch</button>
+</section>
+</div>
+<script src="{{ deploy_context | safe }}/static/js/hybrid_simulator.js?{{ currentVersionJS }}"></script>

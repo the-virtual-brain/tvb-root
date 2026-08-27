@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="{{ deploy_context | safe }}/static/style/hybrid_simulator.css?{{ currentVersionJS }}">
+<div id="main">
+{% include 'burst/hybrid/steps.html' %}
+<section class="hybrid-page">
+    <h3>Edit projection matrices</h3>
+    <label>Projection</label>
+    <select onchange="window.location='{{ deploy_context | safe }}/burst/hybrid/projections?projection_index='+this.value">
+        {% for choice in choices %}<option value="{{ choice.index }}" {{ 'selected' if choice.index == projection_index else '' }}>{{ choice.label }}</option>{% endfor %}
+    </select>
+    <p>Rows are target nodes; columns are source nodes. The coupling function is fixed to Linear.</p>
+    <form method="post" action="{{ deploy_context | safe }}/burst/hybrid/projections?projection_index={{ projection_index }}" id="hybrid-projection-form">
+        <label for="weights">Weights</label>
+        <div id="hybrid-weights-grid" class="hybrid-matrix"></div>
+        <textarea id="weights" name="weights" hidden>{{ weights }}</textarea>
+        <label for="tract_lengths">Tract lengths</label>
+        <div id="hybrid-tracts-grid" class="hybrid-matrix"></div>
+        <textarea id="tract_lengths" name="tract_lengths" hidden>{{ tract_lengths }}</textarea>
+        <a class="button" href="{{ deploy_context | safe }}/burst/hybrid/connectivity">Previous</a>
+        <button type="submit">Save projection</button>
+        <button type="submit" name="next" value="1">Save and continue</button>
+    </form>
+</section>
+</div>
+<script>window.HYBRID_SOURCE_LABELS={{ source_labels | safe }}; window.HYBRID_TARGET_LABELS={{ target_labels | safe }};</script>
+<script src="{{ deploy_context | safe }}/static/js/hybrid_simulator.js?{{ currentVersionJS }}"></script>

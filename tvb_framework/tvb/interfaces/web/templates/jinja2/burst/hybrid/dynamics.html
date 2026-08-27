@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="{{ deploy_context | safe }}/static/style/hybrid_simulator.css?{{ currentVersionJS }}">
+<div id="main">
+{% include 'burst/hybrid/steps.html' %}
+<section class="hybrid-page">
+    <h3>Configure subnetwork dynamics</h3>
+    <nav class="inline-menu">
+        {% for item in configuration.subnetworks %}<a class="{{ 'active' if item.stable_id == subnet.stable_id else '' }}" href="{{ deploy_context | safe }}/burst/hybrid/dynamics?subnetwork_id={{ item.stable_id }}">{{ item.name }}</a>{% endfor %}
+    </nav>
+    <form method="post">
+        <input type="hidden" name="subnetwork_id" value="{{ subnet.stable_id }}">
+        <dl>
+            <dt><label for="model_class">Model</label></dt>
+            <dd><select id="model_class" name="model_class">{% for name in model_classes %}<option value="{{ name }}" {{ 'selected' if name == subnet.model.__class__.__name__ else '' }}>{{ name }}</option>{% endfor %}</select>
+                <button name="action" value="change_model">Change model</button></dd>
+            {% for field in model_form.fields %}{% if field.name != 'variables_of_interest' %}<dt><label>{{ field.label }}</label></dt><dd>{{ field | safe }}</dd>{% endif %}{% endfor %}
+            <dt><label for="integrator">Integrator</label></dt>
+            <dd><select id="integrator" name="integrator"><option value="HeunDeterministicViewModel" {{ 'selected' if subnet.integrator.__class__.__name__ == 'HeunDeterministicViewModel' else '' }}>Heun</option><option value="EulerDeterministicViewModel" {{ 'selected' if subnet.integrator.__class__.__name__ == 'EulerDeterministicViewModel' else '' }}>Euler</option></select></dd>
+            {% for field in integrator_form.fields %}<dt><label>{{ field.label }}</label></dt><dd>{{ field | safe }}</dd>{% endfor %}
+            <dt><label for="observable">Observable</label></dt>
+            <dd><select id="observable" name="observable">{% for observable in observables %}<option value="{{ observable }}" {{ 'selected' if observable == subnet.observable else '' }}>{{ observable }}</option>{% endfor %}</select></dd>
+        </dl>
+        <a class="button" href="{{ deploy_context | safe }}/burst/hybrid/projections">Previous</a>
+        <button type="submit">Save subnetwork</button>
+        <button type="submit" name="next" value="1">Save and continue</button>
+    </form>
+</section>
+</div>

@@ -24,4 +24,4 @@
 #
 #
 
-ALL_SIMULATORS = ["simulator_adapter"]
+ALL_SIMULATORS = ["simulator_adapter", "hybrid_simulator_adapter"]

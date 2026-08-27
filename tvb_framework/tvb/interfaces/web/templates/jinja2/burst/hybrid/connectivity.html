@@ -1,0 +1,18 @@
+<link rel="stylesheet" href="{{ deploy_context | safe }}/static/style/hybrid_simulator.css?{{ currentVersionJS }}">
+<div id="main">
+{% include 'burst/hybrid/steps.html' %}
+<section class="hybrid-page">
+    <h3>Select connectivity and group its regions</h3>
+    <form method="post" id="hybrid-connectivity-form">
+        <dl><dt><label>{{ form.connectivity.label }}</label></dt><dd>{{ form.connectivity | safe }}</dd></dl>
+        <button type="submit" name="action" value="load">Load regions</button>
+        <p><strong>Unassigned:</strong> <span id="hybrid-unassigned"></span></p>
+        <div id="hybrid-groups"></div>
+        <input type="hidden" name="subnetworks" id="hybrid-subnetworks">
+        <button type="button" id="hybrid-add-subnetwork">Add subnetwork</button>
+        <button type="submit" name="action" value="save">Save and continue</button>
+    </form>
+</section>
+</div>
+<script>window.HYBRID_LABELS={{ labels_json | safe }}; window.HYBRID_SUBNETWORKS={{ subnetworks_json | safe }};</script>
+<script src="{{ deploy_context | safe }}/static/js/hybrid_simulator.js?{{ currentVersionJS }}"></script>

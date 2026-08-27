@@ -1,0 +1,7 @@
+<nav class="inline-menu hybrid-steps">
+    <a href="{{ deploy_context | safe }}/burst/hybrid/connectivity" class="{{ 'active' if hybrid_step == 1 else '' }}">1. Subnetworks</a>
+    <a href="{{ deploy_context | safe }}/burst/hybrid/projections" class="{{ 'active' if hybrid_step == 2 else '' }}">2. Projections</a>
+    <a href="{{ deploy_context | safe }}/burst/hybrid/dynamics" class="{{ 'active' if hybrid_step == 3 else '' }}">3. Dynamics</a>
+    <a href="{{ deploy_context | safe }}/burst/hybrid/run_settings" class="{{ 'active' if hybrid_step == 4 else '' }}">4. Run</a>
+    <a href="{{ deploy_context | safe }}/burst/hybrid/review" class="{{ 'active' if hybrid_step == 5 else '' }}">5. Review</a>
+</nav>
