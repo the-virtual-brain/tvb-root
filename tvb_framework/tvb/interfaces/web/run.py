@@ -63,6 +63,7 @@ from tvb.interfaces.web.controllers.project.figure_controller import FigureContr
 from tvb.interfaces.web.controllers.project.project_controller import ProjectController
 from tvb.interfaces.web.controllers.settings_controller import SettingsController
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
+from tvb.interfaces.web.controllers.simulator.hybrid_simulator_controller import HybridSimulatorController
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
 from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import LocalConnectivityController
 from tvb.interfaces.web.controllers.spatial.region_stimulus_controller import RegionStimulusController
@@ -142,6 +143,7 @@ def init_cherrypy(arguments=None):
     cherrypy.tree.mount(SettingsController(), BaseController.build_path("/settings/"), config=CONFIGUER)
     cherrypy.tree.mount(HelpController(), BaseController.build_path("/help/"), config=CONFIGUER)
     cherrypy.tree.mount(SimulatorController(), BaseController.build_path("/burst/"), config=CONFIGUER)
+    cherrypy.tree.mount(HybridSimulatorController(), BaseController.build_path("/burst/hybrid/"), config=CONFIGUER)
     cherrypy.tree.mount(ParameterExplorationController(), BaseController.build_path("/burst/explore/"),
                         config=CONFIGUER)
     cherrypy.tree.mount(DynamicModelController(), BaseController.build_path("/burst/dynamic/"), config=CONFIGUER)
