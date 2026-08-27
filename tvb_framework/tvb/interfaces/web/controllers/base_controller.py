@@ -103,6 +103,8 @@ class BaseController(object):
 
         self.burst_submenu = [dict(link=self.build_path('/burst'), subsection=WebStructure.SUB_SECTION_BURST,
                                    title='Simulation Cockpit', description='Manage simulations'),
+                              dict(link=self.build_path('/burst/hybrid'), subsection='hybrid',
+                                   title='Hybrid Simulator', description='Configure hybrid simulations'),
                               dict(link=self.build_path('/burst/dynamic'), subsection='dynamic',
                                    title='Phase plane', description='Configure model dynamics')]
 

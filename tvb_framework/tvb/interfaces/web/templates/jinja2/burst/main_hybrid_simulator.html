@@ -1,0 +1,44 @@
+<!-- ====================================================== -->
+<!-- Display Hybrid Simulator page with 3 areas             -->
+<!-- ====================================================== -->
+<div id="main" class="columnized colscheme-3-1st-narrow">
+
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/hybrid_simulator.js?{{ currentVersionJS }}"></script>
+    <!--! We need projectTree.js for the Results TAB. -->
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/projectTree.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/filters.js?{{ currentVersionJS }}"></script>
+
+    <!--! Select from Hybrid Simulator History -->
+    <section id="section-view-history" class="view-history view-column col-1">
+        {% include 'burst/hybrid_burst_history.html' %}
+    </section>
+
+    <!--! Configure Hybrid Simulation -->
+    <section id="section-simulator-main" class="edit-simulator view-column col-2 is-created">
+        <h4><span id="title-simulation"><mark>Configure</mark> Hybrid simulation</span></h4>
+
+        <div id="div-hybrid-simulator-parameters">
+            <div class="adaptersDiv">
+                {% include 'hybrid_simulator_fragment.html' %}
+            </div>
+        </div>
+    </section>
+
+    <!--! Visualize results -->
+    <section id="section" class="view-column col-3">
+        <h4>
+            <mark>Visualize</mark>
+            <span id="title-visualizers">Hybrid simulation</span></h4>
+        <input id="hiddenProjectId" type="hidden" value="{{ selectedProject.id }}"/>
+
+        <ul id="section-ul" class="view-switcher tabswitcher">
+            <li class="active">
+                <a href="#" id="tab-burst-tree" onclick="displayBurstTree(undefined);">Results</a>
+            </li>
+        </ul>
+
+        <div class="specialviewer visible-2-2" id="div-burst-tree" style="display: none;">
+            <div id="treeOverlay"></div>
+        </div>
+    </section>
+</div>

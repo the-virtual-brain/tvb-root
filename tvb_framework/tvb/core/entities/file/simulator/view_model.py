@@ -406,3 +406,12 @@ class SimulatorAdapterModel(ViewModel, Simulator):
         for variable in chosen_variables:
             variables_of_interest_indexes[variable] = all_variables.index(variable)
         return variables_of_interest_indexes
+
+
+class HybridSimulatorAdapterModel(ViewModel):
+    connectivity = DataTypeGidAttr(
+        linked_datatype=Connectivity,
+        required=True,
+        label=Simulator.connectivity.label,
+        doc=Simulator.connectivity.doc
+    )

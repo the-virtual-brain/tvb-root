@@ -1,0 +1,14 @@
+<div>
+    <h4>History</h4>
+    <a href="#" title="Prepare a new hybrid simulation " class="column-control action action-big-new"
+       onclick="resetToNewHybridSimulator();">New</a>
+
+    <ul class="burst-list" id="hybrid-burst-history">
+        {% for burst in burst_list %}
+            <li class="burst {{ 'burst-started' if burst.status == 'running' else 'burst-canceled' if burst.status == 'canceled' else 'burst-error' if burst.status == 'error' else 'burst-finished' }}"
+                id='hybrid_burst_id_{{ burst.id }}'>
+                <a href="#" title="Load this hybrid simulation">{{ burst.name }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+</div>
