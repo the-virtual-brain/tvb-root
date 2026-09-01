@@ -42,7 +42,10 @@ from tvb.interfaces.web.entities.context_hybrid_simulator import HybridSimulator
 
 class HybridSimulatorURLs(object):
     SET_CONNECTIVITY_URL = '/burst/hybrid/set_connectivity'
+    # the wizard step listing the configured Subnetworks, shown in the cockpit layout
     SET_SUBNETWORKS_URL = '/burst/hybrid/set_subnetworks'
+    # the full width board on which the regions are actually grouped
+    CONFIGURE_SUBNETWORKS_URL = '/burst/hybrid/configure_subnetworks'
     ADD_SUBNETWORK_URL = '/burst/hybrid/add_subnetwork'
     REMOVE_SUBNETWORK_URL = '/burst/hybrid/remove_subnetwork'
     RENAME_SUBNETWORK_URL = '/burst/hybrid/rename_subnetwork'
@@ -52,26 +55,58 @@ class HybridSimulatorURLs(object):
 class HybridSimulatorFragmentRenderingRules(object):
     FIRST_FORM_URL = HybridSimulatorURLs.SET_CONNECTIVITY_URL
 
+    CONFIGURE_SUBNETWORKS_URL = HybridSimulatorURLs.CONFIGURE_SUBNETWORKS_URL
+
     def __init__(self, form, form_action_url, previous_form_action_url=None, is_first_fragment=False,
-                 is_subnetwork_fragment=False, fragment_title=None, next_button_label='Next',
+                 is_subnetwork_fragment=False, is_subnetworks_summary_fragment=False, fragment_title=None,
+                 next_button_label='Next', previous_button_label='Previous', next_button_enabled=True,
                  region_labels=None, subnetworks=None):
         self.form = form
         self.form_action_url = form_action_url
         self.previous_form_action_url = previous_form_action_url
         self.is_first_fragment = is_first_fragment
+        # the full width Subnetwork grouping board
         self.is_subnetwork_fragment = is_subnetwork_fragment
+        # the wizard step listing what the board produced
+        self.is_subnetworks_summary_fragment = is_subnetworks_summary_fragment
         self.fragment_title = fragment_title
         self.next_button_label = next_button_label
+        self.previous_button_label = previous_button_label
+        self.next_button_enabled = next_button_enabled
         self.region_labels = region_labels
         self.subnetworks = subnetworks
 
     @property
     def include_next_button(self):
+        # the grouping board is a detour from the wizard, it only leads back to the Subnetworks step
         return not self.is_subnetwork_fragment
 
     @property
     def include_previous_button(self):
         return not self.is_first_fragment
+
+    @property
+    def include_configure_subnetworks_button(self):
+        return self.is_subnetworks_summary_fragment
+
+    @property
+    def subnetwork_rows(self):
+        """
+        One row per Subnetwork for the summary step: its name and the regions assigned to it, keeping
+        the original Connectivity indices next to the labels.
+        """
+        labels = self.region_labels or []
+        rows = []
+        for subnetwork in self.subnetworks or []:
+            node_indices = list(subnetwork.node_indices)
+            rows.append({
+                'name': subnetwork.name,
+                'count': len(node_indices),
+                'regions': [{'index': node_index,
+                             'label': labels[node_index] if node_index < len(labels) else str(node_index)}
+                            for node_index in node_indices]
+            })
+        return rows
 
     @property
     def subnetworks_json(self):
@@ -113,8 +148,7 @@ class HybridSimulatorController(BurstBaseController):
     @staticmethod
     def _connectivity_rendering_rules(form):
         return HybridSimulatorFragmentRenderingRules(
-            form, HybridSimulatorURLs.SET_CONNECTIVITY_URL, is_first_fragment=True, fragment_title="Connectivity",
-            next_button_label="Configure Subnetworks")
+            form, HybridSimulatorURLs.SET_CONNECTIVITY_URL, is_first_fragment=True, fragment_title="Connectivity")
 
     @expose_page
     @settings
@@ -168,17 +202,28 @@ class HybridSimulatorController(BurstBaseController):
             self.context.set_hybrid_simulator(hybrid_simulator)
 
             self.context.add_last_loaded_form_url_to_session(HybridSimulatorURLs.SET_SUBNETWORKS_URL)
-            return self._prepare_subnetworks_fragment()
+            return self._prepare_subnetworks_fragment(is_summary=True)
 
         form = self._prepare_connectivity_form()
         return self._connectivity_rendering_rules(form).to_dict()
 
     @expose_fragment('hybrid_simulator_fragment')
     def set_subnetworks(self, **data):
+        """
+        The wizard step listing the configured Subnetworks, rendered in the usual cockpit layout.
+        """
         self.context.add_last_loaded_form_url_to_session(HybridSimulatorURLs.SET_SUBNETWORKS_URL)
-        return self._prepare_subnetworks_fragment()
+        return self._prepare_subnetworks_fragment(is_summary=True)
 
-    def _prepare_subnetworks_fragment(self):
+    @expose_fragment('hybrid_simulator_fragment')
+    def configure_subnetworks(self, **data):
+        """
+        The full width board on which the Connectivity regions are grouped into Subnetworks.
+        """
+        self.context.add_last_loaded_form_url_to_session(HybridSimulatorURLs.CONFIGURE_SUBNETWORKS_URL)
+        return self._prepare_subnetworks_fragment(is_summary=False)
+
+    def _prepare_subnetworks_fragment(self, is_summary):
         try:
             _, region_labels, subnetworks = self._load_subnetworks_configuration()
         except HybridSubnetworkException as excep:
@@ -186,10 +231,19 @@ class HybridSimulatorController(BurstBaseController):
             self.context.add_last_loaded_form_url_to_session(HybridSimulatorURLs.SET_CONNECTIVITY_URL)
             return self._connectivity_rendering_rules(self._prepare_connectivity_form()).to_dict()
 
-        rendering_rules = HybridSimulatorFragmentRenderingRules(
-            HybridSubnetworksFragment(), HybridSimulatorURLs.SET_SUBNETWORKS_URL,
-            HybridSimulatorURLs.SET_CONNECTIVITY_URL, is_subnetwork_fragment=True, fragment_title="Subnetworks",
-            region_labels=region_labels, subnetworks=subnetworks)
+        if is_summary:
+            rendering_rules = HybridSimulatorFragmentRenderingRules(
+                HybridSubnetworksFragment(), HybridSimulatorURLs.SET_SUBNETWORKS_URL,
+                HybridSimulatorURLs.SET_CONNECTIVITY_URL, is_subnetworks_summary_fragment=True,
+                fragment_title="Subnetworks", region_labels=region_labels, subnetworks=subnetworks,
+                # Model and Integrator configuration is the next wizard step, it does not exist yet
+                next_button_enabled=False)
+        else:
+            rendering_rules = HybridSimulatorFragmentRenderingRules(
+                HybridSubnetworksFragment(), HybridSimulatorURLs.CONFIGURE_SUBNETWORKS_URL,
+                HybridSimulatorURLs.SET_SUBNETWORKS_URL, is_subnetwork_fragment=True,
+                fragment_title="Subnetworks", previous_button_label="Back to Simulator",
+                region_labels=region_labels, subnetworks=subnetworks)
         return rendering_rules.to_dict()
 
     # ---------------------------------------------------------------- Subnetwork editing

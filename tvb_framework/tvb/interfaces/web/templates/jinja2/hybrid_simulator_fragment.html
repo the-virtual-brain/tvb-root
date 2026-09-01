@@ -3,12 +3,13 @@
 <form method="post" action="{{ renderer.form_action_url }}" id="{{ renderer.form_action_url }}" enctype="multipart/form-data">
     {% if renderer.is_subnetwork_fragment %}
         {% include 'burst/hybrid_subnetworks.html' %}
+    {% elif renderer.is_subnetworks_summary_fragment %}
+        {% include 'burst/hybrid_subnetworks_summary.html' %}
     {% else %}
         <fieldset>
             <dl>
-                {% if renderer.fragment_title %}
-                    <legend>{{ renderer.fragment_title }}</legend>
-                {% endif %}
+                {#- No step title here: the classic cockpit only shows a legend for monitor fragments,
+                    every other step exposes just its parameter labels. -#}
                 {% if renderer.form.ordered_fields %}
                     {% set form_fields = renderer.form.ordered_fields %}
                 {% else %}
@@ -34,13 +35,28 @@
 
     {% if renderer.include_previous_button %}
         <button name="previous" type="button" class="btn btn-primary" tabindex="1"
-                onclick="hybridPrevious(this.parentElement, '{{ renderer.previous_form_action_url }}')">Previous
+                {% if renderer.is_subnetwork_fragment %}
+                    onclick="hybridBackToSimulator()"
+                {% else %}
+                    onclick="hybridPreviousStep(this.parentElement, '{{ renderer.previous_form_action_url }}')"
+                {% endif %}>{{ renderer.previous_button_label }}
+        </button>
+    {% endif %}
+
+    {% if renderer.include_configure_subnetworks_button %}
+        <button name="configure_subnetworks" type="button" class="btn btn-primary" tabindex="1"
+                title="Group the Connectivity regions into Subnetworks"
+                onclick="hybridLoadFragment('{{ renderer.CONFIGURE_SUBNETWORKS_URL }}')">Configure Subnetworks
         </button>
     {% endif %}
 
     {% if renderer.include_next_button %}
         <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1"
-                onclick="hybridSubmit(this.parentElement)">{{ renderer.next_button_label }}
+                onclick="hybridSubmit(this.parentElement)"
+                {% if not renderer.next_button_enabled %}
+                    disabled="disabled"
+                    title="The next configuration step is not available yet"
+                {% endif %}>{{ renderer.next_button_label }}
         </button>
     {% endif %}
 </form>
