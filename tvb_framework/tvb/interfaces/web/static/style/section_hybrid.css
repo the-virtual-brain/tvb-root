@@ -14,10 +14,76 @@
     display: none;
 }
 
+/**
+ * Deliberately keeps the padding and margin base.css gives every `fieldset` (0 10px, and 10px below).
+ * That inset is what puts the space in front of a parameter label and stops its separator short of
+ * the column edges, so the hybrid steps line up with the classic cockpit ones above them.
+ */
 .hybrid-subnetworks-fieldset {
     border: none;
-    margin: 0;
-    padding: 0;
+}
+
+/**
+ * Read only listing of the configured Subnetworks, shown on the Subnetworks wizard step.
+ */
+table.hybrid-subnetworks-summary {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+/* Mirrors `fieldset dt` from base.css, which is how the classic wizard separates and labels each
+   configured parameter: a dark rule above every row and a black, bold name. */
+table.hybrid-subnetworks-summary th,
+table.hybrid-subnetworks-summary td {
+    border-top: 1px solid rgba(0, 0, 0, 0.2);
+    padding: 6px 8px 6px 0;
+    text-align: left;
+    vertical-align: top;
+}
+
+table.hybrid-subnetworks-summary th {
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+    width: 1%;
+}
+
+.hybrid-summary-count {
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 11px;
+    white-space: nowrap;
+    width: 1%;
+}
+
+.hybrid-summary-count.is-empty {
+    color: #a06800;
+}
+
+.hybrid-summary-regions {
+    /* long Connectivities stay readable instead of pushing the step off screen */
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.hybrid-summary-region {
+    background: rgba(250, 247, 228, 0.5);
+    color: #000;
+    display: inline-block;
+    font-size: 11px;
+    margin: 0 3px 3px 0;
+    padding: 1px 4px;
+}
+
+.hybrid-summary-region .hybrid-region-index {
+    color: #666;
+    flex: none;
+    margin-right: 4px;
+    text-align: left;
+}
+
+.hybrid-summary-empty {
+    color: #a06800;
+    font-size: 11px;
 }
 
 .hybrid-subnetworks-hint {

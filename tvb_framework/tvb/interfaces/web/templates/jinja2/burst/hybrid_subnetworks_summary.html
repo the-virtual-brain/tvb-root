@@ -1,0 +1,34 @@
+<!--! ============================================================================ -->
+<!--! Wizard step listing the configured Subnetworks. Read only: the grouping is  -->
+<!--! edited on the full width board reached through "Configure Subnetworks".     -->
+<!--! ============================================================================ -->
+<fieldset class="hybrid-subnetworks-fieldset">
+    {#- No step title, matching the classic cockpit: each row already names its Subnetwork. -#}
+    <table class="hybrid-subnetworks-summary">
+        {% for row in renderer.subnetwork_rows %}
+            <tr>
+                <th scope="row">{{ row.name }}</th>
+                <td class="hybrid-summary-count {{ 'is-empty' if row.count == 0 else '' }}">
+                    {% if row.count == 0 %}
+                        no region
+                    {% else %}
+                        {{ row.count }} region{{ 's' if row.count != 1 else '' }}
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="hybrid-summary-regions">
+                        {% if row.count == 0 %}
+                            <span class="hybrid-summary-empty">no region assigned to this Subnetwork</span>
+                        {% else %}
+                            {% for region in row.regions %}
+                                <span class="hybrid-summary-region">
+                                    <span class="hybrid-region-index">{{ region.index }}</span>{{ region.label }}
+                                </span>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+</fieldset>
