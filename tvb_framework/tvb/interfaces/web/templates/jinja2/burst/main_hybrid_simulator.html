@@ -3,7 +3,11 @@
 <!-- ====================================================== -->
 <div id="main" class="columnized colscheme-3-1st-narrow">
 
+    <link rel="stylesheet" type="text/css"
+          href="{{ deploy_context | safe }}/static/style/section_hybrid.css?{{ currentVersionJS }}"/>
+
     <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/hybrid_simulator.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/hybrid_subnetworks.js?{{ currentVersionJS }}"></script>
     <!--! We need projectTree.js for the Results TAB. -->
     <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/projectTree.js?{{ currentVersionJS }}"></script>
     <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/filters.js?{{ currentVersionJS }}"></script>
@@ -18,7 +22,7 @@
         <h4><span id="title-simulation"><mark>Configure</mark> Hybrid simulation</span></h4>
 
         <div id="div-hybrid-simulator-parameters">
-            <div class="adaptersDiv">
+            <div class="adaptersDiv" id="hybrid-simulator-forms">
                 {% include 'hybrid_simulator_fragment.html' %}
             </div>
         </div>

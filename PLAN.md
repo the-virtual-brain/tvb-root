@@ -82,49 +82,140 @@ panel before implementing Subnetwork configuration.
 
 ---
 
-## Phase 2 – Create Subnetworks
+## Phase 2 – Configure Subnetworks
 
-Allow the user to divide Connectivity regions into Subnetworks.
+Implement the UI for dividing the selected Connectivity regions into Subnetworks.
 
-Preferred first approach:
+After selecting a Connectivity, the Hybrid Simulator configuration should provide a **Configure Subnetworks** action that opens the Subnetwork configuration step.
 
-* reuse concepts/components from **Setup Region Model** where practical;
-* allow creation and naming of Subnetworks;
-* allow assigning selected Connectivity nodes to a Subnetwork;
-* every Connectivity node must belong to exactly one Subnetwork.
+### Initial behaviour
 
-Start with a simple interaction before considering drag-and-drop.
+When Subnetwork configuration is opened:
 
-Example:
+* create one default Subnetwork, initially named **Subnetwork A**;
+* assign all Connectivity regions to Subnetwork A;
+* allow the user to rename a Subnetwork;
+* allow the user to create additional empty Subnetworks;
+* allow the user to remove a Subnetwork when this does not leave the configuration in an invalid state.
+
+Example initial state:
 
 ```text
-Connectivity
-
 Subnetwork A
-  - Region 1
-  - Region 2
-  - Region 3
-
-Subnetwork B
-  - Region 4
-  - Region 5
+  Region 1
+  Region 2
+  Region 3
+  Region 4
+  ...
 ```
 
-Optionally reuse the existing 3D Connectivity display to visualize Subnetwork membership with different colors.
+After creating another Subnetwork:
+
+```text
+Subnetwork A              Subnetwork B
+  Region 1
+  Region 2
+  Region 3
+  Region 4
+```
+
+### Region assignment
+
+Implement a simple visual way of moving Connectivity regions between Subnetworks.
+
+Preferred interaction:
+
+* drag and drop regions from one Subnetwork to another;
+* support selecting multiple regions and moving them together, since Connectivities can contain many nodes;
+* clearly indicate the selected regions and the destination Subnetwork;
+* preserve the original Connectivity node indices internally.
+
+Every Connectivity region must belong to **exactly one Subnetwork**.
+
+A region must never:
+
+* belong to multiple Subnetworks;
+* disappear from all Subnetworks;
+* change its original Connectivity index.
+
+The UI representation can use region names, but the stored configuration should rely on the original Connectivity node indices.
+
+### UI technology investigation
+
+Before implementing drag and drop:
+
+1. inspect existing TVB Web JavaScript/components for reusable region-selection or list-management behaviour;
+2. inspect **Setup Region Model** in particular;
+3. determine whether native HTML5 drag-and-drop and the existing TVB frontend stack are sufficient;
+4. avoid introducing a new frontend dependency unless it provides a clear benefit, especially for multi-selection and drag-and-drop.
+
+If a new dependency appears necessary, document:
+
+* why existing TVB functionality is insufficient;
+* which dependency is proposed;
+* where it would be integrated;
+* whether it introduces additional build/runtime dependencies.
+
+Discuss this before adding the dependency.
+
+### Large Connectivities
+
+The interaction should remain usable for Connectivities with many regions.
+
+At minimum, investigate:
+
+* multiple region selection;
+* moving all selected regions at once;
+* scrolling within Subnetwork region lists.
+
+Do not implement advanced filtering/search unless it becomes necessary for usability.
+
+### State
+
+Store enough information in the Hybrid Simulator configuration to reconstruct the Subnetwork assignments, for example conceptually:
+
+```text
+Subnetwork A
+    name
+    node_indices = [0, 1, 4, 7, ...]
+
+Subnetwork B
+    name
+    node_indices = [2, 3, 5, 6, ...]
+```
+
+Do not create `tvb.simulator.hybrid.Subnetwork` objects yet. That mapping will be handled in the next phases.
 
 ### Tests
 
-* create/rename/remove a Subnetwork;
-* assign nodes;
-* move nodes between Subnetworks;
-* prevent invalid assignments;
-* verify all nodes are assigned before continuing.
+Test that:
+
+* all Connectivity regions initially appear in Subnetwork A;
+* a Subnetwork can be created;
+* a Subnetwork can be renamed;
+* regions can be moved between Subnetworks;
+* multiple selected regions can be moved together;
+* region assignments preserve their original Connectivity indices;
+* one region cannot belong to multiple Subnetworks;
+* no region can remain unassigned;
+* invalid Subnetwork removal is prevented or handled correctly;
+* configuration survives navigation between the Hybrid Simulator steps;
+* classic Simulator Cockpit behaviour remains unchanged.
 
 ### Checkpoint
 
-Evaluate the interaction with both small and large Connectivities.
+Stop after the Subnetwork grouping UI is functional.
 
-Decide whether the existing region-selection UI is sufficient or whether a dedicated interaction is needed.
+Review:
+
+* the drag-and-drop interaction;
+* multiple selection;
+* behaviour with a large Connectivity;
+* how Subnetwork assignments are stored;
+* whether a 3D visualization would improve usability.
+
+Do not start Model or Integrator configuration yet.
+
 
 ---
 

@@ -16,10 +16,17 @@
  * program.  If not, see <http://www.gnu.org/licenses/>.
  **/
 
-/* globals doAjaxCall, renderWithMathjax, displayMessage, setupMenuEvents */
+/* globals doAjaxCall, renderWithMathjax, displayMessage, setupMenuEvents, HYBRID_SUBNETWORKS */
 
 function _renderHybridSimulatorParameters(response) {
-    const simParamElem = $("#div-hybrid-simulator-parameters");
+    // Drop the Subnetwork step's full width layout before rendering; the Subnetwork fragment turns it
+    // back on from its own init, so any other fragment gets the usual three column cockpit layout.
+    // The function is probed rather than assumed: a browser holding a cached older hybrid_subnetworks.js
+    // would otherwise throw here and leave the whole wizard unable to render.
+    if (typeof HYBRID_SUBNETWORKS !== "undefined" && typeof HYBRID_SUBNETWORKS.resetLayout === "function") {
+        HYBRID_SUBNETWORKS.resetLayout();
+    }
+    const simParamElem = $("#hybrid-simulator-forms");
     renderWithMathjax(simParamElem, response, true);
     if (typeof setupMenuEvents === "function") {
         setupMenuEvents();

@@ -1,0 +1,30 @@
+<!--! =========================================================================== -->
+<!--! Groups the Connectivity regions of the Hybrid Simulator into Subnetworks. -->
+<!--! The board itself is rendered by static/js/hybrid_subnetworks.js, from the  -->
+<!--! configuration currently stored on the server.                              -->
+<!--! =========================================================================== -->
+<fieldset class="hybrid-subnetworks-fieldset">
+    <legend>{{ renderer.fragment_title }}</legend>
+
+    <p class="hybrid-subnetworks-hint">
+        Every Connectivity region belongs to exactly one Subnetwork. Click to select a region,
+        use <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> to add to the selection and <kbd>Shift</kbd> to select a range,
+        then drag the selection over another Subnetwork or use its <em>Move selected here</em> action.
+    </p>
+
+    <div class="hybrid-subnetworks-toolbar">
+        <button type="button" class="btn btn-primary" id="hybrid-add-subnetwork"
+                title="Add a new, empty Subnetwork">Add Subnetwork
+        </button>
+        <button type="button" class="btn btn-primary" id="hybrid-clear-selection"
+                title="Clear the current region selection">Clear selection
+        </button>
+        <span id="hybrid-selection-summary" class="hybrid-selection-summary">No region selected</span>
+    </div>
+
+    <div id="hybrid-subnetworks-board" class="hybrid-subnetworks-board"></div>
+</fieldset>
+
+<script type="text/javascript">
+    HYBRID_SUBNETWORKS.init({{ renderer.subnetworks_json | safe }});
+</script>

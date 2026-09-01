@@ -56,5 +56,12 @@ class HybridConnectivityFragment(ABCAdapterForm):
         return ConnectivityIndex
 
 
-class HybridSubnetworksPlaceholderFragment(ABCAdapterForm):
-    pass
+class HybridSubnetworksFragment(ABCAdapterForm):
+    """
+    The Subnetwork grouping step has no traited fields, the Connectivity regions are assigned to Subnetworks
+    through a dedicated interactive component. This form only keeps the step inside the Hybrid Simulator wizard.
+    """
+
+    @staticmethod
+    def get_view_model():
+        return HybridSimulatorAdapterModel

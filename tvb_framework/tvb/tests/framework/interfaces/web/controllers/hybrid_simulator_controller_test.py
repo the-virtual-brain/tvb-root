@@ -24,6 +24,7 @@
 #
 #
 
+import json
 from unittest.mock import patch
 from uuid import UUID
 
@@ -56,6 +57,26 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         self.sess_mock = RamSession()
         self.sess_mock[KEY_USER] = self.test_user
         self.sess_mock[KEY_PROJECT] = self.test_project
+
+    def _configured_hybrid_simulator(self):
+        """
+        Put a Hybrid Simulator configuration with the imported Connectivity in session and open the
+        Subnetwork configuration step for it.
+        """
+        self.hybrid_controller.context.set_hybrid_simulator(self.session_stored_hybrid_simulator)
+        return self.hybrid_controller.set_subnetworks()
+
+    @staticmethod
+    def _assert_valid_partition(subnetworks, number_of_regions):
+        """
+        Every Connectivity node must show up in exactly one Subnetwork, with its original index.
+        """
+        assigned = []
+        for subnetwork in subnetworks:
+            assigned.extend(subnetwork['node_indices'])
+
+        assert sorted(assigned) == list(range(number_of_regions))
+        assert len(assigned) == len(set(assigned))
 
     def test_index(self):
         cherrypy.request.method = "GET"
@@ -96,6 +117,175 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         assert renderer.form_action_url == HybridSimulatorURLs.SET_CONNECTIVITY_URL
         assert renderer.is_first_fragment
         assert renderer.form.connectivity.errors
+
+    def test_set_subnetworks_creates_one_subnetwork_with_all_regions(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            rendering_rules = self._configured_hybrid_simulator()
+            hybrid_simulator = self.hybrid_controller.context.hybrid_simulator
+
+        renderer = rendering_rules['renderer']
+        assert renderer.is_subnetwork_fragment
+        assert renderer.form_action_url == HybridSimulatorURLs.SET_SUBNETWORKS_URL
+        assert len(renderer.region_labels) == self.connectivity.number_of_regions
+
+        assert len(hybrid_simulator.subnetworks) == 1
+        assert hybrid_simulator.subnetworks[0].name == 'Subnetwork A'
+        assert list(hybrid_simulator.subnetworks[0].node_indices) == list(
+            range(self.connectivity.number_of_regions))
+
+        rendered_state = json.loads(renderer.subnetworks_json)
+        self._assert_valid_partition(rendered_state['subnetworks'], self.connectivity.number_of_regions)
+
+    def test_set_subnetworks_without_connectivity_returns_to_first_fragment(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self.hybrid_controller.context.set_hybrid_simulator(HybridSimulatorAdapterModel())
+            rendering_rules = self.hybrid_controller.set_subnetworks()
+
+        assert rendering_rules['renderer'].form_action_url == HybridSimulatorURLs.SET_CONNECTIVITY_URL
+        assert rendering_rules['renderer'].is_first_fragment
+
+    def test_add_subnetwork(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            result = json.loads(self.hybrid_controller.add_subnetwork())
+
+        assert result['status'] == 'ok'
+        assert [subnetwork['name'] for subnetwork in result['subnetworks']] == ['Subnetwork A', 'Subnetwork B']
+        assert result['subnetworks'][1]['node_indices'] == []
+        self._assert_valid_partition(result['subnetworks'], self.connectivity.number_of_regions)
+
+    def test_rename_subnetwork(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            result = json.loads(self.hybrid_controller.rename_subnetwork(subnetwork_index='0', name=' Cortex '))
+            hybrid_simulator = self.hybrid_controller.context.hybrid_simulator
+
+        assert result['status'] == 'ok'
+        assert result['subnetworks'][0]['name'] == 'Cortex'
+        assert hybrid_simulator.subnetworks[0].name == 'Cortex'
+
+    def test_rename_subnetwork_rejects_empty_and_duplicated_names(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            self.hybrid_controller.add_subnetwork()
+
+            empty_name = json.loads(self.hybrid_controller.rename_subnetwork(subnetwork_index='1', name='  '))
+            duplicated = json.loads(
+                self.hybrid_controller.rename_subnetwork(subnetwork_index='1', name='Subnetwork A'))
+            missing_subnetwork = json.loads(
+                self.hybrid_controller.rename_subnetwork(subnetwork_index='7', name='Whatever'))
+
+        assert empty_name['status'] == 'error'
+        assert duplicated['status'] == 'error'
+        assert missing_subnetwork['status'] == 'error'
+        assert [subnetwork['name'] for subnetwork in duplicated['subnetworks']] == ['Subnetwork A', 'Subnetwork B']
+
+    def test_move_regions_keeps_original_connectivity_indices(self):
+        moved = [1, 3, 4]
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            self.hybrid_controller.add_subnetwork()
+            result = json.loads(self.hybrid_controller.move_regions(subnetwork_index='1',
+                                                                    node_indices=json.dumps(moved)))
+            hybrid_simulator = self.hybrid_controller.context.hybrid_simulator
+
+        assert result['status'] == 'ok'
+        assert result['subnetworks'][1]['node_indices'] == moved
+        for node_index in moved:
+            assert node_index not in result['subnetworks'][0]['node_indices']
+        self._assert_valid_partition(result['subnetworks'], self.connectivity.number_of_regions)
+
+        # the same grouping is stored in session, still using the original Connectivity indices
+        assert list(hybrid_simulator.subnetworks[1].node_indices) == moved
+
+    def test_move_regions_back_leaves_no_region_unassigned(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            self.hybrid_controller.add_subnetwork()
+            self.hybrid_controller.move_regions(subnetwork_index='1', node_indices=json.dumps([0, 2]))
+            result = json.loads(self.hybrid_controller.move_regions(subnetwork_index='0',
+                                                                    node_indices=json.dumps([2])))
+
+        assert result['status'] == 'ok'
+        assert result['subnetworks'][1]['node_indices'] == [0]
+        assert 2 in result['subnetworks'][0]['node_indices']
+        self._assert_valid_partition(result['subnetworks'], self.connectivity.number_of_regions)
+
+    def test_move_regions_rejects_invalid_input(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            self.hybrid_controller.add_subnetwork()
+
+            no_selection = json.loads(self.hybrid_controller.move_regions(subnetwork_index='1',
+                                                                          node_indices=json.dumps([])))
+            unknown_node = json.loads(self.hybrid_controller.move_regions(
+                subnetwork_index='1', node_indices=json.dumps([self.connectivity.number_of_regions])))
+            unknown_subnetwork = json.loads(self.hybrid_controller.move_regions(subnetwork_index='5',
+                                                                                node_indices=json.dumps([0])))
+
+        for result in (no_selection, unknown_node, unknown_subnetwork):
+            assert result['status'] == 'error'
+            self._assert_valid_partition(result['subnetworks'], self.connectivity.number_of_regions)
+
+    def test_remove_subnetwork_reassigns_its_regions(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            self.hybrid_controller.add_subnetwork()
+            self.hybrid_controller.move_regions(subnetwork_index='1', node_indices=json.dumps([0, 1]))
+            result = json.loads(self.hybrid_controller.remove_subnetwork(subnetwork_index='1'))
+
+        assert result['status'] == 'ok'
+        assert len(result['subnetworks']) == 1
+        self._assert_valid_partition(result['subnetworks'], self.connectivity.number_of_regions)
+
+    def test_remove_last_subnetwork_is_prevented(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            result = json.loads(self.hybrid_controller.remove_subnetwork(subnetwork_index='0'))
+
+        assert result['status'] == 'error'
+        assert len(result['subnetworks']) == 1
+        self._assert_valid_partition(result['subnetworks'], self.connectivity.number_of_regions)
+
+    def test_subnetworks_survive_navigation_between_steps(self):
+        cherrypy.request.method = "POST"
+        self.sess_mock['connectivity'] = self.connectivity.gid
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            self.hybrid_controller.add_subnetwork()
+            self.hybrid_controller.move_regions(subnetwork_index='1', node_indices=json.dumps([2, 5]))
+
+            # go back to the Connectivity step and forward again, without changing the Connectivity
+            cherrypy.request.method = "GET"
+            previous_rules = self.hybrid_controller.set_connectivity()
+            cherrypy.request.method = "POST"
+            rendering_rules = self.hybrid_controller.set_connectivity(**self.sess_mock._data)
+            hybrid_simulator = self.hybrid_controller.context.hybrid_simulator
+
+        assert previous_rules['renderer'].is_first_fragment
+        assert rendering_rules['renderer'].is_subnetwork_fragment
+        assert len(hybrid_simulator.subnetworks) == 2
+        assert list(hybrid_simulator.subnetworks[1].node_indices) == [2, 5]
+
+    def test_subnetworks_are_reset_when_connectivity_changes(self):
+        other_connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project,
+                                                                 subject='HybridSubject')
+        cherrypy.request.method = "POST"
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            self.hybrid_controller.add_subnetwork()
+
+            self.sess_mock['connectivity'] = other_connectivity.gid
+            self.hybrid_controller.set_connectivity(**self.sess_mock._data)
+            hybrid_simulator = self.hybrid_controller.context.hybrid_simulator
+
+        assert hybrid_simulator.connectivity.hex == other_connectivity.gid
+        assert len(hybrid_simulator.subnetworks) == 1
+        assert list(hybrid_simulator.subnetworks[0].node_indices) == list(
+            range(other_connectivity.number_of_regions))
 
     def test_hybrid_history_excludes_classic_bursts_for_now(self):
         classic_burst = BurstConfiguration(self.test_project.id)

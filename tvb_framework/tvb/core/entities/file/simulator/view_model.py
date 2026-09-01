@@ -408,10 +408,36 @@ class SimulatorAdapterModel(ViewModel, Simulator):
         return variables_of_interest_indexes
 
 
+class HybridSubnetworkViewModel(ViewModel):
+    """
+    Configuration of a single Hybrid Simulator Subnetwork, as gathered from the web UI.
+    It only keeps the name and the Connectivity nodes assigned to it. The corresponding
+    tvb.simulator.hybrid.Subnetwork instances are built from this configuration at a later step.
+    """
+
+    name = Attr(
+        field_type=str,
+        label='Name',
+        doc='Name used to identify this Subnetwork inside the Hybrid Simulator configuration'
+    )
+
+    node_indices = List(
+        of=int,
+        label='Node indices',
+        doc='Indices of the assigned nodes, in the original Connectivity ordering'
+    )
+
+
 class HybridSimulatorAdapterModel(ViewModel):
     connectivity = DataTypeGidAttr(
         linked_datatype=Connectivity,
         required=True,
         label=Simulator.connectivity.label,
         doc=Simulator.connectivity.doc
+    )
+
+    subnetworks = List(
+        of=HybridSubnetworkViewModel,
+        label='Subnetworks',
+        doc='Partition of the Connectivity nodes into Subnetworks'
     )
