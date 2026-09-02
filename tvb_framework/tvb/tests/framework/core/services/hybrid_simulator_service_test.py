@@ -148,6 +148,30 @@ class TestHybridSimulatorService(object):
 
         self._assert_valid_partition(self.subnetworks)
 
+    def test_discard_empty_subnetworks(self):
+        self.subnetworks = self.service.add_subnetwork(self.subnetworks)
+        self.subnetworks = self.service.add_subnetwork(self.subnetworks)
+        self.subnetworks = self.service.move_regions(self.subnetworks, [1, 2], 1)
+
+        remaining = self.service.discard_empty_subnetworks(self.subnetworks)
+
+        assert [subnetwork.name for subnetwork in remaining] == ['Subnetwork A', 'Subnetwork B']
+        self._assert_valid_partition(remaining)
+
+    def test_discard_empty_subnetworks_keeps_a_populated_configuration_untouched(self):
+        remaining = self.service.discard_empty_subnetworks(self.subnetworks)
+
+        assert remaining == self.subnetworks
+        self._assert_valid_partition(remaining)
+
+    def test_discard_empty_subnetworks_always_keeps_one(self):
+        empty_only = [HybridSubnetworkViewModel(name='Subnetwork A', node_indices=[])]
+
+        remaining = self.service.discard_empty_subnetworks(empty_only)
+
+        assert len(remaining) == 1
+        assert remaining[0].name == 'Subnetwork A'
+
     def test_remove_refuses_an_unknown_position(self):
         with pytest.raises(HybridSubnetworkException):
             self.service.remove_subnetwork(self.subnetworks, 4)

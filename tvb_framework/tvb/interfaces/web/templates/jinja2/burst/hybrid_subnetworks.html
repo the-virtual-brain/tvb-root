@@ -9,15 +9,14 @@
     <p class="hybrid-subnetworks-hint">
         Every Connectivity region belongs to exactly one Subnetwork. Click to select a region,
         use <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> to add to the selection and <kbd>Shift</kbd> to select a range,
-        then drag the selection over another Subnetwork or use its <em>Move selected here</em> action.
+        or use a Subnetwork's <em>Select all</em> toggle. Drag the selection onto another Subnetwork
+        to move those regions into it. Subnetworks left without any region are discarded when you go
+        back to the simulator.
     </p>
 
     <div class="hybrid-subnetworks-toolbar">
         <button type="button" class="btn btn-primary" id="hybrid-add-subnetwork"
                 title="Add a new, empty Subnetwork">Add Subnetwork
-        </button>
-        <button type="button" class="btn btn-primary" id="hybrid-clear-selection"
-                title="Clear the current region selection">Clear selection
         </button>
         <span id="hybrid-selection-summary" class="hybrid-selection-summary">No region selected</span>
     </div>
