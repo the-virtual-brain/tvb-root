@@ -216,6 +216,83 @@ Review:
 
 Do not start Model or Integrator configuration yet.
 
+---
+
+## Phase 2 – Implementation Summary
+
+### Where the configuration lives
+
+Subnetworks are stored as `HybridSubnetworkViewModel` (`name`, `node_indices`) on
+`HybridSimulatorAdapterModel.subnetworks`, kept in the CherryPy session.
+
+* `node_indices` are the **original Connectivity indices**, never renumbered, so the grouping can be
+  sliced straight out of `weights`/`tract_lengths` in Phase 4.
+* Nothing is written to the database or H5 yet. This matches the classic Simulator Cockpit, which
+  also keeps the in-progress configuration in session until launch. Persistence belongs with the
+  operation in Phase 6.
+* Deliberately *not* `tvb.simulator.hybrid.Subnetwork`: the UI only needs a name and a set of nodes,
+  and building library objects would drag in Model/Integrator before Phase 3.
+
+### The server owns the state
+
+Two request shapes, distinguished by the controller decorator:
+
+| decorator | used for | returns |
+|---|---|---|
+| `@expose_fragment` | moving between wizard steps | rendered HTML |
+| `@expose_json` | editing the grouping | the **complete** new state |
+
+Every edit (add / rename / remove / move) round-trips to the server, which validates it through
+`HybridSimulatorService` and answers with the whole configuration — not a delta. The browser discards
+its copy and redraws. A rejected change returns the *unchanged* state plus an error message, so the
+screen can never show a grouping the server does not hold.
+
+### Layering
+
+* `HybridSimulatorService` — all grouping rules and invariants; no web concepts.
+* `HybridSimulatorController` — thin; every mutation funnels through one `_change_subnetworks` helper.
+* `hybrid_subnetworks.js` — rendering and interaction only; it decides nothing.
+
+### Invariants enforced by the service
+
+Every Connectivity node belongs to exactly one Subnetwork; at least one Subnetwork always exists;
+names are non-empty and unique. `prepare_subnetworks` re-creates the default grouping whenever the
+stored one is not an exact partition of the current Connectivity, which is what makes a Connectivity
+change self-heal instead of corrupting the configuration.
+
+Removing a non-empty Subnetwork moves its regions into the first remaining one rather than refusing,
+so no region can be orphaned. Empty Subnetworks are allowed *on the board* (they are the drop target
+being prepared) and discarded when the Subnetworks step is entered.
+
+### UI structure
+
+Connectivity and Subnetworks are cockpit wizard steps; the grouping board is a full-width **detour**,
+not a step — it replaces the wizard while open (`colscheme-1`, TVB's own single-column scheme) and the
+stack is rebuilt on return. The wizard accumulates steps read-only, mirroring `wizzard_submit` /
+`previousWizzardStep` in `bursts.js`.
+
+### No new frontend dependency
+
+Native HTML5 drag-and-drop plus the existing jQuery / `doAjaxCall` / `displayMessage` stack.
+`TVBUI.RegionSelectComponent` (used by Setup Region Model) was evaluated and not reused: it models one
+selection over one flat checkbox grid whose DOM order *implies* the node index, which does not carry
+over to N containers owning disjoint region sets. Its interaction idiom — click / Ctrl-click /
+Shift-range, then apply — was reused instead.
+
+### Styling
+
+The hybrid step reuses TVB's own `fieldset` / `fieldset dt` rules rather than styling from a blank
+slate; overriding them is what produced mismatched insets, separators and text colours. Two traps
+worth remembering: the configuration column is a near-transparent cream over a **light** page (light
+text is invisible), and `base.css` styles the bare `<header>` element as the site's fixed top nav, so
+an in-box title bar must not be a `<header>`.
+
+### Tests
+
+Service and controller are covered by Python tests (partition invariants asserted after every
+operation). The client is covered by jsdom suites that drive the **real** `hybrid_subnetworks.js` and
+`hybrid_simulator.js` against **real Jinja-rendered fragments** and TVB's own jQuery, including a
+computed-style check against a real classic parameter row.
 
 ---
 
