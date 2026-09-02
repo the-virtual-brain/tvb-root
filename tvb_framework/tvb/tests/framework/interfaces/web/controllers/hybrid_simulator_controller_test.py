@@ -153,15 +153,45 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         assert all(region['label'] for region in rows[1]['regions'])
         assert 1 not in [region['index'] for region in rows[0]['regions']]
 
-    def test_subnetworks_step_shows_an_empty_subnetwork_as_empty(self):
+    def test_subnetworks_step_discards_the_ones_left_empty(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            # two extra Subnetworks, only one of which is ever filled
+            self.hybrid_controller.add_subnetwork()
+            self.hybrid_controller.add_subnetwork()
+            self.hybrid_controller.move_regions(subnetwork_index='1', node_indices=json.dumps([1, 3]))
+
+            rendering_rules = self.hybrid_controller.set_subnetworks()
+            hybrid_simulator = self.hybrid_controller.context.hybrid_simulator
+
+        rows = rendering_rules['renderer'].subnetwork_rows
+        assert [row['name'] for row in rows] == ['Subnetwork A', 'Subnetwork B']
+        assert all(row['count'] > 0 for row in rows)
+
+        # the empty one is gone from the stored configuration too, not just hidden
+        assert [subnetwork.name for subnetwork in hybrid_simulator.subnetworks] == ['Subnetwork A',
+                                                                                    'Subnetwork B']
+        self._assert_valid_partition(
+            [{'node_indices': list(s.node_indices)} for s in hybrid_simulator.subnetworks],
+            self.connectivity.number_of_regions)
+
+    def test_grouping_board_keeps_empty_subnetworks_so_regions_can_be_dragged_into_them(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
             self._configured_hybrid_simulator()
             self.hybrid_controller.add_subnetwork()
+            rendering_rules = self.hybrid_controller.configure_subnetworks()
+
+        # on the board an empty Subnetwork must survive, it is the drop target being prepared
+        assert len(rendering_rules['renderer'].subnetworks) == 2
+        assert list(rendering_rules['renderer'].subnetworks[1].node_indices) == []
+
+    def test_a_single_empty_subnetwork_is_never_discarded(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self.hybrid_controller.context.set_hybrid_simulator(self.session_stored_hybrid_simulator)
             rendering_rules = self.hybrid_controller.set_subnetworks()
 
-        rows = rendering_rules['renderer'].subnetwork_rows
-        assert rows[1]['count'] == 0
-        assert rows[1]['regions'] == []
+        # the default configuration holds every region, so nothing is dropped and one always remains
+        assert len(rendering_rules['renderer'].subnetwork_rows) == 1
 
     def test_subnetworks_step_offers_configure_and_a_not_yet_available_next(self):
         with patch('cherrypy.session', self.sess_mock, create=True):

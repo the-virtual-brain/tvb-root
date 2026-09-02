@@ -137,6 +137,18 @@ class HybridSimulatorService(object):
 
         return sorted(assigned) == list(range(number_of_regions))
 
+    @staticmethod
+    def discard_empty_subnetworks(subnetworks):
+        """
+        Drop the Subnetworks that ended up holding no region. Empty Subnetworks are useful while
+        grouping, as somewhere to drag regions into, but they can not take part in a simulation.
+        At least one Subnetwork is always kept, so the configuration stays valid.
+
+        :return: the remaining Subnetworks
+        """
+        populated = [subnetwork for subnetwork in subnetworks if len(subnetwork.node_indices) > 0]
+        return populated or list(subnetworks[:1])
+
     @classmethod
     def add_subnetwork(cls, subnetworks):
         """

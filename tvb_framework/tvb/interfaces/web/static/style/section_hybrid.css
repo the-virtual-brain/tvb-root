@@ -208,8 +208,21 @@ button.hybrid-subnetwork-action {
     padding: 2px 5px;
 }
 
-button.hybrid-subnetwork-action:hover {
+button.hybrid-subnetwork-action:hover:not(:disabled) {
     background: rgba(250, 247, 228, 0.3);
+}
+
+/* pressed state of the Select all toggle: every region of that Subnetwork is selected */
+button.hybrid-subnetwork-action.is-active {
+    background: #cde8c0;
+    border-color: #41921f;
+    color: #2c4a1c;
+    font-weight: bold;
+}
+
+button.hybrid-subnetwork-action:disabled {
+    cursor: default;
+    opacity: 0.45;
 }
 
 .hybrid-region-list {

@@ -49,6 +49,9 @@ var HYBRID_SUBNETWORKS = (function () {
 
     let board = null;
     let summary = null;
+    // the elements whose listeners are already attached, so init stays idempotent
+    let boundBoard = null;
+    let boundAddButton = null;
 
     // ------------------------------------------------------------------ rendering
 
@@ -118,21 +121,14 @@ var HYBRID_SUBNETWORKS = (function () {
             count === 0 ? "no region" : count + (count === 1 ? " region" : " regions"));
         actions.appendChild(countLabel);
 
-        const selectAll = createElement("button", "hybrid-subnetwork-action", "Select all");
+        const selectAll = createElement("button", "hybrid-subnetwork-action hybrid-select-all", "Select all");
         selectAll.type = "button";
-        selectAll.title = "Select every region of this Subnetwork";
+        selectAll.disabled = count === 0;
+        selectAll.title = "Select or deselect every region of this Subnetwork";
         selectAll.addEventListener("click", function () {
-            setSelection(state.selected.concat(subnetwork.node_indices));
+            toggleSubnetworkSelection(index);
         });
         actions.appendChild(selectAll);
-
-        const moveHere = createElement("button", "hybrid-subnetwork-action", "Move selected here");
-        moveHere.type = "button";
-        moveHere.title = "Move the selected regions into this Subnetwork";
-        moveHere.addEventListener("click", function () {
-            moveSelectedTo(index);
-        });
-        actions.appendChild(moveHere);
 
         return actions;
     }
@@ -177,6 +173,17 @@ var HYBRID_SUBNETWORKS = (function () {
             const isSelected = selected.indexOf(parseInt(region.dataset.nodeIndex, 10)) !== -1;
             region.classList.toggle("selected", isSelected);
         });
+        // The Select all toggles are derived from the selection rather than kept as their own state,
+        // so picking regions by hand leaves each toggle showing the truth about its Subnetwork.
+        board.querySelectorAll(".hybrid-subnetwork").forEach(function (section) {
+            const toggle = section.querySelector(".hybrid-select-all");
+            if (toggle === null) {
+                return;
+            }
+            const active = isFullySelected(state.subnetworks[parseInt(section.dataset.index, 10)]);
+            toggle.classList.toggle("is-active", active);
+            toggle.setAttribute("aria-pressed", active ? "true" : "false");
+        });
         if (summary !== null) {
             summary.textContent = selected.length === 0 ? "No region selected"
                 : selected.length + (selected.length === 1 ? " region selected" : " regions selected");
@@ -184,6 +191,32 @@ var HYBRID_SUBNETWORKS = (function () {
     }
 
     // ------------------------------------------------------------------ selection
+
+    /** True when every region of a Subnetwork is currently selected. Drives its Select all toggle. */
+    function isFullySelected(subnetwork) {
+        if (subnetwork === undefined || subnetwork.node_indices.length === 0) {
+            return false;
+        }
+        return subnetwork.node_indices.every(function (nodeIndex) {
+            return state.selected.indexOf(nodeIndex) !== -1;
+        });
+    }
+
+    /** Select every region of a Subnetwork, or deselect them all when they are already selected. */
+    function toggleSubnetworkSelection(index) {
+        const subnetwork = state.subnetworks[index];
+        if (subnetwork === undefined || subnetwork.node_indices.length === 0) {
+            return;
+        }
+        if (isFullySelected(subnetwork)) {
+            setSelection(state.selected.filter(function (nodeIndex) {
+                return subnetwork.node_indices.indexOf(nodeIndex) === -1;
+            }));
+        } else {
+            setSelection(state.selected.concat(subnetwork.node_indices));
+        }
+        state.anchor = null;
+    }
 
     function setSelection(nodeIndices) {
         const unique = [];
@@ -422,34 +455,33 @@ var HYBRID_SUBNETWORKS = (function () {
         state.selected = [];
         state.anchor = null;
 
-        board.addEventListener("click", function (event) {
-            const region = event.target.closest(".hybrid-region");
-            if (region !== null) {
-                onRegionClick(event, parseInt(region.dataset.nodeIndex, 10));
-            }
-        });
-        board.addEventListener("dragstart", onDragStart);
-        board.addEventListener("dragover", onDragOver);
-        board.addEventListener("drop", onDrop);
-        board.addEventListener("dragend", clearDropTargets);
-        board.addEventListener("dragleave", function (event) {
-            if (event.target === board) {
-                clearDropTargets();
-            }
-        });
+        // Bind once per board element. Normally each render brings a brand new board, but binding
+        // twice to the same one would fire every handler twice, which silently cancels out a
+        // Ctrl+click toggle instead of failing loudly.
+        if (boundBoard !== board) {
+            board.addEventListener("click", function (event) {
+                const region = event.target.closest(".hybrid-region");
+                if (region !== null) {
+                    onRegionClick(event, parseInt(region.dataset.nodeIndex, 10));
+                }
+            });
+            board.addEventListener("dragstart", onDragStart);
+            board.addEventListener("dragover", onDragOver);
+            board.addEventListener("drop", onDrop);
+            board.addEventListener("dragend", clearDropTargets);
+            board.addEventListener("dragleave", function (event) {
+                if (event.target === board) {
+                    clearDropTargets();
+                }
+            });
+            boundBoard = board;
+        }
 
         const addButton = document.getElementById("hybrid-add-subnetwork");
-        if (addButton !== null) {
+        if (addButton !== null && boundAddButton !== addButton) {
             addButton.addEventListener("click", addSubnetwork);
+            boundAddButton = addButton;
         }
-        const clearButton = document.getElementById("hybrid-clear-selection");
-        if (clearButton !== null) {
-            clearButton.addEventListener("click", function () {
-                state.anchor = null;
-                setSelection([]);
-            });
-        }
-
         render();
     }
 

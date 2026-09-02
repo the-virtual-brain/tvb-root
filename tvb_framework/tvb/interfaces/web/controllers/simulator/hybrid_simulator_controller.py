@@ -225,13 +225,21 @@ class HybridSimulatorController(BurstBaseController):
 
     def _prepare_subnetworks_fragment(self, is_summary):
         try:
-            _, region_labels, subnetworks = self._load_subnetworks_configuration()
+            hybrid_simulator, region_labels, subnetworks = self._load_subnetworks_configuration()
         except HybridSubnetworkException as excep:
             common.set_error_message(str(excep))
             self.context.add_last_loaded_form_url_to_session(HybridSimulatorURLs.SET_CONNECTIVITY_URL)
             return self._connectivity_rendering_rules(self._prepare_connectivity_form()).to_dict()
 
         if is_summary:
+            # Empty Subnetworks only make sense on the grouping board, as a place to drag regions
+            # into. Leaving the board drops the ones that stayed empty.
+            remaining = self.hybrid_simulator_service.discard_empty_subnetworks(subnetworks)
+            if len(remaining) != len(subnetworks):
+                subnetworks = remaining
+                hybrid_simulator.subnetworks = subnetworks
+                self.context.set_hybrid_simulator(hybrid_simulator)
+
             rendering_rules = HybridSimulatorFragmentRenderingRules(
                 HybridSubnetworksFragment(), HybridSimulatorURLs.SET_SUBNETWORKS_URL,
                 HybridSimulatorURLs.SET_CONNECTIVITY_URL, is_subnetworks_summary_fragment=True,
