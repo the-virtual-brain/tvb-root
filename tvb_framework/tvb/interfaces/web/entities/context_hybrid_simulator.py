@@ -41,6 +41,10 @@ class HybridSimulatorContext(object):
     KEY_DYNAMICS_DRAFT = 'hybrid_simulator_dynamics_draft'
     # Identifier of the Subnetwork whose dynamics the contextual column is currently configuring
     KEY_SELECTED_SUBNETWORK = 'hybrid_simulator_selected_subnetwork'
+    # Which saved Dynamic is placed on which region, per Subnetwork, for the Region Model panel. Kept
+    # next to the dynamics draft rather than derived from the Model, since the parameter arrays alone
+    # cannot say which Dynamic produced them.
+    KEY_REGION_MODEL = 'hybrid_simulator_region_model'
 
     @property
     def project(self):
@@ -70,6 +74,10 @@ class HybridSimulatorContext(object):
     def selected_subnetwork(self):
         return common.get_from_session(self.KEY_SELECTED_SUBNETWORK)
 
+    @property
+    def region_model(self):
+        return common.get_from_session(self.KEY_REGION_MODEL)
+
     def set_hybrid_simulator(self, hybrid_simulator=None):
         if not hybrid_simulator and not self.hybrid_simulator:
             hybrid_simulator = HybridSimulatorAdapterModel()
@@ -89,9 +97,14 @@ class HybridSimulatorContext(object):
         common.add2session(HybridSimulatorContext.KEY_DYNAMICS_DRAFT, dynamics_by_id)
 
     @staticmethod
+    def set_region_model(region_model):
+        common.add2session(HybridSimulatorContext.KEY_REGION_MODEL, region_model)
+
+    @staticmethod
     def clear_dynamics_draft():
         common.remove_from_session(HybridSimulatorContext.KEY_DYNAMICS_DRAFT)
         common.remove_from_session(HybridSimulatorContext.KEY_SELECTED_SUBNETWORK)
+        common.remove_from_session(HybridSimulatorContext.KEY_REGION_MODEL)
 
     @staticmethod
     def set_selected_subnetwork(subnetwork_id):
@@ -113,3 +126,4 @@ class HybridSimulatorContext(object):
         common.remove_from_session(HybridSimulatorContext.KEY_SUBNETWORKS_DRAFT)
         common.remove_from_session(HybridSimulatorContext.KEY_DYNAMICS_DRAFT)
         common.remove_from_session(HybridSimulatorContext.KEY_SELECTED_SUBNETWORK)
+        common.remove_from_session(HybridSimulatorContext.KEY_REGION_MODEL)

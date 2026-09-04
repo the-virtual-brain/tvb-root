@@ -70,6 +70,16 @@
         </button>
     {% endif %}
 
+    {#- The classic Cockpit's Set up region Model, except that it fills the third column instead of
+        opening a page of its own. -#}
+    {% if renderer.include_region_model_button %}
+        <button type="button" class="btn btn-primary" tabindex="1"
+                id="configRegionModelParam" name="configRegionModelParam"
+                title="Place saved model configurations on this Subnetwork's regions"
+                onclick="hybridConfigureRegionModel()">Set up region Model
+        </button>
+    {% endif %}
+
     {% if renderer.is_dynamics_save_fragment %}
         <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1"
                 title="Store the configured dynamics on the Hybrid Simulator configuration"

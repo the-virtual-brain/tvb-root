@@ -36,6 +36,7 @@ workflow.
 """
 
 import copy
+import json
 import keyword
 import re
 
@@ -44,6 +45,7 @@ import numpy
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.simulator.view_model import HybridSubnetworkDynamics, HybridSubnetworkViewModel
 from tvb.core.neocom import h5
+from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.core.services.exceptions import ServicesBaseException
 
 
@@ -419,6 +421,116 @@ class HybridSimulatorService(object):
                     "Subnetwork '{}' owns {} regions, so its Model parameter '{}' needs either 1 value "
                     "shared by all of them or {} values, but {} were given.".format(
                         subnetwork.name, nnodes, attr_name, nnodes, length))
+
+    # ---------------------------------------------------------------- Region Model setup
+
+    @staticmethod
+    def dynamics_for_model(dynamics, model):
+        """
+        The saved Dynamics that can be placed on this Subnetwork's regions: the ones built on the same
+        Model class it is configured with.
+
+        Restricting the offer is what keeps the Model class chosen on the wizard step the only place it
+        is decided. The classic Cockpit instead overwrites the Simulator's Model with whatever class the
+        chosen Dynamics happen to carry.
+        """
+        model_class_name = type(model).__name__ if model is not None else None
+        return [dynamic for dynamic in dynamics or [] if dynamic.model_class == model_class_name]
+
+    @staticmethod
+    def parameters_of_dynamic(dynamic):
+        """
+        :return: the Model parameter values a Dynamic holds, as a plain dict
+        """
+        return dict(json.loads(dynamic.model_parameters))
+
+    @classmethod
+    def apply_dynamics_to_model(cls, model, node_indices, assignment, dynamics_by_id):
+        """
+        Write the Dynamics placed on this Subnetwork's regions onto its Model, as one array per
+        parameter in the Subnetwork's own node order.
+
+        :param node_indices: this Subnetwork's Connectivity node indices, in order
+        :param assignment: what each of them is configured with, as node index to Dynamic id
+        :param dynamics_by_id: the available Dynamics
+        :raise HybridSubnetworkException: when a region has no Dynamic placed on it yet, since a Model
+                                          parameter has to hold a value for every node of the Subnetwork
+        """
+        ordered_parameters = []
+        for node_index in node_indices:
+            dynamic = dynamics_by_id.get(assignment.get(node_index))
+            if dynamic is None:
+                raise HybridSubnetworkException(
+                    "Every region needs a Model configuration before it can be applied; "
+                    "{} of them do not have one yet.".format(cls.unassigned_count(node_indices, assignment)))
+            ordered_parameters.append(cls.parameters_of_dynamic(dynamic))
+
+        # the same grouping the classic Set up region Model does, so both produce the same arrays
+        grouped = SerializationManager.group_parameter_values_by_name(ordered_parameters)
+
+        for parameter_name, values in grouped.items():
+            if not hasattr(type(model), parameter_name):
+                # a Dynamic may carry values this Model class does not declare, leave those alone
+                continue
+            setattr(model, parameter_name, cls._contract_constant(values))
+
+        return model
+
+    @staticmethod
+    def _contract_constant(values):
+        """
+        One value per node, or a single shared one when they are all the same. Both broadcast onto the
+        Subnetwork, and the contracted form is what the classic Cockpit stores as well.
+        """
+        if len(set(values)) == 1:
+            values = values[:1]
+        return numpy.array(values, dtype=numpy.float64)
+
+    @staticmethod
+    def unassigned_count(node_indices, assignment):
+        """
+        :return: how many of this Subnetwork's regions have no Model configuration placed on them yet
+        """
+        return len([node_index for node_index in node_indices if assignment.get(node_index) is None])
+
+    @classmethod
+    def region_model_rows(cls, node_indices, region_labels, assignment, dynamics_by_id):
+        """
+        One row per region of this Subnetwork, for the Region Model panel: the original Connectivity
+        index, its label, and the Model configuration currently placed on it.
+        """
+        rows = []
+        for node_index in node_indices:
+            dynamic = dynamics_by_id.get(assignment.get(node_index))
+            rows.append({
+                'index': node_index,
+                'label': region_labels[node_index] if node_index < len(region_labels) else str(node_index),
+                'dynamic_id': dynamic.id if dynamic is not None else None,
+                'dynamic_name': dynamic.name if dynamic is not None else ''
+            })
+        return rows
+
+    @staticmethod
+    def place_dynamic_on_regions(assignment, node_indices, dynamic_id):
+        """
+        Put the given Model configuration on the given regions, leaving the others as they are.
+
+        :return: the updated assignment, as node index to Dynamic id
+        """
+        assignment = dict(assignment or {})
+        for node_index in node_indices or []:
+            assignment[node_index] = dynamic_id
+        return assignment
+
+    @staticmethod
+    def restrict_assignment(assignment, node_indices):
+        """
+        Drop what was placed on regions this Subnetwork no longer owns, so a regrouping cannot leave a
+        stale configuration behind.
+        """
+        owned = set(node_indices or [])
+        return {node_index: dynamic_id for node_index, dynamic_id in (assignment or {}).items()
+                if node_index in owned}
 
     # ---------------------------------------------------------------- tvb_library naming
 

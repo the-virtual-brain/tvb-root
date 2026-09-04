@@ -36,6 +36,7 @@ from tvb.adapters.forms.noise_forms import get_form_for_noise
 from tvb.adapters.forms.simulator_fragments import SimulatorIntegratorFragment, SimulatorModelFragment
 from tvb.core.entities.file.simulator.view_model import HybridSimulatorAdapterModel, \
     IntegratorStochasticViewModel, MultiplicativeNoiseViewModel
+from tvb.core.entities.storage import dao
 from tvb.core.services.hybrid_simulator_service import HybridSimulatorService, HybridSubnetworkException
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.interfaces.web.controllers import common
@@ -70,6 +71,9 @@ class HybridSimulatorURLs(object):
     SET_SUBNETWORK_INTEGRATOR_PARAMS_URL = '/burst/hybrid/set_subnetwork_integrator_params'
     SET_SUBNETWORK_NOISE_PARAMS_URL = '/burst/hybrid/set_subnetwork_noise_params'
     SET_SUBNETWORK_NOISE_EQUATION_PARAMS_URL = '/burst/hybrid/set_subnetwork_noise_equation_params'
+    # placing saved Dynamics on the regions of the Subnetwork being configured, in the third column
+    CONFIGURE_REGION_MODEL_URL = '/burst/hybrid/configure_region_model'
+    APPLY_REGION_MODEL_URL = '/burst/hybrid/apply_region_model'
 
 
 class HybridSimulatorFragmentRenderingRules(object):
@@ -108,6 +112,13 @@ class HybridSimulatorFragmentRenderingRules(object):
         self.selected_subnetwork = selected_subnetwork
         # the dynamics currently being edited, keyed by Subnetwork identifier
         self.dynamics_by_id = dynamics_by_id or {}
+        # set on the Model parameters step, which offers the Set up region Model action
+        self.include_region_model_button = False
+        # the Region Model panel: the Subnetwork being configured, its regions and the Dynamics on offer
+        self.region_model_subnetwork = None
+        self.region_model_rows = []
+        self.region_model_dynamics = []
+        self.region_model_unassigned = 0
 
     @property
     def include_previous_button(self):
@@ -131,6 +142,18 @@ class HybridSimulatorFragmentRenderingRules(object):
                             for node_index in node_indices]
             })
         return rows
+
+    @property
+    def region_model_json(self):
+        """
+        The Region Model panel state, as consumed by the hybrid_region_model.js client side component.
+        """
+        payload = json.dumps({
+            'rows': self.region_model_rows,
+            'unassigned': self.region_model_unassigned
+        })
+        # the result is inlined inside a <script> tag, so no region label may close it
+        return payload.replace('<', '\\u003c')
 
     @property
     def subnetwork_choices(self):
@@ -600,6 +623,140 @@ class HybridSimulatorController(BurstBaseController):
         self.context.add_last_loaded_form_url_to_session(HybridSimulatorURLs.SET_SUBNETWORK_DYNAMICS_URL)
         return self._dynamics_step_rules(form, subnetworks, draft).to_dict()
 
+    # ---------------------------------------------------------------- Region Model
+
+    @expose_fragment('burst/hybrid_region_model')
+    def configure_region_model(self, **data):
+        """
+        Place saved Dynamics on the regions of the Subnetwork being configured, shown in the third
+        column. Only that Subnetwork's own regions are listed: its Model applies to the nodes it owns, so
+        a parameter value is needed for each of those and for no other.
+        """
+        try:
+            rules = self._region_model_rules()
+        except HybridSubnetworkException as excep:
+            return HybridSimulatorFragmentRenderingRules(
+                None, HybridSimulatorURLs.CONFIGURE_REGION_MODEL_URL, load_error=str(excep)).to_dict()
+        return rules.to_dict()
+
+    @expose_json
+    def apply_region_model(self, dynamic_id=None, node_indices=None, **data):
+        """
+        Put the given Model configuration on the given regions. The Subnetwork's Model parameters are
+        rewritten as soon as every one of its regions carries a configuration; until then the placement
+        is only remembered, since a parameter needs a value for every node.
+        """
+        try:
+            subnetwork, dynamics, assignment, region_labels = self._region_model_state()
+        except HybridSubnetworkException as excep:
+            return {'status': 'error', 'message': str(excep), 'rows': [], 'unassigned': 0}
+
+        dynamics_by_id = {dynamic.id: dynamic for dynamic in dynamics}
+        try:
+            chosen_id = int(dynamic_id)
+        except (TypeError, ValueError):
+            chosen_id = None
+
+        if chosen_id not in dynamics_by_id:
+            return self._region_model_state_answer(
+                subnetwork, dynamics_by_id, assignment, region_labels,
+                "This Model configuration is not available for this Subnetwork.", is_error=True)
+
+        nodes = self._parse_node_indices(node_indices)
+        if nodes is None:
+            return self._region_model_state_answer(
+                subnetwork, dynamics_by_id, assignment, region_labels,
+                "The regions to configure could not be read.", is_error=True)
+
+        owned = [node_index for node_index in nodes if node_index in set(subnetwork.node_indices)]
+        if not owned:
+            return self._region_model_state_answer(
+                subnetwork, dynamics_by_id, assignment, region_labels,
+                "Select the regions this Model configuration should be placed on.", is_error=True)
+
+        assignment = self.hybrid_simulator_service.place_dynamic_on_regions(assignment, owned, chosen_id)
+        self._store_region_model(subnetwork, assignment)
+
+        message = "Model configuration placed on {} region{}.".format(
+            len(owned), 's' if len(owned) != 1 else '')
+        unassigned = self.hybrid_simulator_service.unassigned_count(list(subnetwork.node_indices), assignment)
+        if unassigned == 0:
+            # every region carries one, so the Subnetwork's Model parameters can be written
+            self.hybrid_simulator_service.apply_dynamics_to_model(
+                subnetwork.dynamics.model, list(subnetwork.node_indices), assignment, dynamics_by_id)
+            message += " The Model parameters of this Subnetwork were updated."
+        else:
+            message += " {} still without one.".format(unassigned)
+
+        return self._region_model_state_answer(subnetwork, dynamics_by_id, assignment, region_labels, message)
+
+    # ---------------------------------------------------------------- Region Model helpers
+
+    def _region_model_state(self):
+        """
+        :return: the draft Subnetwork being configured, the Dynamics that can be placed on it, what is
+                 placed on its regions already, and the Connectivity region labels
+        """
+        hybrid_simulator, region_labels, subnetworks, _ = self._load_subnetworks_configuration()
+        draft = self._prepare_dynamics_draft(subnetworks, hybrid_simulator.dt)
+        selected = self._selected_subnetwork(subnetworks)
+
+        # the panel edits the draft Model, so the existing Save Configuration is what commits it
+        subnetwork = self.hybrid_simulator_service.copy_subnetworks([selected])[0]
+        subnetwork.dynamics = draft[selected.id]
+
+        dynamics = self.hybrid_simulator_service.dynamics_for_model(
+            dao.get_dynamics_for_user(self.context.logged_user.id), subnetwork.dynamics.model)
+
+        assignment = (self.context.region_model or {}).get(selected.id, {})
+        # a regrouping may have taken regions away from this Subnetwork since this was last edited
+        assignment = self.hybrid_simulator_service.restrict_assignment(assignment, subnetwork.node_indices)
+
+        return subnetwork, dynamics, assignment, region_labels
+
+    def _store_region_model(self, subnetwork, assignment):
+        region_model = dict(self.context.region_model or {})
+        region_model[subnetwork.id] = assignment
+        self.context.set_region_model(region_model)
+
+    def _region_model_rules(self):
+        subnetwork, dynamics, assignment, region_labels = self._region_model_state()
+        dynamics_by_id = {dynamic.id: dynamic for dynamic in dynamics}
+
+        rules = HybridSimulatorFragmentRenderingRules(
+            None, HybridSimulatorURLs.CONFIGURE_REGION_MODEL_URL, fragment_title="Region Model")
+        rules.region_model_subnetwork = subnetwork
+        rules.region_model_dynamics = dynamics
+        rules.region_model_rows = self.hybrid_simulator_service.region_model_rows(
+            list(subnetwork.node_indices), region_labels, assignment, dynamics_by_id)
+        rules.region_model_unassigned = self.hybrid_simulator_service.unassigned_count(
+            list(subnetwork.node_indices), assignment)
+        return rules
+
+    def _region_model_state_answer(self, subnetwork, dynamics_by_id, assignment, region_labels,
+                                   message, is_error=False):
+        return {
+            'status': 'error' if is_error else 'ok',
+            'message': message,
+            'rows': self.hybrid_simulator_service.region_model_rows(
+                list(subnetwork.node_indices), region_labels, assignment, dynamics_by_id),
+            'unassigned': self.hybrid_simulator_service.unassigned_count(
+                list(subnetwork.node_indices), assignment)
+        }
+
+    @staticmethod
+    def _parse_node_indices(node_indices):
+        try:
+            nodes = json.loads(node_indices) if node_indices else []
+        except ValueError:
+            return None
+        if not isinstance(nodes, list):
+            return None
+        try:
+            return [int(node_index) for node_index in nodes]
+        except (TypeError, ValueError):
+            return None
+
     # ---------------------------------------------------------------- Dynamics helpers
 
     def _prepare_dynamics_draft(self, subnetworks, dt):
@@ -662,8 +819,12 @@ class HybridSimulatorController(BurstBaseController):
             form = self.algorithm_service.prepare_adapter_form(
                 form_instance=get_form_for_model(type(dynamics.model))())
             form.fill_from_trait(dynamics.model)
-        return self._step_rules(form, HybridSimulatorURLs.SET_SUBNETWORK_MODEL_PARAMS_URL,
-                                HybridSimulatorURLs.SET_SUBNETWORK_MODEL_URL)
+        rules = self._step_rules(form, HybridSimulatorURLs.SET_SUBNETWORK_MODEL_PARAMS_URL,
+                                 HybridSimulatorURLs.SET_SUBNETWORK_MODEL_URL)
+        # the same action the classic Cockpit offers next to the Model parameters, except that it fills
+        # the third column instead of opening a page of its own
+        rules.include_region_model_button = True
+        return rules
 
     def _integrator_step_rules(self, dynamics):
         form = self.algorithm_service.prepare_adapter_form(form_instance=SimulatorIntegratorFragment())

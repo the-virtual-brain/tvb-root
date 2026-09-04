@@ -26,6 +26,8 @@
 
 import pytest
 
+import json
+
 import numpy
 
 from tvb.core.entities.file.simulator.view_model import HybridSimulatorAdapterModel, HybridSubnetworkViewModel
@@ -367,3 +369,88 @@ class TestHybridSimulatorService(object):
         identifier = identifiers[subnetworks[0].id]
         assert identifier.isidentifier(), identifier
         assert not identifier[0].isdigit()
+
+    # ---------------------------------------------------------------- Set up region Model
+
+    class _FakeDynamic(object):
+        """A saved Dynamic, as far as this service is concerned: a model class and its parameters."""
+
+        def __init__(self, dynamic_id, name, model_class, parameters):
+            self.id = dynamic_id
+            self.name = name
+            self.model_class = model_class
+            # a Dynamic stores its parameters as a JSON list of name/value pairs
+            self.model_parameters = json.dumps([[key, value] for key, value in parameters.items()])
+
+    def _dynamics(self):
+        fast = self._FakeDynamic(1, 'fast', 'Generic2dOscillator', {'a': -2.0, 'tau': 1.0})
+        slow = self._FakeDynamic(2, 'slow', 'Generic2dOscillator', {'a': -4.0, 'tau': 1.0})
+        other = self._FakeDynamic(3, 'other', 'Kuramoto', {'omega': 1.0})
+        return fast, slow, other
+
+    def test_only_dynamics_of_the_configured_model_class_are_offered(self):
+        fast, slow, other = self._dynamics()
+        model = self.subnetworks[0].model
+
+        offered = self.service.dynamics_for_model([fast, slow, other], model)
+
+        assert [dynamic.name for dynamic in offered] == ['fast', 'slow']
+
+    def test_no_dynamics_are_offered_without_a_model(self):
+        fast, _, _ = self._dynamics()
+        assert self.service.dynamics_for_model([fast], None) == []
+
+    def test_applying_dynamics_writes_one_value_per_node(self):
+        fast, slow, _ = self._dynamics()
+        dynamics_by_id = {fast.id: fast, slow.id: slow}
+        node_indices = [0, 1, 2]
+        assignment = {0: slow.id, 1: fast.id, 2: fast.id}
+
+        model = self.service.apply_dynamics_to_model(
+            self.subnetworks[0].model, node_indices, assignment, dynamics_by_id)
+
+        assert list(model.a) == [-4.0, -2.0, -2.0]
+        # a parameter every configuration agrees on contracts back to a single shared value
+        assert list(model.tau) == [1.0]
+
+    def test_applying_dynamics_refuses_an_unconfigured_region(self):
+        fast, _, _ = self._dynamics()
+        assignment = {0: fast.id}
+
+        with pytest.raises(HybridSubnetworkException) as excep:
+            self.service.apply_dynamics_to_model(
+                self.subnetworks[0].model, [0, 1, 2], assignment, {fast.id: fast})
+
+        assert '2' in str(excep.value)
+
+    def test_applying_dynamics_ignores_parameters_the_model_does_not_declare(self):
+        stray = self._FakeDynamic(9, 'stray', 'Generic2dOscillator', {'a': -2.0, 'not_a_parameter': 3.0})
+
+        model = self.service.apply_dynamics_to_model(
+            self.subnetworks[0].model, [0], {0: stray.id}, {stray.id: stray})
+
+        assert list(model.a) == [-2.0]
+        assert not hasattr(model, 'not_a_parameter')
+
+    def test_placing_a_dynamic_leaves_the_other_regions_alone(self):
+        assignment = self.service.place_dynamic_on_regions({0: 5}, [1, 2], 7)
+
+        assert assignment == {0: 5, 1: 7, 2: 7}
+
+    def test_assignment_is_restricted_to_the_regions_still_owned(self):
+        assignment = self.service.restrict_assignment({0: 1, 1: 1, 5: 2}, [1, 5])
+
+        assert assignment == {1: 1, 5: 2}
+
+    def test_unassigned_count(self):
+        assert self.service.unassigned_count([0, 1, 2], {0: 1}) == 2
+        assert self.service.unassigned_count([0, 1], {0: 1, 1: 2}) == 0
+
+    def test_region_model_rows_describe_every_owned_region(self):
+        fast, _, _ = self._dynamics()
+
+        rows = self.service.region_model_rows([0, 2], ['lOFC', 'rOFC', 'lPCUN'], {0: fast.id},
+                                              {fast.id: fast})
+
+        assert rows[0] == {'index': 0, 'label': 'lOFC', 'dynamic_id': fast.id, 'dynamic_name': 'fast'}
+        assert rows[1] == {'index': 2, 'label': 'lPCUN', 'dynamic_id': None, 'dynamic_name': ''}

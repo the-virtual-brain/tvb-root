@@ -31,8 +31,11 @@ from uuid import UUID
 import cherrypy
 from cherrypy.lib.sessions import RamSession
 
+from tvb.adapters.forms.model_forms import ModelsEnum
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.simulator.view_model import HybridSimulatorAdapterModel
+from tvb.core.entities.model.model_burst import Dynamic
+from tvb.simulator.integrators import HeunDeterministic
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.interfaces.web.controllers.common import KEY_PROJECT, KEY_USER
@@ -784,6 +787,185 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         # refused, and the saved configuration is left as it was
         assert list(saved[0].dynamics.model.a) == [-2.0]
         assert rendering_rules['renderer'].form_action_url == HybridSimulatorURLs.SET_SUBNETWORK_DYNAMICS_URL
+
+    # ---------------------------------------------------------------- Set up region Model
+
+    @staticmethod
+    def _g2d_parameters(a):
+        """Generic2dOscillator parameters, as a Dynamic stores them: a JSON list of name/value pairs."""
+        values = {'tau': 1.0, 'a': a, 'b': -10.0, 'c': 0.0, 'I': 0.0, 'd': 0.02, 'e': 3.0, 'f': 1.0,
+                  'g': 0.0, 'alpha': 1.0, 'beta': 1.0, 'gamma': 1.0}
+        return json.dumps([[name, value] for name, value in values.items()])
+
+    def _saved_dynamics(self):
+        """Two model configurations on the Subnetwork's Model class, and one on another class."""
+        self.dynamic_fast = dao.store_entity(Dynamic(
+            'hybrid_fast', self.test_user.id, ModelsEnum.GENERIC_2D_OSCILLATOR.value.__name__,
+            self._g2d_parameters(-2.0), HeunDeterministic.__name__, None))
+        self.dynamic_slow = dao.store_entity(Dynamic(
+            'hybrid_slow', self.test_user.id, ModelsEnum.GENERIC_2D_OSCILLATOR.value.__name__,
+            self._g2d_parameters(-4.0), HeunDeterministic.__name__, None))
+        self.dynamic_other = dao.store_entity(Dynamic(
+            'hybrid_kuramoto', self.test_user.id, ModelsEnum.KURAMOTO.value.__name__,
+            '[["omega", 1.0]]', HeunDeterministic.__name__, None))
+
+    def _region_model_panel(self):
+        previous_method = getattr(cherrypy.request, 'method', None)
+        cherrypy.request.method = "GET"
+        try:
+            return self.hybrid_controller.configure_region_model()
+        finally:
+            if previous_method is not None:
+                cherrypy.request.method = previous_method
+
+    def _apply_region_model(self, dynamic_id, node_indices):
+        cherrypy.request.method = "POST"
+        return json.loads(self.hybrid_controller.apply_region_model(
+            dynamic_id=str(dynamic_id), node_indices=json.dumps(node_indices)))
+
+    def test_model_params_step_offers_the_region_model_action(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            self._open_dynamics_step()
+            self._enter_dynamics_chain()
+            cherrypy.request.method = "POST"
+            rendering_rules = self.hybrid_controller.set_subnetwork_model(model='Generic 2D Oscillator')
+
+        # the same action the classic Cockpit offers next to the Model parameters
+        assert rendering_rules['renderer'].include_region_model_button
+
+    def test_region_model_lists_only_this_subnetworks_regions(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._saved_dynamics()
+            saved = self._two_subnetworks()
+            self._open_dynamics_step()
+            self._enter_dynamics_chain()
+            panel = self._region_model_panel()
+
+        renderer = panel['renderer']
+        # the first Subnetwork is selected by default, and its Model applies to the nodes it owns
+        assert [row['index'] for row in renderer.region_model_rows] == list(saved[0].node_indices)
+        assert renderer.region_model_unassigned == len(saved[0].node_indices)
+
+    def test_region_model_offers_only_matching_model_configurations(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._saved_dynamics()
+            self._configured_hybrid_simulator()
+            self._open_dynamics_step()
+            self._enter_dynamics_chain()
+            panel = self._region_model_panel()
+
+        offered = [dynamic.name for dynamic in panel['renderer'].region_model_dynamics]
+        # the Subnetwork is configured with Generic2dOscillator, so the Kuramoto configuration is not
+        # offered; the Model class stays decided by the wizard step alone
+        assert sorted(offered) == ['hybrid_fast', 'hybrid_slow']
+
+    def test_placing_on_some_regions_leaves_the_model_alone(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._saved_dynamics()
+            self._configured_hybrid_simulator()
+            self._open_dynamics_step()
+            self._enter_dynamics_chain()
+            self._region_model_panel()
+            saved = self._saved_subnetworks()
+
+            answer = self._apply_region_model(self.dynamic_fast.id, [0, 1])
+            model_a = list(self._dynamics_draft()[saved[0].id].model.a)
+
+        assert answer['status'] == 'ok'
+        assert answer['unassigned'] == self.connectivity.number_of_regions - 2
+        assert [row['dynamic_name'] for row in answer['rows'][:2]] == ['hybrid_fast', 'hybrid_fast']
+        assert answer['rows'][2]['dynamic_name'] == ''
+        # a Model parameter needs a value for every node, so nothing is written until they all have one
+        assert model_a == [-2.0]
+
+    def test_placing_on_every_region_writes_one_value_per_node(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._saved_dynamics()
+            self._configured_hybrid_simulator()
+            self._open_dynamics_step()
+            self._enter_dynamics_chain()
+            self._region_model_panel()
+            saved = self._saved_subnetworks()
+            every_region = list(saved[0].node_indices)
+
+            self._apply_region_model(self.dynamic_fast.id, every_region)
+            answer = self._apply_region_model(self.dynamic_slow.id, every_region[:2])
+            model = self._dynamics_draft()[saved[0].id].model
+
+        assert answer['unassigned'] == 0
+        # two regions carry the slow configuration and the rest the fast one, in node order
+        assert list(model.a) == [-4.0, -4.0] + [-2.0] * (len(every_region) - 2)
+        assert len(model.a) == len(every_region)
+        # a parameter both configurations agree on stays a single shared value
+        assert list(model.tau) == [1.0]
+
+    def test_region_model_reaches_the_configuration_only_once_saved(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._saved_dynamics()
+            self._configured_hybrid_simulator()
+            self._open_dynamics_step()
+            self._enter_dynamics_chain()
+            self._region_model_panel()
+            saved = self._saved_subnetworks()
+
+            self._apply_region_model(self.dynamic_slow.id, list(saved[0].node_indices))
+            before_save = list(self._saved_subnetworks()[0].dynamics.model.a)
+
+            self.hybrid_controller.save_subnetwork_dynamics()
+            after_save = list(self._saved_subnetworks()[0].dynamics.model.a)
+
+        # the panel edits the draft, like every other Phase 3 step
+        assert before_save == [-2.0]
+        assert after_save == [-4.0]
+
+    def test_placing_a_configuration_of_another_model_is_refused(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._saved_dynamics()
+            self._configured_hybrid_simulator()
+            self._open_dynamics_step()
+            self._enter_dynamics_chain()
+            self._region_model_panel()
+
+            answer = self._apply_region_model(self.dynamic_other.id, [0, 1])
+
+        assert answer['status'] == 'error'
+        assert answer['rows'][0]['dynamic_name'] == ''
+
+    def test_placing_on_no_region_is_refused(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._saved_dynamics()
+            self._configured_hybrid_simulator()
+            self._open_dynamics_step()
+            self._enter_dynamics_chain()
+            self._region_model_panel()
+
+            answer = self._apply_region_model(self.dynamic_fast.id, [])
+
+        assert answer['status'] == 'error'
+
+    def test_regions_moved_away_lose_their_configuration(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._saved_dynamics()
+            self._configured_hybrid_simulator()
+            self._open_dynamics_step()
+            self._enter_dynamics_chain()
+            self._region_model_panel()
+
+            self._apply_region_model(self.dynamic_fast.id, [0, 1, 2])
+
+            # regroup: regions 0 and 1 go to a second Subnetwork
+            self.hybrid_controller.add_subnetwork()
+            self.hybrid_controller.move_regions(subnetwork_index='1', node_indices=json.dumps([0, 1]))
+            self.hybrid_controller.save_subnetworks()
+
+            panel = self._region_model_panel()
+
+        rows = {row['index']: row['dynamic_name'] for row in panel['renderer'].region_model_rows}
+        # what is left of the first Subnetwork keeps its configuration, and the regions it no longer
+        # owns are simply not listed for it any more
+        assert 0 not in rows and 1 not in rows
+        assert rows[2] == 'hybrid_fast'
 
     # ---------------------------------------------------------------- navigation
 

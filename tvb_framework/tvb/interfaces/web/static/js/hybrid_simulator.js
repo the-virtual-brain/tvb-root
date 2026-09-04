@@ -121,6 +121,32 @@ function _syncHybridContextColumn() {
     });
 }
 
+/**
+ * Show the Set up region Model configuration in the third column. Unlike the configurations a step
+ * declares through data-hybrid-context-url, this one is opened on demand by its button, so nothing
+ * clears it until the user leaves the step - moving on re-syncs the column, which is what closes it.
+ */
+function hybridConfigureRegionModel() {
+    const contextDiv = document.getElementById(HYBRID_CONTEXT_DIV);
+    if (contextDiv === null) {
+        return;
+    }
+
+    doAjaxCall({
+        type: "GET",
+        url: "/burst/hybrid/configure_region_model",
+        success: function (response) {
+            $("#" + HYBRID_RESULTS_DIV).hide();
+            contextDiv.style.display = "";
+            renderWithMathjax($(contextDiv), _asFragment(response), true);
+            _setHybridContextTitle("Region Model");
+        },
+        error: function () {
+            displayMessage("The region Model configuration could not be loaded.", "errorMessage");
+        }
+    });
+}
+
 /** The Results tree of this page. bursts.js, which owns the cockpit one, is not loaded here. */
 function displayHybridResultsTree() {
     updateTree("#treeOverlay", null, JSON.stringify({'type': 'from_burst', 'value': "0"}));

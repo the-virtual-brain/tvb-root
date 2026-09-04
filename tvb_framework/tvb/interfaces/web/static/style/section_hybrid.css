@@ -347,3 +347,52 @@ button.hybrid-subnetwork-action:disabled {
 table.hybrid-dynamics-summary .hybrid-summary-region {
     white-space: nowrap;
 }
+
+/**
+ * Set up region Model, shown in the third column. This is the right hand section of the classic page,
+ * so it sits on that column's dark ground and needs light text, like the Subnetwork board above it.
+ */
+.hybrid-region-model-label {
+    color: rgba(250, 247, 228, 0.85);
+    font-size: 11px;
+    margin-right: 4px;
+}
+
+.hybrid-region-model-list {
+    list-style: none;
+    margin: 0;
+    max-height: 420px;
+    overflow-y: auto;
+    padding: 0;
+}
+
+/* The configuration placed on a region, after its index and label. */
+.hybrid-region-dynamic {
+    color: rgba(250, 247, 228, 0.85);
+    flex: 0 0 auto;
+    margin-left: auto;
+    padding-left: 8px;
+}
+
+/* A region with nothing on it yet cannot take part in the parameter arrays, so say so. */
+.hybrid-region-dynamic.is-empty {
+    color: #e8b84b;
+    font-style: italic;
+}
+
+/* The parameter values of the selected configuration, from the shared dynamic_detail fragment. */
+.hybrid-region-values-pane {
+    background: rgba(250, 247, 228, 0.08);
+    border: 1px solid rgba(250, 247, 228, 0.25);
+    border-radius: 3px;
+    color: rgba(250, 247, 228, 0.9);
+    font-size: 11px;
+    margin-bottom: 6px;
+    max-height: 160px;
+    overflow-y: auto;
+    padding: 6px;
+}
+
+.hybrid-region-values-pane table {
+    width: 100%;
+}

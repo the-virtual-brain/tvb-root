@@ -854,6 +854,63 @@ save action. That is what stands in for a JS test here, and it is what caught th
 
 ---
 
+## Phase 3 addition – Set up region Model
+
+The classic Cockpit offers a **Set up region Model** button next to the Model parameters, which opens a
+page of its own. The Hybrid Simulator offers the same action on its Model parameters step, but fills the
+**third column** with it instead of navigating away, and shows only the right-hand half of that page —
+the region list — not its 3D view.
+
+### What the classic page actually does
+
+It is not a free-form per-region parameter editor. Each region is given a saved **Dynamic**, created on
+the Phase plane page; `RegionsModelParametersController.index` bails out to a "no dynamics" page when the
+user has none. On submit, every node's Dynamic is read and
+`SerializationManager.write_model_parameters` groups them into one array per parameter, **contracting a
+constant array back to a single value**. That is exactly the shape a Subnetwork's Model needs, and
+exactly what the Phase 3 `1`-or-`nnodes` validation already expects.
+
+### Decisions
+
+| decision | choice | why |
+|---|---|---|
+| region scope | only the selected Subnetwork's own regions | its Model applies to the nodes it owns, so a parameter value is needed for each of those and no other |
+| Model class | only Dynamics built on the Subnetwork's configured Model class are offered | a conflict cannot arise, and the wizard step stays the only place a Model class is decided. The classic page instead **overwrites** the Simulator's Model with whatever class the chosen Dynamics carry |
+| region selection | the Phase 2 board's click / Ctrl / Shift idiom | see below |
+| save | into the dynamics draft, committed by the existing **Save Configuration** | one save action per Subnetwork, and the wizard summary stays honest |
+
+### Why the classic component could not be reused
+
+`TVBUI.RegionAssociatorView` drives the 3D view through globals — `GVAR_interestAreaNodeIndexes`,
+`CONN_pickedIndex`, `GFUNC_toggleNodeInInterestArea`, `GFUNC_updateLeftSideVisualization` — and binds a
+`#GLcanvas` click handler. None of those exist on this page once the left column is dropped. The region
+list therefore reuses the interaction already built for the Subnetwork board, in
+`hybrid_region_model.js`.
+
+### How it behaves
+
+The panel is opened by its button rather than by a step declaring `data-hybrid-context-url`, so nothing
+closes it while the user stays on the Model parameters step; moving on re-syncs the third column, which
+is what hands it back to the Results view.
+
+Placing a configuration on a subset of the regions is only remembered — a Model parameter needs a value
+for **every** node of the Subnetwork, so the arrays are written the moment the last region gets one, and
+the panel says how many are still without. The placement itself lives in
+`HybridSimulatorContext.KEY_REGION_MODEL`, keyed by Subnetwork id, because the parameter arrays alone
+cannot say which Dynamic produced them. A regrouping that takes regions away from a Subnetwork drops
+them from its placement rather than leaving a stale one behind.
+
+### Tests
+
+9 controller tests, 9 service tests and a render check covering both panel states. They assert that only
+the Subnetwork's own regions are listed, that only matching Dynamics are offered, that a partial
+placement leaves the Model alone, that a complete one writes one value per node while contracting the
+parameters every configuration agrees on, that the result reaches the saved configuration only through
+Save Configuration, and that regions moved to another Subnetwork lose their placement. The classic
+`region_model_parameters_controller` suite still passes untouched.
+
+---
+
 ## Phase 4 – Generate Projections
 
 Generate IntraProjections and InterProjections from the selected Connectivity and Subnetwork assignments.

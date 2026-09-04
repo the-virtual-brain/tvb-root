@@ -1,0 +1,56 @@
+<!--! =========================================================================== -->
+<!--! Places saved Dynamics on the regions of the Subnetwork being configured.    -->
+<!--! Rendered in the third column by the Set up region Model action of the Model -->
+<!--! parameters step. This is the right hand section of the classic Set up       -->
+<!--! region Model page; its 3D view is deliberately left out, the regions are    -->
+<!--! selected in the list the same way they are on the Subnetwork board.         -->
+<!--! =========================================================================== -->
+<div class="hybrid-context-config">
+    {% if renderer.load_error %}
+        <p class="errorMessage">{{ renderer.load_error }}</p>
+    {% elif not renderer.region_model_dynamics %}
+        <p class="hybrid-subnetworks-hint">
+            No saved model configuration matches the
+            <strong>{{ renderer.region_model_subnetwork.dynamics.model.__class__.__name__ }}</strong>
+            Model this Subnetwork is configured with. Model configurations are created on the
+            <em>Phase plane</em> page; save one built on this Model class and it will be offered here.
+        </p>
+    {% else %}
+        <p class="hybrid-subnetworks-hint">
+            Placing a model configuration on every region of
+            <strong>{{ renderer.region_model_subnetwork.name }}</strong> replaces this Subnetwork's Model
+            parameters with one value per region. Click to select a region, use <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>
+            to add to the selection and <kbd>Shift</kbd> to select a range. Only configurations built on
+            this Subnetwork's Model class are offered. The result is stored with the rest of the
+            Subnetwork configuration, by <em>Save Configuration</em> on the last step.
+        </p>
+
+        <div class="hybrid-subnetworks-toolbar">
+            <label for="hybrid-region-dynamic" class="hybrid-region-model-label">Model configuration</label>
+            <select id="hybrid-region-dynamic" class="dataset-selector">
+                {% for dynamic in renderer.region_model_dynamics %}
+                    <option value="{{ dynamic.id }}">{{ dynamic.name }}</option>
+                {% endfor %}
+            </select>
+            <button type="button" class="btn btn-primary" id="hybrid-region-values"
+                    title="Show the parameter values of the selected model configuration">Values
+            </button>
+            <button type="button" class="btn btn-primary" id="hybrid-region-apply"
+                    title="Put the selected model configuration on the selected regions">Apply to selection
+            </button>
+        </div>
+
+        <div id="hybrid-region-values-pane" class="hybrid-region-values-pane" style="display: none;"></div>
+
+        <div class="hybrid-subnetworks-statusbar">
+            <span id="hybrid-region-status" class="hybrid-subnetworks-status"></span>
+            <span id="hybrid-region-selection" class="hybrid-selection-summary">No region selected</span>
+        </div>
+
+        <ul id="hybrid-region-model-list" class="hybrid-region-model-list"></ul>
+
+        <script type="text/javascript">
+            HYBRID_REGION_MODEL.init({{ renderer.region_model_json | safe }});
+        </script>
+    {% endif %}
+</div>

@@ -7,8 +7,12 @@ from uuid import UUID
 import cherrypy
 from cherrypy.lib.sessions import RamSession
 
+from tvb.adapters.forms.model_forms import ModelsEnum
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.simulator.view_model import HybridSimulatorAdapterModel
+from tvb.core.entities.model.model_burst import Dynamic
+from tvb.core.entities.storage import dao
+from tvb.simulator.integrators import HeunDeterministic
 from tvb.interfaces.web.controllers.common import KEY_PROJECT, KEY_USER
 from tvb.interfaces.web.controllers.simulator.hybrid_simulator_controller import HybridSimulatorController
 from tvb.tests.framework.core.factory import TestFactory
@@ -136,3 +140,49 @@ class TestHybridRendering(BaseTransactionalControllerTest):
         # switching Subnetwork restarts its configuration at the Model step, rendered once
         assert isinstance(selected_html, str)
         assert 'action="/burst/hybrid/set_subnetwork_model"' in selected_html
+
+    def test_what_the_region_model_panel_returns(self):
+        """
+        Render the Set up region Model panel, in both states it can be in: with a matching model
+        configuration on offer, and with none.
+        """
+        with patch.object(TvbProfile.current.web, 'RENDER_HTML', True), \
+                patch('cherrypy.session', self.sess_mock, create=True):
+            self.hybrid_controller.context.set_hybrid_simulator(self.hybrid_simulator)
+
+            cherrypy.request.method = "GET"
+            self.hybrid_controller.set_subnetworks()
+            cherrypy.request.method = "POST"
+            self.hybrid_controller.set_subnetworks()
+            self.hybrid_controller.set_subnetwork_dynamics(dt='0.1')
+            # the action sits on the Model parameters step, which follows the Model class one
+            model_html = self.hybrid_controller.set_subnetwork_model(model='Generic 2D Oscillator')
+
+            # nothing saved yet, so nothing can be placed on the regions
+            cherrypy.request.method = "GET"
+            empty_html = self.hybrid_controller.configure_region_model()
+
+            dao.store_entity(Dynamic(
+                'render_check_dyn', self.test_user.id, ModelsEnum.GENERIC_2D_OSCILLATOR.value.__name__,
+                '[["tau", 1.0], ["a", -2.0]]', HeunDeterministic.__name__, None))
+            # and one built on a Model class this Subnetwork is not configured with
+            dao.store_entity(Dynamic(
+                'render_check_other', self.test_user.id, ModelsEnum.KURAMOTO.value.__name__,
+                '[["omega", 1.0]]', HeunDeterministic.__name__, None))
+            panel_html = self.hybrid_controller.configure_region_model()
+
+        # the Model parameters step offers the action, which fills the third column rather than opening
+        # a page of its own
+        assert 'Set up region Model' in model_html
+        assert 'hybridConfigureRegionModel()' in model_html
+
+        # with no matching configuration saved, the panel says where they come from
+        assert 'Phase plane' in empty_html
+        assert 'HYBRID_REGION_MODEL.init(' not in empty_html
+
+        # with one saved, the region list is drawn from it
+        assert 'HYBRID_REGION_MODEL.init(' in panel_html
+        assert 'id="hybrid-region-model-list"' in panel_html
+        assert 'render_check_dyn' in panel_html
+        # only configurations on this Subnetwork's Model class are offered
+        assert 'render_check_other' not in panel_html
