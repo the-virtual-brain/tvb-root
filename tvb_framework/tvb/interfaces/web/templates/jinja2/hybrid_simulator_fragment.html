@@ -1,9 +1,11 @@
 {% import 'form_fields/generate_help_tooltip.html' as ght with context %}
 
-<form method="post" action="{{ renderer.form_action_url }}" id="{{ renderer.form_action_url }}" enctype="multipart/form-data">
-    {% if renderer.is_subnetwork_fragment %}
-        {% include 'burst/hybrid_subnetworks.html' %}
-    {% elif renderer.is_subnetworks_summary_fragment %}
+{#- data-hybrid-context-url names the configuration this step exposes in the third column. Steps
+    declaring none leave that column empty, which is how it is cleared when moving on. -#}
+<form method="post" action="{{ renderer.form_action_url }}" id="{{ renderer.form_action_url }}" enctype="multipart/form-data"
+      data-hybrid-context-url="{{ renderer.context_form_url if renderer.context_form_url else '' }}"
+      data-hybrid-context-title="{{ renderer.context_title if renderer.context_title else '' }}">
+    {% if renderer.is_subnetworks_summary_fragment %}
         {% include 'burst/hybrid_subnetworks_summary.html' %}
     {% else %}
         <fieldset>
@@ -35,28 +37,15 @@
 
     {% if renderer.include_previous_button %}
         <button name="previous" type="button" class="btn btn-primary" tabindex="1"
-                {% if renderer.is_subnetwork_fragment %}
-                    onclick="hybridBackToSimulator()"
-                {% else %}
-                    onclick="hybridPreviousStep(this.parentElement, '{{ renderer.previous_form_action_url }}')"
-                {% endif %}>{{ renderer.previous_button_label }}
+                onclick="hybridPreviousStep(this.parentElement, '{{ renderer.previous_form_action_url }}')">{{ renderer.previous_button_label }}
         </button>
     {% endif %}
 
-    {% if renderer.include_configure_subnetworks_button %}
-        <button name="configure_subnetworks" type="button" class="btn btn-primary" tabindex="1"
-                title="Group the Connectivity regions into Subnetworks"
-                onclick="hybridLoadFragment('{{ renderer.CONFIGURE_SUBNETWORKS_URL }}')">Configure Subnetworks
-        </button>
-    {% endif %}
-
-    {% if renderer.include_next_button %}
-        <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1"
-                onclick="hybridSubmit(this.parentElement)"
-                {% if not renderer.next_button_enabled %}
-                    disabled="disabled"
-                    title="The next configuration step is not available yet"
-                {% endif %}>{{ renderer.next_button_label }}
-        </button>
-    {% endif %}
+    <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1"
+            onclick="hybridSubmit(this.parentElement)"
+            {% if not renderer.next_button_enabled %}
+                disabled="disabled"
+                title="The next configuration step is not available yet"
+            {% endif %}>{{ renderer.next_button_label }}
+    </button>
 </form>

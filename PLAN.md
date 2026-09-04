@@ -262,14 +262,13 @@ change self-heal instead of corrupting the configuration.
 
 Removing a non-empty Subnetwork moves its regions into the first remaining one rather than refusing,
 so no region can be orphaned. Empty Subnetworks are allowed *on the board* (they are the drop target
-being prepared) and discarded when the Subnetworks step is entered.
+being prepared) and discarded when the grouping is saved.
 
 ### UI structure
 
-Connectivity and Subnetworks are cockpit wizard steps; the grouping board is a full-width **detour**,
-not a step — it replaces the wizard while open (`colscheme-1`, TVB's own single-column scheme) and the
-stack is rebuilt on return. The wizard accumulates steps read-only, mirroring `wizzard_submit` /
-`previousWizzardStep` in `bursts.js`.
+Connectivity and Subnetworks are cockpit wizard steps. The grouping board lives in the third column, as
+the configuration belonging to the Subnetworks step — see the refinement summary below. The wizard
+accumulates steps read-only, mirroring `wizzard_submit` / `previousWizzardStep` in `bursts.js`.
 
 ### No new frontend dependency
 
@@ -290,9 +289,115 @@ an in-box title bar must not be a `<header>`.
 ### Tests
 
 Service and controller are covered by Python tests (partition invariants asserted after every
-operation). The client is covered by jsdom suites that drive the **real** `hybrid_subnetworks.js` and
-`hybrid_simulator.js` against **real Jinja-rendered fragments** and TVB's own jQuery, including a
-computed-style check against a real classic parameter row.
+operation). There is no JavaScript test infrastructure in this repository, so the client is verified
+out of tree.
+
+
+---
+
+## Phase 2 – Refine Subnetwork Configuration
+
+Refactor the Phase 2 UI so Subnetwork configuration remains on the main **Hybrid Simulator** page.
+
+Remove the separate Subnetwork configuration page and reuse the current third column, which is reserved for Results / Visualization.
+
+Workflow:
+
+* user selects a Connectivity in the main Hybrid Simulator configuration;
+* after pressing **Next**, show the existing Subnetwork configuration UI in the third column;
+* keep the current Subnetwork operations and drag-and-drop behaviour unchanged where possible;
+* remove the **Configure Subnetworks** button, since navigation to a separate page is no longer needed;
+* add a **Save Configuration** action for the Subnetwork configuration;
+* update the Subnetwork summary in the main simulator column only after the configuration is saved;
+* when the user presses **Next** to continue to the following Hybrid configuration step, clear the third column.
+
+The third column should become the contextual configuration area for the current Hybrid Simulator step.
+
+Future phases can reuse the same area for Model / Integrator configuration, Projections, and other Hybrid settings.
+
+### Tests
+
+* Subnetwork configuration is displayed in the third column;
+* existing drag-and-drop and multi-selection behaviour still works;
+* saved Subnetwork configuration updates the summary correctly;
+* navigating between Hybrid configuration steps preserves the expected state;
+* the separate Subnetwork configuration page and navigation are removed;
+* classic Simulator Cockpit behaviour remains unchanged.
+
+### Checkpoint
+
+Review the new single-page Hybrid Simulator workflow before continuing with Phase 3.
+
+---
+
+## Phase 2 Refinement – Implementation Summary
+
+### The third column is now step-contextual
+
+Every wizard fragment declares the configuration it wants in the third column:
+
+```html
+<form ... data-hybrid-context-url="/burst/hybrid/configure_subnetworks"
+          data-hybrid-context-title="Subnetworks">
+```
+
+After any wizard render, `_afterHybridRender` in `hybrid_simulator.js` reads that attribute off the
+**last** form in the stack (the step being configured) and either loads it into
+`#hybrid-context-column`, hiding `#hybrid-results-view`, or empties the column and hands it back to the
+Results view. The Connectivity step declares nothing, which is what clears the column when stepping
+back; a Phase 3 step gets the same behavior for free by declaring its own url, or none.
+
+The full-width detour is gone with it: `colscheme-1` swapping, `resetLayout`,
+`hybridBackToSimulator`, `hybridLoadFragment`, the *Configure Subnetworks* button and the
+`is_subnetwork_fragment` branch were all removed.
+
+### Save Configuration, and why a draft was needed
+
+The summary must change only on save, but every grouping edit still has to round-trip so the server can
+validate it. So the board edits a **draft** held in its own session slot
+(`HybridSimulatorContext.KEY_SUBNETWORKS_DRAFT`); `save_subnetworks` is the only writer of
+`HybridSimulatorAdapterModel.subnetworks`.
+
+| where | holds | changed by |
+|---|---|---|
+| `hybrid_simulator.subnetworks` | what the wizard step lists | `save_subnetworks` only |
+| session draft | what the board shows | add / rename / remove / move |
+
+Drag-and-drop, multi-selection and every `HybridSimulatorService` rule are untouched — only the list
+they are applied to changed. `copy_subnetworks` keeps the two apart: the grouping operations mutate
+`HybridSubnetworkViewModel` instances in place, so sharing them would let a drag silently rewrite the
+summary.
+
+The draft survives stepping away and back (unsaved work is not thrown away), and is dropped together
+with the grouping when the Connectivity changes or the configuration is reset. Empty Subnetworks stay
+on the board as drop targets and are discarded on save.
+
+Each answer carries `is_modified`, computed against `discard_empty_subnetworks(draft)` so that an empty
+Subnetwork prepared as a drop target is not reported as a pending change. The board shows it as
+*Unsaved changes* / *Configuration saved*, which is what stops the board and the summary next to it
+from disagreeing silently.
+
+### Fixed in passing
+
+`main_hybrid_simulator.html` called `displayBurstTree`, which lives in `bursts.js` and is not loaded on
+this page — the Results tab raised a `ReferenceError`. Replaced by a local `displayHybridResultsTree`
+built on `updateTree` from `projectTree.js`, which the page does load.
+
+### Tests
+
+Python: 29 controller tests and 25 service tests, asserting the partition invariants after every
+operation plus the new draft/save split — that editing leaves the saved grouping alone, that saving
+updates the summary and discards empty Subnetworks, and that both saved and unsaved groupings survive
+navigation. The classic Simulator Cockpit suite (41 tests) still passes untouched.
+
+Client: there is no JavaScript test infrastructure in this repository, so the board was driven out of
+tree in jsdom against the **real** `hybrid_simulator.js` / `hybrid_subnetworks.js`, the **real**
+Jinja-rendered fragments and TVB's own jQuery — covering multi-selection (click / Ctrl / Shift / Select
+all), dragging a multi-region selection between Subnetworks, save refreshing the summary, and the third
+column filling and clearing as steps change. Worth adding to the repository if a JS test dependency is
+acceptable.
+
+---
 
 ---
 
