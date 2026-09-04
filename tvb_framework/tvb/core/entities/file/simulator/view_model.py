@@ -23,7 +23,9 @@
 # https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 
-from tvb.basic.neotraits.api import Attr, List, EnumAttr, TupleEnum
+import uuid
+
+from tvb.basic.neotraits.api import Attr, Float, List, EnumAttr, TupleEnum
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
@@ -39,6 +41,7 @@ from tvb.simulator.integrators import HeunDeterministic, Integrator, IntegratorS
     Dopri5Stochastic, Dop853, Dop853Stochastic
 from tvb.simulator.monitors import Monitor, EEG, MEG, iEEG, Raw, SubSample, SpatialAverage, GlobalAverage, \
     TemporalAverage, Projection, Bold, BoldRegionROI
+from tvb.simulator.models import Model, Generic2dOscillator
 from tvb.simulator.noise import Noise, Additive, Multiplicative
 from tvb.simulator.simulator import Simulator
 
@@ -408,12 +411,52 @@ class SimulatorAdapterModel(ViewModel, Simulator):
         return variables_of_interest_indexes
 
 
+class HybridSubnetworkDynamics(ViewModel):
+    """
+    The Model and the Integrator configured for one Hybrid Simulator Subnetwork.
+
+    Kept as a separate object because it is what the reused Simulator Cockpit forms are filled from and
+    into: SimulatorModelFragment and SimulatorIntegratorFragment only require a 'model' and an
+    'integrator' attribute, so they operate on this without any change.
+    """
+
+    model = Attr(
+        field_type=Model,
+        required=False,
+        label=Simulator.model.label,
+        doc=Simulator.model.doc
+    )
+
+    integrator = Attr(
+        field_type=IntegratorViewModel,
+        required=False,
+        label=Simulator.integrator.label,
+        doc=Simulator.integrator.doc
+    )
+
+    def __init__(self, **kwargs):
+        super(HybridSubnetworkDynamics, self).__init__(**kwargs)
+        # A trait default would be one shared instance for every Subnetwork, and the parameter editing
+        # forms change these in place, so each one has to get its own.
+        if self.model is None:
+            self.model = Generic2dOscillator()
+        if self.integrator is None:
+            self.integrator = IntegratorViewModelsEnum.HEUN.instance
+
+
 class HybridSubnetworkViewModel(ViewModel):
     """
-    Configuration of a single Hybrid Simulator Subnetwork, as gathered from the web UI.
-    It only keeps the name and the Connectivity nodes assigned to it. The corresponding
+    Configuration of a single Hybrid Simulator Subnetwork, as gathered from the web UI: the name, the
+    Connectivity nodes assigned to it and the dynamics configured for it. The corresponding
     tvb.simulator.hybrid.Subnetwork instances are built from this configuration at a later step.
     """
+
+    id = Attr(
+        field_type=str,
+        label='Identifier',
+        doc='Generated identifier, stable across renaming, reordering and the removal of other '
+            'Subnetworks, so that the configured dynamics stay attached to the intended Subnetwork'
+    )
 
     name = Attr(
         field_type=str,
@@ -426,6 +469,32 @@ class HybridSubnetworkViewModel(ViewModel):
         label='Node indices',
         doc='Indices of the assigned nodes, in the original Connectivity ordering'
     )
+
+    dynamics = Attr(
+        field_type=HybridSubnetworkDynamics,
+        required=False,
+        label='Dynamics',
+        doc='The Model and the Integrator configured for this Subnetwork'
+    )
+
+    def __init__(self, **kwargs):
+        super(HybridSubnetworkViewModel, self).__init__(**kwargs)
+        try:
+            has_id = bool(self.id)
+        except (AttributeError, TypeError, ValueError):
+            has_id = False
+        if not has_id:
+            self.id = uuid.uuid4().hex
+        if self.dynamics is None:
+            self.dynamics = HybridSubnetworkDynamics()
+
+    @property
+    def model(self):
+        return self.dynamics.model
+
+    @property
+    def integrator(self):
+        return self.dynamics.integrator
 
 
 class HybridSimulatorAdapterModel(ViewModel):
@@ -440,4 +509,12 @@ class HybridSimulatorAdapterModel(ViewModel):
         of=HybridSubnetworkViewModel,
         label='Subnetworks',
         doc='Partition of the Connectivity nodes into Subnetworks'
+    )
+
+    dt = Float(
+        label='Integration step size (dt)',
+        default=Integrator.dt.default,
+        doc='The step size used by every Subnetwork Integrator. tvb.simulator.hybrid.Simulator requires '
+            'all Subnetworks to share it, so it is configured once for the whole Hybrid Simulator '
+            'instead of per Subnetwork.'
     )

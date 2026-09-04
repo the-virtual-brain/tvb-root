@@ -287,3 +287,89 @@ button.hybrid-subnetwork-action:disabled {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+/**
+ * Per Subnetwork Model/Integrator configuration, shown in the third column.
+ *
+ * That column sits on a dark ground, unlike the configuration column next to it, so the reused
+ * Simulator Cockpit form markup needs light labels and separators here. base.css leaves `fieldset dt`
+ * without a colour of its own, which on this ground would render it near invisible.
+ */
+.hybrid-context-column fieldset dt,
+.hybrid-context-column fieldset dt label {
+    color: rgba(250, 247, 228, 0.95);
+}
+
+.hybrid-context-column fieldset dt,
+.hybrid-context-column fieldset dd {
+    border-top-color: rgba(250, 247, 228, 0.2);
+}
+
+.hybrid-context-column fieldset .field-comment {
+    color: rgba(250, 247, 228, 0.7);
+}
+
+/* The dt/dd pairs float, so the step buttons underneath need the row closed first. */
+.hybrid-context-column #hybrid-dynamics-forms form {
+    clear: both;
+    display: block;
+    overflow: hidden;
+}
+
+.hybrid-context-column #hybrid-dynamics-forms fieldset {
+    border: none;
+}
+
+/**
+ * One button per Subnetwork, for choosing which one to configure. Only one Subnetwork is configured at
+ * a time: the reused Cockpit forms share one flat POST namespace, so two on screen would collide.
+ */
+.hybrid-subnetwork-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.hybrid-subnetwork-tab {
+    background: rgba(250, 247, 228, 0.08);
+    border: 1px solid rgba(250, 247, 228, 0.25);
+    border-radius: 3px;
+    color: rgba(250, 247, 228, 0.95);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    font-size: 11px;
+    gap: 2px;
+    padding: 5px 8px;
+    text-align: left;
+}
+
+.hybrid-subnetwork-tab:hover {
+    background: rgba(250, 247, 228, 0.16);
+}
+
+.hybrid-subnetwork-tab.is-selected {
+    background: rgba(65, 146, 31, 0.25);
+    border-color: #41921f;
+}
+
+.hybrid-tab-name {
+    font-weight: bold;
+}
+
+.hybrid-tab-detail {
+    color: rgba(250, 247, 228, 0.7);
+}
+
+/* The closing step of the sub wizard: nothing left to fill in, only the action that stores it. */
+.hybrid-dynamics-done {
+    color: rgba(250, 247, 228, 0.85);
+    font-size: 11px;
+    margin: 0 0 8px 0;
+}
+
+/* The saved dynamics, listed on the wizard step in the light configuration column. */
+table.hybrid-dynamics-summary .hybrid-summary-region {
+    white-space: nowrap;
+}

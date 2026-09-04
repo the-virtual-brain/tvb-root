@@ -32,16 +32,33 @@ const HYBRID_FORMS_DIV = "hybrid-simulator-forms";
 const HYBRID_CONTEXT_DIV = "hybrid-context-column";
 const HYBRID_RESULTS_DIV = "hybrid-results-view";
 const HYBRID_SUBNETWORKS_STEP_URL = "/burst/hybrid/set_subnetworks";
+const HYBRID_DYNAMICS_STEP_URL = "/burst/hybrid/set_subnetwork_dynamics";
 // the cockpit steps, in wizard order, used to rebuild the stack when a step is no longer on screen
-const HYBRID_WIZARD_STEPS = ["/burst/hybrid/set_connectivity", HYBRID_SUBNETWORKS_STEP_URL];
+const HYBRID_WIZARD_STEPS = ["/burst/hybrid/set_connectivity", HYBRID_SUBNETWORKS_STEP_URL,
+    HYBRID_DYNAMICS_STEP_URL];
 
 function _hybridFormsDiv() {
     return document.getElementById(HYBRID_FORMS_DIV);
 }
 
-/** The step currently being configured: the last one of the wizard stack. */
-function _activeHybridForm() {
-    const forms = _hybridFormsDiv().querySelectorAll("form");
+/**
+ * The wizard stack a form belongs to. There are two: the cockpit configuration column, and the sub
+ * wizard configuring one Subnetwork's dynamics inside the contextual column. Stepping through one must
+ * leave the other alone, so every stack operation is scoped to the container marked data-hybrid-stack.
+ */
+function _hybridStackOf(form) {
+    const stack = form === null ? null : form.closest("[data-hybrid-stack]");
+    return stack === null ? _hybridFormsDiv() : stack;
+}
+
+/** True when the given container is the cockpit wizard rather than a sub wizard. */
+function _isMainHybridStack(container) {
+    return container === null || container.id === HYBRID_FORMS_DIV;
+}
+
+/** The step currently being configured: the last one of the given wizard stack. */
+function _activeHybridForm(container) {
+    const forms = (container || _hybridFormsDiv()).querySelectorAll("form");
     return forms.length === 0 ? null : forms[forms.length - 1];
 }
 
@@ -50,12 +67,16 @@ function _asFragment(response) {
     return document.createRange().createContextualFragment(response);
 }
 
-function _afterHybridRender() {
+function _afterHybridRender(container) {
     if (typeof setupMenuEvents === "function") {
         setupMenuEvents();
     }
-    _syncHybridContextColumn();
-    $("button.btn-next").last().focus();
+    // Only the cockpit wizard drives the contextual column. Re-syncing it after a sub wizard step would
+    // reload that column and throw away the step the user just reached.
+    if (_isMainHybridStack(container)) {
+        _syncHybridContextColumn();
+    }
+    $(container || _hybridFormsDiv()).find("button.btn-next").last().focus();
 }
 
 // ---------------------------------------------------------------- contextual configuration column
@@ -90,7 +111,7 @@ function _syncHybridContextColumn() {
     if (contextDiv === null) {
         return;
     }
-    const form = _activeHybridForm();
+    const form = _activeHybridForm(_hybridFormsDiv());
     const contextUrl = form === null ? "" : (form.dataset.hybridContextUrl || "");
 
     if (contextUrl === "") {
@@ -145,15 +166,17 @@ function _unlockHybridForm(form) {
 }
 
 /** Append one more step under the ones already on screen. */
-function _appendHybridFragment(fragment) {
-    renderWithMathjax($(_hybridFormsDiv()), fragment);
-    _afterHybridRender();
+function _appendHybridFragment(fragment, container) {
+    const stack = container || _hybridFormsDiv();
+    renderWithMathjax($(stack), fragment);
+    _afterHybridRender(stack);
 }
 
 /** Replace everything on screen with a single fragment. */
-function _replaceHybridFragments(response) {
-    renderWithMathjax($(_hybridFormsDiv()), _asFragment(response), true);
-    _afterHybridRender();
+function _replaceHybridFragments(response, container) {
+    const stack = container || _hybridFormsDiv();
+    renderWithMathjax($(stack), _asFragment(response), true);
+    _afterHybridRender(stack);
 }
 
 /**
@@ -168,7 +191,7 @@ function _renderHybridStack(stepUrls) {
 
     function loadNext() {
         if (index >= stepUrls.length) {
-            _afterHybridRender();
+            _afterHybridRender(container);
             return;
         }
         const isLastStep = index === stepUrls.length - 1;
@@ -234,7 +257,21 @@ function hybridSubmit(currentForm) {
     if (typeof event !== "undefined" && event !== null) {
         event.preventDefault();
     }
+    const container = _hybridStackOf(currentForm);
+    // A disabled fieldset is not serialized, and a read-only step is exactly that, so it is enabled for
+    // the length of the call. The classic wizzard_submit does the same.
+    const disabledFieldsets = Array.prototype.filter.call(
+        currentForm.querySelectorAll("fieldset"), function (fieldset) {
+            return fieldset.disabled;
+        });
+    disabledFieldsets.forEach(function (fieldset) {
+        fieldset.disabled = false;
+    });
     const formData = $(currentForm).serialize();
+    disabledFieldsets.forEach(function (fieldset) {
+        fieldset.disabled = true;
+    });
+
     doAjaxCall({
         type: "POST",
         url: $(currentForm).attr("action"),
@@ -246,12 +283,12 @@ function hybridSubmit(currentForm) {
 
             if (newForm !== null && newForm.id === currentForm.id) {
                 currentForm.replaceWith(fragment);
-                _afterHybridRender();
+                _afterHybridRender(container);
                 return;
             }
 
             _lockHybridForm(currentForm);
-            _appendHybridFragment(fragment);
+            _appendHybridFragment(fragment, container);
         },
         error: function () {
             displayMessage("Hybrid simulator parameters could not be submitted.", "errorMessage");
@@ -264,18 +301,25 @@ function hybridSubmit(currentForm) {
  * screen. A form's id is its action url, which is how the previous step is found.
  */
 function hybridPreviousStep(currentForm, previousUrl) {
-    const previousForm = document.getElementById(previousUrl);
+    const container = _hybridStackOf(currentForm);
+    const previousForm = container.querySelector("[id='" + previousUrl + "']");
 
     if (previousForm === null) {
         // the step above is not on screen, so rebuild the stack up to and including it
         const upTo = HYBRID_WIZARD_STEPS.indexOf(previousUrl);
+        if (upTo === -1 && !_isMainHybridStack(container)) {
+            // a sub wizard step that is no longer on screen: reload the column, which reopens it at its
+            // first step, rather than rebuilding the cockpit wizard over it
+            _syncHybridContextColumn();
+            return;
+        }
         _renderHybridStack(HYBRID_WIZARD_STEPS.slice(0, upTo === -1 ? undefined : upTo + 1));
         return;
     }
 
     currentForm.remove();
     _unlockHybridForm(previousForm);
-    _afterHybridRender();
+    _afterHybridRender(container);
 }
 
 /**
@@ -304,6 +348,65 @@ function hybridSaveSubnetworks() {
         },
         error: function () {
             displayMessage("The Subnetwork configuration could not be saved.", "errorMessage");
+        }
+    });
+}
+
+// ---------------------------------------------------------------- Subnetwork dynamics
+
+/**
+ * Configure another Subnetwork. The whole contextual column is replaced, so its sub wizard reopens on
+ * the first step showing that Subnetwork's own configuration. What was edited for the Subnetwork being
+ * left is kept: the server holds the draft of every Subnetwork at once.
+ */
+function hybridSelectSubnetwork(subnetworkId) {
+    const contextDiv = document.getElementById(HYBRID_CONTEXT_DIV);
+    if (contextDiv === null) {
+        return;
+    }
+
+    doAjaxCall({
+        type: "POST",
+        url: "/burst/hybrid/select_subnetwork/",
+        data: {subnetwork_id: subnetworkId},
+        success: function (response) {
+            renderWithMathjax($(contextDiv), _asFragment(response), true);
+            if (typeof setupMenuEvents === "function") {
+                setupMenuEvents();
+            }
+        },
+        error: function () {
+            displayMessage("This Subnetwork could not be opened.", "errorMessage");
+        }
+    });
+}
+
+/**
+ * Store the dynamics configured for every Subnetwork. Only then does the wizard step summarising them
+ * change, which is why the answer replaces that step; reloading it also refreshes the column, so the
+ * two always agree about what is configured.
+ */
+function hybridSaveSubnetworkDynamics() {
+    doAjaxCall({
+        type: "POST",
+        url: "/burst/hybrid/save_subnetwork_dynamics/",
+        success: function (response) {
+            const currentForm = document.getElementById(HYBRID_DYNAMICS_STEP_URL);
+            const fragment = _asFragment(response);
+            const newForm = fragment.querySelector("form");
+
+            if (currentForm === null || newForm === null || newForm.id !== HYBRID_DYNAMICS_STEP_URL) {
+                // the configuration is no longer where we left it, e.g. the Connectivity went missing
+                _replaceHybridFragments(response);
+                return;
+            }
+
+            currentForm.replaceWith(fragment);
+            _afterHybridRender(_hybridFormsDiv());
+            displayMessage("Subnetwork dynamics saved.");
+        },
+        error: function () {
+            displayMessage("The Subnetwork dynamics could not be saved.", "errorMessage");
         }
     });
 }

@@ -27,7 +27,7 @@
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities.file.simulator.view_model import HybridSimulatorAdapterModel
-from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.forms import FloatField, TraitDataTypeSelectField
 
 
 class HybridConnectivityFragment(ABCAdapterForm):
@@ -61,6 +61,26 @@ class HybridSubnetworksFragment(ABCAdapterForm):
     The Subnetwork grouping step has no traited fields, the Connectivity regions are assigned to Subnetworks
     through a dedicated interactive component. This form only keeps the step inside the Hybrid Simulator wizard.
     """
+
+    @staticmethod
+    def get_view_model():
+        return HybridSimulatorAdapterModel
+
+
+class HybridSubnetworkDynamicsFragment(ABCAdapterForm):
+    """
+    The wizard step under which each Subnetwork's Model and Integrator are configured.
+
+    Its only field is the integration step size, which is shared by every Subnetwork:
+    tvb.simulator.hybrid.Simulator refuses a NetworkSet whose Subnetworks disagree on dt, so it is
+    configured once here instead of being editable on each Subnetwork's Integrator form. The
+    per-Subnetwork configuration itself happens in the contextual column.
+    """
+
+    def __init__(self):
+        super(HybridSubnetworkDynamicsFragment, self).__init__()
+        self.dt = FloatField(HybridSimulatorAdapterModel.dt)
+        self.ordered_fields = (self.dt,)
 
     @staticmethod
     def get_view_model():

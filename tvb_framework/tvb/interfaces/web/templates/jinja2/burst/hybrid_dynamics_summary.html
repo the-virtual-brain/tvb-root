@@ -1,0 +1,23 @@
+{#- ============================================================================ -#}
+{#- Wizard step listing the dynamics saved for every Subnetwork. Read only: they -#}
+{#- are configured in the third column and show up here once saved there.        -#}
+{#- ============================================================================ -#}
+<table class="hybrid-subnetworks-summary hybrid-dynamics-summary">
+    {% for row in renderer.dynamics_rows %}
+        <tr>
+            <th scope="row">{{ row.name }}</th>
+            <td class="hybrid-summary-count">
+                {{ row.count }} region{{ 's' if row.count != 1 else '' }}
+            </td>
+            <td>
+                <div class="hybrid-summary-regions">
+                    <span class="hybrid-summary-region">{{ row.model }}</span>
+                    <span class="hybrid-summary-region">{{ row.integrator }}</span>
+                    {% if row.noise %}
+                        <span class="hybrid-summary-region">{{ row.noise }} noise</span>
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+    {% endfor %}
+</table>

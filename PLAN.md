@@ -399,34 +399,420 @@ acceptable.
 
 ---
 
----
-
 ## Phase 3 – Configure each Subnetwork
 
-For each Subnetwork allow selection of:
+For each Subnetwork allow selection and parameter editing of:
 
 * Model;
-* Integrator.
+* Integrator (including its nested Noise and, for Multiplicative Noise, Equation sub-fragments).
 
-Start with default parameters supplied by the selected Model and Integrator.
+Start from the defaults supplied by the selected Model and Integrator classes, then reuse the classic
+Simulator Cockpit's own forms and rendering to display and edit their parameters.
 
-Do not expose all model parameters initially.
+### Investigation findings
 
-All Integrators must currently use a compatible/common `dt` required by the Hybrid Simulator.
+These constrain the design and are the reason for the decisions below.
+
+1. **The classic Cockpit never renders these sub-fragments inline.** It splits Model/Integrator/Noise
+   across six sequential wizard steps (`simulator_controller.py`: `set_model`, `set_model_params`,
+   `set_integrator`, `set_integrator_params`, `set_noise_params`, `set_noise_equation_params`) and
+   actively suppresses nesting — `SimulatorModelFragment.model` carries no subform at all, and
+   `set_integrator` sets `form.noise.display_subform = False`.
+
+2. **Inline nesting would need new plumbing.** With `display_subform = True`,
+   `form_fields/select_field.html` emits an inline script calling `refreshSubform` and
+   `setEventsOnFormFields`. `setEventsOnFormFields` is *not* global — it is defined per page in
+   `bursts_dynamic.js`, `spatial/model_parameters.js` and `spatial/transfer_function_apply.js`, none of
+   which the Hybrid page loads, so it would raise a `ReferenceError` (the same class of bug as the
+   `displayBurstTree` one fixed in Phase 2). `flow_controller.refresh_subform` is equation-specific
+   (it calls `spatial_model.get_equation_information()`) and cannot refresh an Integrator→Noise
+   subform. Nested display would require a hybrid-specific refresh endpoint plus `session_key` /
+   `form_key` on the SelectFields.
+
+3. **`is_dt_disabled` already exists.** `IntegratorForm.__init__(self, is_dt_disabled=False)` disables
+   `dt` from `fill_from_trait`, which is exactly what the shared `dt` needs.
+
+4. **The selection fragments are reusable as they are.** `SimulatorModelFragment` and
+   `SimulatorIntegratorFragment` are duck-typed on `.model` / `.integrator`, so they operate on a
+   `HybridSubnetworkViewModel` without modification.
+
+5. **`SimulatorIntegratorFragment.fill_trait` replaces the Integrator unconditionally**
+   (`datatype.integrator = self.integrator.value.instance`), unlike `SimulatorModelFragment.fill_trait`
+   which guards on a class change. Reusing it verbatim would discard edited Integrator parameters on
+   every re-submission of that step.
+
+6. **The form POST namespace is flat.** `FormField.fill_from_post` hands the same unprefixed POST dict
+   to its subform, and field names are unprefixed (`dt`, `noise`, `a`, `tau`). Only one Subnetwork's
+   form can therefore be on screen and submitted at a time.
+
+### Decisions
+
+| decision | choice | why |
+|---|---|---|
+| layout | a nested sub-wizard inside the third column | no new subform plumbing (finding 2); reuses the classic step chain almost verbatim (finding 1) |
+| editing model | draft in session + explicit **Save Configuration** | consistent with the Phase 2 board; keeps the wizard summary honest |
+| Model form scope | the full `ModelForm`, `variables_of_interest` **editable** per Subnetwork | the Cockpit's own rendering, unmodified |
+| Subnetwork identity | a stable generated `id` on `HybridSubnetworkViewModel` | index identity would silently reattach a configuration to the wrong Subnetwork after a rename or removal |
+
+### UI flow
+
+The Subnetworks step is followed by a **Subnetwork dynamics** wizard step. It declares its
+configuration in the third column the same way Phase 2's step does:
+
+```html
+<form ... data-hybrid-context-url="/burst/hybrid/configure_subnetwork_dynamics"
+          data-hybrid-context-title="Subnetwork dynamics">
+```
+
+The column then holds two things:
+
+* a **Subnetwork selector** listing every saved Subnetwork with its region count and whether its
+  dynamics are configured. The first Subnetwork is selected by default. Selecting another one restarts
+  its own sub-wizard at step 1, seeded from that Subnetwork's draft state;
+* the **sub-wizard** for the selected Subnetwork, whose steps mirror the classic chain:
+
+| # | step | form | notes |
+|---|---|---|---|
+| 1 | Model class | `SimulatorModelFragment` | reused unmodified |
+| 2 | Model parameters | `get_form_for_model(cls)()` | full `ModelForm`, `variables_of_interest` editable |
+| 3 | Integrator class | `SimulatorIntegratorFragment`, `integrator.display_subform = False` | reused unmodified |
+| 4 | Integrator parameters | `get_form_for_integrator(cls)(is_dt_disabled=True)`, `noise.display_subform = False` | `dt` read-only, sourced from the shared value |
+| 5 | Noise parameters | `get_form_for_noise(cls)()`, `equation.display_subform = False` | only for an `IntegratorStochasticViewModel` |
+| 6 | Noise Equation parameters | `get_form_for_equation(cls)()` | only for a `MultiplicativeNoiseViewModel` |
+
+Steps 5 and 6 are skipped exactly as the classic controller skips them, by branching on the configured
+Integrator's and Noise's types. The sub-wizard accumulates its steps read-only as the main wizard does,
+so the whole per-Subnetwork configuration stays visible while it is built. After the last step, a
+**Save Configuration** action commits the draft.
+
+Because every `display_subform` is `False`, `select_field.html` never emits its inline script, so no
+`refreshSubform` endpoint and no page-local `setEventsOnFormFields` are needed. That is the point of
+choosing the sub-wizard.
+
+The main wizard's **Next** clears the column, as Phase 2's refinement already arranges.
+
+### Client-side reuse
+
+The column needs its own step stack, so `hybrid_simulator.js` must stop assuming a single container:
+`_renderHybridStack`, `_appendHybridFragment`, `_replaceHybridFragments`, `hybridSubmit` and
+`hybridPreviousStep` take the container element they act on, with `#hybrid-simulator-forms` as the
+default. Sub-wizard step urls stay static, which keeps the id-based previous-step lookup working.
+
+Also to update, listed because they are easy to miss:
+
+* `next_button_enabled=False` in `_subnetworks_step_rules` — the Subnetworks step's **Next** is
+  currently dead on purpose and is what opens this phase;
+* the `HYBRID_WIZARD_STEPS` array, which the stack rebuild walks;
+* the third column is loaded by a parameterless `GET` on `data-hybrid-context-url`, so it cannot name a
+  Subnetwork — see below.
+
+### The server owns the selection
+
+The selected Subnetwork lives in the session (`HybridSimulatorContext.KEY_SELECTED_SUBNETWORK`, holding
+a Subnetwork `id`), not in the url. A `select_subnetwork` endpoint sets it and answers with the
+re-rendered column. This keeps the context url parameterless and every sub-wizard step url static, and
+keeps the client deciding nothing — the same division Phase 2 established.
+
+### Shared simulation `dt`
+
+`dt` is not a Hybrid Simulator field of its own — it lives on each Subnetwork's Integrator, and
+`tvb.simulator.hybrid.Simulator.validate_dts` raises a `ValueError` when Subnetworks disagree
+(it compares every Subnetwork against `subnets[0].scheme.dt`).
+
+Avoid the mismatch by construction with a single shared value:
+
+* it is stored as `HybridSimulatorAdapterModel.dt`, defaulting to `IntegratorViewModel.dt`'s own
+  default, and is exposed as a `FloatField` **on the Subnetwork dynamics wizard step itself** — so it
+  sits in the accumulating wizard record and locks read-only with that step, like every other setting;
+* every Subnetwork's Integrator is created and kept with that value; changing it rewrites `scheme.dt`
+  on every already-configured Subnetwork;
+* each Subnetwork's Integrator parameters form is built with `is_dt_disabled=True`, so `dt` shows but
+  cannot be edited there.
+
+**A disabled input is not submitted.** `$(form).serialize()` drops it, and `hybridSubmit` serializes
+directly — unlike the classic `wizzard_submit`, which strips `disabled` off the fieldset first. The
+Integrator parameters handler must therefore inject the shared value into the POST data before
+`fill_from_post`, exactly as `set_integrator_params` already does for a branch:
+
+```python
+data['dt'] = str(hybrid_simulator.dt)
+```
+
+Without it, `FloatField` validation fails on the missing key.
+
+### Model and Integrator scope
+
+`tvb.simulator.hybrid.Subnetwork` accepts any `tvb.simulator.models.Model` and any
+`tvb.simulator.integrators.Integrator` generically; only the numba execution backend enforces a fixed
+whitelist (a fixed set of Model classes, and only Heun/Euler Integrators, deterministic or stochastic).
+
+Keep selection **fully generic** here: reuse the same class lists the classic Cockpit uses, unfiltered.
+Backend selection is a single global choice for the whole `NetworkSet` and is out of scope until
+Phase 5/6; compatibility between the chosen backend and the configured Models/Integrators is validated
+at launch (Phase 6), where an unsupported combination must fail with a clear error rather than silently
+succeed.
+
+Reuse, rather than rebuild:
+
+* `tvb.adapters.forms.model_forms` — `ModelsEnum`, `get_form_for_model`;
+* `tvb.adapters.forms.integrator_forms` — `get_integrator_name_list`, `get_form_for_integrator`;
+* `tvb.adapters.forms.noise_forms` — `get_form_for_noise`;
+* `tvb.adapters.forms.equation_forms` — `get_form_for_equation`;
+* `tvb.adapters.forms.simulator_fragments` — `SimulatorModelFragment`, `SimulatorIntegratorFragment`;
+* the corresponding `*ViewModel` classes in `tvb.core.entities.file.simulator.view_model`.
+
+#### Model parameters
+
+The full `ModelForm` is rendered, `variables_of_interest` included and editable per Subnetwork.
+
+*Forward dependency:* Phase 5 configures monitors globally, so it must reconcile Subnetworks that
+choose different variables of interest. Record the decision there; do not pre-empt it here.
+
+Model parameters are `ArrayField`s. A value must broadcast onto *this Subnetwork's* nodes, so on save a
+parameter array's length must be either `1` or that Subnetwork's `nnodes`; anything else — notably an
+array sized to the whole Connectivity — is rejected with a message naming the Subnetwork, the parameter
+and both acceptable lengths. (Assumption, not derived from the Cockpit: classic relies on the *Setup
+Region Model* page to size these against the whole Connectivity, which does not carry over to a
+Subnetwork owning a subset of nodes.)
+
+The *Setup Region Model*, *Configure Spatial Vector* and *Configure noise* buttons are **not** rendered
+in this column — all three operate on the whole Connectivity and would target the wrong node set.
+`FormWithRanges` range parameters are likewise not registered: Hybrid PSE stays a follow-up feature.
+
+#### Switching classes
+
+Switching a Subnetwork's Model or Integrator **class** resets that Subnetwork's parameters to the new
+class's defaults. Re-submitting the step without changing the class must *preserve* the edited
+parameters — which means the Integrator class step cannot simply delegate to
+`SimulatorIntegratorFragment.fill_trait` (finding 5). The handler compares the submitted class against
+`type(subnetwork.integrator)` and assigns a fresh instance only when they differ. `SimulatorModelFragment`
+already guards this way and is delegated to as-is.
+
+Neither shared fragment is modified, so the classic Cockpit is unaffected.
+
+### Persisted configuration
+
+Extend `HybridSubnetworkViewModel` (Phase 2: `name`, `node_indices`) with:
+
+* `id` — a generated, stable identifier, unchanged by rename, reorder or the removal of another
+  Subnetwork;
+* `model` — a `tvb.simulator.models.Model` instance, edited parameters included;
+* `integrator` — an `IntegratorViewModel` instance, edited parameters included, its `dt` always the
+  shared value.
+
+and `HybridSimulatorAdapterModel` with `dt`.
+
+This mirrors how the classic Cockpit persists its own selection — actual instances, not class
+identifiers. Nothing is written to the database or H5 yet; persistence belongs with the operation in
+Phase 6.
+
+#### Identity and regrouping
+
+Phase 2's board operations keep addressing Subnetworks by `subnetwork_index` — no client change — while
+the dynamics draft and the saved dynamics are keyed by `id`. Consequences to implement and test:
+
+* renaming a Subnetwork, reordering, or removing a *different* one preserves its dynamics;
+* removing a Subnetwork drops its dynamics;
+* `prepare_subnetworks` regenerating the default grouping (a Connectivity change, or a stored grouping
+  that is no longer an exact partition) mints new ids, so dynamics keyed by ids that no longer exist are
+  discarded rather than reattached.
+
+### Draft and Save Configuration
+
+The Phase 2 split is repeated for the dynamics, for the same reason: every edit must round-trip so the
+server can validate it, but the wizard summary may only change on save.
+
+| where | holds | changed by |
+|---|---|---|
+| `HybridSubnetworkViewModel.model` / `.integrator` | what the wizard step summarises | `save_subnetwork_dynamics` only |
+| session draft (`KEY_DYNAMICS_DRAFT`), keyed by Subnetwork `id` | what the column shows | the sub-wizard steps |
+
+The draft is deep-copied from the saved configuration when the step is entered, the way
+`copy_subnetworks` already keeps the board and the summary apart — Model and Integrator instances are
+mutated in place, so a shared instance would let an edit silently rewrite the summary.
+
+Entering the step seeds any Subnetwork with no saved dynamics with the class defaults
+(`ModelsEnum.GENERIC_2D_OSCILLATOR`, `IntegratorViewModelsEnum.HEUN`, the shared `dt`), so a Subnetwork
+is never left without a Model or an Integrator.
+
+That makes the original "block progression while any Subnetwork is missing a Model or an Integrator"
+gate unreachable. It is replaced by: **Next is disabled while the draft differs from the saved
+configuration**, with the button title saying so. Each answer carries `is_modified` per Subnetwork and
+overall, shown as *Unsaved changes* / *Configuration saved*, which is what stops the column and the
+summary from disagreeing.
+
+The draft survives stepping away and back, and is dropped together with the grouping when the
+Connectivity changes or the configuration is reset.
+
+Switching to another Subnetwork keeps the draft — unsaved work on the Subnetwork being left is not
+thrown away — since the draft holds every Subnetwork at once.
+
+### Name sanitization belongs here
+
+`NetworkSet.__init__` builds a namedtuple from its Subnetworks' names by joining them with spaces and
+splitting the result back into field names, so each tvb_library `name` must be a **valid, unique Python
+identifier**. UI display names are not (the Phase 2 default "Subnetwork A" already isn't), and
+sanitizing can collide where display names do not ("Sub A" and "Sub-A" both yield "Sub_A").
+
+Since this phase's checkpoint is to verify the configuration translates cleanly into `Subnetwork`
+objects, the rule lives here: a `HybridSimulatorService` helper maps display names to identifiers
+deterministically, disambiguating collisions, and Phase 6 reuses it rather than re-inventing it.
 
 ### Tests
 
-* Model selection is stored per Subnetwork;
-* Integrator selection is stored per Subnetwork;
-* defaults are correctly created;
-* changing one Subnetwork does not affect another;
-* invalid combinations are rejected.
+* Model selection, Integrator selection and their edited parameters are stored per Subnetwork;
+* defaults are correctly seeded for both when the step is entered;
+* Noise parameters are stored for a stochastic Integrator, and Noise Equation parameters for a
+  Multiplicative Noise — including that steps 5 and 6 are skipped for a deterministic Integrator and
+  for Additive Noise respectively;
+* `variables_of_interest` is stored per Subnetwork;
+* invalid parameter values are rejected with a useful message;
+* a Model parameter array whose length is neither `1` nor the Subnetwork's `nnodes` is rejected, naming
+  the Subnetwork, the parameter and both acceptable lengths;
+* changing one Subnetwork's Model, Integrator or parameters does not affect another Subnetwork;
+* switching a Subnetwork's Model or Integrator **class** resets its parameters to that class's
+  defaults;
+* re-submitting the Integrator class step **without** changing the class preserves the edited
+  Integrator parameters (regression for finding 5);
+* the shared `dt` applies uniformly to every Subnetwork, including ones configured before the value was
+  last changed, and stays read-only on each Integrator form;
+* submitting the Integrator parameters step with **no** `dt` key in the POST data still stores the
+  shared value (regression for the disabled-field trap);
+* selecting a Subnetwork loads its own configuration, unaffected by what is being edited for another;
+* editing the dynamics leaves the saved configuration alone; saving updates the wizard summary;
+* **Next** is disabled while the draft differs from the saved configuration;
+* a Subnetwork's dynamics survive renaming it, reordering, and removing a different Subnetwork; are
+  dropped when that Subnetwork is removed; and are discarded when the grouping is regenerated;
+* sanitized names are valid Python identifiers and stay unique when display names sanitize to the same
+  string;
+* configuration survives navigation between the Hybrid Simulator steps;
+* the classic Simulator Cockpit's Model/Integrator forms and fragments are unchanged and its own suite
+  still passes.
+
+Client-side, driven out of tree as in Phase 2 (there is still no JavaScript test infrastructure in this
+repository):
+
+* the column's sub-wizard advances, steps back and accumulates read-only steps;
+* switching Subnetworks reloads the sub-wizard at step 1 for the newly selected one;
+* exactly one Subnetwork's form is on screen at a time (finding 6);
+* no `ReferenceError` is raised while rendering any of the six steps.
 
 ### Checkpoint
 
-Verify that the UI configuration can be translated cleanly into `tvb.simulator.hybrid.Subnetwork` objects.
+Verify that the UI configuration translates cleanly into `tvb.simulator.hybrid.Subnetwork` objects:
+`name` (sanitized to an identifier), `model`, `scheme` (the Integrator, built with the shared `dt`),
+`nnodes` and `node_indices` from the Phase 2 grouping.
 
-Only after this works consider exposing Model/Integrator parameter editing.
+`projections`, `monitors`, `stimuli` and initial conditions stay at their empty/default values for this
+checkpoint — they are addressed later (Phase 4 Projections, Phase 5 Monitors). **Initial conditions are
+still not covered by any phase**; decide whether they join Phase 5's global configuration before
+Phase 6 starts.
+
+---
+
+## Phase 3 – Implementation Summary
+
+Implemented as specified above, with the deviations recorded at the end of this section.
+
+### Where the configuration lives
+
+`HybridSubnetworkViewModel` gained an `id` and a `dynamics`; `HybridSimulatorAdapterModel` gained `dt`.
+
+```text
+HybridSimulatorAdapterModel
+    connectivity, dt
+    subnetworks = [ HybridSubnetworkViewModel
+                        id, name, node_indices
+                        dynamics = HybridSubnetworkDynamics(model, integrator) ]
+```
+
+`dynamics` is its own object rather than two bare attributes on the Subnetwork, because that is what the
+reused Cockpit fragments are filled from and into: `SimulatorModelFragment` and
+`SimulatorIntegratorFragment` only require a `model` and an `integrator` attribute, so they operate on
+`HybridSubnetworkDynamics` unchanged. `model` and `integrator` stay available on the Subnetwork as
+read-only properties, so the Phase 2 code and tests reading them are unaffected.
+
+Both are seeded in `__init__` rather than through a trait default: a trait default would be **one shared
+instance** for every Subnetwork, and the parameter forms edit these in place, so one Subnetwork's edit
+would silently change every other one.
+
+### Two drafts, two save actions
+
+| where | holds | changed by |
+|---|---|---|
+| `hybrid_simulator.subnetworks[i].node_indices` | what the Subnetworks step lists | `save_subnetworks` |
+| `KEY_SUBNETWORKS_DRAFT` | what the grouping board shows | add / rename / remove / move |
+| `hybrid_simulator.subnetworks[i].dynamics` | what the dynamics step lists | `save_subnetwork_dynamics` |
+| `KEY_DYNAMICS_DRAFT`, keyed by Subnetwork `id` | what the dynamics column shows | the six sub-wizard steps |
+| `hybrid_simulator.dt` | the shared step size | the dynamics step's own **Apply** |
+
+`prepare_dynamics_draft` seeds an entry from the saved dynamics for every Subnetwork missing one and
+drops entries keyed by an `id` that no longer exists. That single rule is what makes a rename preserve
+the configuration, a removal discard it, and a regenerated grouping not reattach it to whichever
+Subnetwork now sits on the same position.
+
+### The sub-wizard
+
+The third column holds a Subnetwork selector plus its own wizard stack. `hybrid_simulator.js` no longer
+assumes one container: every stack operation resolves `form.closest("[data-hybrid-stack]")`, so stepping
+through the column leaves the cockpit wizard alone, and `_afterHybridRender` only re-syncs the column
+when the cockpit stack was the one that changed — re-syncing after a sub-wizard step would reload the
+column and throw away the step just reached.
+
+Every `display_subform` stays `False`, so `select_field.html` never emits its inline script. That is the
+point of the sub-wizard: no hybrid `refresh_subform` endpoint and no page-local `setEventsOnFormFields`
+are needed, and neither shared fragment had to be modified.
+
+### The traps, and what closed them
+
+* **Disabled `dt` is not submitted.** The Integrator parameters handler injects
+  `data['dt'] = str(hybrid_simulator.dt)` before `fill_from_post`, as `set_integrator_params` does for a
+  branch. Covered by a test that posts that step with no `dt` key at all.
+* **Disabled fieldsets are not serialized.** `hybridSubmit` now enables them for the length of the call,
+  as the classic `wizzard_submit` does.
+* **`SimulatorIntegratorFragment.fill_trait` replaces the Integrator unconditionally.** The Integrator
+  class step compares against `type(dynamics.integrator)` itself and assigns only on a real change, so
+  re-submitting the same class keeps the edited parameters.
+* **An unknown posted class reaches `fill_trait` as a plain string** and raises `AttributeError` there.
+  Both class-selection steps call `form.validate()` first and re-render the step with its error instead.
+  The classic Cockpit leaves this unguarded.
+* **An endpoint must not call another exposed endpoint.** `select_subnetwork` first returned
+  `configure_subnetwork_dynamics()`, which renders; the outer decorator would then have rendered that
+  HTML a second time — invisible in tests, where `RENDER_HTML` is off, and broken in the app. Both now go
+  through the undecorated `_subnetwork_dynamics_column`. The render check covers it.
+
+### Deviations from the specification above
+
+1. **The dynamics step's button is `Apply`, not `Next`.** The spec put the shared `dt` on this step, but
+   Phase 4 does not exist, so its `Next` was disabled — which would have left `dt` unreachable, since a
+   disabled button never submits the field. Submitting the step now applies `dt` and answers with the
+   same step, which the client replaces in place. When Phase 4 lands, this becomes `Next` again.
+2. **The shared `dt` is applied to the saved Integrators too**, not only to the draft. It is a
+   simulation-wide setting applied on its own step, not a pending per-Subnetwork edit; leaving the saved
+   Integrators behind reported an unsaved change the user could not save away.
+3. **The Subnetworks step's `Next` is gated on the grouping being saved.** The spec only gated the
+   dynamics step. The dynamics step configures the *saved* Subnetworks, so opening it over an unsaved
+   grouping would configure Subnetworks the configuration does not hold.
+4. **Model parameter array lengths are validated on save**, against `1` or that Subnetwork's `nnodes`,
+   naming the Subnetwork, the parameter and both accepted lengths. This was flagged as an assumption in
+   the spec and is implemented as described.
+
+### Tests
+
+Python: 87 hybrid tests pass — 39 service, 46 controller, 2 render checks. The controller tests cover the
+draft/save split per Subnetwork, the shared `dt` reaching Integrators configured before it changed, the
+disabled-`dt` regression, class-switch reset versus re-submit preservation, per-Subnetwork isolation,
+identity across rename and removal, and the parameter-shape refusal. The classic Simulator Cockpit suite
+(41 tests) passes untouched, as do the view model and simulator adapter suites (21 tests).
+
+One pre-existing fragility was fixed in passing: `cherrypy.request.method` is shared and leaked between
+tests, so `_configured_hybrid_simulator` now sets `GET` explicitly and restores what it found. Two tests
+had been passing only because of the method a previously-run test happened to leave behind.
+
+Client: still no JavaScript test infrastructure in this repository. The render check renders the whole
+six-step chain — including a stochastic Integrator with Multiplicative Noise and its Equation — and
+asserts each step's action url, that `dt` is present and disabled, and that the closing step offers the
+save action. That is what stands in for a JS test here, and it is what caught the double-render bug.
 
 ---
 

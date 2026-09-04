@@ -26,6 +26,8 @@
 
 import pytest
 
+import numpy
+
 from tvb.core.entities.file.simulator.view_model import HybridSimulatorAdapterModel, HybridSubnetworkViewModel
 from tvb.core.services.hybrid_simulator_service import HybridSimulatorService, HybridSubnetworkException
 
@@ -234,3 +236,134 @@ class TestHybridSimulatorService(object):
     def test_same_grouping_of_nothing(self):
         assert self.service.same_grouping([], None)
         assert not self.service.same_grouping(self.subnetworks, [])
+
+    # ---------------------------------------------------------------- Subnetwork dynamics
+
+    def test_every_subnetwork_gets_its_own_identifier_and_dynamics(self):
+        subnetworks = self.service.add_subnetwork(self.subnetworks)
+
+        assert subnetworks[0].id != subnetworks[1].id
+        # a trait default would be one shared instance, and the parameter forms edit these in place
+        assert subnetworks[0].dynamics is not subnetworks[1].dynamics
+        assert subnetworks[0].model is not subnetworks[1].model
+        assert subnetworks[0].integrator is not subnetworks[1].integrator
+
+    def test_copy_keeps_the_identifier_and_detaches_the_dynamics(self):
+        copied = self.service.copy_subnetworks(self.subnetworks)
+
+        assert copied[0].id == self.subnetworks[0].id
+        assert copied[0].dynamics is not self.subnetworks[0].dynamics
+
+        copied[0].model.a = numpy.array([9.0])
+        assert list(self.subnetworks[0].model.a) != [9.0]
+
+    def test_dynamics_draft_is_seeded_from_the_saved_dynamics(self):
+        draft = self.service.prepare_dynamics_draft(self.subnetworks, None)
+
+        assert set(draft.keys()) == {self.subnetworks[0].id}
+        assert self.service.same_dynamics(self.subnetworks, draft)
+        # and it is a copy, so editing it leaves the saved configuration alone
+        assert draft[self.subnetworks[0].id] is not self.subnetworks[0].dynamics
+
+    def test_dynamics_draft_reports_an_edit(self):
+        draft = self.service.prepare_dynamics_draft(self.subnetworks, None)
+        draft[self.subnetworks[0].id].model.a = numpy.array([9.0])
+
+        assert not self.service.same_dynamics(self.subnetworks, draft)
+
+    def test_dynamics_draft_drops_entries_of_subnetworks_that_are_gone(self):
+        subnetworks = self.service.add_subnetwork(self.subnetworks)
+        draft = self.service.prepare_dynamics_draft(subnetworks, None)
+        removed_id = subnetworks[1].id
+
+        remaining = self.service.remove_subnetwork(subnetworks, 1)
+        draft = self.service.prepare_dynamics_draft(remaining, draft)
+
+        assert removed_id not in draft
+        assert set(draft.keys()) == {remaining[0].id}
+
+    def test_dynamics_draft_survives_a_rename(self):
+        draft = self.service.prepare_dynamics_draft(self.subnetworks, None)
+        draft[self.subnetworks[0].id].model.a = numpy.array([9.0])
+
+        renamed = self.service.rename_subnetwork(self.subnetworks, 0, 'Cortex')
+        draft = self.service.prepare_dynamics_draft(renamed, draft)
+
+        assert list(draft[renamed[0].id].model.a) == [9.0]
+
+    def test_store_dynamics_writes_the_draft_onto_the_subnetworks(self):
+        draft = self.service.prepare_dynamics_draft(self.subnetworks, None)
+        draft[self.subnetworks[0].id].model.a = numpy.array([9.0])
+
+        self.service.store_dynamics(self.subnetworks, draft)
+
+        assert list(self.subnetworks[0].model.a) == [9.0]
+        assert self.service.same_dynamics(self.subnetworks, draft)
+        # stored as a copy, so continuing to edit the draft does not change what was saved
+        draft[self.subnetworks[0].id].model.a = numpy.array([3.0])
+        assert list(self.subnetworks[0].model.a) == [9.0]
+
+    def test_shared_dt_reaches_every_integrator(self):
+        subnetworks = self.service.add_subnetwork(self.subnetworks)
+        draft = self.service.prepare_dynamics_draft(subnetworks, None)
+
+        self.service.apply_shared_dt(draft, 0.5)
+
+        assert [dynamics.integrator.dt for dynamics in draft.values()] == [0.5, 0.5]
+
+    def test_find_subnetwork_refuses_an_unknown_identifier(self):
+        with pytest.raises(HybridSubnetworkException):
+            self.service.find_subnetwork(self.subnetworks, 'not-an-identifier')
+
+        assert self.service.find_subnetwork(self.subnetworks, self.subnetworks[0].id) is self.subnetworks[0]
+
+    # ---------------------------------------------------------------- Model parameter shapes
+
+    def test_model_parameters_may_be_shared_or_one_per_owned_node(self):
+        self.service.validate_model_parameters(self.subnetworks[0])
+
+        self.subnetworks[0].model.a = numpy.array([1.0] * self.NUMBER_OF_REGIONS)
+        self.service.validate_model_parameters(self.subnetworks[0])
+
+    def test_model_parameters_sized_for_another_node_set_are_refused(self):
+        subnetworks = self.service.move_regions(
+            self.service.add_subnetwork(self.subnetworks), [0, 1], 1)
+        # the second Subnetwork owns 2 of the 8 regions, so a value per Connectivity node cannot apply
+        subnetworks[1].model.a = numpy.array([1.0] * self.NUMBER_OF_REGIONS)
+
+        with pytest.raises(HybridSubnetworkException) as excep:
+            self.service.validate_model_parameters(subnetworks[1])
+
+        message = str(excep.value)
+        assert subnetworks[1].name in message
+        assert "'a'" in message
+        assert '2' in message
+
+    # ---------------------------------------------------------------- tvb_library naming
+
+    def test_names_are_sanitized_into_identifiers(self):
+        subnetworks = self.service.rename_subnetwork(self.subnetworks, 0, 'Subnetwork A')
+        identifiers = self.service.to_identifiers(subnetworks)
+
+        # NetworkSet builds a namedtuple out of these, so each one has to be a valid identifier
+        assert identifiers[subnetworks[0].id] == 'Subnetwork_A'
+        assert identifiers[subnetworks[0].id].isidentifier()
+
+    def test_names_sanitizing_to_the_same_identifier_are_disambiguated(self):
+        subnetworks = self.service.rename_subnetwork(self.subnetworks, 0, 'Sub A')
+        subnetworks = self.service.add_subnetwork(subnetworks)
+        subnetworks = self.service.rename_subnetwork(subnetworks, 1, 'Sub-A')
+
+        identifiers = self.service.to_identifiers(subnetworks)
+
+        assert len(set(identifiers.values())) == 2
+        for identifier in identifiers.values():
+            assert identifier.isidentifier()
+
+    def test_names_that_are_not_identifiers_at_all(self):
+        subnetworks = self.service.rename_subnetwork(self.subnetworks, 0, '2nd network!')
+        identifiers = self.service.to_identifiers(subnetworks)
+
+        identifier = identifiers[subnetworks[0].id]
+        assert identifier.isidentifier(), identifier
+        assert not identifier[0].isdigit()

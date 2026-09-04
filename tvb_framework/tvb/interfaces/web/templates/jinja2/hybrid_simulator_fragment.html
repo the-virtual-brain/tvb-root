@@ -32,6 +32,11 @@
                     </dd>
                 {% endfor %}
             </dl>
+            {#- The dynamics step owns the shared dt above, and lists what each Subnetwork was
+                configured with below it. -#}
+            {% if renderer.is_dynamics_summary_fragment %}
+                {% include 'burst/hybrid_dynamics_summary.html' %}
+            {% endif %}
         </fieldset>
     {% endif %}
 

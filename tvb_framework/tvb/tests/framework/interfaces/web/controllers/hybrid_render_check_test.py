@@ -17,6 +17,14 @@ from tvb.tests.framework.interfaces.web.controllers.base_controller_test import 
 
 class TestHybridRendering(BaseTransactionalControllerTest):
 
+    # The reused Cockpit forms declare every parameter required, so a step has to be posted whole.
+    # These are the defaults of the classes the Hybrid Simulator seeds a Subnetwork with.
+    MODEL_PARAMS = {'tau': '[1.0]', 'I': '[0.0]', 'a': '[-2.0]', 'b': '[-10.0]', 'c': '[0.0]',
+                    'd': '[0.02]', 'e': '[3.0]', 'f': '[1.0]', 'g': '[0.0]', 'alpha': '[1.0]',
+                    'beta': '[1.0]', 'gamma': '[1.0]', 'variables_of_interest': 'V'}
+    NOISE_PARAMS = {'nsig': '[1.0]', 'ntau': '0.0', 'noise_seed': '42', 'equation': 'Linear'}
+    EQUATION_PARAMS = {'a': '1.0', 'b': '0.0'}
+
     def transactional_setup_method(self):
         self.hybrid_controller = HybridSimulatorController()
         self.test_user = TestFactory.create_user('HybridRender_User')
@@ -49,3 +57,80 @@ class TestHybridRendering(BaseTransactionalControllerTest):
         assert 'id="hybrid-subnetworks-board"' in board_html
         assert 'HYBRID_SUBNETWORKS.init(' in board_html
         assert 'hybridSaveSubnetworks()' in board_html
+
+    def test_what_the_dynamics_endpoints_return(self):
+        """
+        Render the whole per Subnetwork dynamics chain. There is no JavaScript test infrastructure here,
+        so this is what catches a template that does not render and a step that loses the shared dt.
+        """
+        with patch.object(TvbProfile.current.web, 'RENDER_HTML', True), \
+                patch('cherrypy.session', self.sess_mock, create=True):
+            self.hybrid_controller.context.set_hybrid_simulator(self.hybrid_simulator)
+
+            cherrypy.request.method = "GET"
+            self.hybrid_controller.set_subnetworks()
+
+            # Next on the Subnetworks step opens the dynamics step
+            cherrypy.request.method = "POST"
+            dynamics_step_html = self.hybrid_controller.set_subnetworks()
+
+            cherrypy.request.method = "GET"
+            column_html = self.hybrid_controller.configure_subnetwork_dynamics()
+
+            # step 1 -> Model parameters
+            cherrypy.request.method = "POST"
+            model_params_html = self.hybrid_controller.set_subnetwork_model(model='Generic 2D Oscillator')
+            # step 2 -> Integrator class. Every ModelForm parameter is required, so all are posted.
+            integrator_html = self.hybrid_controller.set_subnetwork_model_params(**self.MODEL_PARAMS)
+            # step 3 -> Integrator parameters, for a stochastic Integrator
+            integrator_params_html = self.hybrid_controller.set_subnetwork_integrator(
+                integrator='Stochastic Heun')
+            # step 4 -> Noise parameters. dt is rendered disabled, so it is deliberately not posted here
+            noise_params_html = self.hybrid_controller.set_subnetwork_integrator_params(
+                noise='Multiplicative')
+            # step 5 -> Equation parameters, for a Multiplicative Noise
+            equation_html = self.hybrid_controller.set_subnetwork_noise_params(**self.NOISE_PARAMS)
+            # step 6 -> the closing step
+            save_step_html = self.hybrid_controller.set_subnetwork_noise_equation_params(
+                **self.EQUATION_PARAMS)
+
+            # switching Subnetwork re-renders the whole column; this is what catches an endpoint that
+            # renders an already rendered fragment a second time
+            selected_html = self.hybrid_controller.select_subnetwork(subnetwork_id='not-an-identifier')
+
+        for name, html in [('dynamics step', dynamics_step_html), ('column', column_html),
+                           ('model params', model_params_html), ('integrator', integrator_html),
+                           ('integrator params', integrator_params_html),
+                           ('noise params', noise_params_html), ('equation', equation_html),
+                           ('save step', save_step_html)]:
+            assert isinstance(html, str) and html.strip(), '{} did not render HTML'.format(name)
+
+        # the dynamics step declares its own configuration for the third column
+        assert 'data-hybrid-context-url="/burst/hybrid/configure_subnetwork_dynamics"' in dynamics_step_html
+        # and lists the shared dt
+        assert 'Integration step size' in dynamics_step_html
+
+        # the column offers the Subnetwork selector and its own wizard stack
+        assert 'data-hybrid-stack="dynamics"' in column_html
+        assert 'hybridSelectSubnetwork(' in column_html
+        assert 'Subnetwork A' in column_html
+
+        # the sub wizard steps post to their own urls
+        assert 'action="/burst/hybrid/set_subnetwork_model_params"' in model_params_html
+        assert 'action="/burst/hybrid/set_subnetwork_integrator"' in integrator_html
+        assert 'action="/burst/hybrid/set_subnetwork_integrator_params"' in integrator_params_html
+        assert 'action="/burst/hybrid/set_subnetwork_noise_params"' in noise_params_html
+        assert 'action="/burst/hybrid/set_subnetwork_noise_equation_params"' in equation_html
+
+        # dt shows on the Integrator parameters step, and cannot be edited there
+        assert 'name="dt"' in integrator_params_html
+        assert 'disabled' in integrator_params_html
+
+        # the closing step offers the save action rather than another Next
+        assert 'hybridSaveSubnetworkDynamics()' in save_step_html
+        assert 'Save Configuration' in save_step_html
+
+        # an unknown Subnetwork falls back to the column for the one that is selected, rendered once
+        assert isinstance(selected_html, str)
+        assert 'data-hybrid-stack="dynamics"' in selected_html
+        assert 'hybridSelectSubnetwork(' in selected_html

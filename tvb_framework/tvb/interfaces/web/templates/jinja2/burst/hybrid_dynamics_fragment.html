@@ -1,0 +1,60 @@
+{% import 'form_fields/generate_help_tooltip.html' as ght with context %}
+
+{#- ============================================================================ -#}
+{#- One step of the sub wizard configuring the dynamics of the selected          -#}
+{#- Subnetwork, rendered inside the third column. The steps mirror the classic   -#}
+{#- Cockpit chain (Model, Model parameters, Integrator, Integrator parameters,   -#}
+{#- Noise, Noise Equation), which is why no SelectField here displays its        -#}
+{#- subform: the nested fragment is the next step instead.                       -#}
+{#- ============================================================================ -#}
+<form method="post" action="{{ renderer.form_action_url }}" id="{{ renderer.form_action_url }}"
+      enctype="multipart/form-data">
+    {% if renderer.is_dynamics_save_fragment %}
+        <p class="hybrid-dynamics-done">
+            This Subnetwork is configured. Press <em>Save Configuration</em> to store the dynamics of
+            every Subnetwork on the Hybrid Simulator configuration, or pick another Subnetwork above to
+            configure it first.
+        </p>
+    {% else %}
+        <fieldset>
+            <dl>
+                {% if renderer.form.ordered_fields %}
+                    {% set form_fields = renderer.form.ordered_fields %}
+                {% else %}
+                    {% set form_fields = renderer.form.fields %}
+                {% endif %}
+                {% for field in form_fields %}
+                    <dt {% if field.label_classes %} class="{{ field.label_classes|join(' ') }}" {% endif %}>
+                        <label for="{{ field.name }}">{{ field.label }}</label>
+                        {{ ght.generate_help_tooltip(field.label, field.doc) }}
+                    </dt>
+                    <dd>
+                        {{ field | safe }}
+                        <p class="errorMessage">
+                            {% for error in field.errors %}
+                                <span> {{ error }} </span>
+                            {% endfor %}
+                        </p>
+                    </dd>
+                {% endfor %}
+            </dl>
+        </fieldset>
+    {% endif %}
+
+    {% if renderer.previous_form_action_url %}
+        <button name="previous" type="button" class="btn btn-primary" tabindex="1"
+                onclick="hybridPreviousStep(this.parentElement, '{{ renderer.previous_form_action_url }}')">{{ renderer.previous_button_label }}
+        </button>
+    {% endif %}
+
+    {% if renderer.is_dynamics_save_fragment %}
+        <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1"
+                title="Store the configured dynamics on the Hybrid Simulator configuration"
+                onclick="hybridSaveSubnetworkDynamics()">{{ renderer.next_button_label }}
+        </button>
+    {% else %}
+        <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1"
+                onclick="hybridSubmit(this.parentElement)">{{ renderer.next_button_label }}
+        </button>
+    {% endif %}
+</form>
