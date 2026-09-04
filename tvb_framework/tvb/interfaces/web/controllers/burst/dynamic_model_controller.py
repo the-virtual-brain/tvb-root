@@ -310,7 +310,10 @@ class DynamicModelController(BurstBaseController):
             if ranger is None:
                 DynamicModelController.LOGGER.warning("Param %s doesn't have a domain specified" % param.name)
                 continue
-            default = float(attr.default)
+            try:
+                default = float(attr.default)
+            except TypeError:
+                default = 0
 
             ret.append({
                 'name': param.name,

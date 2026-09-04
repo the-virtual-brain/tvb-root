@@ -823,6 +823,11 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         return json.loads(self.hybrid_controller.apply_region_model(
             dynamic_id=str(dynamic_id), node_indices=json.dumps(node_indices)))
 
+    def _submit_region_model(self):
+        """Press Submit, which puts the placed values into the Model parameters of the middle column."""
+        cherrypy.request.method = "POST"
+        return self.hybrid_controller.submit_region_model()
+
     def test_model_params_step_offers_the_region_model_action(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
             self._configured_hybrid_simulator()
@@ -876,10 +881,10 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         assert answer['unassigned'] == self.connectivity.number_of_regions - 2
         assert [row['dynamic_name'] for row in answer['rows'][:2]] == ['hybrid_fast', 'hybrid_fast']
         assert answer['rows'][2]['dynamic_name'] == ''
-        # a Model parameter needs a value for every node, so nothing is written until they all have one
+        # placing only records where the configuration goes, the Model is written by Submit
         assert model_a == [-2.0]
 
-    def test_placing_on_every_region_writes_one_value_per_node(self):
+    def test_submitting_writes_one_value_per_node_into_the_model(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
             self._saved_dynamics()
             self._configured_hybrid_simulator()
@@ -891,14 +896,42 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
 
             self._apply_region_model(self.dynamic_fast.id, every_region)
             answer = self._apply_region_model(self.dynamic_slow.id, every_region[:2])
+            before_submit = list(self._dynamics_draft()[saved[0].id].model.a)
+
+            rendering_rules = self._submit_region_model()
             model = self._dynamics_draft()[saved[0].id].model
 
         assert answer['unassigned'] == 0
+        # placing only records where each configuration goes, Submit is what writes it
+        assert before_submit == [-2.0]
         # two regions carry the slow configuration and the rest the fast one, in node order
         assert list(model.a) == [-4.0, -4.0] + [-2.0] * (len(every_region) - 2)
         assert len(model.a) == len(every_region)
         # a parameter both configurations agree on stays a single shared value
         assert list(model.tau) == [1.0]
+        # and the answer is the Model parameters step, so those values show up in the middle column
+        assert rendering_rules['renderer'].form_action_url == \
+               HybridSimulatorURLs.SET_SUBNETWORK_MODEL_PARAMS_URL
+        assert rendering_rules['renderer'].include_region_model_button
+
+    def test_submitting_an_incomplete_placement_is_refused(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._saved_dynamics()
+            self._configured_hybrid_simulator()
+            self._open_dynamics_step()
+            self._enter_dynamics_chain()
+            self._region_model_panel()
+            saved = self._saved_subnetworks()
+
+            self._apply_region_model(self.dynamic_slow.id, [0, 1])
+            rendering_rules = self._submit_region_model()
+            model_a = list(self._dynamics_draft()[saved[0].id].model.a)
+
+        # a Model parameter needs a value for every node, so nothing is written
+        assert model_a == [-2.0]
+        # and the step comes back unchanged, so what is on screen still matches the configuration
+        assert rendering_rules['renderer'].form_action_url == \
+               HybridSimulatorURLs.SET_SUBNETWORK_MODEL_PARAMS_URL
 
     def test_region_model_reaches_the_configuration_only_once_saved(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
@@ -910,6 +943,7 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
             saved = self._saved_subnetworks()
 
             self._apply_region_model(self.dynamic_slow.id, list(saved[0].node_indices))
+            self._submit_region_model()
             before_save = list(self._saved_subnetworks()[0].dynamics.model.a)
 
             self.hybrid_controller.save_subnetwork_dynamics()

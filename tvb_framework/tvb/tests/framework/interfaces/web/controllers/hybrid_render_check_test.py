@@ -186,3 +186,7 @@ class TestHybridRendering(BaseTransactionalControllerTest):
         assert 'render_check_dyn' in panel_html
         # only configurations on this Subnetwork's Model class are offered
         assert 'render_check_other' not in panel_html
+        # placing, putting the result into the Model parameters, and selecting every region at once
+        assert 'id="hybrid-region-apply"' in panel_html
+        assert 'id="hybrid-region-submit"' in panel_html
+        assert 'id="hybrid-region-select-all"' in panel_html

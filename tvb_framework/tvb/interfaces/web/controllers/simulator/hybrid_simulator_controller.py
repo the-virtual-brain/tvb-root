@@ -74,6 +74,7 @@ class HybridSimulatorURLs(object):
     # placing saved Dynamics on the regions of the Subnetwork being configured, in the third column
     CONFIGURE_REGION_MODEL_URL = '/burst/hybrid/configure_region_model'
     APPLY_REGION_MODEL_URL = '/burst/hybrid/apply_region_model'
+    SUBMIT_REGION_MODEL_URL = '/burst/hybrid/submit_region_model'
 
 
 class HybridSimulatorFragmentRenderingRules(object):
@@ -642,9 +643,8 @@ class HybridSimulatorController(BurstBaseController):
     @expose_json
     def apply_region_model(self, dynamic_id=None, node_indices=None, **data):
         """
-        Put the given Model configuration on the given regions. The Subnetwork's Model parameters are
-        rewritten as soon as every one of its regions carries a configuration; until then the placement
-        is only remembered, since a parameter needs a value for every node.
+        Put the given Model configuration on the given regions. This only records the placement, the way
+        the classic page's Apply to selected nodes does; Submit is what writes it onto the Model.
         """
         try:
             subnetwork, dynamics, assignment, region_labels = self._region_model_state()
@@ -681,14 +681,38 @@ class HybridSimulatorController(BurstBaseController):
             len(owned), 's' if len(owned) != 1 else '')
         unassigned = self.hybrid_simulator_service.unassigned_count(list(subnetwork.node_indices), assignment)
         if unassigned == 0:
-            # every region carries one, so the Subnetwork's Model parameters can be written
-            self.hybrid_simulator_service.apply_dynamics_to_model(
-                subnetwork.dynamics.model, list(subnetwork.node_indices), assignment, dynamics_by_id)
-            message += " The Model parameters of this Subnetwork were updated."
+            message += " Press Submit to put these values in the Model parameters."
         else:
             message += " {} still without one.".format(unassigned)
 
         return self._region_model_state_answer(subnetwork, dynamics_by_id, assignment, region_labels, message)
+
+    @expose_fragment('hybrid_simulator_fragment')
+    def submit_region_model(self, **data):
+        """
+        Write what was placed on the regions onto the Subnetwork's Model, as one array per parameter, and
+        answer with the refreshed Model parameters step so the values show up there.
+
+        Like every other Phase 3 edit this reaches the draft only; the existing Save Configuration is
+        what stores it on the Hybrid Simulator configuration.
+        """
+        try:
+            subnetwork, dynamics, assignment, _ = self._region_model_state()
+        except HybridSubnetworkException as excep:
+            return self._back_to_connectivity(str(excep))
+
+        dynamics_by_id = {dynamic.id: dynamic for dynamic in dynamics}
+        try:
+            self.hybrid_simulator_service.apply_dynamics_to_model(
+                subnetwork.dynamics.model, list(subnetwork.node_indices), assignment, dynamics_by_id)
+        except HybridSubnetworkException as excep:
+            # answers with the step unchanged, so the values on screen keep matching the configuration
+            common.set_error_message(str(excep))
+            return self._model_params_step_rules(subnetwork.dynamics).to_dict()
+
+        common.set_info_message(
+            "The Model parameters of '{}' now hold one value per region.".format(subnetwork.name))
+        return self._model_params_step_rules(subnetwork.dynamics).to_dict()
 
     # ---------------------------------------------------------------- Region Model helpers
 

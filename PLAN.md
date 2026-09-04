@@ -893,21 +893,40 @@ The panel is opened by its button rather than by a step declaring `data-hybrid-c
 closes it while the user stays on the Model parameters step; moving on re-syncs the third column, which
 is what hands it back to the Results view.
 
-Placing a configuration on a subset of the regions is only remembered — a Model parameter needs a value
-for **every** node of the Subnetwork, so the arrays are written the moment the last region gets one, and
-the panel says how many are still without. The placement itself lives in
+Three actions, mirroring the classic page's own split:
+
+| action | does |
+|---|---|
+| **Apply to selection** | records which configuration sits on which region; the Model is not touched |
+| **Submit** | writes those values onto the Subnetwork's Model, one array per parameter, and answers with the **Model parameters step re-rendered**, which is how the values appear in the middle column |
+| **Select all** / **Clear selection** | one toggle over every region of the Subnetwork |
+
+Submit refreshes that step through `hybridReplaceStep`, deliberately *not* through `_afterHybridRender`:
+the latter re-syncs the third column, which would close the panel the user is still working in.
+
+A Model parameter needs a value for **every** node of the Subnetwork, so submitting an incomplete
+placement is refused and answers with the step unchanged — what is on screen keeps matching the
+configuration. The panel says how many regions are still without one. The placement itself lives in
 `HybridSimulatorContext.KEY_REGION_MODEL`, keyed by Subnetwork id, because the parameter arrays alone
 cannot say which Dynamic produced them. A regrouping that takes regions away from a Subnetwork drops
 them from its placement rather than leaving a stale one behind.
 
+### Styling
+
+The warning amber on this column was `#e8b84b`, which measures 4.08:1 against the column's dark ground —
+under the 4.5:1 that text at these sizes needs. It is `#ffdd99` throughout now, at 5.75:1. The three
+places using it are all on that column: the board's unsaved marker, its empty-Subnetwork count, and a
+region with no configuration on it.
+
 ### Tests
 
-9 controller tests, 9 service tests and a render check covering both panel states. They assert that only
-the Subnetwork's own regions are listed, that only matching Dynamics are offered, that a partial
-placement leaves the Model alone, that a complete one writes one value per node while contracting the
-parameters every configuration agrees on, that the result reaches the saved configuration only through
-Save Configuration, and that regions moved to another Subnetwork lose their placement. The classic
-`region_model_parameters_controller` suite still passes untouched.
+10 controller tests, 9 service tests and a render check covering both panel states. They assert that
+only the Subnetwork's own regions are listed, that only matching Dynamics are offered, that placing
+leaves the Model alone, that Submit writes one value per node while contracting the parameters every
+configuration agrees on and answers with the Model parameters step, that an incomplete placement is
+refused, that the result reaches the saved configuration only through Save Configuration, and that
+regions moved to another Subnetwork lose their placement. The classic `region_model_parameters_controller`
+suite still passes untouched.
 
 ---
 

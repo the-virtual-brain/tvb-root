@@ -16,7 +16,7 @@
  * program.  If not, see <http://www.gnu.org/licenses/>.
  **/
 
-/* globals doAjaxCall, displayMessage */
+/* globals doAjaxCall, displayMessage, hybridReplaceStep */
 
 /**
  * Places saved Dynamics on the regions of the Subnetwork being configured: the right hand section of
@@ -34,8 +34,11 @@ var HYBRID_REGION_MODEL = (function () {
 
     const URLS = {
         apply: "/burst/hybrid/apply_region_model/",
+        submit: "/burst/hybrid/submit_region_model/",
         dynamicDetail: "/burst/dynamic/dynamic_detail/"
     };
+
+    const MODEL_PARAMS_STEP_URL = "/burst/hybrid/set_subnetwork_model_params";
 
     const state = {
         // one entry per region of this Subnetwork: index, label and the configuration placed on it
@@ -53,6 +56,8 @@ var HYBRID_REGION_MODEL = (function () {
     // the elements whose listeners are already attached, so init stays idempotent
     let boundList = null;
     let boundApply = null;
+    let boundSubmit = null;
+    let boundSelectAll = null;
     let boundValues = null;
 
     // ------------------------------------------------------------------ rendering
@@ -117,6 +122,7 @@ var HYBRID_REGION_MODEL = (function () {
                 ? "No region selected"
                 : state.selected.length + " region" + (state.selected.length === 1 ? "" : "s") + " selected";
         }
+        refreshSelectAllLabel();
     }
 
     // ------------------------------------------------------------------ selection
@@ -130,6 +136,22 @@ var HYBRID_REGION_MODEL = (function () {
         });
         state.selected = unique;
         refreshSelection();
+    }
+
+    function allSelected() {
+        return state.rows.length > 0 && state.selected.length === state.rows.length;
+    }
+
+    function refreshSelectAllLabel() {
+        const button = document.getElementById("hybrid-region-select-all");
+        if (button !== null) {
+            button.textContent = allSelected() ? "Clear selection" : "Select all";
+        }
+    }
+
+    function toggleSelectAll() {
+        setSelection(allSelected() ? [] : orderedIndices());
+        state.anchor = null;
     }
 
     function orderedIndices() {
@@ -209,6 +231,26 @@ var HYBRID_REGION_MODEL = (function () {
         });
     }
 
+    /**
+     * Put the configured values into the Model parameters of the middle column. The answer is that step
+     * re-rendered, which is how the arrays become visible there; the panel stays open on purpose, so a
+     * placement can still be corrected and submitted again.
+     */
+    function submitToModelParameters() {
+        doAjaxCall({
+            type: "POST",
+            url: URLS.submit,
+            success: function (response) {
+                if (!hybridReplaceStep(MODEL_PARAMS_STEP_URL, response)) {
+                    displayMessage("The Model parameters could not be refreshed.", "errorMessage");
+                }
+            },
+            error: function () {
+                displayMessage("The Model parameters could not be updated.", "errorMessage");
+            }
+        });
+    }
+
     function toggleValues() {
         const pane = document.getElementById("hybrid-region-values-pane");
         const selector = document.getElementById("hybrid-region-dynamic");
@@ -259,6 +301,18 @@ var HYBRID_REGION_MODEL = (function () {
         if (applyButton !== null && boundApply !== applyButton) {
             applyButton.addEventListener("click", applyToSelection);
             boundApply = applyButton;
+        }
+
+        const submitButton = document.getElementById("hybrid-region-submit");
+        if (submitButton !== null && boundSubmit !== submitButton) {
+            submitButton.addEventListener("click", submitToModelParameters);
+            boundSubmit = submitButton;
+        }
+
+        const selectAllButton = document.getElementById("hybrid-region-select-all");
+        if (selectAllButton !== null && boundSelectAll !== selectAllButton) {
+            selectAllButton.addEventListener("click", toggleSelectAll);
+            boundSelectAll = selectAllButton;
         }
 
         const valuesButton = document.getElementById("hybrid-region-values");

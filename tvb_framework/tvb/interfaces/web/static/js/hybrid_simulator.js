@@ -147,6 +147,29 @@ function hybridConfigureRegionModel() {
     });
 }
 
+/**
+ * Replace one wizard step with a freshly rendered version of itself, leaving the third column as it is.
+ *
+ * Deliberately not _afterHybridRender: that re-syncs the column, and the Set up region Model panel is
+ * open in it while this is called, so it would close the panel the user is still working in.
+ */
+function hybridReplaceStep(stepUrl, response) {
+    const form = document.getElementById(stepUrl);
+    if (form === null) {
+        return false;
+    }
+    const fragment = _asFragment(response);
+    const newForm = fragment.querySelector("form");
+    if (newForm === null || newForm.id !== stepUrl) {
+        return false;
+    }
+    form.replaceWith(fragment);
+    if (typeof setupMenuEvents === "function") {
+        setupMenuEvents();
+    }
+    return true;
+}
+
 /** The Results tree of this page. bursts.js, which owns the cockpit one, is not loaded here. */
 function displayHybridResultsTree() {
     updateTree("#treeOverlay", null, JSON.stringify({'type': 'from_burst', 'value': "0"}));

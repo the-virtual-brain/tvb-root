@@ -21,8 +21,10 @@
             <strong>{{ renderer.region_model_subnetwork.name }}</strong> replaces this Subnetwork's Model
             parameters with one value per region. Click to select a region, use <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>
             to add to the selection and <kbd>Shift</kbd> to select a range. Only configurations built on
-            this Subnetwork's Model class are offered. The result is stored with the rest of the
-            Subnetwork configuration, by <em>Save Configuration</em> on the last step.
+            this Subnetwork's Model class are offered. <em>Apply to selection</em> places a configuration
+            on the selected regions; <em>Submit</em> then puts those values into the Model parameters on
+            the left. They are stored with the rest of the Subnetwork configuration, by
+            <em>Save Configuration</em> on the last step.
         </p>
 
         <div class="hybrid-subnetworks-toolbar">
@@ -37,6 +39,15 @@
             </button>
             <button type="button" class="btn btn-primary" id="hybrid-region-apply"
                     title="Put the selected model configuration on the selected regions">Apply to selection
+            </button>
+            <button type="button" class="btn btn-primary" id="hybrid-region-submit"
+                    title="Put the configured values into this Subnetwork's Model parameters">Submit
+            </button>
+        </div>
+
+        <div class="hybrid-subnetworks-toolbar">
+            <button type="button" class="btn btn-primary" id="hybrid-region-select-all"
+                    title="Select or clear every region of this Subnetwork">Select all
             </button>
         </div>
 

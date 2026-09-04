@@ -117,9 +117,11 @@ table.hybrid-subnetworks-summary th {
     font-size: 11px;
 }
 
-/* The board holds a grouping the Subnetworks step does not list yet, so say so loudly. */
+/* The board holds a grouping the Subnetworks step does not list yet, so say so loudly.
+   This amber is the one used for every warning on this column: it clears 4.5:1 against the column's
+   dark ground at these small sizes, which the darker #e8b84b it replaced did not. */
 .hybrid-subnetworks-status.is-modified {
-    color: #e8b84b;
+    color: #ffdd99;
     font-weight: bold;
 }
 
@@ -217,7 +219,7 @@ button.hybrid-remove-subnetwork:hover {
 }
 
 .hybrid-region-count.is-empty {
-    color: #e8b84b;
+    color: #ffdd99;
 }
 
 button.hybrid-subnetwork-action {
@@ -376,7 +378,7 @@ table.hybrid-dynamics-summary .hybrid-summary-region {
 
 /* A region with nothing on it yet cannot take part in the parameter arrays, so say so. */
 .hybrid-region-dynamic.is-empty {
-    color: #e8b84b;
+    color: #ffdd99;
     font-style: italic;
 }
 
