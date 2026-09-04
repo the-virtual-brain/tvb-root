@@ -289,53 +289,27 @@ button.hybrid-subnetwork-action:disabled {
 }
 
 /**
- * Per Subnetwork Model/Integrator configuration, shown in the third column.
- *
- * That column sits on a dark ground, unlike the configuration column next to it, so the reused
- * Simulator Cockpit form markup needs light labels and separators here. base.css leaves `fieldset dt`
- * without a colour of its own, which on this ground would render it near invisible.
+ * Per Subnetwork Model/Integrator configuration. It lives in the configuration column together with the
+ * rest of the wizard, so the reused Simulator Cockpit form markup is styled by base.css exactly as it is
+ * for the classic cockpit and needs nothing from here.
  */
-.hybrid-context-column fieldset dt,
-.hybrid-context-column fieldset dt label {
-    color: rgba(250, 247, 228, 0.95);
-}
-
-.hybrid-context-column fieldset dt,
-.hybrid-context-column fieldset dd {
-    border-top-color: rgba(250, 247, 228, 0.2);
-}
-
-.hybrid-context-column fieldset .field-comment {
-    color: rgba(250, 247, 228, 0.7);
-}
-
-/* The dt/dd pairs float, so the step buttons underneath need the row closed first. */
-.hybrid-context-column #hybrid-dynamics-forms form {
-    clear: both;
-    display: block;
-    overflow: hidden;
-}
-
-.hybrid-context-column #hybrid-dynamics-forms fieldset {
-    border: none;
-}
 
 /**
- * One button per Subnetwork, for choosing which one to configure. Only one Subnetwork is configured at
- * a time: the reused Cockpit forms share one flat POST namespace, so two on screen would collide.
+ * One button per Subnetwork, for choosing which one the steps below are configuring. It sits on the
+ * Subnetwork dynamics step and keeps working once that step is locked, so it must not read as disabled.
  */
 .hybrid-subnetwork-tabs {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    margin-bottom: 8px;
+    margin: 0 10px 10px 10px;
 }
 
 .hybrid-subnetwork-tab {
-    background: rgba(250, 247, 228, 0.08);
-    border: 1px solid rgba(250, 247, 228, 0.25);
+    background: rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(0, 0, 0, 0.25);
     border-radius: 3px;
-    color: rgba(250, 247, 228, 0.95);
+    color: #3e4252;
     cursor: pointer;
     display: flex;
     flex-direction: column;
@@ -346,11 +320,11 @@ button.hybrid-subnetwork-action:disabled {
 }
 
 .hybrid-subnetwork-tab:hover {
-    background: rgba(250, 247, 228, 0.16);
+    background: rgba(0, 0, 0, 0.09);
 }
 
 .hybrid-subnetwork-tab.is-selected {
-    background: rgba(65, 146, 31, 0.25);
+    background: rgba(65, 146, 31, 0.18);
     border-color: #41921f;
 }
 
@@ -359,17 +333,17 @@ button.hybrid-subnetwork-action:disabled {
 }
 
 .hybrid-tab-detail {
-    color: rgba(250, 247, 228, 0.7);
+    color: rgba(0, 0, 0, 0.6);
 }
 
-/* The closing step of the sub wizard: nothing left to fill in, only the action that stores it. */
+/* The closing step: nothing left to fill in for this Subnetwork, only the action that stores it. */
 .hybrid-dynamics-done {
-    color: rgba(250, 247, 228, 0.85);
+    color: #3e4252;
     font-size: 11px;
-    margin: 0 0 8px 0;
+    margin: 0 10px 10px 10px;
 }
 
-/* The saved dynamics, listed on the wizard step in the light configuration column. */
+/* The saved dynamics, listed on the Subnetwork dynamics step. */
 table.hybrid-dynamics-summary .hybrid-summary-region {
     white-space: nowrap;
 }

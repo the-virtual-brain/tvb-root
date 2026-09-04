@@ -449,27 +449,27 @@ These constrain the design and are the reason for the decisions below.
 
 | decision | choice | why |
 |---|---|---|
-| layout | a nested sub-wizard inside the third column | no new subform plumbing (finding 2); reuses the classic step chain almost verbatim (finding 1) |
+| layout | the steps are ordinary wizard steps of the **configuration column**, stacked under a Subnetwork dynamics step | no new subform plumbing (finding 2); reuses the classic step chain almost verbatim (finding 1), in the column the rest of the wizard already lives in |
 | editing model | draft in session + explicit **Save Configuration** | consistent with the Phase 2 board; keeps the wizard summary honest |
 | Model form scope | the full `ModelForm`, `variables_of_interest` **editable** per Subnetwork | the Cockpit's own rendering, unmodified |
 | Subnetwork identity | a stable generated `id` on `HybridSubnetworkViewModel` | index identity would silently reattach a configuration to the wrong Subnetwork after a rename or removal |
 
 ### UI flow
 
-The Subnetworks step is followed by a **Subnetwork dynamics** wizard step. It declares its
-configuration in the third column the same way Phase 2's step does:
+The Subnetworks step is followed by a **Subnetwork dynamics** step, in the configuration column with the
+rest of the wizard. That step holds:
 
-```html
-<form ... data-hybrid-context-url="/burst/hybrid/configure_subnetwork_dynamics"
-          data-hybrid-context-title="Subnetwork dynamics">
-```
+* the shared `dt`;
+* a read-only summary of what every Subnetwork is configured with;
+* a **Subnetwork selector** listing every saved Subnetwork with its region count and its Model. The
+  first Subnetwork is selected by default.
 
-The column then holds two things:
+Unlike Phase 2's Subnetworks step, it declares **no** `data-hybrid-context-url`, so the third column is
+emptied and handed back to the Results view — the Model and Integrator are configured in this same
+column, not next to it.
 
-* a **Subnetwork selector** listing every saved Subnetwork with its region count and whether its
-  dynamics are configured. The first Subnetwork is selected by default. Selecting another one restarts
-  its own sub-wizard at step 1, seeded from that Subnetwork's draft state;
-* the **sub-wizard** for the selected Subnetwork, whose steps mirror the classic chain:
+Pressing **Next** on it applies the shared `dt` and opens the configuration of the selected Subnetwork
+underneath, as further wizard steps that mirror the classic chain:
 
 | # | step | form | notes |
 |---|---|---|---|
@@ -481,37 +481,43 @@ The column then holds two things:
 | 6 | Noise Equation parameters | `get_form_for_equation(cls)()` | only for a `MultiplicativeNoiseViewModel` |
 
 Steps 5 and 6 are skipped exactly as the classic controller skips them, by branching on the configured
-Integrator's and Noise's types. The sub-wizard accumulates its steps read-only as the main wizard does,
-so the whole per-Subnetwork configuration stays visible while it is built. After the last step, a
-**Save Configuration** action commits the draft.
+Integrator's and Noise's types. They accumulate read-only like every other wizard step, so the whole
+per-Subnetwork configuration stays visible while it is built. After the last one, a **Save
+Configuration** action commits the draft.
 
 Because every `display_subform` is `False`, `select_field.html` never emits its inline script, so no
 `refreshSubform` endpoint and no page-local `setEventsOnFormFields` are needed. That is the point of
-choosing the sub-wizard.
+reusing the step chain rather than nesting the sub-fragments.
 
-The main wizard's **Next** clears the column, as Phase 2's refinement already arranges.
+Selecting another Subnetwork drops every step stacked under the dynamics step and starts that
+Subnetwork's chain in their place, seeded from its own draft. Whatever was edited for the Subnetwork
+being left is kept — the draft holds them all.
 
 ### Client-side reuse
 
-The column needs its own step stack, so `hybrid_simulator.js` must stop assuming a single container:
-`_renderHybridStack`, `_appendHybridFragment`, `_replaceHybridFragments`, `hybridSubmit` and
-`hybridPreviousStep` take the container element they act on, with `#hybrid-simulator-forms` as the
-default. Sub-wizard step urls stay static, which keeps the id-based previous-step lookup working.
+There is one wizard stack, so `hybrid_simulator.js` keeps working as it is: the new steps are appended,
+locked and stepped back through exactly like the Connectivity and Subnetworks ones. Two additions:
+
+* **the Subnetwork selector must survive locking.** Once the user moves on, the dynamics step is locked
+  like every finished step — buttons hidden, fieldsets disabled — but switching Subnetwork is what
+  rebuilds the steps below it. The selector is marked `data-hybrid-keep-enabled` and `_lockHybridForm`
+  leaves anything inside such a marker alone;
+* **switching Subnetwork drops the steps under the dynamics step** and appends the answer in their
+  place, then re-reads that step so its selector and summary stop being stale.
 
 Also to update, listed because they are easy to miss:
 
 * `next_button_enabled=False` in `_subnetworks_step_rules` — the Subnetworks step's **Next** is
   currently dead on purpose and is what opens this phase;
-* the `HYBRID_WIZARD_STEPS` array, which the stack rebuild walks;
-* the third column is loaded by a parameterless `GET` on `data-hybrid-context-url`, so it cannot name a
-  Subnetwork — see below.
+* the `HYBRID_WIZARD_STEPS` array, which the stack rebuild walks.
 
 ### The server owns the selection
 
 The selected Subnetwork lives in the session (`HybridSimulatorContext.KEY_SELECTED_SUBNETWORK`, holding
-a Subnetwork `id`), not in the url. A `select_subnetwork` endpoint sets it and answers with the
-re-rendered column. This keeps the context url parameterless and every sub-wizard step url static, and
-keeps the client deciding nothing — the same division Phase 2 established.
+a Subnetwork `id`), not in the url. A `select_subnetwork` endpoint sets it and answers with the first
+configuration step of that Subnetwork. This keeps every step url static — which is what the id-based
+previous-step lookup needs — and keeps the client deciding nothing, the same division Phase 2
+established.
 
 ### Shared simulation `dt`
 
@@ -523,7 +529,11 @@ Avoid the mismatch by construction with a single shared value:
 
 * it is stored as `HybridSimulatorAdapterModel.dt`, defaulting to `IntegratorViewModel.dt`'s own
   default, and is exposed as a `FloatField` **on the Subnetwork dynamics wizard step itself** — so it
-  sits in the accumulating wizard record and locks read-only with that step, like every other setting;
+  sits in the accumulating wizard record and locks read-only with that step, like every other setting.
+  Submitting that step is what applies it, on the way into the steps configuring the first Subnetwork;
+* it is applied to the **saved** Integrators as well as to the ones being edited. It is a
+  simulation-wide setting applied on its own step, not a pending per-Subnetwork edit, so leaving the
+  saved ones behind would report an unsaved change that cannot be saved away;
 * every Subnetwork's Integrator is created and kept with that value; changing it rewrites `scheme.dt`
   on every already-configured Subnetwork;
 * each Subnetwork's Integrator parameters form is built with `is_dt_disabled=True`, so `dt` shows but
@@ -744,24 +754,31 @@ would silently change every other one.
 | `KEY_SUBNETWORKS_DRAFT` | what the grouping board shows | add / rename / remove / move |
 | `hybrid_simulator.subnetworks[i].dynamics` | what the dynamics step lists | `save_subnetwork_dynamics` |
 | `KEY_DYNAMICS_DRAFT`, keyed by Subnetwork `id` | what the dynamics column shows | the six sub-wizard steps |
-| `hybrid_simulator.dt` | the shared step size | the dynamics step's own **Apply** |
+| `hybrid_simulator.dt` | the shared step size | submitting the dynamics step, on the way into the chain |
 
 `prepare_dynamics_draft` seeds an entry from the saved dynamics for every Subnetwork missing one and
 drops entries keyed by an `id` that no longer exists. That single rule is what makes a rename preserve
 the configuration, a removal discard it, and a regenerated grouping not reattach it to whichever
 Subnetwork now sits on the same position.
 
-### The sub-wizard
+### The step chain
 
-The third column holds a Subnetwork selector plus its own wizard stack. `hybrid_simulator.js` no longer
-assumes one container: every stack operation resolves `form.closest("[data-hybrid-stack]")`, so stepping
-through the column leaves the cockpit wizard alone, and `_afterHybridRender` only re-syncs the column
-when the cockpit stack was the one that changed — re-syncing after a sub-wizard step would reload the
-column and throw away the step just reached.
+Everything is one wizard stack in the configuration column: the six steps are appended, locked and
+stepped back through exactly like the Connectivity and Subnetworks steps, and the third column is
+handed back to the Results view for this part of the wizard.
+
+Two things the chain needed:
+
+* **the selector survives locking.** The dynamics step carries the Subnetwork selector and locks like
+  any finished step, but switching Subnetwork is what rebuilds the steps under it. The selector is
+  marked `data-hybrid-keep-enabled`, and `_lockHybridForm` leaves anything inside such a marker alone.
+* **switching Subnetwork rebuilds downwards.** `hybridSelectSubnetwork` drops every step stacked under
+  the dynamics step, appends the first step of the newly selected one, then re-reads the dynamics step
+  so its selector and summary are not left stale.
 
 Every `display_subform` stays `False`, so `select_field.html` never emits its inline script. That is the
-point of the sub-wizard: no hybrid `refresh_subform` endpoint and no page-local `setEventsOnFormFields`
-are needed, and neither shared fragment had to be modified.
+point of reusing the chain rather than nesting: no hybrid `refresh_subform` endpoint and no page-local
+`setEventsOnFormFields` are needed, and neither shared fragment had to be modified.
 
 ### The traps, and what closed them
 
@@ -783,23 +800,44 @@ are needed, and neither shared fragment had to be modified.
 
 ### Deviations from the specification above
 
-1. **The dynamics step's button is `Apply`, not `Next`.** The spec put the shared `dt` on this step, but
-   Phase 4 does not exist, so its `Next` was disabled — which would have left `dt` unreachable, since a
-   disabled button never submits the field. Submitting the step now applies `dt` and answers with the
-   same step, which the client replaces in place. When Phase 4 lands, this becomes `Next` again.
-2. **The shared `dt` is applied to the saved Integrators too**, not only to the draft. It is a
+1. **The shared `dt` is applied to the saved Integrators too**, not only to the draft. It is a
    simulation-wide setting applied on its own step, not a pending per-Subnetwork edit; leaving the saved
    Integrators behind reported an unsaved change the user could not save away.
-3. **The Subnetworks step's `Next` is gated on the grouping being saved.** The spec only gated the
+2. **The Subnetworks step's `Next` is gated on the grouping being saved.** The spec only gated the
    dynamics step. The dynamics step configures the *saved* Subnetworks, so opening it over an unsaved
    grouping would configure Subnetworks the configuration does not hold.
-4. **Model parameter array lengths are validated on save**, against `1` or that Subnetwork's `nnodes`,
+3. **Model parameter array lengths are validated on save**, against `1` or that Subnetwork's `nnodes`,
    naming the Subnetwork, the parameter and both accepted lengths. This was flagged as an assumption in
    the spec and is implemented as described.
 
+### Revised after review: the configuration column, not the third one
+
+The first implementation put the Subnetwork selector and the six steps in the **third** column, as its
+own wizard stack, which is what the specification above originally described. On review the Model and
+Integrator configuration was moved into the **configuration column**, with the rest of the wizard; the
+specification above has been rewritten to match. What that changed:
+
+* the third column configures nothing for this step and goes back to showing the Results, the way the
+  Connectivity step already leaves it;
+* the second wizard stack is gone — `_hybridStackOf`, `_isMainHybridStack`, the `data-hybrid-stack`
+  markers and the container arguments threaded through the stack helpers were all removed, since there
+  is one stack again;
+* `burst/hybrid_dynamics_fragment.html` and `burst/hybrid_subnetwork_dynamics.html` are gone with it.
+  The steps render through `hybrid_simulator_fragment.html` like every other wizard step, which grew the
+  selector and the Save Configuration branch;
+* `configure_subnetwork_dynamics` is gone. `select_subnetwork` now answers with the first step of the
+  newly selected Subnetwork rather than with a re-rendered column;
+* the selector needed `data-hybrid-keep-enabled`, because it now sits on a step that gets locked;
+* the styling moved from light-on-dark to the configuration column's dark-on-light, and the overrides
+  that had been needed to make TVB form fields legible on the third column's dark ground were dropped —
+  base.css styles them correctly here with nothing extra;
+* **the `Apply` workaround disappeared.** It existed only because the shared `dt` sat on a step whose
+  `Next` was disabled for want of a Phase 4 step. The chain now follows that step, so `Next` applies
+  `dt` on its way into the first Subnetwork's Model, and the button is an ordinary `Next` again.
+
 ### Tests
 
-Python: 87 hybrid tests pass — 39 service, 46 controller, 2 render checks. The controller tests cover the
+Python: 88 hybrid tests pass — 39 service, 47 controller, 2 render checks. The controller tests cover the
 draft/save split per Subnetwork, the shared `dt` reaching Integrators configured before it changed, the
 disabled-`dt` regression, class-switch reset versus re-submit preservation, per-Subnetwork isolation,
 identity across rename and removal, and the parameter-shape refusal. The classic Simulator Cockpit suite

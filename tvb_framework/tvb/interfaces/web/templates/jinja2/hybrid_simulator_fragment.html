@@ -7,6 +7,12 @@
       data-hybrid-context-title="{{ renderer.context_title if renderer.context_title else '' }}">
     {% if renderer.is_subnetworks_summary_fragment %}
         {% include 'burst/hybrid_subnetworks_summary.html' %}
+    {% elif renderer.is_dynamics_save_fragment %}
+        <p class="hybrid-dynamics-done">
+            This Subnetwork is configured. Press <em>Save Configuration</em> to store the dynamics of
+            every Subnetwork on the Hybrid Simulator configuration, or go back to the
+            <em>Subnetwork dynamics</em> step to pick another Subnetwork.
+        </p>
     {% else %}
         <fieldset>
             <dl>
@@ -38,6 +44,24 @@
                 {% include 'burst/hybrid_dynamics_summary.html' %}
             {% endif %}
         </fieldset>
+
+        {#- The Subnetwork being configured. Deliberately outside the fieldset and marked to stay live:
+            once the user moves on, this step is locked like every finished one, but switching
+            Subnetwork is what rebuilds the steps below it, so it has to keep working. -#}
+        {% if renderer.is_dynamics_summary_fragment %}
+            <div class="hybrid-subnetwork-tabs" data-hybrid-keep-enabled="true">
+                {% for choice in renderer.subnetwork_choices %}
+                    <button type="button" tabindex="1"
+                            class="hybrid-subnetwork-tab {{ 'is-selected' if choice.is_selected else '' }}"
+                            title="Configure the Model and Integrator of {{ choice.name }}"
+                            onclick="hybridSelectSubnetwork('{{ choice.id }}')">
+                        <span class="hybrid-tab-name">{{ choice.name }}</span>
+                        <span class="hybrid-tab-detail">{{ choice.count }} region{{ 's' if choice.count != 1 else '' }}</span>
+                        <span class="hybrid-tab-detail">{{ choice.model }}</span>
+                    </button>
+                {% endfor %}
+            </div>
+        {% endif %}
     {% endif %}
 
     {% if renderer.include_previous_button %}
@@ -46,11 +70,18 @@
         </button>
     {% endif %}
 
-    <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1"
-            onclick="hybridSubmit(this.parentElement)"
-            {% if not renderer.next_button_enabled %}
-                disabled="disabled"
-                title="The next configuration step is not available yet"
-            {% endif %}>{{ renderer.next_button_label }}
-    </button>
+    {% if renderer.is_dynamics_save_fragment %}
+        <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1"
+                title="Store the configured dynamics on the Hybrid Simulator configuration"
+                onclick="hybridSaveSubnetworkDynamics()">{{ renderer.next_button_label }}
+        </button>
+    {% else %}
+        <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1"
+                onclick="hybridSubmit(this.parentElement)"
+                {% if not renderer.next_button_enabled %}
+                    disabled="disabled"
+                    title="The next configuration step is not available yet"
+                {% endif %}>{{ renderer.next_button_label }}
+        </button>
+    {% endif %}
 </form>

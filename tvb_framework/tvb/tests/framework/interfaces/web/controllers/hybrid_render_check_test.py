@@ -58,6 +58,9 @@ class TestHybridRendering(BaseTransactionalControllerTest):
         assert 'HYBRID_SUBNETWORKS.init(' in board_html
         assert 'hybridSaveSubnetworks()' in board_html
 
+    def _first_subnetwork_id(self):
+        return self.hybrid_controller.context.hybrid_simulator.subnetworks[0].id
+
     def test_what_the_dynamics_endpoints_return(self):
         """
         Render the whole per Subnetwork dynamics chain. There is no JavaScript test infrastructure here,
@@ -74,11 +77,11 @@ class TestHybridRendering(BaseTransactionalControllerTest):
             cherrypy.request.method = "POST"
             dynamics_step_html = self.hybrid_controller.set_subnetworks()
 
-            cherrypy.request.method = "GET"
-            column_html = self.hybrid_controller.configure_subnetwork_dynamics()
+            # Next on the dynamics step applies the shared dt and opens the Model of the selected
+            # Subnetwork, in this same column
+            model_html = self.hybrid_controller.set_subnetwork_dynamics(dt='0.1')
 
             # step 1 -> Model parameters
-            cherrypy.request.method = "POST"
             model_params_html = self.hybrid_controller.set_subnetwork_model(model='Generic 2D Oscillator')
             # step 2 -> Integrator class. Every ModelForm parameter is required, so all are posted.
             integrator_html = self.hybrid_controller.set_subnetwork_model_params(**self.MODEL_PARAMS)
@@ -94,28 +97,28 @@ class TestHybridRendering(BaseTransactionalControllerTest):
             save_step_html = self.hybrid_controller.set_subnetwork_noise_equation_params(
                 **self.EQUATION_PARAMS)
 
-            # switching Subnetwork re-renders the whole column; this is what catches an endpoint that
-            # renders an already rendered fragment a second time
-            selected_html = self.hybrid_controller.select_subnetwork(subnetwork_id='not-an-identifier')
+            # switching Subnetwork answers with the first step of the newly selected one
+            selected_html = self.hybrid_controller.select_subnetwork(subnetwork_id=self._first_subnetwork_id())
 
-        for name, html in [('dynamics step', dynamics_step_html), ('column', column_html),
+        for name, html in [('dynamics step', dynamics_step_html), ('model', model_html),
                            ('model params', model_params_html), ('integrator', integrator_html),
                            ('integrator params', integrator_params_html),
                            ('noise params', noise_params_html), ('equation', equation_html),
                            ('save step', save_step_html)]:
             assert isinstance(html, str) and html.strip(), '{} did not render HTML'.format(name)
 
-        # the dynamics step declares its own configuration for the third column
-        assert 'data-hybrid-context-url="/burst/hybrid/configure_subnetwork_dynamics"' in dynamics_step_html
-        # and lists the shared dt
+        # the Model and Integrator are configured in this same column, so the dynamics step declares no
+        # configuration for the third column, which hands it back to the Results view
+        assert 'data-hybrid-context-url=""' in dynamics_step_html
+        # it lists the shared dt and offers the Subnetwork selector for the steps stacked under it
         assert 'Integration step size' in dynamics_step_html
+        assert 'hybridSelectSubnetwork(' in dynamics_step_html
+        assert 'Subnetwork A' in dynamics_step_html
+        # the selector keeps working once this step is locked, which is what that marker is read for
+        assert 'data-hybrid-keep-enabled="true"' in dynamics_step_html
 
-        # the column offers the Subnetwork selector and its own wizard stack
-        assert 'data-hybrid-stack="dynamics"' in column_html
-        assert 'hybridSelectSubnetwork(' in column_html
-        assert 'Subnetwork A' in column_html
-
-        # the sub wizard steps post to their own urls
+        # the steps post to their own urls
+        assert 'action="/burst/hybrid/set_subnetwork_model"' in model_html
         assert 'action="/burst/hybrid/set_subnetwork_model_params"' in model_params_html
         assert 'action="/burst/hybrid/set_subnetwork_integrator"' in integrator_html
         assert 'action="/burst/hybrid/set_subnetwork_integrator_params"' in integrator_params_html
@@ -130,7 +133,6 @@ class TestHybridRendering(BaseTransactionalControllerTest):
         assert 'hybridSaveSubnetworkDynamics()' in save_step_html
         assert 'Save Configuration' in save_step_html
 
-        # an unknown Subnetwork falls back to the column for the one that is selected, rendered once
+        # switching Subnetwork restarts its configuration at the Model step, rendered once
         assert isinstance(selected_html, str)
-        assert 'data-hybrid-stack="dynamics"' in selected_html
-        assert 'hybridSelectSubnetwork(' in selected_html
+        assert 'action="/burst/hybrid/set_subnetwork_model"' in selected_html

@@ -60,11 +60,10 @@ class HybridSimulatorURLs(object):
     MOVE_REGIONS_URL = '/burst/hybrid/move_regions'
     # the wizard step under which every Subnetwork's dynamics are configured, holding the shared dt
     SET_SUBNETWORK_DYNAMICS_URL = '/burst/hybrid/set_subnetwork_dynamics'
-    # the per Subnetwork Model/Integrator configuration, shown in the contextual configuration column
-    CONFIGURE_SUBNETWORK_DYNAMICS_URL = '/burst/hybrid/configure_subnetwork_dynamics'
     SELECT_SUBNETWORK_URL = '/burst/hybrid/select_subnetwork'
     SAVE_SUBNETWORK_DYNAMICS_URL = '/burst/hybrid/save_subnetwork_dynamics'
-    # the steps of the sub wizard configuring the selected Subnetwork, mirroring the classic Cockpit chain
+    # the steps configuring the selected Subnetwork, mirroring the classic Cockpit chain. They are
+    # wizard steps of the configuration column, accumulating under the Subnetwork dynamics step.
     SET_SUBNETWORK_MODEL_URL = '/burst/hybrid/set_subnetwork_model'
     SET_SUBNETWORK_MODEL_PARAMS_URL = '/burst/hybrid/set_subnetwork_model_params'
     SET_SUBNETWORK_INTEGRATOR_URL = '/burst/hybrid/set_subnetwork_integrator'
@@ -109,8 +108,6 @@ class HybridSimulatorFragmentRenderingRules(object):
         self.selected_subnetwork = selected_subnetwork
         # the dynamics currently being edited, keyed by Subnetwork identifier
         self.dynamics_by_id = dynamics_by_id or {}
-        # the sub wizard step rendered inside the contextual column, when one is
-        self.step_renderer = None
 
     @property
     def include_previous_button(self):
@@ -396,10 +393,11 @@ class HybridSimulatorController(BurstBaseController):
         is the shared integration step size; the per Subnetwork configuration lives in the third column.
         """
         if cherrypy.request.method == POST_REQUEST:
-            # Projections are the next step and do not exist yet, so submitting this one applies the
-            # shared dt and renders the step again. The client replaces a step that answers with itself,
-            # so this reads as an Apply rather than as a move forward.
-            return self._subnetwork_dynamics_step(data)
+            # applying the shared dt is what submitting this step does, and then the configuration of the
+            # selected Subnetwork begins under it
+            self._subnetwork_dynamics_step(data)
+            dynamics, _ = self._selected_dynamics()
+            return self._model_step_rules(dynamics).to_dict()
 
         return self._subnetwork_dynamics_step()
 
@@ -427,53 +425,24 @@ class HybridSimulatorController(BurstBaseController):
 
         return self._dynamics_step_rules(form, subnetworks, draft).to_dict()
 
-    @expose_fragment('burst/hybrid_subnetwork_dynamics')
-    def configure_subnetwork_dynamics(self, **data):
-        """
-        The per Subnetwork Model/Integrator configuration shown in the third column: a selector listing
-        the Subnetworks, and the sub wizard configuring the selected one, opened on its first step.
-        """
-        return self._subnetwork_dynamics_column()
-
-    def _subnetwork_dynamics_column(self):
-        """
-        The undecorated helper, since an exposed method answers with a rendered fragment rather than with
-        the rendering rules another endpoint could reuse.
-        """
-        try:
-            hybrid_simulator, _, subnetworks, _ = self._load_subnetworks_configuration()
-        except HybridSubnetworkException as excep:
-            return HybridSimulatorFragmentRenderingRules(
-                None, HybridSimulatorURLs.CONFIGURE_SUBNETWORK_DYNAMICS_URL, load_error=str(excep)).to_dict()
-
-        draft = self._prepare_dynamics_draft(subnetworks, hybrid_simulator.dt)
-        selected = self._selected_subnetwork(subnetworks)
-
-        rules = HybridSimulatorFragmentRenderingRules(
-            None, HybridSimulatorURLs.CONFIGURE_SUBNETWORK_DYNAMICS_URL, fragment_title="Subnetwork dynamics",
-            subnetworks=subnetworks, selected_subnetwork=selected.id, dynamics_by_id=draft,
-            is_modified=not self.hybrid_simulator_service.same_dynamics(subnetworks, draft))
-        # the sub wizard's first step, rendered together with the column so it needs no extra request
-        rules.step_renderer = self._model_step_rules(draft[selected.id])
-        return rules.to_dict()
-
-    @expose_fragment('burst/hybrid_subnetwork_dynamics')
+    @expose_fragment('hybrid_simulator_fragment')
     def select_subnetwork(self, subnetwork_id=None, **data):
         """
-        Configure another Subnetwork. The sub wizard restarts on its first step, showing that
-        Subnetwork's own draft; what was edited for the one being left is kept, the draft holds them all.
+        Configure another Subnetwork. Answers with the first step of its configuration, which is what the
+        client puts in place of the steps that were configuring the Subnetwork being left. What was
+        edited there is kept: the draft holds every Subnetwork at once.
         """
         try:
             _, _, subnetworks, _ = self._load_subnetworks_configuration()
             self.hybrid_simulator_service.find_subnetwork(subnetworks, subnetwork_id)
         except HybridSubnetworkException as excep:
-            common.set_error_message(str(excep))
-            return self._subnetwork_dynamics_column()
+            return self._back_to_connectivity(str(excep))
 
         self.context.set_selected_subnetwork(subnetwork_id)
-        return self._subnetwork_dynamics_column()
+        dynamics, _ = self._selected_dynamics()
+        return self._model_step_rules(dynamics).to_dict()
 
-    @expose_fragment('burst/hybrid_dynamics_fragment')
+    @expose_fragment('hybrid_simulator_fragment')
     def set_subnetwork_model(self, **data):
         """
         Step 1: the Model class of the selected Subnetwork. Answers with its parameters, the way the
@@ -486,14 +455,15 @@ class HybridSimulatorController(BurstBaseController):
             form.fill_from_post(data)
             if not form.validate():
                 # an unknown class would otherwise reach fill_trait as a plain string and raise there
-                return self._step_rules(form, HybridSimulatorURLs.SET_SUBNETWORK_MODEL_URL, None).to_dict()
+                return self._step_rules(form, HybridSimulatorURLs.SET_SUBNETWORK_MODEL_URL,
+                                        HybridSimulatorURLs.SET_SUBNETWORK_DYNAMICS_URL).to_dict()
             # fill_trait only replaces the Model when the selected class actually changed, so switching
             # class resets the parameters while re-submitting the same one keeps the edited values
             form.fill_trait(dynamics)
 
         return self._model_params_step_rules(dynamics).to_dict()
 
-    @expose_fragment('burst/hybrid_dynamics_fragment')
+    @expose_fragment('hybrid_simulator_fragment')
     def set_subnetwork_model_params(self, **data):
         """
         Step 2: the Model parameters. Answers with the Integrator class selection.
@@ -509,7 +479,7 @@ class HybridSimulatorController(BurstBaseController):
 
         return self._integrator_step_rules(dynamics).to_dict()
 
-    @expose_fragment('burst/hybrid_dynamics_fragment')
+    @expose_fragment('hybrid_simulator_fragment')
     def set_subnetwork_integrator(self, **data):
         """
         Step 3: the Integrator class of the selected Subnetwork. Answers with its parameters.
@@ -533,7 +503,7 @@ class HybridSimulatorController(BurstBaseController):
 
         return self._integrator_params_step_rules(dynamics).to_dict()
 
-    @expose_fragment('burst/hybrid_dynamics_fragment')
+    @expose_fragment('hybrid_simulator_fragment')
     def set_subnetwork_integrator_params(self, **data):
         """
         Step 4: the Integrator parameters. Answers with the Noise parameters for a stochastic Integrator,
@@ -557,7 +527,7 @@ class HybridSimulatorController(BurstBaseController):
 
         return self._noise_params_step_rules(dynamics).to_dict()
 
-    @expose_fragment('burst/hybrid_dynamics_fragment')
+    @expose_fragment('hybrid_simulator_fragment')
     def set_subnetwork_noise_params(self, **data):
         """
         Step 5: the Noise parameters. Answers with the Equation parameters for a Multiplicative Noise,
@@ -578,7 +548,7 @@ class HybridSimulatorController(BurstBaseController):
 
         return self._noise_equation_step_rules(dynamics).to_dict()
 
-    @expose_fragment('burst/hybrid_dynamics_fragment')
+    @expose_fragment('hybrid_simulator_fragment')
     def set_subnetwork_noise_equation_params(self, **data):
         """
         Step 6: the parameters of the Equation of a Multiplicative Noise. Answers with the closing step.
@@ -672,12 +642,10 @@ class HybridSimulatorController(BurstBaseController):
         return HybridSimulatorFragmentRenderingRules(
             form, HybridSimulatorURLs.SET_SUBNETWORK_DYNAMICS_URL, HybridSimulatorURLs.SET_SUBNETWORKS_URL,
             is_dynamics_summary_fragment=True, fragment_title="Subnetwork dynamics", subnetworks=subnetworks,
-            context_form_url=HybridSimulatorURLs.CONFIGURE_SUBNETWORK_DYNAMICS_URL,
-            context_title="Subnetwork dynamics", dynamics_by_id=draft,
-            is_modified=not self.hybrid_simulator_service.same_dynamics(subnetworks, draft),
-            # Projections are the next wizard step and do not exist yet, so this button applies the
-            # shared dt instead of moving on
-            next_button_label='Apply')
+            # No context_form_url: the Model and Integrator of each Subnetwork are configured in this
+            # column, under this step, so the third column is handed back to the Results view here.
+            dynamics_by_id=draft, selected_subnetwork=self._selected_subnetwork(subnetworks).id,
+            is_modified=not self.hybrid_simulator_service.same_dynamics(subnetworks, draft))
 
     @staticmethod
     def _step_rules(form, form_action_url, previous_form_action_url):
@@ -686,7 +654,8 @@ class HybridSimulatorController(BurstBaseController):
     def _model_step_rules(self, dynamics):
         form = self.algorithm_service.prepare_adapter_form(form_instance=SimulatorModelFragment())
         form.fill_from_trait(dynamics)
-        return self._step_rules(form, HybridSimulatorURLs.SET_SUBNETWORK_MODEL_URL, None)
+        return self._step_rules(form, HybridSimulatorURLs.SET_SUBNETWORK_MODEL_URL,
+                                HybridSimulatorURLs.SET_SUBNETWORK_DYNAMICS_URL)
 
     def _model_params_step_rules(self, dynamics, form=None):
         if form is None:
