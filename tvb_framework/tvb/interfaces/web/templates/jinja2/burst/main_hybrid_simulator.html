@@ -28,21 +28,26 @@
         </div>
     </section>
 
-    <!--! Visualize results -->
+    <!--! Configure the current Hybrid Simulator step, or visualize results when it configures nothing -->
     <section id="section" class="view-column col-3">
         <h4>
-            <mark>Visualize</mark>
+            <mark id="hybrid-context-action">Visualize</mark>
             <span id="title-visualizers">Hybrid simulation</span></h4>
         <input id="hiddenProjectId" type="hidden" value="{{ selectedProject.id }}"/>
 
-        <ul id="section-ul" class="view-switcher tabswitcher">
-            <li class="active">
-                <a href="#" id="tab-burst-tree" onclick="displayBurstTree(undefined);">Results</a>
-            </li>
-        </ul>
+        <!--! Filled by hybrid_simulator.js with the configuration declared by the current wizard step -->
+        <div id="hybrid-context-column" class="hybrid-context-column" style="display: none;"></div>
 
-        <div class="specialviewer visible-2-2" id="div-burst-tree" style="display: none;">
-            <div id="treeOverlay"></div>
+        <div id="hybrid-results-view">
+            <ul id="section-ul" class="view-switcher tabswitcher">
+                <li class="active">
+                    <a href="#" id="tab-burst-tree" onclick="displayHybridResultsTree();">Results</a>
+                </li>
+            </ul>
+
+            <div class="specialviewer visible-2-2" id="div-burst-tree" style="display: none;">
+                <div id="treeOverlay"></div>
+            </div>
         </div>
     </section>
 </div>
