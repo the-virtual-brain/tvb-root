@@ -4,14 +4,14 @@
  */
 
 /**
- * The Subnetwork grouping is a dedicated step, not a cockpit view: the Simulation History and the
- * Results columns are folded away so the configuration column can use the whole page width.
- * hybrid_subnetworks.js toggles this class on #main and swaps the column scheme to TVB's own
- * .colscheme-1, which already widens the remaining column to 100%.
+ * The third column of the Hybrid Simulator page is the configuration area of the step currently being
+ * configured. It is filled by hybrid_simulator.js from the url the step declares, and emptied again for
+ * the steps declaring none, which hands the column back to the Results view.
+ * The inset matches the `fieldset` padding base.css gives the configuration column next to it.
  */
-#main.hybrid-subnetworks-step .view-column.col-1,
-#main.hybrid-subnetworks-step .view-column.col-3 {
-    display: none;
+.hybrid-context-column .hybrid-context-config {
+    font-size: 12px;
+    padding: 0 10px;
 }
 
 /**
@@ -91,8 +91,6 @@ table.hybrid-subnetworks-summary th {
     font-size: 11px;
     line-height: 15px;
     margin: 0 0 8px 0;
-    /* keep the hint readable instead of stretching it over the full page width */
-    max-width: 900px;
 }
 
 .hybrid-subnetworks-hint kbd {
@@ -103,13 +101,32 @@ table.hybrid-subnetworks-summary th {
 }
 
 .hybrid-subnetworks-toolbar {
-    margin-bottom: 8px;
+    margin-bottom: 6px;
+}
+
+/* The saved/unsaved marker and the selection size, on one line under the actions. */
+.hybrid-subnetworks-statusbar {
+    align-items: baseline;
+    display: flex;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.hybrid-subnetworks-status {
+    color: rgba(250, 247, 228, 0.85);
+    font-size: 11px;
+}
+
+/* The board holds a grouping the Subnetworks step does not list yet, so say so loudly. */
+.hybrid-subnetworks-status.is-modified {
+    color: #e8b84b;
+    font-weight: bold;
 }
 
 .hybrid-selection-summary {
     color: rgba(250, 247, 228, 0.85);
-    font-size: 12px;
-    margin-left: 10px;
+    font-size: 11px;
+    margin-left: auto;
 }
 
 .hybrid-subnetworks-board {
@@ -120,12 +137,17 @@ table.hybrid-subnetworks-summary th {
     padding-bottom: 8px;
 }
 
+/* A fixed width, so a Subnetwork box looks the same whatever else is on the board. Letting them grow
+   into the row instead makes every box resize each time one is added or removed. They wrap onto
+   further rows rather than scrolling the board sideways, which would fight with dragging.
+   `max-width` only guards against a column too narrow to hold the box; it never applies otherwise. */
 .hybrid-subnetwork {
     background: rgba(250, 247, 228, 0.08);
     border: 1px solid rgba(250, 247, 228, 0.25);
     border-radius: 3px;
     box-sizing: border-box;
     flex: 0 0 240px;
+    max-width: 100%;
     padding: 6px;
     width: 240px;
 }
@@ -228,7 +250,7 @@ button.hybrid-subnetwork-action:disabled {
 .hybrid-region-list {
     list-style: none;
     margin: 0;
-    max-height: 420px;
+    max-height: 300px;
     min-height: 60px;
     overflow-y: auto;
     padding: 0;

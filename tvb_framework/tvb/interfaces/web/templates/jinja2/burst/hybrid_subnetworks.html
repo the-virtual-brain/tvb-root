@@ -1,29 +1,42 @@
 <!--! =========================================================================== -->
 <!--! Groups the Connectivity regions of the Hybrid Simulator into Subnetworks. -->
-<!--! The board itself is rendered by static/js/hybrid_subnetworks.js, from the  -->
-<!--! configuration currently stored on the server.                              -->
+<!--! Rendered in the third column, as the configuration belonging to the       -->
+<!--! Subnetworks wizard step. The board itself is drawn by                     -->
+<!--! static/js/hybrid_subnetworks.js, from the draft currently held by the     -->
+<!--! server; the wizard keeps showing the saved grouping until this one is     -->
+<!--! saved.                                                                    -->
 <!--! =========================================================================== -->
-<fieldset class="hybrid-subnetworks-fieldset">
-    <legend>{{ renderer.fragment_title }}</legend>
+<div class="hybrid-context-config">
+    {% if renderer.load_error %}
+        <p class="errorMessage">{{ renderer.load_error }}</p>
+    {% else %}
+        <p class="hybrid-subnetworks-hint">
+            Every Connectivity region belongs to exactly one Subnetwork. Click to select a region,
+            use <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> to add to the selection and <kbd>Shift</kbd> to select a range,
+            or use a Subnetwork's <em>Select all</em> toggle. Drag the selection onto another Subnetwork
+            to move those regions into it. Press <em>Save Configuration</em> to apply the grouping to the
+            simulation; Subnetworks left without any region are discarded when saving.
+        </p>
 
-    <p class="hybrid-subnetworks-hint">
-        Every Connectivity region belongs to exactly one Subnetwork. Click to select a region,
-        use <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> to add to the selection and <kbd>Shift</kbd> to select a range,
-        or use a Subnetwork's <em>Select all</em> toggle. Drag the selection onto another Subnetwork
-        to move those regions into it. Subnetworks left without any region are discarded when you go
-        back to the simulator.
-    </p>
+        <div class="hybrid-subnetworks-toolbar">
+            <button type="button" class="btn btn-primary" id="hybrid-add-subnetwork"
+                    title="Add a new, empty Subnetwork">Add Subnetwork
+            </button>
+            <button type="button" class="btn btn-primary" id="hybrid-save-subnetworks"
+                    title="Store this grouping on the Hybrid Simulator configuration"
+                    onclick="hybridSaveSubnetworks()">Save Configuration
+            </button>
+        </div>
 
-    <div class="hybrid-subnetworks-toolbar">
-        <button type="button" class="btn btn-primary" id="hybrid-add-subnetwork"
-                title="Add a new, empty Subnetwork">Add Subnetwork
-        </button>
-        <span id="hybrid-selection-summary" class="hybrid-selection-summary">No region selected</span>
-    </div>
+        <div class="hybrid-subnetworks-statusbar">
+            <span id="hybrid-subnetworks-status" class="hybrid-subnetworks-status"></span>
+            <span id="hybrid-selection-summary" class="hybrid-selection-summary">No region selected</span>
+        </div>
 
-    <div id="hybrid-subnetworks-board" class="hybrid-subnetworks-board"></div>
-</fieldset>
+        <div id="hybrid-subnetworks-board" class="hybrid-subnetworks-board"></div>
 
-<script type="text/javascript">
-    HYBRID_SUBNETWORKS.init({{ renderer.subnetworks_json | safe }});
-</script>
+        <script type="text/javascript">
+            HYBRID_SUBNETWORKS.init({{ renderer.subnetworks_json | safe }});
+        </script>
+    {% endif %}
+</div>

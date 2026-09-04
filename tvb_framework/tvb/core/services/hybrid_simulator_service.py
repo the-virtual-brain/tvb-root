@@ -149,6 +149,23 @@ class HybridSimulatorService(object):
         populated = [subnetwork for subnetwork in subnetworks if len(subnetwork.node_indices) > 0]
         return populated or list(subnetworks[:1])
 
+    @staticmethod
+    def copy_subnetworks(subnetworks):
+        """
+        Build an independent copy of the given Subnetworks. The grouping operations change the
+        HybridSubnetworkViewModel instances in place, so the draft edited on the board and the saved
+        configuration must never share them, or editing the draft would also change what the wizard shows.
+        """
+        return [HybridSubnetworkViewModel(name=subnetwork.name, node_indices=list(subnetwork.node_indices))
+                for subnetwork in subnetworks or []]
+
+    @classmethod
+    def same_grouping(cls, subnetworks, other_subnetworks):
+        """
+        :return: True when both describe the same Subnetworks, by name and by assigned Connectivity nodes
+        """
+        return cls.to_json_ready(subnetworks or []) == cls.to_json_ready(other_subnetworks or [])
+
     @classmethod
     def add_subnetwork(cls, subnetworks):
         """

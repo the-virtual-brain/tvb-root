@@ -17,11 +17,15 @@
  **/
 
 /**
- * Groups the Connectivity regions of a Hybrid Simulation into Subnetworks.
+ * Groups the Connectivity regions of a Hybrid Simulation into Subnetworks. The board lives in the
+ * third column of the Hybrid Simulator page, as the configuration belonging to the Subnetworks step.
  *
  * The server is the single source of truth: every change is sent to the Hybrid Simulator controller,
- * which validates it and answers with the resulting configuration. The board is then re-rendered from
- * that answer, so the displayed grouping can never drift away from the stored one.
+ * which validates it and answers with the resulting grouping. The board is then re-rendered from that
+ * answer, so what is displayed can never drift away from what the server holds.
+ *
+ * What is edited here is a draft. It only reaches the Hybrid Simulator configuration, and therefore the
+ * summary shown by the wizard, once Save Configuration is pressed - which hybrid_simulator.js handles.
  *
  * Regions are identified by their original Connectivity node index, which is never changed here.
  */
@@ -44,11 +48,14 @@ var HYBRID_SUBNETWORKS = (function () {
         // original Connectivity node indices of the currently selected regions
         selected: [],
         // last clicked region, used as anchor for Shift range selection
-        anchor: null
+        anchor: null,
+        // true while this grouping differs from the one saved on the Hybrid Simulator configuration
+        isModified: false
     };
 
     let board = null;
     let summary = null;
+    let statusLabel = null;
     // the elements whose listeners are already attached, so init stays idempotent
     let boundBoard = null;
     let boundAddButton = null;
@@ -158,6 +165,19 @@ var HYBRID_SUBNETWORKS = (function () {
             board.appendChild(renderSubnetwork(subnetwork, index));
         });
         refreshSelection();
+        refreshStatus();
+    }
+
+    /**
+     * Say whether this grouping still has to be saved. The wizard step keeps listing the saved one, so
+     * without this the board and the summary next to it would silently disagree.
+     */
+    function refreshStatus() {
+        if (statusLabel === null) {
+            return;
+        }
+        statusLabel.textContent = state.isModified ? "Unsaved changes" : "Configuration saved";
+        statusLabel.classList.toggle("is-modified", state.isModified);
     }
 
     /**
@@ -329,6 +349,7 @@ var HYBRID_SUBNETWORKS = (function () {
             state.regionLabels = answer.region_labels;
         }
         state.subnetworks = answer.subnetworks || [];
+        state.isModified = answer.is_modified === true;
 
         // keep selected only the regions that are still known
         const known = [];
@@ -410,50 +431,19 @@ var HYBRID_SUBNETWORKS = (function () {
 
     // ------------------------------------------------------------------ setup
 
-    /**
-     * The Subnetwork grouping is a dedicated step, so the cockpit's History and Results columns are
-     * folded away and the configuration column takes the whole page width. The class is dropped again
-     * by the wizard when any other fragment is rendered, which restores the three column layout.
-     */
-    const FULL_WIDTH_CLASS = "hybrid-subnetworks-step";
-    const SINGLE_COLUMN_CLASS = "colscheme-1";
-    // the cockpit column scheme declared by the page, remembered so it can be put back
-    let cockpitColumnScheme = null;
-
-    function setFullWidthLayout(enabled) {
-        const mainDiv = document.getElementById("main");
-        if (mainDiv === null) {
-            return;
-        }
-        if (enabled) {
-            if (cockpitColumnScheme === null) {
-                const declared = mainDiv.className.match(/colscheme-[\w-]+/);
-                cockpitColumnScheme = declared === null ? "" : declared[0];
-            }
-            if (cockpitColumnScheme !== "") {
-                mainDiv.classList.remove(cockpitColumnScheme);
-            }
-            mainDiv.classList.add(SINGLE_COLUMN_CLASS, FULL_WIDTH_CLASS);
-        } else {
-            mainDiv.classList.remove(SINGLE_COLUMN_CLASS, FULL_WIDTH_CLASS);
-            if (cockpitColumnScheme) {
-                mainDiv.classList.add(cockpitColumnScheme);
-            }
-        }
-    }
-
     function init(configuration) {
         board = document.getElementById("hybrid-subnetworks-board");
         summary = document.getElementById("hybrid-selection-summary");
+        statusLabel = document.getElementById("hybrid-subnetworks-status");
         if (board === null) {
             return;
         }
-        setFullWidthLayout(true);
 
         state.regionLabels = configuration.region_labels || [];
         state.subnetworks = configuration.subnetworks || [];
         state.selected = [];
         state.anchor = null;
+        state.isModified = configuration.is_modified === true;
 
         // Bind once per board element. Normally each render brings a brand new board, but binding
         // twice to the same one would fire every handler twice, which silently cancels out a
@@ -487,10 +477,6 @@ var HYBRID_SUBNETWORKS = (function () {
 
     return {
         init: init,
-        // restores the cockpit three column layout, called when another wizard fragment is rendered
-        resetLayout: function () {
-            setFullWidthLayout(false);
-        },
         // called from the confirmation overlay
         removeSubnetwork: removeSubnetwork,
         // exposed for tests and debugging

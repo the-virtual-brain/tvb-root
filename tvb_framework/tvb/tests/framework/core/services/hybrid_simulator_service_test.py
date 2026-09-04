@@ -204,3 +204,33 @@ class TestHybridSimulatorService(object):
 
         assert len(prepared) == 1
         assert list(prepared[0].node_indices) == list(range(self.NUMBER_OF_REGIONS))
+
+    def test_copy_subnetworks_is_independent_of_the_original(self):
+        copied = self.service.copy_subnetworks(self.subnetworks)
+
+        assert self.service.same_grouping(copied, self.subnetworks)
+        assert copied[0] is not self.subnetworks[0]
+
+        # the grouping operations change the view models in place, which must not reach the original
+        copied = self.service.rename_subnetwork(copied, 0, 'Cortex')
+        copied = self.service.move_regions(self.service.add_subnetwork(copied), [0, 1], 1)
+
+        assert self.subnetworks[0].name == 'Subnetwork A'
+        assert list(self.subnetworks[0].node_indices) == list(range(self.NUMBER_OF_REGIONS))
+        self._assert_valid_partition(self.subnetworks)
+        self._assert_valid_partition(copied)
+
+    def test_same_grouping_compares_names_and_assigned_nodes(self):
+        copied = self.service.copy_subnetworks(self.subnetworks)
+        assert self.service.same_grouping(copied, self.subnetworks)
+
+        renamed = self.service.rename_subnetwork(self.service.copy_subnetworks(self.subnetworks), 0, 'Cortex')
+        assert not self.service.same_grouping(renamed, self.subnetworks)
+
+        regrouped = self.service.move_regions(
+            self.service.add_subnetwork(self.service.copy_subnetworks(self.subnetworks)), [0], 1)
+        assert not self.service.same_grouping(regrouped, self.subnetworks)
+
+    def test_same_grouping_of_nothing(self):
+        assert self.service.same_grouping([], None)
+        assert not self.service.same_grouping(self.subnetworks, [])

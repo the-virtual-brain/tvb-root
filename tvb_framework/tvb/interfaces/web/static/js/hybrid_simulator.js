@@ -16,37 +16,37 @@
  * program.  If not, see <http://www.gnu.org/licenses/>.
  **/
 
-/* globals doAjaxCall, renderWithMathjax, displayMessage, setupMenuEvents, displayBurstTree,
-   HYBRID_SUBNETWORKS */
+/* globals doAjaxCall, renderWithMathjax, displayMessage, setupMenuEvents, updateTree */
 
 /**
  * The Hybrid Simulator wizard, following the classic Simulator Cockpit behaviour: pressing Next keeps
  * the step you just filled in on screen as a disabled, read-only form and appends the next one under
  * it, so the whole configuration stays visible while it is built up.
  *
- * The Subnetwork grouping board is the exception. It is a full width detour rather than a wizard step,
- * so it replaces the stack while it is open, and the stack is rebuilt when you come back from it.
+ * The third column follows the step being configured. Each fragment names the configuration it wants
+ * there through data-hybrid-context-url; a step naming none leaves the column empty and the Results
+ * view visible. This is what replaced the separate, full width Subnetwork configuration page.
  */
 
 const HYBRID_FORMS_DIV = "hybrid-simulator-forms";
-// the cockpit steps, in wizard order, used to rebuild the stack after the grouping board
-const HYBRID_WIZARD_STEPS = ["/burst/hybrid/set_connectivity", "/burst/hybrid/set_subnetworks"];
+const HYBRID_CONTEXT_DIV = "hybrid-context-column";
+const HYBRID_RESULTS_DIV = "hybrid-results-view";
+const HYBRID_SUBNETWORKS_STEP_URL = "/burst/hybrid/set_subnetworks";
+// the cockpit steps, in wizard order, used to rebuild the stack when a step is no longer on screen
+const HYBRID_WIZARD_STEPS = ["/burst/hybrid/set_connectivity", HYBRID_SUBNETWORKS_STEP_URL];
 
 function _hybridFormsDiv() {
     return document.getElementById(HYBRID_FORMS_DIV);
 }
 
-function _resetHybridLayout() {
-    // The grouping board widens the page; every other fragment belongs in the cockpit layout.
-    // Probed rather than assumed: a cached older hybrid_subnetworks.js would otherwise throw here
-    // and leave the whole wizard unable to render.
-    if (typeof HYBRID_SUBNETWORKS !== "undefined" && typeof HYBRID_SUBNETWORKS.resetLayout === "function") {
-        HYBRID_SUBNETWORKS.resetLayout();
-    }
+/** The step currently being configured: the last one of the wizard stack. */
+function _activeHybridForm() {
+    const forms = _hybridFormsDiv().querySelectorAll("form");
+    return forms.length === 0 ? null : forms[forms.length - 1];
 }
 
 function _asFragment(response) {
-    // createContextualFragment keeps inline scripts executable, which the grouping board needs
+    // createContextualFragment keeps inline scripts executable, which the Subnetwork board needs
     return document.createRange().createContextualFragment(response);
 }
 
@@ -54,8 +54,73 @@ function _afterHybridRender() {
     if (typeof setupMenuEvents === "function") {
         setupMenuEvents();
     }
+    _syncHybridContextColumn();
     $("button.btn-next").last().focus();
 }
+
+// ---------------------------------------------------------------- contextual configuration column
+
+function _setHybridContextTitle(title) {
+    const action = document.getElementById("hybrid-context-action");
+    const subject = document.getElementById("title-visualizers");
+    if (action === null || subject === null) {
+        return;
+    }
+    action.textContent = title === "" ? "Visualize" : "Configure";
+    subject.textContent = title === "" ? "Hybrid simulation" : title;
+}
+
+function _clearHybridContextColumn() {
+    const contextDiv = document.getElementById(HYBRID_CONTEXT_DIV);
+    if (contextDiv === null) {
+        return;
+    }
+    contextDiv.innerHTML = "";
+    contextDiv.style.display = "none";
+    $("#" + HYBRID_RESULTS_DIV).show();
+    _setHybridContextTitle("");
+}
+
+/**
+ * Show in the third column whatever the step currently being configured asked for, or empty that
+ * column and hand it back to the Results view when the step configures nothing there.
+ */
+function _syncHybridContextColumn() {
+    const contextDiv = document.getElementById(HYBRID_CONTEXT_DIV);
+    if (contextDiv === null) {
+        return;
+    }
+    const form = _activeHybridForm();
+    const contextUrl = form === null ? "" : (form.dataset.hybridContextUrl || "");
+
+    if (contextUrl === "") {
+        _clearHybridContextColumn();
+        return;
+    }
+
+    doAjaxCall({
+        type: "GET",
+        url: contextUrl,
+        success: function (response) {
+            $("#" + HYBRID_RESULTS_DIV).hide();
+            contextDiv.style.display = "";
+            renderWithMathjax($(contextDiv), _asFragment(response), true);
+            _setHybridContextTitle(form.dataset.hybridContextTitle || "");
+        },
+        error: function () {
+            _clearHybridContextColumn();
+            displayMessage("The configuration of this step could not be loaded.", "errorMessage");
+        }
+    });
+}
+
+/** The Results tree of this page. bursts.js, which owns the cockpit one, is not loaded here. */
+function displayHybridResultsTree() {
+    updateTree("#treeOverlay", null, JSON.stringify({'type': 'from_burst', 'value': "0"}));
+    $("#div-burst-tree").show();
+}
+
+// ---------------------------------------------------------------- wizard stack
 
 /**
  * Turn a form into the read-only record of a step that is already done: fields greyed out, buttons
@@ -81,25 +146,22 @@ function _unlockHybridForm(form) {
 
 /** Append one more step under the ones already on screen. */
 function _appendHybridFragment(fragment) {
-    _resetHybridLayout();
     renderWithMathjax($(_hybridFormsDiv()), fragment);
     _afterHybridRender();
 }
 
 /** Replace everything on screen with a single fragment. */
 function _replaceHybridFragments(response) {
-    _resetHybridLayout();
     renderWithMathjax($(_hybridFormsDiv()), _asFragment(response), true);
     _afterHybridRender();
 }
 
 /**
  * Rebuild the wizard stack from scratch, loading the given steps in order and leaving every step but
- * the last one read-only. Used when returning from the full width grouping board.
+ * the last one read-only.
  */
 function _renderHybridStack(stepUrls) {
     const container = _hybridFormsDiv();
-    _resetHybridLayout();
     container.innerHTML = "";
 
     let index = 0;
@@ -138,7 +200,6 @@ function resetToNewHybridSimulator() {
         url: "/burst/hybrid/reset_hybrid_simulator_configuration/",
         success: function (response) {
             _replaceHybridFragments(response);
-            displayBurstTree(undefined);
             displayMessage("New hybrid simulator configuration loaded!");
         },
         error: function () {
@@ -184,7 +245,6 @@ function hybridSubmit(currentForm) {
             const newForm = fragment.querySelector("form");
 
             if (newForm !== null && newForm.id === currentForm.id) {
-                _resetHybridLayout();
                 currentForm.replaceWith(fragment);
                 _afterHybridRender();
                 return;
@@ -218,19 +278,32 @@ function hybridPreviousStep(currentForm, previousUrl) {
     _afterHybridRender();
 }
 
-/** Leave the full width grouping board and rebuild the cockpit wizard behind it. */
-function hybridBackToSimulator() {
-    _renderHybridStack(HYBRID_WIZARD_STEPS);
-}
-
-/** Replace the wizard with a single fragment, used to open the grouping board. */
-function hybridLoadFragment(fragmentUrl) {
+/**
+ * Store the Subnetwork grouping edited in the third column. Only then does the wizard step listing the
+ * Subnetworks change, which is why the answer replaces that step. Rendering it also reloads the board,
+ * so the two always agree about what is configured.
+ */
+function hybridSaveSubnetworks() {
     doAjaxCall({
-        type: "GET",
-        url: fragmentUrl,
-        success: _replaceHybridFragments,
+        type: "POST",
+        url: "/burst/hybrid/save_subnetworks/",
+        success: function (response) {
+            const currentForm = document.getElementById(HYBRID_SUBNETWORKS_STEP_URL);
+            const fragment = _asFragment(response);
+            const newForm = fragment.querySelector("form");
+
+            if (currentForm === null || newForm === null || newForm.id !== HYBRID_SUBNETWORKS_STEP_URL) {
+                // the configuration is no longer where we left it, e.g. the Connectivity went missing
+                _replaceHybridFragments(response);
+                return;
+            }
+
+            currentForm.replaceWith(fragment);
+            _afterHybridRender();
+            displayMessage("Subnetwork configuration saved.");
+        },
         error: function () {
-            displayMessage("Hybrid simulator parameters could not be loaded.", "errorMessage");
+            displayMessage("The Subnetwork configuration could not be saved.", "errorMessage");
         }
     });
 }

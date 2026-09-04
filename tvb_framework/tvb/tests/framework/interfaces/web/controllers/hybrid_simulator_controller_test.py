@@ -31,6 +31,7 @@ from uuid import UUID
 import cherrypy
 from cherrypy.lib.sessions import RamSession
 
+from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.simulator.view_model import HybridSimulatorAdapterModel
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
@@ -61,19 +62,33 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
     def _configured_hybrid_simulator(self):
         """
         Put a Hybrid Simulator configuration with the imported Connectivity in session and open the
-        Subnetwork configuration step for it.
+        Subnetworks wizard step for it.
         """
         self.hybrid_controller.context.set_hybrid_simulator(self.session_stored_hybrid_simulator)
         return self.hybrid_controller.set_subnetworks()
+
+    def _saved_subnetworks(self):
+        """The grouping stored on the Hybrid Simulator configuration, as the wizard step lists it."""
+        return self.hybrid_controller.context.hybrid_simulator.subnetworks
+
+    def _draft_subnetworks(self):
+        """The grouping currently being edited on the board in the third column."""
+        return self.hybrid_controller.context.subnetworks_draft
+
+    @staticmethod
+    def _names(subnetworks):
+        return [subnetwork.name for subnetwork in subnetworks]
 
     @staticmethod
     def _assert_valid_partition(subnetworks, number_of_regions):
         """
         Every Connectivity node must show up in exactly one Subnetwork, with its original index.
+        Accepts both the view models and their JSON ready form.
         """
         assigned = []
         for subnetwork in subnetworks:
-            assigned.extend(subnetwork['node_indices'])
+            node_indices = subnetwork['node_indices'] if isinstance(subnetwork, dict) else subnetwork.node_indices
+            assigned.extend(node_indices)
 
         assert sorted(assigned) == list(range(number_of_regions))
         assert len(assigned) == len(set(assigned))
@@ -91,6 +106,15 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         assert result_dict['renderer'].fragment_title == "Connectivity"
         assert result_dict['burst_list'] == []
         assert not result_dict['errors']
+
+    def test_connectivity_step_configures_nothing_in_the_third_column(self):
+        cherrypy.request.method = "GET"
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            rendering_rules = self.hybrid_controller.set_connectivity()
+
+        # nothing declared here is what empties the third column when stepping back to this step
+        assert rendering_rules['renderer'].context_form_url is None
 
     def test_set_connectivity(self):
         cherrypy.request.method = "POST"
@@ -121,39 +145,147 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
     def test_set_subnetworks_creates_one_subnetwork_with_all_regions(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
             rendering_rules = self._configured_hybrid_simulator()
-            hybrid_simulator = self.hybrid_controller.context.hybrid_simulator
+            saved = self._saved_subnetworks()
 
         renderer = rendering_rules['renderer']
         assert renderer.is_subnetworks_summary_fragment
         assert renderer.form_action_url == HybridSimulatorURLs.SET_SUBNETWORKS_URL
         assert len(renderer.region_labels) == self.connectivity.number_of_regions
 
-        assert len(hybrid_simulator.subnetworks) == 1
-        assert hybrid_simulator.subnetworks[0].name == 'Subnetwork A'
-        assert list(hybrid_simulator.subnetworks[0].node_indices) == list(
-            range(self.connectivity.number_of_regions))
+        assert len(saved) == 1
+        assert saved[0].name == 'Subnetwork A'
+        assert list(saved[0].node_indices) == list(range(self.connectivity.number_of_regions))
+        self._assert_valid_partition(saved, self.connectivity.number_of_regions)
+
+    def test_subnetworks_step_configures_the_board_in_the_third_column(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            rendering_rules = self._configured_hybrid_simulator()
+
+        renderer = rendering_rules['renderer']
+        # this is what makes the third column show the grouping board for this step
+        assert renderer.context_form_url == HybridSimulatorURLs.CONFIGURE_SUBNETWORKS_URL
+        assert renderer.context_title == "Subnetworks"
+        assert renderer.include_previous_button
+        assert renderer.previous_button_label == 'Previous'
+        # Model and Integrator configuration is a later phase, so Next has nowhere to go yet
+        assert not renderer.next_button_enabled
+        # nothing was edited yet, so the board holds exactly what the step lists
+        assert not renderer.is_modified
+
+    def test_configure_subnetworks_renders_the_board_for_the_current_grouping(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            rendering_rules = self.hybrid_controller.configure_subnetworks()
+
+        renderer = rendering_rules['renderer']
+        assert renderer.load_error is None
+        assert len(renderer.region_labels) == self.connectivity.number_of_regions
+        assert self._names(renderer.subnetworks) == ['Subnetwork A']
+        assert not renderer.is_modified
 
         rendered_state = json.loads(renderer.subnetworks_json)
+        assert rendered_state['is_modified'] is False
         self._assert_valid_partition(rendered_state['subnetworks'], self.connectivity.number_of_regions)
 
-    def test_subnetworks_step_lists_every_subnetwork_with_its_regions(self):
+    def test_configure_subnetworks_without_connectivity_reports_the_reason(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self.hybrid_controller.context.set_hybrid_simulator(HybridSimulatorAdapterModel())
+            rendering_rules = self.hybrid_controller.configure_subnetworks()
+
+        # the third column says why it can not configure anything, the wizard is left alone
+        assert rendering_rules['renderer'].load_error
+        assert rendering_rules['renderer'].subnetworks is None
+
+    def test_the_rendered_step_points_the_third_column_at_the_board(self):
+        """
+        What actually goes on the wire: the wizard step carries the attribute hybrid_simulator.js reads
+        to fill the third column, and that url answers with the board. Rendering is normally off during
+        tests, so a broken template would otherwise only show up in the browser.
+        """
+        cherrypy.request.method = "GET"
+        with patch.object(TvbProfile.current.web, 'RENDER_HTML', True), \
+                patch('cherrypy.session', self.sess_mock, create=True):
+            self.hybrid_controller.context.set_hybrid_simulator(self.session_stored_hybrid_simulator)
+            step_html = self.hybrid_controller.set_subnetworks()
+            board_html = self.hybrid_controller.configure_subnetworks()
+
+        assert 'data-hybrid-context-url="{}"'.format(
+            HybridSimulatorURLs.CONFIGURE_SUBNETWORKS_URL) in step_html
+        assert 'data-hybrid-context-title="Subnetworks"' in step_html
+        # the removed page and the action that used to open it must not come back
+        assert 'Configure Subnetworks</button>' not in step_html
+
+        assert 'id="hybrid-subnetworks-board"' in board_html
+        assert 'HYBRID_SUBNETWORKS.init(' in board_html
+        assert 'hybridSaveSubnetworks()' in board_html
+
+    def test_connectivity_step_declares_no_third_column_configuration_when_rendered(self):
+        cherrypy.request.method = "GET"
+        with patch.object(TvbProfile.current.web, 'RENDER_HTML', True), \
+                patch('cherrypy.session', self.sess_mock, create=True):
+            step_html = self.hybrid_controller.set_connectivity()
+
+        # an empty url is what makes hybrid_simulator.js clear the third column on this step
+        assert 'data-hybrid-context-url=""' in step_html
+
+    def test_set_subnetworks_without_connectivity_returns_to_first_fragment(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self.hybrid_controller.context.set_hybrid_simulator(HybridSimulatorAdapterModel())
+            rendering_rules = self.hybrid_controller.set_subnetworks()
+
+        assert rendering_rules['renderer'].form_action_url == HybridSimulatorURLs.SET_CONNECTIVITY_URL
+        assert rendering_rules['renderer'].is_first_fragment
+
+    # ---------------------------------------------------------------- editing the board
+
+    def test_editing_the_board_leaves_the_saved_configuration_alone(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            self.hybrid_controller.add_subnetwork()
+            result = json.loads(self.hybrid_controller.move_regions(subnetwork_index='1',
+                                                                    node_indices=json.dumps([1, 3])))
+            rendering_rules = self.hybrid_controller.set_subnetworks()
+            saved, draft = self._saved_subnetworks(), self._draft_subnetworks()
+
+        # the board holds the new grouping...
+        assert result['status'] == 'ok'
+        assert result['is_modified'] is True
+        assert result['subnetworks'][1]['node_indices'] == [1, 3]
+        assert self._names(draft) == ['Subnetwork A', 'Subnetwork B']
+
+        # ...while the wizard step still lists the saved one
+        assert self._names(saved) == ['Subnetwork A']
+        assert list(saved[0].node_indices) == list(range(self.connectivity.number_of_regions))
+        assert [row['name'] for row in rendering_rules['renderer'].subnetwork_rows] == ['Subnetwork A']
+        assert rendering_rules['renderer'].is_modified
+
+    def test_save_updates_the_summary_with_the_grouping_from_the_board(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
             self._configured_hybrid_simulator()
             self.hybrid_controller.add_subnetwork()
             self.hybrid_controller.move_regions(subnetwork_index='1', node_indices=json.dumps([1, 3]))
-            rendering_rules = self.hybrid_controller.set_subnetworks()
+            rendering_rules = self.hybrid_controller.save_subnetworks()
+            saved = self._saved_subnetworks()
 
-        rows = rendering_rules['renderer'].subnetwork_rows
+        renderer = rendering_rules['renderer']
+        assert renderer.form_action_url == HybridSimulatorURLs.SET_SUBNETWORKS_URL
+        assert renderer.is_subnetworks_summary_fragment
+        # saving is what makes the board and the summary agree again
+        assert not renderer.is_modified
+
+        rows = renderer.subnetwork_rows
         assert [row['name'] for row in rows] == ['Subnetwork A', 'Subnetwork B']
         assert rows[0]['count'] == self.connectivity.number_of_regions - 2
         assert rows[1]['count'] == 2
-
         # the rows keep the original Connectivity indices next to the labels
         assert [region['index'] for region in rows[1]['regions']] == [1, 3]
         assert all(region['label'] for region in rows[1]['regions'])
         assert 1 not in [region['index'] for region in rows[0]['regions']]
 
-    def test_subnetworks_step_discards_the_ones_left_empty(self):
+        assert list(saved[1].node_indices) == [1, 3]
+        self._assert_valid_partition(saved, self.connectivity.number_of_regions)
+
+    def test_the_board_keeps_empty_subnetworks_and_saving_discards_them(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
             self._configured_hybrid_simulator()
             # two extra Subnetworks, only one of which is ever filled
@@ -161,29 +293,29 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
             self.hybrid_controller.add_subnetwork()
             self.hybrid_controller.move_regions(subnetwork_index='1', node_indices=json.dumps([1, 3]))
 
-            rendering_rules = self.hybrid_controller.set_subnetworks()
-            hybrid_simulator = self.hybrid_controller.context.hybrid_simulator
-
-        rows = rendering_rules['renderer'].subnetwork_rows
-        assert [row['name'] for row in rows] == ['Subnetwork A', 'Subnetwork B']
-        assert all(row['count'] > 0 for row in rows)
-
-        # the empty one is gone from the stored configuration too, not just hidden
-        assert [subnetwork.name for subnetwork in hybrid_simulator.subnetworks] == ['Subnetwork A',
-                                                                                    'Subnetwork B']
-        self._assert_valid_partition(
-            [{'node_indices': list(s.node_indices)} for s in hybrid_simulator.subnetworks],
-            self.connectivity.number_of_regions)
-
-    def test_grouping_board_keeps_empty_subnetworks_so_regions_can_be_dragged_into_them(self):
-        with patch('cherrypy.session', self.sess_mock, create=True):
-            self._configured_hybrid_simulator()
-            self.hybrid_controller.add_subnetwork()
-            rendering_rules = self.hybrid_controller.configure_subnetworks()
+            board = self.hybrid_controller.configure_subnetworks()
+            rendering_rules = self.hybrid_controller.save_subnetworks()
+            saved, draft = self._saved_subnetworks(), self._draft_subnetworks()
 
         # on the board an empty Subnetwork must survive, it is the drop target being prepared
-        assert len(rendering_rules['renderer'].subnetworks) == 2
-        assert list(rendering_rules['renderer'].subnetworks[1].node_indices) == []
+        assert self._names(board['renderer'].subnetworks) == ['Subnetwork A', 'Subnetwork B', 'Subnetwork C']
+        assert list(board['renderer'].subnetworks[2].node_indices) == []
+
+        # saving is where the ones left empty are dropped, from the configuration and from the board
+        assert [row['name'] for row in rendering_rules['renderer'].subnetwork_rows] == ['Subnetwork A',
+                                                                                        'Subnetwork B']
+        assert self._names(saved) == ['Subnetwork A', 'Subnetwork B']
+        assert self._names(draft) == ['Subnetwork A', 'Subnetwork B']
+        self._assert_valid_partition(saved, self.connectivity.number_of_regions)
+
+    def test_an_empty_subnetwork_alone_is_not_reported_as_an_unsaved_change(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            result = json.loads(self.hybrid_controller.add_subnetwork())
+
+        # saving would discard it again, so there is nothing pending to save yet
+        assert result['status'] == 'ok'
+        assert result['is_modified'] is False
 
     def test_a_single_empty_subnetwork_is_never_discarded(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
@@ -193,60 +325,11 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         # the default configuration holds every region, so nothing is dropped and one always remains
         assert len(rendering_rules['renderer'].subnetwork_rows) == 1
 
-    def test_subnetworks_step_offers_configure_and_a_not_yet_available_next(self):
-        with patch('cherrypy.session', self.sess_mock, create=True):
-            rendering_rules = self._configured_hybrid_simulator()
-
-        renderer = rendering_rules['renderer']
-        assert renderer.include_configure_subnetworks_button
-        assert renderer.include_previous_button
-        assert renderer.previous_button_label == 'Previous'
-        assert renderer.include_next_button
-        # Model and Integrator configuration is a later phase, so Next has nowhere to go yet
-        assert not renderer.next_button_enabled
-
-    def test_configure_subnetworks_opens_the_grouping_board(self):
-        with patch('cherrypy.session', self.sess_mock, create=True):
-            self._configured_hybrid_simulator()
-            rendering_rules = self.hybrid_controller.configure_subnetworks()
-
-        renderer = rendering_rules['renderer']
-        assert renderer.is_subnetwork_fragment
-        assert not renderer.is_subnetworks_summary_fragment
-        assert renderer.form_action_url == HybridSimulatorURLs.CONFIGURE_SUBNETWORKS_URL
-        # the board leads back to the Subnetworks step, under a label that says so
-        assert renderer.previous_form_action_url == HybridSimulatorURLs.SET_SUBNETWORKS_URL
-        assert renderer.previous_button_label == 'Back to Simulator'
-        assert not renderer.include_next_button
-        assert not renderer.include_configure_subnetworks_button
-        assert len(renderer.region_labels) == self.connectivity.number_of_regions
-
-    def test_grouping_on_the_board_shows_up_on_the_subnetworks_step(self):
-        with patch('cherrypy.session', self.sess_mock, create=True):
-            self._configured_hybrid_simulator()
-            self.hybrid_controller.configure_subnetworks()
-            self.hybrid_controller.add_subnetwork()
-            self.hybrid_controller.move_regions(subnetwork_index='1', node_indices=json.dumps([4, 5]))
-            # "Back to Simulator" is a plain load of the Subnetworks step
-            rendering_rules = self.hybrid_controller.set_subnetworks()
-
-        rows = rendering_rules['renderer'].subnetwork_rows
-        assert len(rows) == 2
-        assert [region['index'] for region in rows[1]['regions']] == [4, 5]
-
-    def test_configure_subnetworks_without_connectivity_returns_to_first_fragment(self):
+    def test_save_without_connectivity_returns_to_first_fragment(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
             self.hybrid_controller.context.set_hybrid_simulator(HybridSimulatorAdapterModel())
-            rendering_rules = self.hybrid_controller.configure_subnetworks()
+            rendering_rules = self.hybrid_controller.save_subnetworks()
 
-        assert rendering_rules['renderer'].is_first_fragment
-
-    def test_set_subnetworks_without_connectivity_returns_to_first_fragment(self):
-        with patch('cherrypy.session', self.sess_mock, create=True):
-            self.hybrid_controller.context.set_hybrid_simulator(HybridSimulatorAdapterModel())
-            rendering_rules = self.hybrid_controller.set_subnetworks()
-
-        assert rendering_rules['renderer'].form_action_url == HybridSimulatorURLs.SET_CONNECTIVITY_URL
         assert rendering_rules['renderer'].is_first_fragment
 
     def test_add_subnetwork(self):
@@ -263,11 +346,17 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         with patch('cherrypy.session', self.sess_mock, create=True):
             self._configured_hybrid_simulator()
             result = json.loads(self.hybrid_controller.rename_subnetwork(subnetwork_index='0', name=' Cortex '))
-            hybrid_simulator = self.hybrid_controller.context.hybrid_simulator
+            saved_before, draft = self._saved_subnetworks(), self._draft_subnetworks()
+
+            self.hybrid_controller.save_subnetworks()
+            saved_after = self._saved_subnetworks()
 
         assert result['status'] == 'ok'
         assert result['subnetworks'][0]['name'] == 'Cortex'
-        assert hybrid_simulator.subnetworks[0].name == 'Cortex'
+        assert draft[0].name == 'Cortex'
+        # renaming on the board does not reach the configuration before it is saved
+        assert saved_before[0].name == 'Subnetwork A'
+        assert saved_after[0].name == 'Cortex'
 
     def test_rename_subnetwork_rejects_empty_and_duplicated_names(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
@@ -293,7 +382,10 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
             self.hybrid_controller.add_subnetwork()
             result = json.loads(self.hybrid_controller.move_regions(subnetwork_index='1',
                                                                     node_indices=json.dumps(moved)))
-            hybrid_simulator = self.hybrid_controller.context.hybrid_simulator
+            draft = self._draft_subnetworks()
+
+            self.hybrid_controller.save_subnetworks()
+            saved = self._saved_subnetworks()
 
         assert result['status'] == 'ok'
         assert result['subnetworks'][1]['node_indices'] == moved
@@ -301,8 +393,10 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
             assert node_index not in result['subnetworks'][0]['node_indices']
         self._assert_valid_partition(result['subnetworks'], self.connectivity.number_of_regions)
 
-        # the same grouping is stored in session, still using the original Connectivity indices
-        assert list(hybrid_simulator.subnetworks[1].node_indices) == moved
+        # the same grouping is on the board and, after saving, in the configuration, both still using
+        # the original Connectivity indices
+        assert list(draft[1].node_indices) == moved
+        assert list(saved[1].node_indices) == moved
 
     def test_move_regions_back_leaves_no_region_unassigned(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
@@ -353,7 +447,35 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         assert len(result['subnetworks']) == 1
         self._assert_valid_partition(result['subnetworks'], self.connectivity.number_of_regions)
 
-    def test_subnetworks_survive_navigation_between_steps(self):
+    # ---------------------------------------------------------------- navigation
+
+    def test_saved_subnetworks_survive_navigation_between_steps(self):
+        cherrypy.request.method = "POST"
+        self.sess_mock['connectivity'] = self.connectivity.gid
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            self.hybrid_controller.add_subnetwork()
+            self.hybrid_controller.move_regions(subnetwork_index='1', node_indices=json.dumps([2, 5]))
+            self.hybrid_controller.save_subnetworks()
+
+            # go back to the Connectivity step and forward again, without changing the Connectivity
+            cherrypy.request.method = "GET"
+            previous_rules = self.hybrid_controller.set_connectivity()
+            cherrypy.request.method = "POST"
+            rendering_rules = self.hybrid_controller.set_connectivity(**self.sess_mock._data)
+            board = self.hybrid_controller.configure_subnetworks()
+            saved = self._saved_subnetworks()
+
+        assert previous_rules['renderer'].is_first_fragment
+        assert rendering_rules['renderer'].is_subnetworks_summary_fragment
+        assert len(saved) == 2
+        assert list(saved[1].node_indices) == [2, 5]
+        # the third column comes back showing the same grouping
+        assert list(board['renderer'].subnetworks[1].node_indices) == [2, 5]
+        assert not board['renderer'].is_modified
+
+    def test_unsaved_grouping_survives_navigation_between_steps(self):
         cherrypy.request.method = "POST"
         self.sess_mock['connectivity'] = self.connectivity.gid
 
@@ -362,17 +484,18 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
             self.hybrid_controller.add_subnetwork()
             self.hybrid_controller.move_regions(subnetwork_index='1', node_indices=json.dumps([2, 5]))
 
-            # go back to the Connectivity step and forward again, without changing the Connectivity
             cherrypy.request.method = "GET"
-            previous_rules = self.hybrid_controller.set_connectivity()
+            self.hybrid_controller.set_connectivity()
             cherrypy.request.method = "POST"
             rendering_rules = self.hybrid_controller.set_connectivity(**self.sess_mock._data)
-            hybrid_simulator = self.hybrid_controller.context.hybrid_simulator
+            board = self.hybrid_controller.configure_subnetworks()
+            saved = self._saved_subnetworks()
 
-        assert previous_rules['renderer'].is_first_fragment
-        assert rendering_rules['renderer'].is_subnetworks_summary_fragment
-        assert len(hybrid_simulator.subnetworks) == 2
-        assert list(hybrid_simulator.subnetworks[1].node_indices) == [2, 5]
+        # what was never saved is still on the board, and still only on the board
+        assert list(board['renderer'].subnetworks[1].node_indices) == [2, 5]
+        assert board['renderer'].is_modified
+        assert rendering_rules['renderer'].is_modified
+        assert len(saved) == 1
 
     def test_subnetworks_are_reset_when_connectivity_changes(self):
         other_connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project,
@@ -382,15 +505,32 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         with patch('cherrypy.session', self.sess_mock, create=True):
             self._configured_hybrid_simulator()
             self.hybrid_controller.add_subnetwork()
+            self.hybrid_controller.move_regions(subnetwork_index='1', node_indices=json.dumps([0, 2]))
 
             self.sess_mock['connectivity'] = other_connectivity.gid
             self.hybrid_controller.set_connectivity(**self.sess_mock._data)
             hybrid_simulator = self.hybrid_controller.context.hybrid_simulator
+            draft = self._draft_subnetworks()
 
         assert hybrid_simulator.connectivity.hex == other_connectivity.gid
         assert len(hybrid_simulator.subnetworks) == 1
         assert list(hybrid_simulator.subnetworks[0].node_indices) == list(
             range(other_connectivity.number_of_regions))
+        # the board was grouping the regions of the Connectivity that is no longer selected
+        assert self._names(draft) == ['Subnetwork A']
+        assert list(draft[0].node_indices) == list(range(other_connectivity.number_of_regions))
+
+    def test_reset_drops_the_board_as_well(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            self.hybrid_controller.add_subnetwork()
+            self.hybrid_controller.move_regions(subnetwork_index='1', node_indices=json.dumps([0, 2]))
+
+            rendering_rules = self.hybrid_controller.reset_hybrid_simulator_configuration()
+            draft = self._draft_subnetworks()
+
+        assert rendering_rules['renderer'].is_first_fragment
+        assert not draft
 
     def test_hybrid_history_excludes_classic_bursts_for_now(self):
         classic_burst = BurstConfiguration(self.test_project.id)
