@@ -42,6 +42,9 @@ HyperbolicTangent, SigmoidalJansenRit, and PreSigmoidal.
 These tests verify that the corrected pipeline is in place and will **fail**
 if the pre/post ordering is ever reverted.
 
+See Also
+--------
+FIX_COUPLING_PIPELINE.md — design doc with quantitative examples.
 """
 
 import numpy as np
@@ -51,6 +54,10 @@ from scipy import sparse as sp
 from tvb.simulator.hybrid.base_projection import BaseProjection
 from tvb.simulator.hybrid.coupling import HyperbolicTangent, Linear
 
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
 def _make_ring_weights(n_nodes: int, weight: float = 1.0, dtype=np.float32):
     """Return a sparse CSR weight matrix for a directed n-node ring where
@@ -164,11 +171,94 @@ class TestCouplingPipelineCorrectness:
         np.testing.assert_allclose(actual, correct, rtol=1e-4, atol=1e-5)
 
 
+class TestNumbaCouplingPipeline:
+    """Verify that the Numba backend also applies ``pre()`` per-edge.
+
+    The Numba simulation kernel (``nb-hybrid-sim.py.mako``) was updated to
+    evaluate ``pre()`` inside the per-edge inner loop before weighting and
+    accumulation.  This test runs a minimal one-step simulation and checks
+    the first-step coupling values against a hand-computed reference.
+    """
+
+    @pytest.mark.skipif(
+        pytest.importorskip("numba", reason="numba not installed") is None,
+        reason="numba not available",
+    )
+    def test_numba_tanh_pre_per_edge(self):
+        """Run a 1-step NbHybridBackend simulation with MontbrioPazoRoxin
+        and HyperbolicTangent intra-coupling.  ``ctavg`` must match the
+        per-edge-pre reference.
+        """
+        from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
+        from tvb.simulator.integrators import HeunDeterministic
+        from tvb.simulator.hybrid import Subnetwork, NetworkSet
+        from tvb.simulator.hybrid.intra_projection import IntraProjection
+        from tvb.simulator.backend.nb_hybrid import NbHybridBackend
+
+        model = MontbrioPazoRoxin()
+        model.configure()
+        scheme = HeunDeterministic(dt=0.1)
+        subnet = Subnetwork(name="mpr", model=model, scheme=scheme, nnodes=3)
+
+        w = sp.csr_matrix(
+            np.array(
+                [[0.0, 0.5, 0.5],
+                 [0.5, 0.0, 0.5],
+                 [0.5, 0.5, 0.0]],
+                dtype=np.float64,
+            )
+        )
+        l = sp.csr_matrix((3, 3), dtype=np.float64)
+
+        cfun = HyperbolicTangent(
+            a=np.array([1.0]), midpoint=np.array([0.0]), sigma=np.array([1.0])
+        )
+        proj = IntraProjection(
+            source_cvar=model.cvar[:1],
+            target_cvar=np.array([0], dtype=np.int32),
+            weights=w,
+            lengths=l,
+            cv=1.0,
+            dt=0.1,
+            scale=1.0,
+            cfun=cfun,
+        )
+        subnet.projections = [proj]
+        subnet.configure()
+
+        nets = NetworkSet(subnets=[subnet], projections=[])
+        nets.configure()
+
+        # Deterministic ICs so we can compute the reference by hand
+        ic = np.zeros((model.nvar, 3, 1), dtype=np.float64)
+        ic[0, :, 0] = [0.1, 0.2, 0.3]   # r (cvar)
+        ic[1, :, 0] = [0.0, 0.0, 0.0]   # V
+
+        be = NbHybridBackend()
+        result = be.run_network(nets, nstep=1, initial_states=[ic])
+        times, data, ctavg = result[0]
+
+        # Reference using the CORRECT pipeline: scale * post(Σ w · pre(x_j))
+        r = np.array([0.1, 0.2, 0.3], dtype=np.float64)
+        pre_r = 1.0 + np.tanh(r)
+        W = w.toarray()
+        correct = W @ pre_r
+
+        actual = ctavg[0, 0, :, 0]
+        np.testing.assert_allclose(
+            actual, correct, rtol=1e-4, atol=1e-5,
+            err_msg=(
+                "Numba backend coupling does not match the per-edge-pre reference. "
+                "The JIT-compiled kernel may be applying pre() after the weighted sum."
+            ),
+        )
+
 
 class TestQuantitativeDiscrepancy:
     """Pure-numpy test (no TVB imports) demonstrating mathematically that
     ``Σ w·pre(x_j) ≠ pre(Σ w·x_j)`` for a nonlinear ``pre``.
 
+    Uses the 4-node example from FIX_COUPLING_PIPELINE.md.
     """
 
     def test_nonlinear_pre_order_matters(self):
