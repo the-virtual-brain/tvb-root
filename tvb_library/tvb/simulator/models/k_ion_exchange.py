@@ -246,9 +246,9 @@ class KIonEx(Model):
             ('h_gate',    'n',
              '1.1 - 1.0 / (1.0 + exp(-8.0 * (n - 0.4)))'),
             ('I_K_form',  'V, n, K_o, K_i',
-             '(g_Kl+g_K*n)*(V - 26.64*log(K_o/K_i))'),
+             '(g_Kl+g_K*n)*(V - 26.64*(log(K_o)-log(K_i)))'),
             ('I_Na_form', 'V, Na_o, Na_i, n',
-             '(g_Nal+g_Na*m_inf(V)*h_gate(n))*(V - 26.64*log(Na_o/Na_i))'),
+             '(g_Nal+g_Na*m_inf(V)*h_gate(n))*(V - 26.64*(log(Na_o)-log(Na_i)))'),
             ('I_Cl_form', 'V',
              'g_Cl*(V + 26.64*log(Cl_o0/Cl_i0))'),
             ('I_pump_form', 'Na_i, K_o',
@@ -402,10 +402,10 @@ class KIonEx(Model):
             return 1.1 - 1.0 / (1.0 + numpy.exp(-8.0 * (n - 0.4)))
 
         def I_K_form(V,n,K_o,K_i):
-            return (g_Kl+g_K*n)*(V- 26.64*numpy.log(K_o/K_i)) 
+            return (g_Kl+g_K*n)*(V- 26.64*(numpy.log(K_o)-numpy.log(K_i))) 
 
         def I_Na_form(V,Na_o,Na_i,n):
-            return (g_Nal+g_Na*m_inf(V)*h(n))*(V- 26.64*numpy.log(Na_o/Na_i))
+            return (g_Nal+g_Na*m_inf(V)*h(n))*(V- 26.64*(numpy.log(Na_o)-numpy.log(Na_i)))
 
         def I_Cl_form(V):
             return g_Cl*(V+ 26.64*numpy.log(Cl_o0/Cl_i0)) 
@@ -502,13 +502,13 @@ def h(n):
 def I_K_form(V, n, K_o, K_i):
     g_K = 22.0  # nS  # maximal potassium conductance
     g_Kl = 0.12  # nS  # potassium leak conductance
-    return (g_Kl + g_K * n) * (V - 26.64 * numpy.log(K_o / K_i))
+    return (g_Kl + g_K * n) * (V - 26.64 * (numpy.log(K_o) - numpy.log(K_i)))
 
 @njit
 def I_Na_form(V, Na_o, Na_i, n):
     g_Na = 40.0  # nS   # maximal sodiumconductance
     g_Nal = 0.02  # nS  # sodium leak conductance
-    return (g_Nal + g_Na * m_inf(V) * h(n)) * (V - 26.64 * numpy.log(Na_o / Na_i))
+    return (g_Nal + g_Na * m_inf(V) * h(n)) * (V - 26.64 * (numpy.log(Na_o) - numpy.log(Na_i)))
 
 @njit
 def I_Cl_form(V):
@@ -552,13 +552,13 @@ def h(n):
 def I_K_form(V, n, K_o, K_i):
     g_K = 22.0  # nS  # maximal potassium conductance
     g_Kl = 0.12  # nS  # potassium leak conductance
-    return (g_Kl + g_K * n) * (V - 26.64 * numpy.log(K_o / K_i))
+    return (g_Kl + g_K * n) * (V - 26.64 * (numpy.log(K_o) - numpy.log(K_i)))
 
 @njit
 def I_Na_form(V, Na_o, Na_i, n):
     g_Na = 40.0  # nS   # maximal sodiumconductance
     g_Nal = 0.02  # nS  # sodium leak conductance
-    return (g_Nal + g_Na * m_inf(V) * h(n)) * (V - 26.64 * numpy.log(Na_o / Na_i))
+    return (g_Nal + g_Na * m_inf(V) * h(n)) * (V - 26.64 * (numpy.log(Na_o) - numpy.log(Na_i)))
 
 @njit
 def I_Cl_form(V):
