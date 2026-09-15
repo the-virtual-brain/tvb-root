@@ -139,6 +139,31 @@ class ReducedWongWang(ModelNumbaDfun):
         default=("S",),
         doc="""default state variables to be monitored""")
 
+    coupling_terms = Final(
+        label="Coupling terms",
+        default=["Coupling_Term_S"])
+
+    parameter_names = List(
+        of=str,
+        label="List of parameters for this model",
+        default='a b d gamma tau_s w J_N I_o'.split()
+    )
+
+    dfun_intermediates = Final(
+        label="Intermediate computations for numba codegen",
+        default=[
+            ('x_ww',  'w * J_N * S + I_o + J_N * Coupling_Term_S'),
+            ('H_ww',  '(a * x_ww - b) / (nb.float32(1.0) - exp(-d * (a * x_ww - b)))'),
+        ]
+    )
+
+    state_variable_dfuns = Final(
+        label="Drift functions for numba codegen",
+        default={
+            'S': '-(S / tau_s) + (nb.float32(1.0) - S) * H_ww * gamma',
+        }
+    )
+
     state_variables = ['S']
     _nvar = 1
     cvar = numpy.array([0], dtype=numpy.int32)

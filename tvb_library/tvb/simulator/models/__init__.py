@@ -78,6 +78,7 @@ class ModelsEnum(Enum):
     DUMONT_GUTKIN = "DumontGutkin"
     DECO_BALANCED_EXC_INH = "DecoBalancedExcInh"
     K_ION_EXCHANGE = "KIonEx"
+    CEREBELLAR_MF = "CerebellarMF"
 
     def get_class(self):
         return _get_imported_model(self.value)
@@ -114,6 +115,7 @@ _module_models = {
     'zerlaut': [ModelsEnum.ZERLAUT_FIRST_ORDER, ModelsEnum.ZERLAUT_SECOND_ORDER],
     'infinite_theta': [ModelsEnum.MONTBRIO_PAZO_ROXIN, ModelsEnum.COOMBES_BYRNE, ModelsEnum.COOMBES_BYRNE_2D, ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF, ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD, ModelsEnum.DUMONT_GUTKIN],
     'k_ion_exchange': [ModelsEnum.K_ION_EXCHANGE],
+    'cerebellar_mf': [ModelsEnum.CEREBELLAR_MF],
 }
 
 
