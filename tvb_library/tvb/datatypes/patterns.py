@@ -164,6 +164,37 @@ class StimuliRegion(SpatioTemporalPattern):
         """
         return numpy.array([0.0] * number_of_regions)
 
+    @classmethod
+    def from_weights(cls, weight, temporal):
+        """Create a StimuliRegion from a weight vector and temporal equation.
+
+        Builds a minimal zero-weight Connectivity internally so the caller
+        does not need to construct one for simple stimulus patterns.
+
+        Parameters
+        ----------
+        weight : array-like, shape (n_nodes,)
+            Per-node stimulus weights.
+        temporal : TemporalApplicableEquation
+            Temporal equation (e.g. ``Linear()``, ``PulseTrain()``).
+
+        Returns
+        -------
+        StimuliRegion
+            Ready-to-configure stimulus pattern.
+        """
+        weight = numpy.asarray(weight)
+        n = len(weight)
+        conn = connectivity.Connectivity(
+            centres=numpy.zeros((n, 3)),
+            weights=numpy.zeros((n, n)),
+            tract_lengths=numpy.zeros((n, n)),
+            region_labels=numpy.array([str(i) for i in range(n)]),
+            speed=numpy.array([1.0]),
+        )
+        conn.configure()
+        return cls(temporal=temporal, connectivity=conn, weight=weight)
+
     @property
     def weight_array(self):
         """
