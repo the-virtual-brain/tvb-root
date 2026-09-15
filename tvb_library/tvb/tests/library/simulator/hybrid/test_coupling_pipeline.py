@@ -42,9 +42,6 @@ HyperbolicTangent, SigmoidalJansenRit, and PreSigmoidal.
 These tests verify that the corrected pipeline is in place and will **fail**
 if the pre/post ordering is ever reverted.
 
-See Also
---------
-FIX_COUPLING_PIPELINE.md — design doc with quantitative examples.
 """
 
 import numpy as np
@@ -54,10 +51,6 @@ from scipy import sparse as sp
 from tvb.simulator.hybrid.base_projection import BaseProjection
 from tvb.simulator.hybrid.coupling import HyperbolicTangent, Linear
 
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
 
 def _make_ring_weights(n_nodes: int, weight: float = 1.0, dtype=np.float32):
     """Return a sparse CSR weight matrix for a directed n-node ring where
@@ -176,7 +169,6 @@ class TestQuantitativeDiscrepancy:
     """Pure-numpy test (no TVB imports) demonstrating mathematically that
     ``Σ w·pre(x_j) ≠ pre(Σ w·x_j)`` for a nonlinear ``pre``.
 
-    Uses the 4-node example from FIX_COUPLING_PIPELINE.md.
     """
 
     def test_nonlinear_pre_order_matters(self):
