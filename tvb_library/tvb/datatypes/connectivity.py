@@ -345,7 +345,7 @@ class Connectivity(HasTraits):
         Compute some labers, if missing
         """
         labels = ["region_%03d" % n for n in range(self.number_of_regions)]
-        self.region_labels = numpy.array(labels, dtype="128a")
+        self.region_labels = numpy.array(labels, dtype="U128")
 
     def try_compute_hemispheres(self):
         """
