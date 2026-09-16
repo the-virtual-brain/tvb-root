@@ -73,7 +73,99 @@ __all__ = [
     "NetworkAnalysis",
     "SubnetworkInfo",
     "ProjectionInfo",
+    "SweepResult",
 ]
+
+
+# ---------------------------------------------------------------------------
+# SweepResult — unified return type for both CPU and GPU sweep
+# ---------------------------------------------------------------------------
+
+
+@dataclasses.dataclass
+class SweepResult:
+    """Container for parameter-sweep results.
+
+    Returned by :meth:`NbHybridBackend.sweep`.  Works identically
+    regardless of whether the sweep ran on CPU or GPU.
+
+    Attributes
+    ----------
+    tavg : dict[str, np.ndarray]
+        Per-subnet temporal-average arrays with shape
+        ``(n_sweeps, n_samples, n_voi, N_subnet, n_modes)``.
+    merged_tavg : np.ndarray
+        All subnets concatenated / reordered along the node axis,
+        shape ``(n_sweeps, n_samples, n_voi, N_total, n_modes)``.
+    ctavg : dict[str, np.ndarray]
+        Per-subnet coupling temporal-average with the same sample axis as tavg.
+    times : np.ndarray
+        Mid-point time vector, shape ``(n_chunks,)``.
+    sweep_values : np.ndarray
+        The sweep parameter grid, ``(n_sweeps, n_dims)``.
+    snapshot : dict or None
+        Final execution state for resume (GPU-only for now).
+    backend : str
+        ``'cpu-seq'``, ``'cpu-prange'``, or ``'cuda'``.
+    elapsed : float
+        Wall-clock seconds for the sweep execution (excludes compile).
+    raw : dict[str, np.ndarray] or None
+        Full step-by-step output when ``monitor='raw'``.
+    bold : dict[str, np.ndarray] or None
+        BOLD signal when ``bold_period`` was given.
+    """
+    tavg: dict = dataclasses.field(default_factory=dict)
+    merged_tavg: np.ndarray = None
+    ctavg: dict = dataclasses.field(default_factory=dict)
+    times: np.ndarray = None
+    sweep_values: np.ndarray = None
+    snapshot: Optional[dict] = None
+    backend: str = ""
+    elapsed: float = 0.0
+    raw: Optional[dict] = None
+    bold: Optional[dict] = None
+
+
+# ---------------------------------------------------------------------------
+# CFun parameter index mapping — named attributes to param_idx
+# ---------------------------------------------------------------------------
+
+_CFUN_PARAM_ATTRS: dict = {
+    "Linear":            [("a", 0), ("b", 1)],
+    "Scaling":           [("a", 0)],
+    "Sigmoidal":         [("a", 0), ("sigma", 1), ("midpoint", 2),
+                          ("cmin", 3), ("cmax", 4)],
+    "SigmoidalJansenRit":[("a", 0), ("e0", 1), ("r", 2), ("v0", 3),
+                          ("cmin", 4), ("cmax", 5), ("midpoint", 6)],
+    "Kuramoto":          [("a", 0), ("inv_N", 1)],
+    "Difference":        [("a", 0)],
+    "HyperbolicTangent": [("a", 0), ("midpoint", 1), ("sigma", 2),
+                          ("b", 3)],
+    "PreSigmoidal":      [("H", 0), ("Q", 1), ("G", 2), ("P", 3), ("theta", 4)],
+}
+
+_CFUN_ATTR_TO_IDX: dict = {}
+for _cls, _attrs in _CFUN_PARAM_ATTRS.items():
+    for _attr, _idx in _attrs:
+        _CFUN_ATTR_TO_IDX[(_cls, _attr)] = _idx
+
+_NAMED_PARAM_ALIASES: dict = {
+    "coupling_scale": {"attr": "a", "idx": 0},
+    "scale":         {"attr": "a", "idx": 0},
+    "coupling_a":    {"attr": "a", "idx": 0},
+    "coupling_b":    {"attr": "b", "idx": 1},
+    "sigma":         {"attr": "sigma", "idx": 1},
+    "midpoint":      {"attr": "midpoint", "idx": 2},
+}
+
+
+# ---------------------------------------------------------------------------
+# Lazy-supported-models cache
+# ---------------------------------------------------------------------------
+# Importing all 27 model modules costs ~2.5 s on first call (each module
+# registers Numba dfun_helpers).  We cache the result so the cost is paid
+# once per process rather than on every compile().
+
 _SUPPORTED_MODELS_CACHE: tuple = ()
 
 
@@ -2258,3 +2350,519 @@ class NbHybridBackend(MakoUtilMix):
             setattr(cfun, ['H', 'Q', 'G', 'P', 'theta'][pidx], np.array([float(value)]))
         else:
             raise TypeError(f"Unknown cfun type: {type(cfun).__name__}")
+
+    # ===================================================================
+    # Unified sweep API
+    # ===================================================================
+
+    @staticmethod
+    def _resolve_named_params(network_set, params):
+        """Resolve a named-parameter dict to ``(sweep_descriptor, sweep_values)``."""
+        # Collect all projections with names
+        # Each entry: (lookup_name, proj, actual_name_for_descriptor)
+        all_projs = []
+        for proj in network_set.projections:
+            actual_name = f"{proj.source.name}_to_{proj.target.name}"
+            all_projs.append((actual_name, proj, actual_name))
+        for sn in network_set.subnets:
+            for p in sn.projections:
+                raw_name = getattr(p, "name", None) or "intra"
+                qualified = f"{sn.name}.{raw_name}" if raw_name == "intra" else raw_name
+                all_projs.append((qualified, p, raw_name))
+
+        dims = []
+        for pname, values in params.items():
+            dims.append(np.asarray(values, dtype=np.float32))
+
+        n_sweeps = len(dims[0])
+        for i, d in enumerate(dims):
+            if len(d) != n_sweeps:
+                raise ValueError(f"All param arrays must be same length; param {i} has {len(d)} vs {n_sweeps}")
+
+        sweep_values = (np.column_stack(dims).astype(np.float32)
+                        if len(dims) > 1 else dims[0].reshape(-1, 1))
+        sweep_descriptor = []
+
+        for dim_idx, (key, _values) in enumerate(params.items()):
+            resolved = False
+
+            # Try alias first ('coupling_scale', 'scale', etc.)
+            if key in _NAMED_PARAM_ALIASES:
+                alias = _NAMED_PARAM_ALIASES[key]
+                for lookup, proj, actual in all_projs:
+                    cfun = proj.cfun
+                    if cfun is None:
+                        continue
+                    cfun_cls = type(cfun).__name__
+                    attr = alias["attr"]
+                    if (cfun_cls, attr) in _CFUN_ATTR_TO_IDX:
+                        sweep_descriptor.append({
+                            "type": "cfun", "projection": actual,
+                            "param_idx": _CFUN_ATTR_TO_IDX[(cfun_cls, attr)],
+                        })
+                        resolved = True
+                        break
+                if resolved:
+                    continue
+
+            # Proj.attr: try "{proj}.{attr}" before model params so that
+            # "ctx.intra.b" resolves to the intra-projection's cfun 'b' 
+            # rather than treating "intra.b" as a model parameter.
+            if "." in key:
+                proj_name, attr = key.rsplit(".", 1)
+                for lookup, proj, actual in all_projs:
+                    if lookup == proj_name or lookup.endswith("." + proj_name):
+                        cfun = proj.cfun
+                        if cfun is not None:
+                            cfun_cls = type(cfun).__name__
+                            if (cfun_cls, attr) in _CFUN_ATTR_TO_IDX:
+                                sweep_descriptor.append({
+                                    "type": "cfun", "projection": actual,
+                                    "param_idx": _CFUN_ATTR_TO_IDX[(cfun_cls, attr)],
+                                })
+                                resolved = True
+                                break
+                if resolved:
+                    continue
+
+            # Model param: "subnet.param" — only if param doesn't match
+            # a known cfun attribute for any projection of that subnet.
+            if "." in key:
+                parts = key.split(".", 1)
+                if len(parts) == 2 and any(sn.name == parts[0] for sn in network_set.subnets):
+                    sname, param = parts
+                    sweep_descriptor.append({"type": "model", "subnet": sname, "param": param})
+                    continue
+
+            raise ValueError(
+                f"Cannot resolve sweep parameter '{key}'. Use 'coupling_scale', "
+                f"'{{proj}}.{{attr}}', or '{{subnet}}.{{param}}'. "
+                f"Projections: {[lookup for lookup, _, _ in all_projs]}. "
+                f"Subnets: {[sn.name for sn in network_set.subnets]}."
+            )
+
+        return sweep_descriptor, sweep_values
+
+    def sweep(
+        self,
+        network_set,
+        params,
+        nstep: int = 100,
+        *,
+        backend: str = "auto",
+        n_workers: int = 1,
+        monitor: str = "tavg",
+        monitor_period: int = 1,
+        bold_period: Optional[float] = None,
+        chunk_size: Optional[int] = None,
+        initial_states: Optional[list] = None,
+        node_indices: Optional[dict] = None,
+    ) -> "SweepResult":
+        """Run a parameter sweep — auto dispatches to GPU or multi-core CPU.
+
+        Parameters
+        ----------
+        params : dict
+            Named parameters to sweep.  Keys → 1-D arrays.  All same length.
+            ``'coupling_scale'`` or ``'scale'``: first projection's scaling.
+            ``'{proj_name}.{attr}'``: named projection cfun attribute.
+            ``'{subnet}.{param}'``: model parameter on a subnet.
+        backend : str
+            ``'auto'`` (try CUDA → fallback CPU), ``'cpu'``, or ``'cuda'``.
+        n_workers : int
+            CPU worker processes (fork-based, ignored for CUDA).
+        monitor : str
+            ``'tavg'``, ``'raw'``, or ``'subsample'``.
+        """
+        import time as _time_mod
+
+        self._validate_sweep_monitor_options(
+            monitor, monitor_period, bold_period, chunk_size
+        )
+        if backend not in ("auto", "cpu", "cuda"):
+            raise ValueError(
+                f"Unsupported sweep backend {backend!r}; expected 'auto', 'cpu', or 'cuda'."
+            )
+        if (isinstance(nstep, (bool, np.bool_))
+                or not isinstance(nstep, (int, np.integer))
+                or nstep <= 0):
+            raise ValueError("nstep must be a positive integer")
+        self._check_compatibility(network_set)
+        sweep_descriptor, sweep_values = self._resolve_named_params(network_set, params)
+
+        use_cuda = False
+        if backend == "cuda":
+            use_cuda = True
+        elif backend == "auto":
+            try:
+                from numba import cuda as _cuda
+                use_cuda = _cuda.is_available()
+            except ImportError:
+                pass
+
+        if use_cuda:
+            try:
+                return self._sweep_cuda(
+                    network_set, sweep_descriptor, sweep_values, nstep,
+                    monitor, monitor_period, bold_period, chunk_size,
+                    initial_states, node_indices)
+            except NotImplementedError:
+                if backend == "cuda":
+                    raise
+
+        return self._sweep_cpu(
+            network_set, sweep_descriptor, sweep_values, nstep,
+            n_workers, monitor, monitor_period, bold_period, chunk_size,
+            initial_states, node_indices)
+
+    def _sweep_cuda(self, network_set, sweep_descriptor, sweep_values,
+                     nstep, monitor, monitor_period, bold_period,
+                     chunk_size, initial_states, node_indices):
+        import time as _time_mod
+        from tvb.simulator.backend.nb_hybrid_cuda_sweep_backend import NbHybridCUDASweepBackend
+
+        cuda_backend = NbHybridCUDASweepBackend()
+        compiled = cuda_backend.compile_sweep(network_set, sweep_descriptor=sweep_descriptor)
+        kwargs = dict(sweep_values=sweep_values, nstep=nstep, monitor_type="raw",
+                      monitor_period=1, node_indices=node_indices,
+                      record_coupling=True)
+        if initial_states is not None: kwargs["initial_states"] = initial_states
+        if chunk_size is not None: kwargs["chunk_size"] = chunk_size
+
+        t0 = _time_mod.perf_counter()
+        raw = compiled.run(**kwargs)
+        elapsed = _time_mod.perf_counter() - t0
+
+        subnet_names = [sn.name for sn in network_set.subnets]
+        result = SweepResult(
+            tavg=dict(zip(subnet_names, raw["raw"])),
+            ctavg=dict(zip(subnet_names, raw["ctraw"])),
+            sweep_values=sweep_values,
+            backend="cuda",
+            elapsed=elapsed,
+            snapshot=raw.get("snapshot"),
+        )
+        return self._finalize_sweep(
+            result, network_set, monitor, monitor_period, bold_period,
+            chunk_size, node_indices
+        )
+
+    def _stack_cpu_results(self, raw_results, network_set, node_indices, sweep_values, backend_label, elapsed):
+        """Stack CPU list-of-tuples into SweepResult.
+
+        raw_results: list of n_sweeps tuples, each tuple has n_subnets entries
+        of (times, data, ctavg).  data shape: (n_chunks, n_voi, N, modes).
+        Stacks into (n_sweeps, n_chunks, n_voi, N, modes) preserving the
+        time (chunk) dimension so callers can access per-timestep traces.
+        """
+        subnet_names = [sn.name for sn in network_set.subnets]
+        tavg_dict = {}
+        ctavg_dict = {}
+        for si, sname in enumerate(subnet_names):
+            # Preserve time (chunk) dimension for per-timestep traces
+            tavg_arr = np.stack([r[si][1] for r in raw_results], axis=0)
+            ctavg_arr = np.stack([r[si][2] for r in raw_results], axis=0)
+            tavg_dict[sname] = tavg_arr
+            ctavg_dict[sname] = ctavg_arr
+        # Merge along node axis
+        if node_indices and len(node_indices) > 0:
+            n_global = max(max(idxs) for idxs in node_indices.values()) + 1
+            ref = list(tavg_dict.values())[0]
+            merged = np.zeros((ref.shape[0], ref.shape[1], ref.shape[2], n_global, ref.shape[4]), dtype=np.float32)
+            for sname in subnet_names:
+                if sname in node_indices:
+                    merged[:, :, :, node_indices[sname], :] = tavg_dict[sname]
+            merged_tavg = merged
+        else:
+            # Concatenate along node axis only if all subnets share the same n_voi
+            vois = set(a.shape[2] for a in tavg_dict.values())
+            if len(vois) == 1:
+                merged_tavg = np.concatenate(list(tavg_dict.values()), axis=3)
+            else:
+                merged_tavg = None  # VOI counts differ — can't merge
+        times = raw_results[0][0][0] if raw_results else np.array([])
+        return SweepResult(tavg=tavg_dict, merged_tavg=merged_tavg, ctavg=ctavg_dict,
+                          times=times, sweep_values=sweep_values, backend=backend_label, elapsed=elapsed)
+
+    @staticmethod
+    def _validate_sweep_monitor_options(monitor, monitor_period, bold_period,
+                                        chunk_size):
+        if monitor not in ("tavg", "raw", "subsample"):
+            raise ValueError(
+                f"Unsupported sweep monitor {monitor!r}; expected "
+                "'tavg', 'raw', or 'subsample'."
+            )
+        if chunk_size is not None and (
+            isinstance(chunk_size, (bool, np.bool_))
+            or not isinstance(chunk_size, (int, np.integer))
+            or chunk_size <= 0
+        ):
+            raise ValueError("chunk_size must be a positive integer")
+        if (isinstance(monitor_period, (bool, np.bool_))
+                or not isinstance(monitor_period, (int, np.integer))
+                or monitor_period <= 0):
+            raise ValueError("monitor_period must be a positive integer number of steps")
+        if bold_period is not None:
+            try:
+                valid_bold_period = (
+                    not isinstance(bold_period, (bool, np.bool_))
+                    and np.isfinite(float(bold_period))
+                    and float(bold_period) > 0
+                )
+            except (TypeError, ValueError):
+                valid_bold_period = False
+            if not valid_bold_period:
+                raise ValueError("bold_period must be positive")
+
+    def _finalize_sweep(self, result, network_set, monitor, monitor_period,
+                        bold_period, chunk_size, node_indices):
+        """Apply the common time-preserving sweep monitor contract."""
+        if chunk_size is None:
+            chunk_size = 1
+
+        per_step_tavg = result.tavg
+        per_step_ctavg = result.ctavg
+        scheme = getattr(network_set.subnets[0], 'scheme', None)
+        if scheme is not None:
+            dt = float(scheme.dt)
+        else:
+            returned_times = np.asarray(result.times)
+            if returned_times.size > 1:
+                dt = float(returned_times[1] - returned_times[0])
+            elif returned_times.size == 1:
+                dt = float(returned_times[0])
+            else:
+                dt = 1.0
+        per_step_times = np.arange(
+            1, next(iter(per_step_tavg.values())).shape[1] + 1,
+            dtype=np.float64,
+        ) * dt
+        slices = [slice(start, min(start + chunk_size, len(per_step_times)))
+                  for start in range(0, len(per_step_times), chunk_size)]
+        result.times = np.asarray([
+            (per_step_times[part.start] + per_step_times[part.stop - 1]) * 0.5
+            for part in slices
+        ], dtype=np.float64)
+        result.tavg = {
+            name: np.stack([values[:, part].mean(axis=1) for part in slices], axis=1)
+            for name, values in per_step_tavg.items()
+        }
+        result.ctavg = {
+            name: np.stack([values[:, part].mean(axis=1) for part in slices], axis=1)
+            for name, values in per_step_ctavg.items()
+        }
+
+        subnet_names = [sn.name for sn in network_set.subnets]
+        compatible = len({(values.shape[2], values.shape[4])
+                          for values in result.tavg.values()}) == 1
+        if not compatible:
+            result.merged_tavg = None
+        elif node_indices:
+            n_global = max(max(indices) for indices in node_indices.values()) + 1
+            ref = next(iter(result.tavg.values()))
+            merged = np.zeros(
+                (ref.shape[0], ref.shape[1], ref.shape[2], n_global, ref.shape[4]),
+                dtype=ref.dtype,
+            )
+            for name in subnet_names:
+                if name in node_indices:
+                    merged[:, :, :, node_indices[name], :] = result.tavg[name]
+            result.merged_tavg = merged
+        else:
+            result.merged_tavg = np.concatenate(
+                [result.tavg[name] for name in subnet_names], axis=3
+            )
+
+        if monitor in ("raw", "subsample"):
+            if monitor == "raw":
+                selected = np.arange(len(per_step_times))
+            else:
+                selected = np.arange(monitor_period - 1, len(per_step_times), monitor_period)
+            result.raw = {
+                name: values[:, selected].copy() for name, values in per_step_tavg.items()
+            }
+
+        if bold_period is not None:
+            from tvb.simulator.monitors import Bold
+
+            bold = {}
+            for name, values in per_step_tavg.items():
+                sweep_samples = []
+                for sweep_data in values:
+                    monitor_instance = Bold(period=float(bold_period))
+                    monitor_instance._config_dt(dt)
+                    monitor_instance.voi = np.arange(sweep_data.shape[1], dtype=int)
+                    monitor_instance.compute_hrf()
+                    monitor_instance._config_stock(*sweep_data.shape[1:])
+                    samples = [
+                        sample for step, state in enumerate(sweep_data, 1)
+                        if (sample := monitor_instance.sample(step, state)) is not None
+                    ]
+                    sweep_samples.append(
+                        np.stack([sample[1] for sample in samples])
+                        if samples else np.empty((0,) + sweep_data.shape[1:])
+                    )
+                bold[name] = np.stack(sweep_samples)
+            result.bold = bold
+        return result
+
+    def _sweep_cpu(self, network_set, sweep_descriptor, sweep_values,
+                    nstep, n_workers, monitor, monitor_period, bold_period,
+                    chunk_size, initial_states, node_indices):
+        import time as _time_mod
+        if n_workers > 1 and all(
+            desc.get("type") == "cfun" for desc in sweep_descriptor
+        ):
+            # Use prange-based parallel sweep instead of fork
+            result = self._sweep_cpu_prange(
+                network_set, sweep_descriptor, sweep_values,
+                nstep, initial_states, node_indices)
+        else:
+            t0 = _time_mod.perf_counter()
+            raw = self.run_sweep(
+                network_set, sweep_values=sweep_values, nstep=nstep,
+                sweep_descriptor=sweep_descriptor, initial_states=initial_states,
+                chunk_size=1,
+            )
+            elapsed = _time_mod.perf_counter() - t0
+            result = self._stack_cpu_results(
+                raw, network_set, node_indices, sweep_values, "cpu-seq", elapsed
+            )
+        return self._finalize_sweep(
+            result, network_set, monitor, monitor_period, bold_period,
+            chunk_size, node_indices
+        )
+
+
+    def _sweep_cpu_prange(self, network_set, sweep_descriptor, sweep_values,
+                          nstep, initial_states, node_indices):
+        """Multi-core CPU sweep using Numba prange (single-process threading).
+
+        Compiles a ``@nb.njit(parallel=True)`` sweep kernel via a Mako
+        template (``nb-hybrid-sweep-cpu.py.mako``), appended to the
+        single-sim module so ``sweep_kernel`` can call ``network_chunk``
+        directly from inside ``nb.prange``.  Each thread operates on its
+        own slice of per-sweep arrays, giving true multi-core parallelism
+        without the fork-safety issues of multiprocessing.
+        """
+        from tvb.simulator.backend.nb_hybrid_sweep_cpu import (
+            compile_sweep_kernel, run_sweep_prange)
+
+        # Ensure single-sim function is compiled (and module is cached)
+        compiled = self.compile(network_set, eager=True)
+        analysis = compiled._analysis
+
+        # Compile the sweep kernel (Mako template + single-sim source)
+        kernel_fn = compile_sweep_kernel(self, analysis)
+
+        # Run the sweep
+        return run_sweep_prange(
+            kernel_fn, analysis, network_set, sweep_descriptor,
+            sweep_values, nstep, self, initial_states=initial_states)
+
+
+
+    def run_sweep(
+        self,
+        network_set,
+        sweep_values: np.ndarray,
+        nstep: int = 100,
+        initial_states: Optional[list] = None,
+        sweep_descriptor: Optional[list] = None,
+        chunk_size: Optional[int] = None,
+        bold_period: Optional[float] = None,
+        print_source: bool = False,
+        **monitors,
+    ):
+        """Run parameter sweep sequentially on CPU.
+
+        Each sweep point calls run_network() internally. Results are
+        returned as a list of per-sweep-point tuples matching the
+        run_network() return format.
+
+        Parameters
+        ----------
+        sweep_values : ndarray (n_sweeps,) or (n_sweeps, n_sweep_dims)
+        sweep_descriptor : list of dict, optional
+            [{type: 'cfun', projection: 'proj_AB', param_idx: 0},
+             {type: 'model', subnet: 'A', param: 'tau_E'}]
+        """
+        self._check_compatibility(network_set)
+        sweep_values = np.asarray(sweep_values, dtype=np.float32)
+        if sweep_values.ndim == 1:
+            sweep_values = sweep_values.reshape(-1, 1)
+
+        if sweep_descriptor is None:
+            if network_set.projections:
+                # Use naming convention for projections
+                first_proj = network_set.projections[0]
+                proj_name = f"{first_proj.source.name}_to_{first_proj.target.name}"
+                sweep_descriptor = [{'type': 'cfun', 'projection': proj_name,
+                                     'param_idx': 0}]
+            else:
+                sweep_descriptor = []
+
+        n_sweeps = sweep_values.shape[0]
+        results = []
+
+        targets = []
+        for desc in sweep_descriptor:
+            if desc['type'] == 'cfun':
+                pname = desc['projection']
+                pidx = desc.get('param_idx', 0)
+                matched_proj = None
+                for proj in network_set.projections:
+                    expected_name = f"{proj.source.name}_to_{proj.target.name}"
+                    if expected_name == pname:
+                        matched_proj = proj
+                        break
+                if matched_proj is None:
+                    for sn in network_set.subnets:
+                        for proj in sn.projections:
+                            expected_name = getattr(proj, 'name', None) or 'intra'
+                            if expected_name == pname:
+                                matched_proj = proj
+                                break
+                        if matched_proj is not None:
+                            break
+                if matched_proj is None:
+                    raise ValueError(f"Projection '{pname}' not found in sweep")
+                attrs = dict(_CFUN_PARAM_ATTRS.get(type(matched_proj.cfun).__name__, ()))
+                attr = next((name for name, index in attrs.items() if index == pidx), None)
+                if attr is None:
+                    raise IndexError(
+                        f"No parameter index {pidx} for "
+                        f"{type(matched_proj.cfun).__name__}"
+                    )
+                targets.append(('cfun', matched_proj.cfun, attr, pidx))
+            elif desc['type'] == 'model':
+                sname = desc['subnet']
+                subnet = next((sn for sn in network_set.subnets if sn.name == sname), None)
+                if subnet is None:
+                    raise ValueError(f"Subnetwork '{sname}' not found in sweep")
+                targets.append(('model', subnet.model, desc['param'], None))
+
+        # Sweep setters replace attributes, so retaining these object references
+        # keeps mutable arrays isolated and preserves non-contiguous layouts exactly.
+        originals = [(owner, attr, getattr(owner, attr))
+                     for _kind, owner, attr, _pidx in targets]
+        try:
+            for tid in range(n_sweeps):
+                sv = sweep_values[tid]
+                for dim, (kind, owner, attr, pidx) in enumerate(targets):
+                    if kind == 'cfun':
+                        self._cfun_set_param(owner, pidx, sv[dim])
+                    else:
+                        setattr(owner, attr, np.array([float(sv[dim])]))
+
+                kwargs = dict(initial_states=initial_states, print_source=print_source)
+                if chunk_size is not None:
+                    kwargs['chunk_size'] = chunk_size
+                results.append(self.run_network(network_set, nstep=nstep, **kwargs))
+        finally:
+            for owner, attr, original in originals:
+                # The value was already valid on this instance. Bypass NArray's
+                # copying setter so restoration retains the exact caller object.
+                vars(owner)[attr] = original
+
+        return results

@@ -27,6 +27,11 @@ STATUS_RE = re.compile(
     r"^##\s*Status:\s*(active|deprecated)\s*$", re.IGNORECASE | re.MULTILINE
 )
 INCLUDE_RE = re.compile(r'<%include\s+file=["\'](nb-hybrid-[^"\']+\.mako)["\']')
+GPL_MARKERS = (
+    "TheVirtualBrain-Scientific Package",
+    "This program is free software",
+    "GNU General Public License",
+)
 
 
 def test_nb_hybrid_templates_have_an_accurate_lifecycle_status():
@@ -63,6 +68,21 @@ def test_nb_hybrid_templates_have_an_accurate_lifecycle_status():
         "template lifecycle status disagrees with include usage; "
         f"unreferenced active={wrongly_active}, referenced deprecated={wrongly_deprecated}"
     )
+
+
+def test_sweep_sources_have_repository_gpl_header():
+    sources = sorted(BACKEND_DIR.glob("*sweep*.py"))
+    sources += sorted(TEMPLATE_DIR.glob("*sweep*.mako"))
+    assert sources, "no sweep source files were found"
+
+    missing = {}
+    for source in sources:
+        text = source.read_text(encoding="utf-8")
+        absent_markers = [marker for marker in GPL_MARKERS if marker not in text]
+        if absent_markers:
+            missing[source.relative_to(BACKEND_DIR).as_posix()] = absent_markers
+
+    assert not missing, f"sweep sources missing repository GPL header markers: {missing}"
 
 
 def _assignment_spy(base, attributes):
