@@ -42,9 +42,6 @@ HyperbolicTangent, SigmoidalJansenRit, and PreSigmoidal.
 These tests verify that the corrected pipeline is in place and will **fail**
 if the pre/post ordering is ever reverted.
 
-See Also
---------
-FIX_COUPLING_PIPELINE.md — design doc with quantitative examples.
 """
 
 import numpy as np
@@ -289,6 +286,5 @@ class TestQuantitativeDiscrepancy:
             "If they don't, the chosen weights/states are accidentally degenerate."
         )
 
-        # Match the expected values from FIX_COUPLING_PIPELINE.md
         np.testing.assert_allclose(correct, [0.721, 0.620, 0.630, 0.730], atol=1e-3)
         np.testing.assert_allclose(buggy, [1.380, 1.100, 1.050, 1.336], atol=1e-3)
