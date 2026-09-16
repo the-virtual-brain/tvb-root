@@ -481,13 +481,17 @@ class TestNbHybridCompatibilityCheck(unittest.TestCase):
         with self.assertRaises(ValueError):
             NbHybridBackend().run_network(nets, nstep=5)
 
-    def test_rejects_chunk_size_gt_horizon(self):
+    def test_chunk_size_gt_horizon_is_valid(self):
+        # Ported from community PR #784 (author i-Zaak).
+        # tract_length=0.2 mm, cv=1 mm/ms → delay=0.2 ms → horizon=ceil(0.2/0.1)+1=3 steps
+        # chunk_size=10 > horizon=3: the buffer wraps within a single chunk, but
+        # global step indexing + read-before-write guarantees correctness.
+        # Verified by comparing final states from chunk_size=1 vs chunk_size=10.
         m = MontbrioPazoRoxin()
         m.configure()
         integ = HeunDeterministic(dt=0.1)
         sn = Subnetwork(name="sn", model=m, scheme=integ, nnodes=3)
         sn.configure()
-        # tract_length=0.2 mm, cv=1 mm/ms → delay=0.2 ms → horizon=ceil(0.2/0.1)+1=3 steps
         W = sp.csr_matrix(np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]], dtype=np.float32))
         L = sp.csr_matrix(np.full((3, 3), 0.2))
         proj = IntraProjection(
@@ -504,8 +508,24 @@ class TestNbHybridCompatibilityCheck(unittest.TestCase):
         sn.configure()
         nets = NetworkSet(subnets=[sn], projections=[])
         nets.configure()
-        with self.assertRaises(ValueError):
-            NbHybridBackend().run_network(nets, nstep=100, chunk_size=10)
+
+        rng = np.random.RandomState(42)
+        x0 = rng.uniform(0.0, 0.2, (m.nvar, 3, 1)).astype(np.float64)
+
+        compiled = NbHybridBackend().compile(nets)
+        _, snap_ref = compiled.run(
+            nstep=30, chunk_size=1, initial_states=[x0.copy()], return_snapshot=True
+        )
+        _, snap_chunked = compiled.run(
+            nstep=30, chunk_size=10, initial_states=[x0.copy()], return_snapshot=True
+        )
+
+        np.testing.assert_allclose(
+            snap_chunked["states"][0],
+            snap_ref["states"][0],
+            rtol=1e-5, atol=1e-6,
+            err_msg="chunk_size=10 final state diverges from chunk_size=1 with horizon=3",
+        )
 
     def test_rejects_subsample_with_chunk_size_gt_1(self):
         """SubSample monitor must not be used with chunk_size > 1."""
@@ -524,6 +544,142 @@ class TestNbHybridCompatibilityCheck(unittest.TestCase):
             )
         self.assertIn("SubSample", str(ctx.exception))
         self.assertIn("chunk_size=1", str(ctx.exception))
+
+
+class TestNbHybridChunkSizeEquivalence(unittest.TestCase):
+    """Extended coverage for the chunk-size > horizon relaxation (PR #784).
+
+    The original community test covered a single subnetwork, 3 nodes, a
+    horizon of 3 and nstep=30.  These tests widen that to multiple subnetworks
+    and projections, a delay that spans several chunks, an RNG-stream-identity
+    check for stochastic integrators, and a loud failure when the delay-buffer
+    horizon does not satisfy the modulo-wrap invariant.
+    """
+
+    def _intra(self, sn, n, length, weight_seed=1):
+        w = _sparse_weights(n, n, seed=weight_seed)
+        lengths = sp.csr_matrix(w.toarray() * length)
+        proj = IntraProjection(
+            source_cvar=np.array([0], dtype=np.int_),
+            target_cvar=np.array([0], dtype=np.int_),
+            weights=w,
+            lengths=lengths,
+            cv=1.0,
+            dt=DT,
+            scale=1.0,
+            cfun=Linear(),
+        )
+        sn.projections = [proj]
+        return sn
+
+    def _run_states(self, nets, nstep, chunk_size, ic):
+        compiled = NbHybridBackend().compile(nets)
+        _, snap = compiled.run(
+            nstep=nstep,
+            chunk_size=chunk_size,
+            initial_states=[a.copy() for a in ic],
+            return_snapshot=True,
+        )
+        return snap["states"]
+
+    def test_multi_subnet_multi_projection_chunk_gt_min_horizon(self):
+        # Two subnetworks with an inter-projection and an intra-projection.
+        # min horizon = 3 (short intra delay); chunk_size=12 exceeds it and
+        # spans both projections' horizons several times over.
+        sn_a = _mpr_subnetwork("a", 4)
+        sn_b = _mpr_subnetwork("b", 5)
+        # dt=0.01; intra length 0.02 -> idelay 2 -> horizon 3 (the min horizon).
+        # chunk_size=12 exceeds it and spans the inter-projection horizon
+        # (length 5.0 -> idelay 500 -> horizon 501) several times over.
+        self._intra(sn_a, 4, length=0.02, weight_seed=2)
+        sn_a.configure()
+        sn_b.configure()
+
+        w = _sparse_weights(5, 4, seed=3)
+        inter = InterProjection(
+            source=sn_a,
+            target=sn_b,
+            source_cvar=np.array([0], dtype=np.int_),
+            target_cvar=np.array([0], dtype=np.int_),
+            weights=w,
+            lengths=sp.csr_matrix(w.toarray() * 5.0),  # delay 50 -> horizon 51
+            cv=1.0,
+            dt=DT,
+            scale=1.0,
+        )
+        nets = NetworkSet(subnets=[sn_a, sn_b], projections=[inter])
+        nets.configure()
+
+        rng = np.random.RandomState(11)
+        ic = [
+            np.abs(rng.uniform(0.0, 0.2, (2, 4, 1))).astype(np.float64),
+            np.abs(rng.uniform(0.0, 0.2, (2, 5, 1))).astype(np.float64),
+        ]
+        ref = self._run_states(nets, nstep=60, chunk_size=1, ic=ic)
+        chunked = self._run_states(nets, nstep=60, chunk_size=12, ic=ic)
+        for i, (a, b) in enumerate(zip(ref, chunked)):
+            np.testing.assert_allclose(
+                b, a, rtol=1e-5, atol=1e-6,
+                err_msg=f"subnet {i}: chunk_size=12 diverges from chunk_size=1",
+            )
+
+    def test_long_delay_crosses_multiple_chunk_boundaries(self):
+        # dt=0.1, cv=1 mm/ms, length=2.5 mm -> idelay=25, horizon=26.
+        # chunk_size=8 means a single delay spans >3 chunk boundaries.
+        m = MontbrioPazoRoxin()
+        m.configure()
+        sn = Subnetwork(name="sn", model=m, scheme=HeunDeterministic(dt=0.1), nnodes=3)
+        self._intra(sn, 3, length=2.5, weight_seed=4)
+        sn.configure()
+        nets = NetworkSet(subnets=[sn], projections=[])
+        nets.configure()
+
+        rng = np.random.RandomState(5)
+        ic = [np.abs(rng.uniform(0.0, 0.2, (m.nvar, 3, 1))).astype(np.float64)]
+        ref = self._run_states(nets, nstep=80, chunk_size=1, ic=ic)
+        chunked = self._run_states(nets, nstep=80, chunk_size=8, ic=ic)
+        np.testing.assert_allclose(
+            chunked[0], ref[0], rtol=1e-5, atol=1e-6,
+            err_msg="long delay crossing multiple chunk boundaries diverges",
+        )
+
+    def test_rng_stream_identity_across_chunk_sizes(self):
+        # Same seed must produce the same stochastic trajectory for different
+        # chunk sizes: per-chunk draws are sequential and preserve order.
+        sn = _mpr_stochastic_subnetwork("ctx", 4, EulerStochastic, nsig=1e-2, seed=42)
+        nets = NetworkSet(subnets=[sn], projections=[])
+        nets.configure()
+
+        ic = [np.abs(np.random.RandomState(9).uniform(0.1, 0.3, (2, 4, 1))).astype(np.float64)]
+
+        states = {}
+        for cs in (1, 7):
+            sn.scheme.noise.random_stream = np.random.RandomState(42)
+            states[cs] = self._run_states(nets, nstep=40, chunk_size=cs, ic=ic)[0]
+
+        np.testing.assert_allclose(
+            states[7], states[1], rtol=1e-6, atol=1e-7,
+            err_msg="stochastic trajectory depends on chunk_size for a fixed seed",
+        )
+
+    def test_rejects_aliased_delay_horizon(self):
+        # The relaxed guard must still fail loudly when horizon < max(idelay)+1.
+        sn = _mpr_subnetwork("sn", 3)
+        # dt=0.01: length 1.0 -> idelay 100 -> horizon 101.
+        self._intra(sn, 3, length=1.0, weight_seed=6)  # delay 100 -> horizon 101
+        sn.configure()
+        nets = NetworkSet(subnets=[sn], projections=[])
+        nets.configure()
+
+        backend = NbHybridBackend()
+        analysis = backend._analyse(nets)
+        proj = analysis.all_projections[0]
+        proj.horizon = int(np.max(proj.idelays))  # break the invariant
+
+        with self.assertRaises(ValueError) as ctx:
+            backend._run_compiled(None, analysis, nets, nstep=10, chunk_size=5,
+                                  initial_states=None)
+        self.assertIn("max(idelay)+1", str(ctx.exception))
 
 
 # ---------------------------------------------------------------------------
