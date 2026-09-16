@@ -1542,16 +1542,33 @@ class NbHybridBackend(MakoUtilMix):
         rng_states: Optional[list] = None,
     ) -> tuple:
         """Build the argument list and call the pre-compiled kernel."""
-        # Guard: chunk_size must not exceed the minimum horizon
-        if analysis.all_projections:
-            min_horizon = min(p.horizon for p in analysis.all_projections)
-            if chunk_size > min_horizon:
-                raise ValueError(
-                    f"chunk_size={chunk_size} exceeds the minimum projection horizon "
-                    f"({min_horizon} steps = min_delay / dt). "
-                    f"Reduce chunk_size to at most {min_horizon}, or increase tract "
-                    "lengths / reduce dt."
-                )
+        # Sanity check replacing the old `chunk_size <= min-horizon` cap.
+        #
+        # The delayed-coupling history buffer is addressed by the global step
+        # modulo the buffer length, and is written *after* it is read within a
+        # step (read-before-write).  That invariant makes the simulation
+        # correct regardless of how many steps a chunk spans, so a chunk is
+        # free to cross a delay horizon (and several chunk boundaries may map
+        # onto the same modulo slots).  The cap existed only because the old
+        # full-run noise array was indexed by the global step; that array is
+        # now generated per chunk, so no cap is needed.
+        #
+        # What must still hold is the per-projection modulo-wrap invariant
+        #     horizon >= max(idelay) + 1
+        # (`horizon = max_delay + 1` by construction).  Violating it would
+        # alias two distinct delays onto the same buffer slot and silently
+        # corrupt the coupling, so we keep a loud failure here.
+        for p in analysis.all_projections:
+            idelays = np.atleast_1d(p.idelays)
+            if idelays.size:
+                max_idelay = int(np.max(idelays))
+                if p.horizon < max_idelay + 1:
+                    raise ValueError(
+                        f"Projection '{p.name}' has delay-buffer horizon "
+                        f"{p.horizon} < max(idelay)+1 = {max_idelay + 1}; the "
+                        "circular history buffer would alias distinct delays "
+                        "onto the same slot. Increase tract lengths / reduce dt."
+                    )
         # Build argument list matching the generated run_network() signature
         args = [nstep, step_offset]
 
@@ -1616,24 +1633,30 @@ class NbHybridBackend(MakoUtilMix):
             cfun_params = _cfun_params(p)
             args.append(cfun_params)
 
-        # Per-subnetwork noise arrays (stochastic integrators)
+        # Per-subnetwork noise sources (stochastic integrators).
+        #
+        # Previously an (nstep, n_vars, n_nodes, n_modes) array was drawn here,
+        # scaled by noise_std, transposed and cast to float32 — an O(nstep)
+        # allocation that OOMs for long stochastic runs (and is worse still in
+        # the sweep backend).  Instead we hand the kernel the RNG stream and
+        # the per-variable noise scale; the run_network template draws a
+        # chunk-sized array inside the outer chunk loop, so peak allocation is
+        # O(chunk_size).
+        #
+        # Draw order is preserved across chunk sizes: each chunk draws
+        # (this_chunk, n_vars, n_nodes, n_modes) sequentially, in the same
+        # element order as the old single draw, so a given seed yields the same
+        # trajectory regardless of chunk_size (numpy's legacy RandomState draws
+        # elementwise and keeps its gauss cache in the bit-generator state, so
+        # splitting the draw across calls does not change the stream).
         for sn_info in analysis.subnetworks:
             if sn_info.is_stochastic:
                 sn_obj = next(s for s in network_set.subnets if s.name == sn_info.name)
                 dt = sn_obj.scheme.dt
                 rng = sn_obj.scheme.noise.random_stream
-                # Draw in (nstep, n_vars, n_nodes, n_modes) order so that
-                # transposed [:, :, :, t] == t-th sequential randn(n_vars, n_nodes, n_modes) call
-                dw = rng.randn(
-                    nstep, sn_info.model.nvar, sn_info.n_nodes, sn_info.n_modes
-                )
-                noise_std = np.sqrt(2.0 * sn_info.noise_nsig * dt)  # (n_vars,)
-                dw *= noise_std[np.newaxis, :, np.newaxis, np.newaxis]
-                # Transpose to (n_vars, n_nodes, n_modes, nstep)
-                dw = np.ascontiguousarray(np.transpose(dw, (1, 2, 3, 0))).astype(
-                    np.float32
-                )
-                args.append(dw)
+                noise_std = np.sqrt(2.0 * sn_info.noise_nsig * dt)  # (n_vars,) float64
+                args.append(rng)
+                args.append(noise_std)
 
         # Per-subnetwork stimulus arrays (pre-computed batch)
         # TODO §8.4: use lazy chunk-by-chunk path when estimated stim_arr_mb

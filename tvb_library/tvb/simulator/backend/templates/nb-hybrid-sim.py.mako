@@ -869,9 +869,12 @@ def network_chunk(
     ${sn.name}_c,  # (n_cvar, n_nodes, n_modes) — scratch for coupling dispatch
     % endfor
     ## per-subnetwork noise arrays (stochastic only)
+    ## The single-run path passes a chunk-sized array regenerated each outer
+    ## chunk (indexed chunk-relatively, t_local); the CPU-sweep template passes
+    ## a full-run array (indexed by the global step, t - data_offset - 1).
     % for sn in subnets:
     % if sn.is_stochastic:
-    ${sn.name}_noise,  # (n_vars, n_nodes, n_modes, nstep_total) float32
+    ${sn.name}_noise,  # (n_vars, n_nodes, n_modes, N) float32 — N=this chunk, or full run (sweep)
     % endif
     % endfor
     ## per-subnetwork stimulus arrays (stimulus subnetworks only)
@@ -986,8 +989,14 @@ def network_chunk(
         % endfor
 
         ## integrate each subnetwork in-place
+        ## A chunk-sized noise array has exactly `nstep` steps, so its shape
+        ## disambiguates the per-chunk path (t_local) from the full-run/sweep
+        ## path (global t - data_offset - 1).
         % for sn in subnets:
-        integrate_${sn.name}(${sn.name}_state, ${sn.name}_c${',' if sn.is_stochastic else ''} ${'%s_noise, t - data_offset - 1' % sn.name if sn.is_stochastic else ''}, ${sn.name}_sp)
+        % if sn.is_stochastic:
+        _t_noise_${sn.name} = t_local if ${sn.name}_noise.shape[3] == nstep else t - data_offset - 1
+        % endif
+        integrate_${sn.name}(${sn.name}_state, ${sn.name}_c${',' if sn.is_stochastic else ''} ${'%s_noise, _t_noise_%s' % (sn.name, sn.name) if sn.is_stochastic else ''}, ${sn.name}_sp)
         % endfor
 
         ## update shared source buffers (one write per source subnet)
@@ -1090,10 +1099,13 @@ def run_network(
     ${p.name}_scale, ${p.name}_target_scales,
     ${p.name}_cfun_params,
     % endfor
-    ## noise arrays (stochastic subnetworks only)
+    ## noise sources (stochastic subnetworks only)
+    ## Instead of a full-run noise array, pass the RNG stream and the per-variable
+    ## noise scale; a chunk-sized noise array is generated inside the chunk loop.
     % for sn in subnets:
     % if sn.is_stochastic:
-    ${sn.name}_noise,
+    ${sn.name}_rng,        # numpy RandomState
+    ${sn.name}_noise_std,  # (n_vars,) float64 = sqrt(2*nsig*dt)
     % endif
     % endfor
     ## stimulus arrays (stimulus subnetworks only)
@@ -1172,6 +1184,16 @@ def run_network(
         ${sn.name}_proj_tavg[:] = np.float32(0.0)
         % endfor
         tavg_count[0] = 0
+
+        ## generate chunk-sized noise for each stochastic subnet
+        ## (avoids allocating an nstep-sized array on the single-run path)
+        % for sn in subnets:
+        % if sn.is_stochastic:
+        _dw_${sn.name} = ${sn.name}_rng.randn(this_chunk, ${sn.model.nvar}, ${sn.n_nodes}, ${sn.n_modes})
+        _dw_${sn.name} *= ${sn.name}_noise_std[np.newaxis, :, np.newaxis, np.newaxis]
+        ${sn.name}_noise = np.ascontiguousarray(np.transpose(_dw_${sn.name}, (1, 2, 3, 0))).astype(np.float32)
+        % endif
+        % endfor
 
         network_chunk(
             this_chunk,
