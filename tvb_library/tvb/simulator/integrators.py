@@ -308,7 +308,12 @@ class HeunDeterministic(Integrator):
         #import pdb; pdb.set_trace()
         m_dx_tn = dfun(X, coupling, local_coupling)
         inter = X + self.dt * (m_dx_tn + stimulus)
-        self.integration_bound_and_clamp(inter)
+        # NOTE: `inter` is the Euler predictor used only to evaluate the second
+        # slope estimate (k2) below. It must NOT be clamped here: clamping it
+        # replaces the genuine predictor point with a boundary-projected one,
+        # which corrupts the (k1+k2)/2 average and silently drops Heun's
+        # method from 2nd-order to 1st-order accuracy whenever a bound is hit.
+        # Only the state that is actually returned/stored is clamped, below.
 
         dX = (m_dx_tn + dfun(inter, coupling, local_coupling)) * self.dt / 2.0
 
@@ -352,7 +357,9 @@ class HeunStochastic(IntegratorStochastic):
         noise *= noise_gfun
 
         inter = X + self.dt * m_dx_tn + noise + self.dt * stimulus
-        self.integration_bound_and_clamp(inter)
+        # See HeunDeterministic.scheme() above: `inter` is the predictor used
+        # only to evaluate k2 and must not be clamped, or the method silently
+        # loses its 2nd-order accuracy whenever a state boundary is active.
 
         dX = (m_dx_tn + dfun(inter, coupling, local_coupling)) * self.dt / 2.0
 
