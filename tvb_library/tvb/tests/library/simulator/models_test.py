@@ -380,3 +380,92 @@ class TestModels(BaseTestCase):
             rtol=1e-10, atol=1e-12,
             err_msg="numpy and numba dfun disagree — check piecewise branches and coupling term"
         )
+
+    def test_kionex_local_self_excitation_term(self):
+        """
+        Regression test for the missing local self-excitation term Jr*(E-V).
+
+        The KIonEx drift for V must carry a local (within-node) synaptic
+        self-excitation J*r*(E-V), where J is the mean synaptic weight
+        (model parameter ``J``) and r = R_minus*x/pi is the population firing
+        rate.  Because the structural connectivity has a zero diagonal, this
+        term can NOT arrive through the coupling matrix and must be added
+        explicitly to the V-derivative.
+
+        Discriminating check: the Jr(E-V) term is the ONLY place in dV/dt
+        where J appears, and it is independent of Coupling_Term.  So for a
+        fixed state and zero coupling, increasing J from J1 to J2 must change
+        dV/dt by exactly (J2 - J1)*r*(E-V).  On the pre-fix implementation
+        J does not appear in dV/dt at all, the difference is 0, and the
+        assertion below fails.  The numba/codegen path is checked as well, so
+        a fix applied to only one of the three drift definitions also fails.
+        """
+        from tvb.simulator.models.k_ion_exchange import KIonEx
+
+        n_nodes = 4
+        rng = numpy.random.default_rng(7)
+        sv = numpy.array([
+            rng.uniform(0.01, 0.8, n_nodes),           # x
+            numpy.array([-50.0, -40.0, -25.0, -20.0]), # V, straddles Vstar=-31
+            rng.uniform(0.1, 0.9, n_nodes),            # n
+            rng.uniform(-1.0, -0.01, n_nodes),         # DKi (keeps K_o > 0)
+            rng.uniform(-0.5, 0.5, n_nodes),           # Kg
+        ])  # shape (5, n_nodes)
+
+        coupling_zero = numpy.zeros((1, n_nodes))
+
+        J1 = numpy.array([0.1])
+        J2 = numpy.array([0.2])
+
+        m1 = KIonEx(J=J1)
+        m1.configure()
+        m2 = KIonEx(J=J2)
+        m2.configure()
+
+        d1 = m1._numpy_dfun(sv, coupling_zero)[1]
+        d2 = m2._numpy_dfun(sv, coupling_zero)[1]
+
+        # r = R_minus*x/pi is J-independent; predicted change of dV/dt.
+        R_minus = float(m1.R_minus[0])
+        E = float(m1.E[0])
+        x, V = sv[0], sv[1]
+        r = R_minus * x / numpy.pi
+        expected = (float(J2[0]) - float(J1[0])) * r * (E - V)
+
+        # (a) non-degeneracy: the predicted delta must be clearly non-zero,
+        #     otherwise the test would be vacuous.
+        assert numpy.all(numpy.abs(expected) > 1e-6), (
+            "test configuration degenerate: (J2-J1)*r*(E-V) is ~0"
+        )
+
+        # (b) THE regression check: J must enter dV/dt through J*r*(E-V).
+        numpy.testing.assert_allclose(
+            d2 - d1, expected, rtol=1e-10, atol=1e-12,
+            err_msg="dV/dt does not depend on J through the local "
+                    "self-excitation term J*r*(E-V); it is missing from the "
+                    "KIonEx drift for V"
+        )
+
+        # (c) the numba njit dfun and the state_variable_dfuns codegen string
+        #     must carry the same term (J must change the numba derivative).
+        x_full = sv[:, :, numpy.newaxis]
+        c_zero = coupling_zero[:, :, numpy.newaxis]
+        n2 = m2.dfun(x_full, c_zero)[1, :, 0]
+        n1 = m1.dfun(x_full, c_zero)[1, :, 0]
+        numpy.testing.assert_allclose(
+            n2 - n1, expected, rtol=1e-10, atol=1e-12,
+            err_msg="numba dfun does not carry the local self-excitation "
+                    "J*r*(E-V)"
+        )
+        # ... and the generated V-drift string must mention the term.
+        assert "J*r*(E-V)" in m1.state_variable_dfuns["V"], (
+            "state_variable_dfuns['V'] (numba/hybrid codegen source) is "
+            "missing the local self-excitation term J*r*(E-V)"
+        )
+
+        # (d) the numpy reference and the numba dfun must agree node-for-node
+        #     with the local term present.
+        numpy.testing.assert_allclose(
+            n2, d2, rtol=1e-10, atol=1e-12,
+            err_msg="numpy and numba dfun disagree once Jr(E-V) is present"
+        )
