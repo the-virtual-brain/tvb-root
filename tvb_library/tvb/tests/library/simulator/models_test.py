@@ -343,6 +343,10 @@ class TestModels(BaseTestCase):
         model = models.DumontGutkin()
         self._validate_initialization(model, 8)
 
+    def test_gast_solla_kennedy(self):
+        model = models.GastSollaKennedy()
+        self._validate_initialization(model, 4)
+
     def test_kionex_numpy_numba_equivalence(self):
         """
         Verify that KIonEx._numpy_dfun and KIonEx.dfun (numba backend) produce
