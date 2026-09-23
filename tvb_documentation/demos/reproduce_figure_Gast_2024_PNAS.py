@@ -40,9 +40,13 @@
 #    the paper derives analytically for that network (Gast, Schmidt & Knösche, 2021;
 #    Gast, Solla & Kennedy, 2024).
 #
-# The mean-field model is **not** part of TVB's model library, so it is implemented
-# directly here with NumPy/SciPy; the notebook lives in the TVB demo collection as a
-# literature-reproduction demo (cf. `remake_figure_WilsonCowan.ipynb`).
+# The 2024 model is **not** in TVB's model library. TVB does ship a *related* Gast
+# family in `tvb.simulator.models.infinite_theta` (`GastSchmidtKnosche_SD` /
+# `GastSchmidtKnosche_SF`, Gast, Schmidt & Knosche 2020), but those are
+# Ott-Antonsen reductions of **QIF / theta** neurons, whereas the 2024 PNAS model
+# uses **adaptive Izhikevich** neurons (Eqs. 1-9). The equations below are
+# therefore implemented directly with NumPy/SciPy; the notebook lives in the TVB
+# demo collection as a literature-reproduction demo (cf. `remake_figure_WilsonCowan.ipynb`).
 #
 # > **Note.** This is a from-scratch, self-contained reproduction, not the authors' code.
 # > The authors' own scripts (PyRates / RectiPy / PyCoBi) are archived at
