@@ -528,11 +528,8 @@ print("two-population mean-field done")
 # and the two firing-rate time series (right), exactly as in the original figure.
 
 # %%
-fig = plt.figure(figsize=(13, 10.5))
-outer = fig.add_gridspec(3, 1, hspace=0.45, height_ratios=[1, 1, 1])
-
-blocks = [
-    # (Z_left, Z_right, xlabel, flip, [(low,high) stars left, right], {row: (dyn, mf, title, ymax)})
+FIG_LETTERS = ["A-D", "E-H", "I-L"]
+BLOCKS = [
     (Z_A, Z_B, r"$I_{rs}$ (pA)", False,
      [I_RS_SINGLE[10.0], I_RS_SINGLE[100.0]],
      [(dyn_single[10.0], mf_single[10.0][1], r"RS: $\Delta_{rs}=0.5$ mV, $\kappa_{rs}=10.0$", 34),
@@ -546,17 +543,19 @@ blocks = [
      [(dyn_two[(0.2, 10.0)], mf_two[(0.2, 10.0)][1], r"RS-FS: $\Delta_{fs}=0.2$ mV, $\kappa_{rs}=10.0$", 40),
       (dyn_two[(0.2, 100.0)], mf_two[(0.2, 100.0)][1], r"RS-FS: $\Delta_{fs}=0.2$ mV, $\kappa_{rs}=100.0$", 30)]),
 ]
-
-bif_titles = [
+BIF_TITLES = [
     (r"RS: $\kappa_{rs}=10.0$ pA", r"RS: $\kappa_{rs}=100.0$ pA"),
     (r"RS-FS: $\Delta_{fs}=2.0$ mV, $\kappa_{rs}=10.0$", r"RS-FS: $\Delta_{fs}=2.0$ mV, $\kappa_{rs}=100.0$"),
     (r"RS-FS: $\Delta_{fs}=0.2$ mV, $\kappa_{rs}=10.0$", r"RS-FS: $\Delta_{fs}=0.2$ mV, $\kappa_{rs}=100.0$"),
 ]
 
-for bi, (ZL, ZR, xlab, flip, stars_pair, dyns) in enumerate(blocks):
-    sub = outer[bi].subgridspec(2, 3, width_ratios=[1, 1, 2.7], hspace=0.85, wspace=0.5)
+
+def draw_block(fig, gsblock, bi):
+    """Draw one of the three row-blocks (2 stacked bifurcation panels + 2 dynamics panels)."""
+    ZL, ZR, xlab, flip, stars_pair, dyns = BLOCKS[bi]
+    sub = gsblock.subgridspec(2, 3, width_ratios=[1, 1, 2.7], hspace=0.85, wspace=0.5)
     Is, Ds = (Is_s, Ds_s) if bi == 0 else (Is_t, Ds_t)
-    for col, (Z, ttl) in enumerate([(ZL, bif_titles[bi][0]), (ZR, bif_titles[bi][1])]):
+    for col, (Z, ttl) in enumerate([(ZL, BIF_TITLES[bi][0]), (ZR, BIF_TITLES[bi][1])]):
         axb = fig.add_subplot(sub[:, col])
         plot_bifurcation(axb, Is, Ds, Z, ttl, xlab, flip, legend=(bi == 1 and col == 1))
         star(axb, stars_pair[col][0], 0.5, "black")
@@ -567,12 +566,46 @@ for bi, (ZL, ZR, xlab, flip, stars_pair, dyns) in enumerate(blocks):
         if bi == 0 and row == 1:
             axd.legend(fontsize=7, loc="upper right")
 
+
+fig = plt.figure(figsize=(13, 10.5))
+outer = fig.add_gridspec(3, 1, hspace=0.45, height_ratios=[1, 1, 1])
+for bi in range(3):
+    draw_block(fig, outer[bi], bi)
 fig.suptitle("Figure 2 (reproduction) - Gast, Solla & Kennedy, PNAS 2024", fontsize=11)
 fig.savefig("reproduce_figure_Gast_2024_PNAS.png", dpi=130, bbox_inches="tight")
 plt.show()
 
 # %% [markdown]
-# ## 6. What the reproduction shows
+# ## 6. Comparison with the original manuscript figure
+#
+# The reference figure is the published Figure 2 of Gast, Solla & Kennedy (2024)
+# (open-access PNAS article; reproduced here with attribution for comparison only).
+# Each row below places the original manuscript panels (top) directly above our
+# reproduction (bottom).
+
+# %%
+ORIGINAL = plt.imread("figures/Gast_2024_pnas_fig2.jpg")
+# vertical extent of the three row-blocks within the published figure
+orig_rows = [(8, 935), (935, 1865), (1865, 2795)]
+orig_cols = (0, ORIGINAL.shape[1])
+
+figc = plt.figure(figsize=(13, 14))
+comp = figc.add_gridspec(3, 1, hspace=0.35, height_ratios=[1, 1, 1])
+for bi in range(3):
+    gg = comp[bi].subgridspec(2, 1, height_ratios=[1.0, 1.5], hspace=0.12)
+    axo = figc.add_subplot(gg[0])
+    y0, y1 = orig_rows[bi]
+    axo.imshow(ORIGINAL[y0:y1, orig_cols[0]:orig_cols[1]], aspect="equal")
+    axo.set_axis_off()
+    axo.set_title(f"Original Fig. 2, panels {FIG_LETTERS[bi]}", fontsize=9, loc="left")
+    draw_block(figc, gg[1], bi)
+figc.suptitle("Original manuscript (top of each block) vs. this reproduction (bottom)",
+              fontsize=11)
+figc.savefig("reproduce_figure_Gast_2024_PNAS_comparison.png", dpi=120, bbox_inches="tight")
+plt.show()
+
+# %% [markdown]
+# ## 7. What the reproduction shows
 #
 # * **A, B (single RS population).** Weak adaptation ($\kappa_{rs}=10$ pA) gives a broad
 #   **bistable** (gray) regime bounded by two fold curves that meet in a cusp; strong
