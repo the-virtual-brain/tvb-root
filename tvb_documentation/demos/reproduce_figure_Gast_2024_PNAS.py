@@ -53,6 +53,31 @@
 # > Zenodo [10.5281/zenodo.10420635](https://doi.org/10.5281/zenodo.10420635).
 # > Regions and curves are reproduced by direct numerical analysis rather than AUTO
 # > continuation, so the panels are *qualitatively* faithful, not pixel-perfect.
+#
+# ### The scientific question
+#
+# Cortical neurons are heterogeneous: even within a single cell class, spike
+# thresholds vary appreciably from neuron to neuron. Gast, Solla & Kennedy ask
+# what that variability is *for*. They consider a recurrent excitatory
+# regular-spiking (RS) population coupled to an inhibitory fast-spiking (FS)
+# interneuron population, and show that the **width of the FS spike-threshold
+# distribution**, $\Delta_{fs}$, acts as a control knob on the computations the
+# coupled network can perform:
+#
+# * with **heterogeneous** FS interneurons (large $\Delta_{fs}$), the E-I network
+#   *preserves* the bifurcation structure of the excitatory population -
+#   bistability between a quiescent and a spiking state, and adaptation-driven
+#   oscillations, survive inhibition;
+# * with **homogeneous** FS interneurons (small $\Delta_{fs}$), the inhibitory
+#   population *overwrites* that structure and imposes its own strongly
+#   oscillatory regime.
+#
+# Since bistability and oscillations are the dynamical substrate of network
+# computations such as persistent (working-memory-like) activity and rhythmic
+# gating, the heterogeneity of the interneuron population decides which
+# repertoire survives when excitation and inhibition are coupled. Figure 2 is
+# the paper's demonstration of this dichotomy; reproducing it below exercises
+# both description levels (spiking network and mean field) in every panel.
 
 # %% [markdown]
 # ## 1. The model
@@ -78,6 +103,31 @@
 # A two-population extension couples an RS population (AMPA, `ampa`) with an FS
 # population (GABA<sub>A</sub>, `gabaa`) via four synaptic channels with strengths
 # $J_{rr}=16,\ J_{rf}=16,\ J_{fr}=4,\ J_{ff}=4$ (Table 4 of the paper).
+#
+# ### State variables
+#
+# Both description levels share four macroscopic variables per population:
+#
+# | symbol | meaning | units |
+# |---|---|---|
+# | $r$ | population mean firing rate | kHz |
+# | $v$ | population mean membrane potential | mV |
+# | $u$ | mean recovery / spike-frequency-adaptation current | pA |
+# | $s$ | synaptic gating variable driven by $r$ | - |
+#
+# ### Where the mean field comes from
+#
+# The firing-rate equations are an **exact low-dimensional reduction** of the
+# spiking network in the limit of a large, all-to-all coupled population: with a
+# Lorentzian (Cauchy) distribution of spike thresholds, the population density
+# of membrane potentials can be integrated in closed form. This is the
+# Lorentzian ansatz introduced by Montbrio, Pazo & Roxin (2015) for QIF neurons,
+# extended here to *adaptive Izhikevich* neurons (Gast, Schmidt & Knosche 2021).
+# The threshold half-width $\Delta$ thereby survives as an explicit *macroscopic*
+# parameter - which is exactly what makes "turning the heterogeneity knob"
+# possible at the mean-field level. The finite, sparsely coupled ($p=0.2$)
+# spiking networks simulated below only approximate that limit, so the spiking
+# and mean-field curves agree quantitatively but not perfectly.
 
 # %%
 import warnings
@@ -103,8 +153,33 @@ print("numpy", np.__version__, "| matplotlib", matplotlib.__version__)
 
 # %% [markdown]
 # ### Model parameters
-# Tables 1, 2 and 4 of the paper. Regular-spiking (RS, excitatory) and fast-spiking
-# (FS, inhibitory) neurons; `g` is the *total* synaptic strength of a projection
+#
+# Parameter values are taken from Tables 1, 2 and 4 of the paper. The two cell
+# types differ the way cortical RS and FS cells do:
+#
+# * **RS (excitatory, regular-spiking)** - large capacitance ($C=100$ pF), slow
+#   recovery ($\tau_u=33.3$ ms), and spike-frequency adaptation
+#   $\kappa_{rs}\in\{10, 100\}$ pA: weak adaptation supports bistability,
+#   strong adaptation drives slow oscillations.
+# * **FS (inhibitory, fast-spiking interneuron)** - small capacitance ($C=20$ pF)
+#   and fast recovery ($\tau_u=5$ ms), with no spike-frequency adaptation
+#   ($\kappa_{fs}=0$).
+#
+# | symbol | RS | FS | meaning |
+# |---|---|---|---|
+# | $C$ | 100 pF | 20 pF | membrane capacitance |
+# | $k$ | 0.7 | 1.0 | scale of the quadratic membrane nonlinearity |
+# | $v_r$ | -60 mV | -55 mV | resting membrane potential |
+# | $\bar v_\theta$ | -40 mV | -40 mV | centre of the spike-threshold Lorentzian |
+# | $\Delta$ | varied | 2.0 / 0.2 mV | HWHM of the threshold Lorentzian = **heterogeneity** |
+# | $b$ | -2 | 0.025 | sensitivity of the recovery current to subthreshold $v$ |
+# | $\tau_u$ | 33.3 ms | 5 ms | recovery time constant |
+# | $\kappa$ | 10 / 100 pA | 0 | spike-frequency adaptation strength |
+# | $\tau_s$ | 6 ms | 8 ms | synaptic time constant (AMPA / GABA<sub>A</sub>) |
+# | $E_r$ | 0 mV | -65 mV | synaptic reversal potential |
+# | $J$ | 15 (1-pop.) | - | total recurrent synaptic strength |
+#
+# In the code below, `g` is the *total* synaptic strength of a projection
 # (= number of synapses `J` x single-synapse conductance `g_nS` = 1 nS).
 
 # %%
@@ -138,6 +213,10 @@ I_RS_FIXED = 60.0
 
 # %% [markdown]
 # ### Right-hand sides
+#
+# The functions below implement these equations directly - first the single
+# population, then the coupled RS-FS system - and the firing rates are clamped
+# at $r \ge 0$ during the explicit Euler integration.
 
 # %%
 def rhs_single_mf(y, I, Delta, kappa, P=RS):
@@ -211,6 +290,12 @@ def simulate_mf_two(Drs, Dfs, kappa_rs, I_fs_of_t, I_rs=I_RS_FIXED, T=T_SIM, dt=
 # synaptic input of a projection is tracked in aggregate,
 # $\dot S = -S/\tau_s + \sum_{j\,\text{spike}} W_{\cdot j}$, which makes the
 # 2,000-neuron network cheap to integrate.
+#
+# The mean-field reduction, by contrast, assumes an *all-to-all* coupled,
+# infinitely large population. The gap between that limit and the finite
+# ($N=2{,}000$), sparse ($p=0.2$) network simulated here is one quantitative
+# source of the residual mismatch between the black (spiking) and orange
+# (mean-field) curves in the dynamics panels below.
 
 # %%
 def trunc_lorentz(n, eta, delta, lb, ub, seed=0):
@@ -316,6 +401,18 @@ def simulate_snn_two(Nrs=2000, Nfs=2000, p=0.2, Drs=0.5, Dfs=2.0, kappa_rs=10.0,
 #
 # This is a direct numerical substitute for the AUTO/PyCoBi parameter continuation
 # used in the paper.
+#
+# **Reading the regions.** A *fold* (saddle-node) curve bounds the region in
+# which a spiking fixed point coexists with the quiescent one - inside it the
+# population is **bistable**. For the single RS population the two fold curves
+# meet in a *cusp*. An *Andronov-Hopf* curve bounds the region in which the
+# fixed point has lost stability to a growing oscillation - the population then
+# settles onto a limit cycle (**oscillatory**). Where fold and Hopf curves meet,
+# codimension-2 points (cusp, Bogdanov-Takens, generalized Hopf) organise the
+# diagram; the grid-based fixed-point classification used here reproduces the
+# *regions and their boundaries* but does **not** locate those codimension-2
+# points - the corresponding legend entries are kept only for visual fidelity
+# with the published figure.
 
 # %%
 def fixed_points_single(I, Delta, kappa, P=RS, n_v=7, n_r=7):
@@ -477,6 +574,16 @@ def plot_dynamics(ax, ts, r_snn, r_mf, title, ymax, ylabel=None, xlabel=True, sm
 
 # %% [markdown]
 # ## 3. Bifurcation diagrams (columns 1-2, panels A, B, E, F, I, J)
+#
+# Each diagram classifies the mean-field dynamics on a grid of input current
+# (x-axis) and excitatory heterogeneity $\Delta_{rs}$ (y-axis): white =
+# monostable, **gray = bistable** (quiescent + spiking fixed points), **green =
+# oscillatory**; fold boundaries are drawn in dark gray, Andronov-Hopf
+# boundaries in green. The **black and red stars** mark the low- and high-input
+# operating points (at $\Delta_{rs}=0.5$ mV) for which the firing-rate dynamics
+# of column 3 are simulated. In the two-population diagrams (rows 2-3) the
+# $I_{fs}$ axis is *reversed*: more FS input means more inhibition onto the RS
+# population, so RS-like structure appears mirrored relative to row 1.
 
 # %%
 Is_s = np.linspace(12, 70, 60)
@@ -496,6 +603,12 @@ print("two-population diagrams done")
 
 # %% [markdown]
 # ## 4. Firing-rate dynamics (column 3, panels C, D, G, H, K, L)
+#
+# In each panel the external current steps from its low to its high value
+# during the shaded window (750-2000 ms) and steps back afterwards, probing
+# whether the network relaxes to its original state or latches into a different
+# one (hysteresis). The black trace is the spiking network, the orange trace the
+# mean-field model; the network rate is smoothed with a 10 ms moving average.
 
 # %%
 # --- single population, panels C (kappa=10) and D (kappa=100) ---
@@ -627,6 +740,31 @@ plt.show()
 # * **G, H, K, L (dynamics).** With heterogeneous FS interneurons the RS population
 #   reproduces the single-population behaviour (G ~ C, H ~ D). With homogeneous FS
 #   interneurons the network oscillates throughout (K, L).
+#
+# ### Back to the scientific question
+#
+# Columns 1-2 make the paper's central point visible. Going from row 1
+# (excitatory population alone) to row 2 (E-I network with **heterogeneous**
+# interneurons) changes the axes but not the *structure* - bistability and the
+# adaptation-driven oscillatory region survive inhibition. Going instead to row
+# 3 (**homogeneous** interneurons) replaces that structure with one large
+# oscillatory region: the inhibition now dictates the dynamics. The right-hand
+# column shows the same dichotomy in the time domain (G, H replay the
+# single-population behaviours of C, D; K, L oscillate throughout).
+#
+# ### Limitations of this reproduction
+#
+# * **Qualitative, not pixel-perfect.** Region boundaries come from grid-based
+#   Newton root-finding plus eigenvalue classification, not AUTO/PyCoBi
+#   continuation, and codimension-2 points are not located numerically (see section 2).
+# * **Finite, sparse spiking networks.** The mean field is exact only for
+#   all-to-all coupling in the large-$N$ limit; the simulated networks use
+#   $N=2{,}000$ neurons with $p=0.2$ random connectivity, integrated by explicit
+#   Euler at $dt=0.01$ ms - a source of the residual black/orange mismatch and
+#   of the need to smooth the network rate.
+# * **Inputs read off the figure.** The low/high current values of the dynamics
+#   panels were taken from the star markers of the published figure and are
+#   approximate.
 #
 # ### References
 # * Gast, R., Solla, S. A., & Kennedy, A. (2024). *Neural heterogeneity controls
