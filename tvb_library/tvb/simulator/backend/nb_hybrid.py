@@ -187,6 +187,7 @@ def _get_supported_models_classes() -> tuple:
         GastSchmidtKnosche_SF,
         DumontGutkin,
     )
+    from tvb.simulator.models.gast_solla_kennedy import GastSollaKennedy
     from tvb.simulator.models.k_ion_exchange import KIonEx
     from tvb.simulator.models.jansen_rit import JansenRit, ZetterbergJansen
     from tvb.simulator.models.oscillator import (
@@ -214,6 +215,7 @@ def _get_supported_models_classes() -> tuple:
     from tvb.simulator.models.linear import Linear
     _SUPPORTED_MODELS_CACHE = (
         MontbrioPazoRoxin,
+        GastSollaKennedy,
         KIonEx,
         JansenRit,
         Generic2dOscillator,
@@ -1954,6 +1956,7 @@ class NbHybridBackend(MakoUtilMix):
                     f"Epileptor, Epileptor2D, EpileptorCodim3, EpileptorCodim3SlowMod, EpileptorRestingState, "
                     f"WilsonCowan, ZerlautAdaptation*, "
                     f"CoombesByrne2D, CoombesByrne, GastSchmidtKnosche_SD/SF, DumontGutkin, "
+                    f"GastSollaKennedy, "
                     f"ReducedSetFitzHughNagumo, ReducedSetHindmarshRose, Linear."
                 )
             if not isinstance(sn.scheme, _allowed_integrators):

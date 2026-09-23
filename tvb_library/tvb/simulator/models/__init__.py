@@ -76,6 +76,7 @@ class ModelsEnum(Enum):
     GAST_SCHMIDT_KNOSCHE_SD = "GastSchmidtKnosche_SD"
     GAST_SCHMIDT_KNOSCHE_SF = "GastSchmidtKnosche_SF"
     DUMONT_GUTKIN = "DumontGutkin"
+    GAST_SOLLA_KENNEDY = "GastSollaKennedy"
     DECO_BALANCED_EXC_INH = "DecoBalancedExcInh"
     K_ION_EXCHANGE = "KIonEx"
     CEREBELLAR_MF = "CerebellarMF"
@@ -116,6 +117,7 @@ _module_models = {
     'infinite_theta': [ModelsEnum.MONTBRIO_PAZO_ROXIN, ModelsEnum.COOMBES_BYRNE, ModelsEnum.COOMBES_BYRNE_2D, ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF, ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD, ModelsEnum.DUMONT_GUTKIN],
     'k_ion_exchange': [ModelsEnum.K_ION_EXCHANGE],
     'cerebellar_mf': [ModelsEnum.CEREBELLAR_MF],
+    'gast_solla_kennedy': [ModelsEnum.GAST_SOLLA_KENNEDY],
 }
 
 
