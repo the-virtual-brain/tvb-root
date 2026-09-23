@@ -701,7 +701,11 @@ plt.show()
 # reproduction (bottom).
 
 # %%
-ORIGINAL = plt.imread("figures/Gast_2024_pnas_fig2.jpg")
+import os
+_fig = "figures/Gast_2024_pnas_fig2.jpg"
+if not os.path.exists(_fig):
+    _fig = "tvb_documentation/demos/figures/Gast_2024_pnas_fig2.jpg"
+ORIGINAL = plt.imread(_fig)
 # vertical extent of the three row-blocks within the published figure
 orig_rows = [(8, 935), (935, 1865), (1865, 2795)]
 orig_cols = (0, ORIGINAL.shape[1])
