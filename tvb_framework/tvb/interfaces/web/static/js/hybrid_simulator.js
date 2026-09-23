@@ -293,6 +293,15 @@ function loadHybridBurstHistory() {
  * replaced in place instead of being stacked on top of itself.
  */
 function hybridSubmit(currentForm) {
+    hybridSubmitTo(currentForm, $(currentForm).attr("action"));
+}
+
+/**
+ * Submit the current step to the given url and move to the next one. A step whose own action url does
+ * something other than moving on - the closing step of the Subnetwork configuration stores the dynamics
+ * there - needs this to say where forward is.
+ */
+function hybridSubmitTo(currentForm, url) {
     // the wizard buttons are type="button" so nothing would submit anyway, but keep the guard for
     // any caller that does arrive through a real event. window.event only exists during dispatch.
     if (typeof event !== "undefined" && event !== null) {
@@ -314,7 +323,7 @@ function hybridSubmit(currentForm) {
 
     doAjaxCall({
         type: "POST",
-        url: $(currentForm).attr("action"),
+        url: url,
         data: formData,
         traditional: true,
         success: function (response) {
@@ -400,9 +409,15 @@ function _dropHybridStepsAfter(form) {
 }
 
 /**
- * Configure another Subnetwork. The steps that were configuring the previous one are dropped and the
- * first step of the newly selected one takes their place. What was edited for the Subnetwork being left
- * is kept: the server holds the draft of every Subnetwork at once.
+ * Configure another Subnetwork. The steps that were configuring the previous one are dropped and this
+ * one's whole configuration takes their place - every step, not just the first, so a Subnetwork that is
+ * already set up is shown rather than stepped through again. Every field is on screen, and any of them
+ * can be reached with Previous.
+ *
+ * The server sends the steps in one answer, already read only except the last, so nothing here has to
+ * sequence requests or decide what to lock.
+ *
+ * What was edited for the Subnetwork being left is kept: the server holds the draft of every one.
  */
 function hybridSelectSubnetwork(subnetworkId) {
     const dynamicsForm = document.getElementById(HYBRID_DYNAMICS_STEP_URL);
@@ -416,7 +431,6 @@ function hybridSelectSubnetwork(subnetworkId) {
         data: {subnetwork_id: subnetworkId},
         success: function (response) {
             _dropHybridStepsAfter(dynamicsForm);
-            _lockHybridForm(dynamicsForm);
             _appendHybridFragment(_asFragment(response));
             // the selector shows which Subnetwork is being configured, so it has to be redrawn too
             _refreshHybridDynamicsStep();

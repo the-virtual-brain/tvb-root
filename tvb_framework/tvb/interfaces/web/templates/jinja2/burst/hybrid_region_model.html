@@ -11,9 +11,14 @@
     {% elif not renderer.region_model_dynamics %}
         <p class="hybrid-subnetworks-hint">
             No saved model configuration matches the
-            <strong>{{ renderer.region_model_subnetwork.dynamics.model.__class__.__name__ }}</strong>
-            Model this Subnetwork is configured with. Model configurations are created on the
-            <em>Phase plane</em> page; save one built on this Model class and it will be offered here.
+            <strong>{{ renderer.region_model_model_label }}</strong>
+            Model this Subnetwork is configured with.
+        </p>
+        <p class="hybrid-subnetworks-hint">
+            Model configurations are defined on the
+            <a href="{{ renderer.phase_plane_url }}" target="_blank" rel="noopener">Phase plane page</a>.
+            Save one built on this Model there, then press <em>Set up region Model</em> again and it will
+            be offered here. The link opens in a new tab, so this configuration is not lost.
         </p>
     {% else %}
         <p class="hybrid-subnetworks-hint">

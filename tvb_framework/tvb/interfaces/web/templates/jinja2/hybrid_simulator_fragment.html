@@ -7,6 +7,10 @@
       data-hybrid-context-title="{{ renderer.context_title if renderer.context_title else '' }}">
     {% if renderer.is_subnetworks_summary_fragment %}
         {% include 'burst/hybrid_subnetworks_summary.html' %}
+    {% elif renderer.is_projections_fragment %}
+        <fieldset>
+            {% include 'burst/hybrid_projections_summary.html' %}
+        </fieldset>
     {% elif renderer.is_dynamics_save_fragment %}
         <p class="hybrid-dynamics-done">
             This Subnetwork is configured. Press <em>Save Configuration</em> to store the dynamics of
@@ -14,7 +18,7 @@
             <em>Subnetwork dynamics</em> step to pick another Subnetwork.
         </p>
     {% else %}
-        <fieldset>
+        <fieldset {% if renderer.is_read_only %} disabled {% endif %}>
             <dl>
                 {#- No step title here: the classic cockpit only shows a legend for monitor fragments,
                     every other step exposes just its parameter labels. -#}
@@ -38,16 +42,14 @@
                     </dd>
                 {% endfor %}
             </dl>
-            {#- The dynamics step owns the shared dt above, and lists what each Subnetwork was
-                configured with below it. -#}
-            {% if renderer.is_dynamics_summary_fragment %}
-                {% include 'burst/hybrid_dynamics_summary.html' %}
-            {% endif %}
         </fieldset>
 
-        {#- The Subnetwork being configured. Deliberately outside the fieldset and marked to stay live:
-            once the user moves on, this step is locked like every finished one, but switching
-            Subnetwork is what rebuilds the steps below it, so it has to keep working. -#}
+        {#- The Subnetworks, and what each one is configured with. This is the only place this step
+            describes them: a separate summary above said the same thing twice.
+
+            Deliberately outside the fieldset and marked to stay live: once the user moves on, this step
+            is locked like every finished one, but switching Subnetwork is what rebuilds the steps below
+            it, so it has to keep working. -#}
         {% if renderer.is_dynamics_summary_fragment %}
             <div class="hybrid-subnetwork-tabs" data-hybrid-keep-enabled="true">
                 {% for choice in renderer.subnetwork_choices %}
@@ -58,14 +60,19 @@
                         <span class="hybrid-tab-name">{{ choice.name }}</span>
                         <span class="hybrid-tab-detail">{{ choice.count }} region{{ 's' if choice.count != 1 else '' }}</span>
                         <span class="hybrid-tab-detail">{{ choice.model }}</span>
+                        <span class="hybrid-tab-detail">{{ choice.integrator }}{% if choice.noise %} &middot; {{ choice.noise }} noise{% endif %}</span>
                     </button>
                 {% endfor %}
             </div>
         {% endif %}
     {% endif %}
 
+    {#- A read only step keeps its buttons so that stepping back can reveal them again, exactly as the
+        client's own locking leaves them. -#}
+    {% set hide_buttons = 'style="visibility: hidden"' if renderer.is_read_only else '' %}
+
     {% if renderer.include_previous_button %}
-        <button name="previous" type="button" class="btn btn-primary" tabindex="1"
+        <button name="previous" type="button" class="btn btn-primary" tabindex="1" {{ hide_buttons | safe }}
                 onclick="hybridPreviousStep(this.parentElement, '{{ renderer.previous_form_action_url }}')">{{ renderer.previous_button_label }}
         </button>
     {% endif %}
@@ -81,17 +88,26 @@
     {% endif %}
 
     {% if renderer.is_dynamics_save_fragment %}
-        <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1"
+        <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1" {{ hide_buttons | safe }}
                 title="Store the configured dynamics on the Hybrid Simulator configuration"
                 onclick="hybridSaveSubnetworkDynamics()">{{ renderer.next_button_label }}
         </button>
     {% else %}
-        <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1"
+        <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1" {{ hide_buttons | safe }}
                 onclick="hybridSubmit(this.parentElement)"
                 {% if not renderer.next_button_enabled %}
                     disabled="disabled"
                     title="The next configuration step is not available yet"
                 {% endif %}>{{ renderer.next_button_label }}
+        </button>
+    {% endif %}
+
+    {#- The closing step of the Subnetwork configuration stores the dynamics through its own action, so
+        its way onward has to post somewhere other than this form's action url. -#}
+    {% if renderer.next_form_action_url %}
+        <button name="continue" type="button" class="btn btn-primary btn-next" tabindex="1" {{ hide_buttons | safe }}
+                title="Continue to the Projections"
+                onclick="hybridSubmitTo(this.parentElement, '{{ renderer.next_form_action_url }}')">Next
         </button>
     {% endif %}
 </form>

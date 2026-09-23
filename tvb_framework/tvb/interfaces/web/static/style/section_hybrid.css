@@ -345,11 +345,6 @@ button.hybrid-subnetwork-action:disabled {
     margin: 0 10px 10px 10px;
 }
 
-/* The saved dynamics, listed on the Subnetwork dynamics step. */
-table.hybrid-dynamics-summary .hybrid-summary-region {
-    white-space: nowrap;
-}
-
 /**
  * Set up region Model, shown in the third column. This is the right hand section of the classic page,
  * so it sits on that column's dark ground and needs light text, like the Subnetwork board above it.
@@ -397,4 +392,39 @@ table.hybrid-dynamics-summary .hybrid-summary-region {
 
 .hybrid-region-values-pane table {
     width: 100%;
+}
+
+/**
+ * The generated Projections, listed on their wizard step in the configuration column. Read only, so it
+ * reuses the Subnetwork summary table's dark-on-light rules and only adds a header row.
+ */
+table.hybrid-projections-summary th[scope="col"] {
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 11px;
+    font-weight: normal;
+    white-space: nowrap;
+    width: auto;
+}
+
+table.hybrid-projections-summary th[scope="row"] {
+    width: 1%;
+}
+
+.hybrid-projections-note {
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 11px;
+    margin: 6px 10px 0 10px;
+}
+
+/**
+ * Links in the third column. base.css gives a bare link a dark grey, which is close to invisible on
+ * this column's dark ground, so they are the column's own cream and underlined.
+ */
+.hybrid-context-column .hybrid-subnetworks-hint a {
+    color: #faf7e4;
+    text-decoration: underline;
+}
+
+.hybrid-context-column .hybrid-subnetworks-hint a:hover {
+    color: #ffffff;
 }

@@ -30,13 +30,14 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.forms.equation_forms import get_form_for_equation
 from tvb.adapters.forms.hybrid_simulator_fragments import HybridConnectivityFragment, \
     HybridSubnetworkDynamicsFragment, HybridSubnetworksFragment
-from tvb.adapters.forms.integrator_forms import get_form_for_integrator
-from tvb.adapters.forms.model_forms import get_form_for_model
+from tvb.adapters.forms.integrator_forms import NoiseTypesEnum, get_form_for_integrator
+from tvb.adapters.forms.model_forms import ModelsEnum, get_form_for_model
 from tvb.adapters.forms.noise_forms import get_form_for_noise
 from tvb.adapters.forms.simulator_fragments import SimulatorIntegratorFragment, SimulatorModelFragment
 from tvb.core.entities.file.simulator.view_model import HybridSimulatorAdapterModel, \
-    IntegratorStochasticViewModel, MultiplicativeNoiseViewModel
+    IntegratorStochasticViewModel, IntegratorViewModelsEnum, MultiplicativeNoiseViewModel
 from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
 from tvb.core.services.hybrid_simulator_service import HybridSimulatorService, HybridSubnetworkException
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.interfaces.web.controllers import common
@@ -46,6 +47,10 @@ from tvb.interfaces.web.controllers.decorators import expose_fragment, expose_pa
     context_selected
 from tvb.interfaces.web.controllers.simulator.simulator_fragment_rendering_rules import POST_REQUEST
 from tvb.interfaces.web.entities.context_hybrid_simulator import HybridSimulatorContext
+
+
+# The Phase plane page, where the Dynamics placed on regions by Set up region Model are defined.
+PHASE_PLANE_PATH = '/burst/dynamic'
 
 
 class HybridSimulatorURLs(object):
@@ -75,6 +80,8 @@ class HybridSimulatorURLs(object):
     CONFIGURE_REGION_MODEL_URL = '/burst/hybrid/configure_region_model'
     APPLY_REGION_MODEL_URL = '/burst/hybrid/apply_region_model'
     SUBMIT_REGION_MODEL_URL = '/burst/hybrid/submit_region_model'
+    # the wizard step generating the Projections out of the Connectivity and the Subnetwork grouping
+    SET_PROJECTIONS_URL = '/burst/hybrid/set_projections'
 
 
 class HybridSimulatorFragmentRenderingRules(object):
@@ -115,11 +122,30 @@ class HybridSimulatorFragmentRenderingRules(object):
         self.dynamics_by_id = dynamics_by_id or {}
         # set on the Model parameters step, which offers the Set up region Model action
         self.include_region_model_button = False
+        # Where Next posts, when that is not this step's own action url. The closing step of the
+        # Subnetwork configuration needs this: its own url stores the dynamics, so Next has to go
+        # somewhere else, and it may not equal the answer's url or the client would take the answer
+        # for a rejection of this step rather than for the next one.
+        self.next_form_action_url = None
+        # True for a step rendered as the record of something already configured: fields disabled and
+        # buttons hidden, which is what the client's own locking does at runtime. Rendering it this way
+        # lets the whole configuration of a Subnetwork arrive already read only.
+        self.is_read_only = False
+        # The steps of one Subnetwork's configuration, in order, when the whole thing is rendered at
+        # once instead of being stepped through. All but the last are read only.
+        self.chain_renderers = []
+        # the wizard step listing the generated Projections
+        self.is_projections_fragment = False
+        self.projection_rows = []
+        self.unconnected_pairs = []
         # the Region Model panel: the Subnetwork being configured, its regions and the Dynamics on offer
         self.region_model_subnetwork = None
         self.region_model_rows = []
         self.region_model_dynamics = []
         self.region_model_unassigned = 0
+        # Where model configurations are defined. Built by the controller because deploy_context is only
+        # put in the template context of a full page, not of a fragment.
+        self.phase_plane_url = None
 
     @property
     def include_previous_button(self):
@@ -145,6 +171,15 @@ class HybridSimulatorFragmentRenderingRules(object):
         return rows
 
     @property
+    def region_model_model_label(self):
+        """
+        The Model this Subnetwork is configured with, named the way the Model selector named it.
+        """
+        subnetwork = self.region_model_subnetwork
+        dynamics = subnetwork.dynamics if subnetwork is not None else None
+        return self._label_for(self.MODEL_LABELS, dynamics.model if dynamics else None)
+
+    @property
     def region_model_json(self):
         """
         The Region Model panel state, as consumed by the hybrid_region_model.js client side component.
@@ -156,43 +191,40 @@ class HybridSimulatorFragmentRenderingRules(object):
         # the result is inlined inside a <script> tag, so no region label may close it
         return payload.replace('<', '\\u003c')
 
+    # The names the Model and Integrator selectors offered, by class, so a Subnetwork is described with
+    # the same words it was configured with rather than with a class name.
+    MODEL_LABELS = {member.value: str(member) for member in ModelsEnum}
+    INTEGRATOR_LABELS = {member.value: str(member) for member in IntegratorViewModelsEnum}
+    NOISE_LABELS = {member.value: str(member) for member in NoiseTypesEnum}
+
+    @classmethod
+    def _label_for(cls, labels, instance):
+        if instance is None:
+            return ''
+        return labels.get(type(instance), type(instance).__name__.replace('ViewModel', ''))
+
     @property
     def subnetwork_choices(self):
         """
-        One entry per Subnetwork for the selector of the contextual column: what it holds and what is
-        configured for it, so the user can tell the Subnetworks apart without opening each one.
+        One entry per Subnetwork for the selector: what it holds and what is configured for it. This is
+        the only place the Subnetwork dynamics step describes them, so it carries the Model, the
+        Integrator and, for a stochastic one, its Noise.
         """
         choices = []
         for subnetwork in self.subnetworks or []:
             dynamics = self.dynamics_by_id.get(subnetwork.id) or subnetwork.dynamics
+            integrator = dynamics.integrator if dynamics else None
+            noise = getattr(integrator, 'noise', None)
             choices.append({
                 'id': subnetwork.id,
                 'name': subnetwork.name,
                 'count': len(subnetwork.node_indices),
-                'model': type(dynamics.model).__name__ if dynamics and dynamics.model else '',
-                'integrator': type(dynamics.integrator).__name__ if dynamics and dynamics.integrator else '',
+                'model': self._label_for(self.MODEL_LABELS, dynamics.model if dynamics else None),
+                'integrator': self._label_for(self.INTEGRATOR_LABELS, integrator),
+                'noise': self._label_for(self.NOISE_LABELS, noise),
                 'is_selected': subnetwork.id == self.selected_subnetwork
             })
         return choices
-
-    @property
-    def dynamics_rows(self):
-        """
-        One row per Subnetwork for the dynamics wizard step, describing the saved configuration.
-        """
-        rows = []
-        for subnetwork in self.subnetworks or []:
-            dynamics = subnetwork.dynamics
-            integrator = dynamics.integrator if dynamics else None
-            noise = getattr(integrator, 'noise', None)
-            rows.append({
-                'name': subnetwork.name,
-                'count': len(subnetwork.node_indices),
-                'model': type(dynamics.model).__name__ if dynamics and dynamics.model else '',
-                'integrator': type(integrator).__name__.replace('ViewModel', '') if integrator else '',
-                'noise': type(noise).__name__.replace('ViewModel', '') if noise is not None else ''
-            })
-        return rows
 
     @property
     def subnetworks_json(self):
@@ -449,22 +481,27 @@ class HybridSimulatorController(BurstBaseController):
 
         return self._dynamics_step_rules(form, subnetworks, draft).to_dict()
 
-    @expose_fragment('hybrid_simulator_fragment')
+    @expose_fragment('burst/hybrid_subnetwork_chain')
     def select_subnetwork(self, subnetwork_id=None, **data):
         """
-        Configure another Subnetwork. Answers with the first step of its configuration, which is what the
-        client puts in place of the steps that were configuring the Subnetwork being left. What was
-        edited there is kept: the draft holds every Subnetwork at once.
+        Configure another Subnetwork.
+
+        Answers with its whole configuration at once - every step, all but the last already read only -
+        rather than with the first step, so a Subnetwork that is already set up is shown rather than
+        stepped through again. What was edited for the Subnetwork being left is kept: the draft holds
+        every Subnetwork at once.
         """
         try:
             _, _, subnetworks, _ = self._load_subnetworks_configuration()
             self.hybrid_simulator_service.find_subnetwork(subnetworks, subnetwork_id)
         except HybridSubnetworkException as excep:
-            return self._back_to_connectivity(str(excep))
+            common.set_error_message(str(excep))
+            return HybridSimulatorFragmentRenderingRules(
+                None, HybridSimulatorURLs.SELECT_SUBNETWORK_URL, load_error=str(excep)).to_dict()
 
         self.context.set_selected_subnetwork(subnetwork_id)
         dynamics, _ = self._selected_dynamics()
-        return self._model_step_rules(dynamics).to_dict()
+        return self._subnetwork_chain_rules(dynamics).to_dict()
 
     @expose_fragment('hybrid_simulator_fragment')
     def set_subnetwork_model(self, **data):
@@ -624,6 +661,65 @@ class HybridSimulatorController(BurstBaseController):
         self.context.add_last_loaded_form_url_to_session(HybridSimulatorURLs.SET_SUBNETWORK_DYNAMICS_URL)
         return self._dynamics_step_rules(form, subnetworks, draft).to_dict()
 
+    # ---------------------------------------------------------------- Projections
+
+    @expose_fragment('hybrid_simulator_fragment')
+    def set_projections(self, **data):
+        """
+        Generate the Projections the configuration describes and list them, so the resulting NetworkSet
+        can be inspected before anything is launched.
+
+        They are derived from the Connectivity and the Subnetwork grouping every time this step is
+        rendered rather than stored: nothing here is a user choice yet, and keeping sparse matrices in
+        the session would only let them fall out of step with the grouping.
+        """
+        try:
+            hybrid_simulator, _, subnetworks, _ = self._load_subnetworks_configuration()
+        except HybridSubnetworkException as excep:
+            return self._back_to_connectivity(str(excep))
+
+        draft = self._prepare_dynamics_draft(subnetworks, hybrid_simulator.dt)
+
+        if not self.hybrid_simulator_service.same_dynamics(subnetworks, draft):
+            # the Projections are built from the saved dynamics, so they would not describe what is on
+            # screen; the same rule the Subnetworks step applies to an unsaved grouping
+            return self._back_to_dynamics(
+                hybrid_simulator, subnetworks, draft,
+                "Save the Subnetwork configuration before generating the Projections.")
+
+        try:
+            connectivity = h5.load_from_gid(hybrid_simulator.connectivity)
+            network_set = self.hybrid_simulator_service.build_network_set(
+                connectivity, subnetworks, hybrid_simulator.dt)
+        except Exception as excep:
+            self.logger.exception("Could not generate the Hybrid Simulator Projections")
+            return self._back_to_dynamics(
+                hybrid_simulator, subnetworks, draft,
+                "The Projections could not be generated: {}".format(excep))
+
+        self.context.add_last_loaded_form_url_to_session(HybridSimulatorURLs.SET_PROJECTIONS_URL)
+
+        rules = HybridSimulatorFragmentRenderingRules(
+            None, HybridSimulatorURLs.SET_PROJECTIONS_URL,
+            HybridSimulatorURLs.SAVE_SUBNETWORK_DYNAMICS_URL, fragment_title="Projections",
+            # the global simulation configuration is the next wizard step, it does not exist yet
+            next_button_enabled=False)
+        rules.is_projections_fragment = True
+        rules.projection_rows = self.hybrid_simulator_service.describe_network_set(network_set)
+        rules.unconnected_pairs = self.hybrid_simulator_service.unconnected_pairs(network_set)
+        return rules.to_dict()
+
+    def _back_to_dynamics(self, hybrid_simulator, subnetworks, draft, message):
+        """
+        Refuse to move on and hand the Subnetwork dynamics step back, so the wizard never shows a step
+        built from a configuration the user has not saved.
+        """
+        common.set_error_message(message)
+        self.context.add_last_loaded_form_url_to_session(HybridSimulatorURLs.SET_SUBNETWORK_DYNAMICS_URL)
+        form = HybridSubnetworkDynamicsFragment()
+        form.fill_from_trait(hybrid_simulator)
+        return self._dynamics_step_rules(form, subnetworks, draft).to_dict()
+
     # ---------------------------------------------------------------- Region Model
 
     @expose_fragment('burst/hybrid_region_model')
@@ -636,8 +732,10 @@ class HybridSimulatorController(BurstBaseController):
         try:
             rules = self._region_model_rules()
         except HybridSubnetworkException as excep:
-            return HybridSimulatorFragmentRenderingRules(
-                None, HybridSimulatorURLs.CONFIGURE_REGION_MODEL_URL, load_error=str(excep)).to_dict()
+            rules = HybridSimulatorFragmentRenderingRules(
+                None, HybridSimulatorURLs.CONFIGURE_REGION_MODEL_URL, load_error=str(excep))
+            rules.phase_plane_url = self.build_path(PHASE_PLANE_PATH)
+            return rules.to_dict()
         return rules.to_dict()
 
     @expose_json
@@ -749,6 +847,7 @@ class HybridSimulatorController(BurstBaseController):
 
         rules = HybridSimulatorFragmentRenderingRules(
             None, HybridSimulatorURLs.CONFIGURE_REGION_MODEL_URL, fragment_title="Region Model")
+        rules.phase_plane_url = self.build_path(PHASE_PLANE_PATH)
         rules.region_model_subnetwork = subnetwork
         rules.region_model_dynamics = dynamics
         rules.region_model_rows = self.hybrid_simulator_service.region_model_rows(
@@ -838,6 +937,36 @@ class HybridSimulatorController(BurstBaseController):
         return self._step_rules(form, HybridSimulatorURLs.SET_SUBNETWORK_MODEL_URL,
                                 HybridSimulatorURLs.SET_SUBNETWORK_DYNAMICS_URL)
 
+    def _subnetwork_chain_rules(self, dynamics):
+        """
+        The whole configuration of one Subnetwork, as the ordered steps that make it up: Model, Model
+        parameters, Integrator, Integrator parameters and, where they apply, Noise and its Equation,
+        closed by the step that stores it.
+
+        Every step but the last is marked read only, so the configuration arrives on screen already in
+        the state the wizard leaves a finished step in. Stepping back through it with Previous is what
+        makes any of it editable again, which the client already does.
+        """
+        steps = [self._model_step_rules(dynamics),
+                 self._model_params_step_rules(dynamics),
+                 self._integrator_step_rules(dynamics),
+                 self._integrator_params_step_rules(dynamics)]
+
+        if isinstance(dynamics.integrator, IntegratorStochasticViewModel):
+            steps.append(self._noise_params_step_rules(dynamics))
+            if isinstance(dynamics.integrator.noise, MultiplicativeNoiseViewModel):
+                steps.append(self._noise_equation_step_rules(dynamics))
+
+        steps.append(self._save_step_rules(steps[-1].form_action_url))
+
+        for step in steps[:-1]:
+            step.is_read_only = True
+
+        rules = HybridSimulatorFragmentRenderingRules(
+            None, HybridSimulatorURLs.SELECT_SUBNETWORK_URL)
+        rules.chain_renderers = steps
+        return rules
+
     def _model_params_step_rules(self, dynamics, form=None):
         if form is None:
             form = self.algorithm_service.prepare_adapter_form(
@@ -891,12 +1020,15 @@ class HybridSimulatorController(BurstBaseController):
     @staticmethod
     def _save_step_rules(previous_form_action_url):
         """
-        The closing step of the sub wizard: nothing left to fill in for this Subnetwork, only the action
-        writing what was configured onto the Hybrid Simulator configuration.
+        The closing step of the Subnetwork configuration: nothing left to fill in for this Subnetwork,
+        the action writing what was configured onto the Hybrid Simulator configuration, and Next onto
+        the Projections.
         """
-        return HybridSimulatorFragmentRenderingRules(
+        rules = HybridSimulatorFragmentRenderingRules(
             None, HybridSimulatorURLs.SAVE_SUBNETWORK_DYNAMICS_URL, previous_form_action_url,
             is_dynamics_save_fragment=True, next_button_label='Save Configuration')
+        rules.next_form_action_url = HybridSimulatorURLs.SET_PROJECTIONS_URL
+        return rules
 
     # ---------------------------------------------------------------- Helpers
 

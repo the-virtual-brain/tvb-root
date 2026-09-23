@@ -47,6 +47,9 @@ from tvb.core.entities.file.simulator.view_model import HybridSubnetworkDynamics
 from tvb.core.neocom import h5
 from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.core.services.exceptions import ServicesBaseException
+from tvb.simulator.hybrid import NetworkSet
+from tvb.simulator.hybrid import Subnetwork as LibrarySubnetwork
+from tvb.simulator.hybrid.projection_utils import create_inter_projection, create_intra_projection
 
 
 class HybridSubnetworkException(ServicesBaseException):
@@ -570,6 +573,164 @@ class HybridSimulatorService(object):
         if keyword.iskeyword(candidate):
             candidate = candidate + '_'
         return candidate
+
+    # ---------------------------------------------------------------- tvb_library translation
+
+    @classmethod
+    def build_library_subnetworks(cls, subnetworks, dt):
+        """
+        Turn the configuration gathered in the web UI into ``tvb.simulator.hybrid.Subnetwork`` objects.
+
+        The Integrator view models subclass the library Integrators, so one can be handed to ``scheme``
+        directly. Model and Integrator are deep copied first: the objects on the configuration are the
+        ones the forms keep editing, and ``configure`` mutates what it is given.
+
+        :param dt: the shared integration step size, given to every Integrator
+        :return: one library Subnetwork per configured Subnetwork, in configuration order
+        """
+        identifiers = cls.to_identifiers(subnetworks)
+        built = []
+
+        for subnetwork in subnetworks or []:
+            model = copy.deepcopy(subnetwork.dynamics.model)
+            model.configure()
+
+            scheme = copy.deepcopy(subnetwork.dynamics.integrator)
+            scheme.dt = dt
+            scheme.configure()
+
+            node_indices = numpy.array(sorted(subnetwork.node_indices), dtype=numpy.int_)
+            built.append(LibrarySubnetwork(
+                # NetworkSet builds a namedtuple out of these, so they have to be identifiers
+                name=identifiers[subnetwork.id],
+                model=model,
+                scheme=scheme,
+                nnodes=len(node_indices),
+                node_indices=node_indices))
+
+        return built
+
+    @staticmethod
+    def default_source_cvar(model):
+        """
+        :return: the state variable index of the model's first coupling variable, which is what a
+                 projection's ``source_cvar`` indexes in the history buffer
+        """
+        return int(model.cvar[0])
+
+    # A projection's target_cvar is a slot in the target model's cvar list, not a state variable index,
+    # so the first coupling variable of any model is always slot 0.
+    DEFAULT_TARGET_CVAR = 0
+
+    @classmethod
+    def build_network_set(cls, connectivity, subnetworks, dt):
+        """
+        Build the ``NetworkSet`` the configuration describes: one IntraProjection per Subnetwork and one
+        InterProjection per connected ordered pair, all sliced out of the Connectivity.
+
+        Weights and lengths are sliced by ``tvb.simulator.hybrid.projection_utils``, which indexes them
+        as ``(target, source)`` - the Connectivity's own orientation - rather than by this service.
+
+        Coupling variables are left at safe defaults: each side uses its own model's first coupling
+        variable. Choosing them per projection is follow-up work.
+
+        A pair whose weights block is entirely zero gets no InterProjection: the two Subnetworks are not
+        connected in this Connectivity, so a projection would only carry zeros.
+
+        :return: the NetworkSet, configured
+        """
+        built = cls.build_library_subnetworks(subnetworks, dt)
+
+        for subnet in built:
+            subnet.projections = [create_intra_projection(
+                subnet,
+                source_cvar=cls.default_source_cvar(subnet.model),
+                target_cvar=cls.DEFAULT_TARGET_CVAR,
+                connectivity=connectivity,
+                dt=dt)]
+            subnet.configure()
+
+        projections = []
+        for source in built:
+            for target in built:
+                if source is target:
+                    continue
+                if not cls.are_connected(connectivity, source, target):
+                    continue
+                projections.append(create_inter_projection(
+                    source_subnet=source,
+                    target_subnet=target,
+                    source_cvar=cls.default_source_cvar(source.model),
+                    target_cvar=cls.DEFAULT_TARGET_CVAR,
+                    connectivity=connectivity,
+                    source_indices=source.node_indices,
+                    target_indices=target.node_indices,
+                    dt=dt))
+
+        network_set = NetworkSet(subnets=built, projections=projections)
+        network_set.configure()
+        return network_set
+
+    @staticmethod
+    def are_connected(connectivity, source, target):
+        """
+        :return: True when this Connectivity holds any non zero weight from the source Subnetwork's
+                 nodes to the target's
+        """
+        block = connectivity.weights[numpy.ix_(target.node_indices, source.node_indices)]
+        return bool(numpy.any(block))
+
+    @staticmethod
+    def describe_network_set(network_set):
+        """
+        Describe the generated NetworkSet for the wizard step, so the configuration can be inspected
+        without leaving the page.
+        """
+        def cvars(value):
+            return [int(index) for index in numpy.atleast_1d(value)]
+
+        rows = []
+
+        for subnet in network_set.subnets:
+            for projection in subnet.projections:
+                rows.append({
+                    'kind': 'Intra',
+                    'source': subnet.name,
+                    'target': subnet.name,
+                    'shape': '{} x {}'.format(*projection.weights.shape),
+                    'connections': int(projection.weights.nnz),
+                    'source_cvar': cvars(projection.source_cvar),
+                    'target_cvar': cvars(projection.target_cvar)
+                })
+
+        for projection in network_set.projections:
+            rows.append({
+                'kind': 'Inter',
+                'source': projection.source.name,
+                'target': projection.target.name,
+                'shape': '{} x {}'.format(*projection.weights.shape),
+                'connections': int(projection.weights.nnz),
+                'source_cvar': cvars(projection.source_cvar),
+                'target_cvar': cvars(projection.target_cvar)
+            })
+
+        return rows
+
+    @classmethod
+    def unconnected_pairs(cls, network_set):
+        """
+        :return: the ordered Subnetwork pairs left without an InterProjection, so the step can say so
+                 rather than quietly leaving them out
+        """
+        connected = {(projection.source.name, projection.target.name)
+                     for projection in network_set.projections}
+        pairs = []
+        for source in network_set.subnets:
+            for target in network_set.subnets:
+                if source is target or (source.name, target.name) in connected:
+                    continue
+                pairs.append({'source': source.name, 'target': target.name})
+        return pairs
 
     # ---------------------------------------------------------------- Helpers
 

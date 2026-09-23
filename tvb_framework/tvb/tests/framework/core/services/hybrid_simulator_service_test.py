@@ -454,3 +454,145 @@ class TestHybridSimulatorService(object):
 
         assert rows[0] == {'index': 0, 'label': 'lOFC', 'dynamic_id': fast.id, 'dynamic_name': 'fast'}
         assert rows[1] == {'index': 2, 'label': 'lPCUN', 'dynamic_id': None, 'dynamic_name': ''}
+
+    # ---------------------------------------------------------------- tvb_library translation
+
+    def _connectivity(self):
+        """
+        A deterministic Connectivity over this test's 8 nodes: two blocks, connected one way only.
+        Weights are indexed (target, source), which is TVB's own orientation.
+        """
+        from tvb.datatypes.connectivity import Connectivity
+
+        n = self.NUMBER_OF_REGIONS
+        weights = numpy.zeros((n, n))
+        weights[:4, :4] = 1.0        # inside the first block
+        weights[4:, 4:] = 2.0        # inside the second block
+        weights[4:, :4] = 0.5        # first block -> second block, and nothing back
+        lengths = numpy.full((n, n), 10.0)
+
+        return Connectivity(weights=weights, tract_lengths=lengths,
+                            region_labels=numpy.array(['r%d' % index for index in range(n)]),
+                            centres=numpy.zeros((n, 3)), number_of_regions=n)
+
+    def _two_blocks(self):
+        """Nodes 0-3 in the first Subnetwork, 4-7 in the second."""
+        subnetworks = self.service.add_subnetwork(self.subnetworks)
+        return self.service.move_regions(subnetworks, [4, 5, 6, 7], 1)
+
+    def test_library_subnetworks_carry_the_configuration(self):
+        subnetworks = self._two_blocks()
+
+        built = self.service.build_library_subnetworks(subnetworks, 0.25)
+
+        assert [subnet.nnodes for subnet in built] == [4, 4]
+        assert [list(subnet.node_indices) for subnet in built] == [[0, 1, 2, 3], [4, 5, 6, 7]]
+        # the shared dt reaches every scheme, which is what stops Simulator.validate_dts from refusing
+        assert [subnet.scheme.dt for subnet in built] == [0.25, 0.25]
+        # names have to be identifiers: NetworkSet builds a namedtuple out of them
+        for subnet in built:
+            assert subnet.name.isidentifier()
+
+    def test_library_subnetworks_do_not_share_the_configured_objects(self):
+        subnetworks = self._two_blocks()
+
+        built = self.service.build_library_subnetworks(subnetworks, 0.1)
+
+        # configure() mutates what it is given, and the configuration objects are the ones the forms
+        # keep editing, so the built Subnetworks must hold copies
+        assert built[0].model is not subnetworks[0].dynamics.model
+        assert built[0].scheme is not subnetworks[0].dynamics.integrator
+        assert built[0].model is not built[1].model
+
+    def test_intra_projections_hold_this_subnetworks_own_block(self):
+        subnetworks = self._two_blocks()
+        connectivity = self._connectivity()
+
+        network_set = self.service.build_network_set(connectivity, subnetworks, 0.1)
+
+        first, second = network_set.subnets
+        assert len(first.projections) == 1
+        intra = first.projections[0]
+        assert intra.weights.shape == (4, 4)
+        assert numpy.allclose(intra.weights.toarray(), 1.0)
+        assert numpy.allclose(intra.lengths.toarray(), 10.0)
+        # and the other Subnetwork's own block, which holds a different weight
+        assert numpy.allclose(second.projections[0].weights.toarray(), 2.0)
+
+    def test_inter_projections_are_generated_for_connected_pairs_only(self):
+        subnetworks = self._two_blocks()
+        connectivity = self._connectivity()
+
+        network_set = self.service.build_network_set(connectivity, subnetworks, 0.1)
+
+        assert len(network_set.projections) == 1
+        projection = network_set.projections[0]
+        # the Connectivity connects the first block to the second and nothing back
+        assert projection.source is network_set.subnets[0]
+        assert projection.target is network_set.subnets[1]
+        assert projection.weights.shape == (4, 4)
+        assert numpy.allclose(projection.weights.toarray(), 0.5)
+
+        # the pair left out is reported rather than quietly dropped
+        unconnected = self.service.unconnected_pairs(network_set)
+        assert len(unconnected) == 1
+        assert unconnected[0]['source'] == network_set.subnets[1].name
+        assert unconnected[0]['target'] == network_set.subnets[0].name
+
+    def test_coupling_variables_are_left_at_safe_defaults(self):
+        subnetworks = self._two_blocks()
+        connectivity = self._connectivity()
+
+        network_set = self.service.build_network_set(connectivity, subnetworks, 0.1)
+        model = network_set.subnets[0].model
+
+        projection = network_set.projections[0]
+        # source_cvar indexes the history buffer, so it is a state variable index
+        assert list(numpy.atleast_1d(projection.source_cvar)) == [int(model.cvar[0])]
+        # target_cvar indexes the coupling array, so it is a slot in the target model's cvar list
+        assert list(numpy.atleast_1d(projection.target_cvar)) == [0]
+
+    def test_the_network_set_names_its_states_after_the_subnetworks(self):
+        subnetworks = self._two_blocks()
+        connectivity = self._connectivity()
+
+        network_set = self.service.build_network_set(connectivity, subnetworks, 0.1)
+
+        # this is what would break on a name that is not a valid Python identifier
+        assert network_set.States._fields == tuple(subnet.name for subnet in network_set.subnets)
+
+    def test_a_single_subnetwork_gets_an_intra_projection_and_no_inter_one(self):
+        connectivity = self._connectivity()
+
+        network_set = self.service.build_network_set(connectivity, self.subnetworks, 0.1)
+
+        assert len(network_set.subnets) == 1
+        assert len(network_set.subnets[0].projections) == 1
+        assert network_set.subnets[0].projections[0].weights.shape == (8, 8)
+        assert network_set.projections == []
+
+    def test_the_generated_network_set_is_described_for_the_wizard(self):
+        subnetworks = self._two_blocks()
+        connectivity = self._connectivity()
+
+        network_set = self.service.build_network_set(connectivity, subnetworks, 0.1)
+        rows = self.service.describe_network_set(network_set)
+
+        kinds = [row['kind'] for row in rows]
+        assert kinds == ['Intra', 'Intra', 'Inter']
+        assert rows[0]['shape'] == '4 x 4'
+        assert rows[0]['connections'] == 16
+        assert rows[2]['source'] == network_set.subnets[0].name
+        assert rows[2]['target'] == network_set.subnets[1].name
+
+    def test_regrouping_changes_what_is_generated(self):
+        connectivity = self._connectivity()
+        subnetworks = self._two_blocks()
+        # move one node across, so the blocks are 3 and 5 nodes wide
+        subnetworks = self.service.move_regions(subnetworks, [3], 1)
+
+        network_set = self.service.build_network_set(connectivity, subnetworks, 0.1)
+
+        assert [subnet.nnodes for subnet in network_set.subnets] == [3, 5]
+        assert network_set.subnets[0].projections[0].weights.shape == (3, 3)
+        assert network_set.projections[0].weights.shape == (5, 3)

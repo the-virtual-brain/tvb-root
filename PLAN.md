@@ -17,7 +17,58 @@ Keep the first implementation small and validate each step before moving to the 
 
 ---
 
+## Status
+
+Last updated 2026-09-07.
+
+| phase | status |
+|---|---|
+| Phase 0 – Understand the existing Simulator workflow | **Done** |
+| Phase 1 – Hybrid Simulator entry and base layout | **Done** |
+| Phase 2 – Configure Subnetworks | **Done** |
+| Phase 2 – Refine Subnetwork Configuration | **Done** |
+| Phase 3 – Configure each Subnetwork | **Done** |
+| Phase 3 addition – Set up region Model | **Done** |
+| Phase 4 – Generate Projections | **Done** |
+| Phase 5 – Global Hybrid Simulator configuration | Not started |
+| Phase 6 – Launch one Hybrid simulation | Not started |
+| Follow-up features | Not started |
+
+A user can currently select a Connectivity, group its regions into Subnetworks, configure a Model and an
+Integrator (with Noise and its Equation) for each of them, place saved Dynamics on a Subnetwork's regions
+to give a Model parameter one value per region, save all of it, and step on to inspect the Projections
+generated from the grouping. Nothing is launched or persisted yet: the configuration lives in the session
+until Phase 6.
+
+### Verified by
+
+124 hybrid tests — 57 service, 63 controller, 4 render checks. The suites the work touches also pass
+unchanged: the classic Simulator Cockpit (41), the classic Set up region Model page (3), and the view
+model and simulator adapter suites (21).
+
+```bash
+python -m pytest tvb/tests/framework/core/services/hybrid_simulator_service_test.py \
+                 tvb/tests/framework/interfaces/web/controllers/hybrid_simulator_controller_test.py \
+                 tvb/tests/framework/interfaces/web/controllers/hybrid_render_check_test.py
+```
+
+There is no JavaScript test infrastructure in this repository, so the client is covered indirectly: the
+render checks render every fragment the wizard puts on the wire and assert on its markup.
+
+### Outstanding
+
+* **Initial conditions are not covered by any phase.** Decide whether they join Phase 5's global
+  configuration before Phase 6 starts.
+* **Per-Subnetwork `variables_of_interest`.** Phase 3 makes these editable per Subnetwork; Phase 5
+  configures monitors globally and will have to reconcile Subnetworks that disagree.
+* **Stale artifact:** `interfaces/web/controllers/simulator/__pycache__/hybrid_simulator_wizard_urls.*.pyc`
+  has no source any more, left over from an earlier iteration.
+
+---
+
 ## Phase 0 – Understand the existing Simulator workflow
+
+**Status: Done.** Findings are recorded in the phase summaries below.
 
 Before implementing new UI:
 
@@ -40,6 +91,8 @@ Discuss the proposed architecture before starting Phase 1.
 ---
 
 ## Phase 1 – Hybrid Simulator entry and base layout
+
+**Status: Done.**
 
 Add **Hybrid Simulator** as a separate option next to the existing
 Simulator Cockpit / Phase Plane entry points.
@@ -83,6 +136,8 @@ panel before implementing Subnetwork configuration.
 ---
 
 ## Phase 2 – Configure Subnetworks
+
+**Status: Done** — see the implementation summary below, and the refinement that followed it.
 
 Implement the UI for dividing the selected Connectivity regions into Subnetworks.
 
@@ -297,6 +352,8 @@ out of tree.
 
 ## Phase 2 – Refine Subnetwork Configuration
 
+**Status: Done** — see the implementation summary below.
+
 Refactor the Phase 2 UI so Subnetwork configuration remains on the main **Hybrid Simulator** page.
 
 Remove the separate Subnetwork configuration page and reuse the current third column, which is reserved for Results / Visualization.
@@ -400,6 +457,10 @@ acceptable.
 ---
 
 ## Phase 3 – Configure each Subnetwork
+
+**Status: Done**, checkpoint included — the translation into `tvb.simulator.hybrid.Subnetwork` objects
+it asks for is implemented in Phase 4, which needs those same objects. See the implementation summary
+below, and Phase 4's.
 
 For each Subnetwork allow selection and parameter editing of:
 
@@ -798,6 +859,56 @@ point of reusing the chain rather than nesting: no hybrid `refresh_subform` endp
   HTML a second time — invisible in tests, where `RENDER_HTML` is off, and broken in the app. Both now go
   through the undecorated `_subnetwork_dynamics_column`. The render check covers it.
 
+### Returning to a Subnetwork shows what it holds
+
+Selecting a Subnetwork from the boxes puts **its whole configuration** on screen — Model, Model
+parameters, Integrator, Integrator parameters and, where they apply, Noise and its Equation — with every
+step read-only except the last. All the fields are visible at once, and any of them can be reached with
+*Previous*. Pressing **Next** from the dynamics step still opens the first step alone, so configuring a
+Subnetwork for the first time is still a walk through it; only *returning* to one replays the chain.
+
+`select_subnetwork` renders **all of those steps in one answer** through
+`burst/hybrid_subnetwork_chain.html`, with every step but the last marked `is_read_only` — its fieldset
+`disabled` and its buttons `visibility: hidden`, which is exactly the state the client's own
+`_lockHybridForm` leaves a finished step in. The buttons are hidden rather than omitted so that
+`_unlockHybridForm` can reveal them again when the user steps back. Which steps exist follows the
+configured Integrator, as stepping through would: a stochastic one adds its Noise step, and a
+Multiplicative Noise its Equation step on top of that.
+
+The client therefore only appends what it is given — no request sequencing, no deciding what to lock.
+
+*First attempt, and why it was replaced:* the client was given the remaining step urls in a
+`data-hybrid-chain` attribute and walked them itself with GETs (each step answers with the step after
+it, and skips its POST branch on a GET, so this was safe). It did not work in the browser and could not
+be reproduced outside one — there is no JavaScript test infrastructure here, so the sequencing and the
+locking were the one part of this feature that nothing could assert. Rendering the stack server-side
+moved all of it under the render checks, which now assert the exact list of forms, that all but the last
+are disabled, and that only the last has visible buttons. It also removed a real defect that attempt
+introduced: the Jinja whitespace-stripping comment before `data-hybrid-chain` glued it onto the previous
+attribute (`data-hybrid-context-title=""data-hybrid-chain="..."`).
+
+*Not* done this way: rendering every step unlocked so any field could be edited in place. The reused
+Cockpit forms share one flat POST namespace — `Generic2dOscillator.a` and a Linear equation's `a`
+collide — so a single submit across the whole chain would need the fields prefixed, which means no longer
+reusing those forms as they are. Read-only-with-Previous is what the classic Cockpit does with a loaded
+configuration anyway.
+
+### The Subnetwork dynamics step describes each Subnetwork once
+
+The step first carried both a summary table and the Subnetwork selector boxes, which said the same thing
+twice — and worse, not always the same thing: the table described the **saved** dynamics while the boxes
+describe the **draft**, so the two disagreed exactly while something was being edited.
+
+The table is gone. Each box now names its Subnetwork, its region count, its Model, its Integrator and,
+for a stochastic one, its Noise, using the labels the selectors themselves offered — `TupleEnum` carries
+those (`str(member)`), so a Subnetwork is described with the same words it was configured with rather
+than with a class name (`Generic 2D Oscillator`, not `Generic2dOscillator`).
+
+The step deliberately carries **no** saved/unsaved marker: the boxes show the draft and nothing says so.
+A marker was tried and removed as clutter. Nothing is lost silently, because the two places that need a
+saved configuration refuse to proceed without one and say why — `set_projections`, and the Subnetworks
+step's own Next. `is_modified` is still computed on the rendering rules, which is what those gates read.
+
 ### Deviations from the specification above
 
 1. **The shared `dt` is applied to the saved Integrators too**, not only to the draft. It is a
@@ -856,6 +967,8 @@ save action. That is what stands in for a JS test here, and it is what caught th
 
 ## Phase 3 addition – Set up region Model
 
+**Status: Done.**
+
 The classic Cockpit offers a **Set up region Model** button next to the Model parameters, which opens a
 page of its own. The Hybrid Simulator offers the same action on its Model parameters step, but fills the
 **third column** with it instead of navigating away, and shows only the right-hand half of that page —
@@ -911,6 +1024,19 @@ configuration. The panel says how many regions are still without one. The placem
 cannot say which Dynamic produced them. A regrouping that takes regions away from a Subnetwork drops
 them from its placement rather than leaving a stale one behind.
 
+### With nothing to place
+
+The panel offers only Dynamics built on the Subnetwork's Model class, so it is often empty at first. It
+then names that Model (with the label the Model selector used) and links to the **Phase plane page**,
+`/burst/dynamic`, where model configurations are defined — the same page the classic
+`model_param_region_empty` template points at.
+
+The link is built in the controller through `build_path`, not in the template: `deploy_context` is only
+put in the template context of a full page, not of a fragment, so a template-side
+`{{ deploy_context }}/burst/dynamic` would silently render as `/burst/dynamic` and break under a deployed
+context path. It opens in a new tab, so the wizard and its in-session configuration are not left behind;
+pressing *Set up region Model* again picks up whatever was saved meanwhile.
+
 ### Styling
 
 The warning amber on this column was `#e8b84b`, which measures 4.08:1 against the column's dark ground —
@@ -931,6 +1057,8 @@ suite still passes untouched.
 ---
 
 ## Phase 4 – Generate Projections
+
+**Status: Done** — see the implementation summary below.
 
 Generate IntraProjections and InterProjections from the selected Connectivity and Subnetwork assignments.
 
@@ -972,7 +1100,91 @@ Inspect the generated `NetworkSet` before exposing projection editing.
 
 ---
 
+## Phase 4 – Implementation Summary
+
+This phase also discharges the **Phase 3 checkpoint**, which asked for the UI configuration to be
+translated into real `tvb.simulator.hybrid.Subnetwork` objects: Phase 4 needs exactly those objects, so
+they are built here rather than twice.
+
+### Translating the configuration
+
+`HybridSimulatorService.build_library_subnetworks` turns each `HybridSubnetworkViewModel` into a library
+`Subnetwork`: the sanitized `name`, the configured `model`, the Integrator as `scheme`, `nnodes` and
+`node_indices`.
+
+Two things made this smaller than expected:
+
+* the Integrator **view models subclass the library Integrators** (`HeunStochasticViewModel` is a
+  `HeunStochastic`), so one can be handed to `scheme` directly — no conversion layer;
+* Model and Integrator are **deep copied first**. `configure()` mutates what it is given, and the
+  objects on the configuration are the ones the forms keep editing.
+
+### The projections are the library's job, not this service's
+
+`tvb.simulator.hybrid.projection_utils` already has `create_intra_projection` and
+`create_inter_projection`, and both take a `connectivity` plus node indices and do the slicing
+themselves — including indexing weights and lengths as **`(target, source)`**, the Connectivity's own
+orientation. So `build_network_set` only decides *which* projections exist, and the library builds them.
+Nothing about the slicing is reimplemented here, which is what `tvb_framework/AGENTS.md` asks for.
+
+### Coupling variables
+
+The two sides are **not** symmetric, and the library has separate resolvers that say so:
+
+| | indexes | resolver |
+|---|---|---|
+| `source_cvar` | the history buffer, so a **state variable index** | `resolve_source_cvar` |
+| `target_cvar` | the coupling array, so a **slot in the target model's `cvar` list** | `resolve_target_cvar` |
+
+The safe default is therefore `model.cvar[0]` for the source and slot `0` for the target — each side's
+own first coupling variable. Choosing them per projection is follow-up work.
+
+### What gets generated
+
+* one `IntraProjection` per Subnetwork, over its own weights and tract-lengths block;
+* one `InterProjection` per ordered pair **whose weights block holds any non-zero weight**. A pair the
+  Connectivity does not connect in that direction gets none — a projection there would only carry
+  zeros — and the step lists those pairs rather than quietly leaving them out;
+* a `NetworkSet` over all of it, configured.
+
+### The wizard step
+
+The closing step of the Subnetwork configuration used to be a dead end: its only action stored the
+dynamics. It now also carries a **Next** onto the Projections step.
+
+That needed one addition to the client: its own action url stores the dynamics, so Next has to post
+somewhere else, and it may not post to the *answer's* url either — `hybridSubmit` treats an answer whose
+form id equals the current one as a rejection of this step rather than as the next step. `hybridSubmitTo`
+takes the url to post to, and `hybridSubmit` is now a one-line wrapper passing the form's own action.
+
+The Projections step derives everything on every render rather than storing it. Nothing there is a user
+choice yet, and keeping sparse matrices in the session would only let them fall out of step with the
+grouping. Generating over an unsaved configuration is refused and hands the dynamics step back, the same
+rule the Subnetworks step applies to an unsaved grouping.
+
+`SET_PROJECTIONS_URL` is deliberately **not** added to `HYBRID_WIZARD_STEPS`: a stack rebuild walks that
+list, and rebuilding would then regenerate the whole `NetworkSet` on every step-back. The existing
+fallback lands the user on the dynamics step instead.
+
+### Tests
+
+9 service tests and 6 controller tests, plus a render check that only passes if the configuration really
+does translate into a `NetworkSet`. They assert the Intra weights and lengths against a known
+Connectivity, that an Inter projection is generated for the connected direction and **not** for the
+unconnected one, the `(target, source)` shape after a regrouping, the cvar defaults on both sides, that
+`NetworkSet.States` is named after the Subnetworks, and that generating is refused while the dynamics are
+unsaved.
+
+Not done: the plan also asks to **compare the generated projections with the hybrid demo notebooks**.
+The tests compare against a hand-built Connectivity whose blocks are known constants, which pins the
+slicing and orientation, but no demo has been run end to end against a GUI-built configuration. That
+belongs with Phase 6, where a simulation can actually be launched and compared.
+
+---
+
 ## Phase 5 – Global Hybrid Simulator configuration
+
+**Status: Not started.**
 
 Add the remaining simulation-level configuration.
 
@@ -995,6 +1207,8 @@ Reuse existing Simulator Cockpit components where possible.
 ---
 
 ## Phase 6 – Launch one Hybrid simulation
+
+**Status: Not started.**
 
 Construct:
 
@@ -1031,6 +1245,8 @@ Compare at least one GUI-created simulation against the equivalent Python hybrid
 ---
 
 # Follow-up features
+
+**Status: Not started.**
 
 These should be implemented only after the basic workflow is stable.
 

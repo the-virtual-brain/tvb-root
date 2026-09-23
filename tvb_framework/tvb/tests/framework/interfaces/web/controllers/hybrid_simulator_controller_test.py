@@ -709,7 +709,11 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         assert type(draft[second_id].integrator).__name__ == 'HeunDeterministicViewModel'
         assert type(draft[second_id].model).__name__ == 'Kuramoto'
 
-    def test_selecting_a_subnetwork_restarts_the_steps_under_the_dynamics_step(self):
+    @staticmethod
+    def _chain_urls(rendering_rules):
+        return [step.form_action_url for step in rendering_rules['renderer'].chain_renderers]
+
+    def test_selecting_a_subnetwork_answers_with_its_whole_configuration(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
             saved = self._two_subnetworks()
             self._open_dynamics_step()
@@ -717,15 +721,95 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
 
             cherrypy.request.method = "POST"
             rendering_rules = self.hybrid_controller.select_subnetwork(subnetwork_id=saved[1].id)
-            dynamics_step = self._dynamics_step()
 
-        # the answer is the first configuration step of the newly selected Subnetwork, which the client
-        # puts in place of the steps that were configuring the previous one
+        # every step of that Subnetwork's configuration, in order, closed by the one that stores it
+        assert self._chain_urls(rendering_rules) == [
+            HybridSimulatorURLs.SET_SUBNETWORK_MODEL_URL,
+            HybridSimulatorURLs.SET_SUBNETWORK_MODEL_PARAMS_URL,
+            HybridSimulatorURLs.SET_SUBNETWORK_INTEGRATOR_URL,
+            HybridSimulatorURLs.SET_SUBNETWORK_INTEGRATOR_PARAMS_URL,
+            HybridSimulatorURLs.SAVE_SUBNETWORK_DYNAMICS_URL]
+
+    def test_every_step_but_the_last_arrives_read_only(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            saved = self._two_subnetworks()
+            self._open_dynamics_step()
+            self._enter_dynamics_chain()
+
+            cherrypy.request.method = "POST"
+            rendering_rules = self.hybrid_controller.select_subnetwork(subnetwork_id=saved[1].id)
+
+        steps = rendering_rules['renderer'].chain_renderers
+        # the configuration is shown, not stepped through: only the last step is live, and Previous on
+        # it is what hands control back up the stack
+        assert [step.is_read_only for step in steps] == [True, True, True, True, False]
+        assert steps[-1].previous_form_action_url == HybridSimulatorURLs.SET_SUBNETWORK_INTEGRATOR_PARAMS_URL
+        # and each step above knows what precedes it, so stepping back walks the whole way up
+        assert steps[0].previous_form_action_url == HybridSimulatorURLs.SET_SUBNETWORK_DYNAMICS_URL
+
+    def test_the_chain_covers_noise_and_its_equation(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            saved = self._two_subnetworks()
+            self._open_dynamics_step()
+            self._enter_dynamics_chain()
+
+            cherrypy.request.method = "POST"
+            self.hybrid_controller.set_subnetwork_integrator(integrator='Stochastic Heun')
+            stochastic = self.hybrid_controller.select_subnetwork(subnetwork_id=saved[0].id)
+
+            self.hybrid_controller.set_subnetwork_integrator_params(noise='Multiplicative')
+            multiplicative = self.hybrid_controller.select_subnetwork(subnetwork_id=saved[0].id)
+
+        # a stochastic Integrator adds its Noise step before the closing one
+        assert self._chain_urls(stochastic)[-2] == HybridSimulatorURLs.SET_SUBNETWORK_NOISE_PARAMS_URL
+        # and a Multiplicative Noise its Equation step on top of that
+        assert self._chain_urls(multiplicative)[-2] == \
+               HybridSimulatorURLs.SET_SUBNETWORK_NOISE_EQUATION_PARAMS_URL
+        assert len(self._chain_urls(multiplicative)) == 7
+
+    def test_first_entry_into_a_subnetwork_still_steps_through(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            self._open_dynamics_step()
+            rendering_rules = self._enter_dynamics_chain()
+
+        # Next from the dynamics step opens the first step alone, and live, so configuring a Subnetwork
+        # for the first time is still a walk through it; only returning to one shows the whole thing
         renderer = rendering_rules['renderer']
         assert renderer.form_action_url == HybridSimulatorURLs.SET_SUBNETWORK_MODEL_URL
-        assert renderer.previous_form_action_url == HybridSimulatorURLs.SET_SUBNETWORK_DYNAMICS_URL
+        assert renderer.chain_renderers == []
+        assert not renderer.is_read_only
 
-        # and the dynamics step above it now points at that Subnetwork
+    def test_building_the_chain_does_not_change_the_configuration(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            self._open_dynamics_step()
+            self._enter_dynamics_chain()
+            saved = self._saved_subnetworks()
+
+            cherrypy.request.method = "POST"
+            self.hybrid_controller.set_subnetwork_integrator(integrator='Stochastic Heun')
+            self.hybrid_controller.set_subnetwork_integrator_params(noise='Additive')
+            self.hybrid_controller.set_subnetwork_noise_params(nsig='[7.0]', ntau='0.0', noise_seed='42')
+            before = list(self._dynamics_draft()[saved[0].id].integrator.noise.nsig)
+
+            # showing the configuration must not be able to alter it
+            self.hybrid_controller.select_subnetwork(subnetwork_id=saved[0].id)
+            after = list(self._dynamics_draft()[saved[0].id].integrator.noise.nsig)
+
+        assert before == [7.0]
+        assert after == [7.0]
+
+    def test_selecting_a_subnetwork_points_the_selector_at_it(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            saved = self._two_subnetworks()
+            self._open_dynamics_step()
+            self._enter_dynamics_chain()
+
+            cherrypy.request.method = "POST"
+            self.hybrid_controller.select_subnetwork(subnetwork_id=saved[1].id)
+            dynamics_step = self._dynamics_step()
+
         selector = dynamics_step['renderer']
         assert selector.selected_subnetwork == saved[1].id
         selected = [choice for choice in selector.subnetwork_choices if choice['is_selected']]
@@ -1000,6 +1084,123 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         # owns are simply not listed for it any more
         assert 0 not in rows and 1 not in rows
         assert rows[2] == 'hybrid_fast'
+
+    # ---------------------------------------------------------------- Projections
+
+    def _reach_projections(self):
+        """Walk the wizard to the closing step of the Subnetwork configuration, then press Next."""
+        cherrypy.request.method = "POST"
+        return self.hybrid_controller.set_projections()
+
+    def _configured_subnetwork(self):
+        """A saved grouping whose dynamics are saved too, which is what the Projections need."""
+        self._configured_hybrid_simulator()
+        self._open_dynamics_step()
+        self._enter_dynamics_chain()
+        cherrypy.request.method = "POST"
+        self.hybrid_controller.save_subnetwork_dynamics()
+
+    def test_next_reaches_the_projections_step(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_subnetwork()
+            rendering_rules = self._reach_projections()
+
+        renderer = rendering_rules['renderer']
+        assert renderer.form_action_url == HybridSimulatorURLs.SET_PROJECTIONS_URL
+        assert renderer.previous_form_action_url == HybridSimulatorURLs.SAVE_SUBNETWORK_DYNAMICS_URL
+        assert renderer.is_projections_fragment
+        assert renderer.fragment_title == "Projections"
+        # the global simulation configuration is the next step and does not exist yet
+        assert not renderer.next_button_enabled
+
+    def test_the_closing_step_offers_a_way_onward(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            self._open_dynamics_step()
+            self._enter_dynamics_chain()
+            cherrypy.request.method = "POST"
+            self.hybrid_controller.set_subnetwork_model(model='Generic 2D Oscillator')
+            self.hybrid_controller.set_subnetwork_model_params(**self.MODEL_PARAMS)
+            self.hybrid_controller.set_subnetwork_integrator(integrator='Heun')
+            rendering_rules = self.hybrid_controller.set_subnetwork_integrator_params()
+
+        renderer = rendering_rules['renderer']
+        assert renderer.is_dynamics_save_fragment
+        # its own action stores the dynamics, so Next has to post somewhere else
+        assert renderer.form_action_url == HybridSimulatorURLs.SAVE_SUBNETWORK_DYNAMICS_URL
+        assert renderer.next_form_action_url == HybridSimulatorURLs.SET_PROJECTIONS_URL
+
+    def test_a_single_subnetwork_generates_one_intra_projection(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_subnetwork()
+            rendering_rules = self._reach_projections()
+
+        rows = rendering_rules['renderer'].projection_rows
+        assert len(rows) == 1
+        assert rows[0]['kind'] == 'Intra'
+        assert rows[0]['shape'] == '{n} x {n}'.format(n=self.connectivity.number_of_regions)
+        # nothing to connect to, so no pair is left out either
+        assert rendering_rules['renderer'].unconnected_pairs == []
+
+    def test_two_subnetworks_generate_intra_and_inter_projections(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            self.hybrid_controller.add_subnetwork()
+            self.hybrid_controller.move_regions(subnetwork_index='1', node_indices=json.dumps([0, 1, 2]))
+            self.hybrid_controller.save_subnetworks()
+            self._open_dynamics_step()
+            self._enter_dynamics_chain()
+            cherrypy.request.method = "POST"
+            self.hybrid_controller.save_subnetwork_dynamics()
+
+            rendering_rules = self._reach_projections()
+
+        rows = rendering_rules['renderer'].projection_rows
+        intra = [row for row in rows if row['kind'] == 'Intra']
+        inter = [row for row in rows if row['kind'] == 'Inter']
+
+        # one IntraProjection per Subnetwork, sized to the nodes it owns
+        assert len(intra) == 2
+        assert sorted(row['shape'] for row in intra) == \
+               sorted(['{n} x {n}'.format(n=self.connectivity.number_of_regions - 3), '3 x 3'])
+        # and the pairs this Connectivity actually connects
+        assert len(inter) >= 1
+        for row in inter:
+            assert row['source'] != row['target']
+            # source_cvar is a state variable index, target_cvar a slot in the target's cvar list
+            assert row['source_cvar'] == [0]
+            assert row['target_cvar'] == [0]
+
+    def test_projections_are_refused_while_the_dynamics_are_unsaved(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_subnetwork()
+
+            # change the Integrator without saving it
+            cherrypy.request.method = "POST"
+            self.hybrid_controller.set_subnetwork_integrator(integrator='Stochastic Heun')
+            rendering_rules = self._reach_projections()
+
+        renderer = rendering_rules['renderer']
+        # the Projections are built from the saved dynamics, so the wizard stays on the dynamics step
+        assert renderer.form_action_url == HybridSimulatorURLs.SET_SUBNETWORK_DYNAMICS_URL
+        assert renderer.is_dynamics_summary_fragment
+        assert renderer.is_modified
+
+    def test_projections_follow_the_grouping(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_subnetwork()
+            before = self._reach_projections()['renderer'].projection_rows
+
+            # regroup and save, then generate again
+            self.hybrid_controller.add_subnetwork()
+            self.hybrid_controller.move_regions(subnetwork_index='1', node_indices=json.dumps([0, 1]))
+            self.hybrid_controller.save_subnetworks()
+            self.hybrid_controller.save_subnetwork_dynamics()
+            after = self._reach_projections()['renderer'].projection_rows
+
+        # they are derived on every render, so the new grouping is reflected without anything stored
+        assert len(before) == 1
+        assert len([row for row in after if row['kind'] == 'Intra']) == 2
 
     # ---------------------------------------------------------------- navigation
 

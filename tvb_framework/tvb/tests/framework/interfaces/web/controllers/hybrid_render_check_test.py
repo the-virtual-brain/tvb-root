@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Temporary check: what the Hybrid Simulator endpoints actually put on the wire."""
 
+import re
 from unittest.mock import patch
 from uuid import UUID
 
@@ -101,6 +102,11 @@ class TestHybridRendering(BaseTransactionalControllerTest):
             save_step_html = self.hybrid_controller.set_subnetwork_noise_equation_params(
                 **self.EQUATION_PARAMS)
 
+            # the dynamics step again, now that this Subnetwork carries a stochastic Integrator
+            cherrypy.request.method = "GET"
+            stochastic_step_html = self.hybrid_controller.set_subnetwork_dynamics()
+            cherrypy.request.method = "POST"
+
             # switching Subnetwork answers with the first step of the newly selected one
             selected_html = self.hybrid_controller.select_subnetwork(subnetwork_id=self._first_subnetwork_id())
 
@@ -121,6 +127,13 @@ class TestHybridRendering(BaseTransactionalControllerTest):
         # the selector keeps working once this step is locked, which is what that marker is read for
         assert 'data-hybrid-keep-enabled="true"' in dynamics_step_html
 
+        # each box describes its Subnetwork with the names the selectors offered, and it is the only
+        # place this step does so - a second summary above the boxes used to repeat all of it
+        assert 'Generic 2D Oscillator' in dynamics_step_html
+        assert 'Heun' in dynamics_step_html
+        assert 'hybrid-dynamics-summary' not in dynamics_step_html
+        assert dynamics_step_html.count('Generic 2D Oscillator') == 1
+
         # the steps post to their own urls
         assert 'action="/burst/hybrid/set_subnetwork_model"' in model_html
         assert 'action="/burst/hybrid/set_subnetwork_model_params"' in model_params_html
@@ -133,13 +146,35 @@ class TestHybridRendering(BaseTransactionalControllerTest):
         assert 'name="dt"' in integrator_params_html
         assert 'disabled' in integrator_params_html
 
+        # a stochastic Integrator names its Noise in the box as well
+        assert 'Stochastic Heun' in stochastic_step_html
+        assert 'Multiplicative noise' in stochastic_step_html
+
         # the closing step offers the save action rather than another Next
         assert 'hybridSaveSubnetworkDynamics()' in save_step_html
         assert 'Save Configuration' in save_step_html
 
-        # switching Subnetwork restarts its configuration at the Model step, rendered once
+        # Switching Subnetwork answers with its whole configuration: every step, in order, all but the
+        # last read only. This is the state the wizard leaves finished steps in, produced server side,
+        # so what reaches the browser can be asserted here rather than only in a browser.
         assert isinstance(selected_html, str)
-        assert 'action="/burst/hybrid/set_subnetwork_model"' in selected_html
+        actions = re.findall(r'<form[^>]*action="([^"]*)"', selected_html)
+        assert actions == ['/burst/hybrid/set_subnetwork_model',
+                           '/burst/hybrid/set_subnetwork_model_params',
+                           '/burst/hybrid/set_subnetwork_integrator',
+                           '/burst/hybrid/set_subnetwork_integrator_params',
+                           '/burst/hybrid/set_subnetwork_noise_params',
+                           '/burst/hybrid/set_subnetwork_noise_equation_params',
+                           '/burst/hybrid/save_subnetwork_dynamics']
+        # every step but the closing one has its fields disabled and its buttons hidden
+        assert len(re.findall(r'<fieldset\s+disabled', selected_html)) == 6
+        assert 'visibility: hidden' in selected_html
+        # and the closing one is the live step, so nothing in it is hidden
+        last_form = selected_html[selected_html.rindex('<form'):]
+        assert 'visibility: hidden' not in last_form
+        assert 'hybridSaveSubnetworkDynamics()' in last_form
+        # the values on screen are the configured ones, not defaults
+        assert 'Stochastic Heun' in selected_html
 
     def test_what_the_region_model_panel_returns(self):
         """
@@ -176,9 +211,13 @@ class TestHybridRendering(BaseTransactionalControllerTest):
         assert 'Set up region Model' in model_html
         assert 'hybridConfigureRegionModel()' in model_html
 
-        # with no matching configuration saved, the panel says where they come from
-        assert 'Phase plane' in empty_html
+        # with no matching configuration saved, the panel links to where they are defined
         assert 'HYBRID_REGION_MODEL.init(' not in empty_html
+        assert 'Phase plane page</a>' in empty_html
+        assert 'href="/burst/dynamic"' in empty_html
+        assert 'target="_blank"' in empty_html
+        # and it names the Model the way the Model selector named it
+        assert 'Generic 2D Oscillator' in empty_html
 
         # with one saved, the region list is drawn from it
         assert 'HYBRID_REGION_MODEL.init(' in panel_html
@@ -190,3 +229,35 @@ class TestHybridRendering(BaseTransactionalControllerTest):
         assert 'id="hybrid-region-apply"' in panel_html
         assert 'id="hybrid-region-submit"' in panel_html
         assert 'id="hybrid-region-select-all"' in panel_html
+
+    def test_what_the_projections_step_returns(self):
+        """
+        Render the Projections step. This is the Phase 3 checkpoint and the Phase 4 one at once: it only
+        renders if the configuration really does translate into a NetworkSet.
+        """
+        with patch.object(TvbProfile.current.web, 'RENDER_HTML', True), \
+                patch('cherrypy.session', self.sess_mock, create=True):
+            self.hybrid_controller.context.set_hybrid_simulator(self.hybrid_simulator)
+
+            cherrypy.request.method = "GET"
+            self.hybrid_controller.set_subnetworks()
+            cherrypy.request.method = "POST"
+            self.hybrid_controller.set_subnetworks()
+            self.hybrid_controller.set_subnetwork_dynamics(dt='0.1')
+            self.hybrid_controller.set_subnetwork_model(model='Generic 2D Oscillator')
+            self.hybrid_controller.set_subnetwork_model_params(**self.MODEL_PARAMS)
+            self.hybrid_controller.set_subnetwork_integrator(integrator='Heun')
+            closing_html = self.hybrid_controller.set_subnetwork_integrator_params()
+            self.hybrid_controller.save_subnetwork_dynamics()
+
+            projections_html = self.hybrid_controller.set_projections()
+
+        # the closing step of the Subnetwork configuration offers both storing and moving on
+        assert 'hybridSaveSubnetworkDynamics()' in closing_html
+        assert "hybridSubmitTo(this.parentElement, '/burst/hybrid/set_projections')" in closing_html
+
+        # and the Projections step lists what the configuration produced
+        assert 'action="/burst/hybrid/set_projections"' in projections_html
+        assert 'Intra' in projections_html
+        assert 'Coupling variables' in projections_html
+        assert 'hybrid-projections-summary' in projections_html
