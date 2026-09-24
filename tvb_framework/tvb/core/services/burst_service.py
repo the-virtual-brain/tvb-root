@@ -29,7 +29,8 @@ import os
 from datetime import datetime
 
 from tvb.basic.logger.builder import get_logger
-from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS
+from tvb.config import HYBRID_SIMULATOR_CLASS, HYBRID_SIMULATOR_MODULE, MEASURE_METRICS_MODULE, \
+    MEASURE_METRICS_CLASS
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
@@ -139,10 +140,39 @@ class BurstService(object):
     @staticmethod
     def get_available_bursts(project_id):
         """
-        Return all the burst for the current project.
+        Return the bursts of the current project that belong to the classic Simulator.
+
+        The Hybrid Simulator stores its launches in this same table, and opening one of those here would
+        try to read a classic configuration, so they are left out. Everything whose simulation Operation
+        is not the Hybrid one - a burst that predates the Hybrid Simulator, or one whose Operation has
+        not been created yet - stays here, which is what keeps this list exactly as it was.
         """
-        bursts = dao.get_bursts_for_project(project_id, page_size=MAX_BURSTS_DISPLAYED) or []
-        return bursts
+        hybrid_algorithm = BurstService.get_hybrid_simulator_algorithm()
+        if hybrid_algorithm is None:
+            return dao.get_bursts_for_project(project_id, page_size=MAX_BURSTS_DISPLAYED) or []
+
+        return dao.get_bursts_for_project_by_algorithm(project_id, hybrid_algorithm.id, matching=False,
+                                                       page_size=MAX_BURSTS_DISPLAYED) or []
+
+    @staticmethod
+    def get_available_hybrid_bursts(project_id):
+        """
+        Return the bursts of the current project launched by the Hybrid Simulator.
+        """
+        hybrid_algorithm = BurstService.get_hybrid_simulator_algorithm()
+        if hybrid_algorithm is None:
+            return []
+
+        return dao.get_bursts_for_project_by_algorithm(project_id, hybrid_algorithm.id, matching=True,
+                                                       page_size=MAX_BURSTS_DISPLAYED) or []
+
+    @staticmethod
+    def get_hybrid_simulator_algorithm():
+        """
+        :return: the stored Algorithm of the Hybrid Simulator, or None when this database does not hold
+                 one yet - which is what keeps an older database working unchanged
+        """
+        return dao.get_algorithm_by_module(HYBRID_SIMULATOR_MODULE, HYBRID_SIMULATOR_CLASS)
 
     @staticmethod
     def populate_burst_disk_usage(bursts):

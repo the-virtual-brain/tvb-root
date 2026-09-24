@@ -26,10 +26,11 @@
 
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.forms.monitor_forms import get_monitor_to_ui_name_dict, get_ui_name_to_monitor_dict
-from tvb.basic.neotraits.api import List
+from tvb.adapters.forms.simulator_fragments import SimulatorFinalFragment
+from tvb.basic.neotraits.api import Attr, List
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities.file.simulator.view_model import HybridSimulatorAdapterModel
-from tvb.core.neotraits.forms import FloatField, MultiSelectField, TraitDataTypeSelectField
+from tvb.core.neotraits.forms import FloatField, MultiSelectField, StrField, TraitDataTypeSelectField
 
 
 class HybridConnectivityFragment(ABCAdapterForm):
@@ -129,6 +130,33 @@ class HybridMonitorsFragment(ABCAdapterForm):
         """
         return [self.monitor_choices[name]() for name in self.monitors.value or []
                 if name in self.monitor_choices]
+
+    @staticmethod
+    def get_view_model():
+        return HybridSimulatorAdapterModel
+
+
+class HybridLaunchFragment(ABCAdapterForm):
+    """
+    The closing step of the Hybrid Simulator: what this simulation is called, next to the Launch button.
+
+    The name is validated by the classic Cockpit's own rule, so that a Hybrid simulation cannot be named
+    something the burst history could not show.
+    """
+
+    def __init__(self, default_simulation_name="simulation_1"):
+        super(HybridLaunchFragment, self).__init__()
+        self.simulation_name = StrField(
+            Attr(str, doc='Name for the current Hybrid simulation', default=default_simulation_name,
+                 label='Simulation name'),
+            name='input_simulation_name_id')
+        self.ordered_fields = (self.simulation_name,)
+
+    def fill_from_post(self, form_data):
+        super(HybridLaunchFragment, self).fill_from_post(form_data)
+        validation_result = SimulatorFinalFragment.is_burst_name_ok(self.simulation_name.value)
+        if validation_result is not True:
+            raise ValueError(validation_result)
 
     @staticmethod
     def get_view_model():

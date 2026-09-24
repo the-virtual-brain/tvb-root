@@ -38,7 +38,10 @@ from tvb.core.entities.file.simulator.view_model import HybridSimulatorAdapterMo
 from tvb.core.entities.model.model_burst import Dynamic
 from tvb.simulator.integrators import HeunDeterministic
 from tvb.core.entities.model.model_burst import BurstConfiguration
+from tvb.core.entities.model.model_operation import Operation
+from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.storage import dao
+from tvb.core.services.burst_service import BurstService
 from tvb.core.neocom import h5
 from tvb.interfaces.web.controllers.common import KEY_PROJECT, KEY_USER
 from tvb.interfaces.web.controllers.simulator.hybrid_simulator_controller import HybridSimulatorController, \
@@ -1437,8 +1440,9 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         assert renderer.fragment_title == "Simulation"
         assert renderer.simulation_length == 100.0
         assert renderer.monitor_rows == [{'name': 'Temporal average', 'period': 1.0, 'is_raw': False}]
-        # launching is the next step and does not exist yet
-        assert not renderer.next_button_enabled
+        # and it closes the wizard: the simulation name sits next to the Launch button
+        assert renderer.is_launch_fragment
+        assert renderer.form.simulation_name is not None
 
     def test_the_summary_reports_the_output_layout(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
@@ -1482,3 +1486,71 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         assert data.shape[0] == len(times)
         # and every region of the Connectivity is recorded, at its own position
         assert data.shape[2] == self.connectivity.number_of_regions
+
+    # ---------------------------------------------------------------- Launch
+
+    def _reach_the_launch_step(self, simulation_length='20.0'):
+        """Walk the whole wizard, ending on the step that carries the Launch button."""
+        self._configured_subnetwork()
+        self._choose_monitors(['Temporal average'], simulation_length=simulation_length)
+        return self._submit_monitor_params('TemporalAverageViewModel', period='1.0')
+
+    def test_launching_stores_a_named_burst(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._reach_the_launch_step()
+            # the simulation itself runs on its own thread; what this asserts is the hand-off
+            with patch.object(self.hybrid_controller.simulator_service,
+                              'async_launch_and_prepare_simulation'):
+                # the endpoint answers the browser, so what comes back is serialized JSON
+                answer = json.loads(self.hybrid_controller.launch_simulation(
+                    input_simulation_name_id='my hybrid run'))
+            assert 'id' in answer, answer
+            burst = dao.get_burst_by_id(answer['id'])
+
+        assert burst.name == 'my hybrid run'
+        assert burst.fk_project == self.test_project.id
+
+    def test_an_unusable_simulation_name_is_refused(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._reach_the_launch_step()
+            with patch.object(self.hybrid_controller.simulator_service,
+                              'async_launch_and_prepare_simulation'):
+                answer = json.loads(
+                    self.hybrid_controller.launch_simulation(input_simulation_name_id='bad/name'))
+
+        assert 'error' in answer
+        assert 'Invalid simulation name' in answer['error']
+
+    def test_the_two_simulators_do_not_share_a_history(self):
+        """
+        Both cockpits store their launches in the same table, so each has to list only its own.
+        """
+        hybrid_algorithm = dao.get_algorithm_by_module(IntrospectionRegistry.HYBRID_SIMULATOR_MODULE,
+                                                       IntrospectionRegistry.HYBRID_SIMULATOR_CLASS)
+        classic_algorithm = dao.get_algorithm_by_module(IntrospectionRegistry.SIMULATOR_MODULE,
+                                                        IntrospectionRegistry.SIMULATOR_CLASS)
+
+        hybrid_burst = self._burst_launched_by(hybrid_algorithm, 'hybrid one')
+        classic_burst = self._burst_launched_by(classic_algorithm, 'classic one')
+        # stored before its operation exists, which is a real moment of every launch
+        pending_burst = dao.store_entity(BurstConfiguration(self.test_project.id, name='not yet launched'))
+
+        hybrid_names = [burst.name for burst in
+                        BurstService.get_available_hybrid_bursts(self.test_project.id)]
+        classic_names = [burst.name for burst in
+                         BurstService.get_available_bursts(self.test_project.id)]
+
+        assert hybrid_burst.name in hybrid_names
+        assert classic_burst.name not in hybrid_names
+        assert classic_burst.name in classic_names
+        assert hybrid_burst.name not in classic_names
+        # a burst whose operation does not exist yet is never hidden from both
+        assert pending_burst.name in classic_names
+
+    def _burst_launched_by(self, algorithm, name):
+        """A stored burst whose simulation Operation used the given Algorithm."""
+        operation = Operation(None, self.test_user.id, self.test_project.id, algorithm.id)
+        operation = dao.store_entity(operation)
+        burst = BurstConfiguration(self.test_project.id, name=name)
+        burst.fk_simulation = operation.id
+        return dao.store_entity(burst)

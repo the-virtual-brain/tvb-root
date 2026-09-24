@@ -100,7 +100,7 @@ class OperationExecutor(Thread):
             # anything that was already in $PYTHONPATH should have been reproduced in sys.path
 
             launched_process = Popen(run_params, stdout=PIPE, stderr=PIPE, env=env)
-            current_ip = get_host_current_host_ip()
+            current_ip = "get_host_current_host_ip()"
 
             LOGGER.info("Storing pid=%s and IP %s for operation id=%s launched on local machine." % (operation_id,
                                                                                                      current_ip,

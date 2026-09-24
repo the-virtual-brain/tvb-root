@@ -696,3 +696,74 @@ class TestHybridSimulatorService(object):
         assert layout['nodes'] == self.NUMBER_OF_REGIONS
         assert [row['name'] for row in layout['rows']] == [subnetworks[0].name, subnetworks[1].name]
         assert layout['rows'][1]['variables'] == ['V', 'W']
+
+    def _hand_built_network_set(self, connectivity, dt=0.1):
+        """
+        The same two-Subnetwork network, written the way the simulate_hybrid_* demos write it: the
+        Connectivity blocks sliced by hand into sparse matrices, and the projections constructed
+        directly rather than through the service.
+        """
+        import scipy.sparse as sp
+        from tvb.simulator.hybrid import IntraProjection, InterProjection, NetworkSet, Subnetwork
+        from tvb.simulator.integrators import HeunDeterministic
+        from tvb.simulator.models import Generic2dOscillator
+
+        first_nodes = [0, 1, 2, 3]
+        second_nodes = [4, 5, 6, 7]
+
+        def block(targets, sources):
+            # TVB indexes weights and tract lengths as (target, source)
+            return (sp.csr_matrix(connectivity.weights[numpy.ix_(targets, sources)]),
+                    sp.csr_matrix(connectivity.tract_lengths[numpy.ix_(targets, sources)]))
+
+        subnets = []
+        for name, nodes in [('first', first_nodes), ('second', second_nodes)]:
+            model = Generic2dOscillator()
+            model.configure()
+            subnet = Subnetwork(name=name, model=model, scheme=HeunDeterministic(dt=dt),
+                                nnodes=len(nodes), node_indices=numpy.array(nodes))
+            weights, lengths = block(nodes, nodes)
+            subnet.projections = [IntraProjection(
+                source_cvar=numpy.array([int(model.cvar[0])]), target_cvar=numpy.array([0]),
+                weights=weights, lengths=lengths, cv=3.0, dt=dt, scale=1.0)]
+            subnet.configure()
+            subnets.append(subnet)
+
+        # this Connectivity connects the first block to the second one and nothing back
+        weights, lengths = block(second_nodes, first_nodes)
+        projection = InterProjection(
+            source=subnets[0], target=subnets[1],
+            source_cvar=numpy.array([int(subnets[0].model.cvar[0])]), target_cvar=numpy.array([0]),
+            weights=weights, lengths=lengths, cv=3.0, dt=dt, scale=1.0)
+
+        network_set = NetworkSet(subnets=subnets, projections=[projection])
+        network_set.configure()
+        return network_set
+
+    def test_the_generated_simulation_matches_one_written_by_hand(self):
+        """
+        What the wizard produces has to be exactly what someone writing the library API by hand gets.
+
+        This is the comparison against the demos that Phase 4 had to defer: it could not be made until a
+        simulation could actually be run. The demos' own weights are random, so both sides are built
+        over the same Connectivity instead, and both are started from the same initial conditions.
+        """
+        from tvb.simulator.hybrid import Simulator as LibrarySimulator
+        from tvb.simulator.monitors import TemporalAverage
+
+        connectivity = self._connectivity()
+        initial_conditions = [numpy.zeros((2, 4, 1)), numpy.zeros((2, 4, 1))]
+
+        network_set = self.service.build_network_set(connectivity, self._two_blocks(), 0.1)
+        simulator = self.service.build_hybrid_simulator(
+            network_set, [TemporalAverageViewModel(period=1.0)], 10.0)
+        ((times, data),) = simulator.run(initial_conditions=initial_conditions)
+
+        by_hand = LibrarySimulator(nets=self._hand_built_network_set(connectivity),
+                                   monitors=[TemporalAverage(period=1.0)], simulation_length=10.0)
+        by_hand.configure()
+        ((hand_times, hand_data),) = by_hand.run(initial_conditions=initial_conditions)
+
+        assert numpy.allclose(times, hand_times)
+        assert data.shape == hand_data.shape
+        assert numpy.allclose(data, hand_data)

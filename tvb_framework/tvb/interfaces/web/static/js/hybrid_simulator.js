@@ -177,9 +177,58 @@ function hybridReplaceStep(stepUrl, response) {
 }
 
 /** The Results tree of this page. bursts.js, which owns the cockpit one, is not loaded here. */
-function displayHybridResultsTree() {
-    updateTree("#treeOverlay", null, JSON.stringify({'type': 'from_burst', 'value': "0"}));
+// The Hybrid simulation whose results the third column is showing. Set when one is launched from this
+// page; until then the tree has no burst to filter on.
+let HYBRID_RESULTS_BURST_ID = null;
+
+function displayHybridResultsTree(burstId) {
+    if (burstId !== undefined && burstId !== null) {
+        HYBRID_RESULTS_BURST_ID = burstId;
+    }
+    const filterValue = HYBRID_RESULTS_BURST_ID === null ? "0" : String(HYBRID_RESULTS_BURST_ID);
+    updateTree("#treeOverlay", null, JSON.stringify({'type': 'from_burst', 'value': filterValue}));
     $("#div-burst-tree").show();
+}
+
+/**
+ * Launch the configured Hybrid simulation. The answer carries the new simulation's id, which is what
+ * the history and the results tree are then pointed at - the simulation itself runs on the server.
+ */
+function hybridLaunchSimulation(currentForm) {
+    const launchButton = currentForm.elements.namedItem("launch_simulation");
+    if (launchButton !== null) {
+        launchButton.disabled = true;
+    }
+
+    displayMessage("Hybrid simulation submitted. Please wait for the preprocessing steps...", "warningMessage");
+
+    doAjaxCall({
+        type: "POST",
+        url: "/burst/hybrid/launch_simulation/",
+        data: $(currentForm).serialize(),
+        traditional: true,
+        success: function (response) {
+            const result = $.parseJSON(response);
+            if ('error' in result) {
+                displayMessage(result.error, "errorMessage");
+                if (launchButton !== null) {
+                    launchButton.disabled = false;
+                }
+                return;
+            }
+            loadHybridBurstHistory();
+            if ('id' in result) {
+                displayHybridResultsTree(result.id);
+            }
+            displayMessage("Hybrid simulation launched.");
+        },
+        error: function () {
+            displayMessage("The Hybrid simulation could not be launched.", "errorMessage");
+            if (launchButton !== null) {
+                launchButton.disabled = false;
+            }
+        }
+    });
 }
 
 // ---------------------------------------------------------------- wizard stack

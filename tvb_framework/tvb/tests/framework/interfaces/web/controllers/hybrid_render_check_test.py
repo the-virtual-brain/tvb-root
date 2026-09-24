@@ -352,5 +352,7 @@ class TestHybridRendering(BaseTransactionalControllerTest):
         assert '100.0 ms of simulated time' in summary_html
         # one Subnetwork, so the variable counts trivially agree and the output is region ordered
         assert 'in the original region order' in summary_html
-        # launching is the next step and does not exist yet
-        assert 'disabled="disabled"' in summary_html
+        # and the step closes the wizard: a name for this simulation, and the Launch button
+        assert 'name="input_simulation_name_id"' in summary_html
+        assert 'hybridLaunchSimulation(this.parentElement)' in summary_html
+        assert 'disabled="disabled"' not in summary_html

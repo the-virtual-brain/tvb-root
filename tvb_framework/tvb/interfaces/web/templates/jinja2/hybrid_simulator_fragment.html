@@ -1,5 +1,3 @@
-{% import 'form_fields/generate_help_tooltip.html' as ght with context %}
-
 {#- data-hybrid-context-url names the configuration this step exposes in the third column. Steps
     declaring none leave that column empty, which is how it is cleared when moving on. -#}
 <form method="post" action="{{ renderer.form_action_url }}" id="{{ renderer.form_action_url }}" enctype="multipart/form-data"
@@ -14,6 +12,9 @@
     {% elif renderer.is_simulation_summary_fragment %}
         <fieldset>
             {% include 'burst/hybrid_simulation_summary.html' %}
+            {% if renderer.form %}
+                {% include 'burst/hybrid_form_fields.html' %}
+            {% endif %}
         </fieldset>
     {% elif renderer.is_dynamics_save_fragment %}
         <p class="hybrid-dynamics-done">
@@ -23,32 +24,7 @@
         </p>
     {% else %}
         <fieldset {% if renderer.is_read_only %} disabled {% endif %}>
-            <dl>
-                {#- No step title here: the classic cockpit only shows a legend for monitor fragments,
-                    every other step exposes just its parameter labels. -#}
-                {% if renderer.monitor_name %}
-                    <legend>{{ renderer.monitor_name }}</legend>
-                {% endif %}
-                {% if renderer.form.ordered_fields %}
-                    {% set form_fields = renderer.form.ordered_fields %}
-                {% else %}
-                    {% set form_fields = renderer.form.fields %}
-                {% endif %}
-                {% for field in form_fields %}
-                    <dt {% if field.label_classes %} class="{{ field.label_classes|join(' ') }}" {% endif %}>
-                        <label for="{{ field.name }}">{{ field.label }}</label>
-                        {{ ght.generate_help_tooltip(field.label, field.doc) }}
-                    </dt>
-                    <dd>
-                        {{ field | safe }}
-                        <p class="errorMessage">
-                            {% for error in field.errors %}
-                                <span> {{ error }} </span>
-                            {% endfor %}
-                        </p>
-                    </dd>
-                {% endfor %}
-            </dl>
+            {% include 'burst/hybrid_form_fields.html' %}
         </fieldset>
 
         {#- The Subnetworks, and what each one is configured with. This is the only place this step
@@ -98,6 +74,12 @@
         <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1" {{ hide_buttons | safe }}
                 title="Store the configured dynamics on the Hybrid Simulator configuration"
                 onclick="hybridSaveSubnetworkDynamics()">{{ renderer.next_button_label }}
+        </button>
+    {% elif renderer.is_launch_fragment %}
+        <button name="launch_simulation" type="button" class="btn btn-primary btn-next action-launch"
+                tabindex="1" {{ hide_buttons | safe }}
+                title="Launch this Hybrid simulation"
+                onclick="hybridLaunchSimulation(this.parentElement)">Launch
         </button>
     {% else %}
         {#- A step that is entered by posting to its own url cannot move on by posting there again: the

@@ -31,26 +31,27 @@ Last updated 2026-09-24.
 | Phase 3 addition – Set up region Model | **Done** |
 | Phase 4 – Generate Projections | **Done** |
 | Phase 5 – Global Hybrid Simulator configuration | **Done** |
-| Phase 6 – Launch one Hybrid simulation | Not started |
+| Phase 6 – Launch one Hybrid simulation | **Done** |
 | Follow-up features | Not started |
 
 A user can currently select a Connectivity, group its regions into Subnetworks, configure a Model and an
 Integrator (with Noise and its Equation) for each of them, place saved Dynamics on a Subnetwork's regions
 to give a Model parameter one value per region, save all of it, inspect the Projections generated from the
-grouping, choose the Monitors and the simulation length, configure each Monitor, and read what the
-resulting output will look like. Nothing is launched or persisted yet: the configuration lives in the
-session until Phase 6.
+grouping, choose the Monitors and the simulation length, configure each Monitor, read what the resulting
+output will look like, and **launch it**. The simulation runs as an ordinary TVB operation and its
+TimeSeries land in the project like any other result.
 
 ### Verified by
 
-151 hybrid tests — 66 service, 79 controller, 6 render checks. The suites the work touches also pass
-unchanged: the classic Simulator Cockpit and the simulator adapters (44), and the view model, forms and
-serialization suites (29).
+161 hybrid tests — 67 service, 82 controller, 6 render checks, 6 adapter. The suites the work touches also
+pass unchanged: the classic Simulator Cockpit, the burst service, the simulator adapters, and the view
+model, forms and serialization suites.
 
 ```bash
 python -m pytest tvb/tests/framework/core/services/hybrid_simulator_service_test.py \
                  tvb/tests/framework/interfaces/web/controllers/hybrid_simulator_controller_test.py \
-                 tvb/tests/framework/interfaces/web/controllers/hybrid_render_check_test.py
+                 tvb/tests/framework/interfaces/web/controllers/hybrid_render_check_test.py \
+                 tvb/tests/framework/adapters/simulator/hybrid_simulator_adapter_test.py
 ```
 
 There is no JavaScript test infrastructure in this repository, so the client is covered indirectly: the
@@ -58,15 +59,22 @@ render checks render every fragment the wizard puts on the wire and assert on it
 
 ### Outstanding
 
-* **Initial conditions are not covered by any phase.** Decided for Phase 5: they stay out of it, and
-  the library's random draw from each Model's `state_variable_range` is what runs. Phase 6 decides
-  whether a seed, explicit per-Subnetwork arrays, or neither is exposed.
-* **Per-Subnetwork `variables_of_interest`.** Phase 3 makes these editable per Subnetwork. Decided for
-  Phase 5: the Monitors step *reports* whether the counts agree — and so whether output is
-  connectome-ordered or concatenated — rather than reconciling or refusing them. Phase 6 has to package
-  both layouts.
+* **Initial conditions.** Settled: no phase exposes them, and the library's random draw from each
+  Model's `state_variable_range` is what runs. A seed, and explicit per-Subnetwork arrays, are
+  follow-up work.
+* **Per-Subnetwork `variables_of_interest`.** Phase 3 makes these editable per Subnetwork. Phase 5's
+  Monitors step *reports* whether the counts agree — and so whether output is connectome-ordered or
+  concatenated — rather than reconciling them. Phase 6 packages both layouts, and refuses only the one
+  combination that cannot mean anything: a projection or Spatial average Monitor over concatenated
+  output.
 * **Stale artifact:** `interfaces/web/controllers/simulator/__pycache__/hybrid_simulator_wizard_urls.*.pyc`
   has no source any more, left over from an earlier iteration.
+* **A substring match waiting for PSE.** `OperationService.initiate_prelaunch` tests
+  `'SimulatorAdapter' in operation.algorithm.classname`, which also matches `HybridSimulatorAdapter`.
+  Nothing creates a Hybrid operation group today, so it cannot fire; it has to become an exact
+  comparison before Hybrid PSE lands. See the Phase 6 summary.
+* **A past Hybrid simulation cannot be re-opened.** The history lists them and its entries carry a
+  'Load this hybrid simulation' link with nothing behind it.
 
 ---
 
@@ -1489,7 +1497,7 @@ Phase 5 therefore offers all nine honestly, and Phase 6 has the list of what to 
 
 ## Phase 6 – Launch one Hybrid simulation
 
-**Status: Not started.**
+**Status: Done** — see the implementation summary below.
 
 Construct:
 
@@ -1509,6 +1517,124 @@ Launch a single simulation using the `tvb_library` Hybrid Simulator API.
 
 Persist the operation/results through the normal TVB framework mechanisms where possible.
 
+### Scope
+
+| question | decision |
+|---|---|
+| how a launch is recorded | a **BurstConfiguration**, with both histories filtered by the algorithm behind it |
+| EEG / MEG / iEEG / Spatial average | **configured through a shim**, and refused unless the output is connectome ordered |
+| initial conditions | **nothing exposed** — the library's random draw from each Model's `state_variable_range` |
+| the variable axis labels | **by position** — `Variable 1`, `Variable 2`, … |
+| branching, continuing, PSE, stimuli | out of scope |
+
+### What this phase does not have to build
+
+Three things were checked before specifying, and each removes work the plan would otherwise have carried:
+
+* **The configuration already persists.** `h5.store_view_model` round-trips a whole
+  `HybridSimulatorAdapterModel` — for a two-Subnetwork configuration it writes eleven files, one per
+  nested view model (the Subnetworks, their dynamics, Models, Integrators and Monitors) — and
+  `load_view_model` reads it back intact. No framework change is needed to store what the wizard holds.
+* **Output packaging is one argument.** `Monitor.create_time_series(connectivity=...)` returns a
+  `TimeSeriesRegion` and `create_time_series(connectivity=None)` a plain `TimeSeries`. Both have a
+  registered Index and H5 class.
+* **The Simulator is already built.** Phase 5's `build_network_set` and `build_hybrid_simulator` produce
+  a configured `tvb.simulator.hybrid.Simulator`, and its checkpoint test already runs one.
+
+### The adapter
+
+`tvb/adapters/simulator/hybrid_simulator_adapter.py`, holding `HybridSimulatorAdapter(ABCAdapter)`.
+
+Registered by adding `"hybrid_simulator_adapter"` to `ALL_SIMULATORS`, which is what gives it an
+Algorithm row, plus `HYBRID_SIMULATOR_MODULE` / `HYBRID_SIMULATOR_CLASS` on `IntrospectionRegistry` and
+in `tvb/config/__init__.py`, the way the classic one is named.
+
+`ABCAdapter` requires five methods:
+
+| method | what it does here |
+|---|---|
+| `get_form_class` | a small `HybridSimulatorAdapterForm` over the Connectivity, as the classic adapter's form is |
+| `get_output` | `[TimeSeriesIndex]` — **no** `SimulationHistoryIndex`, since branching is not offered and `SimulationHistory.populate_from` reads a classic Simulator |
+| `configure` | the Phase 5 service: `build_network_set`, then `build_hybrid_simulator` |
+| `get_required_memory_size` / `get_required_disk_size` | estimated here, see below |
+| `launch` | run, then write one TimeSeries per Monitor |
+
+**The size estimates cannot be delegated.** The classic adapter asks the Simulator for
+`memory_requirement()` and `storage_requirement()`; the hybrid Simulator has neither. They are estimated
+from the recorded shape instead — samples × variables × nodes × 8 bytes per Monitor — and the memory one
+has to be honest about something the classic path does not do: `hybrid.Simulator.run()` returns its
+results as whole arrays rather than yielding them per step, so the adapter holds every Monitor's output
+in memory and writes it after the run, where the classic adapter streams it slice by slice into H5.
+
+### Output packaging
+
+| layout | datatype | node axis |
+|---|---|---|
+| connectome ordered | `TimeSeriesRegion`, keyed to the Connectivity | one column per region, in region order |
+| concatenated | plain `TimeSeries` | Subnetwork after Subnetwork |
+
+Phase 5 already computes which one applies, and reports it on the Simulation summary; this phase reads
+the same `output_layout` and passes the Connectivity or `None` accordingly. A `TimeSeriesRegion` over a
+concatenated array would claim a region ordering the data does not have, which is the one thing worth
+refusing to write.
+
+**The variable axis is labelled by position** — `Variable 1`, `Variable 2`, … Connectome ordered output
+requires the Subnetworks to agree on the *number* of variables they watch, never on their names:
+JansenRit watches `y0, y1` where Generic2dOscillator watches `V, W`. Labelling by position claims
+nothing that is untrue of any Subnetwork, and the per-Subnetwork names stay recoverable from the stored
+configuration. `start_time` is zero, as nothing is being continued.
+
+### Projection and Spatial average Monitors
+
+Phase 5 offers all nine Monitors and recorded why four of them cannot yet run. The cause is single:
+**the hybrid Simulator never calls `config_for_sim`**. It calls `_config_dt`, `_config_stock` and
+`record` only, so `Projection._state`, `_period_in_steps` and the gain matrix, and `SpatialAverage`'s
+`spatial_mean`, are never created — every one of them is assigned inside `config_for_sim`.
+
+A shim object standing in for a classic Simulator closes all four at once. It has to answer for
+`connectivity`, `surface` (`None`), `model`, `integrator` (anything carrying `dt`) and
+`number_of_nodes`, and its Model must expose as many `variables_of_interest` as the merged output has
+variables.
+
+**It must be applied before the Simulator is constructed.** `Monitor._config_vois` sets
+`voi = arange(len(model.variables_of_interest))` and `Projection.config_for_sim` then sizes
+`_state = zeros((gain.shape[0], len(self.voi)))`. `Simulator.__init__` overwrites `voi` with
+`slice(None)` afterwards, which is harmless *in that order*: `len(voi)` was read while it was still a
+concrete array, and `slice(None)` then selects exactly those same rows at sample time. In the other
+order `len()` is applied to a slice and raises.
+
+**Refused unless the output is connectome ordered.** A gain matrix is `(n_sensors, n_regions)` and a
+cortical or hemisphere mask is indexed the same way, so both are meaningful only when column *i* is
+region *i*. In concatenated mode they would weight the wrong nodes and return a number rather than
+fail, so the launch is refused with a message naming the Subnetworks whose variable counts differ and
+the Monitor that needs them to agree. Phase 5 reports that layout; this is where it becomes a rule.
+
+### The launch, and the burst
+
+`HybridSimulatorController.launch_simulation` mirrors the classic one: store the `BurstConfiguration`,
+then run `prepare_operation` and `launch_operation` on a thread, answering `{'id': ...}` or
+`{'error': ...}`. The Simulation summary step gains the simulation name and the Launch button, which is
+what its disabled `Next` is holding open today.
+
+**Telling the two histories apart.** `dao.get_bursts_for_project` filters by project alone, so a
+BurstConfiguration created here would otherwise appear in the classic Simulator's history, where opening
+it would try to read a classic configuration. A burst's simulation operation names its algorithm, so one
+DAO query joining `BurstConfiguration` to `Operation` can separate them — asked once rather than per
+burst.
+
+The rule is deliberately asymmetric: **the hybrid history shows the bursts whose operation used the
+hybrid adapter, and the classic history shows everything else.** A burst is stored before its operation
+exists — `store_burst` runs first so the client gets an id, and the thread fills `fk_simulation` in
+afterwards — so there is a real moment where the algorithm is unknown. Sending those to the classic
+history leaves every existing burst exactly where it is today and never hides one from both.
+
+### The client
+
+`hybridLaunchSimulation()`, mirroring `launchNewBurst`: post the summary step, then reload the hybrid
+history through the `load_hybrid_history` endpoint that already exists, and point the results tree at
+the new burst. `displayHybridResultsTree` passes the placeholder burst id `"0"` today, which is the one
+thing on that panel that has to change.
+
 ### Tests
 
 Use a small deterministic simulation.
@@ -1522,6 +1648,153 @@ Verify:
 * failures are reported through the normal TVB operation mechanism.
 
 Compare at least one GUI-created simulation against the equivalent Python hybrid demo.
+
+How each is made concrete:
+
+* **node ordering** is asserted rather than assumed: give two Subnetworks distinguishable Model
+  parameters and non-contiguous node indices, then check that the columns carrying each Subnetwork's
+  signature are exactly its own `node_indices`. Connectome ordering is the claim a `TimeSeriesRegion`
+  makes, so it is the claim worth testing;
+* **failures** are checked by launching a configuration that cannot run — a projection Monitor over
+  Subnetworks that disagree on their variable counts is one the phase itself creates — and asserting the
+  operation ends in `ERROR` carrying the message;
+* **the demo comparison** builds the `simulate_hybrid_getting_started` configuration through the service
+  and compares the result against the same network hand-built with the library API. The notebook's own
+  weights are random, so both sides are built over the same Connectivity instead.
+
+### Out of scope
+
+* branching and continuing a simulation, and the `SimulationHistory` that would carry them;
+* loading a past hybrid simulation back into the cockpit — the history template already has the link,
+  and it has nothing behind it;
+* PSE, stimuli and the numba backend, which are the follow-up features below.
+
+---
+
+## Phase 6 – Implementation Summary
+
+Implemented as specified above, with the deviations recorded at the end of this section.
+
+### The adapter
+
+`tvb/adapters/simulator/hybrid_simulator_adapter.py` holds `HybridSimulatorAdapter`. It is registered by
+adding `"hybrid_simulator_adapter"` to `ALL_SIMULATORS`, which is what gives it an Algorithm row, and
+named by `HYBRID_SIMULATOR_MODULE` / `HYBRID_SIMULATOR_CLASS` in `tvb/config/__init__.py` and on
+`IntrospectionRegistry`, the way the classic one is named.
+
+`get_form_class` returns `HybridConnectivityFragment` rather than a new class: the cockpit's own
+Connectivity step already is that form, with the same field and the same filters.
+
+`configure` does the whole translation — the layout, the Monitors, the `NetworkSet`, the `Simulator` —
+and wraps a `HybridSubnetworkException` into a `LaunchException`, so a configuration that cannot run is
+reported the way every other adapter reports one.
+
+The size estimates could not be delegated: the hybrid Simulator has no `memory_requirement`. They are
+computed from what will actually be recorded, samples × variables × nodes × 8 bytes per Monitor, and the
+memory one is genuinely the larger of the two because `Simulator.run` returns whole arrays instead of
+yielding them — every Monitor's output is held until the run is over, where the classic adapter streams
+its own into H5 as it goes.
+
+### Output packaging
+
+The layout Phase 5 reports is the one this phase writes:
+
+| layout | passed to `create_time_series` | result |
+|---|---|---|
+| connectome ordered | the Connectivity | `TimeSeriesRegion`, one column per region |
+| concatenated | `None` | plain `TimeSeries` |
+
+Nothing else was needed, because **every Monitor that changes the node axis already says what it
+produces**: EEG a `TimeSeriesEEG` over its Sensors, Global average a plain `TimeSeries`, Spatial average
+one or the other depending on its mask. Withholding the Connectivity is therefore enough to stop a
+Monitor claiming a region ordering the data does not have.
+
+The variable axis is labelled by position — `Variable 1`, `Variable 2`, … Connectome ordered output
+requires the Subnetworks to agree on the *number* of variables they watch, never on their names, so
+that is the only labelling true of all of them.
+
+### The Monitors that needed a classic Simulator
+
+`ClassicSimulatorShim` carries the five things `config_for_sim` reads: the Connectivity, a `None`
+surface, a Model exposing one variable of interest per variable the merged output holds, an Integrator
+carrying `dt`, and the node count. That is the whole fix for EEG, MEG, iEEG and Spatial average.
+
+It is applied **inside** `build_hybrid_simulator`, between the deep copy of the Monitors and the
+construction of the Simulator, and the order is the point: `Projection.config_for_sim` sizes its
+recording buffer from `len(self.voi)` while `voi` is still a concrete index array, and
+`Simulator.__init__` replaces `voi` with `slice(None)` immediately after — which selects exactly those
+same rows. In the other order `len()` is applied to a slice and raises.
+
+`validate_monitors_for_layout` refuses these Monitors over concatenated output, naming the Monitor and
+each Subnetwork's variable count.
+
+### The launch, and the two histories
+
+`HybridSimulatorController.launch_simulation` stores a `BurstConfiguration` and hands off on a thread to
+`SimulatorService.async_launch_and_prepare_simulation` — **reused unchanged**. Nothing in it is
+particular to the classic Simulator: it takes the Algorithm and the view model it is given.
+
+`dao.get_bursts_for_project_by_algorithm` separates the two cockpits' histories in one query, by the
+Algorithm of the Operation behind each burst. The rule is asymmetric on purpose: the Hybrid history
+shows the bursts whose Operation used the Hybrid adapter, and the classic history shows **everything
+else**. A burst is stored before its Operation exists — the id has to be answered to the browser while
+the Operation is created on the launching thread — so there is a real moment where the Algorithm is
+unknown, and sending those to the classic history leaves every burst that predates this phase exactly
+where it already was. `BurstService.get_available_bursts` falls back to the unfiltered list when the
+database holds no Hybrid Algorithm at all, which is what keeps an older database working.
+
+### Deviations from the specification above
+
+1. **The refusals are checked on the stored Monitors, before any of them is converted.** The
+   specification put `config_for_sim` and the layout check together; in practice a Monitor that cannot
+   run should not first have its Sensors, Projection matrix and Region mapping loaded out of the
+   database. What is refused depends only on the Monitor's class and on the layout, both of which the
+   stored configuration already carries, so the check happens there and the loading happens after it.
+2. **The launch step carries only the simulation name.** The specification described the summary
+   gaining "the simulation name field and the Launch button"; the simulation length is already on the
+   Monitors step from Phase 5, so nothing else had to move.
+
+### Found in passing, not fixed
+
+`OperationService.initiate_prelaunch` ends with
+`if operation.fk_operation_group and 'SimulatorAdapter' in operation.algorithm.classname`. That
+substring also matches **`HybridSimulatorAdapter`**, so a Hybrid operation belonging to an operation
+group would launch the classic metric operation after it. Nothing creates one today — operation groups
+come from PSE, which the Hybrid Simulator does not offer — so it cannot fire, but it is a trap waiting
+for the PSE follow-up and should be made an exact comparison before that lands.
+
+### Tests
+
+The Phase 6 list, and what each one became:
+
+* **simulation launches / operation completes** — `test_happy_flow_launch` runs a real simulation
+  through `TestFactory.launch_synchronously`, which asserts the operation finished, and checks the
+  stored `TimeSeriesRegion`'s four dimensions;
+* **expected monitor output** — the same test, plus the concatenated case asserting that a plain
+  `TimeSeries` is written and **no** `TimeSeriesRegion` is;
+* **node ordering** — `test_connectome_ordering_is_preserved` gives the two Subnetworks different Model
+  parameters and the second one a scattered, non-contiguous set of nodes, then asserts that the columns
+  carrying its dynamics are exactly its own `node_indices`. A concatenating output would place them
+  contiguously and fail;
+* **failures reported through the operation mechanism** — `test_a_refused_configuration_fails_the_operation`
+  drives a refused configuration through `OperationService` and asserts the operation ends in `ERROR`
+  carrying the reason;
+* **compared against the demos** — `test_the_generated_simulation_matches_one_written_by_hand` builds
+  the same two-Subnetwork network twice: once through the service, once by hand with `IntraProjection`,
+  `InterProjection` and blocks sliced straight out of the Connectivity, the way the `simulate_hybrid_*`
+  notebooks write them. Both are run from the same zero initial conditions and the outputs must be
+  identical. **This is the comparison Phase 4 deferred**, and it could not be made until a simulation
+  could actually be run.
+
+Also covered: the launch stores a named burst and hands off; an unusable simulation name is refused; and
+the two histories do not show each other's bursts, including the burst whose Operation does not exist
+yet.
+
+### Checkpoint
+
+A Hybrid simulation can be configured, launched, and its results found in the project. The whole chain
+from the specification is exercised end to end by the adapter tests, and the wizard's own path to it by
+the controller ones.
 
 ---
 

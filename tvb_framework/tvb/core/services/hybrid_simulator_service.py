@@ -51,7 +51,7 @@ from tvb.simulator.hybrid import NetworkSet
 from tvb.simulator.hybrid import Simulator as LibrarySimulator
 from tvb.simulator.hybrid import Subnetwork as LibrarySubnetwork
 from tvb.simulator.hybrid.projection_utils import create_inter_projection, create_intra_projection
-from tvb.simulator.monitors import Raw
+from tvb.simulator.monitors import Projection, Raw, SpatialAverage
 
 
 class HybridSubnetworkException(ServicesBaseException):
@@ -59,6 +59,44 @@ class HybridSubnetworkException(ServicesBaseException):
     Exception thrown when the requested Subnetwork operation would leave the Hybrid Simulator
     configuration in an invalid state.
     """
+
+
+class _ShimModel(object):
+    """The one thing ``Monitor._config_vois`` asks a Model for."""
+
+    def __init__(self, variables_of_interest):
+        self.variables_of_interest = variables_of_interest
+
+
+class _ShimIntegrator(object):
+    """The one thing ``Monitor._config_time`` asks an Integrator for."""
+
+    def __init__(self, dt):
+        self.dt = dt
+
+
+class ClassicSimulatorShim(object):
+    """
+    Stands in for the classic Simulator that ``Monitor.config_for_sim`` expects.
+
+    The Hybrid Simulator never calls ``config_for_sim`` - it calls ``_config_dt``, ``_config_stock`` and
+    ``record`` only - so a Projection Monitor is left without its gain matrix, its ``_state`` and its
+    ``_period_in_steps``, and a Spatial average without its ``spatial_mean``. All of those are assigned
+    inside ``config_for_sim``, and all it reads to assign them is what this object carries.
+
+    The Model it exposes has one variable of interest per variable the merged output holds, because
+    ``_config_vois`` sizes the Monitor's ``voi`` from it, and a Projection Monitor then sizes its
+    recording buffer from that.
+    """
+
+    def __init__(self, connectivity, number_of_variables, number_of_nodes, dt):
+        self.connectivity = connectivity
+        # the Hybrid Simulator has no surface, which is what makes these region Monitors
+        self.surface = None
+        self.is_surface_simulation = False
+        self.model = _ShimModel(['Variable {}'.format(index + 1) for index in range(number_of_variables)])
+        self.integrator = _ShimIntegrator(dt)
+        self.number_of_nodes = number_of_nodes
 
 
 class HybridSimulatorService(object):
@@ -805,8 +843,12 @@ class HybridSimulatorService(object):
         """
         return type(monitor).__name__.replace('ViewModel', '')
 
-    @staticmethod
-    def build_hybrid_simulator(network_set, monitors, simulation_length):
+    # the Monitors whose output is indexed in Connectivity region order: a gain matrix is
+    # (n_sensors, n_regions) and a cortical or hemisphere mask is one entry per region
+    REGION_ORDERED_MONITORS = (Projection, SpatialAverage)
+
+    @classmethod
+    def build_hybrid_simulator(cls, network_set, monitors, simulation_length, connectivity=None, layout=None):
         """
         Build the ``tvb.simulator.hybrid.Simulator`` the configuration describes.
 
@@ -815,16 +857,65 @@ class HybridSimulatorService(object):
         the Simulator configures every Monitor's ``dt`` and sampling step and allocates its buffers, and
         the objects on the configuration are the ones the forms keep editing.
 
+        When a ``connectivity`` and a ``layout`` are given, the Monitors that need a classic Simulator
+        are handed one. **The order matters and is the reason this happens here** rather than before the
+        copy or after the Simulator exists: ``Projection.config_for_sim`` sizes its recording buffer from
+        ``len(self.voi)`` while ``voi`` is still a concrete index array, and ``Simulator.__init__``
+        replaces ``voi`` with ``slice(None)`` right after - which selects those very same rows. Done in
+        the other order, ``len()`` is applied to a slice and raises.
+
         The backend is left at the library default, ``"python"``. The numba one only accepts a fixed set
         of Model classes and Heun/Euler Integrators, so choosing it is follow-up work.
 
         :return: the Simulator, configured
         """
         built_monitors = [copy.deepcopy(monitor) for monitor in monitors or []]
+
+        if connectivity is not None and layout is not None:
+            shim = ClassicSimulatorShim(connectivity, layout['variables'], layout['nodes'],
+                                        cls._scheme_dt(network_set))
+            for monitor in built_monitors:
+                if isinstance(monitor, cls.REGION_ORDERED_MONITORS):
+                    monitor.config_for_sim(shim)
+
         simulator = LibrarySimulator(nets=network_set, monitors=built_monitors,
                                      simulation_length=simulation_length)
         simulator.configure()
         return simulator
+
+    @staticmethod
+    def _scheme_dt(network_set):
+        """
+        :return: the integration step size the Subnetworks share, which Simulator.validate_dts has
+                 already made sure is one value
+        """
+        return network_set.subnets[0].scheme.dt
+
+    @classmethod
+    def validate_monitors_for_layout(cls, monitors, layout):
+        """
+        Refuse the Monitors that cannot mean anything over the output this configuration produces.
+
+        A gain matrix and a cortical or hemisphere mask are indexed in Connectivity region order, so they
+        are meaningful only when column *i* of the recorded array is region *i*. Over concatenated output
+        they would weight the wrong nodes and return a number rather than fail, which is the one thing
+        worth refusing outright.
+
+        :raise HybridSubnetworkException: naming the Monitor and the Subnetworks that disagree
+        """
+        if layout['is_merged']:
+            return
+
+        for monitor in monitors or []:
+            if not isinstance(monitor, cls.REGION_ORDERED_MONITORS):
+                continue
+            counts = ', '.join('{} watches {}'.format(row['name'], len(row['variables']))
+                               for row in layout['rows'])
+            raise HybridSubnetworkException(
+                "The {} Monitor records in Connectivity region order, which this configuration does not "
+                "produce: the Subnetworks watch different numbers of variables ({}). Give every "
+                "Subnetwork the same number of variables to watch, or drop this Monitor."
+                .format(cls.monitor_name(monitor), counts))
 
     # ---------------------------------------------------------------- Helpers
 

@@ -1,0 +1,40 @@
+{#- ============================================================================ -#}
+{#- The closing step of the global Hybrid Simulator configuration: what the      -#}
+{#- configured Monitors record, and the shape of the array that produces.        -#}
+{#- ============================================================================ -#}
+<table class="hybrid-subnetworks-summary hybrid-simulation-summary">
+    <tr>
+        <th scope="col">Monitor</th>
+        <th scope="col">Samples every</th>
+    </tr>
+    {% for row in renderer.monitor_rows %}
+        <tr>
+            <th scope="row">{{ row.name }}</th>
+            <td class="hybrid-summary-count">
+                {{ row.period }} ms{% if row.is_raw %} &mdash; every integration step{% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+</table>
+
+<p class="hybrid-projections-note">
+    Over {{ renderer.simulation_length }} ms of simulated time.
+</p>
+
+{% if renderer.output_layout %}
+    {% if renderer.output_layout.is_merged %}
+        <p class="hybrid-projections-note">
+            Every Subnetwork watches {{ renderer.output_layout.variables }} variable{{ 's' if renderer.output_layout.variables != 1 else '' }},
+            so each Monitor records <span class="hybrid-summary-region">{{ renderer.output_layout.variables }} &times; {{ renderer.output_layout.nodes }}</span>
+            &mdash; one column per Connectivity region, in the original region order.
+        </p>
+    {% else %}
+        <p class="hybrid-projections-note">
+            The Subnetworks watch different numbers of variables
+            ({% for row in renderer.output_layout.rows %}<span class="hybrid-summary-region">{{ row.name }}: {{ row.variables|length }}</span>{% endfor %}),
+            so each Monitor records <span class="hybrid-summary-region">{{ renderer.output_layout.variables }} &times; {{ renderer.output_layout.nodes }}</span>:
+            the Subnetworks stacked one after another rather than placed at their Connectivity positions.
+            Give every Subnetwork the same number of variables to watch to record in region order instead.
+        </p>
+    {% endif %}
+{% endif %}

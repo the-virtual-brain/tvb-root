@@ -30,6 +30,7 @@ from sqlalchemy.orm import aliased
 from sqlalchemy.orm.exc import NoResultFound
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataType
+from tvb.core.entities.model.model_operation import Operation
 from tvb.core.entities.storage.root_dao import RootDAO, DEFAULT_PAGE_SIZE
 
 
@@ -49,6 +50,36 @@ class BurstDAO(RootDAO):
             if page_size is not None:
                 bursts = bursts.offset(max(page_start, 0)).limit(page_size)
 
+            bursts = bursts.all()
+        except SQLAlchemyError as excep:
+            self.logger.exception(excep)
+            bursts = None
+        return bursts
+
+    def get_bursts_for_project_by_algorithm(self, project_id, algorithm_id, matching=True,
+                                            page_start=0, page_size=DEFAULT_PAGE_SIZE):
+        """
+        Get the BurstConfigurations of a project whose simulation Operation used the given Algorithm, or
+        the ones it did not, so that two cockpits sharing this table can each list their own.
+
+        A burst is stored before its Operation exists - the id is needed to answer the browser, and the
+        Operation is created on the launching thread - so ``fk_simulation`` is briefly NULL. Those are
+        answered as **not** matching: it leaves every burst that predates a second cockpit where it
+        already was, and no burst is ever hidden from both.
+        """
+        try:
+            bursts = self.session.query(BurstConfiguration
+                                        ).outerjoin(Operation, BurstConfiguration.fk_simulation == Operation.id
+                                                    ).filter(BurstConfiguration.fk_project == project_id)
+            if matching:
+                bursts = bursts.filter(Operation.fk_from_algo == algorithm_id)
+            else:
+                bursts = bursts.filter(or_(Operation.fk_from_algo != algorithm_id,
+                                           BurstConfiguration.fk_simulation.is_(None)))
+
+            bursts = bursts.order_by(desc(BurstConfiguration.start_time))
+            if page_size is not None:
+                bursts = bursts.offset(max(page_start, 0)).limit(page_size)
             bursts = bursts.all()
         except SQLAlchemyError as excep:
             self.logger.exception(excep)

@@ -25,13 +25,18 @@
 #
 
 import json
+import threading
+from datetime import datetime
+
 import cherrypy
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.forms.equation_forms import get_form_for_equation
 from tvb.adapters.forms.hybrid_monitor_forms import HybridSpatialAverageMonitorForm, \
     get_form_for_hybrid_monitor
 from tvb.adapters.forms.hybrid_simulator_fragments import HybridConnectivityFragment, \
-    HybridMonitorsFragment, HybridSubnetworkDynamicsFragment, HybridSubnetworksFragment
+    HybridLaunchFragment, HybridMonitorsFragment, HybridSubnetworkDynamicsFragment, HybridSubnetworksFragment
+from tvb.adapters.simulator.hybrid_simulator_adapter import HybridSimulatorAdapter
+from tvb.config import HYBRID_SIMULATOR_CLASS, HYBRID_SIMULATOR_MODULE
 from tvb.adapters.forms.monitor_forms import get_monitor_to_ui_name_dict
 from tvb.adapters.forms.integrator_forms import NoiseTypesEnum, get_form_for_integrator
 from tvb.adapters.forms.model_forms import ModelsEnum, get_form_for_model
@@ -39,8 +44,10 @@ from tvb.adapters.forms.noise_forms import get_form_for_noise
 from tvb.adapters.forms.simulator_fragments import SimulatorIntegratorFragment, SimulatorModelFragment
 from tvb.core.entities.file.simulator.view_model import BoldViewModel, HybridSimulatorAdapterModel, \
     IntegratorStochasticViewModel, IntegratorViewModelsEnum, MultiplicativeNoiseViewModel, RawViewModel
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
+from tvb.core.services.burst_service import BurstService
 from tvb.core.services.hybrid_simulator_service import HybridSimulatorService, HybridSubnetworkException
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.interfaces.web.controllers import common
@@ -150,6 +157,8 @@ class HybridSimulatorFragmentRenderingRules(object):
         self.monitor_name = None
         # the closing step of the global configuration, describing what the simulation will record
         self.is_simulation_summary_fragment = False
+        # True on the step carrying the Launch button
+        self.is_launch_fragment = False
         self.monitor_rows = []
         self.output_layout = None
         self.simulation_length = None
@@ -265,11 +274,14 @@ class HybridSimulatorController(BurstBaseController):
         BurstBaseController.__init__(self)
         self.context = HybridSimulatorContext()
         self.simulator_service = SimulatorService()
+        self.burst_service = BurstService()
         self.hybrid_simulator_service = HybridSimulatorService()
+        self.cached_hybrid_algorithm = self.algorithm_service.get_algorithm_by_module_and_class(
+            HYBRID_SIMULATOR_MODULE, HYBRID_SIMULATOR_CLASS)
 
     @staticmethod
     def get_available_hybrid_bursts(project_id):
-        return []
+        return BurstService.get_available_hybrid_bursts(project_id)
 
     def _prepare_connectivity_form(self):
         self.context.set_hybrid_simulator()
@@ -940,17 +952,71 @@ class HybridSimulatorController(BurstBaseController):
         chain = self._monitor_chain(hybrid_simulator)
         previous_url = chain[-1][0] if chain else HybridSimulatorURLs.SET_MONITORS_URL
 
+        form = HybridLaunchFragment(default_simulation_name=self._default_simulation_name())
+
         self.context.add_last_loaded_form_url_to_session(HybridSimulatorURLs.SET_SIMULATION_SUMMARY_URL)
         rules = HybridSimulatorFragmentRenderingRules(
-            None, HybridSimulatorURLs.SET_SIMULATION_SUMMARY_URL, previous_url,
-            fragment_title="Simulation",
-            # launching is the next wizard step, it does not exist yet
-            next_button_enabled=False)
+            form, HybridSimulatorURLs.SET_SIMULATION_SUMMARY_URL, previous_url,
+            fragment_title="Simulation")
         rules.is_simulation_summary_fragment = True
+        rules.is_launch_fragment = True
         rules.simulation_length = hybrid_simulator.simulation_length
         rules.monitor_rows = self._monitor_rows(hybrid_simulator)
         rules.output_layout = self.hybrid_simulator_service.output_layout(subnetworks)
         return rules.to_dict()
+
+    def _default_simulation_name(self):
+        """
+        The name this simulation is offered, numbered the way the classic Cockpit numbers its own.
+        """
+        name, _ = self.burst_service.prepare_simulation_name(
+            BurstConfiguration(self.context.project.id), self.context.project.id)
+        return name
+
+    @expose_json
+    def launch_simulation(self, **data):
+        """
+        Launch the configured Hybrid simulation.
+
+        The configuration is stored as it is; everything scientific about it is built by the adapter on
+        the operation's own thread, so a failure there is reported through the normal operation
+        mechanism rather than here.
+        """
+        try:
+            hybrid_simulator, _, _, _ = self._load_subnetworks_configuration()
+        except HybridSubnetworkException as excep:
+            return {'error': str(excep)}
+
+        form = HybridLaunchFragment()
+        try:
+            form.fill_from_post(data)
+        except Exception as excep:
+            self.logger.exception(excep)
+            return {'error': str(excep)}
+
+        if not self.simulator_service.operation_service.fits_max_operation_size(
+                HybridSimulatorAdapter(), hybrid_simulator, self.context.project.id):
+            return {'error': self.MAX_SIZE_ERROR_MSG}
+
+        burst_config = BurstConfiguration(self.context.project.id)
+        burst_config.name = form.simulation_name.value
+        burst_config.start_time = datetime.now()
+        burst_config = self.burst_service.store_burst(burst_config)
+
+        try:
+            # the same launcher the classic Cockpit uses: nothing in it is particular to that Simulator,
+            # it takes the Algorithm and the view model it is given
+            thread = threading.Thread(target=self.simulator_service.async_launch_and_prepare_simulation,
+                                      kwargs={'burst_config': burst_config,
+                                              'user': self.context.logged_user,
+                                              'project': self.context.project,
+                                              'simulator_algo': self.cached_hybrid_algorithm,
+                                              'simulator': hybrid_simulator})
+            thread.start()
+            return {'id': burst_config.id}
+        except Exception as excep:
+            self.logger.exception("Could not launch the Hybrid simulation")
+            return {'error': str(excep)}
 
     def _monitor_rows(self, hybrid_simulator):
         """
