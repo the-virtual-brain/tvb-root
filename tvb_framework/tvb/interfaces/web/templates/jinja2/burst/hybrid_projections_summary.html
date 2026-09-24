@@ -1,0 +1,38 @@
+{#- ============================================================================ -#}
+{#- The Projections generated out of the Connectivity and the Subnetwork         -#}
+{#- grouping. Read only: nothing here is a user choice yet, so the step is there -#}
+{#- to inspect what the configuration produced before anything is launched.      -#}
+{#- ============================================================================ -#}
+<table class="hybrid-subnetworks-summary hybrid-projections-summary">
+    <tr>
+        <th scope="col">Kind</th>
+        <th scope="col">From</th>
+        <th scope="col">To</th>
+        <th scope="col">Weights</th>
+        <th scope="col">Connections</th>
+        <th scope="col">Coupling variables</th>
+    </tr>
+    {% for row in renderer.projection_rows %}
+        <tr>
+            <th scope="row">{{ row.kind }}</th>
+            <td>{{ row.source }}</td>
+            <td>{{ row.target }}</td>
+            <td class="hybrid-summary-count">{{ row.shape }}</td>
+            <td class="hybrid-summary-count">{{ row.connections }}</td>
+            <td class="hybrid-summary-count">
+                source {{ row.source_cvar|join(', ') }} &rarr; target slot {{ row.target_cvar|join(', ') }}
+            </td>
+        </tr>
+    {% endfor %}
+</table>
+
+{% if renderer.unconnected_pairs %}
+    <p class="hybrid-projections-note">
+        No InterProjection was generated for
+        {% for pair in renderer.unconnected_pairs %}
+            <span class="hybrid-summary-region">{{ pair.source }} &rarr; {{ pair.target }}</span>
+        {% endfor %}
+        &mdash; this Connectivity holds no weight between those regions in that direction, so a
+        projection would only carry zeros.
+    </p>
+{% endif %}

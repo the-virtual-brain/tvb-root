@@ -1,0 +1,19 @@
+{#- ============================================================================ -#}
+{#- The whole configuration of one Subnetwork, as the ordered steps that make it -#}
+{#- up. Answered when a Subnetwork is picked from the selector, so one that is   -#}
+{#- already set up is shown rather than stepped through again.                   -#}
+{#-                                                                             -#}
+{#- Every step but the last arrives read only: fields disabled and buttons       -#}
+{#- hidden, which is the state the wizard leaves a finished step in. Pressing    -#}
+{#- Previous on the last one hands control back up the stack, which is what      -#}
+{#- makes any of it editable again.                                              -#}
+{#- ============================================================================ -#}
+{% if renderer.load_error %}
+    <p class="errorMessage">{{ renderer.load_error }}</p>
+{% else %}
+    {% for step in renderer.chain_renderers %}
+        {% with renderer = step %}
+            {% include 'hybrid_simulator_fragment.html' %}
+        {% endwith %}
+    {% endfor %}
+{% endif %}
