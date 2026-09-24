@@ -108,7 +108,7 @@ class Model(HasTraits):
     @property
     def nvar(self):
         """ The number of state variables in this model. """
-        return self._nvar
+        return len(self.state_variables)
 
     @property
     def nintvar(self):
