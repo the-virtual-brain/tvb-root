@@ -30,7 +30,8 @@ import json
 
 import numpy
 
-from tvb.core.entities.file.simulator.view_model import HybridSimulatorAdapterModel, HybridSubnetworkViewModel
+from tvb.core.entities.file.simulator.view_model import BoldViewModel, HybridSimulatorAdapterModel, \
+    HybridSubnetworkViewModel, RawViewModel, TemporalAverageViewModel
 from tvb.core.services.hybrid_simulator_service import HybridSimulatorService, HybridSubnetworkException
 
 
@@ -596,3 +597,102 @@ class TestHybridSimulatorService(object):
         assert [subnet.nnodes for subnet in network_set.subnets] == [3, 5]
         assert network_set.subnets[0].projections[0].weights.shape == (3, 3)
         assert network_set.projections[0].weights.shape == (5, 3)
+
+    # ---------------------------------------------------------------- Global configuration
+
+    def _network_set(self, dt=0.1):
+        return self.service.build_network_set(self._connectivity(), self._two_blocks(), dt)
+
+    def test_the_configuration_reaches_the_hybrid_simulator(self):
+        network_set = self._network_set()
+
+        simulator = self.service.build_hybrid_simulator(
+            network_set, [TemporalAverageViewModel()], 500.0)
+
+        assert simulator.nets is network_set
+        assert simulator.simulation_length == 500.0
+        assert len(simulator.monitors) == 1
+        # the library default, the numba one accepts only a fixed set of Models and Integrators
+        assert simulator.backend == 'python'
+
+    def test_monitors_are_configured_from_the_shared_dt(self):
+        monitor = TemporalAverageViewModel()
+        monitor.period = 1.0
+
+        simulator = self.service.build_hybrid_simulator(self._network_set(dt=0.25), [monitor], 100.0)
+
+        built = simulator.monitors[0]
+        assert built.dt == 0.25
+        # what the Monitor samples on: one sample every period / dt integration steps
+        assert built.istep == 4
+
+    def test_the_built_monitors_do_not_share_the_configured_ones(self):
+        monitor = TemporalAverageViewModel()
+        monitor.period = 1.0
+
+        simulator = self.service.build_hybrid_simulator(self._network_set(), [monitor], 100.0)
+        # building configures every Monitor and allocates its buffers, and this is the object the forms
+        # keep editing
+        monitor.period = 50.0
+
+        assert simulator.monitors[0] is not monitor
+        assert simulator.monitors[0].period == 1.0
+
+    def test_simulation_length_is_respected(self):
+        monitor = TemporalAverageViewModel()
+        monitor.period = 1.0
+
+        simulator = self.service.build_hybrid_simulator(self._network_set(dt=0.1), [monitor], 10.0)
+        ((times, data),) = simulator.run()
+
+        # 10 ms sampled every 1 ms
+        assert len(times) == 10
+        assert data.shape[0] == 10
+
+    def test_a_sampling_period_below_the_step_size_is_refused(self):
+        monitor = TemporalAverageViewModel()
+        monitor.period = 0.05
+
+        with pytest.raises(HybridSubnetworkException) as excinfo:
+            self.service.validate_monitors([monitor], 100.0, 0.1)
+
+        # rounding that period to integration steps gives zero, which the Monitor then divides by
+        assert 'TemporalAverage' in str(excinfo.value)
+        assert '0.1' in str(excinfo.value)
+
+    def test_a_sampling_period_longer_than_the_simulation_is_refused(self):
+        monitor = BoldViewModel()
+
+        with pytest.raises(HybridSubnetworkException) as excinfo:
+            self.service.validate_monitors([monitor], 100.0, 0.1)
+
+        assert 'Bold' in str(excinfo.value)
+        assert 'record nothing' in str(excinfo.value)
+
+    def test_the_raw_monitor_is_not_judged_on_its_period(self):
+        # Raw records every integration step and documents its sampling period as ignored, so its
+        # default of zero is not a period below dt
+        self.service.validate_monitors([RawViewModel()], 100.0, 0.1)
+
+    def test_output_is_connectome_ordered_when_the_subnetworks_agree(self):
+        subnetworks = self._two_blocks()
+
+        layout = self.service.output_layout(subnetworks)
+
+        assert layout['is_merged'] is True
+        assert layout['variables'] == 1
+        # one column per Connectivity region, at its own position
+        assert layout['nodes'] == self.NUMBER_OF_REGIONS
+
+    def test_output_is_concatenated_when_the_subnetworks_disagree(self):
+        subnetworks = self._two_blocks()
+        subnetworks[1].dynamics.model.variables_of_interest = ('V', 'W')
+
+        layout = self.service.output_layout(subnetworks)
+
+        assert layout['is_merged'] is False
+        # the variables stacked and the nodes concatenated, Subnetwork after Subnetwork
+        assert layout['variables'] == 3
+        assert layout['nodes'] == self.NUMBER_OF_REGIONS
+        assert [row['name'] for row in layout['rows']] == [subnetworks[0].name, subnetworks[1].name]
+        assert layout['rows'][1]['variables'] == ['V', 'W']

@@ -48,8 +48,10 @@ from tvb.core.neocom import h5
 from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.core.services.exceptions import ServicesBaseException
 from tvb.simulator.hybrid import NetworkSet
+from tvb.simulator.hybrid import Simulator as LibrarySimulator
 from tvb.simulator.hybrid import Subnetwork as LibrarySubnetwork
 from tvb.simulator.hybrid.projection_utils import create_inter_projection, create_intra_projection
+from tvb.simulator.monitors import Raw
 
 
 class HybridSubnetworkException(ServicesBaseException):
@@ -731,6 +733,98 @@ class HybridSimulatorService(object):
                     continue
                 pairs.append({'source': source.name, 'target': target.name})
         return pairs
+
+    # ---------------------------------------------------------------- Global configuration
+
+    @staticmethod
+    def output_layout(subnetworks):
+        """
+        Describe the array the global Monitors are going to record.
+
+        ``NetworkSet.observe`` places every Subnetwork's observation at its original Connectivity
+        position when all of them carry ``node_indices`` **and** expose the same number of variables of
+        interest, and concatenates them Subnetwork after Subnetwork otherwise. The Subnetworks built
+        here always carry ``node_indices``, so the number of variables of interest is the only thing
+        left deciding it.
+
+        :return: whether the output is connectome ordered, its variable and node counts, and what each
+                 Subnetwork watches, so the step can report the layout rather than impose one
+        """
+        rows = []
+        for subnetwork in subnetworks or []:
+            model = subnetwork.dynamics.model
+            rows.append({'name': subnetwork.name,
+                         'variables': [str(variable) for variable in model.variables_of_interest]})
+
+        counts = {len(row['variables']) for row in rows}
+        is_merged = len(counts) == 1
+
+        if is_merged:
+            variables = next(iter(counts))
+            nodes = max(max(subnetwork.node_indices) for subnetwork in subnetworks) + 1
+        else:
+            variables = sum(len(row['variables']) for row in rows)
+            nodes = sum(len(subnetwork.node_indices) for subnetwork in subnetworks or [])
+
+        return {'is_merged': is_merged, 'variables': variables, 'nodes': nodes, 'rows': rows}
+
+    @classmethod
+    def validate_monitors(cls, monitors, simulation_length, dt):
+        """
+        Refuse the Monitors that cannot record anything over this simulation.
+
+        Both rules come from what the library does with a sampling period: ``Monitor._config_dt`` turns
+        it into ``istep = round(period / dt)``, which a period below ``dt`` rounds down to zero - and a
+        Monitor then divides by it on its first sample.
+
+        :raise HybridSubnetworkException: naming the Monitor and what to change
+        """
+        for monitor in monitors or []:
+            # Raw records every integration step; its period is documented as ignored
+            if isinstance(monitor, Raw):
+                continue
+
+            name = cls.monitor_name(monitor)
+            period = float(monitor.period)
+
+            if period < dt:
+                raise HybridSubnetworkException(
+                    "The {} Monitor samples every {} ms, below the {} ms integration step size. Give it "
+                    "a sampling period of at least {} ms.".format(name, period, dt, dt))
+
+            if period > simulation_length:
+                raise HybridSubnetworkException(
+                    "The {} Monitor samples every {} ms, longer than the {} ms simulation, so it would "
+                    "record nothing. Shorten its sampling period or lengthen the simulation."
+                    .format(name, period, simulation_length))
+
+    @staticmethod
+    def monitor_name(monitor):
+        """
+        :return: the Monitor class name without the view model suffix, for a message or a summary
+        """
+        return type(monitor).__name__.replace('ViewModel', '')
+
+    @staticmethod
+    def build_hybrid_simulator(network_set, monitors, simulation_length):
+        """
+        Build the ``tvb.simulator.hybrid.Simulator`` the configuration describes.
+
+        The Monitor view models subclass the library Monitors, so one can be handed to ``monitors``
+        directly - the same reuse the Integrators already get. They are deep copied first: constructing
+        the Simulator configures every Monitor's ``dt`` and sampling step and allocates its buffers, and
+        the objects on the configuration are the ones the forms keep editing.
+
+        The backend is left at the library default, ``"python"``. The numba one only accepts a fixed set
+        of Model classes and Heun/Euler Integrators, so choosing it is follow-up work.
+
+        :return: the Simulator, configured
+        """
+        built_monitors = [copy.deepcopy(monitor) for monitor in monitors or []]
+        simulator = LibrarySimulator(nets=network_set, monitors=built_monitors,
+                                     simulation_length=simulation_length)
+        simulator.configure()
+        return simulator
 
     # ---------------------------------------------------------------- Helpers
 

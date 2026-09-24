@@ -28,14 +28,17 @@ import json
 import cherrypy
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.forms.equation_forms import get_form_for_equation
+from tvb.adapters.forms.hybrid_monitor_forms import HybridSpatialAverageMonitorForm, \
+    get_form_for_hybrid_monitor
 from tvb.adapters.forms.hybrid_simulator_fragments import HybridConnectivityFragment, \
-    HybridSubnetworkDynamicsFragment, HybridSubnetworksFragment
+    HybridMonitorsFragment, HybridSubnetworkDynamicsFragment, HybridSubnetworksFragment
+from tvb.adapters.forms.monitor_forms import get_monitor_to_ui_name_dict
 from tvb.adapters.forms.integrator_forms import NoiseTypesEnum, get_form_for_integrator
 from tvb.adapters.forms.model_forms import ModelsEnum, get_form_for_model
 from tvb.adapters.forms.noise_forms import get_form_for_noise
 from tvb.adapters.forms.simulator_fragments import SimulatorIntegratorFragment, SimulatorModelFragment
-from tvb.core.entities.file.simulator.view_model import HybridSimulatorAdapterModel, \
-    IntegratorStochasticViewModel, IntegratorViewModelsEnum, MultiplicativeNoiseViewModel
+from tvb.core.entities.file.simulator.view_model import BoldViewModel, HybridSimulatorAdapterModel, \
+    IntegratorStochasticViewModel, IntegratorViewModelsEnum, MultiplicativeNoiseViewModel, RawViewModel
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.services.hybrid_simulator_service import HybridSimulatorService, HybridSubnetworkException
@@ -82,6 +85,11 @@ class HybridSimulatorURLs(object):
     SUBMIT_REGION_MODEL_URL = '/burst/hybrid/submit_region_model'
     # the wizard step generating the Projections out of the Connectivity and the Subnetwork grouping
     SET_PROJECTIONS_URL = '/burst/hybrid/set_projections'
+    # the global configuration: what the simulation records, for how long, and what that produces
+    SET_MONITORS_URL = '/burst/hybrid/set_monitors'
+    SET_MONITOR_PARAMS_URL = '/burst/hybrid/set_monitor_params'
+    SET_MONITOR_EQUATION_URL = '/burst/hybrid/set_monitor_equation'
+    SET_SIMULATION_SUMMARY_URL = '/burst/hybrid/set_simulation_summary'
 
 
 class HybridSimulatorFragmentRenderingRules(object):
@@ -138,6 +146,13 @@ class HybridSimulatorFragmentRenderingRules(object):
         self.is_projections_fragment = False
         self.projection_rows = []
         self.unconnected_pairs = []
+        # the legend a Monitor parameters step carries, the way the classic Cockpit titles its own
+        self.monitor_name = None
+        # the closing step of the global configuration, describing what the simulation will record
+        self.is_simulation_summary_fragment = False
+        self.monitor_rows = []
+        self.output_layout = None
+        self.simulation_length = None
         # the Region Model panel: the Subnetwork being configured, its regions and the Dynamics on offer
         self.region_model_subnetwork = None
         self.region_model_rows = []
@@ -701,12 +716,13 @@ class HybridSimulatorController(BurstBaseController):
 
         rules = HybridSimulatorFragmentRenderingRules(
             None, HybridSimulatorURLs.SET_PROJECTIONS_URL,
-            HybridSimulatorURLs.SAVE_SUBNETWORK_DYNAMICS_URL, fragment_title="Projections",
-            # the global simulation configuration is the next wizard step, it does not exist yet
-            next_button_enabled=False)
+            HybridSimulatorURLs.SAVE_SUBNETWORK_DYNAMICS_URL, fragment_title="Projections")
         rules.is_projections_fragment = True
         rules.projection_rows = self.hybrid_simulator_service.describe_network_set(network_set)
         rules.unconnected_pairs = self.hybrid_simulator_service.unconnected_pairs(network_set)
+        # This step is entered by posting to its own url, so its Next has to post somewhere else, the
+        # same way the closing step of the Subnetwork configuration does.
+        rules.next_form_action_url = HybridSimulatorURLs.SET_MONITORS_URL
         return rules.to_dict()
 
     def _back_to_dynamics(self, hybrid_simulator, subnetworks, draft, message):
@@ -719,6 +735,236 @@ class HybridSimulatorController(BurstBaseController):
         form = HybridSubnetworkDynamicsFragment()
         form.fill_from_trait(hybrid_simulator)
         return self._dynamics_step_rules(form, subnetworks, draft).to_dict()
+
+    # ---------------------------------------------------------------- Monitors
+
+    @expose_fragment('hybrid_simulator_fragment')
+    def set_monitors(self, **data):
+        """
+        The wizard step saying what the simulation records and for how long.
+
+        Answers with the parameters of the first Monitor that has any, and with the closing summary when
+        none of them has - a Raw Monitor on its own is the whole of that case.
+        """
+        try:
+            hybrid_simulator, _, _, _ = self._load_subnetworks_configuration()
+        except HybridSubnetworkException as excep:
+            return self._back_to_connectivity(str(excep))
+
+        if cherrypy.request.method == POST_REQUEST:
+            form = HybridMonitorsFragment()
+            form.fill_from_post(data)
+            if not form.validate():
+                return self._monitors_step_rules(form).to_dict()
+
+            form.fill_trait(hybrid_simulator)
+            # the Monitor selector is built on an ad hoc List carrying no field_name, so fill_trait
+            # skips it and the Monitors are built here, the way the classic Cockpit builds its own
+            hybrid_simulator.monitors = form.monitors_from_post()
+            self.context.set_hybrid_simulator(hybrid_simulator)
+
+            return self._monitor_chain_step(hybrid_simulator, 0)
+
+        return self._monitors_step()
+
+    @expose_fragment('hybrid_simulator_fragment')
+    def set_monitor_params(self, current_monitor_name, **data):
+        """
+        The parameters of one Monitor. Answers with the next step of the Monitor chain, which is this
+        Monitor's Equation for a BOLD one, the next Monitor's parameters, or the closing summary.
+        """
+        return self._handle_monitor_step(current_monitor_name, data, is_equation=False)
+
+    @expose_fragment('hybrid_simulator_fragment')
+    def set_monitor_equation(self, current_monitor_name, **data):
+        """
+        The parameters of the haemodynamic response Equation of a BOLD Monitor.
+        """
+        return self._handle_monitor_step(current_monitor_name, data, is_equation=True)
+
+    @expose_fragment('hybrid_simulator_fragment')
+    def set_simulation_summary(self, **data):
+        """
+        The closing step of the global configuration: what each Monitor records, over how long, and the
+        shape of the array that produces.
+        """
+        return self._simulation_summary_step()
+
+    def _handle_monitor_step(self, current_monitor_name, data, is_equation):
+        try:
+            hybrid_simulator, _, _, _ = self._load_subnetworks_configuration()
+        except HybridSubnetworkException as excep:
+            return self._back_to_connectivity(str(excep))
+
+        index = self._monitor_step_index(hybrid_simulator, current_monitor_name, is_equation)
+        if index is None:
+            # the Monitor selection changed under this step, so start the chain again
+            return self._monitors_step()
+
+        _, monitor, _ = self._monitor_chain(hybrid_simulator)[index]
+
+        if cherrypy.request.method == POST_REQUEST:
+            form = self._monitor_form(hybrid_simulator, monitor, is_equation)
+            form.fill_from_post(data)
+            if not form.validate():
+                return self._monitor_chain_step(hybrid_simulator, index, form)
+
+            form.fill_trait(monitor.hrf_kernel if is_equation else monitor)
+
+            try:
+                # checked on this Monitor's own step rather than on the closing summary: a refusal has
+                # to hand back the step it is about, and the summary would instead answer with a step
+                # already on screen
+                self.hybrid_simulator_service.validate_monitors(
+                    [monitor], hybrid_simulator.simulation_length, hybrid_simulator.dt)
+            except HybridSubnetworkException as excep:
+                common.set_error_message(str(excep))
+                return self._monitor_chain_step(hybrid_simulator, index)
+
+            self.context.set_hybrid_simulator(hybrid_simulator)
+            return self._monitor_chain_step(hybrid_simulator, index + 1)
+
+        return self._monitor_chain_step(hybrid_simulator, index)
+
+    # ---------------------------------------------------------------- Monitor chain
+
+    @staticmethod
+    def _build_monitor_url(url, monitor):
+        """
+        The action url of one Monitor's step. The class name is a path segment, which is how the exposed
+        method receives it - the same shape the classic Cockpit gives its own Monitor steps.
+        """
+        return '{}/{}'.format(url, type(monitor).__name__)
+
+    def _monitor_chain(self, hybrid_simulator):
+        """
+        The steps configuring the chosen Monitors, in the order they were chosen.
+
+        :return: one ``(url, monitor, is_equation)`` per step: the parameters of every Monitor that has
+                 any, each BOLD Monitor followed by its Equation. A Raw Monitor contributes none - it
+                 records every integration step and documents its sampling period as ignored.
+        """
+        chain = []
+        for monitor in hybrid_simulator.monitors or []:
+            if isinstance(monitor, RawViewModel):
+                continue
+            chain.append((self._build_monitor_url(HybridSimulatorURLs.SET_MONITOR_PARAMS_URL, monitor),
+                          monitor, False))
+            if isinstance(monitor, BoldViewModel):
+                chain.append((self._build_monitor_url(HybridSimulatorURLs.SET_MONITOR_EQUATION_URL, monitor),
+                              monitor, True))
+        return chain
+
+    def _monitor_step_index(self, hybrid_simulator, monitor_name, is_equation):
+        """
+        :return: the position of the given Monitor step in the chain, or None when the Monitor selection
+                 no longer holds it
+        """
+        for index, (_, monitor, step_is_equation) in enumerate(self._monitor_chain(hybrid_simulator)):
+            if type(monitor).__name__ == monitor_name and step_is_equation == is_equation:
+                return index
+        return None
+
+    def _monitor_form(self, hybrid_simulator, monitor, is_equation):
+        if is_equation:
+            return get_form_for_equation(type(monitor.hrf_kernel))()
+
+        form_class = get_form_for_hybrid_monitor(type(monitor))
+        if issubclass(form_class, HybridSpatialAverageMonitorForm):
+            # which default masks are on offer depends on what this Connectivity carries
+            form = form_class(connectivity_gid=hybrid_simulator.connectivity)
+        else:
+            form = form_class()
+        return self.algorithm_service.prepare_adapter_form(form_instance=form,
+                                                           project_id=self.context.project.id)
+
+    def _monitor_chain_step(self, hybrid_simulator, index, form=None):
+        """
+        Render the Monitor chain step on the given position, or the closing summary once the chain is
+        exhausted.
+        """
+        chain = self._monitor_chain(hybrid_simulator)
+        if index >= len(chain):
+            return self._simulation_summary_step()
+
+        url, monitor, is_equation = chain[index]
+        previous_url = chain[index - 1][0] if index > 0 else HybridSimulatorURLs.SET_MONITORS_URL
+
+        if form is None:
+            form = self._monitor_form(hybrid_simulator, monitor, is_equation)
+            form.fill_from_trait(monitor.hrf_kernel if is_equation else monitor)
+
+        self.context.add_last_loaded_form_url_to_session(url)
+        rules = self._step_rules(form, url, previous_url)
+        rules.monitor_name = self._monitor_legend(monitor, is_equation)
+        return rules.to_dict()
+
+    @staticmethod
+    def _monitor_legend(monitor, is_equation):
+        name = get_monitor_to_ui_name_dict(HybridMonitorsFragment.IS_SURFACE_SIMULATION).get(
+            type(monitor), type(monitor).__name__.replace('ViewModel', ''))
+        if is_equation:
+            return '{} monitor - haemodynamic response'.format(name)
+        return '{} monitor'.format(name)
+
+    # ---------------------------------------------------------------- Global configuration steps
+
+    def _monitors_step(self, form=None):
+        try:
+            hybrid_simulator, _, _, _ = self._load_subnetworks_configuration()
+        except HybridSubnetworkException as excep:
+            return self._back_to_connectivity(str(excep))
+
+        if form is None:
+            form = HybridMonitorsFragment()
+            form.fill_from_trait(hybrid_simulator)
+        return self._monitors_step_rules(form).to_dict()
+
+    def _monitors_step_rules(self, form):
+        self.context.add_last_loaded_form_url_to_session(HybridSimulatorURLs.SET_MONITORS_URL)
+        return self._step_rules(form, HybridSimulatorURLs.SET_MONITORS_URL,
+                                HybridSimulatorURLs.SET_PROJECTIONS_URL)
+
+    def _simulation_summary_step(self):
+        """
+        Describe what the configured Monitors will record.
+
+        Purely descriptive: a sampling period that could not record anything is refused on the step of
+        the Monitor it belongs to, on the way here.
+        """
+        try:
+            hybrid_simulator, _, subnetworks, _ = self._load_subnetworks_configuration()
+        except HybridSubnetworkException as excep:
+            return self._back_to_connectivity(str(excep))
+
+        chain = self._monitor_chain(hybrid_simulator)
+        previous_url = chain[-1][0] if chain else HybridSimulatorURLs.SET_MONITORS_URL
+
+        self.context.add_last_loaded_form_url_to_session(HybridSimulatorURLs.SET_SIMULATION_SUMMARY_URL)
+        rules = HybridSimulatorFragmentRenderingRules(
+            None, HybridSimulatorURLs.SET_SIMULATION_SUMMARY_URL, previous_url,
+            fragment_title="Simulation",
+            # launching is the next wizard step, it does not exist yet
+            next_button_enabled=False)
+        rules.is_simulation_summary_fragment = True
+        rules.simulation_length = hybrid_simulator.simulation_length
+        rules.monitor_rows = self._monitor_rows(hybrid_simulator)
+        rules.output_layout = self.hybrid_simulator_service.output_layout(subnetworks)
+        return rules.to_dict()
+
+    def _monitor_rows(self, hybrid_simulator):
+        """
+        One row per configured Monitor: what it is called and how often it samples.
+        """
+        rows = []
+        for monitor in hybrid_simulator.monitors or []:
+            rows.append({
+                'name': self._monitor_legend(monitor, False).replace(' monitor', ''),
+                # Raw ignores its own period and records every integration step
+                'period': hybrid_simulator.dt if isinstance(monitor, RawViewModel) else float(monitor.period),
+                'is_raw': isinstance(monitor, RawViewModel)
+            })
+        return rows
 
     # ---------------------------------------------------------------- Region Model
 

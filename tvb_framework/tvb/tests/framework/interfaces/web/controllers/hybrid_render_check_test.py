@@ -261,3 +261,96 @@ class TestHybridRendering(BaseTransactionalControllerTest):
         assert 'Intra' in projections_html
         assert 'Coupling variables' in projections_html
         assert 'hybrid-projections-summary' in projections_html
+
+    def _reach_the_projections(self):
+        """Walk the wizard up to the Projections step, which is where the global configuration starts."""
+        cherrypy.request.method = "GET"
+        self.hybrid_controller.set_subnetworks()
+        cherrypy.request.method = "POST"
+        self.hybrid_controller.set_subnetworks()
+        self.hybrid_controller.set_subnetwork_dynamics(dt='0.1')
+        self.hybrid_controller.set_subnetwork_model(model='Generic 2D Oscillator')
+        self.hybrid_controller.set_subnetwork_model_params(**self.MODEL_PARAMS)
+        self.hybrid_controller.set_subnetwork_integrator(integrator='Heun')
+        self.hybrid_controller.set_subnetwork_integrator_params()
+        self.hybrid_controller.save_subnetwork_dynamics()
+        return self.hybrid_controller.set_projections()
+
+    def test_what_the_monitor_steps_return(self):
+        """
+        Render the whole global configuration chain, a projection Monitor and a BOLD one included. There
+        is no JavaScript test infrastructure here, so this is what catches a step that does not render,
+        one that posts to the wrong url, and a Monitor form still offering the variables of interest.
+        """
+        with patch.object(TvbProfile.current.web, 'RENDER_HTML', True), \
+                patch('cherrypy.session', self.sess_mock, create=True):
+            self.hybrid_controller.context.set_hybrid_simulator(self.hybrid_simulator)
+
+            projections_html = self._reach_the_projections()
+
+            # Next on the Projections step opens the global configuration
+            monitors_html = self.hybrid_controller.set_monitors()
+
+            # a plain Monitor followed by one carrying datatype fields
+            tavg_html = self.hybrid_controller.set_monitors(
+                simulation_length='6000.0', monitors=['Temporal average', 'EEG'])
+            eeg_html = self.hybrid_controller.set_monitor_params(
+                'TemporalAverageViewModel', period='1.0')
+
+            # and a BOLD Monitor, which takes an Equation step of its own after its parameters
+            bold_html = self.hybrid_controller.set_monitors(
+                simulation_length='6000.0', monitors=['BOLD'])
+            equation_html = self.hybrid_controller.set_monitor_params(
+                'BoldViewModel', period='2000.0', hrf_kernel='Hrf Kernel: Mixture Of Gammas')
+
+        # the Projections step now carries a way onward
+        assert "hybridSubmitTo(this.parentElement, '/burst/hybrid/set_monitors')" in projections_html
+
+        # the global configuration step asks what to record and for how long
+        assert 'action="/burst/hybrid/set_monitors"' in monitors_html
+        assert 'simulation_length' in monitors_html
+        assert 'BOLD' in monitors_html
+
+        # the first chosen Monitor's own step, with a legend and without the variables of interest
+        assert 'action="/burst/hybrid/set_monitor_params/TemporalAverageViewModel"' in tavg_html
+        assert 'Temporal average monitor' in tavg_html
+        assert 'name="variables_of_interest"' not in tavg_html
+
+        # the EEG step renders the datatype fields it needs
+        assert 'action="/burst/hybrid/set_monitor_params/EEGViewModel"' in eeg_html
+        assert 'EEG monitor' in eeg_html
+        assert 'name="sensors"' in eeg_html
+        assert 'name="projection"' in eeg_html
+        assert 'name="region_mapping"' in eeg_html
+        assert 'name="variables_of_interest"' not in eeg_html
+
+        # BOLD carries its haemodynamic response kernel, and its Equation follows on its own step
+        assert 'action="/burst/hybrid/set_monitor_params/BoldViewModel"' in bold_html
+        assert 'name="hrf_kernel"' in bold_html
+        assert 'name="variables_of_interest"' not in bold_html
+        assert 'action="/burst/hybrid/set_monitor_equation/BoldViewModel"' in equation_html
+        assert 'haemodynamic response' in equation_html
+
+    def test_what_the_simulation_summary_returns(self):
+        """
+        Render the closing step of the global configuration, which reports what the Monitors record.
+        """
+        with patch.object(TvbProfile.current.web, 'RENDER_HTML', True), \
+                patch('cherrypy.session', self.sess_mock, create=True):
+            self.hybrid_controller.context.set_hybrid_simulator(self.hybrid_simulator)
+
+            self._reach_the_projections()
+            self.hybrid_controller.set_monitors(simulation_length='100.0',
+                                                monitors=['Raw recording', 'Temporal average'])
+            summary_html = self.hybrid_controller.set_monitor_params(
+                'TemporalAverageViewModel', period='1.0')
+
+        assert 'action="/burst/hybrid/set_simulation_summary"' in summary_html
+        assert 'hybrid-simulation-summary' in summary_html
+        assert 'Raw' in summary_html
+        assert 'every integration step' in summary_html
+        assert '100.0 ms of simulated time' in summary_html
+        # one Subnetwork, so the variable counts trivially agree and the output is region ordered
+        assert 'in the original region order' in summary_html
+        # launching is the next step and does not exist yet
+        assert 'disabled="disabled"' in summary_html

@@ -19,7 +19,7 @@ Keep the first implementation small and validate each step before moving to the 
 
 ## Status
 
-Last updated 2026-09-07.
+Last updated 2026-09-24.
 
 | phase | status |
 |---|---|
@@ -30,21 +30,22 @@ Last updated 2026-09-07.
 | Phase 3 – Configure each Subnetwork | **Done** |
 | Phase 3 addition – Set up region Model | **Done** |
 | Phase 4 – Generate Projections | **Done** |
-| Phase 5 – Global Hybrid Simulator configuration | Not started |
+| Phase 5 – Global Hybrid Simulator configuration | **Done** |
 | Phase 6 – Launch one Hybrid simulation | Not started |
 | Follow-up features | Not started |
 
 A user can currently select a Connectivity, group its regions into Subnetworks, configure a Model and an
 Integrator (with Noise and its Equation) for each of them, place saved Dynamics on a Subnetwork's regions
-to give a Model parameter one value per region, save all of it, and step on to inspect the Projections
-generated from the grouping. Nothing is launched or persisted yet: the configuration lives in the session
-until Phase 6.
+to give a Model parameter one value per region, save all of it, inspect the Projections generated from the
+grouping, choose the Monitors and the simulation length, configure each Monitor, and read what the
+resulting output will look like. Nothing is launched or persisted yet: the configuration lives in the
+session until Phase 6.
 
 ### Verified by
 
-124 hybrid tests — 57 service, 63 controller, 4 render checks. The suites the work touches also pass
-unchanged: the classic Simulator Cockpit (41), the classic Set up region Model page (3), and the view
-model and simulator adapter suites (21).
+151 hybrid tests — 66 service, 79 controller, 6 render checks. The suites the work touches also pass
+unchanged: the classic Simulator Cockpit and the simulator adapters (44), and the view model, forms and
+serialization suites (29).
 
 ```bash
 python -m pytest tvb/tests/framework/core/services/hybrid_simulator_service_test.py \
@@ -57,10 +58,13 @@ render checks render every fragment the wizard puts on the wire and assert on it
 
 ### Outstanding
 
-* **Initial conditions are not covered by any phase.** Decide whether they join Phase 5's global
-  configuration before Phase 6 starts.
-* **Per-Subnetwork `variables_of_interest`.** Phase 3 makes these editable per Subnetwork; Phase 5
-  configures monitors globally and will have to reconcile Subnetworks that disagree.
+* **Initial conditions are not covered by any phase.** Decided for Phase 5: they stay out of it, and
+  the library's random draw from each Model's `state_variable_range` is what runs. Phase 6 decides
+  whether a seed, explicit per-Subnetwork arrays, or neither is exposed.
+* **Per-Subnetwork `variables_of_interest`.** Phase 3 makes these editable per Subnetwork. Decided for
+  Phase 5: the Monitors step *reports* whether the counts agree — and so whether output is
+  connectome-ordered or concatenated — rather than reconciling or refusing them. Phase 6 has to package
+  both layouts.
 * **Stale artifact:** `interfaces/web/controllers/simulator/__pycache__/hybrid_simulator_wizard_urls.*.pyc`
   has no source any more, left over from an earlier iteration.
 
@@ -1184,25 +1188,302 @@ belongs with Phase 6, where a simulation can actually be launched and compared.
 
 ## Phase 5 – Global Hybrid Simulator configuration
 
-**Status: Not started.**
+**Status: Done** — see the implementation summary below.
 
-Add the remaining simulation-level configuration.
+Add the remaining simulation-level configuration — the Monitors and the simulation length — and the
+translation of the whole configuration into a `tvb.simulator.hybrid.Simulator`.
 
-Initial scope:
+Reuse existing Simulator Cockpit components where possible. These are configurations are common with the Simulator Cockpit.
 
-* simulation length;
-* Monitors;
-* backend if appropriate;
-* other required global Hybrid Simulator parameters.
+### Scope
 
-Reuse existing Simulator Cockpit components where possible.
+| question | decision |
+|---|---|
+| which Monitors | all nine the classic Cockpit offers for a region simulation |
+| Monitor scope | **global only** — the `Simulator.monitors` list, not per-Subnetwork recorders |
+| per-Monitor `variables_of_interest` | **not exposed** — the library discards it |
+| initial conditions | **not in this phase** — Phase 6 decides |
+| backend | **not exposed** — always `"python"` |
+| Subnetworks with different VOI counts | **reported, not refused** |
+
+Per-Subnetwork recorders (`Subnetwork.add_monitor`, Section 5 of the stimuli demo) were considered and
+left out. They would dissolve the VOI reconciliation below — each recorder sees exactly one Model — but
+they produce no whole-brain output, which is what Phase 6 has to persist and what the projection
+monitors need. They belong with the follow-up features.
+
+### What the library takes
+
+`hybrid.Simulator(nets=..., monitors=[...], simulation_length=...)`. `backend` is a plain constructor
+keyword, not a trait, and defaults to `"python"`; the numba backend accepts only a whitelist of Model
+classes and Heun/Euler Integrators, so exposing it is left to a follow-up as Phase 3 anticipated.
+
+Monitor view models **subclass the library Monitors** (`RawViewModel(MonitorViewModel, Raw)`), so a
+stored view model can be handed to `monitors=` directly — the same reuse Phase 4 got from the Integrator
+view models. They are deep copied first, for the reason Phase 4 already records: `configure()` mutates
+what it is given, and the stored objects are the ones the forms keep editing.
+
+### Output layout: merged or concatenated
+
+`build_library_subnetworks` always sets `node_indices`, so `NetworkSet._is_merged_mode()` reduces to one
+question — do all Subnetworks expose the same *number* of variables of interest.
+
+| | when | output shape | node axis |
+|---|---|---|---|
+| merged | all VOI counts equal | `(t, n_vois, n_regions, modes)` | the original Connectivity ordering |
+| concatenated | any count differs | `(t, Σ vois, Σ nnodes, modes)` | Subnetwork after Subnetwork |
+
+A mismatch is the common case rather than the exception: JansenRit declares four variables of interest
+by default, Generic2dOscillator one.
+
+**The step reports which layout the configuration produces and refuses neither.** Phase 3 deliberately
+made `variables_of_interest` editable per Subnetwork, and blocking here would take that back. The report
+names the Subnetworks and their counts, so a user who wants connectome-ordered output knows exactly what
+to change. How concatenated output is packaged into a TVB datatype is Phase 6's problem, and is recorded
+as such below.
+
+### Monitors
+
+All nine: Raw, Temporally sub-sample, Spatial average, Global average, Temporal average, EEG, MEG,
+Intracerebral / Stereo EEG, BOLD. `BOLD Region ROI` is excluded — the classic Cockpit offers it only for
+surface simulations, and the Hybrid Simulator has no surface.
+
+`variables_of_interest` is **not** rendered. `Simulator.validate_dts` assigns `monitor.voi = slice(None)`
+to every monitor, so a selection made there is discarded before the first step is integrated; the field
+would describe something the simulation does not do. Everything else on each monitor's form is kept.
+
+`Form.fields` iterates `self.__dict__`, so the hybrid forms **subclass the classic ones and drop that one
+attribute** rather than restating the EEG/MEG/iEEG/BOLD/SpatialAverage field definitions. Two methods
+have to go with it: `MonitorForm.fill_from_post` dereferences `session_stored_simulator.model`, and
+`fill_trait` writes the VOI indexes back onto the monitor. Both assume a classic `SimulatorAdapterModel`
+with a single Model, which the Hybrid Simulator does not have.
+
+The projection monitors' forms select `projection`, `sensors` and `region_mapping` as **datatype GIDs**,
+so nothing about them has to work in this phase: the configuration is stored, not run. What it takes to
+run them is listed under *Obligations this phase hands to Phase 6*.
+
+### Where the configuration lives
+
+`HybridSimulatorAdapterModel` gains:
+
+* `simulation_length` — label, doc and default borrowed from the classic `Simulator` trait, the way `dt`
+  already borrows from `Integrator.dt`;
+* `monitors = List(of=MonitorViewModel, default=(TemporalAverageViewModel(),))`.
+
+`__init__` must instantiate a fresh monitor, as `SimulatorAdapterModel.__init__` does. A trait default is
+one shared instance across every session — the trap Phase 3 already documented for Model and Integrator.
+
+Still nothing in the database: this lives in the session with the rest of the configuration until Phase 6.
+
+### The wizard chain
+
+Projections → Monitors → one parameters step per selected Monitor, in order → Simulation length.
+
+* the Projections step's `next_button_enabled=False` is the switch this phase turns on;
+* a BOLD monitor takes the extra hrf Equation step after its parameters, as the classic Cockpit does;
+* the monitor ordering mirrors `MonitorsWizardHandler.get_current_and_next_monitor_form`, but the handler
+  itself is not reused: it is bound to `SimulatorWizzardURLs` and to `SimulatorAdapterModel`, and the
+  hybrid cockpit has its own of both;
+* **no draft/save pair.** Phase 3 needed one because a Subnetwork's configuration could be abandoned by
+  selecting a different Subnetwork mid-edit. The monitors are global and the chain is linear, so each
+  step commits, exactly as the classic Cockpit does;
+* the length step closes the phase. Its Next stays disabled until Phase 6 adds the launch.
+
+**Open, to be decided while implementing:** `HYBRID_WIZARD_STEPS`. Phase 4 deliberately kept
+`SET_PROJECTIONS_URL` out of that list, because a stack rebuild walks it and would regenerate the whole
+`NetworkSet` on every step-back. But `hybridPreviousStep` slices `(0, undefined)` — the entire list — for
+any url it cannot find, so appending the new steps while leaving Projections out makes a rebuild from the
+length step render everything anyway. This needs a deliberate answer rather than an append.
+
+### Service
+
+* `set_monitors(hybrid_simulator, ui_names)` — UI names to view model instances, mirroring
+  `MonitorsWizardHandler.set_monitors_list_on_simulator`;
+* `output_layout(subnetworks)` — merged or concatenated, the resulting shape, and the Subnetworks whose
+  VOI counts disagree;
+* `validate_monitors(monitors, simulation_length, dt)` — a period longer than the simulation records
+  nothing at all (BOLD defaults to 2000 ms), and a period below `dt` is not recordable;
+* `build_hybrid_simulator(network_set, monitors, simulation_length)` — the configured `hybrid.Simulator`,
+  monitors deep copied.
+
+`build_hybrid_simulator` belongs here rather than in Phase 6, for the reason `build_network_set` belonged
+in Phase 4: it is what makes *"configuration reaches the Hybrid Simulator correctly"* testable without
+launching anything. Phase 6 then only has to run it and persist the result.
 
 ### Tests
 
-* configuration reaches the Hybrid Simulator correctly;
-* monitors are configured correctly;
-* simulation length is respected;
-* invalid configuration produces useful validation messages.
+* configuration reaches the Hybrid Simulator correctly — `simulation_length`, the monitor list and the
+  `NetworkSet` all arrive on the built Simulator;
+* monitors are configured correctly — each monitor's `dt` and `istep` after construction, and editing a
+  stored monitor afterwards leaving the built one untouched (the deep copy);
+* simulation length is respected — the sample count a `TemporalAverage` of a known period produces over
+  a known length;
+* invalid configuration produces useful validation messages — period above the length, period below `dt`;
+* the layout report — equal VOI counts give merged and the connectome shape; one differing Subnetwork
+  gives concatenated and is named;
+* controller — the chain urls in order, two selected monitors producing two parameters steps, the BOLD
+  equation step, the length round-trip, and the existing refusal to proceed over unsaved dynamics;
+* render check — the whole chain, including a projection monitor with its GID fields and BOLD with its
+  Equation step.
+
+### Obligations this phase hands to Phase 6
+
+Offering every classic monitor is cheap here and expensive there. Recorded now so the cost is not
+discovered later:
+
+1. **`voi = slice(None)` breaks the projection monitors.** `Projection.sample` allocates
+   `numpy.zeros((gain.shape[0], len(self.voi)))`, and `len()` of a slice raises `TypeError`.
+2. **`config_for_sim` is never called.** The hybrid Simulator calls only `_config_dt`, `_config_stock`
+   and `record`, so a Projection monitor has no gain matrix and no `rmap`, and `SpatialAverage` has no
+   spatial mask. Either a shim exposing `connectivity`, `surface`, `model`, `integrator` and
+   `number_of_nodes` is handed to `config_for_sim`, or the framework computes and assigns those itself.
+3. **Concatenated mode misaligns them silently.** A gain matrix is `(n_sensors, n_regions)` in connectome
+   order, and `SpatialAverage`'s cortical/hemisphere masks are indexed the same way, so in concatenated
+   mode they weight the wrong nodes rather than failing. Both are meaningful only in merged mode.
+4. **GIDs have to become datatypes.** `projection`, `sensors` and `region_mapping` are stored as GIDs and
+   must be loaded before the monitor can be configured.
+5. Unrelated, noticed in passing: merged-mode `NetworkSet.observe` shapes its result with
+   `subnets[0].model.number_of_modes`, while every subnetwork's observation has already been summed to a
+   single mode — so a multi-mode first Subnetwork duplicates its output across the mode axis.
+
+### Checkpoint
+
+Build the Simulator from a saved configuration and inspect it before Phase 6 launches anything: `nets` is
+the Phase 4 `NetworkSet`, `monitors` are the configured ones with `dt` and `istep` set from the shared
+`dt`, and `simulation_length` is what the closing step stored.
+
+---
+
+## Phase 5 – Implementation Summary
+
+Implemented as specified above, with the deviations recorded at the end of this section.
+
+### Where the configuration lives
+
+`HybridSimulatorAdapterModel` gained `monitors` (a `List(of=MonitorViewModel)` defaulting to a single
+Temporal average) and `simulation_length`, whose label, doc and default are the classic `Simulator`
+trait's, the way `dt` already borrows from `Integrator.dt`. Its `__init__` re-instantiates the default
+Monitor: a trait default is one shared instance across every session, and the parameter forms edit the
+Monitor in place. Still nothing in the database - this lives in the session until Phase 6.
+
+### The Monitor forms
+
+`tvb/adapters/forms/hybrid_monitor_forms.py` holds a `HybridMonitorForm` per classic Monitor form,
+each inheriting its classic sibling so that not one field definition is restated.
+
+`MonitorForm` adds exactly three methods on top of `Form`, and all three exist to carry
+`variables_of_interest`. All three are taken back down to `Form`:
+
+| method | what it assumed |
+|---|---|
+| `fill_from_post` | resolves the posted names against `session_stored_simulator.model` |
+| `fill_trait` | writes the resolved indices onto the Monitor |
+| `fill_from_trait` | reads them back into the field |
+
+The field itself is deleted in `__init__`, which is what keeps it off the page: `Form.fields` yields
+what is on the instance.
+
+**`fill_trait` had to be overridden, not merely left alone.** With nothing resolved it writes
+`numpy.array([])`, whose dtype is `float64`, and `Monitor.variables_of_interest` is an `int` typed
+`NArray` that refuses it outright. The Monitor's own `variables_of_interest` is therefore left at
+`None`, which `Monitor._config_vois` reads as 'all of them' - the same thing the Hybrid Simulator
+imposes with `voi = slice(None)`.
+
+**The base ordering matters.** BOLD and Spatial average override `fill_trait` / `fill_from_trait` to
+carry their own fields, so the hybrid form lists the classic sibling **first** and `HybridMonitorForm`
+second: `class HybridBoldMonitorForm(BoldMonitorForm, HybridMonitorForm)`. The MRO then runs BOLD's own
+method, whose `super()` reaches this phase's override instead of `MonitorForm`'s. Listing the hybrid
+base first would have skipped BOLD's own behaviour entirely.
+
+Spatial average needed one more thing. Its classic `fill_from_trait` prunes the default-mask choices out
+of `session_stored_simulator.connectivity`, so the hybrid form takes a `connectivity_gid` and does that
+pruning against the Connectivity the Hybrid Simulator was given, dropping the surface-only choice
+outright.
+
+### The wizard chain
+
+Projections → Monitors → one parameters step per Monitor → Simulation summary.
+
+`_monitor_chain` builds the ordered `(url, monitor, is_equation)` list once, and every step is rendered
+by position in it: the previous url is the step before, the next is the step after, and running off the
+end is the summary. A Raw Monitor contributes no step - it records every integration step and documents
+its sampling period as ignored, which is the rule the classic Cockpit applies through `first_monitor`. A
+BOLD Monitor contributes a second one for its haemodynamic response Equation.
+
+Each step's action url carries the Monitor class as a path segment
+(`/burst/hybrid/set_monitor_params/EEGViewModel`), which is how the exposed method receives it - the
+shape the classic Cockpit already uses.
+
+### A step entered by a POST cannot move on by posting to itself
+
+The Projections step is reached by posting to its own url, from the closing step of the Subnetwork
+configuration. Giving it a POST branch that moved on therefore broke entering it at all, which its own
+tests caught immediately. It instead names where its Next posts, through the `next_form_action_url` that
+the closing step of the Subnetwork configuration already had.
+
+That turned the template's second button into a general rule rather than one step's special case: an
+ordinary step's Next now posts to `next_form_action_url` when one is set and to its own action
+otherwise, and the extra button is rendered only for the step that genuinely needs two (Save
+Configuration *and* Next).
+
+### Where a sampling period is refused
+
+On the step of the Monitor it belongs to, not on the summary. The summary would otherwise have to answer
+with a step already on screen, and the client would append a second form carrying an id it already has.
+Every non-Raw Monitor is posted through on the way to the summary, so nothing escapes the check.
+
+### `HYBRID_WIZARD_STEPS`, the question Phase 5 left open
+
+**Left unchanged.** Phase 4 kept `SET_PROJECTIONS_URL` off that list so a stack rebuild would not
+regenerate the whole `NetworkSet` on every step back. The Monitor steps cannot go on it either: their
+urls depend on what was selected, so there are no fixed ones to list. A url that is not on the list
+rebuilds up to the Subnetwork dynamics, which is where every later step can be reached again, and that
+is the behaviour the new steps now document rather than change.
+
+### Tests
+
+**151 hybrid tests** - 66 service, 79 controller, 6 render checks. The suites this work touches pass
+unchanged: the classic Simulator Cockpit and the simulator adapters (44), and the view model, forms and
+serialization suites (29).
+
+```bash
+python -m pytest tvb/tests/framework/core/services/hybrid_simulator_service_test.py \
+                 tvb/tests/framework/interfaces/web/controllers/hybrid_simulator_controller_test.py \
+                 tvb/tests/framework/interfaces/web/controllers/hybrid_render_check_test.py
+```
+
+The service tests assert that the configuration reaches the Simulator, that a Monitor's `dt` and `istep`
+come from the shared `dt`, that editing a stored Monitor afterwards leaves the built one alone, both
+refusals and Raw's exemption from them, and both output layouts. The controller tests assert the chain
+urls and legends, that Raw gets no step, that BOLD gets its Equation step, that no step offers the
+variables of interest, and that a period which records nothing hands its own step back.
+
+**The Phase 5 checkpoint is a test**: `test_the_stored_configuration_builds_and_runs_a_hybrid_simulator`
+walks the wizard, builds the `NetworkSet` and the `Simulator` out of what the session holds, runs it, and
+asserts the sample count and that every Connectivity region is recorded at its own position. Its expected
+sample count is *derived* from the shared `dt` rather than assumed: the default `dt` is `0.01220703125`,
+which is not a round fraction of a 1 ms sampling period.
+
+The render checks render the whole chain, a projection Monitor with its datatype fields and a BOLD
+Monitor with its Equation step included, and assert that `variables_of_interest` appears on none of them.
+
+### Deviations from the specification above
+
+1. **The simulation length is not a step of its own.** It sits on the Monitors step, which now asks what
+   to record and for how long at once. The classic Cockpit keeps it for last only because it shares that
+   step with the Launch button; there is nothing to launch yet, and a sampling period means little away
+   from the length it is sampling. It also gives the period refusals something to check against before
+   any Monitor is configured.
+2. **A Simulation summary closes the phase**, which the specification did not ask for. Something has to
+   be the terminus - a step whose Next is disabled until Phase 6 - and a form is a poor terminus because
+   its value would never be submitted. The summary is where the output-layout report belongs anyway, next
+   to what each Monitor samples, and it is where Phase 6's simulation name and Launch button will go.
+
+### Checked, and left to Phase 6
+
+All nine Monitors **build** without complaint - `Simulator(...)` and `configure()` were run against each
+one, and each came back with its `dt` and `istep` set. The obligations listed above are run-time ones:
+they are what happens when a projection Monitor's `sample` is first called, not when it is configured.
+Phase 5 therefore offers all nine honestly, and Phase 6 has the list of what to make work.
 
 ---
 

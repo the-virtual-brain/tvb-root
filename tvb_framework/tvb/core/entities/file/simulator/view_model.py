@@ -518,3 +518,25 @@ class HybridSimulatorAdapterModel(ViewModel):
             'all Subnetworks to share it, so it is configured once for the whole Hybrid Simulator '
             'instead of per Subnetwork.'
     )
+
+    monitors = List(
+        of=MonitorViewModel,
+        default=(TemporalAverageViewModel(),),
+        label=Simulator.monitors.label,
+        doc='The Monitors recording the whole Hybrid Simulator. They are global: '
+            'tvb.simulator.hybrid.Simulator observes every Subnetwork at once and hands one array to '
+            'each Monitor.'
+    )
+
+    simulation_length = Float(
+        label=Simulator.simulation_length.label,
+        default=Simulator.simulation_length.default,
+        doc=Simulator.simulation_length.doc
+    )
+
+    def __init__(self, **kwargs):
+        super(HybridSimulatorAdapterModel, self).__init__(**kwargs)
+        # A trait default is one shared instance for every Hybrid Simulator configuration, and the
+        # parameter forms edit the Monitors in place, so this one gets its own. Same reason
+        # SimulatorAdapterModel re-instantiates its own default Monitor.
+        self.monitors = [type(self.monitors[0])()]

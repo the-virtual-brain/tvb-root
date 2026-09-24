@@ -395,10 +395,12 @@ button.hybrid-subnetwork-action:disabled {
 }
 
 /**
- * The generated Projections, listed on their wizard step in the configuration column. Read only, so it
- * reuses the Subnetwork summary table's dark-on-light rules and only adds a header row.
+ * The generated Projections and the closing Simulation summary, listed on their wizard steps in the
+ * configuration column. Both are read only, so they reuse the Subnetwork summary table's
+ * dark-on-light rules and only add a header row.
  */
-table.hybrid-projections-summary th[scope="col"] {
+table.hybrid-projections-summary th[scope="col"],
+table.hybrid-simulation-summary th[scope="col"] {
     color: rgba(0, 0, 0, 0.6);
     font-size: 11px;
     font-weight: normal;
@@ -406,7 +408,8 @@ table.hybrid-projections-summary th[scope="col"] {
     width: auto;
 }
 
-table.hybrid-projections-summary th[scope="row"] {
+table.hybrid-projections-summary th[scope="row"],
+table.hybrid-simulation-summary th[scope="row"] {
     width: 1%;
 }
 

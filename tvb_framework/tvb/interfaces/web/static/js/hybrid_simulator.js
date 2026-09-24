@@ -33,7 +33,13 @@ const HYBRID_CONTEXT_DIV = "hybrid-context-column";
 const HYBRID_RESULTS_DIV = "hybrid-results-view";
 const HYBRID_SUBNETWORKS_STEP_URL = "/burst/hybrid/set_subnetworks";
 const HYBRID_DYNAMICS_STEP_URL = "/burst/hybrid/set_subnetwork_dynamics";
-// the cockpit steps, in wizard order, used to rebuild the stack when a step is no longer on screen
+// The cockpit steps, in wizard order, used to rebuild the stack when a step is no longer on screen.
+//
+// It deliberately stops at the Subnetwork dynamics. Rebuilding walks this list and renders every step
+// on it, which for the Projections would mean regenerating the whole NetworkSet on any step back, and
+// for the Monitors would mean rendering them out of order, since the Monitor parameter steps depend on
+// what was selected and have no fixed urls at all. A step that is not on the list falls back to
+// rebuilding up to the dynamics, which is where a user can reach all of them again.
 const HYBRID_WIZARD_STEPS = ["/burst/hybrid/set_connectivity", HYBRID_SUBNETWORKS_STEP_URL,
     HYBRID_DYNAMICS_STEP_URL];
 

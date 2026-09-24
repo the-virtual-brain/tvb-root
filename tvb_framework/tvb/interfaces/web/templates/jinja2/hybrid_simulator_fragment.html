@@ -11,6 +11,10 @@
         <fieldset>
             {% include 'burst/hybrid_projections_summary.html' %}
         </fieldset>
+    {% elif renderer.is_simulation_summary_fragment %}
+        <fieldset>
+            {% include 'burst/hybrid_simulation_summary.html' %}
+        </fieldset>
     {% elif renderer.is_dynamics_save_fragment %}
         <p class="hybrid-dynamics-done">
             This Subnetwork is configured. Press <em>Save Configuration</em> to store the dynamics of
@@ -22,6 +26,9 @@
             <dl>
                 {#- No step title here: the classic cockpit only shows a legend for monitor fragments,
                     every other step exposes just its parameter labels. -#}
+                {% if renderer.monitor_name %}
+                    <legend>{{ renderer.monitor_name }}</legend>
+                {% endif %}
                 {% if renderer.form.ordered_fields %}
                     {% set form_fields = renderer.form.ordered_fields %}
                 {% else %}
@@ -93,8 +100,11 @@
                 onclick="hybridSaveSubnetworkDynamics()">{{ renderer.next_button_label }}
         </button>
     {% else %}
+        {#- A step that is entered by posting to its own url cannot move on by posting there again: the
+            client would take the answer for a rejection of this step rather than for the next one. Such
+            a step names where its Next posts instead. -#}
         <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1" {{ hide_buttons | safe }}
-                onclick="hybridSubmit(this.parentElement)"
+                onclick="hybridSubmitTo(this.parentElement, '{{ renderer.next_form_action_url if renderer.next_form_action_url else renderer.form_action_url }}')"
                 {% if not renderer.next_button_enabled %}
                     disabled="disabled"
                     title="The next configuration step is not available yet"
@@ -103,8 +113,8 @@
     {% endif %}
 
     {#- The closing step of the Subnetwork configuration stores the dynamics through its own action, so
-        its way onward has to post somewhere other than this form's action url. -#}
-    {% if renderer.next_form_action_url %}
+        it carries a Next of its own next to that one. -#}
+    {% if renderer.is_dynamics_save_fragment and renderer.next_form_action_url %}
         <button name="continue" type="button" class="btn btn-primary btn-next" tabindex="1" {{ hide_buttons | safe }}
                 title="Continue to the Projections"
                 onclick="hybridSubmitTo(this.parentElement, '{{ renderer.next_form_action_url }}')">Next

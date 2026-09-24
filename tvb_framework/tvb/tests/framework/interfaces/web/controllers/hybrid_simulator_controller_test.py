@@ -25,6 +25,7 @@
 #
 
 import json
+import math
 from unittest.mock import patch
 from uuid import UUID
 
@@ -38,6 +39,7 @@ from tvb.core.entities.model.model_burst import Dynamic
 from tvb.simulator.integrators import HeunDeterministic
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
 from tvb.interfaces.web.controllers.common import KEY_PROJECT, KEY_USER
 from tvb.interfaces.web.controllers.simulator.hybrid_simulator_controller import HybridSimulatorController, \
     HybridSimulatorURLs
@@ -1110,8 +1112,9 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         assert renderer.previous_form_action_url == HybridSimulatorURLs.SAVE_SUBNETWORK_DYNAMICS_URL
         assert renderer.is_projections_fragment
         assert renderer.fragment_title == "Projections"
-        # the global simulation configuration is the next step and does not exist yet
-        assert not renderer.next_button_enabled
+        # this step is entered by posting to its own url, so its Next has to post somewhere else
+        assert renderer.next_button_enabled
+        assert renderer.next_form_action_url == HybridSimulatorURLs.SET_MONITORS_URL
 
     def test_the_closing_step_offers_a_way_onward(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
@@ -1305,3 +1308,177 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
             result_dict = self.simulator_controller.index()
 
         assert result_dict['mainContent'] == 'burst/main_burst'
+
+    # ---------------------------------------------------------------- Monitors
+
+    def _monitors_step(self, **data):
+        """Open the Monitors step, the way pressing Next on the Projections step opens it."""
+        cherrypy.request.method = "POST" if data else "GET"
+        return self.hybrid_controller.set_monitors(**data)
+
+    def _choose_monitors(self, names, simulation_length='100.0'):
+        """Submit the Monitors step, which answers with the first Monitor that has parameters."""
+        cherrypy.request.method = "POST"
+        return self.hybrid_controller.set_monitors(monitors=names, simulation_length=simulation_length)
+
+    def _submit_monitor_params(self, monitor_name, **data):
+        cherrypy.request.method = "POST"
+        return self.hybrid_controller.set_monitor_params(monitor_name, **data)
+
+    def _configured_monitors(self):
+        return self.hybrid_controller.context.hybrid_simulator.monitors
+
+    def test_the_monitors_step_follows_the_projections(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_subnetwork()
+            rendering_rules = self._monitors_step()
+
+        renderer = rendering_rules['renderer']
+        assert renderer.form_action_url == HybridSimulatorURLs.SET_MONITORS_URL
+        assert renderer.previous_form_action_url == HybridSimulatorURLs.SET_PROJECTIONS_URL
+        # both of this step's fields: what to record, and for how long
+        names = [field.name for field in renderer.form.ordered_fields]
+        assert names == ['simulation_length', 'monitors']
+
+    def test_every_region_monitor_is_on_offer(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_subnetwork()
+            rendering_rules = self._monitors_step()
+
+        choices = rendering_rules['renderer'].form.monitors.trait_attribute.element_choices
+        assert 'Raw recording' in choices
+        assert 'EEG' in choices and 'MEG' in choices and 'BOLD' in choices
+        # a surface only Monitor, and the Hybrid Simulator has no surface
+        assert 'BOLD Region ROI' not in choices
+
+    def test_choosing_monitors_stores_them_and_opens_the_first(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_subnetwork()
+            rendering_rules = self._choose_monitors(['Temporal average', 'BOLD'], simulation_length='6000.0')
+            stored = [type(monitor).__name__ for monitor in self._configured_monitors()]
+            simulation_length = self.hybrid_controller.context.hybrid_simulator.simulation_length
+
+        assert stored == ['TemporalAverageViewModel', 'BoldViewModel']
+        assert simulation_length == 6000.0
+
+        renderer = rendering_rules['renderer']
+        assert renderer.form_action_url == \
+               HybridSimulatorURLs.SET_MONITOR_PARAMS_URL + '/TemporalAverageViewModel'
+        assert renderer.previous_form_action_url == HybridSimulatorURLs.SET_MONITORS_URL
+        assert renderer.monitor_name == 'Temporal average monitor'
+
+    def test_a_monitor_step_does_not_offer_the_variables_of_interest(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_subnetwork()
+            rendering_rules = self._choose_monitors(['Temporal average'])
+
+        # the Hybrid Simulator assigns voi = slice(None) to every Monitor, so a selection made here
+        # would be discarded before the first step is integrated
+        names = [field.name for field in rendering_rules['renderer'].form.fields]
+        assert 'variables_of_interest' not in names
+        assert names == ['period']
+
+    def test_each_chosen_monitor_gets_its_own_step(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_subnetwork()
+            self._choose_monitors(['Temporal average', 'Global average'])
+            rendering_rules = self._submit_monitor_params('TemporalAverageViewModel', period='1.0')
+            period = self._configured_monitors()[0].period
+
+        renderer = rendering_rules['renderer']
+        assert renderer.form_action_url == \
+               HybridSimulatorURLs.SET_MONITOR_PARAMS_URL + '/GlobalAverageViewModel'
+        assert renderer.previous_form_action_url == \
+               HybridSimulatorURLs.SET_MONITOR_PARAMS_URL + '/TemporalAverageViewModel'
+        assert period == 1.0
+
+    def test_the_raw_monitor_has_no_step_of_its_own(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_subnetwork()
+            rendering_rules = self._choose_monitors(['Raw recording', 'Temporal average'])
+
+        # Raw records every integration step and documents its sampling period as ignored
+        assert rendering_rules['renderer'].form_action_url == \
+               HybridSimulatorURLs.SET_MONITOR_PARAMS_URL + '/TemporalAverageViewModel'
+
+    def test_a_bold_monitor_takes_an_equation_step(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_subnetwork()
+            self._choose_monitors(['BOLD'], simulation_length='6000.0')
+            rendering_rules = self._submit_monitor_params(
+                'BoldViewModel', period='2000.0', hrf_kernel='Hrf Kernel: Mixture Of Gammas')
+            kernel = type(self._configured_monitors()[0].hrf_kernel).__name__
+
+        renderer = rendering_rules['renderer']
+        assert renderer.form_action_url == \
+               HybridSimulatorURLs.SET_MONITOR_EQUATION_URL + '/BoldViewModel'
+        assert renderer.monitor_name == 'BOLD monitor - haemodynamic response'
+        assert kernel == 'MixtureOfGammas'
+
+    def test_a_sampling_period_that_records_nothing_is_refused(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_subnetwork()
+            self._choose_monitors(['Temporal average'], simulation_length='100.0')
+            rendering_rules = self._submit_monitor_params('TemporalAverageViewModel', period='500.0')
+
+        # the step hands itself back, which is what the client reads as a refusal of this step
+        assert rendering_rules['renderer'].form_action_url == \
+               HybridSimulatorURLs.SET_MONITOR_PARAMS_URL + '/TemporalAverageViewModel'
+
+    def test_the_last_monitor_reaches_the_summary(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_subnetwork()
+            self._choose_monitors(['Temporal average'], simulation_length='100.0')
+            rendering_rules = self._submit_monitor_params('TemporalAverageViewModel', period='1.0')
+
+        renderer = rendering_rules['renderer']
+        assert renderer.form_action_url == HybridSimulatorURLs.SET_SIMULATION_SUMMARY_URL
+        assert renderer.is_simulation_summary_fragment
+        assert renderer.fragment_title == "Simulation"
+        assert renderer.simulation_length == 100.0
+        assert renderer.monitor_rows == [{'name': 'Temporal average', 'period': 1.0, 'is_raw': False}]
+        # launching is the next step and does not exist yet
+        assert not renderer.next_button_enabled
+
+    def test_the_summary_reports_the_output_layout(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_subnetwork()
+            self._choose_monitors(['Temporal average'], simulation_length='100.0')
+            rendering_rules = self._submit_monitor_params('TemporalAverageViewModel', period='1.0')
+
+        layout = rendering_rules['renderer'].output_layout
+        # one Subnetwork holding everything, so the counts trivially agree
+        assert layout['is_merged'] is True
+        assert layout['nodes'] == self.connectivity.number_of_regions
+
+    def test_the_stored_configuration_builds_and_runs_a_hybrid_simulator(self):
+        """
+        The Phase 5 checkpoint: everything the wizard stored - the grouping, the dynamics, the shared
+        dt, the Monitors and the simulation length - translates into a library Simulator that runs.
+        """
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_subnetwork()
+            self._choose_monitors(['Temporal average'], simulation_length='20.0')
+            self._submit_monitor_params('TemporalAverageViewModel', period='1.0')
+
+            hybrid_simulator = self.hybrid_controller.context.hybrid_simulator
+            service = self.hybrid_controller.hybrid_simulator_service
+            connectivity = h5.load_from_gid(hybrid_simulator.connectivity)
+
+            network_set = service.build_network_set(
+                connectivity, hybrid_simulator.subnetworks, hybrid_simulator.dt)
+            simulator = service.build_hybrid_simulator(
+                network_set, hybrid_simulator.monitors, hybrid_simulator.simulation_length)
+            ((times, data),) = simulator.run()
+
+        assert simulator.simulation_length == 20.0
+        assert simulator.monitors[0].dt == hybrid_simulator.dt
+
+        # 20 ms of simulated time, sampled every istep integration steps. The shared dt is the default
+        # one here, which is not a round fraction of the sampling period, so the count is derived
+        # rather than assumed.
+        steps = int(math.ceil(20.0 / hybrid_simulator.dt))
+        assert len(times) == steps // simulator.monitors[0].istep
+        assert data.shape[0] == len(times)
+        # and every region of the Connectivity is recorded, at its own position
+        assert data.shape[2] == self.connectivity.number_of_regions
