@@ -21,7 +21,7 @@ separately.
 | `backend.py` | `CppHybridBackend` — mirrors `nb_hybrid.NbHybridBackend`, imported via `from ._cpp_hybrid import Sim, enable_generic_dfuns`. |
 | `notebook.py` | `sweep()` sugar for multithreaded SIMD parameter sweeps, tqdm, `SweepResult.to_dataframe()`. |
 | `features.py` | Vendored Apache-2.0 feature module (VBI subset). |
-| `dfungen.py` | Compiles `models_gen.so` via g++ at runtime (ctypes; independent of this build). |
+| `dfungen.py` | Translates each model's `state_variable_dfuns` expressions into C++ dfun kernels (`emit_sources`, also a CLI), plus the runtime g++/ctypes fallback (`generate_lib`) for models the build did not compile. |
 | `README.md` | This file. |
 
 Build config lives one level up: `tvb_library/pyproject.toml`
@@ -80,6 +80,115 @@ float32 bit-exactness parity with the numba reference hybrid backend depends on
 no fast-math / fast-FP contraction. `-fopenmp-simd` (no runtime libgomp
 dependency) enables the SIMD vectorization across the batch lane.
 
+## Build-time generation of the generic dfuns
+
+Models whose derivatives are declared as Python expression strings
+(`state_variable_dfuns`, plus optional `dfun_intermediates`, `dfun_helpers`,
+`dfun_constants`) do not need a hand-written kernel. `dfungen.py` translates
+each expression into a small per-model C++ function — this is **not**
+monolithic codegen: only the derivative functions are generated, all control
+flow (integration, coupling, monitors, sweeps) stays in the hand-written core.
+
+`tvb_library/CMakeLists.txt` runs, as part of every build:
+
+```bash
+python tvb/simulator/backend/cpp_hybrid/dfungen.py \
+       --emit <build>/generated/models_gen.cpp \
+       --meta <build>/generated/models_gen.json \
+       --entry-name cph_builtin_dfun --strict
+```
+
+and compiles the emitted translation unit **into `_cpp_hybrid`** with
+`CPH_HAVE_BUILTIN_GEN=1`. What the emitted TU contains:
+
+* one `dfun_gen_<id>` kernel per model, in the same SIMD-lane layout
+  (`(n_svar, n_node, n_modes, W)`, `parr[k * W + i]`) as the hand-written ones;
+* a dispatch array `_dfuns` indexed by `id - 100` behind an `extern "C"` entry
+  `cph_builtin_dfun(...)` that returns **1** when it handled the id and **0**
+  when it did not — which is what lets `dfun_dispatch` in `_core.cpp` fall back
+  to the runtime library for ids the build does not own;
+* a metadata table `cph_gen_entry` (name, id, `n_parm`, `n_cvar`, `n_svar`,
+  ordered parameter names) read out through `cph_builtin_count` /
+  `cph_builtin_entry` and exposed to Python as
+  `_cpp_hybrid.generic_model_table()`. That table — not a Python-side
+  re-derivation — is what `backend.py` uses to pick the model id, the buffer
+  shapes and the parameter packing order, so Python and the kernels cannot
+  disagree.
+
+`--strict` makes any model module that cannot be imported, any
+`state_variable_dfuns` model that cannot be configured, and any model that
+cannot be emitted a **build failure** listing every offender, instead of a
+silent shrink of the generated model set.
+
+### Why compile it into the extension
+
+The generated kernels get the *same* compile flags as the hand-written ones:
+`-O3 -march=native -funroll-loops -fopenmp-simd -ffp-contract=off`. The runtime
+fallback (`dfungen.generate_lib`, g++ + ctypes) compiles with
+`-O3 -march=native -fopenmp-simd -std=c++17` and **omits `-ffp-contract=off`**
+(and `-funroll-loops`), so a fallback-compiled model is only float32-tolerance
+equal to the numba reference, not bit-exact. Compiling at build time also
+removes a g++ call and a `models_gen.cpp`/`models_gen.so` pair from every
+first run: a stock generic model needs no compiler at runtime at all
+(`test_cpp_hybrid_buildgen.py` proves it by making `generate_lib` raise).
+
+Turn the whole thing off with:
+
+```bash
+cmake -DTVB_CPP_GENERATE_MODELS=OFF
+# through scikit-build-core:
+pip install -Ccmake.args=-DTVB_CPP_GENERATE_MODELS=OFF
+```
+
+Then no TU is emitted, `generic_model_table()` is empty, and the backend falls
+back to the runtime g++/ctypes path for every generic model — the behaviour
+from before this feature, including the original 100-based id range.
+
+### Why the build needs numpy, scipy, numba and six
+
+`dfungen` discovers models by importing **every module** under
+`tvb/simulator/models` and instantiating each concrete class, so those imports
+must work before the package's own dependencies are installed. The verified
+minimal set (omitting any one makes `dfungen --strict` fail with a
+`ModuleNotFoundError` naming it, or silently drop models):
+`numpy` (dfungen itself + every model module), `six` (`tvb.basic.neotraits._core`),
+`scipy` (neotraits `NArray`, `stefanescu_jirsa`, `cerebellar_mf`), `numba` (the
+numba-dfun model modules — without them those models are simply absent from the
+table). See `tvb_library/pyproject.toml` `[build-system] requires`.
+
+### Model id ranges
+
+| Range | Owner | Lookup |
+|---|---|---|
+| **0..12** | hand-written kernels in `_core.cpp` (MPR, Generic2dOscillator, Kuramoto, SupHopf, Linear, ReducedWongWang, WilsonCowan, JansenRit, Epileptor, Epileptor2D, Zerlaut 1st/2nd order, CerebellarMF) | `_MODEL_IDS`, checked first, so these take precedence over a generated kernel for the same model |
+| **100..125** | the 26 built-in generic kernels compiled in at build time | `generic_model_table()`, ids assigned in sorted class-name order |
+| **126+** | runtime-compiled fallback library (`models_gen.so`) for models the build did not know about | emitted at `max(built-in id) + 1`, dispatch table gap-padded with `nullptr` over `100..125` |
+
+The gap padding matters: ids are positional over sorted class names, so a user
+model sorting before every stock name (`AaaProbe`) would otherwise take id 100
+and shift all the stock ids — and since `_core.cpp` serves the built-in range
+first, that model would silently run a stock kernel. With disjoint ranges that
+is structurally impossible, and a gap id returns 0 from the fallback entry so
+nothing calls a null slot.
+
+### Residual caveat: models are looked up by class **name**
+
+`_model_key` resolves a model by `type(model).__name__`. Consequences:
+
+* A user class that **shadows a stock model name** (e.g. their own
+  `class JansenRit(...)`) resolves to the stock kernel, not to theirs. It is
+  not detected as "a model the build does not know about".
+* What *is* caught: a parameter-count or parameter-name mismatch against the
+  table the kernel was generated from. Packing `parr` positionally would
+  otherwise read past the end of the array or land values in the wrong slots,
+  so `_packing_parm_names` raises a `ValueError` naming the model and showing
+  both lists.
+* What is **not** caught: a shadowing class with the *same* state variables,
+  coupling terms and parameters but **different equations**. Same buffer
+  shapes, same packing — so it runs the stock equations silently. Avoid it by
+  not reusing stock model names; a distinct class name lands in the 126+ range
+  and gets its own generated kernel.
+
 ## Feature parity with nb_hybrid (all parity-tested, float32 tolerance)
 
 Full audit: `parity_audit.md`. Summary of the supported feature set, which now
@@ -102,12 +211,25 @@ From `tvb_library` root:
 
 ```bash
 python -m pytest tvb/tests/library/simulator/backend/test_cpp_hybrid_core.py \
+                 tvb/tests/library/simulator/backend/test_cpp_hybrid_models.py \
+                 tvb/tests/library/simulator/backend/test_cpp_hybrid_coupling.py \
+                 tvb/tests/library/simulator/backend/test_cpp_hybrid_monitors.py \
+                 tvb/tests/library/simulator/backend/test_cpp_hybrid_stimuli.py \
                  tvb/tests/library/simulator/backend/test_cpp_hybrid_parity.py \
                  tvb/tests/library/simulator/backend/test_cpp_hybrid_sweep.py \
                  tvb/tests/library/simulator/backend/test_cpp_hybrid_sugar.py \
+                 tvb/tests/library/simulator/backend/test_cpp_hybrid_buildgen.py \
                  -q -p no:cacheprovider
 ```
 
+`test_cpp_hybrid_buildgen.py` is the permanent guard on the generated-kernel
+feature: stock generic models running with `generate_lib` unable to run, the
+extension table agreeing with `emit_sources` metadata, disjoint built-in /
+user-model id ranges, `start_id` gap padding, the empty-table fallback range,
+packing-mismatch errors, and fallback-vs-numba parity.
+
 (The full 222-item battery mono-process run crashes at *interpreter shutdown*
-due to numba/llvmlite teardown — run it fresh-process per class if you need a
-single clean tally; see the test files for the collected classes.)
+due to numba/llvmlite teardown — run `test_cpp_hybrid_battery.py` class by
+class in fresh processes if you need a single clean tally; see the test files
+for the collected classes.)
+

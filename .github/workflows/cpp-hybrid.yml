@@ -51,6 +51,12 @@ jobs:
                             tvb/tests/library/simulator/backend/test_cpp_hybrid_battery.py::TestMergedMode \
                             -q -p no:cacheprovider
 
+      - name: Run the generated-kernel (buildgen) tests
+        working-directory: tvb_library
+        run: |
+          python -m pytest tvb/tests/library/simulator/backend/test_cpp_hybrid_buildgen.py \
+                            -q -p no:cacheprovider
+
       - name: Auto-rebuild smoke test (touch _core.cpp, fresh import)
         working-directory: tvb_library
         run: |
@@ -62,6 +68,65 @@ jobs:
         run: |
           pip wheel . --no-deps -w dist
           python -c "import zipfile,glob; z=zipfile.ZipFile(glob.glob('dist/tvb_library*.whl')[0]); ext=[n for n in z.namelist() if n.endswith('.so')]; assert ext, 'extension missing from wheel'; print('wheel contains:', ext)"
+
+      # The permanent guarantee that a shipped wheel carries the build-time
+      # generated dfuns: install the wheel built above into a throwaway venv
+      # (nothing from the checkout on sys.path) and check the extension's
+      # built-in generic model table, then run a generic-route model with the
+      # runtime generator made unable to run.  If the wheel's extension had no
+      # generated kernels, that model would need g++ and this step would fail.
+      - name: Wheel carries the built-in generic kernels (throwaway venv)
+        working-directory: ${{ runner.temp }}
+        run: |
+          python -m venv wheel-venv
+          ./wheel-venv/bin/pip install "$GITHUB_WORKSPACE/tvb_library/dist/"tvb_library-*.whl
+          ./wheel-venv/bin/python - <<'PY'
+          import numpy as np
+          import tvb
+          from tvb.simulator.backend.cpp_hybrid import _cpp_hybrid, dfungen
+          from tvb.simulator.backend.cpp_hybrid.backend import CppHybridBackend
+
+          # must be the wheel in the throwaway venv, not the checkout
+          print("tvb package:", tvb.__file__)
+          print("extension:", _cpp_hybrid.__file__)
+          assert "wheel-venv" in tvb.__file__, tvb.__file__
+          assert _cpp_hybrid.__file__.endswith((".so", ".pyd")), _cpp_hybrid.__file__
+
+          table = _cpp_hybrid.generic_model_table()
+          assert table, "wheel extension carries no built-in generic model table"
+          ids = sorted(int(m["mid"]) for m in table.values())
+          print(f"built-in generic models: {len(table)}, ids {ids[0]}..{ids[-1]}")
+          assert ids == list(range(100, 100 + len(ids))), ids
+          assert len(table) >= 26, f"expected 26 built-in models, got {len(table)}"
+          # every model dfungen discovers in the installed package has a kernel
+          discovered = dfungen.collect_models()
+          missing = sorted(set(discovered) - set(table))
+          assert not missing, f"models with no built-in kernel: {missing}"
+
+          def no_runtime_generation(*args, **kwargs):
+              raise AssertionError(
+                  "wheel backend fell back to runtime dfun generation "
+                  "(needs a compiler); the built-in kernels are missing")
+
+          dfungen.generate_lib = no_runtime_generation
+
+          from tvb.simulator.integrators import HeunDeterministic
+          from tvb.simulator.hybrid.network import NetworkSet
+          from tvb.simulator.hybrid.subnetwork import Subnetwork
+          from tvb.simulator.models.infinite_theta import CoombesByrne
+
+          model = CoombesByrne()
+          model.configure()
+          subnet = Subnetwork(name="S", model=model,
+                              scheme=HeunDeterministic(dt=0.01), nnodes=3)
+          subnet.configure()
+          net = NetworkSet(subnets=[subnet], projections=[])
+          net.configure()
+          data = np.asarray(CppHybridBackend().run_network(net, 20)[0][1])
+          assert data.shape == (20, 2, 3, 1), data.shape
+          assert np.all(np.isfinite(data)) and np.any(data != 0.0)
+          print("wheel generic model run OK:", data.shape)
+          PY
 
   # Wheel building mirroring the original tvbk extension repo's wheels.yml:
   # an sdist plus a cibuildwheel matrix, here building the tvb_library package
