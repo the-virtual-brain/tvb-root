@@ -244,8 +244,7 @@ class DistanceNETW(DistanceDBIN):
         connectivity = self.get_connectivity(view_model)
         result = bct.findwalks(connectivity.weights)
 
-        measure1 = self.build_connectivity_measure(result[0], connectivity, "3D matrix")
-        measure2 = self.build_connectivity_measure(result[2], connectivity, "Walk length distribution")
+        measure = self.build_connectivity_measure(result[0], connectivity, "3D matrix")
         value = self.build_float_value_wrapper(result[1], title="Total number of walks found")
 
-        return [measure1, value, measure2]
+        return [measure, value]
