@@ -67,7 +67,7 @@ jobs:
         # The wheel installs the whole tvb package including the compiled
         # extension; verify the nested relative import resolves the .so.
         CIBW_TEST_COMMAND: >-
-          python -c "import tvb.simulator.backend.cpp_hybrid as cph; import tvb.simulator.backend.cpp_hybrid._cpp_hybrid as m; print(m.__file__); assert m.__file__.endswith('.so')"
+          python -c "import tvb.simulator.backend.cpp_hybrid as cph; import tvb.simulator.backend.cpp_hybrid._cpp_hybrid as m; print(m.__file__); assert m.__file__.endswith(('.so', '.pyd'))"
 
     - name: Verify clean directory
       run: git diff --exit-code

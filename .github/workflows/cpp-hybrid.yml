@@ -33,7 +33,7 @@ jobs:
 
       - name: Verify the extension imports and binds
         run: |
-          python -c "import tvb.simulator.backend.cpp_hybrid as cph; import tvb.simulator.backend.cpp_hybrid._cpp_hybrid as m; print(m.__file__); assert m.__file__.endswith('.so')"
+          python -c "import tvb.simulator.backend.cpp_hybrid as cph; import tvb.simulator.backend.cpp_hybrid._cpp_hybrid as m; print(m.__file__); assert m.__file__.endswith(('.so', '.pyd'))"
 
       - name: Run backend test suites (contract + sugar)
         working-directory: tvb_library
@@ -100,7 +100,7 @@ jobs:
           CIBW_SKIP: 'pp* *i686 *win32 *musl* *universal2 cp38-* cp39-* cp310-* cp311-*'
           CIBW_TEST_REQUIRES: numpy
           CIBW_TEST_COMMAND: >-
-            python -c "import tvb.simulator.backend.cpp_hybrid as cph; import tvb.simulator.backend.cpp_hybrid._cpp_hybrid as m; print(m.__file__); assert m.__file__.endswith('.so')"
+            python -c "import tvb.simulator.backend.cpp_hybrid as cph; import tvb.simulator.backend.cpp_hybrid._cpp_hybrid as m; print(m.__file__); assert m.__file__.endswith(('.so', '.pyd'))"
 
       - name: Verify clean directory
         run: git diff --exit-code
