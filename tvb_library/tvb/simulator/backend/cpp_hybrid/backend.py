@@ -21,6 +21,8 @@ from ._cpp_hybrid import Sim
 _GENERIC_BASE = 100
 _GEN_LIB = None      # ctypes handle
 _GEN_IDS = {}        # model class name -> generic id
+_GEN_META = {}       # model class name -> emit_sources metadata (runtime lib)
+_BUILTIN_TABLE = None  # built-in (build-time) generic model table, or None
 from tvb.simulator.backend.nb_hybrid import (
     _CFUN_PARAM_ATTRS,
     _cfun_type,
@@ -148,6 +150,27 @@ def _squeeze_lane(a):
     if a.ndim == 4 and a.shape[-1] == 1:
         return a[..., 0]
     return a
+
+
+def _builtin_model_table():
+    """The generic-model table the extension's build-time kernels describe.
+
+    Read once from ``_cpp_hybrid.generic_model_table()`` and cached: model id,
+    buffer shapes (n_parm/n_cvar/n_svar) and parameter order all come from the
+    very table the generated kernels were emitted from, so a stock generic model
+    needs no runtime g++ and no Python-side re-derivation of ids or packing
+    order.  Empty when the extension was built with
+    ``-DTVB_CPP_GENERATE_MODELS=OFF`` (or predates the table), which is the
+    signal for the runtime g++/ctypes path to cover every generic model, as it
+    did before the built-in table existed.
+    """
+    global _BUILTIN_TABLE
+    if _BUILTIN_TABLE is None:
+        from . import _cpp_hybrid
+        getter = getattr(_cpp_hybrid, "generic_model_table", None)
+        _BUILTIN_TABLE = ({} if getter is None else
+                          {str(k): dict(v) for k, v in getter().items()})
+    return _BUILTIN_TABLE
 
 
 @dataclasses.dataclass
@@ -466,8 +489,7 @@ class CppHybridBackend:
         dt0 = network_set.subnets[0].scheme.dt
         for sn in network_set.subnets:
             model_name = type(sn.model).__name__
-            if (model_name not in _MODEL_IDS
-                    and model_name not in _GEN_IDS):
+            if not self._model_supported(model_name):
                 self._model_key(sn.model)  # raises if unsupported
             if (sn.model.number_of_modes != 1
                     and type(sn.model).__name__ not in _MODEL_IDS
@@ -665,39 +687,102 @@ class CppHybridBackend:
 
     @classmethod
     def _ensure_generic_dfuns(cls):
-        """Generate + compile + load the expression-driven model dfuns."""
-        global _GEN_LIB, _GEN_IDS
+        """Generate + compile + load the runtime dfun library.
+
+        Called only for a model that is neither hand-written (``_MODEL_IDS``)
+        nor in the built-in table, so stock models never trigger a g++ compile.
+
+        The library is emitted at ``start_id = max(built-in id) + 1``, i.e. in
+        an id range strictly above every built-in id.  Ids are positional over
+        sorted class names, so without this a user model sorting before the
+        stock ones (``AaaProbe``) would take id 100, shift every stock id, and
+        — because _core.cpp serves the built-in range first — silently run the
+        wrong kernel.  Disjoint ranges make that structurally impossible: the
+        built-in table owns 100..max_builtin, the runtime library owns
+        max_builtin+1.., and dfungen gap-pads the runtime library's dispatch
+        table with ``nullptr`` over the built-in range so those ids fall
+        through instead of calling a null slot.  With no built-in table at all
+        the original 100-based range is used unchanged.
+        """
+        global _GEN_LIB, _GEN_IDS, _GEN_META
         if _GEN_LIB is not None:
             return
         import ctypes
         from . import dfungen
-        lib_path, ids, meta = dfungen.generate_lib(cls.get_cache_dir())
+        builtin_ids = [int(m["mid"]) for m in _builtin_model_table().values()]
+        start_id = (_GENERIC_BASE if not builtin_ids
+                    else max(_GENERIC_BASE, max(builtin_ids)) + 1)
+        lib_path, ids, meta = dfungen.generate_lib(cls.get_cache_dir(),
+                                                   start_id=start_id)
         _GEN_LIB = ctypes.CDLL(str(lib_path))
-        _GEN_IDS = ids
+        _GEN_IDS = dict(ids)
+        _GEN_META = dict(meta)
         fn = ctypes.cast(_GEN_LIB.cph_generic_dfun, ctypes.c_void_p).value
         import tvb.simulator.backend.cpp_hybrid as _pkg
         _pkg.enable_generic_dfuns(fn)
 
+    @staticmethod
+    def _model_supported(name: str) -> bool:
+        """Whether *name* has a kernel: hand-written, built-in generated, or in
+        the runtime library compiled during this process."""
+        return (name in _MODEL_IDS or name in _builtin_model_table()
+                or name in _GEN_IDS)
+
+    @staticmethod
+    def _packing_parm_names(model, meta) -> list:
+        """Parameter names to pack, taken from the table the kernel came from.
+
+        ``parr`` is indexed positionally by the dfun, so the packing order must
+        be the table's own ``parm_names`` — the order that kernel was generated
+        with — not an independently derived one.  The instance's global+spatial
+        names are checked against it: a different count means the kernel would
+        read past the end of the packed array, a different set means values
+        would land in the wrong slots.  Either is a wrong-dynamics bug, so it
+        fails loudly here, naming the model.
+        """
+        table = [str(p) for p in meta["parm_names"]]
+        own = (list(model.global_parameter_names)
+               + list(model.spatial_parameter_names))
+        if int(meta["n_parm"]) != len(table) or len(own) != len(table):
+            raise ValueError(
+                f"{type(model).__name__}: its dfun declares {meta['n_parm']} "
+                f"parameter(s) {table} but this instance has {len(own)} {own}; "
+                f"parameter packing would not match the kernel")
+        if set(table) != set(own):
+            raise ValueError(
+                f"{type(model).__name__}: its dfun packs {table} but this "
+                f"instance declares {own}; the model definition has changed "
+                f"since the kernel was generated (rebuild the extension)")
+        return table
+
     def _model_key(self, model):
         """Return (model_id, n_parm, n_cvar, n_svar, parm_names) for a model
-        instance, using hand-written kernels first, then generated ones."""
+        instance.
+
+        Resolution order mirrors _core.cpp's dispatch: hand-written kernels
+        first (parity was established against them), then the table compiled
+        into the extension, then the runtime-compiled library for models
+        neither covers.
+        """
         name = type(model).__name__
         if name in _MODEL_IDS:
             parm = _MODEL_PARM_NAMES[name]
             return _MODEL_IDS[name], len(parm), None, None, parm
+        builtin = _builtin_model_table()
+        if name in builtin:
+            meta = builtin[name]
+            parm = self._packing_parm_names(model, meta)
+            return (int(meta["mid"]), len(parm), int(meta["n_cvar"]),
+                    int(meta["n_svar"]), parm)
         self._ensure_generic_dfuns()
         if name not in _GEN_IDS:
             raise NotImplementedError(
                 f"CppHybridBackend does not support {name}"
             )
-        import ctypes
-        from . import dfungen
-        meta = dfungen.generate_meta()
-        m = meta[name]
-        parm = list(model.global_parameter_names) + list(
-            model.spatial_parameter_names)
-        assert m["n_parm"] == len(parm), (name, m["n_parm"], parm)
-        return _GEN_IDS[name], len(parm), m["n_cvar"], m["n_svar"], parm
+        meta = _GEN_META[name]
+        parm = self._packing_parm_names(model, meta)
+        return (_GEN_IDS[name], len(parm), int(meta["n_cvar"]),
+                int(meta["n_svar"]), parm)
 
     @staticmethod
     def _cfun_params(cfun) -> np.ndarray:

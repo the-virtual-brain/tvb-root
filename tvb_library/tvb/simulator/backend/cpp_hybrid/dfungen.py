@@ -472,7 +472,8 @@ def _emit_model(mid, model, fns):
 
 
 def emit_sources(models: dict = None, strict: bool = False,
-                 entry_name: str = "cph_generic_dfun"):
+                 entry_name: str = "cph_generic_dfun",
+                 start_id: int = _FIRST_MODEL_ID):
     """Emit the expression-driven dfun C++ source plus its model metadata.
 
     Pure code emission: nothing is written to disk and nothing is compiled.
@@ -488,14 +489,21 @@ def emit_sources(models: dict = None, strict: bool = False,
     from ``meta`` itself, so ids, counts and parameter names cannot drift from
     the kernels they describe.
 
-    Ids are assigned in sorted class-name order starting at
-    ``_FIRST_MODEL_ID`` (100) and stay in lockstep with the emitted dispatch
-    table, whose index is ``mid - _FIRST_MODEL_ID``.  ``entry_name`` names the
-    emitted ``extern "C"`` entry symbol: the runtime fallback library uses
-    ``cph_generic_dfun``, the prebuilt extension uses ``cph_builtin_dfun``.
-    The entry returns ``int`` — 1 when it handled ``model_id``, 0 when the id
-    is outside the table — which is what lets the core fall back to a
-    runtime-injected dfun for ids the built-in table does not cover.
+    Ids are assigned in sorted class-name order starting at ``start_id``
+    (default ``_FIRST_MODEL_ID``, 100) and stay in lockstep with the emitted
+    dispatch table, whose index is ``mid - _FIRST_MODEL_ID``.  A ``start_id``
+    above ``_FIRST_MODEL_ID`` leaves that lower id range to another table — the
+    one already compiled into the extension — and the dispatch table is
+    gap-padded with ``nullptr`` for ``_FIRST_MODEL_ID .. start_id - 1``; the
+    entry returns 0 for those slots, so such ids fall through to whoever owns
+    them instead of calling a null pointer.  This is what lets a runtime library
+    occupy an id range disjoint from the built-in one.
+
+    ``entry_name`` names the emitted ``extern "C"`` entry symbol: the runtime
+    fallback library uses ``cph_generic_dfun``, the prebuilt extension uses
+    ``cph_builtin_dfun``.  The entry returns ``int`` — 1 when it handled
+    ``model_id``, 0 when the id is outside this table — which is what lets the
+    core fall back to another dfun source for ids it does not cover.
 
     ``models`` overrides model discovery (the runtime path uses it to inject
     user-defined models).  With ``strict=True``, every model module that failed
@@ -504,6 +512,11 @@ def emit_sources(models: dict = None, strict: bool = False,
     """
     if not entry_name.isidentifier():
         raise ValueError(f"invalid entry symbol name {entry_name!r}")
+    if start_id < _FIRST_MODEL_ID:
+        # ids below _FIRST_MODEL_ID are the hand-written kernels' range in
+        # _core.cpp; a generated kernel there would never be dispatched
+        raise ValueError(f"start_id {start_id} < {_FIRST_MODEL_ID} "
+                         f"(the hand-written kernel range)")
 
     failures = []
     if models is None:
@@ -511,7 +524,7 @@ def emit_sources(models: dict = None, strict: bool = False,
 
     blocks = []
     meta = {}
-    mid = _FIRST_MODEL_ID
+    mid = start_id
     for name, model in sorted(models.items()):
         try:
             code, n_parm, n_cvar, n_svar, parm_names = _emit_model(
@@ -528,11 +541,19 @@ def emit_sources(models: dict = None, strict: bool = False,
     if strict and failures:
         raise DfunGenerationError(_failure_report(failures))
 
-    table = "\n".join(f"  dfun_gen_{m['mid']}," for m in meta.values())
-    if not table:
+    # Dispatch table slots, one per id from _FIRST_MODEL_ID.  Slots below
+    # start_id are nullptr: this TU has no kernel for those ids (another table
+    # owns them) and the entry's nullptr check returns 0 so the id falls
+    # through to that owner rather than here.
+    entries = ["  nullptr,"] * (start_id - _FIRST_MODEL_ID)
+    entries.extend(f"  dfun_gen_{m['mid']}," for m in meta.values())
+    n_slots = len(entries)
+    if not entries:
         # nothing emitted: keep the array non-empty (C++ forbids a zero-sized
         # array); the bounds check below makes the entry unreachable
-        table = "  nullptr,"
+        entries = ["  nullptr,"]
+        n_slots = 1
+    table = "\n".join(entries)
 
     # Metadata table rows, built from the same ``meta`` dict returned to
     # Python callers (sorted by id, i.e. emission order) so the C++ view and
@@ -566,6 +587,10 @@ static dfun_fn_t _dfuns[] = {
 """)
     src.append(table)
     src.append("};\n")
+    src.append("/* _dfuns slots == id - _FIRST_MODEL_ID; N_GEN_DFUNS is the slot "
+               "count (gap-padded), N_GEN_MODELS the number of kernels. */\n")
+    src.append(f"#define N_GEN_DFUNS {n_slots}\n")
+    src.append(f"#define N_GEN_MODELS {len(meta)}\n")
     src.extend(name_arrays)
     src.append("""
 /* One row per generated model: the C++ mirror of the metadata dict dfungen
@@ -583,11 +608,11 @@ static const cph_gen_entry _cph_gen[] = {
 """)
     src.append("\n".join(rows))
     src.append("};\n")
-    src.append(f"#define N_GEN_DFUNS {len(meta)}\n")
     src.append(f"""
 /* Dispatch entry.  Returns 1 when ``model_id`` is in this table (and the
- * kernel ran), 0 when the id is unknown, so a host dispatcher can fall back
- * to another dfun source instead of silently doing nothing. */
+ * kernel ran), 0 when the id is unknown or lands on a gap-padded slot, so a
+ * host dispatcher can fall back to another dfun source instead of silently
+ * doing nothing or calling a null pointer. */
 extern "C" CPH_GEN_EXPORT int {entry_name}(int model_id, float *dx,
                                            const float *x, int node, int mode,
                                            int n_node, int n_modes,
@@ -601,13 +626,16 @@ extern "C" CPH_GEN_EXPORT int {entry_name}(int model_id, float *dx,
   return 1;
 }}
 
-/* Metadata accessors for the table above, for idx in [0, count). */
+/* Metadata accessors for _cph_gen, for idx in [0, N_GEN_MODELS).  Unlike
+ * _dfuns, _cph_gen is compact: one row per emitted model, sorted by mid, so
+ * its index is NOT an id offset when start_id > {_FIRST_MODEL_ID}; take
+ * ``mid`` from the row itself. */
 extern "C" CPH_GEN_EXPORT int cph_builtin_count(void) {{
-  return N_GEN_DFUNS;
+  return N_GEN_MODELS;
 }}
 
 extern "C" CPH_GEN_EXPORT const cph_gen_entry *cph_builtin_entry(int idx) {{
-  if (idx < 0 || idx >= N_GEN_DFUNS) return nullptr;
+  if (idx < 0 || idx >= N_GEN_MODELS) return nullptr;
   return &_cph_gen[idx];
 }}
 
@@ -616,9 +644,16 @@ extern "C" CPH_GEN_EXPORT const cph_gen_entry *cph_builtin_entry(int idx) {{
     return "\n".join(src), meta
 
 
-def generate_lib(cache_dir: Path, extra_models: dict = None):
+def generate_lib(cache_dir: Path, extra_models: dict = None,
+                 start_id: int = _FIRST_MODEL_ID):
     """Generate + compile the generic dfun shared library (the runtime g++ /
     ctypes fallback path; stock models come from the prebuilt extension).
+
+    ``start_id`` shifts the emitted ids so this library can occupy a range
+    disjoint from the table already compiled into the extension (see
+    ``emit_sources``); the dispatch table is gap-padded accordingly, so ids
+    below ``start_id`` fall through to the built-in kernels instead of hitting
+    a null slot.
 
     Returns (lib_path, model_ids, meta) where model_ids maps model class name
     to the integer id used in the dispatch table (ids >= 100) and meta is the
@@ -630,7 +665,7 @@ def generate_lib(cache_dir: Path, extra_models: dict = None):
     if extra_models:
         models.update(extra_models)
 
-    src, meta = emit_sources(models)
+    src, meta = emit_sources(models, start_id=start_id)
     src_path = cache_dir / "models_gen.cpp"
     src_path.write_text(src)
     so_path = cache_dir / "models_gen.so"
