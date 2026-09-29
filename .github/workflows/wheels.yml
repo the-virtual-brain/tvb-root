@@ -62,7 +62,10 @@ jobs:
         # skip lots of irrelevant stuff to keep gha fast
         # also skip Python 3.8 as nanobind no longer supports it
         # (we target cp312 stable-ABI wheels)
-        CIBW_SKIP: 'pp* *i686 *win32 *musl* *universal2 cp38-*'
+        # the extension targets the cp312 stable ABI (and the tvb hybrid
+          # code needs >=3.10), so only build/test CPython 3.12
+          CIBW_BUILD: 'cp312-*'
+          CIBW_SKIP: 'pp* *i686 *win32 *musl* *universal2 cp38-* cp39-* cp310-* cp311-*'
         CIBW_BEFORE_TEST: pip install numpy
         # The wheel installs the whole tvb package including the compiled
         # extension; verify the nested relative import resolves the .so.
