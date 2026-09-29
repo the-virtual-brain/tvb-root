@@ -31,7 +31,27 @@
 # C++ hybrid simulator extension (tvb/simulator/backend/cpp_hybrid/_core.cpp)
 # so a single `pip install tvb-library` — editable or from a wheel — delivers
 # the compiled backend.
-requires = ["scikit-build-core>=0.10", "nanobind>=1.3.2"]
+# numpy, scipy, numba and six are build requirements too, not just runtime
+# ones: CMake runs dfungen during the build (see CMakeLists.txt) to emit the
+# expression-driven dfun kernels, and dfungen discovers models by importing
+# every module under tvb/simulator/models and instantiating it — so real
+# imports are unavoidable and must exist before the package's own dependencies
+# are installed.  Minimal verified set (each one makes dfungen --strict fail
+# with a ModuleNotFoundError naming it when omitted):
+#   numpy  - dfungen itself + every model module
+#   six    - tvb.basic.neotraits._core (`from six import add_metaclass`)
+#   scipy  - neotraits NArray (csc_matrix), stefanescu_jirsa, cerebellar_mf
+#   numba  - the numba-dfun model modules (epileptor*, jansen_rit, oscillator,
+#            wilson_cowan, wong_wang*, k_ion_exchange, zerlaut); without it
+#            those models are simply absent from the generated table
+requires = [
+  "scikit-build-core>=0.10",
+  "nanobind>=1.3.2",
+  "numpy",
+  "scipy",
+  "numba",
+  "six",
+]
 build-backend = "scikit_build_core.build"
 
 [project]

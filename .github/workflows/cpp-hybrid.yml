@@ -25,7 +25,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install build toolchain
-        run: pip install nanobind scikit-build-core numpy pytest cmake ninja
+        run: pip install nanobind scikit-build-core numpy scipy numba six pytest cmake ninja
 
       - name: Editable install of tvb-library (builds the extension)
         working-directory: tvb_library
