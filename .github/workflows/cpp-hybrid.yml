@@ -90,7 +90,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pypa/cibuildwheel@v3
+      - uses: pypa/cibuildwheel@v4.2.1
         with:
           package-dir: tvb_library
         env:
