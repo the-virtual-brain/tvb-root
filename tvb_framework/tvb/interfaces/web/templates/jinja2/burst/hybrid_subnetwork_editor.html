@@ -1,0 +1,22 @@
+{#- ============================================================================ -#}
+{#- The editor of one Subnetwork's dynamics: every section of it at once, all    -#}
+{#- editable and filled from the draft, closed by the row of actions storing     -#}
+{#- them. Answered when a Subnetwork is picked, when the Subnetwork dynamics     -#}
+{#- step moves on, and again after a class changed in one of its sections.      -#}
+{#-                                                                             -#}
+{#- Each section is its own form posting to its own url: one form for all of    -#}
+{#- them is not possible, since an Equation names its fields after its          -#}
+{#- parameters and those collide with the parameters of some Models.            -#}
+{#- ============================================================================ -#}
+{% if renderer.load_error %}
+    <p class="errorMessage">{{ renderer.load_error }}</p>
+{% else %}
+    <div class="hybrid-subnetwork-editor" id="hybrid-subnetwork-editor" data-hybrid-editor="true">
+        <p class="hybrid-editor-title">Dynamics of <strong>{{ renderer.editor_subnetwork_name }}</strong></p>
+        {% for section in renderer.editor_sections %}
+            {% with renderer = section %}
+                {% include 'hybrid_simulator_fragment.html' %}
+            {% endwith %}
+        {% endfor %}
+    </div>
+{% endif %}

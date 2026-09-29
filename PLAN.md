@@ -19,7 +19,7 @@ Keep the first implementation small and validate each step before moving to the 
 
 ## Status
 
-Last updated 2026-09-24.
+Last updated 2026-09-29.
 
 | phase | status |
 |---|---|
@@ -32,6 +32,7 @@ Last updated 2026-09-24.
 | Phase 4 – Generate Projections | **Done** |
 | Phase 5 – Global Hybrid Simulator configuration | **Done** |
 | Phase 6 – Launch one Hybrid simulation | **Done** |
+| Phase 7 – Subnetwork editor | **Done** |
 | Follow-up features | Not started |
 
 A user can currently select a Connectivity, group its regions into Subnetworks, configure a Model and an
@@ -73,6 +74,11 @@ render checks render every fragment the wizard puts on the wire and assert on it
   `'SimulatorAdapter' in operation.algorithm.classname`, which also matches `HybridSimulatorAdapter`.
   Nothing creates a Hybrid operation group today, so it cannot fire; it has to become an exact
   comparison before Hybrid PSE lands. See the Phase 6 summary.
+* **The framework tests reset the live database.** `session_maker.SA_SESSIONMAKER` binds its engine at
+  import time with the default profile, i.e. the `~/.tvb.configuration` of whoever runs them, and test
+  initialisation calls `reset_database()`. Run them with `TVB_USER_HOME` pointing at a scratch folder whose
+  `.tvb.configuration` names its own `TVB_STORAGE` and `URL_VALUE`, the database outside the storage folder
+  (test cleanup deletes that folder).
 * **A past Hybrid simulation cannot be re-opened.** The history lists them and its entries carry a
   'Load this hybrid simulation' link with nothing behind it.
 
@@ -1795,6 +1801,126 @@ yet.
 A Hybrid simulation can be configured, launched, and its results found in the project. The whole chain
 from the specification is exercised end to end by the adapter tests, and the wizard's own path to it by
 the controller ones.
+
+---
+
+## Phase 7 – Subnetwork editor
+
+**Status: Done** — see the implementation summary below.
+
+A review of the GUI (2026-09-28) found the per Subnetwork configuration hard to work with:
+
+* picking a Subnetwork from the selector answered with its whole chain of steps already read only, so
+  changing its Model meant pressing Previous four times;
+* the closing step said "This Subnetwork is configured" even for a Subnetwork nobody had touched;
+* the selector did not say which Subnetworks held unsaved changes, and went stale while the steps below it
+  were edited;
+* the closing step offered *Next* next to *Save Configuration*, and that Next was silently refused when
+  nothing had been saved;
+* *Set up region Model* stayed visible, and clickable, on the read only Model parameters step of a chain
+  opened from the selector.
+
+### Scope
+
+**1. One editor per Subnetwork, no Next/Previous inside it.**
+
+* Picking a Subnetwork, or pressing Next on the Subnetwork dynamics step, answers with a single editor
+  holding every section of that Subnetwork's dynamics at once, all editable and filled from the draft
+  (the defaults for a Subnetwork nobody configured): Model, Model parameters, Integrator, Integrator
+  parameters and, for a stochastic Integrator, Noise and, for a Multiplicative one, its Equation.
+* Each section stays its own `<form>`, posting to the step endpoint it posts to today. One form for all of
+  them is not possible: an Equation names its fields after its parameters (`a`, `b`), which collide with
+  the parameters of Models such as the Generic 2D Oscillator.
+* Changing a Model, Integrator, Noise or Equation selector applies that section and re-renders the editor
+  from the draft, so the sections depending on it are reloaded directly: a stochastic Integrator brings
+  the Noise section in, a deterministic one takes it away.
+* Changing a parameter field applies its section at once. A valid value is simply kept; a rejected one
+  answers with the same section and its field errors, which replace it in place.
+* The client sends the editor's requests one at a time, so a selector click cannot overtake the apply of
+  the field that lost focus to it.
+
+**2. Unsaved changes.**
+
+* Every Subnetwork in the selector says whether its draft differs from what is saved.
+* Every apply refreshes the selector, so it always describes the draft.
+* The editor closes with one row of actions: *Previous* (back to the Subnetwork dynamics step),
+  *Save Configuration* (store the dynamics of every Subnetwork and keep editing) and *Save and continue*
+  (store them, then open the Projections). There is no way forward that skips saving.
+
+**3. Set up region Model.**
+
+* Offered only while the editor is editable: hidden when the editor is locked by *Save and continue*, and
+  never rendered on a read only section.
+* Its panel is closed when the Model class changes, since it only offers configurations of the class it
+  was opened for.
+
+### Out of scope
+
+The smaller findings of the same review (naming the Subnetworks the same way in the Projections table, a
+heading for the shared dt, the simulation length units, disabling the last Subnetwork's remove button,
+Monitor labels) are left for later.
+
+### Tests
+
+* The editor holds the sections matching the Integrator and Noise classes of the draft.
+* A class change followed by a re-render adds or removes the dependent sections.
+* A rejected parameter answers with the same section and its errors.
+* The selector reports per Subnetwork whether it is modified.
+* The editor sections render without Next and Previous; the actions row renders its three buttons; the
+  region Model button is hidden on a read only section.
+* Checked in the browser: switching Models, switching to a stochastic Integrator and Multiplicative Noise,
+  an invalid value, switching Subnetwork mid edit, *Save and continue*, then *Previous* from the
+  Projections.
+
+---
+
+## Phase 7 – Implementation Summary
+
+### The editor
+
+* `_subnetwork_editor_rules` replaces `_subnetwork_chain_rules`. It answers `set_subnetwork_dynamics`
+  (POST), `select_subnetwork` and the new `subnetwork_editor` (GET) with one renderer flagged
+  `is_subnetwork_editor`, whose `editor_sections` are the same section renderers as before plus
+  `_editor_actions_rules()`. `burst/hybrid_subnetwork_editor.html` replaces `burst/hybrid_subnetwork_chain.html`
+  and is included from `hybrid_simulator_fragment.html`, so every endpoint keeps one template.
+* Every section is built by `_section_rules`, flagged `is_editor_section`: the template renders it without
+  Next or Previous. The section endpoints are unchanged; their rejections answer with the same section,
+  which is how the client recognises them.
+* `hybrid_simulator.js` listens for `change` (and `submit`, so Enter does not leave the page) on the editor
+  sections. A class chooser - recognised by name, `model`, `integrator`, `noise`, `equation`, since the Noise
+  is a radio group and not a select - applies its section and fetches the editor again; any other field
+  only applies its section. Requests on the draft go through `_queueHybridRequest`, one at a time.
+* The editor is locked, unlocked and removed as a whole (`_hybridStepForms`), which is what hides Set up
+  region Model once *Save and continue* moves on. The template also hides that button on a read only
+  section. A Model change re-syncs the third column, which closes the Region Model panel.
+
+### Unsaved changes
+
+* `subnetwork_choices` carries `is_modified` per Subnetwork; the tab shows *unsaved changes*. Every apply
+  refreshes the dynamics step, so the tabs describe the draft.
+* The actions row offers *Previous*, *Save Configuration* and *Save and continue*
+  (`hybridSaveSubnetworkDynamics(url)`), which continues only when the save was not refused.
+
+### Deviations from the specification above
+
+* A refused save and a refused Projections step now carry their reason on the answer
+  (`error_message`, rendered as `data-hybrid-error`), and the client shows it. The session message they
+  set never reached a fragment.
+* An answer naming a step already on screen replaces that step and drops what is under it, instead of
+  stacking a second copy at the bottom.
+
+### Tests
+
+163 hybrid tests pass (run with an isolated `TVB_USER_HOME`, see Outstanding). The chain tests were
+replaced by editor tests: sections per Integrator and Noise class, a Model change reloading its
+parameters, a refused section answering with itself, the per Subnetwork `is_modified`, and the reasons
+carried by a refused save or Projections step. The render check asserts the editor markup, the actions
+row, the hidden region Model button on a read only section, and the names of the class choosers the
+client relies on.
+
+Checked in the browser: switching Models, a stochastic Integrator with Multiplicative Noise and another
+Equation class and back, an invalid value, switching Subnetwork mid edit, the Region Model panel closing on
+a Model change, *Save and continue* locking the editor, *Previous* from the Projections and from the editor.
 
 ---
 

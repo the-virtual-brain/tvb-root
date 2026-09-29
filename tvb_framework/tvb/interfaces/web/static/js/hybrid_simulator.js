@@ -16,7 +16,7 @@
  * program.  If not, see <http://www.gnu.org/licenses/>.
  **/
 
-/* globals doAjaxCall, renderWithMathjax, displayMessage, setupMenuEvents, updateTree */
+/* globals doAjaxCall, renderWithMathjax, displayMessage, setupMenuEvents, updateTree, MathJax */
 
 /**
  * The Hybrid Simulator wizard, following the classic Simulator Cockpit behaviour: pressing Next keeps
@@ -33,6 +33,8 @@ const HYBRID_CONTEXT_DIV = "hybrid-context-column";
 const HYBRID_RESULTS_DIV = "hybrid-results-view";
 const HYBRID_SUBNETWORKS_STEP_URL = "/burst/hybrid/set_subnetworks";
 const HYBRID_DYNAMICS_STEP_URL = "/burst/hybrid/set_subnetwork_dynamics";
+const HYBRID_SUBNETWORK_EDITOR_URL = "/burst/hybrid/subnetwork_editor";
+const HYBRID_SAVE_DYNAMICS_URL = "/burst/hybrid/save_subnetwork_dynamics";
 // The cockpit steps, in wizard order, used to rebuild the stack when a step is no longer on screen.
 //
 // It deliberately stops at the Subnetwork dynamics. Rebuilding walks this list and renders every step
@@ -169,9 +171,15 @@ function hybridReplaceStep(stepUrl, response) {
     if (newForm === null || newForm.id !== stepUrl) {
         return false;
     }
+    const inEditor = form.closest("[data-hybrid-editor]") !== null;
     form.replaceWith(fragment);
+    _typesetHybrid(document.getElementById(stepUrl));
     if (typeof setupMenuEvents === "function") {
         setupMenuEvents();
+    }
+    if (inEditor) {
+        // what was put into the section changed the draft, which the selector describes
+        _queueHybridRequest(_refreshHybridDynamicsStep);
     }
     return true;
 }
@@ -243,23 +251,37 @@ function _staysEnabled(element) {
     return element.closest("[data-hybrid-keep-enabled]") !== null;
 }
 
+/**
+ * The forms making up the step the given form belongs to: every section of the Subnetwork editor for
+ * one of its forms, since the editor is locked and unlocked as a whole, and the form alone otherwise.
+ */
+function _hybridStepForms(form) {
+    const editor = form.closest("[data-hybrid-editor]");
+    return editor === null ? [form] : Array.prototype.slice.call(editor.querySelectorAll("form"));
+}
+
 function _lockHybridForm(form) {
-    form.querySelectorAll("button").forEach(function (button) {
-        if (!_staysEnabled(button)) {
-            button.style.visibility = "hidden";
-        }
-    });
-    form.querySelectorAll("fieldset").forEach(function (fieldset) {
-        fieldset.disabled = true;
+    _hybridStepForms(form).forEach(function (stepForm) {
+        stepForm.querySelectorAll("button").forEach(function (button) {
+            // Set up region Model included: it is only offered while its section can be edited
+            if (!_staysEnabled(button)) {
+                button.style.visibility = "hidden";
+            }
+        });
+        stepForm.querySelectorAll("fieldset").forEach(function (fieldset) {
+            fieldset.disabled = true;
+        });
     });
 }
 
 function _unlockHybridForm(form) {
-    form.querySelectorAll("button").forEach(function (button) {
-        button.style.visibility = "visible";
-    });
-    form.querySelectorAll("fieldset").forEach(function (fieldset) {
-        fieldset.disabled = false;
+    _hybridStepForms(form).forEach(function (stepForm) {
+        stepForm.querySelectorAll("button").forEach(function (button) {
+            button.style.visibility = "visible";
+        });
+        stepForm.querySelectorAll("fieldset").forEach(function (fieldset) {
+            fieldset.disabled = false;
+        });
     });
 }
 
@@ -391,6 +413,18 @@ function hybridSubmitTo(currentForm, url) {
                 return;
             }
 
+            // An answer naming a step that is already on screen, above this one, is a refusal sending
+            // the user back there. That step is replaced and everything under it dropped, rather than a
+            // second copy of it being stacked at the bottom.
+            const earlierForm = newForm === null ? null : document.getElementById(newForm.id);
+            if (earlierForm !== null) {
+                _dropHybridStepsAfter(earlierForm);
+                earlierForm.replaceWith(fragment);
+                _afterHybridRender();
+                _showHybridError(document.getElementById(newForm.id));
+                return;
+            }
+
             _lockHybridForm(currentForm);
             _appendHybridFragment(fragment);
         },
@@ -414,7 +448,9 @@ function hybridPreviousStep(currentForm, previousUrl) {
         return;
     }
 
-    currentForm.remove();
+    // the Subnetwork editor is one step made of several forms, so it is left as a whole
+    const editor = currentForm.closest("[data-hybrid-editor]");
+    (editor !== null ? editor : currentForm).remove();
     _unlockHybridForm(previousForm);
     _afterHybridRender();
 }
@@ -459,54 +495,205 @@ function _dropHybridStepsAfter(form) {
         return;
     }
     forms.slice(from + 1).forEach(function (later) {
-        later.remove();
+        // a section of the Subnetwork editor goes together with the editor holding it
+        const editor = later.closest("[data-hybrid-editor]");
+        (editor !== null ? editor : later).remove();
+    });
+}
+
+// ---------------------------------------------------------------- Subnetwork editor
+
+/**
+ * The requests touching the dynamics draft, run one at a time. Without this a click on a Subnetwork, or
+ * on Save, could reach the server before the apply of the field that lost focus to that click, and the
+ * edit would land on the wrong Subnetwork or miss the save.
+ *
+ * Each task receives a callback to call once its request is over, whichever way it ended.
+ */
+let HYBRID_REQUEST_QUEUE = Promise.resolve();
+
+function _queueHybridRequest(task) {
+    HYBRID_REQUEST_QUEUE = HYBRID_REQUEST_QUEUE.then(function () {
+        return new Promise(function (resolve) {
+            try {
+                task(resolve);
+            } catch (error) {
+                resolve();
+                throw error;
+            }
+        });
+    });
+}
+
+function _typesetHybrid(element) {
+    if (element !== null && typeof MathJax !== "undefined") {
+        MathJax.Hub.Queue(["Typeset", MathJax.Hub, element]);
+    }
+}
+
+/** Show the refusal a step answered with, when it carries one. */
+function _showHybridError(form) {
+    const message = form === null ? "" : (form.dataset.hybridError || "");
+    if (message !== "") {
+        displayMessage(message, "errorMessage");
+    }
+    return message !== "";
+}
+
+/**
+ * Apply one section of the Subnetwork editor onto the draft. A refused section answers with itself and
+ * its field errors, and replaces the one on screen; an accepted one answers with whatever follows it,
+ * which the editor has no use for. A changed class also changes which sections there are, so the editor
+ * is then rendered again from the draft.
+ */
+function _applyHybridEditorSection(sectionUrl, classChanged, isModelChange) {
+    _queueHybridRequest(function (done) {
+        // looked up now rather than when the change happened: an earlier task may have replaced it
+        const section = document.getElementById(sectionUrl);
+        if (section === null || section.closest("[data-hybrid-editor]") === null) {
+            done();
+            return;
+        }
+
+        doAjaxCall({
+            type: "POST",
+            url: sectionUrl,
+            data: $(section).serialize(),
+            traditional: true,
+            success: function (response) {
+                const fragment = _asFragment(response);
+                const newForm = fragment.querySelector("form");
+
+                if (newForm !== null && newForm.id === sectionUrl) {
+                    section.replaceWith(fragment);
+                    _typesetHybrid(document.getElementById(sectionUrl));
+                    if (typeof setupMenuEvents === "function") {
+                        setupMenuEvents();
+                    }
+                    done();
+                    return;
+                }
+
+                if (classChanged) {
+                    _reloadHybridEditor(isModelChange, function () {
+                        _refreshHybridDynamicsStep(done);
+                    });
+                    return;
+                }
+                _refreshHybridDynamicsStep(done);
+            },
+            error: function () {
+                displayMessage("This Subnetwork configuration could not be applied.", "errorMessage");
+                done();
+            }
+        });
     });
 }
 
 /**
- * Configure another Subnetwork. The steps that were configuring the previous one are dropped and this
- * one's whole configuration takes their place - every step, not just the first, so a Subnetwork that is
- * already set up is shown rather than stepped through again. Every field is on screen, and any of them
- * can be reached with Previous.
- *
- * The server sends the steps in one answer, already read only except the last, so nothing here has to
- * sequence requests or decide what to lock.
- *
- * What was edited for the Subnetwork being left is kept: the server holds the draft of every one.
+ * Render the Subnetwork editor again from the draft, in place. After a Model change the Set up region
+ * Model panel is closed as well: it only offers configurations of the Model it was opened for.
  */
-function hybridSelectSubnetwork(subnetworkId) {
-    const dynamicsForm = document.getElementById(HYBRID_DYNAMICS_STEP_URL);
-    if (dynamicsForm === null) {
-        return;
-    }
-
+function _reloadHybridEditor(closeRegionModel, done) {
     doAjaxCall({
-        type: "POST",
-        url: "/burst/hybrid/select_subnetwork/",
-        data: {subnetwork_id: subnetworkId},
+        type: "GET",
+        url: HYBRID_SUBNETWORK_EDITOR_URL,
         success: function (response) {
-            _dropHybridStepsAfter(dynamicsForm);
-            _appendHybridFragment(_asFragment(response));
-            // the selector shows which Subnetwork is being configured, so it has to be redrawn too
-            _refreshHybridDynamicsStep();
+            const editor = document.querySelector("[data-hybrid-editor]");
+            const fragment = _asFragment(response);
+            if (editor === null || fragment.querySelector("[data-hybrid-editor]") === null) {
+                done();
+                return;
+            }
+            editor.replaceWith(fragment);
+            _typesetHybrid(document.querySelector("[data-hybrid-editor]"));
+            if (typeof setupMenuEvents === "function") {
+                setupMenuEvents();
+            }
+            if (closeRegionModel) {
+                _syncHybridContextColumn();
+            }
+            done();
         },
         error: function () {
-            displayMessage("This Subnetwork could not be opened.", "errorMessage");
+            displayMessage("This Subnetwork configuration could not be reloaded.", "errorMessage");
+            done();
         }
+    });
+}
+
+function _editorSectionOf(element) {
+    const section = element.closest("form.hybrid-editor-section");
+    return section !== null && section.closest("[data-hybrid-editor]") !== null ? section : null;
+}
+
+// The fields choosing the class of what a section configures. Every other field is one of that class's
+// parameters. They are told apart by name rather than by element: the Noise is chosen with radio
+// buttons, not with a select.
+const HYBRID_CLASS_FIELDS = ["model", "integrator", "noise", "equation"];
+
+document.addEventListener("change", function (event) {
+    const section = _editorSectionOf(event.target);
+    if (section === null) {
+        return;
+    }
+    const classChanged = HYBRID_CLASS_FIELDS.indexOf(event.target.name) !== -1;
+    const isModelChange = classChanged && section.id === "/burst/hybrid/set_subnetwork_model";
+    _applyHybridEditorSection(section.id, classChanged, isModelChange);
+});
+
+// Enter in a field would submit its section as a page of its own; it is applied like a change instead.
+document.addEventListener("submit", function (event) {
+    const section = _editorSectionOf(event.target);
+    if (section !== null) {
+        event.preventDefault();
+        _applyHybridEditorSection(section.id, false, false);
+    }
+});
+
+/**
+ * Configure another Subnetwork. Whatever was stacked under the Subnetwork dynamics step is dropped and
+ * the editor of the newly selected Subnetwork takes its place. What was edited for the Subnetwork being
+ * left is kept: the server holds the draft of every one.
+ */
+function hybridSelectSubnetwork(subnetworkId) {
+    _queueHybridRequest(function (done) {
+        const dynamicsForm = document.getElementById(HYBRID_DYNAMICS_STEP_URL);
+        if (dynamicsForm === null) {
+            done();
+            return;
+        }
+
+        doAjaxCall({
+            type: "POST",
+            url: "/burst/hybrid/select_subnetwork/",
+            data: {subnetwork_id: subnetworkId},
+            success: function (response) {
+                _dropHybridStepsAfter(dynamicsForm);
+                _appendHybridFragment(_asFragment(response));
+                // the selector shows which Subnetwork is being configured, so it has to be redrawn too
+                _refreshHybridDynamicsStep(done);
+            },
+            error: function () {
+                displayMessage("This Subnetwork could not be opened.", "errorMessage");
+                done();
+            }
+        });
     });
 }
 
 /**
  * Reload the Subnetwork dynamics step in place, keeping the steps stacked under it. That step carries
- * the selector and the summary of what every Subnetwork is configured with, both of which go stale as
- * soon as something below it changes.
+ * the selector and what every Subnetwork is configured with, both of which change with the draft.
  */
-function _refreshHybridDynamicsStep() {
+function _refreshHybridDynamicsStep(done) {
+    const finished = typeof done === "function" ? done : function () {
+    };
     const dynamicsForm = document.getElementById(HYBRID_DYNAMICS_STEP_URL);
     if (dynamicsForm === null) {
+        finished();
         return;
     }
-    const isLastStep = _activeHybridForm() === dynamicsForm;
 
     doAjaxCall({
         type: "GET",
@@ -514,49 +701,67 @@ function _refreshHybridDynamicsStep() {
         success: function (response) {
             const fragment = _asFragment(response);
             const newForm = fragment.querySelector("form");
-            if (newForm === null || newForm.id !== HYBRID_DYNAMICS_STEP_URL) {
-                return;
+            const currentForm = document.getElementById(HYBRID_DYNAMICS_STEP_URL);
+            if (currentForm !== null && newForm !== null && newForm.id === HYBRID_DYNAMICS_STEP_URL) {
+                const isLastStep = _activeHybridForm() === currentForm;
+                currentForm.replaceWith(fragment);
+                if (!isLastStep) {
+                    // steps are still stacked under it, so it stays the read-only record of a finished step
+                    _lockHybridForm(document.getElementById(HYBRID_DYNAMICS_STEP_URL));
+                }
             }
-            dynamicsForm.replaceWith(fragment);
-            if (!isLastStep) {
-                // steps are still stacked under it, so it stays the read-only record of a finished step
-                _lockHybridForm(document.getElementById(HYBRID_DYNAMICS_STEP_URL));
-            }
-        }
+            finished();
+        },
+        error: finished
     });
 }
 
 /**
- * Store the dynamics configured for every Subnetwork. Only then does the wizard step summarising them
- * change, which is why the answer replaces that step; reloading it also refreshes the column, so the
- * two always agree about what is configured.
+ * Store the dynamics configured for every Subnetwork, then, for Save and continue, open the step the
+ * editor continues to. The answer is the Subnetwork dynamics step, which replaces the one on screen; a
+ * refused save carries its reason on it, and then nothing moves on.
  */
-function hybridSaveSubnetworkDynamics() {
-    const dynamicsForm = document.getElementById(HYBRID_DYNAMICS_STEP_URL);
+function hybridSaveSubnetworkDynamics(continueUrl) {
+    _queueHybridRequest(function (done) {
+        doAjaxCall({
+            type: "POST",
+            url: "/burst/hybrid/save_subnetwork_dynamics/",
+            success: function (response) {
+                const dynamicsForm = document.getElementById(HYBRID_DYNAMICS_STEP_URL);
+                const fragment = _asFragment(response);
+                const newForm = fragment.querySelector("form");
 
-    doAjaxCall({
-        type: "POST",
-        url: "/burst/hybrid/save_subnetwork_dynamics/",
-        success: function (response) {
-            const fragment = _asFragment(response);
-            const newForm = fragment.querySelector("form");
+                if (dynamicsForm === null || newForm === null || newForm.id !== HYBRID_DYNAMICS_STEP_URL) {
+                    // the configuration is no longer where we left it, e.g. the Connectivity went missing
+                    _replaceHybridFragments(response);
+                    done();
+                    return;
+                }
 
-            if (dynamicsForm === null || newForm === null || newForm.id !== HYBRID_DYNAMICS_STEP_URL) {
-                // the configuration is no longer where we left it, e.g. the Connectivity went missing
-                _replaceHybridFragments(response);
-                return;
+                // the selector on that step changes, the editor under it stays as it is
+                const isLastStep = _activeHybridForm() === dynamicsForm;
+                dynamicsForm.replaceWith(fragment);
+                const savedForm = document.getElementById(HYBRID_DYNAMICS_STEP_URL);
+                if (!isLastStep) {
+                    _lockHybridForm(savedForm);
+                }
+
+                if (_showHybridError(savedForm)) {
+                    done();
+                    return;
+                }
+                displayMessage("Subnetwork dynamics saved.");
+
+                const actionsForm = document.getElementById(HYBRID_SAVE_DYNAMICS_URL);
+                if (continueUrl && actionsForm !== null) {
+                    hybridSubmitTo(actionsForm, continueUrl);
+                }
+                done();
+            },
+            error: function () {
+                displayMessage("The Subnetwork dynamics could not be saved.", "errorMessage");
+                done();
             }
-
-            // the summary on that step changes, the steps configuring the Subnetwork stay as they are
-            const isLastStep = _activeHybridForm() === dynamicsForm;
-            dynamicsForm.replaceWith(fragment);
-            if (!isLastStep) {
-                _lockHybridForm(document.getElementById(HYBRID_DYNAMICS_STEP_URL));
-            }
-            displayMessage("Subnetwork dynamics saved.");
-        },
-        error: function () {
-            displayMessage("The Subnetwork dynamics could not be saved.", "errorMessage");
-        }
+        });
     });
 }

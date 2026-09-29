@@ -15,6 +15,7 @@ from tvb.core.entities.model.model_burst import Dynamic
 from tvb.core.entities.storage import dao
 from tvb.simulator.integrators import HeunDeterministic
 from tvb.interfaces.web.controllers.common import KEY_PROJECT, KEY_USER
+from tvb.interfaces.web.controllers.decorators import env
 from tvb.interfaces.web.controllers.simulator.hybrid_simulator_controller import HybridSimulatorController
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
@@ -82,9 +83,10 @@ class TestHybridRendering(BaseTransactionalControllerTest):
             cherrypy.request.method = "POST"
             dynamics_step_html = self.hybrid_controller.set_subnetworks()
 
-            # Next on the dynamics step applies the shared dt and opens the Model of the selected
+            # Next on the dynamics step applies the shared dt and opens the editor of the selected
             # Subnetwork, in this same column
-            model_html = self.hybrid_controller.set_subnetwork_dynamics(dt='0.1')
+            editor_html = self.hybrid_controller.set_subnetwork_dynamics(dt='0.1')
+            model_html = editor_html
 
             # step 1 -> Model parameters
             model_params_html = self.hybrid_controller.set_subnetwork_model(model='Generic 2D Oscillator')
@@ -107,8 +109,18 @@ class TestHybridRendering(BaseTransactionalControllerTest):
             stochastic_step_html = self.hybrid_controller.set_subnetwork_dynamics()
             cherrypy.request.method = "POST"
 
-            # switching Subnetwork answers with the first step of the newly selected one
+            # switching Subnetwork answers with the editor of the newly selected one
             selected_html = self.hybrid_controller.select_subnetwork(subnetwork_id=self._first_subnetwork_id())
+
+            # the editor as re-rendered after a class change
+            cherrypy.request.method = "GET"
+            reloaded_html = self.hybrid_controller.subnetwork_editor()
+
+            # a Model parameters section rendered read only, as the record of a finished step
+            dynamics, _ = self.hybrid_controller._selected_dynamics()
+            read_only_rules = self.hybrid_controller._model_params_step_rules(dynamics)
+            read_only_rules.is_read_only = True
+            read_only_html = env.get_template('hybrid_simulator_fragment.html').render(**read_only_rules.to_dict())
 
         for name, html in [('dynamics step', dynamics_step_html), ('model', model_html),
                            ('model params', model_params_html), ('integrator', integrator_html),
@@ -142,6 +154,15 @@ class TestHybridRendering(BaseTransactionalControllerTest):
         assert 'action="/burst/hybrid/set_subnetwork_noise_params"' in noise_params_html
         assert 'action="/burst/hybrid/set_subnetwork_noise_equation_params"' in equation_html
 
+        # The client re-renders the editor when a class chooser changes, and tells those apart from the
+        # parameter fields by name (hybrid_simulator.js HYBRID_CLASS_FIELDS). The Noise is chosen with
+        # radio buttons, the Equation with a select.
+        assert '<select name="model"' in model_html
+        assert '<select name="integrator"' in integrator_html
+        assert re.search(r'<input[^>]*type="radio"[^>]*name="noise"|<input[^>]*name="noise"[^>]*type="radio"',
+                         integrator_params_html)
+        assert '<select name="equation"' in noise_params_html
+
         # dt shows on the Integrator parameters step, and cannot be edited there
         assert 'name="dt"' in integrator_params_html
         assert 'disabled' in integrator_params_html
@@ -150,29 +171,53 @@ class TestHybridRendering(BaseTransactionalControllerTest):
         assert 'Stochastic Heun' in stochastic_step_html
         assert 'Multiplicative noise' in stochastic_step_html
 
-        # the closing step offers the save action rather than another Next
+        # the row closing the editor stores the dynamics, and moves on only by storing them first
         assert 'hybridSaveSubnetworkDynamics()' in save_step_html
         assert 'Save Configuration' in save_step_html
+        assert "hybridSaveSubnetworkDynamics('/burst/hybrid/set_projections')" in save_step_html
+        assert 'Save and continue' in save_step_html
+        assert "hybridSubmitTo(this.parentElement, '/burst/hybrid/set_projections')" not in save_step_html
+        assert 'This Subnetwork is configured' not in save_step_html
 
-        # Switching Subnetwork answers with its whole configuration: every step, in order, all but the
-        # last read only. This is the state the wizard leaves finished steps in, produced server side,
-        # so what reaches the browser can be asserted here rather than only in a browser.
-        assert isinstance(selected_html, str)
-        actions = re.findall(r'<form[^>]*action="([^"]*)"', selected_html)
-        assert actions == ['/burst/hybrid/set_subnetwork_model',
-                           '/burst/hybrid/set_subnetwork_model_params',
-                           '/burst/hybrid/set_subnetwork_integrator',
-                           '/burst/hybrid/set_subnetwork_integrator_params',
-                           '/burst/hybrid/set_subnetwork_noise_params',
-                           '/burst/hybrid/set_subnetwork_noise_equation_params',
-                           '/burst/hybrid/save_subnetwork_dynamics']
-        # every step but the closing one has its fields disabled and its buttons hidden
-        assert len(re.findall(r'<fieldset\s+disabled', selected_html)) == 6
-        assert 'visibility: hidden' in selected_html
-        # and the closing one is the live step, so nothing in it is hidden
-        last_form = selected_html[selected_html.rindex('<form'):]
-        assert 'visibility: hidden' not in last_form
-        assert 'hybridSaveSubnetworkDynamics()' in last_form
+        # Next on the dynamics step answers with the editor: every section, editable, then the actions
+        assert 'data-hybrid-editor="true"' in editor_html
+        assert re.findall(r'<form[^>]*action="([^"]*)"', editor_html) == [
+            '/burst/hybrid/set_subnetwork_model', '/burst/hybrid/set_subnetwork_model_params',
+            '/burst/hybrid/set_subnetwork_integrator', '/burst/hybrid/set_subnetwork_integrator_params',
+            '/burst/hybrid/save_subnetwork_dynamics']
+
+        # Switching Subnetwork answers with its editor: every section of its configuration at once, in
+        # order, all of them editable, and no Next or Previous between them.
+        for html in (selected_html, reloaded_html):
+            assert isinstance(html, str)
+            actions = re.findall(r'<form[^>]*action="([^"]*)"', html)
+            assert actions == ['/burst/hybrid/set_subnetwork_model',
+                               '/burst/hybrid/set_subnetwork_model_params',
+                               '/burst/hybrid/set_subnetwork_integrator',
+                               '/burst/hybrid/set_subnetwork_integrator_params',
+                               '/burst/hybrid/set_subnetwork_noise_params',
+                               '/burst/hybrid/set_subnetwork_noise_equation_params',
+                               '/burst/hybrid/save_subnetwork_dynamics']
+            assert not re.findall(r'<fieldset\s+disabled', html)
+            assert 'visibility: hidden' not in html
+            sections = html[:html.rindex('<form')]
+            assert 'name="next"' not in sections
+            assert 'name="previous"' not in sections
+            assert sections.count('class="hybrid-editor-section"') == 6
+            # the region Model action is offered, on the section it edits
+            assert 'hybridConfigureRegionModel()' in sections
+            # and the row closing it carries the three actions
+            last_form = html[html.rindex('<form'):]
+            assert 'hybridPreviousStep(' in last_form
+            assert 'hybridSaveSubnetworkDynamics()' in last_form
+            assert 'Save and continue' in last_form
+        assert 'Dynamics of <strong>Subnetwork A</strong>' in selected_html
+
+        # a read only Model parameters section does not offer Set up region Model
+        region_model_button = read_only_html[read_only_html.index('id="configRegionModelParam"') - 200:]
+        region_model_button = region_model_button[:region_model_button.index('</button>')]
+        assert 'visibility: hidden' in region_model_button
+
         # the values on screen are the configured ones, not defaults
         assert 'Stochastic Heun' in selected_html
 
@@ -252,9 +297,9 @@ class TestHybridRendering(BaseTransactionalControllerTest):
 
             projections_html = self.hybrid_controller.set_projections()
 
-        # the closing step of the Subnetwork configuration offers both storing and moving on
+        # the row closing the Subnetwork editor offers storing, and moving on by storing first
         assert 'hybridSaveSubnetworkDynamics()' in closing_html
-        assert "hybridSubmitTo(this.parentElement, '/burst/hybrid/set_projections')" in closing_html
+        assert "hybridSaveSubnetworkDynamics('/burst/hybrid/set_projections')" in closing_html
 
         # and the Projections step lists what the configuration produced
         assert 'action="/burst/hybrid/set_projections"' in projections_html

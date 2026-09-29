@@ -338,11 +338,30 @@ button.hybrid-subnetwork-action:disabled {
     color: rgba(0, 0, 0, 0.6);
 }
 
-/* The closing step: nothing left to fill in for this Subnetwork, only the action that stores it. */
-.hybrid-dynamics-done {
+/* a Subnetwork whose draft holds something Save Configuration has not stored yet */
+.hybrid-subnetwork-tab.is-modified {
+    border-color: #c98a00;
+}
+
+.hybrid-tab-modified {
+    color: #a86f00;
+    font-style: italic;
+}
+
+/**
+ * The Subnetwork editor: every section of one Subnetwork's dynamics at once. The sections read as one
+ * block, so only the first carries the rule the wizard draws between steps.
+ */
+.hybrid-subnetwork-editor {
+    border-top: 1px solid rgba(0, 0, 0, 0.15);
+    margin-top: 6px;
+    padding-top: 4px;
+}
+
+.hybrid-editor-title {
     color: #3e4252;
     font-size: 11px;
-    margin: 0 10px 10px 10px;
+    margin: 0 10px 4px 10px;
 }
 
 /**

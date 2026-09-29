@@ -1,8 +1,19 @@
+{#- The Subnetwork editor is not one step but several forms at once, one per section. -#}
+{% if renderer.is_subnetwork_editor %}
+    {% include 'burst/hybrid_subnetwork_editor.html' %}
+{% else %}
 {#- data-hybrid-context-url names the configuration this step exposes in the third column. Steps
-    declaring none leave that column empty, which is how it is cleared when moving on. -#}
+    declaring none leave that column empty, which is how it is cleared when moving on.
+
+    data-hybrid-modified and data-hybrid-error let the client tell a stored configuration from a refused
+    one: both answer with the same step, and a message set on the session only reaches a full page. -#}
 <form method="post" action="{{ renderer.form_action_url }}" id="{{ renderer.form_action_url }}" enctype="multipart/form-data"
+      {% if renderer.is_editor_section %} class="hybrid-editor-section" {% endif %}
+      {% if renderer.is_dynamics_save_fragment %} class="hybrid-editor-actions" {% endif %}
       data-hybrid-context-url="{{ renderer.context_form_url if renderer.context_form_url else '' }}"
-      data-hybrid-context-title="{{ renderer.context_title if renderer.context_title else '' }}">
+      data-hybrid-context-title="{{ renderer.context_title if renderer.context_title else '' }}"
+      data-hybrid-modified="{{ 'true' if renderer.is_modified else 'false' }}"
+      {% if renderer.error_message %} data-hybrid-error="{{ renderer.error_message }}" {% endif %}>
     {% if renderer.is_subnetworks_summary_fragment %}
         {% include 'burst/hybrid_subnetworks_summary.html' %}
     {% elif renderer.is_projections_fragment %}
@@ -17,11 +28,7 @@
             {% endif %}
         </fieldset>
     {% elif renderer.is_dynamics_save_fragment %}
-        <p class="hybrid-dynamics-done">
-            This Subnetwork is configured. Press <em>Save Configuration</em> to store the dynamics of
-            every Subnetwork on the Hybrid Simulator configuration, or go back to the
-            <em>Subnetwork dynamics</em> step to pick another Subnetwork.
-        </p>
+        {#- the row of actions closing the Subnetwork editor: nothing to fill in -#}
     {% else %}
         <fieldset {% if renderer.is_read_only %} disabled {% endif %}>
             {% include 'burst/hybrid_form_fields.html' %}
@@ -31,19 +38,22 @@
             describes them: a separate summary above said the same thing twice.
 
             Deliberately outside the fieldset and marked to stay live: once the user moves on, this step
-            is locked like every finished one, but switching Subnetwork is what rebuilds the steps below
+            is locked like every finished one, but switching Subnetwork is what rebuilds the editor below
             it, so it has to keep working. -#}
         {% if renderer.is_dynamics_summary_fragment %}
             <div class="hybrid-subnetwork-tabs" data-hybrid-keep-enabled="true">
                 {% for choice in renderer.subnetwork_choices %}
                     <button type="button" tabindex="1"
-                            class="hybrid-subnetwork-tab {{ 'is-selected' if choice.is_selected else '' }}"
+                            class="hybrid-subnetwork-tab {{ 'is-selected' if choice.is_selected else '' }} {{ 'is-modified' if choice.is_modified else '' }}"
                             title="Configure the Model and Integrator of {{ choice.name }}"
                             onclick="hybridSelectSubnetwork('{{ choice.id }}')">
                         <span class="hybrid-tab-name">{{ choice.name }}</span>
                         <span class="hybrid-tab-detail">{{ choice.count }} region{{ 's' if choice.count != 1 else '' }}</span>
                         <span class="hybrid-tab-detail">{{ choice.model }}</span>
                         <span class="hybrid-tab-detail">{{ choice.integrator }}{% if choice.noise %} &middot; {{ choice.noise }} noise{% endif %}</span>
+                        {% if choice.is_modified %}
+                            <span class="hybrid-tab-modified">unsaved changes</span>
+                        {% endif %}
                     </button>
                 {% endfor %}
             </div>
@@ -54,52 +64,53 @@
         client's own locking leaves them. -#}
     {% set hide_buttons = 'style="visibility: hidden"' if renderer.is_read_only else '' %}
 
-    {% if renderer.include_previous_button %}
-        <button name="previous" type="button" class="btn btn-primary" tabindex="1" {{ hide_buttons | safe }}
-                onclick="hybridPreviousStep(this.parentElement, '{{ renderer.previous_form_action_url }}')">{{ renderer.previous_button_label }}
-        </button>
-    {% endif %}
-
     {#- The classic Cockpit's Set up region Model, except that it fills the third column instead of
-        opening a page of its own. -#}
+        opening a page of its own. Offered only while its section can be edited. -#}
     {% if renderer.include_region_model_button %}
-        <button type="button" class="btn btn-primary" tabindex="1"
+        <button type="button" class="btn btn-primary" tabindex="1" {{ hide_buttons | safe }}
                 id="configRegionModelParam" name="configRegionModelParam"
                 title="Place saved model configurations on this Subnetwork's regions"
                 onclick="hybridConfigureRegionModel()">Set up region Model
         </button>
     {% endif %}
 
-    {% if renderer.is_dynamics_save_fragment %}
-        <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1" {{ hide_buttons | safe }}
-                title="Store the configured dynamics on the Hybrid Simulator configuration"
-                onclick="hybridSaveSubnetworkDynamics()">{{ renderer.next_button_label }}
-        </button>
-    {% elif renderer.is_launch_fragment %}
-        <button name="launch_simulation" type="button" class="btn btn-primary btn-next action-launch"
-                tabindex="1" {{ hide_buttons | safe }}
-                title="Launch this Hybrid simulation"
-                onclick="hybridLaunchSimulation(this.parentElement)">Launch
-        </button>
-    {% else %}
-        {#- A step that is entered by posting to its own url cannot move on by posting there again: the
-            client would take the answer for a rejection of this step rather than for the next one. Such
-            a step names where its Next posts instead. -#}
-        <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1" {{ hide_buttons | safe }}
-                onclick="hybridSubmitTo(this.parentElement, '{{ renderer.next_form_action_url if renderer.next_form_action_url else renderer.form_action_url }}')"
-                {% if not renderer.next_button_enabled %}
-                    disabled="disabled"
-                    title="The next configuration step is not available yet"
-                {% endif %}>{{ renderer.next_button_label }}
-        </button>
-    {% endif %}
+    {#- A section of the Subnetwork editor is applied as soon as it changes, so it carries no wizard
+        buttons of its own. -#}
+    {% if not renderer.is_editor_section %}
+        {% if renderer.include_previous_button %}
+            <button name="previous" type="button" class="btn btn-primary" tabindex="1" {{ hide_buttons | safe }}
+                    onclick="hybridPreviousStep(this.parentElement, '{{ renderer.previous_form_action_url }}')">{{ renderer.previous_button_label }}
+            </button>
+        {% endif %}
 
-    {#- The closing step of the Subnetwork configuration stores the dynamics through its own action, so
-        it carries a Next of its own next to that one. -#}
-    {% if renderer.is_dynamics_save_fragment and renderer.next_form_action_url %}
-        <button name="continue" type="button" class="btn btn-primary btn-next" tabindex="1" {{ hide_buttons | safe }}
-                title="Continue to the Projections"
-                onclick="hybridSubmitTo(this.parentElement, '{{ renderer.next_form_action_url }}')">Next
-        </button>
+        {% if renderer.is_dynamics_save_fragment %}
+            <button name="save" type="button" class="btn btn-primary" tabindex="1" {{ hide_buttons | safe }}
+                    title="Store the dynamics of every Subnetwork on the Hybrid Simulator configuration"
+                    onclick="hybridSaveSubnetworkDynamics()">{{ renderer.next_button_label }}
+            </button>
+            {#- Storing is the only way forward: the Projections are built from the stored dynamics. -#}
+            <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1" {{ hide_buttons | safe }}
+                    title="Store the dynamics of every Subnetwork, then continue to the Projections"
+                    onclick="hybridSaveSubnetworkDynamics('{{ renderer.next_form_action_url }}')">Save and continue
+            </button>
+        {% elif renderer.is_launch_fragment %}
+            <button name="launch_simulation" type="button" class="btn btn-primary btn-next action-launch"
+                    tabindex="1" {{ hide_buttons | safe }}
+                    title="Launch this Hybrid simulation"
+                    onclick="hybridLaunchSimulation(this.parentElement)">Launch
+            </button>
+        {% else %}
+            {#- A step that is entered by posting to its own url cannot move on by posting there again: the
+                client would take the answer for a rejection of this step rather than for the next one.
+                Such a step names where its Next posts instead. -#}
+            <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1" {{ hide_buttons | safe }}
+                    onclick="hybridSubmitTo(this.parentElement, '{{ renderer.next_form_action_url if renderer.next_form_action_url else renderer.form_action_url }}')"
+                    {% if not renderer.next_button_enabled %}
+                        disabled="disabled"
+                        title="The next configuration step is not available yet"
+                    {% endif %}>{{ renderer.next_button_label }}
+            </button>
+        {% endif %}
     {% endif %}
 </form>
+{% endif %}
