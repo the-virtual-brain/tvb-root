@@ -57,10 +57,41 @@ static nb::ndarray<nb::numpy, T> make_owned_array(
 #define INLINE CPH_INLINE_HINT
 #include <cstring>
 
+// ---- build-time generated ("built-in") generic dfuns -----------------------
+//
+// When the package build ran dfungen (CMakeLists.txt, TVB_CPP_GENERATE_MODELS),
+// the generated kernels and their metadata table are compiled into this module
+// and CPH_HAVE_BUILTIN_GEN is defined.  What follows redeclares the entry
+// points dfungen.emit_sources emits; the declarations must stay identical to
+// that emission.  cph_builtin_dfun returns 1 when it handled the model id and
+// 0 when the id is not in the built-in table, which is what lets dfun_dispatch
+// fall back to the runtime-injected dfun for models the build did not know
+// about.  Without the macro nothing is declared and dispatch stays exactly as
+// it was: the runtime pointer only.
+#ifdef CPH_HAVE_BUILTIN_GEN
+extern "C" {
+typedef struct cph_gen_entry {
+  const char *name;               /* model class name */
+  int mid;                        /* model id (>= 100) */
+  int n_parm, n_cvar, n_svar;     /* buffer shapes the kernel expects */
+  const char *const *parm_names;  /* parr packing order */
+} cph_gen_entry;
+int cph_builtin_dfun(int model_id, float *dx, const float *x, int node,
+                     int mode, int n_node, int n_modes, const float *c,
+                     const float *p, int n_parm, int Wn);
+int cph_builtin_count(void);
+const cph_gen_entry *cph_builtin_entry(int idx);
+}
+#endif
+
 namespace cph {
 
-typedef void (*cph_generic_fn_t)(int, float *, const float *, int, int, int,
-                                 int, const float *, const float *, int, int);
+// Runtime-injected generic dfun (the ctypes fallback library compiled by
+// dfungen.generate_lib).  int-returning to match the entry dfungen emits; the
+// return value is not used on this path, because the library is compiled from
+// the same model set the caller took the ids from.
+typedef int (*cph_generic_fn_t)(int, float *, const float *, int, int, int,
+                                int, const float *, const float *, int, int);
 static cph_generic_fn_t cph_generic_fn = nullptr;
 static bool cph_have_generic = false;
 
@@ -863,6 +894,14 @@ CPH_NOINLINE static void dfun_dispatch(int model_id, float *dx, const float *x,
   if (model_id >= 100) {
     // generic (expression-generated) dfuns: x/c laid out node-major
     // (n_svar, n_node, n_modes, W); works for single- and multi-mode.
+    // The kernels compiled into the extension at build time serve the id
+    // first; only when that table does not cover it (user-defined models,
+    // added after the build) does the runtime-injected library get a turn.
+#ifdef CPH_HAVE_BUILTIN_GEN
+    if (::cph_builtin_dfun(model_id, dx, x, node, mode, n_node, n_modes,
+                           c, p, n_parm, W))
+      return;
+#endif
     if (cph::cph_have_generic && cph::cph_generic_fn)
       cph::cph_generic_fn(model_id, dx, x, node, mode, n_node, n_modes,
                           c, p, n_parm, W);
@@ -1514,6 +1553,33 @@ struct sim {
   }
 };
 
+// Model metadata for the dfuns compiled into this module at build time:
+// class name -> {mid, n_parm, n_cvar, n_svar, parm_names}, i.e. the same
+// shape dfungen's meta dict has.  Read straight from the generated table, so
+// Python and the kernels cannot disagree about ids or parameter order.
+// Empty when the extension was built without the generated TU.
+static nb::dict generic_model_table() {
+  nb::dict out;
+#ifdef CPH_HAVE_BUILTIN_GEN
+  const int n = cph_builtin_count();
+  for (int i = 0; i < n; i++) {
+    const cph_gen_entry *e = cph_builtin_entry(i);
+    if (e == nullptr || e->name == nullptr) continue;
+    nb::list parm;
+    for (int k = 0; k < e->n_parm; k++)
+      parm.append(nb::str(e->parm_names[k] ? e->parm_names[k] : ""));
+    nb::dict rec;
+    rec["mid"] = e->mid;
+    rec["n_parm"] = e->n_parm;
+    rec["n_cvar"] = e->n_cvar;
+    rec["n_svar"] = e->n_svar;
+    rec["parm_names"] = parm;
+    out[nb::str(e->name)] = rec;
+  }
+#endif
+  return out;
+}
+
 // debug helper: single MPR dfun evaluation (1 node, 1 lane)
 std::vector<float> dbg_mpr_dfun(float r, float V, float c,
                                 nb::ndarray<nb::numpy, float> parr) {
@@ -1555,6 +1621,7 @@ NB_MODULE(_cpp_hybrid, m) {
   }, nb::arg("fn"));
   m.def("dbg_mpr_dfun", &cph::dbg_mpr_dfun);
   m.def("dbg_mpr_heun", &cph::dbg_mpr_heun);
+  m.def("generic_model_table", &cph::generic_model_table);
   m.doc() = "C++ hybrid simulator core (runtime SIMD kernels, no codegen)";
   nb::class_<cph::sim>(m, "Sim")
       .def(nb::init<int>(), nb::arg("width") = 8)
