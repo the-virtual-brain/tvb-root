@@ -154,6 +154,9 @@ class HybridSimulatorFragmentRenderingRules(object):
         self.editor_subnetwork_name = None
         # set on a section of the Subnetwork editor, which carries no Next or Previous of its own
         self.is_editor_section = False
+        # how deep a section of the Subnetwork editor is nested: 1 for the Noise of the Integrator,
+        # 2 for the Equation of that Noise, indented as many tabs
+        self.section_level = 0
         # a refusal the client has to show, since a message set on the session only reaches a full page
         self.error_message = None
         # the wizard step listing the generated Projections
@@ -1351,14 +1354,20 @@ class HybridSimulatorController(BurstBaseController):
                 # the Equation parameters are the next section
                 form.equation.display_subform = False
             form.fill_from_trait(dynamics.integrator.noise)
-        return self._section_rules(form, HybridSimulatorURLs.SET_SUBNETWORK_NOISE_PARAMS_URL)
+        rules = self._section_rules(form, HybridSimulatorURLs.SET_SUBNETWORK_NOISE_PARAMS_URL)
+        # configures a part of the Integrator
+        rules.section_level = 1
+        return rules
 
     def _noise_equation_step_rules(self, dynamics, form=None):
         if form is None:
             form = self.algorithm_service.prepare_adapter_form(
                 form_instance=get_form_for_equation(type(dynamics.integrator.noise.b))())
             form.fill_from_trait(dynamics.integrator.noise.b)
-        return self._section_rules(form, HybridSimulatorURLs.SET_SUBNETWORK_NOISE_EQUATION_PARAMS_URL)
+        rules = self._section_rules(form, HybridSimulatorURLs.SET_SUBNETWORK_NOISE_EQUATION_PARAMS_URL)
+        # configures a part of the Noise
+        rules.section_level = 2
+        return rules
 
     @staticmethod
     def _editor_actions_rules():

@@ -8,7 +8,7 @@
     data-hybrid-modified and data-hybrid-error let the client tell a stored configuration from a refused
     one: both answer with the same step, and a message set on the session only reaches a full page. -#}
 <form method="post" action="{{ renderer.form_action_url }}" id="{{ renderer.form_action_url }}" enctype="multipart/form-data"
-      {% if renderer.is_editor_section %} class="hybrid-editor-section" {% endif %}
+      {% if renderer.is_editor_section %} class="hybrid-editor-section hybrid-editor-level-{{ renderer.section_level }}" {% endif %}
       {% if renderer.is_dynamics_save_fragment %} class="hybrid-editor-actions" {% endif %}
       data-hybrid-context-url="{{ renderer.context_form_url if renderer.context_form_url else '' }}"
       data-hybrid-context-title="{{ renderer.context_title if renderer.context_title else '' }}"

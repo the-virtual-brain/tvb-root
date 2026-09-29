@@ -203,7 +203,13 @@ class TestHybridRendering(BaseTransactionalControllerTest):
             sections = html[:html.rindex('<form')]
             assert 'name="next"' not in sections
             assert 'name="previous"' not in sections
-            assert sections.count('class="hybrid-editor-section"') == 6
+            assert sections.count('class="hybrid-editor-section ') == 6
+            # the Noise is nested one level into the Integrator, its Equation one level further
+            levels = re.findall(r'action="/burst/hybrid/([a-z_]+)"[^>]*\s+class="hybrid-editor-section hybrid-editor-level-(\d)"', html)
+            assert dict(levels) == {'set_subnetwork_model': '0', 'set_subnetwork_model_params': '0',
+                                    'set_subnetwork_integrator': '0', 'set_subnetwork_integrator_params': '0',
+                                    'set_subnetwork_noise_params': '1',
+                                    'set_subnetwork_noise_equation_params': '2'}
             # the region Model action is offered, on the section it edits
             assert 'hybridConfigureRegionModel()' in sections
             # and the row closing it carries the three actions
@@ -212,6 +218,11 @@ class TestHybridRendering(BaseTransactionalControllerTest):
             assert 'hybridSaveSubnetworkDynamics()' in last_form
             assert 'Save and continue' in last_form
         assert 'Dynamics of <strong>Subnetwork A</strong>' in selected_html
+        # the Model and Integrator sections are framed apart from the simulation wide fields, and the
+        # row of actions, which stores every Subnetwork, is left outside that frame
+        frame = selected_html[selected_html.index('class="hybrid-editor-fields"'):selected_html.rindex('<form')]
+        assert frame.count('class="hybrid-editor-section ') == 6
+        assert 'hybrid-editor-actions' not in frame
 
         # a read only Model parameters section does not offer Set up region Model
         region_model_button = read_only_html[read_only_html.index('id="configRegionModelParam"') - 200:]

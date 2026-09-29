@@ -355,13 +355,43 @@ button.hybrid-subnetwork-action:disabled {
 .hybrid-subnetwork-editor {
     border-top: 1px solid rgba(0, 0, 0, 0.15);
     margin-top: 6px;
-    padding-top: 4px;
+    padding-top: 10px;
+}
+
+/**
+ * The Model and Integrator fields of the Subnetwork being configured. Indented on both sides and
+ * outlined, so they read apart from the fields of the whole simulation above and below them. The
+ * outline takes the colour of the selected Subnetwork on the dynamics step, which is what it configures.
+ */
+.hybrid-editor-fields {
+    background: rgba(65, 146, 31, 0.05);
+    border: 2px solid #41921f;
+    border-radius: 4px;
+    margin: 0 24px 10px 24px;
+    padding: 0 0 6px 0;
 }
 
 .hybrid-editor-title {
+    background: rgba(65, 146, 31, 0.18);
+    border-bottom: 1px solid #41921f;
     color: #3e4252;
     font-size: 11px;
-    margin: 0 10px 4px 10px;
+    margin: 0 0 4px 0;
+    padding: 4px 10px;
+}
+
+/* The Noise configures part of the Integrator, and the Equation part of that Noise: one tab each */
+.hybrid-editor-fields .hybrid-editor-level-1 {
+    margin-left: 24px;
+}
+
+.hybrid-editor-fields .hybrid-editor-level-2 {
+    margin-left: 48px;
+}
+
+/* Set up region Model, which the Model parameters section carries under its fields */
+.hybrid-editor-fields .hybrid-editor-section > button {
+    margin: 0 10px 6px 10px;
 }
 
 /**
