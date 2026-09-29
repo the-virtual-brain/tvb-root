@@ -80,6 +80,22 @@ float32 bit-exactness parity with the numba reference hybrid backend depends on
 no fast-math / fast-FP contraction. `-fopenmp-simd` (no runtime libgomp
 dependency) enables the SIMD vectorization across the batch lane.
 
+## Feature parity with nb_hybrid (all parity-tested, float32 tolerance)
+
+Full audit: `parity_audit.md`. Summary of the supported feature set, which now
+matches `NbHybridBackend`:
+
+| Feature | Coverage | Parity test |
+|---|---|---|
+| **Models** (26 classes) | 13 hand-written dfuns (ids 0–12, incl. CerebellarMF) + generic expression-generated route (ids ≥ 100) covering every model declaring `state_variable_dfuns` — i.e. **all 26** | `test_cpp_hybrid_models.py` (31 items: 26 classes + CerebellarMF flag variants) |
+| **Coupling functions** | Linear, Scaling, Sigmoidal, Difference, Kuramoto, HyperbolicTangent, SigmoidalJansenRit (classic **and** legacy), PreSigmoidal (static **and** dynamic, incl. `globalT`) | `test_cpp_hybrid_coupling.py` (11 items) |
+| **Monitors** | Raw, RawVoi, TemporalAverage, SubSample, GlobalAverage, AfferentCoupling (+TemporalAverage), SpatialAverage, Projection, Bold — plumbing shared with nb_hybrid | `test_cpp_hybrid_monitors.py` (10 items) |
+| **Stimuli** | constant / pulse / sinusoid patterns (single-node and all-node spatial), **multiple subnetworks with stimuli simultaneously** | `test_cpp_hybrid_stimuli.py` (6 items) |
+| **Stochastic noise** | Additive noise, HeunStochastic/EulerStochastic, per-subnet RNG streams, **multiple stochastic subnetworks** | `test_cpp_hybrid_stimuli.py::test_stochastic_noise_parity`, `test_multi_subnet_stimuli_and_noise` |
+
+Not supported by either backend (rejected identically): nonzero
+`model_local_coupling`.
+
 ## Tests
 
 From `tvb_library` root:

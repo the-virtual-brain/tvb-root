@@ -133,6 +133,21 @@ CPH_NOINLINE static void cfun_pre(int id, float *v,
                            ((double)p[3 * W + i] * (double)v[0 * W + i] -
                             (double)p[4 * W + i]))));
     break;
+  case 8:  // SigmoidalJansenRit legacy: a*2e0/(1+exp(r*(v0 - x)))
+    for (int i = 0; i < W; i++)
+      v[0 * W + i] = (float)((double)p[0 * W + i] * 2.0 * (double)p[1 * W + i] /
+          (1.0 + exp((double)p[2 * W + i] *
+                     ((double)p[3 * W + i] - (double)v[0 * W + i]))));
+    break;
+  case 9:  // PreSigmoidal dynamic: H*(Q+tanh(G*(P*v0 - v1)))
+           // (v1 already replaced by the globalT per-mode mean when globalT)
+    for (int i = 0; i < W; i++)
+      v[0 * W + i] = (float)((double)p[0 * W + i] *
+                     ((double)p[1 * W + i] +
+                      tanh((double)p[2 * W + i] *
+                           ((double)p[3 * W + i] * (double)v[0 * W + i] -
+                            (double)v[1 * W + i]))));
+    break;
   default: break;
   }
 }
@@ -154,7 +169,8 @@ static constexpr int MOD_JR = 7;       // JansenRit
 static constexpr int MOD_EPI = 8;      // Epileptor
 static constexpr int MOD_EPI2D = 9;    // Epileptor2D
 static constexpr int MOD_ZER1 = 10;   // ZerlautAdaptationFirstOrder
-static constexpr int MOD_ZER2 = 11;   // ZerlautAdaptationSecondOrder
+static constexpr int MOD_ZER2 = 11;    // ZerlautAdaptationSecondOrder
+static constexpr int MOD_CRBL = 12;    // CerebellarMF   // ZerlautAdaptationSecondOrder
 
 // n_svar / n_parm per model (param order = the nb_hybrid gufunc arg order)
 INLINE static void model_dims(int model_id, int &n_svar, int &n_parm,
@@ -172,6 +188,7 @@ INLINE static void model_dims(int model_id, int &n_svar, int &n_parm,
   case MOD_EPI2D:    n_svar = 2; n_parm = 12; n_cvar = 1; break;
   case MOD_ZER1:     n_svar = 5; n_parm = 49; n_cvar = 1; break;
   case MOD_ZER2:     n_svar = 8; n_parm = 50; n_cvar = 1; break;
+  case MOD_CRBL:     n_svar = 5; n_parm = 84; n_cvar = 2; break;
   default: n_svar = 2; n_parm = 6; n_cvar = 1; break;
   }
 }
@@ -609,6 +626,236 @@ CPH_NOINLINE static void dfun_zerlaut2(float *dx, const float *x, int node,
   }
 }
 
+// CerebellarMF: svars (GrC, GoC, MLI, PC, noise); cvars (mossy, parallel).
+// Port of backend/templates/nb-cerebellar-dfun.py.mako (nb_hybrid reference).
+// Param order (see backend.py _MODEL_PARM_NAMES["CerebellarMF"]):
+//   0..49   runtime scalars: g_L_*, E_L_*, C_m_*, E_e, E_i, Q_*, tau_*, K_*,
+//           N_*, alpha_*, T
+//   50..61  tau_OU, weight_noise, external_input_*, frac_*, mf_to_*, pf_to_*
+//   62..66  P_grc[0..4]   67..71 P_goc[0..4]   72..76 P_mli[0..4]
+//   77..81  P_pc[0..4]
+//   82 use_legacy_goc_e_e   83 add_noise_mli_pc
+#define CRBL(p, k) ((double)p[(k) * W + i])
+
+static double crbl_fluct_2d(double Fe, double Fi, double Fe_ext, double Fi_ext,
+                            double Q_e, double tau_e, double Ee, double Q_i,
+                            double tau_i, double Ei, double Gl, double Cm,
+                            double El, double Ke, double Ki,
+                            double *mu_V_out, double *sigma_V_out,
+                            double *T_V_out, double *muGn_out) {
+  double fe = (Fe + 1.0e-6) + Fe_ext;
+  double fi = (Fi + 1.0e-6) + Fi_ext;
+  double mu_Ge = Q_e * tau_e * fe * Ke;
+  double mu_Gi = Q_i * tau_i * fi * Ki;
+  double mu_G = Gl + mu_Ge + mu_Gi;
+  double mu_V = (2.718281828459045 * (mu_Ge * Ee + mu_Gi * Ei + Gl * El)) / mu_G;
+  double muGn = mu_G / Gl;
+  double Tm = Cm / mu_G;
+  double Ue = Q_e / mu_G * (Ee - mu_V);
+  double Ui = Q_i / mu_G * (Ei - mu_V);
+  double sVe = (2.0 * Tm + tau_e) *
+      pow((2.718281828459045 * Ue * tau_e) / (2.0 * (tau_e + Tm)), 2) * Ke * fe;
+  double sVi = (2.0 * Tm + tau_i) *
+      pow((2.718281828459045 * Ui * tau_i) / (2.0 * (tau_i + Tm)), 2) * Ki * fi;
+  double sigma_V = std::sqrt(sVe + sVi);
+  fe += 1.0e-9;
+  fi += 1.0e-9;
+  double Tv_num = (Ke * fe * Ue * Ue * tau_e * tau_e * 2.718281828459045 * 2.718281828459045
+                   + Ki * fi * Ui * Ui * tau_i * tau_i * 2.718281828459045 * 2.718281828459045);
+  double Tv_den = (sigma_V + 1.0e-20) * (sigma_V + 1.0e-20);
+  double Tv = 0.5 * Tv_num / Tv_den;
+  double T_V = Tv * Gl / Cm;
+  *mu_V_out = mu_V; *sigma_V_out = sigma_V; *T_V_out = T_V; *muGn_out = muGn;
+  return 0.0;
+}
+
+static double crbl_fluct_3d(double Fe, double Fi, double Fe_ext,
+                            double Qe_gr, double Te_gr, double Ee, double Qi,
+                            double Ti, double Ei, double Gl, double Cm,
+                            double El, double Ke_grc, double Ki,
+                            double Ke_ext, double Qe_ext, double Te_ext,
+                            double *mu_V_out, double *sigma_V_out,
+                            double *T_V_out, double *muGn_out) {
+  double fe_g = Fe + 1.0e-6;
+  double fe_m = Fe_ext;
+  double fi = Fi + 1.0e-6;
+  double muGe_g = Qe_gr * Ke_grc * Te_gr * fe_g;
+  double muGe_m = Qe_ext * Ke_ext * Te_ext * fe_m;
+  double muGi = Qi * Ki * Ti * fi;
+  double mu_G = Gl + muGe_g + muGe_m + muGi;
+  double mu_V = (2.718281828459045 *
+                 (muGe_g * Ee + muGe_m * Ee + muGi * Ei + Gl * El)) / mu_G;
+  double muGn = mu_G / Gl;
+  double Tm = Cm / mu_G;
+  double Ue_g = Qe_gr / mu_G * (Ee - mu_V);
+  double Ue_m = Qe_ext / mu_G * (Ee - mu_V);
+  double Ui = Qi / mu_G * (Ei - mu_V);
+  double sVe_g = (2.0 * Tm + Te_gr) *
+      pow((2.718281828459045 * Ue_g * Te_gr) / (2.0 * (Te_gr + Tm)), 2) * Ke_grc * fe_g;
+  double sVe_m = (2.0 * Tm + Te_ext) *
+      pow((2.718281828459045 * Ue_m * Te_ext) / (2.0 * (Te_ext + Tm)), 2) * Ke_ext * fe_m;
+  double sVi = (2.0 * Tm + Ti) *
+      pow((2.718281828459045 * Ui * Ti) / (2.0 * (Ti + Tm)), 2) * Ki * fi;
+  double sigma_V = std::sqrt(sVe_g + sVe_m + sVi);
+  fe_m += 1.0e-15;
+  fe_g += 1.0e-15;
+  fi += 1.0e-15;
+  double Tv_num = (Ke_grc * fe_g * Ue_g * Ue_g * Te_gr * Te_gr * 2.718281828459045 * 2.718281828459045
+                   + Ke_ext * fe_m * Ue_m * Ue_m * Te_ext * Te_ext * 2.718281828459045 * 2.718281828459045
+                   + Ki * fi * Ui * Ui * Ti * Ti * 2.718281828459045 * 2.718281828459045);
+  double Tv_den = (sigma_V + 1.0e-20) * (sigma_V + 1.0e-20);
+  double Tv = 0.5 * Tv_num / Tv_den;
+  double T_V = Tv * Gl / Cm;
+  *mu_V_out = mu_V; *sigma_V_out = sigma_V; *T_V_out = T_V; *muGn_out = muGn;
+  return 0.0;
+}
+
+static double crbl_threshold(double muV, double sigmaV, double TvN, double muGn,
+                             const double *P) {
+  double V = (muV - (-60.0)) / 10.0;
+  double S = (sigmaV - 4.0) / 6.0;
+  double T = (TvN - 0.5) / 1.0;
+  return P[0] + P[1] * V + P[2] * S + P[3] * T + P[4] * std::log(muGn);
+}
+
+static double crbl_firing_rate(double muV, double sigmaV, double TvN,
+                               double Vthre, double Gl, double Cm,
+                               double alpha) {
+  return 0.5 / TvN * Gl / Cm
+      * std::erfc((Vthre - muV) / (1.4142135623730951 * sigmaV)) * alpha;
+}
+
+static double crbl_TF_2d(double Fe, double Fi, double Fe_ext, double Fi_ext,
+                         double Q_e, double tau_e, double Ee, double Q_i,
+                         double tau_i, double Ei, double Gl, double Cm,
+                         double El, double Ke, double Ki, double alpha,
+                         const double *P) {
+  double mu_V, sigma_V, T_V, muGn;
+  crbl_fluct_2d(Fe, Fi, Fe_ext, Fi_ext, Q_e, tau_e, Ee, Q_i, tau_i, Ei,
+                Gl, Cm, El, Ke, Ki, &mu_V, &sigma_V, &T_V, &muGn);
+  double V_thre = crbl_threshold(mu_V, sigma_V, T_V, muGn, P) * 1000.0;
+  return crbl_firing_rate(mu_V, sigma_V, T_V, V_thre, Gl, Cm, alpha);
+}
+
+static double crbl_TF_3d(double Fe, double Fi, double Fe_ext,
+                         double Qe_gr, double Te_gr, double Ee, double Qi,
+                         double Ti, double Ei, double Gl, double Cm,
+                         double El, double Ke_grc, double Ki, double Ke_ext,
+                         double Qe_ext, double Te_ext, double alpha,
+                         const double *P) {
+  double mu_V, sigma_V, T_V, muGn;
+  crbl_fluct_3d(Fe, Fi, Fe_ext, Qe_gr, Te_gr, Ee, Qi, Ti, Ei, Gl, Cm, El,
+                Ke_grc, Ki, Ke_ext, Qe_ext, Te_ext,
+                &mu_V, &sigma_V, &T_V, &muGn);
+  double V_thre = crbl_threshold(mu_V, sigma_V, T_V, muGn, P) * 1000.0;
+  return crbl_firing_rate(mu_V, sigma_V, T_V, V_thre, Gl, Cm, alpha);
+}
+
+// note: mu_V formula in the template subtracts XX (=0.0 in every call),
+// hence it is omitted above.
+template <int W>
+CPH_NOINLINE static void dfun_crbl(float *dx, const float *x, int node, int mode,
+                             int n_node, int n_modes, const float *c,
+                             const float *p, int n_parm) {
+  const float *GrC0 = x + XOFF(0);
+  const float *GoC0 = x + XOFF(1);
+  const float *MLI0 = x + XOFF(2);
+  const float *PC0  = x + XOFF(3);
+  const float *nz0  = x + XOFF(4);
+  float *dGrC = dx + XOFF(0);
+  float *dGoC = dx + XOFF(1);
+  float *dMLI = dx + XOFF(2);
+  float *dPC  = dx + XOFF(3);
+  float *dnz  = dx + XOFF(4);
+  const float *c_mossy = c + COFF(0);
+  const float *c_par   = c + COFF(1);
+  const float *pk = p + (size_t)node * n_parm * W;
+  for (int i = 0; i < W; i++) {
+    double GrC = GrC0[i], GoC = GoC0[i], MLI = MLI0[i], PC = PC0[i],
+           noise = nz0[i];
+    double mossy = c_mossy[i], parallel = c_par[i];
+    bool legacy_ee = CRBL(p, 82) != 0.0;
+    bool add_nz    = CRBL(p, 83) != 0.0;
+    double P_grc[5], P_goc[5], P_mli[5], P_pc[5];
+    for (int k = 0; k < 5; k++) {
+      P_grc[k] = CRBL(p, 62 + k);
+      P_goc[k] = CRBL(p, 67 + k);
+      P_mli[k] = CRBL(p, 72 + k);
+      P_pc[k]  = CRBL(p, 77 + k);
+    }
+    double gL_grc = CRBL(p, 0), gL_goc = CRBL(p, 1), gL_mli = CRBL(p, 2),
+           gL_pc = CRBL(p, 3);
+    double EL_grc = CRBL(p, 4), EL_goc = CRBL(p, 5), EL_mli = CRBL(p, 6),
+           EL_pc = CRBL(p, 7);
+    double Cm_grc = CRBL(p, 8), Cm_goc = CRBL(p, 9), Cm_mli = CRBL(p, 10),
+           Cm_pc = CRBL(p, 11);
+    double E_e = CRBL(p, 12), E_i = CRBL(p, 13);
+    double Q_mf_grc = CRBL(p, 14), Q_mf_goc = CRBL(p, 15);
+    double Q_grc_goc = CRBL(p, 16), Q_grc_mli = CRBL(p, 17),
+           Q_grc_pc = CRBL(p, 18);
+    double Q_goc_grc = CRBL(p, 19), Q_goc_goc = CRBL(p, 20);
+    double Q_mli_mli = CRBL(p, 21), Q_mli_pc = CRBL(p, 22);
+    double tau_mf_grc = CRBL(p, 23), tau_mf_goc = CRBL(p, 24);
+    double tau_grc_goc = CRBL(p, 25), tau_grc_mli = CRBL(p, 26),
+           tau_grc_pc = CRBL(p, 27);
+    double tau_goc_grc = CRBL(p, 28), tau_goc_goc = CRBL(p, 29);
+    double tau_mli_mli = CRBL(p, 30), tau_mli_pc = CRBL(p, 31);
+    double K_mossy_grc = CRBL(p, 32), K_mossy_goc = CRBL(p, 33);
+    double K_grc_goc = CRBL(p, 34), K_grc_mli = CRBL(p, 35),
+           K_grc_pc = CRBL(p, 36);
+    double K_goc_goc = CRBL(p, 37), K_mli_mli = CRBL(p, 38),
+           K_mli_pc = CRBL(p, 39);
+    double alpha_grc = CRBL(p, 45), alpha_goc = CRBL(p, 46),
+           alpha_mli = CRBL(p, 47), alpha_pc = CRBL(p, 48);
+    double T = CRBL(p, 49);
+    double tau_OU = CRBL(p, 50), weight_noise = CRBL(p, 51);
+    double eie = CRBL(p, 52), eiin = CRBL(p, 53), ein_ex = CRBL(p, 54);
+    double fm = CRBL(p, 55), fp = CRBL(p, 56);
+    double mf_to_grc = CRBL(p, 57), mf_to_goc = CRBL(p, 58);
+    double pf_to_goc = CRBL(p, 59), pf_to_mli = CRBL(p, 60),
+           pf_to_pc = CRBL(p, 61);
+
+    double wn = weight_noise * noise;
+    double Fe_tod1 = mossy * fm * mf_to_grc + wn;
+    double Fe_tod2 = mossy * fm * mf_to_goc + parallel * fp * pf_to_goc + wn;
+    double nz_mli_pc = add_nz ? wn : 0.0;
+    double Fe_tod3 = parallel * fp * pf_to_mli + nz_mli_pc;
+    double Fe_tod4 = parallel * fp * pf_to_pc + nz_mli_pc;
+
+    if (Fe_tod1 * K_mossy_grc < 0.0) Fe_tod1 = 0.0;
+    if (Fe_tod2 * K_mossy_goc < 0.0) Fe_tod2 = 0.0;
+    if (Fe_tod3 * K_grc_mli  < 0.0) Fe_tod3 = 0.0;
+    if (Fe_tod4 * K_grc_pc   < 0.0) Fe_tod4 = 0.0;
+
+    double Fi_ext = 0.0;
+    double goc_Ee = legacy_ee ? E_i : E_e;
+
+    dGrC[i] = (float)((crbl_TF_2d(
+        Fe_tod1 + eie, GoC, 0.0, Fi_ext + eiin,
+        Q_mf_grc, tau_mf_grc, E_e, Q_goc_grc, tau_goc_grc, E_i,
+        gL_grc, Cm_grc, EL_grc, K_mossy_grc, K_mossy_goc, alpha_grc,
+        P_grc) - GrC) / T);
+    dGoC[i] = (float)((crbl_TF_3d(
+        GrC, GoC, Fe_tod2 + ein_ex,
+        Q_grc_goc, tau_grc_goc, goc_Ee, Q_goc_goc, tau_goc_goc, E_i,
+        gL_goc, Cm_goc, EL_goc, K_grc_goc, K_goc_goc,
+        K_mossy_goc, Q_mf_goc, tau_mf_goc, alpha_goc,
+        P_goc) - GoC) / T);
+    dMLI[i] = (float)((crbl_TF_2d(
+        GrC, MLI, Fe_tod3, Fi_ext,
+        Q_grc_mli, tau_grc_mli, E_e, Q_mli_mli, tau_mli_mli, E_i,
+        gL_mli, Cm_mli, EL_mli, K_grc_mli, K_mli_mli, alpha_mli,
+        P_mli) - MLI) / T);
+    dPC[i] = (float)((crbl_TF_2d(
+        GrC, MLI, Fe_tod4, Fi_ext,
+        Q_grc_pc, tau_grc_pc, E_e, Q_mli_pc, tau_mli_pc, E_i,
+        gL_pc, Cm_pc, EL_pc, K_grc_pc, K_mli_pc, alpha_pc,
+        P_pc) - PC) / T);
+    dnz[i] = (float)(-noise / tau_OU);
+  }
+}
+#undef CRBL
+
 template <int W>
 CPH_NOINLINE static void dfun_dispatch(int model_id, float *dx, const float *x,
                                  int node, int mode, int n_node, int n_modes,
@@ -634,6 +881,7 @@ CPH_NOINLINE static void dfun_dispatch(int model_id, float *dx, const float *x,
   case MOD_EPI2D: dfun_epi2d<W>(dx, x, node, mode, n_node, n_modes, c, p, n_parm); break;
   case MOD_ZER1: dfun_zerlaut1<W>(dx, x, node, mode, n_node, n_modes, c, p, n_parm); break;
   case MOD_ZER2: dfun_zerlaut2<W>(dx, x, node, mode, n_node, n_modes, c, p, n_parm); break;
+  case MOD_CRBL: dfun_crbl<W>(dx, x, node, mode, n_node, n_modes, c, p, n_parm); break;
   default: throw std::runtime_error("unknown model id");
   }
 }
@@ -741,7 +989,7 @@ template <int W> struct proj {
   float scale = 1.0f;
   float ts = 1.0f;          // target_scales[0]
   int tgt_state_cvar = 0;   // target state var for per-edge pre(x_i)
-  bool has_pre = false;     // ids 3..6
+  bool has_pre = false;     // ids 3..9
   std::vector<int> src_cvars;  // state vars summed into the weighted input
   std::vector<float> w;      // (nnz,)
   std::vector<uint32_t> idx; // (nnz,)
@@ -761,6 +1009,31 @@ template <int W> struct proj {
       for (int m = 0; m < nms && m < nmt; m++) mode_map[m * nmt + m] = 1.f;
     }
     float *out = tgt.c.data() + (size_t)tgt_cvar * nn * nmt * W;
+    // globalT (PreSigmoidal dynamic, globalT=1): mean of the delayed
+    // threshold (second source cvar) over ALL projection edges, per source
+    // mode — matches nb_hybrid's PreSigmoidal.pre() global-threshold path.
+    float gthr[8 * W];
+    bool use_gT = (cfun_id == 9 && n_cfun_parm > 5 &&
+                   cfp[(size_t)5 * W] != 0.f);
+    if (use_gT) {
+      const int nnz_total = (int)ptr[ptr.size() - 1];
+      const int cv1 = src_cvars[1];
+      const float *sbuf1 = src.buf.data() +
+          (size_t)cv1 * src.n_node * nms * src.H * W;
+      for (int m = 0; m < nms && m < 8; m++)
+        for (int i = 0; i < W; i++) gthr[m * W + i] = 0.f;
+      for (int nz = 0; nz < nnz_total; nz++) {
+        const uint32_t slot = ((uint32_t)t - 1u - del[nz]) & Hm1;
+        for (int m = 0; m < nms && m < 8; m++) {
+          const float *b = sbuf1 +
+              (((size_t)idx[nz] * nms + m) * src.H + slot) * W;
+          for (int i = 0; i < W; i++) gthr[m * W + i] += b[i];
+        }
+      }
+      const float inv = 1.0f / (float)nnz_total;
+      for (int m = 0; m < nms && m < 8; m++)
+        for (int i = 0; i < W; i++) gthr[m * W + i] *= inv;
+    }
     // fast path: single source mode, no pre transform, one source cvar,
     // matching target — the dominant case (Linear.a * matvec).  Avoids the
     // per-edge v[] copy / mode loops for W==1 and openmps for wider W.
@@ -813,6 +1086,8 @@ template <int W> struct proj {
             for (int i = 0; i < W; i++) v[cv * W + i] = b[i];
           }
           if (has_pre) {
+            if (use_gT)
+              for (int i = 0; i < W; i++) v[W + i] = gthr[m * W + i];
             cfun_pre<W>(cfun_id, v, cfp.data(), xi + (nmt < 8 ? 0 : 0) * W);
             for (int i = 0; i < W; i++) cx[m * W + i] += wgt * v[i];
           } else {
@@ -868,16 +1143,36 @@ template <int W> struct simw {
     const size_t n_sn = sn.size();
 
     // per-step noise/stim pointers (lane-major innermost)
-    const float *noise = nullptr, *stim = nullptr;
-    nb::ndarray<nb::numpy, float> noise_arr, stim_arr;
-    if (!noise_obj.is_none()) {
-      noise_arr = nb::cast<nb::ndarray<nb::numpy, float>>(noise_obj);
-      noise = noise_arr.data();
-    }
-    if (!stim_obj.is_none()) {
-      stim_arr = nb::cast<nb::ndarray<nb::numpy, float>>(stim_obj);
-      stim = stim_arr.data();
-    }
+    // Each of noise_obj / stim_obj is either a single array (single-subnet
+    // layout, applied to every subnet) or a sequence with one entry per
+    // subnetwork (None = no input for that subnet).
+    std::vector<nb::ndarray<nb::numpy, float>> keep_alive;
+    auto resolve_per_sn = [&](nb::object obj) -> std::vector<const float *> {
+      std::vector<const float *> ps(n_sn, nullptr);
+      if (obj.is_none()) return ps;
+      if (nb::isinstance<nb::list>(obj) || nb::isinstance<nb::tuple>(obj)) {
+        auto seq = nb::cast<nb::sequence>(obj);
+        size_t idx = 0;
+        for (auto item : seq) {
+          if (idx >= n_sn)
+            throw std::runtime_error(
+                "noise/stim sequence longer than number of subnetworks");
+          if (!item.is_none()) {
+            keep_alive.push_back(
+                nb::cast<nb::ndarray<nb::numpy, float>>(item));
+            ps[idx] = keep_alive.back().data();
+          }
+          idx++;
+        }
+      } else {
+        keep_alive.push_back(nb::cast<nb::ndarray<nb::numpy, float>>(obj));
+        const float *d = keep_alive.back().data();
+        for (size_t s = 0; s < n_sn; s++) ps[s] = d;
+      }
+      return ps;
+    };
+    const std::vector<const float *> noise_ps = resolve_per_sn(noise_obj);
+    const std::vector<const float *> stim_ps = resolve_per_sn(stim_obj);
 
     std::vector<std::vector<float>> tacc(n_sn), cacc(n_sn);
     std::vector<std::vector<int>> counts(n_sn);
@@ -899,6 +1194,7 @@ template <int W> struct simw {
         for (auto &p : pr) p.apply(sn[p.src_sn], sn[p.tgt_sn], (int)t_abs);
         for (size_t s = 0; s < n_sn; s++) {
           auto &sub = sn[s];
+          const float *stim = stim_ps[s];
           counts[s][chunk]++;
           if (stim) {
             // stim layout (n_cvar, n_node, W, nstep)
@@ -922,8 +1218,8 @@ template <int W> struct simw {
             for (size_t k = 0; k < n_cv; k++) dst[k] += cv[k];
           }
           const float *nz = nullptr;
-          if (noise)
-            nz = noise + ((size_t)step) * (size_t)sub.n_svar * sub.n_node * sub.n_modes * W;
+          if (const float *nptr = noise_ps[s])
+            nz = nptr + ((size_t)step) * (size_t)sub.n_svar * sub.n_node * sub.n_modes * W;
           if (integ_id == 1)
             sub.step_heun(dt, nz);
           else
@@ -1079,7 +1375,7 @@ struct sim {
                   nb::object mode_map_obj) {
     p.ts = ts;
     p.tgt_state_cvar = tgt_state_cvar;
-    p.has_pre = (cfun_id >= 3 && cfun_id <= 7);
+    p.has_pre = (cfun_id >= 3 && cfun_id <= 9);
     if (mode_map_obj.is_none()) {
       // identity handled by caller-provided sizes; fill lazily in apply is
       // not possible for const apply — fill with 1x1 identity here and

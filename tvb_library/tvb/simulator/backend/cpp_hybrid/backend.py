@@ -23,6 +23,7 @@ _GEN_LIB = None      # ctypes handle
 _GEN_IDS = {}        # model class name -> generic id
 from tvb.simulator.backend.nb_hybrid import (
     _CFUN_PARAM_ATTRS,
+    _cfun_type,
     _apply_monitors,
     _aggregate_raw_outputs,
     _compute_chunk_size,
@@ -46,12 +47,24 @@ __all__ = [
     "SweepResult",
 ]
 
-# cfun dispatch ids (must match _core.cpp)
+# cfun dispatch ids (must match _core.cpp); variants are resolved via
+# nb_hybrid._cfun_type so classic/legacy and static/dynamic forms dispatch
+# to distinct C++ implementations.
+_CFUN_TYPE_IDS = {
+    "none": -1,
+    "linear": 0, "scaling": 1, "sigmoidal": 2, "difference": 3,
+    "kuramoto": 4, "tanh": 5, "sigmoidal_jr": 6, "pre_sigmoidal": 7,
+    "sigmoidal_jr_legacy": 8, "pre_sigmoidal_dynamic": 9,
+}
 _CFUN_IDS = {
     "Linear": 0, "Scaling": 1, "Sigmoidal": 2, "Difference": 3,
     "Kuramoto": 4, "HyperbolicTangent": 5, "SigmoidalJansenRit": 6,
     "PreSigmoidal": 7,
 }
+# PreSigmoidal needs the globalT flag at slot 5 for the dynamic variant.
+_CPP_CFUN_PARAM_ATTRS = dict(_CFUN_PARAM_ATTRS)
+_CPP_CFUN_PARAM_ATTRS["PreSigmoidal"] = (
+    _CFUN_PARAM_ATTRS["PreSigmoidal"] + [("globalT", 5)])
 _PASSTHROUGH_CFUN = -1  # no cfun: plain weighted sum
 # model dispatch ids (must match _core.cpp)
 _MODEL_IDS = {
@@ -59,6 +72,7 @@ _MODEL_IDS = {
     "SupHopf": 3, "Linear": 4, "ReducedWongWang": 5, "WilsonCowan": 6,
     "JansenRit": 7, "Epileptor": 8, "Epileptor2D": 9,
     "ZerlautAdaptationFirstOrder": 10, "ZerlautAdaptationSecondOrder": 11,
+    "CerebellarMF": 12,
 }
 # per-model parameter attribute order (must match the C++ dfuns; this is the
 # nb_hybrid gufunc argument order for each model)
@@ -94,6 +108,38 @@ _MODEL_PARM_NAMES["ZerlautAdaptationFirstOrder"] = (
     list(_MODEL_ZERLAUT_BASE) + list(_MODEL_ZERLAUT_POLY))
 _MODEL_PARM_NAMES["ZerlautAdaptationSecondOrder"] = (
     list(_MODEL_ZERLAUT_BASE) + ["S_i"] + list(_MODEL_ZERLAUT_POLY))
+
+# CerebellarMF: runtime (per-node) parameters in nb_hybrid template order
+# (_nb_hybrid_runtime_parameter_names), then the polynomial coefficients
+# expanded per index (P_<pop>:i read element i of the base array), then the
+# two mode flags. Must match the CRBL param indexing in _core.cpp.
+_MODEL_CRBL_RUNTIME = [
+    "g_L_grc", "g_L_goc", "g_L_mli", "g_L_pc",
+    "E_L_grc", "E_L_goc", "E_L_mli", "E_L_pc",
+    "C_m_grc", "C_m_goc", "C_m_mli", "C_m_pc",
+    "E_e", "E_i",
+    "Q_mf_grc", "Q_mf_goc", "Q_grc_goc", "Q_grc_mli", "Q_grc_pc",
+    "Q_goc_grc", "Q_goc_goc", "Q_mli_mli", "Q_mli_pc",
+    "tau_mf_grc", "tau_mf_goc", "tau_grc_goc", "tau_grc_mli", "tau_grc_pc",
+    "tau_goc_grc", "tau_goc_goc", "tau_mli_mli", "tau_mli_pc",
+    "K_mossy_grc", "K_mossy_goc", "K_grc_goc", "K_grc_mli", "K_grc_pc",
+    "K_goc_goc", "K_mli_mli", "K_mli_pc",
+    "N_grc", "N_goc", "N_mli", "N_pc", "N_mossy",
+    "alpha_grc", "alpha_goc", "alpha_mli", "alpha_pc",
+    "T",
+    "tau_OU", "weight_noise",
+    "external_input_ex_ex", "external_input_ex_in", "external_input_in_ex",
+    "frac_mossy", "frac_parallel",
+    "mf_to_grc", "mf_to_goc",
+    "pf_to_goc", "pf_to_mli", "pf_to_pc",
+]
+_MODEL_PARM_NAMES["CerebellarMF"] = (
+    list(_MODEL_CRBL_RUNTIME)
+    + [f"P_grc:{k}" for k in range(5)]
+    + [f"P_goc:{k}" for k in range(5)]
+    + [f"P_mli:{k}" for k in range(5)]
+    + [f"P_pc:{k}" for k in range(5)]
+    + ["use_legacy_goc_e_e", "add_noise_mli_pc"])
 
 
 
@@ -451,11 +497,6 @@ class CppHybridBackend:
                 )
         for p in self._all_projections(network_set):
             cfun_name = type(p.cfun).__name__ if p.cfun is not None else None
-            if cfun_name == "PreSigmoidal" and getattr(p.cfun, "dynamic", True):
-                raise NotImplementedError(
-                    "CppHybridBackend supports PreSigmoidal with "
-                    "dynamic=False only."
-                )
             if cfun_name is None:
                 continue  # passthrough projections are supported
             if cfun_name not in _CFUN_IDS:
@@ -562,9 +603,9 @@ class CppHybridBackend:
                 cfun_id, cfun_params, n_cfun_parm = (
                     _PASSTHROUGH_CFUN, np.zeros(0, np.float32), 0)
             else:
-                cfun_id = _CFUN_IDS[cfun_name]
+                cfun_id = _CFUN_TYPE_IDS[_cfun_type(p)]
                 cfun_params = self._cfun_params(p.cfun)
-                n_cfun_parm = len(_CFUN_PARAM_ATTRS[cfun_name])
+                n_cfun_parm = len(_CPP_CFUN_PARAM_ATTRS[cfun_name])
             if is_inter:
                 pr_name = (getattr(p, "name", None)
                            or f"{src_name}_to_{tgt_name}")
@@ -661,7 +702,7 @@ class CppHybridBackend:
     @staticmethod
     def _cfun_params(cfun) -> np.ndarray:
         """(n_parm,) float32 cfun parameter values, ordered like nb_hybrid."""
-        attrs = _CFUN_PARAM_ATTRS[type(cfun).__name__]
+        attrs = _CPP_CFUN_PARAM_ATTRS[type(cfun).__name__]
         params = np.zeros(max(idx for _, idx in attrs) + 1, dtype=np.float32)
         for name, idx in attrs:
             # some cfuns (e.g. Kuramoto.inv_N) are post-scaling conventions
@@ -672,14 +713,14 @@ class CppHybridBackend:
 
     @staticmethod
     def _params_for_model(model, names) -> np.ndarray:
-        """(n_parm,) float32 — handles Zerlaut P_e:/P_i: expansion."""
+        """(n_parm,) float32 — handles '<attr>:<idx>' array-element expansion
+        (Zerlaut P_e:/P_i:, CerebellarMF P_grc:/P_goc:/P_mli:/P_pc:)."""
         vals = []
         for k in names:
-            if k.startswith("P_e:") or k.startswith("P_i:"):
-                base, _ = k.split(":")
-                idx = int(k.split(":")[1])
+            if ":" in k:
+                base, idx_s = k.split(":", 1)
                 arr = np.asarray(getattr(model, base), dtype=np.float32).ravel()
-                vals.append(float(arr[idx]))
+                vals.append(float(arr[int(idx_s)]))
             else:
                 vals.append(float(np.asarray(
                     getattr(model, k), dtype=np.float32).ravel()[0]))
@@ -906,11 +947,12 @@ class CppHybridBackend:
         self._init_states(sim, analysis, network_set, initial_states, width)
 
         stims = self._build_stim_arrays(analysis, int(nstep), width)
-        stim_obj = stims[0] if len(stims) == 1 else (stims if stims else None)
-        if len(stims) > 1:
-            raise NotImplementedError(
-                "stimuli on multiple subnetworks not yet supported"
-            )
+        # Align stimulus arrays with subnetwork order (None where absent);
+        # the core accepts a per-subnet sequence.
+        stim_iter = iter(stims)
+        stim_by_sn = [next(stim_iter) if sn.stimuli else None
+                      for sn in analysis.subnets]
+        stim_obj = stim_by_sn if stims else None
 
         if not stoch:
             outs = sim.run(int(nstep), cs, None, stim_obj)
@@ -921,7 +963,8 @@ class CppHybridBackend:
             chunk_results = []
             while remaining > 0:
                 this_chunk = min(remaining, max(cs, 1))
-                noises = []
+                # one noise array per subnetwork (None where deterministic)
+                noise_by_sn = [None] * len(analysis.subnets)
                 for sn, std, rng in zip(stoch, noise_std, rngs):
                     dw = rng.randn(this_chunk, sn.n_svar, sn.n_nodes,
                                    sn.n_modes)
@@ -930,14 +973,8 @@ class CppHybridBackend:
                     nz = np.ascontiguousarray(
                         np.repeat(dw[..., np.newaxis], width,
                                   axis=4)).astype(np.float32)
-                    noises.append(nz)
-                outs = sim.run(this_chunk, 0,
-                               noises[0] if len(noises) == 1 else noises,
-                               None) if len(stoch) == 1 else None
-                if len(stoch) != 1:
-                    raise NotImplementedError(
-                        "multiple stochastic subnetworks not yet supported"
-                    )
+                    noise_by_sn[analysis.subnets.index(sn)] = nz
+                outs = sim.run(this_chunk, 0, noise_by_sn, stim_obj)
                 chunk_results.append(outs)
                 remaining -= this_chunk
             # concatenate chunk outputs along the chunk axis
