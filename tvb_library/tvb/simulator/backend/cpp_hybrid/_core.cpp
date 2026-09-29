@@ -45,7 +45,16 @@ static nb::ndarray<nb::numpy, T> make_owned_array(
 #define M_PI_F 3.14159265358979323846f
 #endif
 
-#define INLINE __attribute__((always_inline)) inline
+// Portability: GCC/Clang inline hints; MSVC ignores them (attributes are
+// only optimization hints here, not required for correctness).
+#if defined(_MSC_VER) && !defined(__clang__)
+#define CPH_INLINE_HINT inline
+#define CPH_NOINLINE
+#else
+#define CPH_INLINE_HINT __attribute__((always_inline)) inline
+#define CPH_NOINLINE __attribute__((noinline))
+#endif
+#define INLINE CPH_INLINE_HINT
 #include <cstring>
 
 namespace cph {
@@ -62,7 +71,7 @@ static bool cph_have_generic = false;
 // 5 HyperbolicTangent(pre, post id), 6 SigmoidalJansenRit(pre v0-v1, post a*gx)
 // 7 PreSigmoidal static (pre H*(Q+tanh(G*(P*v0-theta))), post id)
 
-template <int W> __attribute__((noinline)) static void cfun_post(int id,
+template <int W> CPH_NOINLINE static void cfun_post(int id,
                                               float *cx, const float *p) {
   switch (id) {
   case 0:  // Linear: a*gx + b
@@ -89,7 +98,7 @@ template <int W> __attribute__((noinline)) static void cfun_post(int id,
 
 // per-edge pre transform of the source value(s) (v = src cvar values)
 template <int W>
-__attribute__((noinline)) static void cfun_pre(int id, float *v,
+CPH_NOINLINE static void cfun_pre(int id, float *v,
                                                const float *p,
                                                const float *xi) {
   switch (id) {
@@ -173,7 +182,7 @@ INLINE static void model_dims(int model_id, int &n_svar, int &n_parm,
 
 // MontbrioPazoRoxin: svars (r, V); params (tau, I, Delta, J, eta, cr)
 template <int W>
-__attribute__((noinline)) static void dfun_mpr(float *dx, const float *x, int node, int mode,
+CPH_NOINLINE static void dfun_mpr(float *dx, const float *x, int node, int mode,
                             int n_node, int n_modes, const float *c,
                             const float *p, int n_parm) {
   const float *r0 = x + XOFF(0);
@@ -194,7 +203,7 @@ __attribute__((noinline)) static void dfun_mpr(float *dx, const float *x, int no
 }
 
 template <int W>
-__attribute__((noinline)) static void clamp_mpr(float *x, int node, int mode, int n_node,
+CPH_NOINLINE static void clamp_mpr(float *x, int node, int mode, int n_node,
                              int n_modes) {
   float *r = x + XOFF(0);
   for (int i = 0; i < W; i++) r[i] = r[i] * (r[i] > 0.f);
@@ -203,7 +212,7 @@ __attribute__((noinline)) static void clamp_mpr(float *x, int node, int mode, in
 // Generic2dOscillator: svars (V, W); cvar 1; params
 // (tau, I, a, b, c, d, e, f, g, beta, alpha, gamma)
 template <int W>
-__attribute__((noinline)) static void dfun_g2d(float *dx, const float *x, int node, int mode,
+CPH_NOINLINE static void dfun_g2d(float *dx, const float *x, int node, int mode,
                             int n_node, int n_modes, const float *c,
                             const float *p, int n_parm) {
   const float *V0 = x + XOFF(0);
@@ -226,7 +235,7 @@ __attribute__((noinline)) static void dfun_g2d(float *dx, const float *x, int no
 
 // Kuramoto: 1 svar (theta); cvar 1; params (omega)
 template <int W>
-__attribute__((noinline)) static void dfun_kuramoto(float *dx, const float *x, int node, int mode,
+CPH_NOINLINE static void dfun_kuramoto(float *dx, const float *x, int node, int mode,
                                  int n_node, int n_modes, const float *c,
                                  const float *p, int n_parm) {
   const float *t0 = x + XOFF(0);
@@ -238,7 +247,7 @@ __attribute__((noinline)) static void dfun_kuramoto(float *dx, const float *x, i
 
 // SupHopf: svars (x, y); cvar 2; params (a, omega)
 template <int W>
-__attribute__((noinline)) static void dfun_suphopf(float *dx, const float *x, int node, int mode,
+CPH_NOINLINE static void dfun_suphopf(float *dx, const float *x, int node, int mode,
                                 int n_node, int n_modes, const float *c,
                                 const float *p, int n_parm) {
   const float *x0 = x + XOFF(0);
@@ -259,7 +268,7 @@ __attribute__((noinline)) static void dfun_suphopf(float *dx, const float *x, in
 
 // Linear: 1 svar (x); cvar 1; params (gamma)
 template <int W>
-__attribute__((noinline)) static void dfun_linear(float *dx, const float *x, int node, int mode,
+CPH_NOINLINE static void dfun_linear(float *dx, const float *x, int node, int mode,
                                int n_node, int n_modes, const float *c,
                                const float *p, int n_parm) {
   const float *x0 = x + XOFF(0);
@@ -272,7 +281,7 @@ __attribute__((noinline)) static void dfun_linear(float *dx, const float *x, int
 // ReducedWongWang: 1 svar (S); cvar 1;
 // params (a, b, d, gamma, tau_s, w, J_N, I_o)
 template <int W>
-__attribute__((noinline)) static void dfun_rww(float *dx, const float *x, int node, int mode,
+CPH_NOINLINE static void dfun_rww(float *dx, const float *x, int node, int mode,
                             int n_node, int n_modes, const float *c,
                             const float *p, int n_parm) {
   const float *S0 = x + XOFF(0);
@@ -295,7 +304,7 @@ __attribute__((noinline)) static void dfun_rww(float *dx, const float *x, int no
 //  a_i, b_i, c_i, theta_i, r_e, r_i, k_e, k_i, P, Q, alpha_e, alpha_i,
 //  shift_sigmoid)
 template <int W>
-__attribute__((noinline)) static void dfun_wc(float *dx, const float *x, int node, int mode,
+CPH_NOINLINE static void dfun_wc(float *dx, const float *x, int node, int mode,
                            int n_node, int n_modes, const float *c,
                            const float *p, int n_parm) {
   const float *E0 = x + XOFF(0);
@@ -334,7 +343,7 @@ __attribute__((noinline)) static void dfun_wc(float *dx, const float *x, int nod
 // JansenRit: 6 svars (y0..y5); cvar 2 (slot 0 used);
 // params (nu_max, r, v0, a, a_1, a_2, a_3, a_4, A, b, B, J, mu)
 template <int W>
-__attribute__((noinline)) static void dfun_jr(float *dx, const float *x, int node, int mode,
+CPH_NOINLINE static void dfun_jr(float *dx, const float *x, int node, int mode,
                            int n_node, int n_modes, const float *c,
                            const float *p, int n_parm) {
   const float *c0 = c + COFF(0);
@@ -364,7 +373,7 @@ __attribute__((noinline)) static void dfun_jr(float *dx, const float *x, int nod
 // (x0, Iext, Iext2, a, b, slope, tt, Kvf, c, d, r, Ks, Kf, aa, bb, tau,
 //  modification)
 template <int W>
-__attribute__((noinline)) static void dfun_epi(float *dx, const float *x, int node, int mode,
+CPH_NOINLINE static void dfun_epi(float *dx, const float *x, int node, int mode,
                             int n_node, int n_modes, const float *c,
                             const float *p, int n_parm) {
   const float *cp1 = c + COFF(0);
@@ -405,7 +414,7 @@ __attribute__((noinline)) static void dfun_epi(float *dx, const float *x, int no
 // Epileptor2D: 2 svars (x1, z); cvar 1; params
 // (x0, Iext, a, b, slope, c, d, r, Kvf, Ks, tt, modification)
 template <int W>
-__attribute__((noinline)) static void dfun_epi2d(float *dx, const float *x, int node, int mode,
+CPH_NOINLINE static void dfun_epi2d(float *dx, const float *x, int node, int mode,
                               int n_node, int n_modes, const float *c,
                               const float *p, int n_parm) {
   const float *cp = c + COFF(0);
@@ -474,7 +483,7 @@ INLINE static float z_TF(float gL, float Cm, float Qe, float te, float Ee,
 
 // ZerlautAdaptationFirstOrder: svars (E,I,W_e,W_i,ou_drift)
 template <int W>
-__attribute__((noinline)) static void dfun_zerlaut1(float *dx, const float *x, int node,
+CPH_NOINLINE static void dfun_zerlaut1(float *dx, const float *x, int node,
     int mode, int n_node, int n_modes, const float *c, const float *p, int n_parm) {
   const float *E0 = x + XOFF(0), *I0 = x + XOFF(1), *We0 = x + XOFF(2),
               *Wi0 = x + XOFF(3), *ou0 = x + XOFF(4);
@@ -516,7 +525,7 @@ __attribute__((noinline)) static void dfun_zerlaut1(float *dx, const float *x, i
 
 // ZerlautAdaptationSecondOrder: svars (E,I,C_ee,C_ei,C_ii,W_e,W_i,ou_drift)
 template <int W>
-__attribute__((noinline)) static void dfun_zerlaut2(float *dx, const float *x, int node,
+CPH_NOINLINE static void dfun_zerlaut2(float *dx, const float *x, int node,
     int mode, int n_node, int n_modes, const float *c, const float *p, int n_parm) {
   const float *E0=x+XOFF(0), *I0=x+XOFF(1), *Cee0=x+XOFF(2), *Cei0=x+XOFF(3),
               *Cii0=x+XOFF(4), *We0=x+XOFF(5), *Wi0=x+XOFF(6), *ou0=x+XOFF(7);
@@ -601,7 +610,7 @@ __attribute__((noinline)) static void dfun_zerlaut2(float *dx, const float *x, i
 }
 
 template <int W>
-__attribute__((noinline)) static void dfun_dispatch(int model_id, float *dx, const float *x,
+CPH_NOINLINE static void dfun_dispatch(int model_id, float *dx, const float *x,
                                  int node, int mode, int n_node, int n_modes,
                                  const float *c, const float *p, int n_parm) {
   if (model_id >= 100) {
@@ -630,7 +639,7 @@ __attribute__((noinline)) static void dfun_dispatch(int model_id, float *dx, con
 }
 
 template <int W>
-__attribute__((noinline)) static void clamp_dispatch(int model_id, float *x, int node, int n_node,
+CPH_NOINLINE static void clamp_dispatch(int model_id, float *x, int node, int n_node,
                                   int n_modes) {
   for (int j = 0; j < n_node; j++)
     for (int m = 0; m < n_modes; m++) {

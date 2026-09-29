@@ -55,7 +55,7 @@ jobs:
     # tvb_library scikit-build-core project (its pyproject.toml is picked up
     # from package-dir). Wheels land in `wheelhouse/` and contain the full
     # tvb package tree plus the compiled extension.
-    - uses: pypa/cibuildwheel@v2.23
+    - uses: pypa/cibuildwheel@v3
       with:
         package-dir: tvb_library
       env:
@@ -63,7 +63,7 @@ jobs:
         # needs >=3.10), so only build/test CPython 3.12.
         CIBW_BUILD: 'cp312-*'
         CIBW_SKIP: 'pp* *i686 *win32 *musl* *universal2 cp38-* cp39-* cp310-* cp311-*'
-        CIBW_BEFORE_TEST: pip install numpy
+        CIBW_TEST_REQUIRES: numpy
         # The wheel installs the whole tvb package including the compiled
         # extension; verify the nested relative import resolves the .so.
         CIBW_TEST_COMMAND: >-
