@@ -35,3 +35,6 @@ coverage.xml
 
 # virtual environments
 .venv/
+
+# pi coding agent internal bookkeeping (goals, sessions)
+.pi/

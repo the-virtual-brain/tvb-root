@@ -23,6 +23,7 @@ env:
 
 jobs:
   build:
+    if: github.ref_name != 'tvbkh'  # tvbkh branch runs only the cpp-hybrid workflow
     name: Build and Push Docker images
     runs-on: ubuntu-latest
 

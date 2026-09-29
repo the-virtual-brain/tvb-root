@@ -1,0 +1,112 @@
+name: Wheels
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+     - master
+  release:
+    types:
+      - published
+
+# The nanobind C++ hybrid-simulator extension
+# (tvb/simulator/backend/cpp_hybrid/_core.cpp) is built as part of the
+# tvb-library package itself (see tvb_library/CMakeLists.txt +
+# tvb_library/pyproject.toml, scikit-build-core). Every wheel/sdist below
+# therefore contains the compiled `_cpp_hybrid` extension.
+
+jobs:
+  build_sdist:
+    if: github.ref_name != 'tvbkh'  # tvbkh branch runs only the cpp-hybrid workflow
+    name: Build SDist
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Build SDist
+      run: pipx run build --sdist tvb_library
+
+    - name: Check metadata
+      run: pipx run twine check tvb_library/dist/*
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: dist-sdist
+        path: tvb_library/dist/*.tar.gz
+
+  build_wheels:
+    if: github.ref_name != 'tvbkh'  # tvbkh branch runs only the cpp-hybrid workflow
+    name: Wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-14, windows-latest]
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    # cibuildwheel runs from the repo root by default; point it at the
+    # tvb_library scikit-build-core project (its pyproject.toml is picked up
+    # from package-dir). Wheels land in `wheelhouse/` and contain the full
+    # tvb package tree plus the compiled extension.
+    - uses: pypa/cibuildwheel@v2.23
+      with:
+        package-dir: tvb_library
+      env:
+        # skip lots of irrelevant stuff to keep gha fast
+        # also skip Python 3.8 as nanobind no longer supports it
+        # (we target cp312 stable-ABI wheels)
+        CIBW_SKIP: 'pp* *i686 *win32 *musl* *universal2 cp38-*'
+        CIBW_BEFORE_TEST: pip install numpy
+        # The wheel installs the whole tvb package including the compiled
+        # extension; verify the nested relative import resolves the .so.
+        CIBW_TEST_COMMAND: >-
+          python -c "import tvb.simulator.backend.cpp_hybrid as cph; import tvb.simulator.backend.cpp_hybrid._cpp_hybrid as m; print(m.__file__); assert m.__file__.endswith('.so')"
+
+    - name: Verify clean directory
+      run: git diff --exit-code
+      shell: bash
+
+    - name: Upload wheels
+      uses: actions/upload-artifact@v4
+      with:
+        path: wheelhouse/*.whl
+        name: dist-${{ matrix.os }}
+
+  upload_all:
+    name: Upload if release
+    needs: [build_wheels, build_sdist]
+    runs-on: ubuntu-latest
+    if: github.ref_name != 'tvbkh' && github.event_name == 'release' && github.event.action == 'published'
+
+    steps:
+    - uses: actions/setup-python@v5
+
+    - uses: actions/download-artifact@v4
+      with:
+        pattern: dist-*
+        merge-multiple: true
+
+    - name: collect distributions
+      run: |
+        mkdir -p dist
+        shopt -s nullglob
+        for f in *.whl *.tar.gz; do cp -v "$f" dist/; done
+        find dist -type f
+
+    - uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_PASSWORD }}
+
+    - name: Upload wheels
+      uses: actions/upload-artifact@v4
+      with:
+        path: dist/*
+        name: wheels.zip
