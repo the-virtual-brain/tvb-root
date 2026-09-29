@@ -262,6 +262,8 @@ function _hybridStepForms(form) {
 
 function _lockHybridForm(form) {
     _hybridStepForms(form).forEach(function (stepForm) {
+        // for the styles telling a finished step apart, e.g. the Subnetwork tabs joining the editor
+        stepForm.classList.add("is-locked");
         stepForm.querySelectorAll("button").forEach(function (button) {
             // Set up region Model included: it is only offered while its section can be edited
             if (!_staysEnabled(button)) {
@@ -276,6 +278,7 @@ function _lockHybridForm(form) {
 
 function _unlockHybridForm(form) {
     _hybridStepForms(form).forEach(function (stepForm) {
+        stepForm.classList.remove("is-locked");
         stepForm.querySelectorAll("button").forEach(function (button) {
             button.style.visibility = "visible";
         });

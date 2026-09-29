@@ -41,19 +41,19 @@
             is locked like every finished one, but switching Subnetwork is what rebuilds the editor below
             it, so it has to keep working. -#}
         {% if renderer.is_dynamics_summary_fragment %}
-            <div class="hybrid-subnetwork-tabs" data-hybrid-keep-enabled="true">
+            <div class="hybrid-subnetwork-tabs" role="tablist" data-hybrid-keep-enabled="true">
                 {% for choice in renderer.subnetwork_choices %}
-                    <button type="button" tabindex="1"
+                    {#- A tab is as wide as the Subnetwork's name: what it is configured with is in the
+                        tooltip, and an unsaved draft is marked with a dot. -#}
+                    <button type="button" tabindex="1" role="tab"
+                            aria-selected="{{ 'true' if choice.is_selected else 'false' }}"
                             class="hybrid-subnetwork-tab {{ 'is-selected' if choice.is_selected else '' }} {{ 'is-modified' if choice.is_modified else '' }}"
-                            title="Configure the Model and Integrator of {{ choice.name }}"
+                            title="{{ choice.name }}: {{ choice.count }} region{{ 's' if choice.count != 1 else '' }}, {{ choice.model }}, {{ choice.integrator }}{% if choice.noise %} with {{ choice.noise }} noise{% endif %}{{ ' (unsaved changes)' if choice.is_modified else '' }}"
                             onclick="hybridSelectSubnetwork('{{ choice.id }}')">
                         <span class="hybrid-tab-name">{{ choice.name }}</span>
-                        <span class="hybrid-tab-detail">{{ choice.count }} region{{ 's' if choice.count != 1 else '' }}</span>
-                        <span class="hybrid-tab-detail">{{ choice.model }}</span>
-                        <span class="hybrid-tab-detail">{{ choice.integrator }}{% if choice.noise %} &middot; {{ choice.noise }} noise{% endif %}</span>
-                        {% if choice.is_modified %}
-                            <span class="hybrid-tab-modified">unsaved changes</span>
-                        {% endif %}
+                        {%- if choice.is_modified %}
+                            <span class="hybrid-tab-modified" aria-label="unsaved changes"></span>
+                        {%- endif %}
                     </button>
                 {% endfor %}
             </div>

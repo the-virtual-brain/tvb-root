@@ -16,7 +16,6 @@
             from the fields of the whole simulation around them. The row of actions stays outside:
             it stores the dynamics of every Subnetwork, not only of this one. -#}
         <div class="hybrid-editor-fields">
-            <p class="hybrid-editor-title">Dynamics of <strong>{{ renderer.editor_subnetwork_name }}</strong></p>
             {% for section in renderer.editor_sections[:-1] %}
                 {% with renderer = section %}
                     {% include 'hybrid_simulator_fragment.html' %}

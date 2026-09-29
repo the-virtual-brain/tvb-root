@@ -138,6 +138,10 @@ class TestHybridRendering(BaseTransactionalControllerTest):
         assert 'Subnetwork A' in dynamics_step_html
         # the selector keeps working once this step is locked, which is what that marker is read for
         assert 'data-hybrid-keep-enabled="true"' in dynamics_step_html
+        # and it is a row of tabs, the Subnetwork being configured the selected one
+        assert 'role="tablist"' in dynamics_step_html
+        assert dynamics_step_html.count('role="tab"') == 1
+        assert 'aria-selected="true"' in dynamics_step_html
 
         # each box describes its Subnetwork with the names the selectors offered, and it is the only
         # place this step does so - a second summary above the boxes used to repeat all of it
@@ -217,7 +221,8 @@ class TestHybridRendering(BaseTransactionalControllerTest):
             assert 'hybridPreviousStep(' in last_form
             assert 'hybridSaveSubnetworkDynamics()' in last_form
             assert 'Save and continue' in last_form
-        assert 'Dynamics of <strong>Subnetwork A</strong>' in selected_html
+        # the editor carries no title of its own: the selected tab names the Subnetwork
+        assert 'Dynamics of' not in selected_html
         # the Model and Integrator sections are framed apart from the simulation wide fields, and the
         # row of actions, which stores every Subnetwork, is left outside that frame
         frame = selected_html[selected_html.index('class="hybrid-editor-fields"'):selected_html.rindex('<form')]

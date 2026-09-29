@@ -297,55 +297,98 @@ button.hybrid-subnetwork-action:disabled {
  */
 
 /**
- * One button per Subnetwork, for choosing which one the steps below are configuring. It sits on the
- * Subnetwork dynamics step and keeps working once that step is locked, so it must not read as disabled.
+ * One tab per Subnetwork, for choosing which one the editor below configures. It sits on the Subnetwork
+ * dynamics step and keeps working once that step is locked, so it must not read as disabled.
+ *
+ * The strip is indented like the editor's outlined block, and its baseline has the block's colour. Once
+ * the editor is open under the locked step, that baseline becomes the block's top edge and the selected
+ * tab opens into it. The colours are opaque on purpose: the selected tab covers the baseline to join the
+ * block, which a translucent background would let show through.
  */
 .hybrid-subnetwork-tabs {
+    --hybrid-tab-accent: #41921f;
+    --hybrid-tab-selected: #b3c4ab;
+    align-items: flex-end;
+    border-bottom: 2px solid var(--hybrid-tab-accent);
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-    margin: 0 10px 10px 10px;
+    gap: 3px;
+    margin: 4px 24px 10px 24px;
+    padding-left: 8px;
 }
 
 .hybrid-subnetwork-tab {
-    background: rgba(0, 0, 0, 0.04);
-    border: 1px solid rgba(0, 0, 0, 0.25);
-    border-radius: 3px;
+    background: #b8babf;
+    border: 1px solid #878a94;
+    border-bottom: none;
+    border-radius: 5px 5px 0 0;
+    align-items: center;
     color: #3e4252;
     cursor: pointer;
     display: flex;
-    flex-direction: column;
     font-size: 11px;
-    gap: 2px;
-    padding: 5px 8px;
-    text-align: left;
+    gap: 5px;
+    padding: 4px 10px 5px 10px;
 }
 
 .hybrid-subnetwork-tab:hover {
-    background: rgba(0, 0, 0, 0.09);
+    background: #c4c6cb;
 }
 
 .hybrid-subnetwork-tab.is-selected {
-    background: rgba(65, 146, 31, 0.18);
-    border-color: #41921f;
+    background: var(--hybrid-tab-selected);
+    border: 2px solid var(--hybrid-tab-accent);
+    border-bottom: none;
+    /* reaches over the baseline, so the selected tab and what is under it read as one surface */
+    margin-bottom: -2px;
+    padding: 4px 10px 7px 10px;
+    position: relative;
+}
+
+.hybrid-subnetwork-tab:focus-visible {
+    outline: 2px solid var(--hybrid-tab-accent);
+    outline-offset: -3px;
 }
 
 .hybrid-tab-name {
     font-weight: bold;
+    white-space: nowrap;
 }
 
-.hybrid-tab-detail {
-    color: rgba(0, 0, 0, 0.6);
+.hybrid-subnetwork-tab:not(.is-selected) .hybrid-tab-name {
+    font-weight: normal;
 }
 
 /* a Subnetwork whose draft holds something Save Configuration has not stored yet */
-.hybrid-subnetwork-tab.is-modified {
-    border-color: #c98a00;
+.hybrid-tab-modified {
+    background: #e2a21b;
+    border-radius: 50%;
+    height: 7px;
+    width: 7px;
 }
 
-.hybrid-tab-modified {
-    color: #a86f00;
-    font-style: italic;
+/**
+ * The editor open under the locked Subnetwork dynamics step: the tabs sit right on its outlined block.
+ * That step's hidden buttons would otherwise keep a row of space between them, and the strip's baseline
+ * stands in for the block's top edge.
+ */
+form[id="/burst/hybrid/set_subnetwork_dynamics"].is-locked > button {
+    display: none;
+}
+
+form[id="/burst/hybrid/set_subnetwork_dynamics"].is-locked .hybrid-subnetwork-tabs {
+    margin-bottom: 0;
+}
+
+form[id="/burst/hybrid/set_subnetwork_dynamics"] + .hybrid-subnetwork-editor {
+    border-top: none;
+    margin-top: 0;
+    padding-top: 0;
+}
+
+form[id="/burst/hybrid/set_subnetwork_dynamics"] + .hybrid-subnetwork-editor .hybrid-editor-fields {
+    border-top: none;
+    border-radius: 0 0 4px 4px;
 }
 
 /**
@@ -368,16 +411,7 @@ button.hybrid-subnetwork-action:disabled {
     border: 2px solid #41921f;
     border-radius: 4px;
     margin: 0 24px 10px 24px;
-    padding: 0 0 6px 0;
-}
-
-.hybrid-editor-title {
-    background: rgba(65, 146, 31, 0.18);
-    border-bottom: 1px solid #41921f;
-    color: #3e4252;
-    font-size: 11px;
-    margin: 0 0 4px 0;
-    padding: 4px 10px;
+    padding: 4px 0 6px 0;
 }
 
 /* The Noise configures part of the Integrator, and the Equation part of that Noise: one tab each */
