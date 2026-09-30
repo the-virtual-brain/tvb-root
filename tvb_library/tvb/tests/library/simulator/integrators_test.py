@@ -144,6 +144,26 @@ class TestIntegrators(BaseTestCase):
                         f"expected unclamped-predictor result",
             )
 
+    def test_rk4_intermediates_not_clamped(self):
+        """
+        RK4 must evaluate k2, k3, k4 at the genuine intermediate states, as
+        Heun does (issue #781). dfun(x) = -50*x, dt = 0.1, x0 = 0.05, lower
+        boundary 0.0. The unclamped intermediates are -0.075, 0.2375, -1.1375,
+        so k = (-2.5, 3.75, -11.875, 56.875) and
+        x1 = 0.05 + 0.1/6 * (-2.5 + 2*3.75 + 2*(-11.875) + 56.875) = 0.685416...
+        Clamping any intermediate to 0.0 gives a different value.
+        """
+        integrator = integrators.RungeKutta4thOrderDeterministic()
+        integrator.dt = 0.1
+        integrator.bounded_state_variable_indices = numpy.r_[0]
+        integrator.state_variable_boundaries = numpy.array([[0.0, numpy.finfo("double").max]])
+        integrator.configure()
+
+        result = integrator.scheme(
+            numpy.array([[[0.05]]]), lambda s, c, lc: -50.0 * s, 0.0, 0.0, 0.0)
+
+        numpy.testing.assert_allclose(result.flat[0], 0.05 + 0.1 / 6 * 38.125, atol=1e-9)
+
     def test_euler(self):
         euler_det = integrators.EulerDeterministic()
         euler_sto = integrators.EulerStochastic()

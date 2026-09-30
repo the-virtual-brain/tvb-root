@@ -467,15 +467,12 @@ class RungeKutta4thOrderDeterministic(Integrator):
 
         k1 = dfun(X, coupling, local_coupling)
         inter_k1 = X + dt2 * k1
-        self.integration_bound_and_clamp(inter_k1)
 
         k2 = dfun(inter_k1, coupling, local_coupling)
         inter_k2 = X + dt2 * k2
-        self.integration_bound_and_clamp(inter_k2)
 
         k3 = dfun(inter_k2, coupling, local_coupling)
         inter_k3 = X + dt * k3
-        self.integration_bound_and_clamp(inter_k3)
 
         k4 = dfun(inter_k3, coupling, local_coupling)
 
