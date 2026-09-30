@@ -43,13 +43,16 @@ import re
 import numpy
 
 from tvb.basic.logger.builder import get_logger
-from tvb.core.entities.file.simulator.view_model import HybridSubnetworkDynamics, HybridSubnetworkViewModel
+from tvb.core.entities.file.simulator.view_model import HybridProjectionViewModel, HybridSubnetworkDynamics, \
+    HybridSubnetworkViewModel, coupling_label
 from tvb.core.neocom import h5
 from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.core.services.exceptions import ServicesBaseException
 from tvb.simulator.hybrid import NetworkSet
 from tvb.simulator.hybrid import Simulator as LibrarySimulator
 from tvb.simulator.hybrid import Subnetwork as LibrarySubnetwork
+from tvb.simulator.coupling import Linear as ClassicLinear
+from tvb.simulator.hybrid import coupling as hybrid_coupling
 from tvb.simulator.hybrid.projection_utils import create_inter_projection, create_intra_projection
 from tvb.simulator.monitors import Projection, Raw, SpatialAverage
 
@@ -663,53 +666,259 @@ class HybridSimulatorService(object):
     DEFAULT_TARGET_CVAR = 0
 
     @classmethod
-    def build_network_set(cls, connectivity, subnetworks, dt):
+    def build_network_set(cls, connectivity, subnetworks, dt, projections=None):
         """
-        Build the ``NetworkSet`` the configuration describes: one IntraProjection per Subnetwork and one
-        InterProjection per connected ordered pair, all sliced out of the Connectivity.
+        Build the ``NetworkSet`` the configuration describes: the IntraProjection of every Subnetwork and
+        the InterProjection of every connected ordered pair, all sliced out of the Connectivity, as the
+        given Projection configurations set them up.
 
         Weights and lengths are sliced by ``tvb.simulator.hybrid.projection_utils``, which indexes them
         as ``(target, source)`` - the Connectivity's own orientation - rather than by this service.
 
-        Coupling variables are left at safe defaults: each side uses its own model's first coupling
-        variable. Choosing them per projection is follow-up work.
+        The configurations are reconciled with the grouping first, on a copy, so a Projection nobody
+        configured is built with the defaults and the given list is left alone. An excluded Projection
+        is not built.
 
-        A pair whose weights block is entirely zero gets no InterProjection: the two Subnetworks are not
-        connected in this Connectivity, so a projection would only carry zeros.
-
+        :param projections: the ``HybridProjectionViewModel`` list; None builds every Projection with
+                            the defaults
         :return: the NetworkSet, configured
         """
+        configurations, _ = cls.reconcile_projections(connectivity, subnetworks, copy.deepcopy(projections or []))
         built = cls.build_library_subnetworks(subnetworks, dt)
+        built_by_id = {subnetwork.id: subnet for subnetwork, subnet in zip(subnetworks, built)}
 
         for subnet in built:
-            subnet.projections = [create_intra_projection(
-                subnet,
-                source_cvar=cls.default_source_cvar(subnet.model),
-                target_cvar=cls.DEFAULT_TARGET_CVAR,
-                connectivity=connectivity,
-                dt=dt)]
+            subnet.projections = []
+
+        inter_projections = []
+        for configuration in configurations:
+            if not configuration.included:
+                continue
+            source = built_by_id[configuration.source_id]
+            target = built_by_id[configuration.target_id]
+            settings = dict(source_cvar=list(configuration.source_cvar),
+                            target_cvar=list(configuration.target_cvar),
+                            connectivity=connectivity, dt=dt, cv=configuration.cv, scale=configuration.scale,
+                            # each build gets its own, the configuration keeps being edited
+                            coupling=copy.deepcopy(configuration.coupling))
+            if configuration.is_intra:
+                source.projections.append(create_intra_projection(source, **settings))
+            else:
+                inter_projections.append(create_inter_projection(
+                    source_subnet=source, target_subnet=target,
+                    source_indices=source.node_indices, target_indices=target.node_indices, **settings))
+
+        for subnet in built:
             subnet.configure()
 
-        projections = []
-        for source in built:
-            for target in built:
-                if source is target:
-                    continue
-                if not cls.are_connected(connectivity, source, target):
-                    continue
-                projections.append(create_inter_projection(
-                    source_subnet=source,
-                    target_subnet=target,
-                    source_cvar=cls.default_source_cvar(source.model),
-                    target_cvar=cls.DEFAULT_TARGET_CVAR,
-                    connectivity=connectivity,
-                    source_indices=source.node_indices,
-                    target_indices=target.node_indices,
-                    dt=dt))
-
-        network_set = NetworkSet(subnets=built, projections=projections)
+        network_set = NetworkSet(subnets=built, projections=inter_projections)
         network_set.configure()
         return network_set
+
+    # ---------------------------------------------------------------- Projection configuration
+
+    @staticmethod
+    def coupling_variable_names(model):
+        """
+        :return: the names of the model's coupling variables, which is what a Projection reads from its
+                 source Model and writes into its target Model
+        """
+        return [str(model.state_variables[int(index)]) for index in numpy.atleast_1d(model.cvar)]
+
+    @staticmethod
+    def default_coupling():
+        """
+        :return: the coupling function a new Projection gets: Linear, with the classic Simulator's
+                 defaults rather than the hybrid Linear's own, so a Hybrid simulation starts from the same
+                 coupling strength a classic one does
+        """
+        return hybrid_coupling.Linear(a=numpy.array(ClassicLinear.a.default, dtype=float),
+                                      b=numpy.array(ClassicLinear.b.default, dtype=float))
+
+    @staticmethod
+    def default_speed(connectivity):
+        """
+        :return: the conduction speed a new Projection gets: the Connectivity's own. A Projection carries
+                 a single speed, so a Connectivity holding one per tract gives their mean.
+        """
+        speed = getattr(connectivity, 'speed', None)
+        if speed is None or numpy.size(speed) == 0:
+            return 3.0
+        return float(numpy.mean(speed))
+
+    @staticmethod
+    def projection_key(projection):
+        """:return: what identifies a Projection on the page: its ordered pair of Subnetworks"""
+        return '{}:{}'.format(projection.source_id, projection.target_id)
+
+    @classmethod
+    def new_projection(cls, source, target, connectivity):
+        """
+        The configuration of a Projection nobody configured yet: the first coupling variable of each side,
+        a scale of 1, the Connectivity's conduction speed and the default coupling function. It is not
+        part of the simulation until the user adds it.
+        """
+        return HybridProjectionViewModel(
+            source_id=source.id, target_id=target.id, included=False,
+            source_cvar=[cls.coupling_variable_names(source.dynamics.model)[0]],
+            target_cvar=[cls.coupling_variable_names(target.dynamics.model)[0]],
+            scale=1.0, cv=cls.default_speed(connectivity), coupling=cls.default_coupling())
+
+    @classmethod
+    def projection_pairs(cls, connectivity, subnetworks):
+        """
+        :return: the ordered Subnetwork pairs a Projection exists for: every Subnetwork to itself, then
+                 every pair with any non zero weight from the first to the second
+        """
+        pairs = [(subnetwork, subnetwork) for subnetwork in subnetworks or []]
+        for source in subnetworks or []:
+            for target in subnetworks or []:
+                if source is not target and cls.are_connected(connectivity, source, target):
+                    pairs.append((source, target))
+        return pairs
+
+    @classmethod
+    def reconcile_projections(cls, connectivity, subnetworks, projections):
+        """
+        Bring the Projection configurations in line with the grouping: a pair that still exists keeps its
+        configuration, a new pair gets the defaults, and the configuration of a pair that no longer exists
+        is dropped. A coupling variable the Subnetwork's current Model does not have falls back to that
+        Model's first one.
+
+        :return: the configurations, in the order the Projections are listed and built, and the ones whose
+                 coupling variables had to be reset
+        """
+        existing = {(projection.source_id, projection.target_id): projection for projection in projections or []}
+        reconciled = []
+        reset = []
+
+        for source, target in cls.projection_pairs(connectivity, subnetworks):
+            projection = existing.get((source.id, target.id))
+            if projection is None:
+                reconciled.append(cls.new_projection(source, target, connectivity))
+                continue
+
+            source_names = cls.coupling_variable_names(source.dynamics.model)
+            target_names = cls.coupling_variable_names(target.dynamics.model)
+            was_reset = False
+            if not projection.source_cvar or any(name not in source_names for name in projection.source_cvar):
+                projection.source_cvar = [source_names[0]]
+                was_reset = True
+            if not projection.target_cvar or any(name not in target_names for name in projection.target_cvar):
+                projection.target_cvar = [target_names[0]]
+                was_reset = True
+            if was_reset:
+                reset.append(projection)
+            reconciled.append(projection)
+
+        return reconciled, reset
+
+    @staticmethod
+    def validate_projection(projection):
+        """
+        What the library only refuses once the simulation runs, refused while it is configured.
+
+        :return: the reasons, keyed by the field they concern; empty when the configuration is valid
+        """
+        errors = {}
+        sources = len(projection.source_cvar or [])
+        targets = len(projection.target_cvar or [])
+        # BaseProjection.apply: as many source as target coupling variables, or a single one on a side
+        if sources and targets and sources != targets and sources != 1 and targets != 1:
+            errors['target_cvar'] = ('{} source and {} target coupling variables: there have to be as many of '
+                                     'each, or a single one on either side.'.format(sources, targets))
+        if projection.cv is None or projection.cv <= 0:
+            errors['cv'] = 'The conduction speed has to be positive.'
+        if projection.scale is None or not numpy.isfinite(projection.scale):
+            errors['scale'] = 'The scale has to be a number.'
+        return errors
+
+    @classmethod
+    def describe_projections(cls, connectivity, subnetworks, projections, reset=()):
+        """
+        Describe the configured Projections for the wizard step, the excluded ones included, so the
+        configuration can be inspected, and changed, without leaving the page.
+
+        The connection counts and delays come from the Connectivity block a Projection is sliced from,
+        so they are there for an excluded Projection as well.
+        """
+        by_id = {subnetwork.id: subnetwork for subnetwork in subnetworks or []}
+        reset_keys = {cls.projection_key(projection) for projection in reset or ()}
+        rows = []
+
+        for projection in projections or []:
+            source = by_id[projection.source_id]
+            target = by_id[projection.target_id]
+            block = numpy.ix_(sorted(target.node_indices), sorted(source.node_indices))
+            weights = numpy.asarray(connectivity.weights)[block]
+            connected = weights != 0
+            lengths = numpy.asarray(connectivity.tract_lengths)[block] if connectivity.tract_lengths is not None \
+                else numpy.zeros_like(weights)
+            longest = float(lengths[connected].max()) if numpy.any(connected) else 0.0
+
+            rows.append({
+                'key': cls.projection_key(projection),
+                'kind': 'Intra' if projection.is_intra else 'Inter',
+                'source': source.name,
+                'target': target.name,
+                'included': bool(projection.included),
+                'shape': '{} x {}'.format(*weights.shape),
+                'connections': int(numpy.count_nonzero(connected)),
+                'source_cvar': list(projection.source_cvar),
+                'target_cvar': list(projection.target_cvar),
+                'coupling': coupling_label(projection.coupling),
+                'scale': projection.scale,
+                'cv': projection.cv,
+                'max_delay': longest / projection.cv if projection.cv else None,
+                'was_reset': cls.projection_key(projection) in reset_keys
+            })
+        return rows
+
+    @staticmethod
+    def pairs_without_projection(subnetworks, projections):
+        """
+        :return: the ordered Subnetwork pairs the Connectivity holds no weight for, and which so have no
+                 Projection at all - worked out from the configurations rather than from a built
+                 NetworkSet, which leaves the excluded Projections out as well
+        """
+        configured = {(projection.source_id, projection.target_id) for projection in projections or []}
+        return [{'source': source.name, 'target': target.name}
+                for source in subnetworks or [] for target in subnetworks or []
+                if source is not target and (source.id, target.id) not in configured]
+
+    @staticmethod
+    def projection_warnings(subnetworks, projections):
+        """
+        :return: what leaving Projections out leaves uncoupled, once any Projection is added: a
+                 Subnetwork whose IntraProjection is not added, and a pair of Subnetworks between which no
+                 Projection is. Before any is added, nothing is coupled, and saying so for every one of
+                 them would only repeat it.
+        """
+        names = {subnetwork.id: subnetwork.name for subnetwork in subnetworks or []}
+        warnings = []
+        if not any(projection.included for projection in projections or []):
+            return warnings
+
+        for projection in projections or []:
+            if projection.is_intra and not projection.included:
+                warnings.append("The regions of {} are not coupled to one another: its IntraProjection is "
+                                "not added.".format(names[projection.source_id]))
+
+        pairs = {}
+        for projection in projections or []:
+            if projection.is_intra:
+                continue
+            pair = frozenset((projection.source_id, projection.target_id))
+            pairs.setdefault(pair, []).append(projection)
+        for subnetwork in subnetworks or []:
+            for other in subnetworks or []:
+                if names[subnetwork.id] >= names[other.id]:
+                    continue
+                between = pairs.get(frozenset((subnetwork.id, other.id)))
+                if between and not any(projection.included for projection in between):
+                    warnings.append("{} and {} are simulated independently: no Projection between them is "
+                                    "added.".format(subnetwork.name, other.name))
+        return warnings
 
     @staticmethod
     def are_connected(connectivity, source, target):

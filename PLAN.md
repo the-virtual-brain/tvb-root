@@ -19,7 +19,7 @@ Keep the first implementation small and validate each step before moving to the 
 
 ## Status
 
-Last updated 2026-09-29.
+Last updated 2026-09-30.
 
 | phase | status |
 |---|---|
@@ -33,6 +33,7 @@ Last updated 2026-09-29.
 | Phase 5 – Global Hybrid Simulator configuration | **Done** |
 | Phase 6 – Launch one Hybrid simulation | **Done** |
 | Phase 7 – Subnetwork editor | **Done** |
+| Phase 8 – Edit and exclude Projections | **Done** |
 | Follow-up features | Not started |
 
 A user can currently select a Connectivity, group its regions into Subnetworks, configure a Model and an
@@ -1924,6 +1925,198 @@ a Model change, *Save and continue* locking the editor, *Previous* from the Proj
 
 ---
 
+## Phase 8 – Edit and exclude Projections
+
+**Status: Done** — see the implementation summary below.
+
+Make the generated Projections editable, and let the user leave any of them out of the simulation.
+
+### Where it starts from
+
+`HybridSimulatorService.build_network_set` generates the Projections every time the Projections step is
+rendered, and nothing about them is stored: one IntraProjection per Subnetwork and one InterProjection per
+ordered pair with any non-zero weight. Every one of them gets the source Model's first coupling variable,
+target slot 0, `scale = 1.0`, no coupling function, and the library's default conduction speed of 3.0.
+The step lists them read only, with their coupling variables as raw indices.
+
+### Decisions
+
+* **Coupling function default:** `Linear` with the classic Simulator's defaults (`a = 0.00390625`,
+  `b = 0`), on every Projection. Until now `cfun` was `None`, i.e. the raw weighted sum times 1.0, which is
+  about 256 times stronger than the classic default. **This changes the results of existing
+  configurations**, which the implementation summary has to say.
+* **Conduction speed default:** the Connectivity's own `speed`, instead of the library's 3.0.
+* Weights and lengths stay derived from the Connectivity and the grouping; they are not editable here.
+* `target_scales` and `mode_map` are not exposed: the library defaults stay (no per target scaling, and an
+  all ones mode map for InterProjections).
+
+### What is shown and edited, per Projection
+
+| Attribute | Applies to | In the GUI |
+|---|---|---|
+| Included (framework only) | both | checkbox; an excluded Projection is not built |
+| `source_cvar` | both | multi-select of the source Model's coupling variables, by name |
+| `target_cvar` | both | multi-select of the target Model's coupling variables, by name |
+| `scale` | both | number |
+| `cfun` | both | select of the hybrid coupling functions (`tvb.simulator.hybrid.coupling`: Linear, Scaling, Sigmoidal, Kuramoto, Difference, HyperbolicTangent, SigmoidalJansenRit, PreSigmoidal) and the parameters of the selected one, reloaded when it changes |
+| `cv` | both | number, with the resulting maximum delay in ms shown read only |
+
+Read only, as today: kind, source and target Subnetworks, weights shape, number of connections. Not shown:
+`dt` (shared by the whole simulation), `source` / `target` (they follow from the grouping), `idelays` /
+`max_delay` (derived), the history buffer, and the identity mode map of an IntraProjection.
+
+### Storage
+
+* `HybridProjectionViewModel`, listed on `HybridSimulatorAdapterModel.projections`: kind, source and target
+  Subnetwork **ids** (stable across renaming), included, source and target coupling variables as **names**,
+  scale, cfun, cv.
+* Reconciled with the grouping whenever the Projections step opens: a pair that still exists keeps its
+  settings, a new pair gets the defaults, a pair that no longer exists is dropped.
+* A stored coupling variable name the Subnetwork's current Model does not have falls back to the default,
+  and the row says so. Names rather than indices are stored for this reason.
+* `build_network_set` builds from this list: excluded Projections are skipped, and the stored values are
+  passed to `create_intra_projection` / `create_inter_projection`.
+* To check early: that a hybrid coupling instance survives the H5 serialisation of the adapter model.
+
+### The Projections step
+
+* The table stays the overview, with an Included checkbox per row and the coupling variables by name,
+  the coupling function and the scale.
+* Excluding keeps the row, greyed out and marked as not simulated, so it can be included again. Deleting
+  would lose its settings, and a Projection cannot be re-created without weights.
+* Clicking a row opens its editor in the third column, like the Subnetworks board and Set up region
+  Model. Changes are applied as they are made, like the Subnetwork editor, and the row follows them.
+* Warnings on the step: an excluded IntraProjection leaves that Subnetwork's regions uncoupled from one
+  another; excluding everything between two Subnetworks simulates them independently.
+
+### Validation
+
+Refused where it is edited, with the reason shown in the editor:
+
+* source and target coupling variable counts must be equal, or one of them 1 (`BaseProjection.apply`);
+* coupling function requirements, e.g. SigmoidalJansenRit in its classic form reading two source
+  variables;
+* `cv > 0`.
+
+The library's own checks, when the NetworkSet is built, remain the last guard.
+
+### Reuse
+
+`adapters/forms/coupling_forms.py` has a form per classic coupling function. The hybrid classes share
+their names and most parameters, so a hybrid enum can map onto the same forms; each one is to be checked
+parameter by parameter, since the hybrid SigmoidalJansenRit and PreSigmoidal carry extra ones.
+
+### Order
+
+1. Storage, reconciliation, and building from it, with the new defaults.
+2. The Included checkbox on the table.
+3. The editor in the third column.
+4. Validation messages.
+
+### Tests
+
+* Defaults: Linear with the classic parameters, and the Connectivity's speed, on every Projection.
+* Reconciliation: settings kept across a regrouping for pairs that survive, dropped for pairs that do not,
+  defaults for new ones; a Model change resetting coupling variables it no longer has.
+* An excluded Projection is not built, and including it again restores its settings.
+* Each edited attribute reaches the built `NetworkSet`.
+* Refused edits: coupling variable counts, coupling function requirements, `cv <= 0`.
+* The stored configuration survives the adapter model's serialisation and launches.
+* Render checks for the table and the editor.
+
+---
+
+## Phase 8 – Implementation Summary
+
+**This changes the results of existing configurations.** No Projection is part of the simulation until
+the user adds it (`HybridProjectionViewModel.included` defaults to False), so a configuration nobody
+added Projections to simulates every Subnetwork uncoupled - where every Projection used to be built. An
+added Projection nobody configured couples through `Linear(a = 0.00390625, b = 0)` at the Connectivity's
+own speed, where it used to be the raw weighted sum at 3.0 mm/ms.
+
+### Storage
+
+* `HybridProjectionViewModel` (`core/entities/file/simulator/view_model.py`) on
+  `HybridSimulatorAdapterModel.projections`: source and target Subnetwork ids, `included`, source and
+  target coupling variables by name, `scale`, `cv`, `coupling`. `HybridCouplingFunctionsEnum` and
+  `coupling_label` live next to it, like `IntegratorViewModelsEnum`, so the service does not depend on
+  the forms.
+* Checked early, as planned: a hybrid coupling instance survives the adapter model's H5 storage
+  (`hybrid_simulator_adapter_test.test_the_projection_configuration_is_stored_and_launched`).
+
+### Service
+
+* `reconcile_projections` keeps the configuration of pairs that still exist, gives new pairs the defaults
+  (`new_projection`: first coupling variable of each Model, scale 1, `default_speed`, `default_coupling`),
+  drops the rest, and resets coupling variable names a Model no longer has, reporting which.
+* `build_network_set(connectivity, subnetworks, dt, projections=None)` reconciles a copy and builds from
+  it, skipping excluded Projections and handing each one's settings to `create_intra_projection` /
+  `create_inter_projection`. The adapter passes `view_model.projections`.
+* `validate_projection`: coupling variable counts (equal, or one of them 1), `cv > 0`, a finite scale.
+* `describe_projections`, `projection_warnings`, `pairs_without_projection` feed the step. Connection
+  counts and the longest delay come from the Connectivity block, so excluded rows have them too.
+
+### Controller and client
+
+* The step lists the Projections added to the simulation (`burst/hybrid_projections_summary.html`): kind,
+  source, target, coupling variables by name, coupling function and scale, speed; before any is added it
+  says so once. The warnings about what is left uncoupled only start once something is added. The list
+  is outlined and indented like the Subnetwork editor's block, in its green. It is read only, and declares the Projections editor for the
+  third column (`configure_projections`), the way the Subnetworks step declares the board.
+* The editor (`burst/hybrid_projections_editor.html`) follows the Subnetwork editor's design: tabs on a
+  baseline, and the selected Projection's editor in an outlined block the selected tab opens into
+  (`burst/hybrid_projection_editor.html`). There are two tabs, each choosing with pickers rather than
+  holding a tab per Projection, since there can be many: *Intra*, whose *Within* picker chooses the
+  Subnetwork, and *Inter*, whose *From* and *To* pickers choose the pair (`select_inter_projection`; *To*
+  only offers the targets connected from the chosen source, and a new source opens its first one). Each
+  counts the added ones and marks them with a check, and points at the last Projection it opened while
+  the other kind is selected (`KEY_LAST_PROJECTION_BY_KIND`). Green, the Subnetwork editor's colour,
+  marks the selected tab and its block whichever kind it is; the step's list names the kind in plain
+  text. The
+  block closes with *Add to the simulation* or *Remove from the simulation*, and the coupling function's
+  parameters sit one tab in. A Projection can be set up before it is added; removing it keeps its
+  settings.
+* `select_projection`, `select_inter_projection`, `set_projection_included` and `set_projection` all answer
+  with the editor, the last one with the values as entered and the reasons when refused
+  (`data-hybrid-applied`). `data-hybrid-changed` says the answer follows a stored change, which is when
+  the client reloads the list on the step.
+* `set_projection` tries the change on a copy: form validation, the coupling function's own form,
+  `validate_projection`, then building the whole NetworkSet with it. Only then is it stored. A new
+  coupling function starts from its defaults (Linear from the classic ones), since the parameters on
+  screen belonged to the previous one.
+* Forms (`adapters/forms/hybrid_projection_forms.py`): `HybridProjectionForm` and `HybridCouplingForm`,
+  the latter generated from each hybrid coupling class's traits.
+* `hybrid_simulator.js`: `hybridSelectProjection`, `hybridSelectInterProjection`,
+  `hybridSetProjectionIncluded`, and applying the editor on every change or Enter, through the request
+  queue; each answer replaces the editor, the field the user moved on to keeps the focus, and a stored
+  change reloads the list.
+
+### Deviations from the specification above
+
+* **Coupling function forms are generated, not reused.** The classic `coupling_forms` are built on the
+  classic classes' traits, whose defaults differ (the hybrid `Linear` defaults to `a = 1`), and they miss
+  the hybrid-only parameters (`e0`, `v0`, `use_classic`, `dynamic`, `globalT`).
+* **No coupling function specific rule.** SigmoidalJansenRit and PreSigmoidal adapt to one or two source
+  variables, so the count rule is the only one `BaseProjection.apply` enforces.
+* **The coupling variable choice keeps the names as they are** (`NamesMultiSelectField`): the default
+  multi select title-cases its labels.
+
+### Tests
+
+185 hybrid tests pass (run with an isolated `TVB_USER_HOME`): 11 new service tests, 11 new controller tests,
+the storage and launch adapter test, and the render check extended to the table, the editor, applied and
+refused edits, a coupling function change and an excluded row. The classic Simulator controller, adapter,
+burst service, serialization and neotraits suites pass unchanged.
+
+Checked in the browser, on an isolated instance: the table and the editor, editing the scale, switching
+to Kuramoto and to Sigmoidal Jansen-Rit, a refused speed of 0, excluding both InterProjections (greyed,
+"not simulated", the independence warning) and including one again, and moving on to the Monitors.
+Launching from that instance failed for every configuration, the untouched one included, with the
+operation subprocess unable to resolve `ConnectivityIndex` in the H5 registry; the launch itself is
+covered by the adapter test, and is to be checked once more on the regular development server.
+
+---
+
 # Follow-up features
 
 **Status: Not started.**
@@ -1932,16 +2125,12 @@ These should be implemented only after the basic workflow is stable.
 
 ## Projection editing
 
-Allow users to:
+Phase 8 covers including and excluding Projections, their coupling variables, coupling function, scale
+and conduction speed. Left for later:
 
-* enable/disable individual projections;
-* change `source_cvar`;
-* change `target_cvar`;
-* change coupling function;
-* change scaling;
-* optionally provide custom weights/lengths.
-
-Support configurations where some Subnetworks are intentionally not connected.
+* per target coupling variable scaling (`target_scales`);
+* the InterProjection mode map (`mode_map`);
+* custom weights/lengths.
 
 ## Subnetwork parameter editing
 

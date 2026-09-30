@@ -478,7 +478,7 @@ form[id="/burst/hybrid/set_subnetwork_dynamics"] + .hybrid-subnetwork-editor .hy
 }
 
 /**
- * The generated Projections and the closing Simulation summary, listed on their wizard steps in the
+ * The included Projections and the closing Simulation summary, listed on their wizard steps in the
  * configuration column. Both are read only, so they reuse the Subnetwork summary table's
  * dark-on-light rules and only add a header row.
  */
@@ -500,6 +500,206 @@ table.hybrid-simulation-summary th[scope="row"] {
     color: rgba(0, 0, 0, 0.6);
     font-size: 11px;
     margin: 6px 10px 0 10px;
+}
+
+/**
+ * The Projections editor sits in the third column, which has no inset of its own around the step's
+ * design, and a darker ground: the tabs and the block reach the column's edges, and the block takes the
+ * light ground of the configuration column so its fields read the same as there.
+ */
+.hybrid-projections-config .hybrid-projection-tabs {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.hybrid-projections-config .hybrid-projection-block {
+    margin-left: 0;
+    margin-right: 0;
+    /* the fieldset inside gives the fields their inset */
+    padding: 4px 0 6px 0;
+}
+
+.hybrid-projections-config .hybrid-projection-summary {
+    margin: 2px 10px 6px 10px;
+}
+
+.hybrid-projection-fields {
+    border: none;
+    margin-bottom: 0;
+}
+
+.hybrid-projections-config .hybrid-projection-block {
+    background: #d9e2d4;
+}
+
+/**
+ * The Projections added to the simulation, on their step: outlined and indented like the Subnetwork
+ * editor's block, in its green, so they read apart from the steps around them.
+ */
+.hybrid-projections-list {
+    background: rgba(65, 146, 31, 0.05);
+    border: 2px solid #41921f;
+    border-radius: 4px;
+    margin: 4px 14px 10px 14px;
+    padding: 4px 10px 8px 10px;
+}
+
+.hybrid-projections-list .hybrid-projections-note {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+/* A Subnetwork left uncoupled by excluding Projections */
+.hybrid-projections-warning {
+    color: #a06800;
+}
+
+/**
+ * The Projections editor, in the Subnetwork editor's design: the Intra and Inter tabs on a baseline, and
+ * under them the selected one's editor in an outlined block the selected tab opens into. Green, the
+ * Subnetwork editor's colour, marks the selected tab, whichever kind it is; the tabs' labels and pickers
+ * tell the kinds apart. The selected tab and its colour come from the Subnetwork tabs' own rules.
+ */
+.hybrid-projection-tabs {
+    gap: 2px;
+    margin-bottom: 0;
+    padding-left: 4px;
+}
+
+/**
+ * Narrower than the Subnetwork tabs, so the Projections of two Subnetworks fit on one row: the selected
+ * one is told by its colour and its joining the block rather than by a bolder, wider, name.
+ */
+.hybrid-projection-tab,
+.hybrid-projection-tab.is-selected {
+    padding-left: 7px;
+    padding-right: 7px;
+}
+
+.hybrid-projection-tab .hybrid-tab-name,
+.hybrid-projection-tab.is-selected .hybrid-tab-name {
+    font-weight: normal;
+}
+
+.hybrid-projection-group {
+    align-self: center;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+    margin: 0 1px 0 6px;
+    text-transform: uppercase;
+}
+
+.hybrid-projection-group:first-child {
+    margin-left: 0;
+}
+
+.hybrid-picker-tab .hybrid-projection-group {
+    color: #3e4252;
+}
+
+/**
+ * The Intra and Inter tabs: their label and their pickers, which choose the Projection each opens -
+ * the Subnetwork for an IntraProjection, the From and To pair for an InterProjection. There can be as
+ * many InterProjections as ordered pairs of Subnetworks, too many for a tab each.
+ */
+.hybrid-picker-tab {
+    gap: 6px;
+}
+
+.hybrid-picker-tab .hybrid-projection-group {
+    margin: 0;
+}
+
+.hybrid-inter-picker {
+    align-items: center;
+    display: flex;
+    font-size: 11px;
+    gap: 3px;
+}
+
+.hybrid-inter-picker select {
+    font-size: 11px;
+    max-width: 160px;
+}
+
+.hybrid-inter-count {
+    color: #a06800;
+    font-size: 10px;
+    font-style: italic;
+    white-space: nowrap;
+}
+
+.hybrid-picker-tab .hybrid-inter-count {
+    color: rgba(0, 0, 0, 0.55);
+    font-style: normal;
+}
+
+/* adding the Projection to the simulation, or removing it, under its fields */
+.hybrid-projection-actions {
+    clear: both;
+    margin: 6px 10px 0 10px;
+}
+
+/**
+ * The editor of the selected Projection, joined to the baseline above it. Its field rows are floated the
+ * way a step's are, so it contains them itself - it is not a fieldset - and it gives them the inset a
+ * step's fieldset does.
+ */
+.hybrid-projection-block {
+    border: 2px solid;
+    border-radius: 0 0 4px 4px;
+    border-top: none;
+    display: flow-root;
+    margin: 0 24px 10px 24px;
+    padding: 4px 10px 6px 10px;
+}
+
+.hybrid-projection-block .hybrid-editor-level-1 {
+    clear: both;
+    display: flow-root;
+}
+
+/* in the selected tab's green, whichever kind of Projection it edits */
+.hybrid-projection-block {
+    background: rgba(65, 146, 31, 0.05);
+    border-color: #41921f;
+}
+
+.hybrid-projection-summary {
+    color: #3e4252;
+    font-size: 11px;
+    margin: 2px 0 6px 0;
+}
+
+.hybrid-projection-block .hybrid-editor-level-1 {
+    margin-left: 24px;
+}
+
+.hybrid-projection-block .hybrid-editor-group {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    clear: both;
+    color: #3e4252;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    margin: 8px 0 4px 0;
+    padding-bottom: 2px;
+    text-transform: uppercase;
+}
+
+.hybrid-projection-added {
+    color: #2f6e14;
+    font-size: 10px;
+    font-weight: bold;
+    margin-left: 4px;
+}
+
+.hybrid-projection-excluded,
+.hybrid-projection-reset {
+    color: #a06800;
+    font-size: 10px;
+    font-style: italic;
+    margin-left: 4px;
 }
 
 /**

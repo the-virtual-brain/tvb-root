@@ -312,16 +312,102 @@ class TestHybridRendering(BaseTransactionalControllerTest):
             self.hybrid_controller.save_subnetwork_dynamics()
 
             projections_html = self.hybrid_controller.set_projections()
+            (projection,) = self.hybrid_controller.context.hybrid_simulator.projections
+            key = self.hybrid_controller.hybrid_simulator_service.projection_key(projection)
+
+            # the editor the step declares for the third column, answering a click on the Projection's
+            # tab, and its answers to an edit
+            cherrypy.request.method = "GET"
+            configure_html = self.hybrid_controller.configure_projections()
+            cherrypy.request.method = "POST"
+            editor_html = self.hybrid_controller.select_projection(projection_key=key)
+            edit = {'source_cvar': 'V', 'target_cvar': 'V', 'scale': '2.0', 'coupling': 'Linear',
+                    'a': '[0.1]', 'b': '[0.0]'}
+            applied_html = self.hybrid_controller.set_projection(projection_key=key, cv='3.0', **edit)
+            refused_html = self.hybrid_controller.set_projection(projection_key=key, cv='0', **edit)
+            kuramoto_html = self.hybrid_controller.set_projection(
+                projection_key=key, cv='3.0', **dict(edit, coupling='Kuramoto'))
+
+            # the editor, and the step, with that Projection added, and removed again
+            added_html = self.hybrid_controller.set_projection_included(projection_key=key, included='true')
+            added_step_html = self.hybrid_controller.set_projections()
+            excluded_html = self.hybrid_controller.set_projection_included(projection_key=key, included='false')
+            excluded_step_html = self.hybrid_controller.set_projections()
 
         # the row closing the Subnetwork editor offers storing, and moving on by storing first
         assert 'hybridSaveSubnetworkDynamics()' in closing_html
         assert "hybridSaveSubnetworkDynamics('/burst/hybrid/set_projections')" in closing_html
 
-        # and the Projections step lists what the configuration produced
+        # and the Projections step lists what the simulation includes - nothing, until a Projection is
+        # added - and declares the editor for the third column
         assert 'action="/burst/hybrid/set_projections"' in projections_html
-        assert 'Intra' in projections_html
-        assert 'Coupling variables' in projections_html
-        assert 'hybrid-projections-summary' in projections_html
+        assert 'data-hybrid-context-url="/burst/hybrid/configure_projections"' in projections_html
+        assert '<table' not in projections_html
+        assert 'No Projection is added yet' in projections_html
+        # without editing anything itself
+        assert 'hybrid-projection-editor' not in projections_html
+        assert 'hybridSelectProjection(' not in projections_html
+
+        # once added, it is listed by name, as it was set up before being added
+        assert '<span class="hybrid-projection-kind is-intra">Intra</span>' in added_step_html
+        assert 'V &rarr; V' in added_step_html
+        assert 'Kuramoto &times; 2.0' in added_step_html
+        # and the editor checks it in the Intra picker, counts it, and offers to remove it
+        assert re.search(r'<option value="{}"[^>]*>✓ Subnetwork A</option>'.format(key), added_html)
+        assert '1 of 1 added' in added_html
+        assert "hybridSetProjectionIncluded('{}', false)".format(key) in added_html
+        assert 'Remove from the simulation' in added_html
+        assert 'data-hybrid-changed="true"' in added_html
+
+        # the editor, in the third column: a single Intra tab, its picker choosing the Subnetwork
+        assert 'id="hybrid-projections-config"' in configure_html
+        assert 'role="tablist"' in configure_html
+        assert '<span class="hybrid-projection-group is-intra">Intra</span>' in configure_html
+        tab = re.search(r'<div role="tab"[^>]*hybrid-intra-tab[^>]*>', configure_html).group(0)
+        assert 'is-intra' in tab and 'is-selected' in tab and 'aria-selected="true"' in tab
+        assert "hybridSelectProjection('{}')".format(key) in tab
+        assert 'id="hybrid-intra-subnetwork"' in configure_html
+        assert re.search(r'<option value="{}" selected>Subnetwork A</option>'.format(key), configure_html)
+        assert '0 of 1 added' in configure_html
+        # no tab of its own for any Projection
+        assert '<button type="button" tabindex="1" role="tab"' not in configure_html
+        # and the Projection's editor is framed under it, in the colour of its kind
+        assert 'class="hybrid-projection-block is-intra" id="hybrid-projection-editor"' in configure_html
+        assert 'Source coupling variables' in configure_html
+        # opening it changes nothing, so the list on the step is not reloaded
+        assert 'data-hybrid-changed="false"' in configure_html
+        assert 'data-hybrid-changed="false"' in editor_html
+
+        # the editor holds the Projection's own fields, its coupling function's parameters, and the button
+        # adding it to the simulation - not added, to begin with
+        assert 'data-projection-key="{}"'.format(key) in editor_html
+        assert "hybridSetProjectionIncluded('{}', true)".format(key) in editor_html
+        assert 'Add to the simulation' in editor_html
+        assert 'not in the simulation' in editor_html
+        for field in ('source_cvar', 'target_cvar', 'scale', 'cv', 'coupling', 'a', 'b'):
+            assert 'name="{}"'.format(field) in editor_html, field
+        assert 'Linear parameters' in editor_html
+        assert '<div class="hybrid-editor-level-1">' in editor_html
+        assert 'data-hybrid-applied="false"' in editor_html
+
+        # an applied edit says so, and asks for the list to be reloaded; a refused one does neither, and
+        # shows why
+        assert 'data-hybrid-applied="true"' in applied_html
+        assert 'data-hybrid-changed="true"' in applied_html
+        assert 'data-hybrid-applied="false"' in refused_html
+        assert 'data-hybrid-changed="false"' in refused_html
+        assert 'The conduction speed has to be positive.' in refused_html
+        # a new coupling function brings its own parameters
+        assert 'Kuramoto parameters' in kuramoto_html
+        assert 'name="b"' not in kuramoto_html
+
+        # removed again, it is no longer checked in the editor, and leaves the list on the step
+        assert '0 of 1 added' in excluded_html
+        assert '✓ Subnetwork A' not in excluded_html
+        assert 'Add to the simulation' in excluded_html
+        assert 'data-hybrid-changed="true"' in excluded_html
+        assert '<table' not in excluded_step_html
+        assert 'No Projection is added yet' in excluded_step_html
 
     def _reach_the_projections(self):
         """Walk the wizard up to the Projections step, which is where the global configuration starts."""

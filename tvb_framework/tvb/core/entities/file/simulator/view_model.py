@@ -42,6 +42,7 @@ from tvb.simulator.integrators import HeunDeterministic, Integrator, IntegratorS
 from tvb.simulator.monitors import Monitor, EEG, MEG, iEEG, Raw, SubSample, SpatialAverage, GlobalAverage, \
     TemporalAverage, Projection, Bold, BoldRegionROI
 from tvb.simulator.models import Model, Generic2dOscillator
+from tvb.simulator.hybrid import coupling as hybrid_coupling
 from tvb.simulator.noise import Noise, Additive, Multiplicative
 from tvb.simulator.simulator import Simulator
 
@@ -497,6 +498,97 @@ class HybridSubnetworkViewModel(ViewModel):
         return self.dynamics.integrator
 
 
+class HybridCouplingFunctionsEnum(TupleEnum):
+    """
+    The coupling functions a Hybrid Simulator Projection can use: the ones of tvb.simulator.hybrid.coupling,
+    whose hooks are called differently from the classic Simulator's.
+    """
+    LINEAR = (hybrid_coupling.Linear, "Linear")
+    SCALING = (hybrid_coupling.Scaling, "Scaling")
+    SIGMOIDAL = (hybrid_coupling.Sigmoidal, "Sigmoidal")
+    HYPERBOLIC_TANGENT = (hybrid_coupling.HyperbolicTangent, "Hyperbolic tangent")
+    SIGMOIDAL_JANSEN_RIT = (hybrid_coupling.SigmoidalJansenRit, "Sigmoidal Jansen-Rit")
+    PRESIGMOIDAL = (hybrid_coupling.PreSigmoidal, "Presigmoidal")
+    DIFFERENCE = (hybrid_coupling.Difference, "Difference")
+    KURAMOTO = (hybrid_coupling.Kuramoto, "Kuramoto")
+
+
+def coupling_label(coupling):
+    """
+    :return: the name the coupling function selector gives the class of this coupling function
+    """
+    for member in HybridCouplingFunctionsEnum:
+        if member.value is type(coupling):
+            return str(member)
+    return type(coupling).__name__
+
+
+class HybridProjectionViewModel(ViewModel):
+    """
+    Configuration of one Projection of the Hybrid Simulator: an IntraProjection when it goes from a
+    Subnetwork to itself, an InterProjection otherwise. Its weights and lengths are not configured here,
+    they are always sliced out of the Connectivity by the Subnetwork grouping.
+
+    Subnetworks are referred to by identifier, so the configuration survives renaming them, and coupling
+    variables by name, so a change of Model can tell which of them are no longer valid.
+    """
+
+    source_id = Attr(
+        field_type=str,
+        label='Source Subnetwork',
+        doc='Identifier of the Subnetwork whose activity this Projection reads'
+    )
+
+    target_id = Attr(
+        field_type=str,
+        label='Target Subnetwork',
+        doc='Identifier of the Subnetwork this Projection delivers its coupling to'
+    )
+
+    included = Attr(
+        field_type=bool,
+        default=False,
+        label='Included',
+        doc='Whether this Projection is part of the simulation. None is until the user adds it; one left '
+            'out is kept, so it can be added again with its settings, but it is not built.'
+    )
+
+    source_cvar = List(
+        of=str,
+        label='Source coupling variables',
+        doc='The coupling variables of the source Model this Projection reads'
+    )
+
+    target_cvar = List(
+        of=str,
+        label='Target coupling variables',
+        doc='The coupling variables of the target Model this Projection writes into'
+    )
+
+    scale = Float(
+        default=1.0,
+        label='Scale',
+        doc='Factor applied to the weighted sum, after the coupling function'
+    )
+
+    cv = Float(
+        default=3.0,
+        label='Conduction speed',
+        doc='Conduction speed turning the Connectivity tract lengths into delays, in mm/ms'
+    )
+
+    coupling = Attr(
+        field_type=hybrid_coupling.Coupling,
+        required=False,
+        label='Coupling function',
+        doc='The function applied around the weighted sum of the delayed source activity'
+    )
+
+    @property
+    def is_intra(self):
+        return self.source_id == self.target_id
+
+
 class HybridSimulatorAdapterModel(ViewModel):
     connectivity = DataTypeGidAttr(
         linked_datatype=Connectivity,
@@ -509,6 +601,12 @@ class HybridSimulatorAdapterModel(ViewModel):
         of=HybridSubnetworkViewModel,
         label='Subnetworks',
         doc='Partition of the Connectivity nodes into Subnetworks'
+    )
+
+    projections = List(
+        of=HybridProjectionViewModel,
+        label='Projections',
+        doc='How every Projection generated from the Connectivity and the grouping is configured'
     )
 
     dt = Float(

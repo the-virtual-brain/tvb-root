@@ -115,6 +115,50 @@ class TestHybridSimulatorAdapter(TransactionalTestCase):
                 result.data_length_3d, result.data_length_4d) == \
                (self._expected_samples(self.SIMULATION_LENGTH, self.PERIOD), 1, self.CONNECTIVITY_NODES, 1)
 
+    def _configured_projections(self, connectivity_gid, model):
+        """
+        The Projections of this configuration as the Projections step leaves them: the IntraProjection
+        of the first Subnetwork added, coupling through Kuramoto at another scale and speed, and every
+        other Projection left out.
+        """
+        from tvb.core.neocom import h5
+        from tvb.simulator.hybrid.coupling import Kuramoto
+
+        connectivity = h5.load_from_gid(connectivity_gid)
+        projections, _ = self.service.reconcile_projections(connectivity, model.subnetworks, None)
+        first = [projection for projection in projections if projection.is_intra][0]
+        first.coupling = Kuramoto(a=numpy.array([0.25]))
+        first.scale = 2.0
+        first.cv = 7.5
+        first.included = True
+        return projections
+
+    def test_the_projection_configuration_is_stored_and_launched(self, connectivity_index_factory, tmpdir):
+        from tvb.core.neocom import h5
+        from tvb.simulator.hybrid.coupling import Kuramoto
+
+        connectivity = connectivity_index_factory(self.CONNECTIVITY_NODES)
+        model = self._model(connectivity.gid, node_indices=range(10))
+        model.projections = self._configured_projections(connectivity.gid, model)
+
+        # what the launch stores is what the adapter reads back
+        loaded = h5.load_view_model_from_file(h5.store_view_model(model, str(tmpdir)))
+        by_pair = {(projection.source_id, projection.target_id): projection for projection in loaded.projections}
+        assert len(by_pair) == len(model.projections)
+        for original in model.projections:
+            copy = by_pair[(original.source_id, original.target_id)]
+            assert copy.included == original.included
+            assert list(copy.source_cvar) == list(original.source_cvar)
+            assert list(copy.target_cvar) == list(original.target_cvar)
+            assert copy.scale == original.scale and copy.cv == original.cv
+            assert type(copy.coupling) is type(original.coupling)
+            assert list(copy.coupling.a) == list(original.coupling.a)
+        assert any(type(projection.coupling) is Kuramoto for projection in loaded.projections)
+
+        TestFactory.launch_synchronously(self.test_user.id, self.test_project, self.adapter, model)
+
+        assert len(dao.get_generic_entity(TimeSeriesRegionIndex, 'TimeSeriesRegion', 'time_series_type')) == 1
+
     def test_connectome_ordering_is_preserved(self, connectivity_index_factory):
         """
         The columns carrying each Subnetwork's own dynamics must be exactly that Subnetwork's nodes.

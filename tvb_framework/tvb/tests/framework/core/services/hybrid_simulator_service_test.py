@@ -476,6 +476,16 @@ class TestHybridSimulatorService(object):
                             region_labels=numpy.array(['r%d' % index for index in range(n)]),
                             centres=numpy.zeros((n, 3)), number_of_regions=n)
 
+    def _build_all(self, connectivity, subnetworks, dt):
+        """
+        Build the NetworkSet with every generated Projection added to the simulation: no Projection is
+        until the user adds it, and what these tests look at is what the generation produces.
+        """
+        projections, _ = self.service.reconcile_projections(connectivity, subnetworks, None)
+        for projection in projections:
+            projection.included = True
+        return self.service.build_network_set(connectivity, subnetworks, dt, projections)
+
     def _two_blocks(self):
         """Nodes 0-3 in the first Subnetwork, 4-7 in the second."""
         subnetworks = self.service.add_subnetwork(self.subnetworks)
@@ -509,7 +519,7 @@ class TestHybridSimulatorService(object):
         subnetworks = self._two_blocks()
         connectivity = self._connectivity()
 
-        network_set = self.service.build_network_set(connectivity, subnetworks, 0.1)
+        network_set = self._build_all(connectivity, subnetworks, 0.1)
 
         first, second = network_set.subnets
         assert len(first.projections) == 1
@@ -524,7 +534,7 @@ class TestHybridSimulatorService(object):
         subnetworks = self._two_blocks()
         connectivity = self._connectivity()
 
-        network_set = self.service.build_network_set(connectivity, subnetworks, 0.1)
+        network_set = self._build_all(connectivity, subnetworks, 0.1)
 
         assert len(network_set.projections) == 1
         projection = network_set.projections[0]
@@ -544,7 +554,7 @@ class TestHybridSimulatorService(object):
         subnetworks = self._two_blocks()
         connectivity = self._connectivity()
 
-        network_set = self.service.build_network_set(connectivity, subnetworks, 0.1)
+        network_set = self._build_all(connectivity, subnetworks, 0.1)
         model = network_set.subnets[0].model
 
         projection = network_set.projections[0]
@@ -557,7 +567,7 @@ class TestHybridSimulatorService(object):
         subnetworks = self._two_blocks()
         connectivity = self._connectivity()
 
-        network_set = self.service.build_network_set(connectivity, subnetworks, 0.1)
+        network_set = self._build_all(connectivity, subnetworks, 0.1)
 
         # this is what would break on a name that is not a valid Python identifier
         assert network_set.States._fields == tuple(subnet.name for subnet in network_set.subnets)
@@ -565,7 +575,7 @@ class TestHybridSimulatorService(object):
     def test_a_single_subnetwork_gets_an_intra_projection_and_no_inter_one(self):
         connectivity = self._connectivity()
 
-        network_set = self.service.build_network_set(connectivity, self.subnetworks, 0.1)
+        network_set = self._build_all(connectivity, self.subnetworks, 0.1)
 
         assert len(network_set.subnets) == 1
         assert len(network_set.subnets[0].projections) == 1
@@ -576,7 +586,7 @@ class TestHybridSimulatorService(object):
         subnetworks = self._two_blocks()
         connectivity = self._connectivity()
 
-        network_set = self.service.build_network_set(connectivity, subnetworks, 0.1)
+        network_set = self._build_all(connectivity, subnetworks, 0.1)
         rows = self.service.describe_network_set(network_set)
 
         kinds = [row['kind'] for row in rows]
@@ -592,7 +602,7 @@ class TestHybridSimulatorService(object):
         # move one node across, so the blocks are 3 and 5 nodes wide
         subnetworks = self.service.move_regions(subnetworks, [3], 1)
 
-        network_set = self.service.build_network_set(connectivity, subnetworks, 0.1)
+        network_set = self._build_all(connectivity, subnetworks, 0.1)
 
         assert [subnet.nnodes for subnet in network_set.subnets] == [3, 5]
         assert network_set.subnets[0].projections[0].weights.shape == (3, 3)
@@ -601,7 +611,7 @@ class TestHybridSimulatorService(object):
     # ---------------------------------------------------------------- Global configuration
 
     def _network_set(self, dt=0.1):
-        return self.service.build_network_set(self._connectivity(), self._two_blocks(), dt)
+        return self._build_all(self._connectivity(), self._two_blocks(), dt)
 
     def test_the_configuration_reaches_the_hybrid_simulator(self):
         network_set = self._network_set()
@@ -702,9 +712,19 @@ class TestHybridSimulatorService(object):
         The same two-Subnetwork network, written the way the simulate_hybrid_* demos write it: the
         Connectivity blocks sliced by hand into sparse matrices, and the projections constructed
         directly rather than through the service.
+
+        Every projection couples through Linear with the classic Simulator's defaults, at the
+        Connectivity's conduction speed, which is what a Projection nobody configured gets.
         """
         import scipy.sparse as sp
+        from tvb.simulator.coupling import Linear as ClassicLinear
         from tvb.simulator.hybrid import IntraProjection, InterProjection, NetworkSet, Subnetwork
+        from tvb.simulator.hybrid.coupling import Linear
+
+        def classic_linear():
+            return Linear(a=numpy.array(ClassicLinear.a.default), b=numpy.array(ClassicLinear.b.default))
+
+        speed = float(numpy.mean(connectivity.speed))
         from tvb.simulator.integrators import HeunDeterministic
         from tvb.simulator.models import Generic2dOscillator
 
@@ -725,7 +745,7 @@ class TestHybridSimulatorService(object):
             weights, lengths = block(nodes, nodes)
             subnet.projections = [IntraProjection(
                 source_cvar=numpy.array([int(model.cvar[0])]), target_cvar=numpy.array([0]),
-                weights=weights, lengths=lengths, cv=3.0, dt=dt, scale=1.0)]
+                weights=weights, lengths=lengths, cv=speed, dt=dt, scale=1.0, cfun=classic_linear())]
             subnet.configure()
             subnets.append(subnet)
 
@@ -734,7 +754,7 @@ class TestHybridSimulatorService(object):
         projection = InterProjection(
             source=subnets[0], target=subnets[1],
             source_cvar=numpy.array([int(subnets[0].model.cvar[0])]), target_cvar=numpy.array([0]),
-            weights=weights, lengths=lengths, cv=3.0, dt=dt, scale=1.0)
+            weights=weights, lengths=lengths, cv=speed, dt=dt, scale=1.0, cfun=classic_linear())
 
         network_set = NetworkSet(subnets=subnets, projections=[projection])
         network_set.configure()
@@ -754,7 +774,7 @@ class TestHybridSimulatorService(object):
         connectivity = self._connectivity()
         initial_conditions = [numpy.zeros((2, 4, 1)), numpy.zeros((2, 4, 1))]
 
-        network_set = self.service.build_network_set(connectivity, self._two_blocks(), 0.1)
+        network_set = self._build_all(connectivity, self._two_blocks(), 0.1)
         simulator = self.service.build_hybrid_simulator(
             network_set, [TemporalAverageViewModel(period=1.0)], 10.0)
         ((times, data),) = simulator.run(initial_conditions=initial_conditions)
@@ -767,3 +787,206 @@ class TestHybridSimulatorService(object):
         assert numpy.allclose(times, hand_times)
         assert data.shape == hand_data.shape
         assert numpy.allclose(data, hand_data)
+
+    # ---------------------------------------------------------------- Projection configuration
+
+    def _projections(self, connectivity, subnetworks, projections=None):
+        reconciled, _ = self.service.reconcile_projections(connectivity, subnetworks, projections)
+        return reconciled
+
+    @staticmethod
+    def _by_pair(projections, subnetworks):
+        names = {subnetwork.id: subnetwork.name for subnetwork in subnetworks}
+        return {(names[projection.source_id], names[projection.target_id]): projection
+                for projection in projections}
+
+    def test_every_projection_starts_with_linear_at_the_connectivity_speed(self):
+        from tvb.simulator.coupling import Linear as ClassicLinear
+        from tvb.simulator.hybrid.coupling import Linear
+
+        connectivity = self._connectivity()
+        connectivity.speed = numpy.array([5.0])
+        subnetworks = self._two_blocks()
+
+        projections = self._projections(connectivity, subnetworks)
+
+        # one IntraProjection per Subnetwork, and the one connected direction between them, none of
+        # them part of the simulation until the user adds it
+        assert [(projection.is_intra, projection.included) for projection in projections] == \
+               [(True, False), (True, False), (False, False)]
+        for projection in projections:
+            assert type(projection.coupling) is Linear
+            assert list(projection.coupling.a) == list(ClassicLinear.a.default)
+            assert list(projection.coupling.b) == list(ClassicLinear.b.default)
+            assert projection.cv == 5.0
+            assert projection.scale == 1.0
+            # the first coupling variable of each Model, by name
+            assert projection.source_cvar == ['V'] and projection.target_cvar == ['V']
+
+    def test_nothing_is_built_until_it_is_added(self):
+        network_set = self.service.build_network_set(self._connectivity(), self._two_blocks(), 0.1)
+
+        assert network_set.projections == []
+        assert [subnet.projections for subnet in network_set.subnets] == [[], []]
+
+    def test_the_defaults_reach_the_built_network_set(self):
+        from tvb.simulator.hybrid.coupling import Linear
+
+        connectivity = self._connectivity()
+        connectivity.speed = numpy.array([5.0])
+
+        # once added, a Projection nobody configured is built with the defaults
+        network_set = self._build_all(connectivity, self._two_blocks(), 0.1)
+
+        built = [projection for subnet in network_set.subnets for projection in subnet.projections]
+        built += list(network_set.projections)
+        assert len(built) == 3
+        for projection in built:
+            assert isinstance(projection.cfun, Linear)
+            assert projection.cv == 5.0
+
+    def test_edited_settings_reach_the_built_network_set(self):
+        from tvb.simulator.hybrid.coupling import Kuramoto
+        from tvb.simulator.models import JansenRit
+
+        connectivity = self._connectivity()
+        subnetworks = self._two_blocks()
+        # JansenRit couples through two variables, y1 and y2
+        subnetworks[0].dynamics.model = JansenRit()
+        projections = self._projections(connectivity, subnetworks)
+        inter = self._by_pair(projections, subnetworks)[('Subnetwork A', 'Subnetwork B')]
+        inter.scale = 2.5
+        inter.cv = 6.0
+        inter.coupling = Kuramoto(a=numpy.array([0.3]))
+        inter.source_cvar = ['y2']
+        inter.target_cvar = ['V']
+        inter.included = True
+
+        network_set = self.service.build_network_set(connectivity, subnetworks, 0.1, projections)
+
+        (built,) = network_set.projections
+        assert built.scale == 2.5
+        assert built.cv == 6.0
+        assert isinstance(built.cfun, Kuramoto) and list(built.cfun.a) == [0.3]
+        # a source coupling variable is its state variable index, a target one its coupling slot
+        assert list(built.source_cvar) == [2]
+        assert list(built.target_cvar) == [0]
+        # and the configuration itself is not touched by building from it
+        assert inter.source_cvar == ['y2']
+
+    def test_an_excluded_projection_is_not_built(self):
+        connectivity = self._connectivity()
+        subnetworks = self._two_blocks()
+        projections = self._projections(connectivity, subnetworks)
+        for projection in projections:
+            projection.included = True
+        by_pair = self._by_pair(projections, subnetworks)
+        by_pair[('Subnetwork A', 'Subnetwork B')].included = False
+        by_pair[('Subnetwork B', 'Subnetwork B')].included = False
+
+        network_set = self.service.build_network_set(connectivity, subnetworks, 0.1, projections)
+
+        assert network_set.projections == []
+        assert [len(subnet.projections) for subnet in network_set.subnets] == [1, 0]
+
+    def test_reconciling_follows_the_grouping(self):
+        connectivity = self._connectivity()
+        subnetworks = self._two_blocks()
+        projections = self._projections(connectivity, subnetworks)
+        by_pair = self._by_pair(projections, subnetworks)
+        by_pair[('Subnetwork A', 'Subnetwork A')].scale = 4.0
+        by_pair[('Subnetwork A', 'Subnetwork B')].scale = 7.0
+
+        # the whole Connectivity back in the first Subnetwork: the second one is gone, and with it the
+        # pair between them
+        regrouped = self.service.discard_empty_subnetworks(
+            self.service.move_regions(subnetworks, [4, 5, 6, 7], 0))
+        reconciled = self._projections(connectivity, regrouped, projections)
+
+        assert len(reconciled) == 1
+        assert reconciled[0].is_intra and reconciled[0].scale == 4.0
+
+        # and a Subnetwork added again gets its Projections with the defaults
+        again = self.service.move_regions(self.service.add_subnetwork(regrouped), [4, 5, 6, 7], 1)
+        reconciled = self._by_pair(self._projections(connectivity, again, reconciled), again)
+        assert reconciled[('Subnetwork A', 'Subnetwork A')].scale == 4.0
+        assert reconciled[(again[0].name, again[1].name)].scale == 1.0
+
+    def test_a_model_change_resets_the_coupling_variables_it_no_longer_has(self):
+        from tvb.simulator.models import JansenRit
+
+        connectivity = self._connectivity()
+        subnetworks = self._two_blocks()
+        projections = self._projections(connectivity, subnetworks)
+        subnetworks[1].dynamics.model = JansenRit()
+
+        reconciled, reset = self.service.reconcile_projections(connectivity, subnetworks, projections)
+
+        by_pair = self._by_pair(reconciled, subnetworks)
+        first_jansen_rit = self.service.coupling_variable_names(JansenRit())[0]
+        assert by_pair[('Subnetwork B', 'Subnetwork B')].source_cvar == [first_jansen_rit]
+        assert by_pair[('Subnetwork A', 'Subnetwork B')].target_cvar == [first_jansen_rit]
+        # the Projection staying within the first Subnetwork keeps what it had
+        assert by_pair[('Subnetwork A', 'Subnetwork A')].source_cvar == ['V']
+        assert {self.service.projection_key(projection) for projection in reset} == \
+               {self.service.projection_key(by_pair[('Subnetwork B', 'Subnetwork B')]),
+                self.service.projection_key(by_pair[('Subnetwork A', 'Subnetwork B')])}
+
+    def test_a_projection_the_library_can_not_run_is_refused(self):
+        connectivity = self._connectivity()
+        projection = self._projections(connectivity, self._two_blocks())[0]
+
+        assert self.service.validate_projection(projection) == {}
+
+        projection.source_cvar = ['a', 'b']
+        projection.target_cvar = ['c', 'd', 'e']
+        projection.cv = 0.0
+        errors = self.service.validate_projection(projection)
+
+        # BaseProjection.apply only takes as many on each side, or a single one on either side
+        assert set(errors) == {'target_cvar', 'cv'}
+        projection.target_cvar = ['c']
+        projection.cv = 3.0
+        assert self.service.validate_projection(projection) == {}
+
+    def test_excluding_projections_is_reported(self):
+        connectivity = self._connectivity()
+        subnetworks = self._two_blocks()
+        projections = self._projections(connectivity, subnetworks)
+        by_pair = self._by_pair(projections, subnetworks)
+
+        # nothing is added yet, so nothing is coupled, which the step says once rather than per Projection
+        assert self.service.projection_warnings(subnetworks, projections) == []
+
+        for projection in projections:
+            projection.included = True
+        assert self.service.projection_warnings(subnetworks, projections) == []
+
+        by_pair[('Subnetwork B', 'Subnetwork B')].included = False
+        by_pair[('Subnetwork A', 'Subnetwork B')].included = False
+        warnings = self.service.projection_warnings(subnetworks, projections)
+
+        assert len(warnings) == 2
+        assert 'Subnetwork B are not coupled to one another' in warnings[0]
+        assert 'simulated independently' in warnings[1]
+        # the pair the Connectivity holds nothing for has no Projection at all, excluded or not
+        assert self.service.pairs_without_projection(subnetworks, projections) == \
+               [{'source': 'Subnetwork B', 'target': 'Subnetwork A'}]
+
+    def test_the_projections_are_described_by_name_the_ones_not_added_included(self):
+        connectivity = self._connectivity()
+        subnetworks = self._two_blocks()
+        projections = self._projections(connectivity, subnetworks)
+        self._by_pair(projections, subnetworks)[('Subnetwork A', 'Subnetwork A')].included = True
+
+        rows = self.service.describe_projections(connectivity, subnetworks, projections)
+
+        assert [(row['kind'], row['source'], row['target'], row['included']) for row in rows] == [
+            ('Intra', 'Subnetwork A', 'Subnetwork A', True),
+            ('Intra', 'Subnetwork B', 'Subnetwork B', False),
+            ('Inter', 'Subnetwork A', 'Subnetwork B', False)]
+        # counted from the Connectivity, so a Projection not added still says what it would carry
+        assert [row['connections'] for row in rows] == [16, 16, 16]
+        assert rows[2]['coupling'] == 'Linear'
+        # 10 mm tracts at 3 mm/ms
+        assert abs(rows[2]['max_delay'] - 10.0 / 3.0) < 1e-9

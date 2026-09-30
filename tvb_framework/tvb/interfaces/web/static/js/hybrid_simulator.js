@@ -768,3 +768,127 @@ function hybridSaveSubnetworkDynamics(continueUrl) {
         });
     });
 }
+
+// ---------------------------------------------------------------- Projections
+
+const HYBRID_PROJECTIONS_STEP_URL = "/burst/hybrid/set_projections";
+const HYBRID_PROJECTION_EDITOR_ID = "hybrid-projection-editor";
+
+const HYBRID_PROJECTIONS_CONFIG_ID = "hybrid-projections-config";
+
+/**
+ * Every Projection action answers with the Projections editor of the third column, which replaces the
+ * one on screen. When the answer follows a change of the configuration, the list on the step is reloaded
+ * as well. The field the user moved on to keeps the focus across the replacement; it is looked up inside
+ * the new editor, since a Model parameter elsewhere on the page may carry the same id.
+ */
+function _replaceHybridProjectionsEditor(response, focusedId, done) {
+    const config = document.getElementById(HYBRID_PROJECTIONS_CONFIG_ID);
+    if (config === null) {
+        done();
+        return;
+    }
+    config.replaceWith(_asFragment(response));
+    const newConfig = document.getElementById(HYBRID_PROJECTIONS_CONFIG_ID);
+    _typesetHybrid(newConfig);
+    const editor = document.getElementById(HYBRID_PROJECTION_EDITOR_ID);
+    if (focusedId && editor !== null) {
+        const field = editor.querySelector("#" + CSS.escape(focusedId));
+        if (field !== null) {
+            field.focus();
+        }
+    }
+    if (newConfig === null || newConfig.dataset.hybridChanged !== "true") {
+        done();
+        return;
+    }
+    doAjaxCall({
+        type: "GET",
+        url: HYBRID_PROJECTIONS_STEP_URL,
+        success: function (stepResponse) {
+            hybridReplaceStep(HYBRID_PROJECTIONS_STEP_URL, stepResponse);
+            done();
+        },
+        error: done
+    });
+}
+
+function _postHybridProjection(url, data, failure) {
+    _queueHybridRequest(function (done) {
+        doAjaxCall({
+            type: "POST",
+            url: url,
+            data: typeof data === "function" ? data() : data,
+            traditional: true,
+            success: function (response) {
+                // read now rather than when the change fired: a change fires before the focus moves on
+                const editor = document.getElementById(HYBRID_PROJECTION_EDITOR_ID);
+                const focused = document.activeElement;
+                const focusedId = editor !== null && focused && editor.contains(focused) ? focused.id : null;
+                _replaceHybridProjectionsEditor(response, focusedId, done);
+            },
+            error: function () {
+                displayMessage(failure, "errorMessage");
+                done();
+            }
+        });
+    });
+}
+
+/** Edit another Projection: its tab is selected, and its editor opens under it in the third column. */
+function hybridSelectProjection(projectionKey) {
+    _postHybridProjection("/burst/hybrid/select_projection/", {projection_key: projectionKey},
+        "This Projection could not be opened.");
+}
+
+/**
+ * Edit the InterProjection the Inter tab's From and To pickers point at. Changing the source alone
+ * opens that source's first InterProjection, since the chosen target may not be connected from it.
+ */
+function hybridSelectInterProjection() {
+    const source = document.getElementById("hybrid-inter-source");
+    const target = document.getElementById("hybrid-inter-target");
+    if (source === null || target === null) {
+        return;
+    }
+    _postHybridProjection("/burst/hybrid/select_inter_projection/",
+        {source_id: source.value, target_id: target.value}, "This Projection could not be opened.");
+}
+
+/** Add a Projection to the simulation, or remove it; it keeps its settings either way. */
+function hybridSetProjectionIncluded(projectionKey, included) {
+    _postHybridProjection("/burst/hybrid/set_projection_included/",
+        {projection_key: projectionKey, included: included}, "This Projection could not be changed.");
+}
+
+/**
+ * Apply what was just edited in the Projection editor. Its fields are read when the request is sent,
+ * not when it is queued, so a queued apply carries the latest values.
+ */
+function _applyHybridProjection() {
+    _postHybridProjection("/burst/hybrid/set_projection/", function () {
+        const editor = document.getElementById(HYBRID_PROJECTION_EDITOR_ID);
+        if (editor === null) {
+            return "";
+        }
+        return $(editor).find(":input").serialize() + "&projection_key=" +
+            encodeURIComponent(editor.dataset.projectionKey);
+    }, "This Projection could not be changed.");
+}
+
+// The editor is not a form, so Enter would do nothing; it applies the field, the way a change does.
+document.addEventListener("keydown", function (event) {
+    if (event.key === "Enter" && event.target.tagName === "INPUT" &&
+        event.target.closest("#" + HYBRID_PROJECTION_EDITOR_ID) !== null) {
+        event.preventDefault();
+        _applyHybridProjection();
+    }
+});
+
+document.addEventListener("change", function (event) {
+    const editor = event.target.closest("#" + HYBRID_PROJECTION_EDITOR_ID);
+    if (editor === null) {
+        return;
+    }
+    _applyHybridProjection();
+});

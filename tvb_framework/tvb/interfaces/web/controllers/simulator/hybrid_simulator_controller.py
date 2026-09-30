@@ -24,6 +24,7 @@
 #
 #
 
+import copy
 import json
 import threading
 from datetime import datetime
@@ -33,6 +34,7 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.forms.equation_forms import get_form_for_equation
 from tvb.adapters.forms.hybrid_monitor_forms import HybridSpatialAverageMonitorForm, \
     get_form_for_hybrid_monitor
+from tvb.adapters.forms.hybrid_projection_forms import HybridCouplingForm, HybridProjectionForm
 from tvb.adapters.forms.hybrid_simulator_fragments import HybridConnectivityFragment, \
     HybridLaunchFragment, HybridMonitorsFragment, HybridSubnetworkDynamicsFragment, HybridSubnetworksFragment
 from tvb.adapters.simulator.hybrid_simulator_adapter import HybridSimulatorAdapter
@@ -94,6 +96,12 @@ class HybridSimulatorURLs(object):
     SUBMIT_REGION_MODEL_URL = '/burst/hybrid/submit_region_model'
     # the wizard step generating the Projections out of the Connectivity and the Subnetwork grouping
     SET_PROJECTIONS_URL = '/burst/hybrid/set_projections'
+    # the Projections editor, in the third column: choosing a Projection, editing it, leaving it out
+    CONFIGURE_PROJECTIONS_URL = '/burst/hybrid/configure_projections'
+    SET_PROJECTION_URL = '/burst/hybrid/set_projection'
+    SELECT_PROJECTION_URL = '/burst/hybrid/select_projection'
+    SELECT_INTER_PROJECTION_URL = '/burst/hybrid/select_inter_projection'
+    SET_PROJECTION_INCLUDED_URL = '/burst/hybrid/set_projection_included'
     # the global configuration: what the simulation records, for how long, and what that produces
     SET_MONITORS_URL = '/burst/hybrid/set_monitors'
     SET_MONITOR_PARAMS_URL = '/burst/hybrid/set_monitor_params'
@@ -163,6 +171,28 @@ class HybridSimulatorFragmentRenderingRules(object):
         self.is_projections_fragment = False
         self.projection_rows = []
         self.unconnected_pairs = []
+        self.projection_warnings = []
+        # the Inter tab's pickers: the Subnetworks sending an InterProjection, the targets of the one
+        # chosen, the InterProjection they point at, and how many of them are added to the simulation
+        self.inter_sources = []
+        self.inter_targets = []
+        self.inter_projection = None
+        self.inter_added = 0
+        self.inter_total = 0
+        # the Intra tab's picker: one option per Subnetwork, the IntraProjection it points at, and how
+        # many of them are added to the simulation
+        self.intra_options = []
+        self.intra_projection = None
+        self.intra_added = 0
+        # the Projection whose tab is selected, by its key
+        self.selected_projection = None
+        # the editor under that tab: the Projection's own form, its coupling function's parameters, the
+        # pair it connects, whether the last change reached the configuration and why not
+        self.projection_form = None
+        self.coupling_form = None
+        self.projection_row = None
+        self.projection_applied = False
+        self.projection_error = None
         # the legend a Monitor parameters step carries, the way the classic Cockpit titles its own
         self.monitor_name = None
         # the closing step of the global configuration, describing what the simulation will record
@@ -729,8 +759,10 @@ class HybridSimulatorController(BurstBaseController):
 
         try:
             connectivity = h5.load_from_gid(hybrid_simulator.connectivity)
-            network_set = self.hybrid_simulator_service.build_network_set(
-                connectivity, subnetworks, hybrid_simulator.dt)
+            projections, reset = self._reconcile_projections(hybrid_simulator, connectivity, subnetworks)
+            # built only to make sure the configuration translates into a NetworkSet
+            self.hybrid_simulator_service.build_network_set(
+                connectivity, subnetworks, hybrid_simulator.dt, projections)
         except Exception as excep:
             self.logger.exception("Could not generate the Hybrid Simulator Projections")
             return self._back_to_dynamics(
@@ -738,17 +770,311 @@ class HybridSimulatorController(BurstBaseController):
                 "The Projections could not be generated: {}".format(excep))
 
         self.context.add_last_loaded_form_url_to_session(HybridSimulatorURLs.SET_PROJECTIONS_URL)
+        return self._projections_step_rules(connectivity, subnetworks, projections, reset).to_dict()
 
+    def _reconcile_projections(self, hybrid_simulator, connectivity, subnetworks):
+        """
+        Bring the stored Projection configurations in line with the grouping and the Models, and store
+        the result, so the step, the editor and the launch all see the same list.
+        """
+        projections, reset = self.hybrid_simulator_service.reconcile_projections(
+            connectivity, subnetworks, hybrid_simulator.projections)
+        hybrid_simulator.projections = projections
+        self.context.set_hybrid_simulator(hybrid_simulator)
+        return projections, reset
+
+    def _selected_projection_key(self, projections):
+        keys = [self.hybrid_simulator_service.projection_key(projection) for projection in projections]
+        selected = self.context.selected_projection
+        if selected not in keys:
+            selected = keys[0] if keys else None
+            self.context.set_selected_projection(selected)
+        return selected
+
+    def _projections_step_rules(self, connectivity, subnetworks, projections, reset=()):
+        """
+        The Projections step: the list of the Projections the simulation includes. They are chosen and
+        edited in the third column, the way the Subnetworks are grouped on the board there.
+        """
         rules = HybridSimulatorFragmentRenderingRules(
             None, HybridSimulatorURLs.SET_PROJECTIONS_URL,
-            HybridSimulatorURLs.SAVE_SUBNETWORK_DYNAMICS_URL, fragment_title="Projections")
+            HybridSimulatorURLs.SAVE_SUBNETWORK_DYNAMICS_URL, fragment_title="Projections",
+            context_form_url=HybridSimulatorURLs.CONFIGURE_PROJECTIONS_URL, context_title="Projections")
         rules.is_projections_fragment = True
-        rules.projection_rows = self.hybrid_simulator_service.describe_network_set(network_set)
-        rules.unconnected_pairs = self.hybrid_simulator_service.unconnected_pairs(network_set)
+        rules.projection_rows = self.hybrid_simulator_service.describe_projections(
+            connectivity, subnetworks, projections, reset)
+        rules.unconnected_pairs = self.hybrid_simulator_service.pairs_without_projection(subnetworks, projections)
+        rules.projection_warnings = self.hybrid_simulator_service.projection_warnings(subnetworks, projections)
         # This step is entered by posting to its own url, so its Next has to post somewhere else, the
         # same way the closing step of the Subnetwork configuration does.
         rules.next_form_action_url = HybridSimulatorURLs.SET_MONITORS_URL
-        return rules.to_dict()
+        return rules
+
+    def _projections_editor_rules(self, connectivity, subnetworks, projections, reset=(), edit=None,
+                                  changed=False):
+        """
+        The Projections editor, in the third column: a tab per IntraProjection, one Inter tab choosing
+        among the InterProjections, and under the selected tab its editor, the way the Subnetwork editor
+        sits under the Subnetwork tabs.
+
+        :param edit: what the last change to the selected Projection left on screen - its forms, whether
+                     it was applied and why not - so a refused change shows the values as entered; the
+                     selected Projection's stored configuration is shown otherwise
+        :param changed: True when the answer follows a change of the configuration, which is when the
+                        list on the step has to be refreshed
+        """
+        rules = HybridSimulatorFragmentRenderingRules(None, HybridSimulatorURLs.CONFIGURE_PROJECTIONS_URL)
+        rules.projection_rows = self.hybrid_simulator_service.describe_projections(
+            connectivity, subnetworks, projections, reset)
+        rules.selected_projection = self._selected_projection_key(projections)
+        rules.is_modified = changed
+        last_by_kind = self._remember_projection_by_kind(projections, rules.selected_projection)
+        self._intra_picker(rules, subnetworks, projections, last_by_kind.get('intra'))
+        self._inter_pickers(rules, subnetworks, projections, last_by_kind.get('inter'))
+
+        if rules.selected_projection is not None:
+            _, projection = self._find_projection(projections, rules.selected_projection)
+            if edit is None:
+                form, coupling_form = self._projection_forms(subnetworks, projection)
+                form.fill_from_projection(projection)
+                coupling_form.fill_from_trait(projection.coupling)
+                edit = {'form': form, 'coupling_form': coupling_form}
+            rules.projection_form = edit['form']
+            rules.coupling_form = edit['coupling_form']
+            rules.projection_applied = edit.get('applied', False)
+            rules.projection_error = edit.get('error')
+            rules.projection_row = [row for row in rules.projection_rows if row['key'] == rules.selected_projection][0]
+        return rules
+
+    def _projections_editor_error(self, message):
+        common.set_error_message(message)
+        return HybridSimulatorFragmentRenderingRules(
+            None, HybridSimulatorURLs.CONFIGURE_PROJECTIONS_URL, load_error=message).to_dict()
+
+    @expose_fragment('burst/hybrid_projections_editor')
+    def configure_projections(self, **data):
+        """
+        The Projections editor, shown in the third column next to the Projections step.
+        """
+        try:
+            _, connectivity, subnetworks, projections, reset = self._projections_configuration()
+        except HybridSubnetworkException as excep:
+            return self._projections_editor_error(str(excep))
+        return self._projections_editor_rules(connectivity, subnetworks, projections, reset).to_dict()
+
+    def _remember_projection_by_kind(self, projections, selected_key):
+        """
+        Remember the selected Projection as the last one opened of its kind, so each of the Intra and
+        Inter tabs keeps pointing at the last Projection it opened while the other kind is selected.
+
+        :return: the last opened Projection key per kind, 'intra' and 'inter'
+        """
+        last_by_kind = dict(self.context.last_projection_by_kind)
+        for projection in projections:
+            if self.hybrid_simulator_service.projection_key(projection) == selected_key:
+                last_by_kind['intra' if projection.is_intra else 'inter'] = selected_key
+                self.context.set_last_projection_by_kind(last_by_kind)
+                break
+        return last_by_kind
+
+    def _intra_picker(self, rules, subnetworks, projections, last_key=None):
+        """
+        Fill the Intra tab's picker: one IntraProjection per Subnetwork, chosen by the Subnetwork's name.
+        It points at the selected IntraProjection or, while an InterProjection is selected, at the last
+        IntraProjection opened - the first one before any was.
+        """
+        names = {subnetwork.id: subnetwork.name for subnetwork in subnetworks}
+        intra = [projection for projection in projections if projection.is_intra]
+        rules.intra_added = len([projection for projection in intra if projection.included])
+        if not intra:
+            return
+        keys = [self.hybrid_simulator_service.projection_key(projection) for projection in intra]
+        rules.intra_projection = next((key for key in (rules.selected_projection, last_key) if key in keys), keys[0])
+        rules.intra_options = [{'key': key, 'name': names[projection.source_id], 'included': projection.included,
+                                'is_selected': key == rules.intra_projection}
+                               for key, projection in zip(keys, intra)]
+
+    def _inter_pickers(self, rules, subnetworks, projections, last_key=None):
+        """
+        Fill the Inter tab's From and To pickers. There can be as many InterProjections as ordered pairs
+        of Subnetworks, too many for a tab each, so one tab picks among them. It points at the selected
+        InterProjection or, while an IntraProjection is selected, at the last InterProjection opened -
+        the first one before any was.
+        """
+        names = {subnetwork.id: subnetwork.name for subnetwork in subnetworks}
+        inter = [projection for projection in projections if not projection.is_intra]
+        rules.inter_total = len(inter)
+        rules.inter_added = len([projection for projection in inter if projection.included])
+        if not inter:
+            return
+
+        keys = {self.hybrid_simulator_service.projection_key(projection): projection for projection in inter}
+        current = keys.get(rules.selected_projection) or keys.get(last_key) or inter[0]
+        rules.inter_projection = self.hybrid_simulator_service.projection_key(current)
+
+        order = [subnetwork.id for subnetwork in subnetworks]
+        sources = sorted({projection.source_id for projection in inter}, key=order.index)
+        rules.inter_sources = [{'id': source_id, 'name': names[source_id],
+                                'is_selected': source_id == current.source_id} for source_id in sources]
+        targets = sorted([projection for projection in inter if projection.source_id == current.source_id],
+                         key=lambda projection: order.index(projection.target_id))
+        rules.inter_targets = [{'id': projection.target_id, 'name': names[projection.target_id],
+                                'included': projection.included,
+                                'is_selected': projection.target_id == current.target_id} for projection in targets]
+
+    @expose_fragment('burst/hybrid_projections_editor')
+    def select_inter_projection(self, source_id=None, target_id=None, **data):
+        """
+        Edit the InterProjection the Inter tab's pickers point at. A source without an InterProjection
+        towards the chosen target - which is what changing the source alone leads to - opens that
+        source's first one instead. Answers with the Projections editor.
+        """
+        try:
+            _, connectivity, subnetworks, projections, reset = self._projections_configuration()
+        except HybridSubnetworkException as excep:
+            return self._projections_editor_error(str(excep))
+
+        from_source = [projection for projection in projections
+                       if not projection.is_intra and projection.source_id == source_id]
+        chosen = [projection for projection in from_source if projection.target_id == target_id]
+        if chosen or from_source:
+            self.context.set_selected_projection(
+                self.hybrid_simulator_service.projection_key((chosen or from_source)[0]))
+        return self._projections_editor_rules(connectivity, subnetworks, projections, reset).to_dict()
+
+    def _projections_configuration(self):
+        """
+        :return: the Hybrid Simulator configuration, its Connectivity, the saved Subnetworks and the
+                 reconciled Projection configurations
+        """
+        hybrid_simulator, _, subnetworks, _ = self._load_subnetworks_configuration()
+        connectivity = h5.load_from_gid(hybrid_simulator.connectivity)
+        projections, reset = self._reconcile_projections(hybrid_simulator, connectivity, subnetworks)
+        return hybrid_simulator, connectivity, subnetworks, projections, reset
+
+    def _find_projection(self, projections, projection_key):
+        for index, projection in enumerate(projections):
+            if self.hybrid_simulator_service.projection_key(projection) == projection_key:
+                return index, projection
+        raise HybridSubnetworkException("This Projection is no longer part of the configuration.")
+
+    @expose_fragment('burst/hybrid_projections_editor')
+    def select_projection(self, projection_key=None, **data):
+        """
+        Edit another Projection. Answers with the Projections editor, its tab selected.
+        """
+        try:
+            _, connectivity, subnetworks, projections, reset = self._projections_configuration()
+            self._find_projection(projections, projection_key)
+        except HybridSubnetworkException as excep:
+            return self._projections_editor_error(str(excep))
+        self.context.set_selected_projection(projection_key)
+        return self._projections_editor_rules(connectivity, subnetworks, projections, reset).to_dict()
+
+    @expose_fragment('burst/hybrid_projections_editor')
+    def set_projection_included(self, projection_key=None, included=None, **data):
+        """
+        Include a Projection in the simulation, or leave it out. An excluded Projection keeps its
+        settings, so including it again restores them. Answers with the Projections editor.
+        """
+        try:
+            hybrid_simulator, connectivity, subnetworks, projections, reset = self._projections_configuration()
+            _, projection = self._find_projection(projections, projection_key)
+        except HybridSubnetworkException as excep:
+            return self._projections_editor_error(str(excep))
+
+        projection.included = str(included).lower() in ('true', 'on', '1')
+        self.context.set_hybrid_simulator(hybrid_simulator)
+        self.context.set_selected_projection(projection_key)
+        return self._projections_editor_rules(connectivity, subnetworks, projections, reset,
+                                              changed=True).to_dict()
+
+    @expose_fragment('burst/hybrid_projections_editor')
+    def set_projection(self, projection_key=None, **data):
+        """
+        Apply what was edited on one Projection, as soon as it was edited.
+
+        The change is tried on a copy first: it reaches the configuration only when the form accepts it,
+        the Projection makes sense for the library, and the whole NetworkSet still builds with it. A
+        refused one answers with the editor showing the values as entered and the reasons, and leaves the
+        configuration as it was.
+
+        A new coupling function starts from its own defaults - Linear from the classic Simulator's - since
+        the parameters on screen belonged to the previous one.
+        """
+        try:
+            hybrid_simulator, connectivity, subnetworks, projections, reset = self._projections_configuration()
+            index, projection = self._find_projection(projections, projection_key)
+        except HybridSubnetworkException as excep:
+            return self._projections_editor_error(str(excep))
+        # the Projection being edited is the one on screen
+        self.context.set_selected_projection(projection_key)
+
+        form, coupling_form = self._projection_forms(subnetworks, projection)
+        form.fill_from_post(data)
+        is_valid = form.validate()
+        candidate = copy.deepcopy(projection)
+
+        if is_valid:
+            candidate.source_cvar = list(form.source_cvar.data)
+            candidate.target_cvar = list(form.target_cvar.data)
+            candidate.scale = form.scale.data
+            candidate.cv = form.cv.data
+            coupling_class = form.coupling.data.value
+            if type(candidate.coupling) is not coupling_class:
+                candidate.coupling = (self.hybrid_simulator_service.default_coupling()
+                                      if coupling_class is type(self.hybrid_simulator_service.default_coupling())
+                                      else coupling_class())
+                coupling_form = HybridCouplingForm(coupling_class)
+                coupling_form.fill_from_trait(candidate.coupling)
+            else:
+                coupling_form.fill_from_post(data)
+                is_valid = coupling_form.validate() and self._fill_coupling(coupling_form, candidate.coupling)
+
+        if is_valid:
+            for field_name, message in self.hybrid_simulator_service.validate_projection(candidate).items():
+                getattr(form, field_name).errors.append(message)
+                is_valid = False
+
+        error = None
+        if is_valid:
+            trial = list(projections)
+            trial[index] = candidate
+            try:
+                self.hybrid_simulator_service.build_network_set(connectivity, subnetworks, hybrid_simulator.dt, trial)
+            except Exception as excep:
+                self.logger.warning("Refused a Projection configuration: %s", excep)
+                error = "This configuration can not be simulated: {}".format(excep)
+                is_valid = False
+
+        if is_valid:
+            projections[index] = candidate
+            hybrid_simulator.projections = projections
+            self.context.set_hybrid_simulator(hybrid_simulator)
+            # shown as stored, so what is on screen is what the configuration holds
+            form.fill_from_projection(candidate)
+
+        edit = {'form': form, 'coupling_form': coupling_form, 'applied': is_valid, 'error': error}
+        return self._projections_editor_rules(connectivity, subnetworks, projections, reset, edit,
+                                              changed=is_valid).to_dict()
+
+    @staticmethod
+    def _fill_coupling(coupling_form, coupling):
+        try:
+            coupling_form.fill_trait(coupling)
+            return True
+        except Exception:
+            # fill_trait has put the reason on the field it could not set
+            return False
+
+    def _projection_forms(self, subnetworks, projection):
+        by_id = {subnetwork.id: subnetwork for subnetwork in subnetworks}
+        source_names = self.hybrid_simulator_service.coupling_variable_names(
+            by_id[projection.source_id].dynamics.model)
+        target_names = self.hybrid_simulator_service.coupling_variable_names(
+            by_id[projection.target_id].dynamics.model)
+        return (HybridProjectionForm(source_names, target_names),
+                HybridCouplingForm(type(projection.coupling)))
 
     def _back_to_dynamics(self, hybrid_simulator, subnetworks, draft, message):
         """

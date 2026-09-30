@@ -25,6 +25,7 @@
 #
 
 import json
+import re
 import math
 from unittest.mock import patch
 from uuid import UUID
@@ -1236,9 +1237,9 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         assert len(inter) >= 1
         for row in inter:
             assert row['source'] != row['target']
-            # source_cvar is a state variable index, target_cvar a slot in the target's cvar list
-            assert row['source_cvar'] == [0]
-            assert row['target_cvar'] == [0]
+            # the coupling variables are named: the first one of each Model by default
+            assert row['source_cvar'] == ['V']
+            assert row['target_cvar'] == ['V']
 
     def test_projections_are_refused_while_the_dynamics_are_unsaved(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
@@ -1274,6 +1275,267 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         assert len([row for row in after if row['kind'] == 'Intra']) == 2
 
     # ---------------------------------------------------------------- navigation
+
+    # ---------------------------------------------------------------- Projection editing
+
+    def _two_saved_subnetworks_at_the_projections(self):
+        """Two saved Subnetworks with saved dynamics, and the Projections step opened over them."""
+        saved = self._two_subnetworks()
+        self._open_dynamics_step()
+        self._open_subnetwork_editor()
+        cherrypy.request.method = "POST"
+        self.hybrid_controller.save_subnetwork_dynamics()
+        return saved, self._reach_projections()
+
+    def _stored_projections(self):
+        return list(self.hybrid_controller.context.hybrid_simulator.projections)
+
+    def _key(self, projection):
+        return self.hybrid_controller.hybrid_simulator_service.projection_key(projection)
+
+    def _inter_keys(self):
+        return [self._key(projection) for projection in self._stored_projections() if not projection.is_intra]
+
+    def _inter_key(self):
+        return self._inter_keys()[0]
+
+    def _post_projection(self, projection_key, **data):
+        posted = {'source_cvar': 'V', 'target_cvar': 'V', 'scale': '1.0', 'cv': '3.0', 'coupling': 'Linear',
+                  'a': '[0.00390625]', 'b': '[0.0]'}
+        posted.update(data)
+        cherrypy.request.method = "POST"
+        return self.hybrid_controller.set_projection(projection_key=projection_key, **posted)
+
+    def _projections_editor(self):
+        """The Projections editor the step declares for the third column."""
+        cherrypy.request.method = "GET"
+        return self.hybrid_controller.configure_projections()['renderer']
+
+    def _projection(self, projection_key):
+        return [projection for projection in self._stored_projections()
+                if self._key(projection) == projection_key][0]
+
+    def test_the_projections_step_stores_the_configuration_and_opens_its_editor(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            _, rendering_rules = self._two_saved_subnetworks_at_the_projections()
+            stored = self._stored_projections()
+            editor = self._projections_editor()
+
+        renderer = rendering_rules['renderer']
+        # every generated Projection is configured, and stored on the configuration
+        assert len(stored) == len(renderer.projection_rows) >= 3
+        assert all(row['coupling'] == 'Linear' for row in renderer.projection_rows)
+        # none of them part of the simulation until the user adds it
+        assert not any(row['included'] for row in renderer.projection_rows)
+        # the step lists them, and declares the editor for the third column
+        assert renderer.context_form_url == HybridSimulatorURLs.CONFIGURE_PROJECTIONS_URL
+        # which edits the selected Projection, the first one to begin with
+        assert editor.selected_projection == editor.projection_rows[0]['key']
+        assert editor.projection_row['key'] == editor.selected_projection
+        assert editor.projection_form.coupling.value.__name__ == 'Linear'
+
+    def test_the_editor_shows_the_selected_projection(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._two_saved_subnetworks_at_the_projections()
+            inter_key = self._inter_key()
+            editor = self.hybrid_controller.select_projection(projection_key=inter_key)['renderer']
+            # and the editor rendered again keeps it selected
+            reopened = self._projections_editor()
+
+        # the editor answers with that Projection's tab selected
+        assert editor.selected_projection == inter_key
+        assert reopened.selected_projection == inter_key
+        assert editor.projection_row['key'] == inter_key
+        assert editor.projection_row['kind'] == 'Inter'
+        assert editor.projection_form.coupling.value.__name__ == 'Linear'
+        assert list(editor.coupling_form.a.data) == [0.00390625]
+
+    def test_an_edit_reaches_the_configuration(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._two_saved_subnetworks_at_the_projections()
+            inter_key = self._inter_key()
+            answer = self._post_projection(inter_key, scale='2.5', cv='6.0', a='[0.2]', b='[0.1]')
+            projection = self._projection(inter_key)
+
+        assert answer['renderer'].projection_applied
+        assert projection.scale == 2.5
+        assert projection.cv == 6.0
+        assert list(projection.coupling.a) == [0.2]
+        assert list(projection.coupling.b) == [0.1]
+
+    def test_a_new_coupling_function_starts_from_its_defaults(self):
+        from tvb.simulator.hybrid.coupling import Kuramoto, Linear
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._two_saved_subnetworks_at_the_projections()
+            inter_key = self._inter_key()
+            # the parameters on screen still belong to Linear when Kuramoto is picked
+            answer = self._post_projection(inter_key, coupling='Kuramoto', a='[0.2]')
+            kuramoto = self._projection(inter_key).coupling
+            self._post_projection(inter_key, coupling='Linear', a='[0.7]')
+            linear = self._projection(inter_key).coupling
+
+        assert answer['renderer'].projection_applied
+        assert type(kuramoto) is Kuramoto and list(kuramoto.a) == list(Kuramoto.a.default)
+        # and Linear comes back with the classic Simulator's defaults, not the hybrid Linear's
+        assert type(linear) is Linear and list(linear.a) == [0.00390625]
+        # the editor answers with the new function's parameters
+        assert [field.name for field in answer['renderer'].coupling_form.fields] == ['a']
+
+    def test_a_refused_edit_leaves_the_configuration_alone(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._two_saved_subnetworks_at_the_projections()
+            inter_key = self._inter_key()
+            answers = [self._post_projection(inter_key, cv='0', scale='9.0'),
+                       self._post_projection(inter_key, scale='nine'),
+                       self._post_projection(inter_key, a='not an array', scale='9.0'),
+                       self._post_projection(inter_key, source_cvar='W', scale='9.0')]
+            projection = self._projection(inter_key)
+
+        for answer in answers:
+            assert not answer['renderer'].projection_applied
+        assert answers[0]['renderer'].projection_form.cv.errors
+        assert answers[1]['renderer'].projection_form.scale.errors
+        assert answers[2]['renderer'].coupling_form.a.errors
+        # W is a state variable of Generic2dOscillator, but not one of its coupling variables
+        assert answers[3]['renderer'].projection_form.source_cvar.errors
+        assert projection.scale == 1.0 and projection.cv > 0
+
+    def test_adding_and_removing_a_projection_keeps_its_settings(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._two_saved_subnetworks_at_the_projections()
+            inter_key = self._inter_key()
+            self._post_projection(inter_key, scale='2.5')
+            nothing_added_step = self._reach_projections()['renderer']
+
+            cherrypy.request.method = "POST"
+            added = self.hybrid_controller.set_projection_included(projection_key=inter_key, included='true')
+            was_added = self._projection(inter_key).included
+            added_step = self._reach_projections()['renderer']
+            removed = self.hybrid_controller.set_projection_included(projection_key=inter_key, included='false')
+            was_removed = not self._projection(inter_key).included
+            added_again = self.hybrid_controller.set_projection_included(projection_key=inter_key, included='true')
+            added_again_projection = self._projection(inter_key)
+
+        # nothing is added to begin with, which the step says once rather than per Projection
+        assert not any(row['included'] for row in nothing_added_step.projection_rows)
+        assert nothing_added_step.projection_warnings == []
+        # added, and listed on the step
+        added_row = [row for row in added['renderer'].projection_rows if row['key'] == inter_key][0]
+        assert added_row['included'] and was_added
+        assert [row['key'] for row in added_step.projection_rows if row['included']] == [inter_key]
+        # with what is still uncoupled: the regions of each Subnetwork, whose IntraProjection is not added
+        assert sum('are not coupled to one another' in warning for warning in added_step.projection_warnings) == 2
+        # every answer follows a change of the configuration, which the list on the step follows
+        assert added['renderer'].is_modified and removed['renderer'].is_modified
+        # removed, then added again, with what it was configured with
+        assert was_removed
+        assert added_again_projection.included and added_again_projection.scale == 2.5
+        assert added_again['renderer'].is_modified
+
+    def test_the_inter_tab_picks_among_the_inter_projections(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            saved, _ = self._two_saved_subnetworks_at_the_projections()
+            first, second = saved[0], saved[1]
+            opened = self._projections_editor()
+            cherrypy.request.method = "POST"
+            chosen = self.hybrid_controller.select_inter_projection(source_id=second.id, target_id=first.id)
+            # a source alone, with a target it has no InterProjection towards, opens its first one
+            fallback = self.hybrid_controller.select_inter_projection(source_id=second.id, target_id=second.id)
+
+        # while an IntraProjection is selected, the Inter tab points at the first InterProjection
+        assert opened.projection_row['kind'] == 'Intra'
+        assert opened.inter_projection == '{}:{}'.format(first.id, second.id)
+        assert [source['name'] for source in opened.inter_sources] == [first.name, second.name]
+        assert [target['name'] for target in opened.inter_targets] == [second.name]
+        assert opened.inter_total == 2 and opened.inter_added == 0
+
+        # and the Intra tab offers one IntraProjection per Subnetwork, pointing at the selected one
+        assert [option['name'] for option in opened.intra_options] == [first.name, second.name]
+        assert opened.intra_projection == '{}:{}'.format(first.id, first.id) == opened.selected_projection
+        assert opened.intra_added == 0
+
+        for answer in (chosen, fallback):
+            renderer = answer['renderer']
+            # while an InterProjection is selected, the Intra tab keeps pointing at the last one opened
+            assert renderer.intra_projection == '{}:{}'.format(first.id, first.id)
+            assert renderer.selected_projection == '{}:{}'.format(second.id, first.id)
+            assert renderer.projection_row['kind'] == 'Inter'
+            assert renderer.inter_projection == renderer.selected_projection
+            assert [source['is_selected'] for source in renderer.inter_sources] == [False, True]
+            assert [target['name'] for target in renderer.inter_targets] == [first.name]
+
+    def test_each_tab_points_at_the_last_projection_it_opened(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            saved, _ = self._two_saved_subnetworks_at_the_projections()
+            first, second = saved[0], saved[1]
+            cherrypy.request.method = "POST"
+            self.hybrid_controller.select_projection(projection_key='{}:{}'.format(second.id, second.id))
+            self.hybrid_controller.select_inter_projection(source_id=second.id, target_id=first.id)
+            back_to_intra = self.hybrid_controller.select_projection(
+                projection_key='{}:{}'.format(first.id, first.id))['renderer']
+            inter_open = self.hybrid_controller.select_inter_projection(
+                source_id=first.id, target_id=second.id)['renderer']
+
+        # the Inter tab still points at the pair opened last, while an IntraProjection is selected
+        assert back_to_intra.inter_projection == '{}:{}'.format(second.id, first.id)
+        # and the Intra tab at the Subnetwork opened last, while an InterProjection is selected
+        assert inter_open.intra_projection == '{}:{}'.format(first.id, first.id)
+
+    def test_the_inter_tab_is_rendered_with_its_pickers(self):
+        with patch.object(TvbProfile.current.web, 'RENDER_HTML', True), \
+                patch('cherrypy.session', self.sess_mock, create=True):
+            saved, _ = self._two_saved_subnetworks_at_the_projections()
+            cherrypy.request.method = "POST"
+            inter_key = '{}:{}'.format(saved[0].id, saved[1].id)
+            self.hybrid_controller.set_projection_included(projection_key=inter_key, included='true')
+            html = self.hybrid_controller.select_inter_projection(source_id=saved[0].id, target_id=saved[1].id)
+
+        # the InterProjections share one tab, selected and in the Inter colour, with its From and To
+        inter_tab = re.search(r'<div role="tab"[^>]*hybrid-inter-tab[^>]*>', html).group(0)
+        assert 'is-inter' in inter_tab and 'is-selected' in inter_tab
+        assert 'id="hybrid-inter-source"' in html and 'id="hybrid-inter-target"' in html
+        assert 'hybridSelectInterProjection()' in html
+        # there is no tab per Projection: one Intra tab and one Inter tab, each with its picker
+        assert html.count('role="tab"') == 2
+        assert 'id="hybrid-intra-subnetwork"' in html
+        intra_tab = re.search(r'<div role="tab"[^>]*hybrid-intra-tab[^>]*>', html).group(0)
+        assert 'is-selected' not in intra_tab
+        # an added target is checked, and counted
+        assert '✓ {}'.format(saved[1].name) in html
+        assert '1 of 2 added' in html
+        # and the editor offers to remove it again
+        assert 'Remove from the simulation' in html
+        # and the editor under it is framed in the Inter colour
+        assert 'class="hybrid-projection-block is-inter"' in html
+
+    def test_projection_settings_survive_leaving_and_reopening_the_step(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._two_saved_subnetworks_at_the_projections()
+            inter_key = self._inter_key()
+            self._post_projection(inter_key, scale='2.5')
+            reopened = self._reach_projections()
+
+        row = [row for row in reopened['renderer'].projection_rows if row['key'] == inter_key][0]
+        assert row['scale'] == 2.5
+
+    def test_the_launched_configuration_carries_the_projections(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._two_saved_subnetworks_at_the_projections()
+            cherrypy.request.method = "POST"
+            # every IntraProjection added, and no InterProjection
+            for projection in self._stored_projections():
+                if projection.is_intra:
+                    self.hybrid_controller.set_projection_included(projection_key=self._key(projection),
+                                                                   included='true')
+            hybrid_simulator = self.hybrid_controller.context.hybrid_simulator
+            connectivity = h5.load_from_gid(hybrid_simulator.connectivity)
+            network_set = self.hybrid_controller.hybrid_simulator_service.build_network_set(
+                connectivity, hybrid_simulator.subnetworks, hybrid_simulator.dt, hybrid_simulator.projections)
+
+        # what the adapter builds holds the added Projections only
+        assert network_set.projections == []
+        assert all(len(subnet.projections) == 1 for subnet in network_set.subnets)
 
     def test_saved_subnetworks_survive_navigation_between_steps(self):
         cherrypy.request.method = "POST"

@@ -94,8 +94,9 @@ class HybridSimulatorAdapter(ABCAdapter):
             # Projection matrix and the Region mapping a projection Monitor points at
             monitors = [self.view_model_to_has_traits(monitor) for monitor in view_model.monitors]
 
+            # built as the Projections step configured them, excluded ones left out
             network_set = self.hybrid_simulator_service.build_network_set(
-                self.connectivity, view_model.subnetworks, view_model.dt)
+                self.connectivity, view_model.subnetworks, view_model.dt, view_model.projections)
             self.algorithm = self.hybrid_simulator_service.build_hybrid_simulator(
                 network_set, monitors, view_model.simulation_length,
                 # the Monitors that need a classic Simulator are only meaningful over region ordered
