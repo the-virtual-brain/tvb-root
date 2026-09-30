@@ -161,9 +161,10 @@ class ModularityOCSM(BaseBCT):
         return [measure, value]
 
 
-class ModularityOpCSMU(ModularityOCSM):
+class ModularityOpCSMU(BaseUndirected):
     """
     """
+    _ui_group = BCT_GROUP_MODULARITY
     _ui_name = "Optimal Community Structure and Modularity (Undirected):"
     _ui_description = bct.modularity_und.__doc__
 
