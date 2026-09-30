@@ -194,19 +194,6 @@ class DistanceDBIN(BaseBCT):
         return [measure]
 
 
-class DistanceDWEI(DistanceDBIN):
-    """
-    """
-    _ui_name = "Distance weighted matrix over a Weighted (directed/undirected) connection matrix"
-    _ui_description = bct.distance_wei.__doc__
-
-    def launch(self, view_model):
-        connectivity = self.get_connectivity(view_model)
-        result = bct.distance_wei(connectivity.weights)[0]
-        measure = self.build_connectivity_measure(result, connectivity, DISTANCE_MATRIX_TITLE)
-        return [measure]
-
-
 class DistanceRDM(DistanceDBIN):
     """
     """
