@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -75,6 +76,7 @@ typedef struct cph_gen_entry {
   int mid;                        /* model id (>= 100) */
   int n_parm, n_cvar, n_svar;     /* buffer shapes the kernel expects */
   const char *const *parm_names;  /* parr packing order */
+  const char *signature;          /* dfun fingerprint (model_dfun_signature) */
 } cph_gen_entry;
 int cph_builtin_dfun(int model_id, float *dx, const float *x, int node,
                      int mode, int n_node, int n_modes, const float *c,
@@ -87,9 +89,10 @@ const cph_gen_entry *cph_builtin_entry(int idx);
 namespace cph {
 
 // Runtime-injected generic dfun (the ctypes fallback library compiled by
-// dfungen.generate_lib).  int-returning to match the entry dfungen emits; the
-// return value is not used on this path, because the library is compiled from
-// the same model set the caller took the ids from.
+// dfungen.generate_lib).  int-returning to match the entry dfungen emits: 1
+// when the id is in the runtime library's table, 0 when it is not (that is
+// what lets dfun_dispatch hard-fail instead of silently never-evolving when
+// neither table covers the id).
 typedef int (*cph_generic_fn_t)(int, float *, const float *, int, int, int,
                                 int, const float *, const float *, int, int);
 static cph_generic_fn_t cph_generic_fn = nullptr;
@@ -902,10 +905,15 @@ CPH_NOINLINE static void dfun_dispatch(int model_id, float *dx, const float *x,
                            c, p, n_parm, W))
       return;
 #endif
-    if (cph::cph_have_generic && cph::cph_generic_fn)
-      cph::cph_generic_fn(model_id, dx, x, node, mode, n_node, n_modes,
-                          c, p, n_parm, W);
-    return;
+    if (cph::cph_have_generic && cph::cph_generic_fn &&
+        cph::cph_generic_fn(model_id, dx, x, node, mode, n_node, n_modes,
+                            c, p, n_parm, W))
+      return;
+    // Neither table covered the id, so dx was never written: letting the run
+    // continue would silently never-evolve (Sim.add_subnet(model_id=...) with
+    // a stale or out-of-range id).  Fail loudly, naming the id.
+    throw std::runtime_error("unknown generic model id " +
+                             std::to_string(model_id));
   }
   switch (model_id) {
   case MOD_MPR: dfun_mpr<W>(dx, x, node, mode, n_node, n_modes, c, p, n_parm); break;
@@ -941,9 +949,121 @@ CPH_NOINLINE static void clamp_dispatch(int model_id, float *x, int node, int n_
 
 struct voispec { int kind, a, b; };  // kind 0 = state a; 1 = diff a-b
 
+// ---- kernel-side monitor engines -------------------------------------------
+// Step-level monitor collection running inside the GIL-released step loop.
+// The engines mirror the shared Python reference implementation in
+// nb_hybrid.py::_apply_monitors (which drives tvb.simulator.monitors
+// sample() methods); the Python path stays in place as the parity reference
+// for the numba backend and as the fallback when the engines are disabled.
+// Each engine consumes the same per-step observed row the kernel already
+// accumulates into tacc (voi-spec sums, modes summed), so input values are
+// bit-identical to what the Python reference sees.
+enum { KMON_RAW = 1, KMON_SUBSAMPLE = 2, KMON_BOLD = 3 };
+
+template <int W> struct kmon {
+  int slot = -1;          // monitor list index (state identity)
+  int kind = 0;           // KMON_*
+  int istep = 1;          // steps per sample (subsample / bold period)
+  int interim_istep = 1;  // bold: steps per interim-stock write
+  int stock_steps = 0;    // bold: outer stock length S
+  int n_out_v = 0;        // output rows per sample (full row or voi subset)
+  double k1v0 = 1.0;      // bold: (dot - 1) * k1v0 for FirstOrderVolterra
+  bool first_order = false;
+  double dt = 0.1;        // master step dt (float64, matches the reference)
+  std::vector<int> voi;         // bold: indices into the per-step row
+  std::vector<double> hrf;      // bold: (S,) G[::-1]
+  // persistent state (mirrors the Python Bold monitor's _interim_stock,
+  // _stock and step counter; survives across run() calls)
+  std::vector<float> interim;   // (interim_istep, n_out_v, n_node, W)
+  std::vector<float> stock;     // (stock_steps, n_out_v, n_node, W)
+  uint64_t m_step = 0;          // 1-based global monitor step counter
+  uint64_t run_start = 0;       // m_step at the start of the current run()
+  // per-run() call outputs (cleared at each simw::run entry)
+  std::vector<double> t_out;
+  std::vector<float> d_out;
+
+  void begin_run() { run_start = m_step; }
+  void begin_call() { t_out.clear(); d_out.clear(); }
+
+  // rowbase: the per-step observed row (n_voi, n_node, W) for this subnet.
+  // step_one is invoked once per master step (same cadence the Python
+  // path drives the reference monitor with).
+  void step_one(const float *rowbase, int n_voi, int n_node) {
+    m_step++;
+    const uint64_t within = m_step - run_start;  // 1-based within this run
+    if (kind == KMON_RAW) {
+      // reference stamp: the per-chunk time the Python path emits for
+      // chunk_size == 1 is (within) * float32-quantized dt (backend.py's
+      // master-grid times), so the engine quantizes dt to float once
+      t_out.push_back((double)within * (double)(float)dt);
+      const size_t n = (size_t)n_voi * n_node * W;
+      for (size_t k = 0; k < n; k++) d_out.push_back(rowbase[k]);
+      return;
+    }
+    if (kind == KMON_SUBSAMPLE) {
+      if (within % (uint64_t)istep == 0) {
+        // same float32-quantized master-grid stamp as the reference path
+        t_out.push_back((double)within * (double)(float)dt);
+        const size_t n = (size_t)n_voi * n_node * W;
+        for (size_t k = 0; k < n; k++) d_out.push_back(rowbase[k]);
+      }
+      return;
+    }
+    if (kind == KMON_BOLD) {
+      const int L = (int)voi.size();
+      const int ii = interim_istep;
+      const int S = stock_steps;
+      const size_t plane = (size_t)L * n_node * W;
+      // interim stock write: Python index ((step % ii) - 1) wraps to ii-1
+      {
+        const int slot = (int)((m_step % (uint64_t)ii) + (uint64_t)ii - 1u) % ii;
+        for (int v = 0; v < L; v++) {
+          const int rv = voi[v];
+          if (rv < 0 || rv >= n_voi)
+            throw std::runtime_error(
+                "bold monitor voi index out of range for subnet row");
+          const float *src = rowbase + (size_t)rv * n_node * W;
+          float *dst = interim.data() + ((size_t)slot * L + v) * n_node * W;
+          std::memcpy(dst, src, (size_t)n_node * W * sizeof(float));
+        }
+      }
+      // interim mean -> outer stock at Python index ((step//ii % S) - 1)
+      if (m_step % (uint64_t)ii == 0) {
+        const int srow =
+            (int)((m_step / (uint64_t)ii) % (uint64_t)S) - 1;
+        const size_t sroww = (srow < 0) ? (size_t)(srow + S) : (size_t)srow;
+        for (size_t k = 0; k < plane; k++) {
+          double acc = 0.0;
+          for (int q = 0; q < ii; q++)
+            acc += (double)interim[(size_t)q * plane + k];
+          stock[sroww * plane + k] = (float)(acc / (double)ii);
+        }
+      }
+      // monitor period: hrf dot over the outer stock, rolled by r
+      if (m_step % (uint64_t)istep == 0) {
+        const int r = (int)((m_step / (uint64_t)ii) % (uint64_t)S) - 1;
+        t_out.push_back((double)m_step * dt);
+        for (size_t k = 0; k < plane; k++) {
+          double acc = 0.0;
+          for (int q = 0; q < S; q++) {
+            int hk = (q - r) % S;
+            if (hk < 0) hk += S;
+            acc += hrf[(size_t)hk] * (double)stock[(size_t)q * plane + k];
+          }
+          const double out = first_order ? (acc - 1.0) * k1v0 : acc;
+          d_out.push_back((float)out);
+        }
+      }
+      return;
+    }
+  }
+};
+
 template <int W> struct subnet {
   int n_node = 0, n_svar = 2, n_parm = 0, n_cvar = 1, n_modes = 1;
   int model_id = MOD_MPR;
+  uint32_t K = 1;     // steps per master tick: dt == K * dt0 (multi-dt)
+  float dt = 0.001f;  // this subnet's own integration step (float32 of dt_j)
   std::vector<voispec> voi_specs;
   std::vector<float> x, dx, xi, dxi;  // (n_svar, n_node, n_modes, W)
   std::vector<float> c;               // (n_cvar, n_node, n_modes, W)
@@ -1038,8 +1158,24 @@ template <int W> struct proj {
   int n_cfun_parm = 2;
 
   // coupling into target subnet's c[tgt_cvar], reading source history
+  // Multi-dt read rule (pinned in parity_audit.md §6, decisions 1/3): with
+  // the source stepping every K master ticks, the read position in
+  // source-step units at master tick t1 (1-based) is tau = (t1-1)/K - delay
+  // (the state at the master time of the start of the target's step, the
+  // k=1 read generalized), i0 = floor(tau) and alpha = frac(tau) =
+  // ((t1-1) mod K)/K.  C++ slots: slot s holds state after source step s+1,
+  // so s0 = (i0-1) & (H-1) and s1 = i0 & (H-1) read steps i0 and i0+1.
+  // Zero-delay edges have i1 = m+1, not pushed yet (m = newest pushed
+  // step), so alpha is zeroed for them: the blend holds x0 exactly
+  // (zero-order hold, decision 3).  Negative i0 wraps onto IC-prefilled
+  // slots (all slots are IC-prefilled; H >= max_delay+1 keeps negative
+  // reads from aliasing pushed steps).  When K == 1 this reduces to the
+  // legacy single-slot read exactly (degenerate gate).
   void apply(const subnet<W> &src, subnet<W> &tgt, int t) const {
     const uint32_t Hm1 = src.H - 1;
+    const uint32_t Ksrc = src.K;
+    const bool interp = Ksrc > 1;
+    const uint32_t t1 = (uint32_t)t + 1u;  // 1-based master tick
     const int nn = tgt.n_node;
     const int nms = src.n_modes, nmt = tgt.n_modes;
     if ((int)mode_map.size() != nms * nmt) {
@@ -1061,12 +1197,33 @@ template <int W> struct proj {
           (size_t)cv1 * src.n_node * nms * src.H * W;
       for (int m = 0; m < nms && m < 8; m++)
         for (int i = 0; i < W; i++) gthr[m * W + i] = 0.f;
-      for (int nz = 0; nz < nnz_total; nz++) {
-        const uint32_t slot = ((uint32_t)t - 1u - del[nz]) & Hm1;
-        for (int m = 0; m < nms && m < 8; m++) {
-          const float *b = sbuf1 +
-              (((size_t)idx[nz] * nms + m) * src.H + slot) * W;
-          for (int i = 0; i < W; i++) gthr[m * W + i] += b[i];
+      if (interp) {
+        for (int nz = 0; nz < nnz_total; nz++) {
+          // i0 is the source-STEP index of x0 (slot s holds step s+1,
+          // so s0 = (i0-1) and s1 = i0 read steps i0 and i0+1)
+          const uint32_t i0 = (t1 - 1u) / Ksrc - del[nz];
+          // zero-delay edges: i1 = m+1 not pushed; hold x0 (decision 3)
+          const float alpha = (del[nz] == 0)
+              ? 0.f : (float)((t1 - 1u) % Ksrc) / (float)Ksrc;
+          const uint32_t s0 = (i0 - 1u) & Hm1;
+          const uint32_t s1 = i0 & Hm1;
+          for (int m = 0; m < nms && m < 8; m++) {
+            const float *b0 = sbuf1 +
+                (((size_t)idx[nz] * nms + m) * src.H + s0) * W;
+            const float *b1 = sbuf1 +
+                (((size_t)idx[nz] * nms + m) * src.H + s1) * W;
+            for (int i = 0; i < W; i++)
+              gthr[m * W + i] += b0[i] + alpha * (b1[i] - b0[i]);
+          }
+        }
+      } else {
+        for (int nz = 0; nz < nnz_total; nz++) {
+          const uint32_t slot = ((uint32_t)t - 1u - del[nz]) & Hm1;
+          for (int m = 0; m < nms && m < 8; m++) {
+            const float *b = sbuf1 +
+                (((size_t)idx[nz] * nms + m) * src.H + slot) * W;
+            for (int i = 0; i < W; i++) gthr[m * W + i] += b[i];
+          }
         }
       }
       const float inv = 1.0f / (float)nnz_total;
@@ -1076,7 +1233,10 @@ template <int W> struct proj {
     // fast path: single source mode, no pre transform, one source cvar,
     // matching target — the dominant case (Linear.a * matvec).  Avoids the
     // per-edge v[] copy / mode loops for W==1 and openmps for wider W.
-    if (nms == 1 && nmt == 1 && !has_pre && src_cvars.size() == 1) {
+    // Unavailable for interpolating projections (non-contiguous paired
+    // reads), so it requires src.K == 1.
+    if (nms == 1 && nmt == 1 && !has_pre && src_cvars.size() == 1 &&
+        !interp) {
       const int scv = src_cvars[0];
       const float *sbuf = src.buf.data() +
           (size_t)scv * src.n_node * src.H * W;
@@ -1112,17 +1272,35 @@ template <int W> struct proj {
       }
       const int i0 = ptr[j], i1 = ptr[j + 1];
       for (int nz = i0; nz < i1; nz++) {
-        // value written at step (t - 1 - delay); slots are (step & H-1)
-        const uint32_t slot = ((uint32_t)t - 1u - del[nz]) & Hm1;
+        // value written at step (t - 1 - delay); slots are (step & H-1).
+        // Multi-dt: interpolate the two bracketing source samples per the
+        // pinned read rule (tau = (t1-1)/K - delay) in the apply() comment;
+        // zero-delay edges hold x0 (i1 not pushed, alpha zeroed).
+        uint32_t s0, s1;
+        float alpha = 0.f;
+        if (interp) {
+          // ii is the source-STEP index of x0 (slot s holds step s+1,
+          // so s0 = (ii-1) and s1 = ii read steps ii and ii+1)
+          const uint32_t ii = (t1 - 1u) / Ksrc - del[nz];
+          s0 = (ii - 1u) & Hm1;
+          s1 = ii & Hm1;
+          alpha = (del[nz] == 0)
+              ? 0.f : (float)((t1 - 1u) % Ksrc) / (float)Ksrc;
+        } else {
+          s0 = s1 = ((uint32_t)t - 1u - del[nz]) & Hm1;
+        }
         const float wgt = w[nz];
         for (int m = 0; m < nms && m < 8; m++) {
           float v[4 * W];  // up to 4 source cvars
           for (size_t cv = 0; cv < src_cvars.size(); cv++) {
             const float *sbuf = src.buf.data() +
                 (size_t)src_cvars[cv] * src.n_node * nms * src.H * W;
-            const float *b = sbuf +
-                (((size_t)idx[nz] * nms + m) * src.H + slot) * W;
-            for (int i = 0; i < W; i++) v[cv * W + i] = b[i];
+            const float *b0 = sbuf +
+                (((size_t)idx[nz] * nms + m) * src.H + s0) * W;
+            const float *b1 = sbuf +
+                (((size_t)idx[nz] * nms + m) * src.H + s1) * W;
+            for (int i = 0; i < W; i++)
+              v[cv * W + i] = b0[i] + alpha * (b1[i] - b0[i]);
           }
           if (has_pre) {
             if (use_gT)
@@ -1168,7 +1346,82 @@ template <int W> struct simw {
   float dt = 0.001f;
   int tavg_period = 1;
   std::vector<std::vector<voispec>> voi_specs;  // per subnet
+  std::vector<std::vector<kmon<W>>> mons;       // per-subnet monitor engines
   uint64_t t_abs = 0;
+
+  // Replace subnet si's armed monitor engines with `atts`.  Engines whose
+  // (slot, kind) match an existing engine are kept with their state intact
+  // (matching the Python reference, which keys monitor runtimes by
+  // (kind, monitor index, subnet)); everything else is recreated; engines no
+  // longer armed are dropped.  atts entries are tuples:
+  //   (slot, kind, istep, interim_istep, stock_steps, k1v0, first_order,
+  //    voi (int32 ndarray), hrf (float64 ndarray or None), dt)
+  void set_monitors(int si, nb::list atts) {
+    if ((size_t)si >= sn.size())
+      throw std::runtime_error("bad subnet index in set_monitors");
+    if (mons.size() < sn.size()) mons.resize(sn.size());
+    auto &cur = mons[si];
+    const int n_voi = (int)voi_specs[si].size();
+    const int n_node = sn[si].n_node;
+    const double dt64 = (double)dt;
+    std::vector<kmon<W>> next;
+    next.reserve(atts.size());
+    for (auto item : atts) {
+      nb::tuple a = nb::cast<nb::tuple>(item);
+      const int slot = nb::cast<int>(a[0]);
+      const int kind = nb::cast<int>(a[1]);
+      auto it = std::find_if(cur.begin(), cur.end(), [&](const kmon<W> &e) {
+        return e.slot == slot && e.kind == kind;
+      });
+      if (it != cur.end()) {  // same (slot, kind): keep state (Python semantics)
+        next.push_back(std::move(*it));
+        continue;
+      }
+      kmon<W> m;
+      m.slot = slot;
+      m.kind = kind;
+      m.istep = nb::cast<int>(a[2]);
+      if (m.istep < 1) m.istep = 1;
+      m.interim_istep = nb::cast<int>(a[3]);
+      if (m.interim_istep < 1) m.interim_istep = 1;
+      m.stock_steps = nb::cast<int>(a[4]);
+      if (m.stock_steps < 1) m.stock_steps = 1;
+      m.k1v0 = nb::cast<double>(a[5]);
+      m.first_order = nb::cast<bool>(a[6]);
+      if (kind == KMON_BOLD) {
+        auto V = nb::cast<nb::ndarray<nb::numpy, int>>(a[7]);
+        auto Vv = V.view<nb::ndim<1>>();
+        m.voi.resize(Vv.shape(0));
+        for (size_t k = 0; k < Vv.shape(0); k++) m.voi[k] = Vv(k);
+        if (!a[8].is_none()) {
+          auto H = nb::cast<nb::ndarray<nb::numpy, double>>(a[8]);
+          auto Hv = H.view<nb::ndim<1>>();
+          m.hrf.assign(Hv.shape(0), 0.0);
+          for (size_t k = 0; k < Hv.shape(0); k++) m.hrf[k] = Hv(k);
+        }
+        m.n_out_v = (int)m.voi.size();
+        const size_t plane = (size_t)m.n_out_v * n_node * W;
+        m.interim.assign((size_t)m.interim_istep * plane, 0.f);
+        m.stock.assign((size_t)m.stock_steps * plane, 0.f);
+      } else {
+        m.n_out_v = n_voi;  // raw / subsample emit the full observed row
+      }
+      m.dt = nb::cast<double>(a[9]);
+      (void)dt64;
+      next.push_back(std::move(m));
+    }
+    cur = std::move(next);
+  }
+
+  void monitor_begin_run() {
+    for (auto &mons_s : mons)
+      for (auto &m : mons_s) m.begin_run();
+  }
+
+  void monitor_begin_call() {
+    for (auto &mons_s : mons)
+      for (auto &m : mons_s) m.begin_call();
+  }
 
   // Run nstep steps. Output per chunk of `chunk_size` steps:
   // tavg (n_chunks, n_voi, n_node, W) and ctavg (n_chunks, n_cvar, n_node, W),
@@ -1180,6 +1433,7 @@ template <int W> struct simw {
     const int cs = chunk_size > 0 ? chunk_size : tavg_period;
     const int n_chunks = (nstep + cs - 1) / cs;
     const size_t n_sn = sn.size();
+    monitor_begin_call();
 
     // per-step noise/stim pointers (lane-major innermost)
     // Each of noise_obj / stim_obj is either a single array (single-subnet
@@ -1218,7 +1472,13 @@ template <int W> struct simw {
     for (size_t s = 0; s < n_sn; s++) {
       const int n_voi = (int)voi_specs[s].size();
       tacc[s].assign((size_t)n_chunks * n_voi * sn[s].n_node * W, 0.f);
-      cacc[s].assign((size_t)n_chunks * sn[s].n_cvar * sn[s].n_node * W, 0.f);
+      // ctavg layout matches the returned array and sub.c: (n_chunks,
+      // n_cvar, n_node, n_modes, W).  The n_modes factor was missing here
+      // while the accumulation below (and the output copy) indexed with
+      // it, so any subnet with n_modes > 1 wrote and read past the end of
+      // the accumulator (heap corruption, garbage ctavg).
+      cacc[s].assign((size_t)n_chunks * sn[s].n_cvar * sn[s].n_node *
+                         sn[s].n_modes * W, 0.f);
       counts[s].assign(n_chunks, 0);
     }
 
@@ -1256,14 +1516,22 @@ template <int W> struct simw {
             float *dst = cacc[s].data() + chunk * n_cv;
             for (size_t k = 0; k < n_cv; k++) dst[k] += cv[k];
           }
-          const float *nz = nullptr;
-          if (const float *nptr = noise_ps[s])
-            nz = nptr + ((size_t)step) * (size_t)sub.n_svar * sub.n_node * sub.n_modes * W;
-          if (integ_id == 1)
-            sub.step_heun(dt, nz);
-          else
-            sub.step_euler(dt, nz);
-          sub.push_state((int)(t_abs & (sub.H - 1)));
+          // multi-dt: the subnet integrates (and pushes) only on its own
+          // ticks; t_abs is the 0-based iteration counter, so master tick
+          // (t_abs + 1) is due when (t_abs + 1) % K == 0.
+          if (((t_abs + 1) % sub.K) == 0) {
+            const float *nz = nullptr;
+            if (const float *nptr = noise_ps[s])
+              nz = nptr + ((size_t)step) * (size_t)sub.n_svar * sub.n_node * sub.n_modes * W;
+            if (integ_id == 1)
+              sub.step_heun(sub.dt, nz);
+            else
+              sub.step_euler(sub.dt, nz);
+            // slot = (subnet's own step count) - 1 in C++ convention:
+            // after master tick (t_abs+1) the subnet has executed
+            // (t_abs+1)/K steps, and slot s holds state after step s+1.
+            sub.push_state((int)((((t_abs + 1) / sub.K) - 1) & (sub.H - 1)));
+          }
           // accumulate tavg (voi specs: 0 = state var, 1 = var difference);
           // values summed over modes (matches hybrid observe)
             {
@@ -1291,6 +1559,19 @@ template <int W> struct simw {
                 }
               }
             }
+          // kernel-side monitor engines consume this step's observed row
+          // (only valid at chunk_size == 1: the per-chunk sums are then the
+          // per-step rows, bit-identical to what the Python reference sees)
+          if (!mons.empty() && !mons[s].empty()) {
+            if (cs != 1)
+              throw std::runtime_error(
+                  "kernel monitor engines require chunk_size == 1");
+            const int n_voi = (int)voi_specs[s].size();
+            const size_t ntv = (size_t)n_voi * sn[s].n_node * W;
+            const float *rowbase = tacc[s].data() + (size_t)step * ntv;
+            for (auto &mon : mons[s])
+              mon.step_one(rowbase, n_voi, sn[s].n_node);
+          }
         }
         t_abs++;
       }
@@ -1305,10 +1586,8 @@ template <int W> struct simw {
     if (nstep > 0 && rem != 0) {
       const size_t chunk = (size_t)(nstep / cs);
       for (size_t s = 0; s < n_sn; s++) {
-        const int n_voi = (int)voi_specs[s].size();
-        const size_t nv = (size_t)n_voi * sn[s].n_node * W;
-        float *dst = tacc[s].data() + chunk * nv;
-        (void)dst;
+        // counts[s][chunk] was already incremented per step in the loop
+        // (it equals rem); recorded once more to be explicit.
         counts[s][chunk] = rem;
       }
     }
@@ -1327,12 +1606,32 @@ template <int W> struct simw {
       const size_t ncv = (size_t)sn[s].n_cvar * sn[s].n_node * sn[s].n_modes * W;
       for (size_t chunk = 0; chunk < (size_t)n_chunks; chunk++) {
         const float tinv = 1.f / (float)(counts[s][chunk] ? counts[s][chunk] : 1);
-        const float cinv = 1.f / (float)cs;
+        // ctavg normalization: the accumulated step count, not the fixed
+        // chunk size (nb_hybrid divides by tavg_count; parity_audit.md
+        // section 6 decision 6).  Identical on full chunks, correct on the
+        // partial final chunk.
+        const float cinv = tinv;
         for (size_t k = 0; k < ntv; k++) td[chunk * ntv + k] = tacc[s][chunk * ntv + k] * tinv;
         for (size_t k = 0; k < ncv; k++) cd[chunk * ncv + k] = cacc[s][chunk * ncv + k] * cinv;
       }
       outs.append(tarr);
       outs.append(carr);
+      // per-subnet monitor engine streams, in arm order:
+      // (times float64, data float32 (n, n_out_v, n_node, W)) each
+      if (mons.size() == n_sn) {
+        for (auto &mon : mons[s]) {
+          const size_t n = mon.t_out.size();
+          nb::ndarray<nb::numpy, double> mt = make_owned_array<double>({n});
+          std::copy(mon.t_out.begin(), mon.t_out.end(),
+                    static_cast<double *>(mt.data()));
+          nb::ndarray<nb::numpy, float> md = make_owned_array<float>(
+              {n, (size_t)mon.n_out_v, (size_t)sn[s].n_node, (size_t)W});
+          std::copy(mon.d_out.begin(), mon.d_out.end(),
+                    static_cast<float *>(md.data()));
+          outs.append(mt);
+          outs.append(md);
+        }
+      }
     }
     return outs;
   }
@@ -1358,7 +1657,8 @@ struct sim {
   }
 
   void add_subnet(int n_node, int n_svar, int n_parm, int n_cvar,
-                  int model_id, int horizon, int n_modes) {
+                  int model_id, int horizon, int n_modes, uint32_t k = 1,
+                  float dt = 0.001f) {
     // round the history length up to a power of two >= horizon+2 so that
     // slot masking with (H-1) is valid
     uint32_t H = 1;
@@ -1367,12 +1667,16 @@ struct sim {
       if (!s8) s8 = std::make_unique<simw<8>>();
       subnet<8> s;
       s.alloc(n_node, n_svar, n_parm, n_cvar, model_id, H, n_modes);
+      s.K = k;
+      s.dt = dt;
       s8->sn.push_back(std::move(s));
       s8->voi_specs.push_back({});
     } else {
       if (!s1) s1 = std::make_unique<simw<1>>();
       subnet<1> s;
       s.alloc(n_node, n_svar, n_parm, n_cvar, model_id, H, n_modes);
+      s.K = k;
+      s.dt = dt;
       s1->sn.push_back(std::move(s));
       s1->voi_specs.push_back({});
     }
@@ -1546,6 +1850,14 @@ struct sim {
     });
   }
 
+  void set_monitors(int si, nb::list atts) {
+    dispatch([&](auto &s) { s.set_monitors(si, atts); });
+  }
+
+  void monitor_begin_run() {
+    dispatch([&](auto &s) { s.monitor_begin_run(); });
+  }
+
   nb::list run(int nstep, int chunk_size, nb::object noise, nb::object stim) {
     nb::list outs;
     dispatch([&](auto &s) { outs = s.run(nstep, chunk_size, noise, stim); });
@@ -1574,6 +1886,7 @@ static nb::dict generic_model_table() {
     rec["n_cvar"] = e->n_cvar;
     rec["n_svar"] = e->n_svar;
     rec["parm_names"] = parm;
+    rec["signature"] = nb::str(e->signature ? e->signature : "");
     out[nb::str(e->name)] = rec;
   }
 #endif
@@ -1625,7 +1938,10 @@ NB_MODULE(_cpp_hybrid, m) {
   m.doc() = "C++ hybrid simulator core (runtime SIMD kernels, no codegen)";
   nb::class_<cph::sim>(m, "Sim")
       .def(nb::init<int>(), nb::arg("width") = 8)
-      .def("add_subnet", &cph::sim::add_subnet)
+      .def("add_subnet", &cph::sim::add_subnet, nb::arg("n_node"),
+           nb::arg("n_svar"), nb::arg("n_parm"), nb::arg("n_cvar"),
+           nb::arg("model_id"), nb::arg("horizon"), nb::arg("n_modes"),
+           nb::arg("k") = 1, nb::arg("dt") = 0.001f)
       .def("add_projection", &cph::sim::add_projection, nb::arg("src_sn"),
            nb::arg("tgt_sn"), nb::arg("w"), nb::arg("idx"), nb::arg("ptr"),
            nb::arg("del"), nb::arg("cfun_id"), nb::arg("src_cvars"),
@@ -1639,6 +1955,9 @@ NB_MODULE(_cpp_hybrid, m) {
       .def("set_voi_specs", &cph::sim::set_voi_specs)
 
       .def("set_opts", &cph::sim::set_opts)
+      .def("set_monitors", &cph::sim::set_monitors, nb::arg("si"),
+           nb::arg("atts"))
+      .def("monitor_begin_run", &cph::sim::monitor_begin_run)
       .def("get_subnet_state", &cph::sim::get_subnet_state)
       .def("t_abs", &cph::sim::t_abs)
       .def("run", &cph::sim::run, nb::arg("nstep"), nb::arg("chunk_size") = 0,

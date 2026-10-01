@@ -98,7 +98,7 @@ def _numpy_ref_mpr(w, idx, ptr, del_, horizon, n_node, nstep, tavg_period, dt,
 def _run_cpp(w, idx, ptr, del_, horizon, n_node, nstep, tavg_period, dt,
              params, cfun_a, width, integ="heun"):
     sim = Sim(width)
-    sim.add_subnet(n_node, 2, MPR_PARM, 1, 0, horizon, 1)  # MPR
+    sim.add_subnet(n_node, 2, MPR_PARM, 1, 0, horizon, 1, dt=DT)  # MPR
     sim.add_projection(0, 0, w, idx, ptr, del_, 0, np.array([0],np.int32), 0, 2, 1.0)  # linear cfun
     sim.set_cfun_params(0, np.broadcast_to(
         np.array([[cfun_a], [0.0]], np.float32), (2, width)).copy())
@@ -195,8 +195,8 @@ def test_two_subnets_inter_projection():
 
     # --- C++
     sim = Sim(8)
-    sim.add_subnet(nA, 2, MPR_PARM, 1, 0, horizon, 1)
-    sim.add_subnet(nB, 2, MPR_PARM, 1, 0, horizon, 1)
+    sim.add_subnet(nA, 2, MPR_PARM, 1, 0, horizon, 1, dt=DT)
+    sim.add_subnet(nB, 2, MPR_PARM, 1, 0, horizon, 1, dt=DT)
     sim.add_projection(0, 1, w, idx, ptr, del_, 0, np.array([0],np.int32), 0, 2, 1.0)
     sim.set_cfun_params(0, np.broadcast_to(
         np.array([[0.8], [0.0]], np.float32), (2, 8)).copy())
@@ -218,6 +218,22 @@ def test_two_subnets_inter_projection():
                                rtol=1e-3, atol=1e-4)
 
 
+@pytest.mark.parametrize("width", [1, 8])
+def test_uncovered_generic_id_raises(width):
+    """Raw Sim API hard-fails on generic ids neither table covers.
+
+    model_id=999 is above the hand-written range, not in the built-in table
+    compiled into the extension, and not in the injected runtime library: the
+    old dispatch returned without writing dx and the subnet silently never
+    evolved.  Now the run raises, naming the id.
+    """
+    sim = Sim(width)
+    sim.add_subnet(2, 2, MPR_PARM, 1, 999, 3, 1)
+    sim.set_opts(1, DT, 1)
+    with pytest.raises(RuntimeError, match="999"):
+        sim.run(3, 0, None, None)
+
+
 def test_state_persists_across_runs():
     """Calling run twice sequentially equals one run of the total steps."""
     n_node = 4
@@ -226,7 +242,7 @@ def test_state_persists_across_runs():
 
     def make():
         sim = Sim(1)
-        sim.add_subnet(n_node, 2, MPR_PARM, 1, 0, horizon, 1)
+        sim.add_subnet(n_node, 2, MPR_PARM, 1, 0, horizon, 1, dt=DT)
         sim.add_projection(0, 0, w, idx, ptr, del_, 0, np.array([0],np.int32), 0, 2, 1.0)
         sim.set_cfun_params(0, np.broadcast_to(
             np.array([[1.0], [0.0]], np.float32), (2, 1)).copy())

@@ -221,6 +221,7 @@ class SubnetworkInfo:
     params: np.ndarray = None
     voi: list = dataclasses.field(default_factory=list)
     dt: float = 0.0
+    k: int = 1  # steps per master tick: dt == k * dt0 (multi-dt)
     horizon: int = 1
     n_modes: int = 1
     is_stochastic: bool = False
@@ -338,7 +339,6 @@ class CompiledCppSim:
 
     def warmup(self) -> float:
         return 0.0  # no JIT: nothing to warm up
-
     def run(
         self,
         nstep: int,
@@ -354,7 +354,7 @@ class CompiledCppSim:
         per subnetwork of ``(times, data, ctavg)``.  With monitors returns
         ``list[monitor][subnetwork]`` of ``(times, data)``.
         """
-        dt = self._network_set.subnets[0].scheme.dt
+        dt = float(min(sn.scheme.dt for sn in self._network_set.subnets))
         if chunk_size is None:
             chunk_size = (
                 _compute_chunk_size(monitors, dt) if monitors is not None else 1
@@ -364,22 +364,32 @@ class CompiledCppSim:
         execution_chunk_size = chunk_size
         kernel_monitors = monitors
         has_bold = has_temporal_average = False
+        kernel_collect = []
         if monitors is not None:
             from tvb.simulator.monitors import Bold, TemporalAverage
             has_bold = any(isinstance(m, Bold) for m in monitors)
             has_temporal_average = any(
                 isinstance(m, TemporalAverage) for m in monitors)
+            if self._backend.enable_kernel_monitors:
+                kernel_collect = [
+                    (mi, m) for mi, m in enumerate(monitors)
+                    if self._backend._kernel_collectable(m)
+                ]
             if has_bold or has_temporal_average:
                 # Stateful monitors consume every observed state.
                 execution_chunk_size = 1
                 kernel_monitors = []
                 if self._bold_states is None:
                     self._bold_states = {}
-        outputs = self._backend._run_compiled(
+        if kernel_collect and execution_chunk_size != 1:
+            # The kernel engines read per-step rows; without chunk_size == 1
+            # fall back to the Python reference path.
+            kernel_collect = []
+        outputs, kernel_streams = self._backend._run_compiled(
             self._sim, self._analysis, self._network_set,
             nstep=nstep, chunk_size=execution_chunk_size,
             initial_states=initial_states, monitors=kernel_monitors,
-            width=self._width,
+            width=self._width, kernel_collect=kernel_collect,
         )
         if monitors is not None:
             bold_raw_outputs = outputs if has_bold else None
@@ -392,6 +402,7 @@ class CompiledCppSim:
                 bold_states=self._bold_states,
                 bold_raw_outputs=bold_raw_outputs,
                 temporal_raw_outputs=temporal_raw_outputs,
+                kernel_streams=kernel_streams or None,
             )
         if not return_snapshot:
             return outputs
@@ -434,7 +445,10 @@ class CppHybridBackend:
     _RUN_FN_CACHE = {}  # topology-key -> cached _run_network_fn token
 
     def __init__(self):
-        pass
+        # Kernel-side monitor engines (Bold HRF convolution, Raw/SubSample
+        # collection) are on by default; disable to force the shared Python
+        # reference path (used by the parity tests).
+        self.enable_kernel_monitors = True
 
     # ---- cache / misc API parity with NbHybridBackend ----
 
@@ -486,7 +500,8 @@ class CppHybridBackend:
             HeunDeterministic, EulerDeterministic,
             HeunStochastic, EulerStochastic,
         )
-        dt0 = network_set.subnets[0].scheme.dt
+        from tvb.simulator.backend.nb_hybrid import _validate_multi_dt
+        dt0 = _validate_multi_dt(network_set)
         for sn in network_set.subnets:
             model_name = type(sn.model).__name__
             if not self._model_supported(model_name):
@@ -504,8 +519,6 @@ class CppHybridBackend:
                     f"(Deterministic or Stochastic); subnetwork "
                     f"'{sn.name}' uses {type(sn.scheme).__name__}"
                 )
-            if sn.scheme.dt != dt0:
-                raise ValueError("All subnetworks must share the same dt.")
             if isinstance(sn.scheme, (HeunStochastic, EulerStochastic)):
                 from tvb.simulator.noise import Additive
                 if not isinstance(sn.scheme.noise, Additive):
@@ -543,8 +556,9 @@ class CppHybridBackend:
     def _analyse(self, network_set: NetworkSet) -> NetworkAnalysis:
         """Map a NetworkSet onto the C++ core's subnets/projections."""
         self._check_compatibility(network_set)
+        from tvb.simulator.backend.nb_hybrid import _validate_multi_dt
         subnet_index = {sn.name: i for i, sn in enumerate(network_set.subnets)}
-        dt = float(network_set.subnets[0].scheme.dt)
+        dt0 = _validate_multi_dt(network_set)
 
         subnets = []
         for sn in network_set.subnets:
@@ -589,13 +603,14 @@ class CppHybridBackend:
                 model=sn.model,
                 params=params,
                 voi=voi,
-                dt=dt,
                 is_stochastic=is_stoch,
                 noise_nsig=nsig,
                 noise_seed=seed,
                 node_indices=(np.asarray(sn.node_indices, dtype=np.int64)
                              if getattr(sn, "node_indices", None) is not None
                              else None),
+                dt=float(sn.scheme.dt),
+                k=max(1, int(round(float(sn.scheme.dt) / dt0))),
                 parm_index={k: i for i, k in enumerate(parm_names)},
             ))
 
@@ -683,7 +698,7 @@ class CppHybridBackend:
             src.horizon = max(src.horizon, pr.horizon)
 
         return NetworkAnalysis(
-            subnets=subnets, projections=projections, dt=dt)
+            subnets=subnets, projections=projections, dt=dt0)
 
     @classmethod
     def _ensure_generic_dfuns(cls):
@@ -693,27 +708,33 @@ class CppHybridBackend:
         nor in the built-in table, so stock models never trigger a g++ compile.
 
         The library is emitted at ``start_id = max(built-in id) + 1``, i.e. in
-        an id range strictly above every built-in id.  Ids are positional over
-        sorted class names, so without this a user model sorting before the
-        stock ones (``AaaProbe``) would take id 100, shift every stock id, and
-        — because _core.cpp serves the built-in range first — silently run the
-        wrong kernel.  Disjoint ranges make that structurally impossible: the
-        built-in table owns 100..max_builtin, the runtime library owns
+        an id range strictly above every built-in id, and it *excludes* the
+        built-in table's own names: stock models already ship as kernels
+        inside the extension, so re-emitting and re-compiling them into the
+        runtime library would only add dead kernels (and g++ time) to the
+        cache.  Ids are positional over sorted class names, so without the
+        disjoint range a user model sorting before the stock ones
+        (``AaaProbe``) would take id 100, shift every stock id, and —
+        because _core.cpp serves the built-in range first — silently run the
+        wrong kernel.  Disjoint ranges make that structurally impossible:
+        the built-in table owns 100..max_builtin, the runtime library owns
         max_builtin+1.., and dfungen gap-pads the runtime library's dispatch
         table with ``nullptr`` over the built-in range so those ids fall
-        through instead of calling a null slot.  With no built-in table at all
-        the original 100-based range is used unchanged.
+        through instead of calling a null slot.  With no built-in table at
+        all the original 100-based range is used unchanged (and nothing is
+        excluded).
         """
         global _GEN_LIB, _GEN_IDS, _GEN_META
         if _GEN_LIB is not None:
             return
         import ctypes
         from . import dfungen
-        builtin_ids = [int(m["mid"]) for m in _builtin_model_table().values()]
+        builtin = _builtin_model_table()
+        builtin_ids = [int(m["mid"]) for m in builtin.values()]
         start_id = (_GENERIC_BASE if not builtin_ids
                     else max(_GENERIC_BASE, max(builtin_ids)) + 1)
-        lib_path, ids, meta = dfungen.generate_lib(cls.get_cache_dir(),
-                                                   start_id=start_id)
+        lib_path, ids, meta = dfungen.generate_lib(
+            cls.get_cache_dir(), start_id=start_id, exclude=list(builtin))
         _GEN_LIB = ctypes.CDLL(str(lib_path))
         _GEN_IDS = dict(ids)
         _GEN_META = dict(meta)
@@ -755,6 +776,33 @@ class CppHybridBackend:
                 f"since the kernel was generated (rebuild the extension)")
         return table
 
+    @staticmethod
+    def _check_dfun_signature(model, meta):
+        """Raise when a model's dfun fingerprint differs from its kernel's.
+
+        The kernel a class name resolves to may have been generated from a
+        *different* class that happens to share the name (a shadowing class
+        with identical parameters but altered equations slips past the
+        parameter-packing check, which only sees shapes).  The fingerprint is
+        computed the same way at emission time and here
+        (``dfungen.model_dfun_signature``), so any divergence between the
+        equations a kernel was generated from and the instance being resolved
+        fails loudly, naming the model.  A kernel emitted without a
+        fingerprint (an extension that predates the feature) skips the check.
+        """
+        from . import dfungen
+        expected = str(meta.get("signature") or "")
+        if not expected:
+            return
+        name = type(model).__name__
+        got = dfungen.model_dfun_signature(model)
+        if got != expected:
+            raise ValueError(
+                f"{name}: a dfun kernel for this class name exists but was "
+                f"generated from different equations (dfun fingerprint "
+                f"{got} != {expected}); rename the class or rebuild the "
+                f"extension")
+
     def _model_key(self, model):
         """Return (model_id, n_parm, n_cvar, n_svar, parm_names) for a model
         instance.
@@ -772,6 +820,7 @@ class CppHybridBackend:
         if name in builtin:
             meta = builtin[name]
             parm = self._packing_parm_names(model, meta)
+            self._check_dfun_signature(model, meta)
             return (int(meta["mid"]), len(parm), int(meta["n_cvar"]),
                     int(meta["n_svar"]), parm)
         self._ensure_generic_dfuns()
@@ -781,6 +830,7 @@ class CppHybridBackend:
             )
         meta = _GEN_META[name]
         parm = self._packing_parm_names(model, meta)
+        self._check_dfun_signature(model, meta)
         return (_GEN_IDS[name], len(parm), int(meta["n_cvar"]),
                 int(meta["n_svar"]), parm)
 
@@ -871,7 +921,7 @@ class CppHybridBackend:
         parts = []
         for sn in analysis.subnets:
             parts.append((sn.model_name, sn.n_nodes, sn.n_modes,
-                          sn.n_svar, sn.n_cvar, sn.horizon))
+                          sn.n_svar, sn.n_cvar, sn.horizon, sn.dt, sn.k))
         for pr in analysis.all_projections:
             parts.append((pr.src_sn, pr.tgt_sn, pr.cfun_id,
                           pr.n_tgt_nodes, tuple(pr.src_cvars_list),
@@ -884,6 +934,7 @@ class CppHybridBackend:
             sim.add_subnet(
                 sn.n_nodes, sn.n_svar, sn.n_parm, sn.n_cvar,
                 sn.model_id, sn.horizon, sn.n_modes,
+                k=sn.k, dt=float(sn.dt),
             )
             sim.set_voi_specs(i, sn.voi)
         integ_id = 1 if isinstance(
@@ -950,7 +1001,10 @@ class CppHybridBackend:
 
         Stimulus for step t (0-based within the run) is evaluated at global
         step t+1, matching the nb_hybrid convention (stim[t - offset - 1]).
+        Multi-dt decision 7: the pattern is evaluated on the master dt0 grid
+        (index = master step), via nb_hybrid._stim_master_grid.
         """
+        from tvb.simulator.backend.nb_hybrid import _stim_master_grid
         stims = []
         for sn in analysis.subnets:
             if not sn.stimuli:
@@ -958,7 +1012,8 @@ class CppHybridBackend:
             nm = sn.n_modes
             arr = np.zeros(
                 (nstep, sn.n_cvar, sn.n_nodes, nm, width), np.float32)
-            for stim in sn.stimuli:
+            for stim in (_stim_master_grid(s, analysis.dt, int(nstep))
+                         for s in sn.stimuli):
                 target_slots = np.asarray(stim.target_cvar).astype(np.intp)
                 for step_idx in range(1, nstep + 1):
                     sc = np.asarray(stim.get_coupling(step_idx), dtype=np.float32)
@@ -1008,20 +1063,101 @@ class CppHybridBackend:
                         f"max(idelay)+1 = {need}; delays would alias."
                     )
 
+    @staticmethod
+    def _kernel_collectable(m):
+        """True when *m* is handled by the kernel-side monitor engines.
+
+        The engines cover Bold's HRF convolution plus Raw/SubSample
+        collection.  AfferentCoupling (a Raw subclass whose output is the
+        coupling stream, not the observed state) and BoldRegionROI (Raw-like
+        state collection with an additional region-ROI reduction in Python)
+        stay on the Python reference path.
+        """
+        from tvb.simulator.monitors import (
+            Raw, SubSample, Bold, AfferentCoupling, BoldRegionROI)
+        if isinstance(m, Bold) and not isinstance(m, BoldRegionROI):
+            return True
+        if isinstance(m, SubSample):
+            return True
+        if isinstance(m, Raw) and not isinstance(m, AfferentCoupling):
+            return True
+        return False
+
+    def _monitor_attach_spec(self, mi, m, n_voi, dt):
+        """Build the C++ engine attachment tuple for monitor *mi* on a
+        subnet whose per-step observed row has *n_voi* entries.
+
+        Mirrors the reference runtime construction in nb_hybrid._apply_monitors
+        so the engine gets byte-identical configuration.
+        """
+        import copy
+        from tvb.datatypes import equations
+        from tvb.simulator.monitors import Bold, SubSample
+        if isinstance(m, Bold):
+            if (m.variables_of_interest is None
+                    or m.variables_of_interest.size == 0):
+                voi = np.arange(n_voi, dtype=np.int32)
+            else:
+                voi = np.asarray(m.variables_of_interest, dtype=np.int32)
+            tmp = copy.deepcopy(m)
+            tmp._config_dt(dt)
+            tmp.compute_hrf()
+            first_order = isinstance(
+                m.hrf_kernel, equations.FirstOrderVolterra)
+            k1v0 = (float(m.hrf_kernel.parameters["k_1"]
+                          * m.hrf_kernel.parameters["V_0"])
+                    if first_order else 1.0)
+            hrf = np.asarray(tmp.hemodynamic_response_function,
+                             dtype=np.float64).ravel()
+            return (mi, 3, int(tmp.istep), int(tmp._interim_istep),
+                    int(tmp._stock_steps), k1v0, bool(first_order),
+                    voi, hrf, float(dt))
+        if isinstance(m, SubSample):
+            istep = max(1, int(round(float(m.period) / dt)))
+            return (mi, 2, istep, 1, 0, 1.0, False,
+                    np.zeros(0, dtype=np.int32), None, float(dt))
+        # Raw / RawVoi: collect every observed row
+        return (mi, 1, 1, 1, 0, 1.0, False,
+                np.zeros(0, dtype=np.int32), None, float(dt))
+
     def _run_compiled(
         self, sim, analysis, network_set, nstep=100, chunk_size=None,
         initial_states=None, monitors=None, width=1, _init_only=False,
+        kernel_collect=None,
     ):
+        """Run the C++ core and return ``(results, kernel_streams)``.
+
+        ``results`` is the per-subnet ``(times, tavg, ctavg)`` list; when
+        ``kernel_collect`` (list of ``(monitor_index, monitor)``) is given and
+        ``chunk_size == 1``, monitor engines are armed on every subnet and
+        their ``(times, data)`` streams are returned per monitor index in
+        ``kernel_streams``.  Without engines the layout is unchanged and
+        ``kernel_streams`` is empty.
+        """
         self._validate_monitors(monitors, chunk_size)
         self._validate_horizons(analysis)
         cs = int(chunk_size) if chunk_size else 1
+
+        if kernel_collect and cs != 1:
+            kernel_collect = []  # engines need per-step rows; use Python path
+        if kernel_collect is None:
+            kernel_collect = []
+
+        # arm (or clear) the kernel monitor engines on every subnet
+        for si in range(len(analysis.subnets)):
+            n_voi = len(analysis.subnets[si].voi) // 3
+            atts = [self._monitor_attach_spec(mi, m, n_voi, analysis.dt)
+                    for mi, m in kernel_collect]
+            sim.set_monitors(si, atts)
+        sim.monitor_begin_run()
+        K = len(kernel_collect)
 
         # per-chunk stochastic noise generation (Python-side RNG, like nb_hybrid)
         noise_obj = None
         stoch = [sn for sn in analysis.subnets if sn.is_stochastic]
         if stoch:
             noise_std = [
-                np.sqrt(2.0 * sn.noise_nsig * analysis.dt) for sn in stoch
+                np.sqrt(2.0 * sn.noise_nsig * sn.dt) for sn in stoch
             ]
             rngs = []
             sn_objs = {sn.name: s for sn, s in
@@ -1071,13 +1207,35 @@ class CppHybridBackend:
             outs = all_outs
 
         results = []
+        kernel_streams = {}
+        block = 2 + 2 * K
         for i, sn in enumerate(analysis.subnets):
-            tavg = np.asarray(outs[2 * i], dtype=np.float32)
-            ctavg = np.asarray(outs[2 * i + 1], dtype=np.float32)
+            base = i * block
+            tavg = np.asarray(outs[base], dtype=np.float32)
+            ctavg = np.asarray(outs[base + 1], dtype=np.float32)
+            # Master-grid sample times (decision 2 plus the pinned
+            # float32 quantization, parity_audit.md section 6): the nb
+            # template emits the per-chunk midpoint as ((2*t_global +
+            # this_chunk - 1) / 2) * float32(dt0) with 1-based t_global =
+            # c*cs + 1, i.e. the mean of the first and last master tick of
+            # the chunk, scaled by float64(float32(dt0)) - the float32
+            # dt0 the nb reference multiplies in, quantized once.  For
+            # chunk_size == 1 this is exactly t * dt0 on the master grid,
+            # which is what the multi-dt oracle and the nb backend emit.
+            # A partial final chunk uses its own bounds (like nb and the
+            # naive oracle); the fixed (cs+1)/2 offset would be wrong there.
             n_chunks = tavg.shape[0]
-            times = (np.arange(n_chunks) + 0.5) * cs * analysis.dt
+            steps_lo = np.arange(n_chunks) * cs + 1
+            steps_hi = np.minimum(steps_lo - 1 + cs, int(nstep))
+            dt0_q = float(np.float32(analysis.dt))
+            times = (steps_lo + steps_hi) * 0.5 * dt0_q
             results.append((times, tavg, ctavg))
-        return results
+            for e, (mi, _m) in enumerate(kernel_collect):
+                ts = np.asarray(outs[base + 2 + 2 * e], dtype=np.float64)
+                dd = np.asarray(outs[base + 3 + 2 * e], dtype=np.float32)
+                kernel_streams.setdefault(
+                    mi, [None] * len(analysis.subnets))[i] = (ts, dd)
+        return results, kernel_streams
 
     def run_network(
         self,
