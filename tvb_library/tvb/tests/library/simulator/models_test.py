@@ -345,7 +345,8 @@ class TestModels(BaseTestCase):
 
     def test_gast_solla_kennedy(self):
         model = models.GastSollaKennedy()
-        self._validate_initialization(model, 4)
+        # two populations (RS excitatory + FS inhibitory), 4 state variables each
+        self._validate_initialization(model, 8)
 
     def test_kionex_numpy_numba_equivalence(self):
         """
