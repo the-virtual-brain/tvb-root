@@ -31,7 +31,9 @@ jobs:
           python3 -m pip install scikit-build pytest
           pip3 install --user --no-build-isolation tvb-gdist
           cd tvb_library
-          pip install -e . --user
+          # non-editable: ships the compiled extension; the editable
+          # rebuild hook needs nanobind/cmake at runtime
+          pip install . --user
 
       - name: cache data
         id: cache-data
