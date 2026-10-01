@@ -35,20 +35,36 @@ jobs:
         run: |
           python -c "import tvb.simulator.backend.cpp_hybrid as cph; import tvb.simulator.backend.cpp_hybrid._cpp_hybrid as m; print(m.__file__); assert m.__file__.endswith(('.so', '.pyd'))"
 
-      - name: Run backend test suites (contract + sugar)
+      - name: Run backend test suites (contract + sugar + multi-dt + monitors)
         working-directory: tvb_library
         run: |
           python -m pytest tvb/tests/library/simulator/backend/test_cpp_hybrid_core.py \
                             tvb/tests/library/simulator/backend/test_cpp_hybrid_parity.py \
                             tvb/tests/library/simulator/backend/test_cpp_hybrid_sweep.py \
                             tvb/tests/library/simulator/backend/test_cpp_hybrid_sugar.py \
+                            tvb/tests/library/simulator/backend/test_cpp_hybrid_multi_dt.py \
+                            tvb/tests/library/simulator/backend/test_cpp_hybrid_monitors.py \
                             -q -p no:cacheprovider
 
-      - name: Run a battery spot-check (fresh processes)
+      # The nb_hybrid reference backend suite: every cpp_hybrid parity
+      # contract is defined against it (parity_audit.md), and the battery
+      # below re-runs the same tests against the C++ backend by patching
+      # NbHybridBackend = CppHybridBackend.
+      - name: Run the nb_hybrid reference suite
         working-directory: tvb_library
         run: |
-          python -m pytest tvb/tests/library/simulator/backend/test_cpp_hybrid_battery.py::TestAutoChunkSize \
-                            tvb/tests/library/simulator/backend/test_cpp_hybrid_battery.py::TestMergedMode \
+          python -m pytest tvb/tests/library/simulator/backend/test_nb_hybrid.py \
+                            -q -p no:cacheprovider
+
+      # Full battery (all of test_nb_hybrid.py against CppHybridBackend).
+      # The former 2-class spot-check was exactly the blind spot that let
+      # a heap-buffer-overflow in the ctavg accumulator (cacc missing
+      # n_modes, multi-mode subnets) ship: the mode-map classes crash the
+      # full battery, and only those classes were not run.
+      - name: Run the full backend battery (nb tests vs the C++ backend)
+        working-directory: tvb_library
+        run: |
+          python -m pytest tvb/tests/library/simulator/backend/test_cpp_hybrid_battery.py \
                             -q -p no:cacheprovider
 
       - name: Run the generated-kernel (buildgen) tests
@@ -97,9 +113,14 @@ jobs:
           ids = sorted(int(m["mid"]) for m in table.values())
           print(f"built-in generic models: {len(table)}, ids {ids[0]}..{ids[-1]}")
           assert ids == list(range(100, 100 + len(ids))), ids
-          assert len(table) >= 26, f"expected 26 built-in models, got {len(table)}"
-          # every model dfungen discovers in the installed package has a kernel
-          discovered = dfungen.collect_models()
+          # the build emits the SUPPORTED model set (--only-supported, 25
+          # expression-driven kernels; the two numba-only supported models
+          # are hand-written ids 0..12), so 26 is no longer the expectation
+          assert len(table) == 25, f"expected 25 built-in models, got {len(table)}"
+          # every SUPPORTED expression-driven model dfungen discovers in
+          # the installed package has a kernel (models outside the
+          # supported set intentionally stay on the runtime g++ fallback)
+          discovered = dfungen.collect_models(only_supported=True)
           missing = sorted(set(discovered) - set(table))
           assert not missing, f"models with no built-in kernel: {missing}"
 
@@ -159,8 +180,29 @@ jobs:
         with:
           package-dir: tvb_library
         env:
-          # the extension targets the cp312 stable ABI (and the tvb hybrid
-          # code needs >=3.10), so only build/test CPython 3.12
+          # Wheel support matrix & decision (recorded 2026-09, handoff item 7):
+          # keep the cp312 stable-ABI pin; intentionally do NOT widen to
+          # cp310/cp311. Rationale is recorded in
+          # tvb_library/tvb/simulator/backend/cpp_hybrid/README.md
+          # ("Support matrix & wheel policy"):
+          #   - the extension is built against the CPython 3.12 stable ABI
+          #     (pyproject.toml [tool.scikit-build.wheel] py-api = cp312), so
+          #     one cp312-abi3 wheel serves CPython >= 3.12 (3.12/3.13/3.14+);
+          #     it cannot load on <3.12 by construction;
+          #   - hybrid Python code needs >= 3.10 (PEP 604), but CPython 3.10
+          #     reaches EOL Oct 2026 and 3.11 Oct 2027. With the static cp312
+          #     py-api, cibuildwheel cp310/cp311 builds would still emit
+          #     cp312-abi3 wheels (the tag follows the ABI compile target, not
+          #     the build interpreter), so widening needs per-version py-api
+          #     config plus two extra C++ compiles x 3 OSes - not warranted
+          #     on this dev branch (wheels go to artifacts, not PyPI).
+          #   - OS/arch matrix: ubuntu x86_64 / macos-14 arm64 / windows
+          #     x86_64 (below).
+          # Portability caveat (predates this work): the extension is compiled
+          # with -march=native (CMakeLists.txt GNU flags; also the runtime g++
+          # fallback in dfungen.py), so baked wheels are tuned to the build
+          # runner's CPU - x86_64 wheels assume the ubuntu-latest (AVX2-class)
+          # baseline; older CPUs may not run them.
           CIBW_BUILD: 'cp312-*'
           CIBW_SKIP: 'pp* *i686 *win32 *musl* *universal2 cp38-* cp39-* cp310-* cp311-*'
           CIBW_TEST_REQUIRES: numpy
