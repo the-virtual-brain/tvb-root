@@ -13,7 +13,11 @@ pip install -e . --no-deps --user
 cd ..
 
 cd tvb_library
-pip install -e . --no-deps --user
+# non-editable: the compiled nanobind extension ships in the install; an
+# editable install would re-run cmake on every tvb import (needs nanobind
+# + cmake + ninja at runtime, and its rebuild hook crashes under a
+# Jupyter kernel whose sys.stderr has no fileno)
+pip install . --no-deps --user
 cd ..
 
 cd tvb_contrib
