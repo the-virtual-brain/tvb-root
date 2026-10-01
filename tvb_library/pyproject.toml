@@ -33,11 +33,15 @@
 # the compiled backend.
 # numpy, scipy, numba and six are build requirements too, not just runtime
 # ones: CMake runs dfungen during the build (see CMakeLists.txt) to emit the
-# expression-driven dfun kernels, and dfungen discovers models by importing
-# every module under tvb/simulator/models and instantiating it — so real
-# imports are unavoidable and must exist before the package's own dependencies
-# are installed.  Minimal verified set (each one makes dfungen --strict fail
-# with a ModuleNotFoundError naming it when omitted):
+# expression-driven dfun kernels of the supported model set, and dfungen
+# emits them by importing the modules of those models and instantiating each
+# class — so real imports are unavoidable and must exist before the package's
+# own dependencies are installed.  Discovery is scoped with --only-supported
+# to the 27 models the hybrid backends support (nb_hybrid.
+# _get_supported_models_classes): 25 of them are expression-driven and their
+# modules are exactly the numba-dfun modules; modules outside that set are
+# neither imported nor emitted.  Minimal verified set (each one makes
+# dfungen --strict fail with a ModuleNotFoundError naming it when omitted):
 #   numpy  - dfungen itself + every model module
 #   six    - tvb.basic.neotraits._core (`from six import add_metaclass`)
 #   scipy  - neotraits NArray (csc_matrix), stefanescu_jirsa, cerebellar_mf
@@ -60,6 +64,9 @@ version = "2.11.0"
 description = "A package for performing whole brain simulations"
 readme = "README.rst"
 license = { file = "LICENSE" }
+# Pure-Python parts of tvb-library keep this Python floor; the compiled
+# cpp_hybrid backend needs >= 3.12 (cp312 stable-ABI wheels) - see the
+# support matrix in tvb/simulator/backend/cpp_hybrid/README.md.
 requires-python = ">=3.8"
 authors = [
     { name = "Marmaduke Woodman" },
@@ -92,6 +99,10 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    # The compiled cpp_hybrid backend ships cp312-abi3 stable-ABI wheels, so
+    # 3.12 (and 3.13+, via the stable ABI) are the versions its wheels serve.
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
     "autopep8",
@@ -133,6 +144,11 @@ build-dir = "build/{wheel_tag}"
 # `packages = ["tvb"]` equivalent); the compiled extension is added by the
 # CMake `install(TARGETS _cpp_hybrid ...)` rule.
 packages = ["tvb"]
+# The compiled cpp_hybrid extension targets the CPython 3.12 stable ABI
+# (nanobind stable ABI): one cp312-abi3 wheel serves CPython >= 3.12
+# (3.12/3.13/3.14+; it cannot load on <3.12). Decision not to widen to
+# cp310/cp311 is recorded in the cpp_hybrid README ("Support matrix & wheel
+# policy") and the CI workflow comments (handoff item 7).
 py-api = "cp312"
 
 # In-place editable install: the extension is compiled straight into the

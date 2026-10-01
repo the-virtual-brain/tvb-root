@@ -63,14 +63,27 @@ endif()
 # ---------------------------------------------------------------------------
 # Build-time generation of the expression-driven dfun kernels.
 #
-# tvb/simulator/backend/cpp_hybrid/dfungen.py translates each model's
-# ``state_variable_dfuns`` expression strings into a C++ dfun kernel and emits
-# one translation unit with an ``extern "C"`` dispatch entry (here named
-# ``cph_builtin_dfun``).  Compiling it *into* the extension — rather than
-# letting the runtime g++/ctypes fallback compile it on first use — is the
-# point: the generated kernels then get the same flags as the hand-written
+# tvb/simulator/backend/cpp_hybrid/dfungen.py translates each supported
+# model's ``state_variable_dfuns`` expression strings into a C++ dfun kernel
+# and emits one translation unit with an ``extern "C"`` dispatch entry (here
+# named ``cph_builtin_dfun``).  Compiling it *into* the extension — rather
+# than letting the runtime g++/ctypes fallback compile it on first use — is
+# the point: the generated kernels then get the same flags as the hand-written
 # ones (-O3 -march=native -funroll-loops -fopenmp-simd -ffp-contract=off),
 # which the runtime path does not provide (-ffp-contract=off in particular).
+#
+# Discovery is scoped with --only-supported to the model set the hybrid
+# backends actually support (the 27 classes of
+# nb_hybrid._get_supported_models_classes; handoff item 6, option 2): the
+# emitted table is exactly the kernels the extension ships, unsupported model
+# modules in the tree are neither imported nor emitted (so they cannot fail
+# the build), and the kernel count is 25 — the expression-driven subset, since
+# the two numba-only supported models (ZerlautAdaptationFirstOrder,
+# CerebellarMF) are hand-written kernels in ids 0..12.  A dfun model outside
+# the supported set (DecoBalancedExcInh) is not a built-in kernel; the runtime
+# fallback keeps full discovery and compiles it on first use.  Without
+# --only-supported the emitted table would carry every in-tree dfun model
+# instead (the pre-item-6 behaviour, used by the runtime fallback path).
 #
 # The generated TU is unreferenced by _core.cpp for now, so nanobind's hidden
 # visibility plus -flto dead-strip it at link time; that is expected until the
@@ -141,17 +154,22 @@ if(TVB_CPP_GENERATE_MODELS)
       --meta "${_tvb_gen_json}"
       --entry-name cph_builtin_dfun
       --strict
+      --only-supported
     DEPENDS "${_tvb_dfungen}" "${_tvb_gen_manifest}" ${_tvb_model_modules}
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     VERBATIM
-    COMMENT "dfungen: emitting expression-driven C++ dfuns (strict)"
+    COMMENT "dfungen: emitting expression-driven C++ dfuns (strict, supported set)"
   )
 
   # --strict makes any model that could not be imported/configured/emitted a
   # hard error listing every offender, so a coverage loss fails the build
-  # instead of silently shrinking the generated model table.  A non-zero exit
-  # from the custom command stops the build (ninja prints the command and the
-  # CLI's stderr); nothing degrades into a skip.
+  # instead of silently shrinking the generated model table.  With
+  # --only-supported the expectation is scoped to the supported model set:
+  # a supported model that cannot be generated fails the build loudly, while
+  # unsupported model code (outside the build's dependency surface) is
+  # irrelevant to it.  A non-zero exit from the custom command stops the build
+  # (ninja prints the command and the CLI's stderr); nothing degrades into a
+  # skip.
   add_custom_target(tvb_cpp_generated_dfuns
     DEPENDS "${_tvb_gen_cpp}" "${_tvb_gen_json}")
   add_dependencies(_cpp_hybrid tvb_cpp_generated_dfuns)

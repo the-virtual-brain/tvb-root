@@ -18,6 +18,7 @@ sweeps) stays in the prebuilt C++ core.
 """
 
 import ast
+import hashlib
 import importlib
 import inspect
 import json
@@ -218,6 +219,110 @@ def translate(expr, names, ctx, helpers=(), allow_mode=False):
 
 
 # ---------------------------------------------------------------------------
+# dfun fingerprinting
+# ---------------------------------------------------------------------------
+
+def _plain_value(value):
+    """Recursively convert a value into JSON-native, deterministic form.
+
+    Numpy scalars/arrays are the only exotic types the fingerprinted
+    attributes carry; everything else is str/number/bool/None, lists, tuples
+    or dicts.  Conversion is deterministic for the same content:
+    ``ndarray.tolist()`` yields native floats (float32 widened to float64 in
+    a fixed way), tuples become lists (JSON has no tuples), and dict keys are
+    sorted at serialization time.
+    """
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    if isinstance(value, np.generic):
+        return value.item()
+    if isinstance(value, bool):
+        return bool(value)
+    if isinstance(value, tuple):
+        return [_plain_value(v) for v in value]
+    if isinstance(value, list):
+        return [_plain_value(v) for v in value]
+    if isinstance(value, dict):
+        return {str(k): _plain_value(v) for k, v in value.items()}
+    if value is None or isinstance(value, (str, int, float)):
+        return value
+    raise TypeError(f"cannot canonicalize {type(value).__name__} value {value!r}")
+
+
+def model_dfun_signature(model) -> str:
+    """sha256 fingerprint of a model's dfun definition.
+
+    Canonical JSON over everything ``emit_sources`` turns into a C++ kernel:
+    state variables, coupling terms, state-variable dfuns, dfun
+    intermediates, helpers and constants, the packed global+spatial parameter
+    names, ``dfun_mode`` and - for combined-mode models - the derived-matrix
+    names, ops and data.  Computed identically at emission time (stored in
+    ``meta`` and emitted into the table row) and at validation time
+    (``backend._model_key``), so a user class that shadows a built-in class
+    name with different equations is caught: same name, different
+    fingerprint.
+
+    Canonicalization mirrors the emitter's view of the model: expressions are
+    normalized like ``translate`` normalizes them (``_{m}`` -> ``_m``),
+    parameter names keep their packed order (global+spatial),
+    helper/intermediate tuples keep declaration order (their order is
+    semantic), dict keys are sorted at serialization time, and numpy values
+    are widened deterministically - derived-matrix data exactly as the kernel
+    inlines it (float32 ravel).
+    """
+    name = type(model).__name__
+    is_combined = getattr(model, "dfun_mode", None) == "combined"
+
+    def _norm_expr(expr):
+        return str(expr).replace("_{m}", "_m")
+
+    def _const(val):
+        arr = np.asarray(val)
+        if arr.size != 1:
+            raise TypeError(f"{name}: non-scalar dfun constant {val!r}")
+        return float(arr.ravel()[0])
+
+    dm_names = (list(getattr(model, "derived_matrix_names", []))
+                if is_combined else [])
+    dm_ops = (list(getattr(model, "derived_matrix_ops", []))
+              if is_combined else [])
+    dm_data = {}
+    if is_combined:
+        for dn in dm_names:
+            arr = getattr(model, dn, None)
+            if arr is not None:
+                dm_data[dn] = (np.asarray(arr, dtype=np.float32).ravel()
+                               .tolist())
+
+    payload = {
+        "state_variables": list(model.state_variables),
+        "coupling_terms": (list(model.coupling_terms)
+                            if getattr(model, "coupling_terms", None) else []),
+        "state_variable_dfuns": {
+            str(k): _norm_expr(v)
+            for k, v in dict(getattr(model, "state_variable_dfuns", None)
+                             or {}).items()},
+        "dfun_intermediates": [[_norm_expr(x) for x in item] for item in
+                                list(getattr(model, "dfun_intermediates", None)
+                                     or [])],
+        "dfun_helpers": [[_norm_expr(x) for x in h] for h in
+                         list(getattr(model, "dfun_helpers", None) or [])],
+        "dfun_constants": {str(k): _const(v) for k, v in
+                           dict(getattr(model, "dfun_constants", None)
+                                or {}).items()},
+        "global_parameter_names": list(model.global_parameter_names),
+        "spatial_parameter_names": list(model.spatial_parameter_names),
+        "dfun_mode": getattr(model, "dfun_mode", None),
+        "derived_matrix_names": dm_names,
+        "derived_matrix_ops": dm_ops,
+        "derived_matrix_data": dm_data,
+    }
+    canonical = json.dumps(_plain_value(payload), sort_keys=True,
+                           separators=(",", ":"), ensure_ascii=True)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+# ---------------------------------------------------------------------------
 # model collection
 # ---------------------------------------------------------------------------
 
@@ -225,6 +330,71 @@ def translate(expr, names, ctx, helpers=(), allow_mode=False):
 #: dispatcher maps model_id -> table index as (model_id - _FIRST_MODEL_ID), so
 #: ids and the table must stay in lockstep
 _FIRST_MODEL_ID = 100
+
+#: the model set the hybrid backends actually support, mirroring
+#: ``nb_hybrid._get_supported_models_classes`` (27 classes).  The build-time
+#: emission path (``only_supported=True``, what CMakeLists invokes with
+#: ``--only-supported``) scopes discovery and emission to exactly this set:
+#: the kernels the extension ships are the kernels the documented support list
+#: needs, and unsupported model code in the tree cannot break the build.
+#: In-tree dfun models *outside* this set (e.g. ``DecoBalancedExcInh``) are
+#: still runnable: the runtime fallback keeps full discovery and compiles
+#: them on first use.  Hand-written kernels (ZerlautAdaptationFirstOrder,
+#: CerebellarMF) are in the supported set but declare no
+#: ``state_variable_dfuns``, so they are never generic-dfun candidates.
+#: A test pins both sets to nb_hybrid's list (``test_supported_set_mirrors_*``).
+_SUPPORTED_MODEL_CLASSES = frozenset((
+    "CerebellarMF",
+    "CoombesByrne",
+    "CoombesByrne2D",
+    "DumontGutkin",
+    "Epileptor",
+    "Epileptor2D",
+    "EpileptorCodim3",
+    "EpileptorCodim3SlowMod",
+    "EpileptorRestingState",
+    "GastSchmidtKnosche_SD",
+    "GastSchmidtKnosche_SF",
+    "Generic2dOscillator",
+    "Hopfield",
+    "JansenRit",
+    "KIonEx",
+    "Kuramoto",
+    "LarterBreakspear",
+    "Linear",
+    "MontbrioPazoRoxin",
+    "ReducedSetFitzHughNagumo",
+    "ReducedSetHindmarshRose",
+    "ReducedWongWang",
+    "ReducedWongWangExcInh",
+    "SupHopf",
+    "WilsonCowan",
+    "ZerlautAdaptationFirstOrder",
+    "ZetterbergJansen",
+))
+
+#: the ``tvb.simulator.models`` modules that define the supported classes
+#: above (``base`` is scaffolding, not a model module; any other module in the
+#: package is out of the build's dependency surface — it is neither imported
+#: nor emitted, so it cannot fail a strict build).
+_SUPPORTED_MODEL_MODULES = frozenset((
+    "cerebellar_mf",
+    "epileptor",
+    "epileptor_rs",
+    "epileptorcodim3",
+    "hopfield",
+    "infinite_theta",
+    "jansen_rit",
+    "k_ion_exchange",
+    "larter_breakspear",
+    "linear",
+    "oscillator",
+    "stefanescu_jirsa",
+    "wilson_cowan",
+    "wong_wang",
+    "wong_wang_exc_inh",
+    "zerlaut",
+))
 
 
 class DfunGenerationError(RuntimeError):
@@ -260,7 +430,7 @@ def _failure_report(failures) -> str:
             f"listed below:\n{detail}")
 
 
-def _collect_models():
+def _collect_models(only_supported: bool = False):
     """Discover expression-driven models.
 
     Returns ``(models, failures)``: ``models`` maps model class name to a
@@ -271,6 +441,15 @@ def _collect_models():
     is not a model, so its absence is not a coverage loss.  Failures are always
     collected and never raised here; callers decide whether to report them
     (``collect_models``/``emit_sources`` with ``strict=True``) or ignore them.
+
+    ``only_supported=True`` scopes discovery to the supported model set
+    (``_SUPPORTED_MODEL_MODULES``/``_SUPPORTED_MODEL_CLASSES``): modules
+    outside the set are never imported and classes outside it are never
+    configured, so the build-time dependency surface is exactly the models
+    whose kernels ship in the extension.  This is the build-time mode
+    (CMake passes ``--only-supported``); the runtime path keeps the default
+    full scan so user-defined models and in-tree models outside the supported
+    set stay discoverable for the g++/ctypes fallback.
     """
     import pkgutil
     from tvb.simulator.models.base import Model
@@ -281,6 +460,8 @@ def _collect_models():
     mods = []
     if hasattr(pkg, '__path__'):
         for mi in pkgutil.iter_modules(pkg.__path__):
+            if only_supported and mi.name not in _SUPPORTED_MODEL_MODULES:
+                continue  # outside the build's dependency surface: skip
             mod_name = f"tvb.simulator.models.{mi.name}"
             try:
                 mods.append(importlib.import_module(mod_name))
@@ -300,6 +481,11 @@ def _collect_models():
             if cls in seen or cn in models:
                 continue
             seen.add(cls)
+            if only_supported and cn not in _SUPPORTED_MODEL_CLASSES:
+                # e.g. DecoBalancedExcInh: a dfun model in the tree that is
+                # not part of the supported set; the runtime fallback covers
+                # it, the build does not
+                continue
             if inspect.isabstract(cls):
                 continue
             generic_candidate = _declares_dfuns(cls)
@@ -317,15 +503,18 @@ def _collect_models():
     return models, failures
 
 
-def collect_models(strict: bool = False):
+def collect_models(strict: bool = False, only_supported: bool = False):
     """Map model class name -> configured instance for all expression-driven
     models (those declaring state_variable_dfuns).
 
     ``strict=False`` (the runtime default) keeps today's lenient behaviour and
     silently skips what cannot be built; ``strict=True`` raises
     ``DfunGenerationError`` listing every failure instead.
+
+    ``only_supported=True`` restricts discovery to the supported model set
+    (see :func:`_collect_models`); the runtime path leaves it ``False``.
     """
-    models, failures = _collect_models()
+    models, failures = _collect_models(only_supported=only_supported)
     if strict and failures:
         raise DfunGenerationError(_failure_report(failures))
     return models
@@ -473,14 +662,18 @@ def _emit_model(mid, model, fns):
 
 def emit_sources(models: dict = None, strict: bool = False,
                  entry_name: str = "cph_generic_dfun",
-                 start_id: int = _FIRST_MODEL_ID):
+                 start_id: int = _FIRST_MODEL_ID,
+                 only_supported: bool = False):
     """Emit the expression-driven dfun C++ source plus its model metadata.
 
     Pure code emission: nothing is written to disk and nothing is compiled.
     Returns ``(source_text, meta)`` where ``meta`` maps model class name to
-    ``dict(mid, n_parm, n_cvar, n_svar, parm_names)``.  ``parm_names`` is the
-    ordered global+spatial parameter list the emitted kernel indexes ``parr``
-    with, so callers can pack parameters without re-deriving them.
+    ``dict(mid, n_parm, n_cvar, n_svar, parm_names, signature)``.
+    ``parm_names`` is the ordered global+spatial parameter list the emitted
+    kernel indexes ``parr`` with, so callers can pack parameters without
+    re-deriving them; ``signature`` is ``model_dfun_signature(model)``, the
+    canonical sha256 fingerprint of the dfun definition the kernel was
+    generated from (see :func:`model_dfun_signature`).
 
     The emitted TU carries that same ``meta`` as a C++ table (``cph_gen_entry``
     rows plus per-model parameter-name arrays, read through
@@ -509,6 +702,13 @@ def emit_sources(models: dict = None, strict: bool = False,
     user-defined models).  With ``strict=True``, every model module that failed
     to import and every model class that failed to configure or emit is raised
     as a single ``DfunGenerationError`` instead of being skipped.
+
+    ``only_supported=True`` (the build-time mode; CMake passes
+    ``--only-supported``) scopes discovery to the supported model set — the 27
+    classes of ``nb_hybrid._get_supported_models_classes`` — so the emitted
+    table is exactly the kernels the extension ships, and unsupported model
+    code in the tree cannot break or slow the build.  Ignored when ``models``
+    is given explicitly.
     """
     if not entry_name.isidentifier():
         raise ValueError(f"invalid entry symbol name {entry_name!r}")
@@ -520,7 +720,7 @@ def emit_sources(models: dict = None, strict: bool = False,
 
     failures = []
     if models is None:
-        models, failures = _collect_models()
+        models, failures = _collect_models(only_supported=only_supported)
 
     blocks = []
     meta = {}
@@ -536,7 +736,8 @@ def emit_sources(models: dict = None, strict: bool = False,
             continue
         blocks.append(code)
         meta[name] = dict(mid=mid, n_parm=n_parm, n_cvar=max(n_cvar, 1),
-                          n_svar=n_svar, parm_names=parm_names)
+                          n_svar=n_svar, parm_names=parm_names,
+                          signature=model_dfun_signature(model))
         mid += 1
     if strict and failures:
         raise DfunGenerationError(_failure_report(failures))
@@ -570,10 +771,11 @@ def emit_sources(models: dict = None, strict: bool = False,
             # n_parm == 0 keeps it unread
             name_arrays.append(
                 f"static const char *const {arr}[] = {{nullptr}};")
-        rows.append('  {"%s", %d, %d, %d, %d, %s},' % (
-            name, m["mid"], m["n_parm"], m["n_cvar"], m["n_svar"], arr))
+        rows.append('  {"%s", %d, %d, %d, %d, %s, %s},' % (
+            name, m["mid"], m["n_parm"], m["n_cvar"], m["n_svar"], arr,
+            json.dumps(str(m["signature"]))))
     if not rows:
-        rows.append("  {nullptr, 0, 0, 0, 0, nullptr},")
+        rows.append("  {nullptr, 0, 0, 0, 0, nullptr, nullptr},")
 
     src = [_GENERATED_BANNER, _PRELUDE, """
 extern "C" {
@@ -595,13 +797,17 @@ static dfun_fn_t _dfuns[] = {
     src.append("""
 /* One row per generated model: the C++ mirror of the metadata dict dfungen
  * hands to Python.  ``parm_names`` has ``n_parm`` entries in the order the
- * kernel indexes ``parr`` with.  _core.cpp redeclares this struct; the two
- * definitions must stay identical. */
+ * kernel indexes ``parr`` with; ``signature`` is the canonical sha256 of the
+ * dfun definition the kernel was generated from (dfungen's
+ * ``model_dfun_signature``), so a host can reject a same-named class whose
+ * equations differ.  _core.cpp redeclares this struct; the two definitions
+ * must stay identical. */
 typedef struct cph_gen_entry {
   const char *name;               /* model class name */
   int mid;                        /* model id (>= 100) */
   int n_parm, n_cvar, n_svar;     /* buffer shapes the kernel expects */
   const char *const *parm_names;  /* parr packing order */
+  const char *signature;          /* dfun fingerprint (model_dfun_signature) */
 } cph_gen_entry;
 
 static const cph_gen_entry _cph_gen[] = {
@@ -645,7 +851,7 @@ extern "C" CPH_GEN_EXPORT const cph_gen_entry *cph_builtin_entry(int idx) {{
 
 
 def generate_lib(cache_dir: Path, extra_models: dict = None,
-                 start_id: int = _FIRST_MODEL_ID):
+                 start_id: int = _FIRST_MODEL_ID, exclude=None):
     """Generate + compile the generic dfun shared library (the runtime g++ /
     ctypes fallback path; stock models come from the prebuilt extension).
 
@@ -654,6 +860,18 @@ def generate_lib(cache_dir: Path, extra_models: dict = None,
     ``emit_sources``); the dispatch table is gap-padded accordingly, so ids
     below ``start_id`` fall through to the built-in kernels instead of hitting
     a null slot.
+
+    ``exclude`` optionally names models (class names) to leave out of the
+    emission.  The backend passes the built-in table's names, so stock models
+    are never re-emitted into the runtime library: the prebuilt extension
+    already serves them, and re-compiling dead copies of them (the old
+    behaviour emitted all 26 stock kernels alongside the user model) cost a
+    g++ pass and left dead code in the cache.  Only models the build did not
+    cover get kernels here, assigned contiguously from ``start_id`` over the
+    *remaining* sorted name set; the dispatch table keeps its front gap
+    padding, so ``N_GEN_MODELS`` (kernels) and ``N_GEN_DFUNS`` (slots, gap
+    included) each count exactly what the name says even where the emitted id
+    range sits above "/ next to" interior gaps.
 
     Returns (lib_path, model_ids, meta) where model_ids maps model class name
     to the integer id used in the dispatch table (ids >= 100) and meta is the
@@ -664,6 +882,9 @@ def generate_lib(cache_dir: Path, extra_models: dict = None,
     models = collect_models()
     if extra_models:
         models.update(extra_models)
+    if exclude:
+        for name in exclude:
+            models.pop(name, None)
 
     src, meta = emit_sources(models, start_id=start_id)
     src_path = cache_dir / "models_gen.cpp"
@@ -675,21 +896,6 @@ def generate_lib(cache_dir: Path, extra_models: dict = None,
     subprocess.run(cmd, shell=True, check=True, capture_output=True)
     model_ids = {name: m["mid"] for name, m in meta.items()}
     return so_path, model_ids, meta
-
-
-_META_CACHE = None
-
-
-def generate_meta():
-    """Model metadata (ids/counts) for the generated library.
-
-    Derived from emit_sources, so ids stay in lockstep with the emitted
-    dispatch table.  Keys per model: mid, n_parm, n_cvar, n_svar, parm_names.
-    """
-    global _META_CACHE
-    if _META_CACHE is None:
-        _META_CACHE = emit_sources()[1]
-    return _META_CACHE
 
 
 # ---------------------------------------------------------------------------
@@ -713,9 +919,17 @@ def _main(argv=None) -> int:
                         help="fail if a model module cannot be imported or an "
                              "expression-driven model cannot be configured or "
                              "emitted, instead of skipping it")
+    parser.add_argument("--only-supported", action="store_true",
+                        help="discover and emit only the supported model set "
+                             "(the 27 classes of "
+                             "nb_hybrid._get_supported_models_classes); "
+                             "unsupported model modules are neither imported "
+                             "nor emitted (the build-time mode)")
     args = parser.parse_args(argv)
     try:
-        src, meta = emit_sources(strict=args.strict, entry_name=args.entry_name)
+        src, meta = emit_sources(strict=args.strict,
+                                 entry_name=args.entry_name,
+                                 only_supported=args.only_supported)
         emit_path = Path(args.emit)
         emit_path.parent.mkdir(parents=True, exist_ok=True)
         emit_path.write_text(src)
@@ -727,8 +941,9 @@ def _main(argv=None) -> int:
     except Exception as exc:
         print(f"dfungen: {exc}", file=sys.stderr)
         return 1
-    print(f"dfungen: emitted {len(meta)} dfun(s), ids "
-          f"{_FIRST_MODEL_ID}..{_FIRST_MODEL_ID + len(meta) - 1} -> {emit_path}")
+    print(f"dfungen: emitted {len(meta)} dfun(s){" from the supported set" if args.only_supported else ""}, "
+          f"ids {_FIRST_MODEL_ID}..{_FIRST_MODEL_ID + len(meta) - 1} "
+          f"-> {emit_path}")
     return 0
 
 
