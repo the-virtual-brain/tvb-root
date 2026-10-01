@@ -39,7 +39,7 @@ Second adds regional heterogeneity (excitation-inhibition balance) as described 
 """
 
 import numpy
-from numba import guvectorize, float64
+from numba import guvectorize, float64, njit, prange
 from tvb.basic.neotraits.api import NArray, Final, List, Range
 from tvb.simulator.models.base import ModelNumbaDfun
 
@@ -64,6 +64,59 @@ def _numba_dfun(
     h = x / (1 - numpy.exp(-di[0] * x))
     dx[1] = -(S[1] / ti[0]) + h * gi[0]
 
+
+@njit(fastmath=True, cache=True)
+def _fast_ww_dfun(x, c, local_coupling,
+                  ae, be, de, ge, te, wp, we, jn,
+                  ai, bi, di, gi, ti, wi, ji,
+                  g, l, io, ie, deriv):
+    n_vars, n_nodes, n_modes = x.shape
+
+    for m in range(n_modes):
+        for i in range(n_nodes):
+            s_e = x[0, i, m]
+            s_i = x[1, i, m]
+            c_val = c[0, i, m]
+
+            # Support both scalar and node-heterogeneous 1D parameter arrays
+            _ae = ae[i] if ae.size > 1 else ae[0]
+            _be = be[i] if be.size > 1 else be[0]
+            _de = de[i] if de.size > 1 else de[0]
+            _ge = ge[i] if ge.size > 1 else ge[0]
+            _te = te[i] if te.size > 1 else te[0]
+            _wp = wp[i] if wp.size > 1 else wp[0]
+            _we = we[i] if we.size > 1 else we[0]
+            _jn = jn[i] if jn.size > 1 else jn[0]
+
+            _ai = ai[i] if ai.size > 1 else ai[0]
+            _bi = bi[i] if bi.size > 1 else bi[0]
+            _di = di[i] if di.size > 1 else di[0]
+            _gi = gi[i] if gi.size > 1 else gi[0]
+            _ti = ti[i] if ti.size > 1 else ti[0]
+            _wi = wi[i] if wi.size > 1 else wi[0]
+            _ji = ji[i] if ji.size > 1 else ji[0]
+
+            _g = g[i] if g.size > 1 else g[0]
+            _l = l[i] if l.size > 1 else l[0]
+            _io = io[i] if io.size > 1 else io[0]
+            _ie = ie[i] if ie.size > 1 else ie[0]
+
+            cc = _g * _jn * (c_val + local_coupling * s_e)
+            jn_se = _jn * s_e
+
+            # Excitatory population
+            x_e = _wp * jn_se - _ji * s_i + _we * _io + cc + _ie
+            x_e = _ae * x_e - _be
+            h_e = x_e / (1.0 - numpy.exp(-_de * x_e))
+            deriv[0, i, m] = - (s_e / _te) + (1.0 - s_e) * h_e * _ge
+
+            # Inhibitory population
+            x_i = jn_se - s_i + _wi * _io + _l * cc
+            x_i = _ai * x_i - _bi
+            h_i = x_i / (1.0 - numpy.exp(-_di * x_i))
+            deriv[1, i, m] = - (s_i / _ti) + h_i * _gi
+
+    return deriv
 
 class ReducedWongWangExcInh(ModelNumbaDfun):
     r"""
@@ -355,10 +408,12 @@ class ReducedWongWangExcInh(ModelNumbaDfun):
     _nvar = 2
     cvar = numpy.array([0], dtype=numpy.int32)
 
+
     def configure(self):
         """ """
         super(ReducedWongWangExcInh, self).configure()
         self.update_derived_parameters()
+
 
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
         S = state_variables[:, :]
@@ -396,74 +451,39 @@ class ReducedWongWangExcInh(ModelNumbaDfun):
 
         return derivative
 
+
+
     def dfun(self, x, c, local_coupling=0.0, **kwargs):
-        r"""
-        Equations taken from [DPA_2013]_ , page 11242
+        # Ensure contiguous memory layout and allocate a clean derivative array per step
+        x_arr = numpy.ascontiguousarray(x, dtype=numpy.float64)
+        c_arr = numpy.ascontiguousarray(c, dtype=numpy.float64)
+        derivative = numpy.empty_like(x_arr)
 
-        .. math::
-                 x_{ek}       &=   w_p\,J_N \, S_{ek} - J_iS_{ik} + W_eI_o + GJ_N \mathbf\Gamma(S_{ek}, S_{ej}, u_{kj}) \\
-                 H(x_{ek})    &=  \dfrac{a_ex_{ek}- b_e}{1 - \exp(-d_e(a_ex_{ek} -b_e))} \\
-                 \dot{S}_{ek} &= -\dfrac{S_{ek}}{\tau_e} + (1 - S_{ek}){\gamma}H(x_{ek}) \\
-
-                 x_{ik}       &=   J_N \, S_{ek} - S_{ik} + W_iI_o + {\lambda}GJ_N \mathbf\Gamma(S_{ik}, S_{ej}, u_{kj}) \\
-                 H(x_{ik})    &=  \dfrac{a_ix_{ik} - b_i}{1 - \exp(-d_i(a_ix_{ik} -b_i))} \\
-                 \dot{S}_{ik} &= -\dfrac{S_{ik}}{\tau_i} + \gamma_iH(x_{ik}) \\
-
-        """
-        x_ = x.reshape(x.shape[:-1]).T
-        c_ = c.reshape(c.shape[:-1]).T + local_coupling * x[0]
-        deriv = _numba_dfun(
-            x_,
-            c_,
-            self.a_e,
-            self.b_e,
-            self.d_e,
-            self.gamma_e,
-            self.tau_e,
-            self.w_p,
-            self.W_e,
-            self.J_N,
-            self.a_i,
-            self.b_i,
-            self.d_i,
-            self.gamma_i,
-            self.tau_i,
-            self.W_i,
-            self.J_i,
-            self.G,
-            self.lamda,
-            self.I_o,
-            self.I_ext,
+        return _fast_ww_dfun(
+            x_arr, c_arr, float(local_coupling),
+            numpy.ascontiguousarray(self.a_e, dtype=numpy.float64).ravel(),
+            numpy.ascontiguousarray(self.b_e, dtype=numpy.float64).ravel(),
+            numpy.ascontiguousarray(self.d_e, dtype=numpy.float64).ravel(),
+            numpy.ascontiguousarray(self.gamma_e, dtype=numpy.float64).ravel(),
+            numpy.ascontiguousarray(self.tau_e, dtype=numpy.float64).ravel(),
+            numpy.ascontiguousarray(self.w_p, dtype=numpy.float64).ravel(),
+            numpy.ascontiguousarray(self.W_e, dtype=numpy.float64).ravel(),
+            numpy.ascontiguousarray(self.J_N, dtype=numpy.float64).ravel(),
+            numpy.ascontiguousarray(self.a_i, dtype=numpy.float64).ravel(),
+            numpy.ascontiguousarray(self.b_i, dtype=numpy.float64).ravel(),
+            numpy.ascontiguousarray(self.d_i, dtype=numpy.float64).ravel(),
+            numpy.ascontiguousarray(self.gamma_i, dtype=numpy.float64).ravel(),
+            numpy.ascontiguousarray(self.tau_i, dtype=numpy.float64).ravel(),
+            numpy.ascontiguousarray(self.W_i, dtype=numpy.float64).ravel(),
+            numpy.ascontiguousarray(self.J_i, dtype=numpy.float64).ravel(),
+            numpy.ascontiguousarray(self.G, dtype=numpy.float64).ravel(),
+            numpy.ascontiguousarray(self.lamda, dtype=numpy.float64).ravel(),
+            numpy.ascontiguousarray(self.I_o, dtype=numpy.float64).ravel(),
+            numpy.ascontiguousarray(self.I_ext, dtype=numpy.float64).ravel(),
+            derivative
         )
-        return deriv.T[..., numpy.newaxis]
-
-
-@guvectorize([(float64[:],) * 23], "(n),(m)" + ",()" * 20 + "->(n)", nopython=True)
-def _numba_dfun_bei(
-    S,
-    c,
-    mi,
-    ae,
-    be,
-    de,
-    ge,
-    te,
-    wp,
-    we,
-    jn,
-    ai,
-    bi,
-    di,
-    gi,
-    ti,
-    wi,
-    ji,
-    g,
-    l,
-    io,
-    ie,
-    dx,
-):
+@guvectorize([(float64[:],)*23], '(n),(m)' + ',()'*20 + '->(n)', nopython=True)
+def _numba_dfun_bei(S, c, mi, ae, be, de, ge, te, wp, we, jn, ai, bi, di, gi, ti, wi, ji, g, l, io, ie, dx):
     """Gufunc for transcriptional model presented in Deco et Al 2020, Dynamical consequences of regional heterogeneity in the
     brain’s transcriptional landscape"""
 

@@ -59,6 +59,31 @@ class ReducedSetBase(Model):
             )
         self.update_derived_parameters()
 
+import numba
+
+@numba.njit(fastmath=True, cache=True)
+def _fhn_dfun(xi, eta, alpha, beta, c_0, local_coupling,
+                  tau, e_i, Aik, Bik, Cik, f_i, IE_i, II_i, m_i, n_i, b, K11, K12, K21, deriv):
+        # Mode coupling via fused matrix-vector products
+        dot_xi_A = xi @ Aik
+        dot_alpha_B = alpha @ Bik
+        dot_xi_C = xi @ Cik
+
+        # Fused in-place assignments avoiding temporary arrays
+        deriv[0] = (tau * (xi - e_i * (xi * xi * xi) / 3.0 - eta) +
+                    K11 * (dot_xi_A - xi) -
+                    K12 * (dot_alpha_B - xi) +
+                    tau * (IE_i + c_0 + local_coupling * xi))
+
+        deriv[1] = (xi - b * eta + m_i) / tau
+
+        deriv[2] = (tau * (alpha - f_i * (alpha * alpha * alpha) / 3.0 - beta) +
+                    K21 * (dot_xi_C - alpha) +
+                    tau * (II_i + c_0 + local_coupling * xi))
+
+        deriv[3] = (alpha - b * beta + n_i) / tau
+        return deriv
+
 
 class ReducedSetFitzHughNagumo(ReducedSetBase):
     r"""
@@ -239,57 +264,18 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
     }
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
-        r"""
-
-
-        The system's equations for the i-th mode at node q are:
-
-        .. math::
-                \dot{\xi}_{i}    &=  c\left(\xi_i-e_i\frac{\xi_{i}^3}{3} -\eta_{i}\right)
-                                  + K_{11}\left[\sum_{k=1}^{o} A_{ik}\xi_k-\xi_i\right]
-                                  - K_{12}\left[\sum_{k =1}^{o} B_{i k}\alpha_k-\xi_i\right] + cIE_i                       \\
-                                 &\, + \left[\sum_{k=1}^{o} \mathbf{\Gamma}(\xi_{kq}, \xi_{kr}, u_{qr})\right]
-                                  +  \left[\sum_{k=1}^{o} W_{\zeta}\cdot\xi_{kr} \right] \\
-                \dot{\eta}_i     &= \frac{1}{c}\left(\xi_i-b\eta_i+m_i\right)                                              \\
-                & \\
-                \dot{\alpha}_i   &= c\left(\alpha_i-f_i\frac{\alpha_i^3}{3}-\beta_i\right)
-                                  + K_{21}\left[\sum_{k=1}^{o} C_{ik}\xi_i-\alpha_i\right] + cII_i                          \\
-                                 & \, + \left[\sum_{k=1}^{o} \mathbf{\Gamma}(\xi_{kq}, \xi_{kr}, u_{qr})\right]
-                                  + \left[\sum_{k=1}^{o} W_{\zeta}\cdot\xi_{kr}\right] \\
-                                 & \\
-                \dot{\beta}_i    &= \frac{1}{c}\left(\alpha_i-b\beta_i+n_i\right)
-
-        """
-
         xi = state_variables[0, :]
         eta = state_variables[1, :]
         alpha = state_variables[2, :]
         beta = state_variables[3, :]
-        derivative = numpy.empty_like(state_variables)
-        # sum the activity from the modes
+
         c_0 = coupling[0, :].sum(axis=1)[:, numpy.newaxis]
+        derivative = numpy.empty_like(state_variables)
 
-        # TODO: generalize coupling variables to a matrix form
-        # c_1 = coupling[1, :] # this cv represents alpha
-
-        derivative[0] = (
-            self.tau * (xi - self.e_i * xi**3 / 3.0 - eta)
-            + self.K11 * (numpy.dot(xi, self.Aik) - xi)
-            - self.K12 * (numpy.dot(alpha, self.Bik) - xi)
-            + self.tau * (self.IE_i + c_0 + local_coupling * xi)
-        )
-
-        derivative[1] = (xi - self.b * eta + self.m_i) / self.tau
-
-        derivative[2] = (
-            self.tau * (alpha - self.f_i * alpha**3 / 3.0 - beta)
-            + self.K21 * (numpy.dot(xi, self.Cik) - alpha)
-            + self.tau * (self.II_i + c_0 + local_coupling * xi)
-        )
-
-        derivative[3] = (alpha - self.b * beta + self.n_i) / self.tau
-
-        return derivative
+        return _fhn_dfun(xi, eta, alpha, beta, c_0, local_coupling,
+                         self.tau, self.e_i, self.Aik, self.Bik, self.Cik,
+                         self.f_i, self.IE_i, self.II_i, self.m_i, self.n_i,
+                         self.b, self.K11, self.K12, self.K21, derivative)
 
     def update_derived_parameters(self):
         """
@@ -353,6 +339,36 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
         self.m_i = (self.a * intcVdZ).T.squeeze()
         self.n_i = (self.a * intcUdZ).T.squeeze()
 
+@numba.njit(fastmath=True, cache=True)
+def _hr_dfun(xi, eta, tau, alpha, beta, gamma, c_0, local_coupling,
+             a_i, b_i, c_i, d_i, e_i, f_i, h_i, p_i,
+             Aik, Bik, Cik, IE_i, II_i, m_i, n_i,
+             r, s, K11, K12, K21, deriv):
+    dot_xi_A = xi @ Aik
+    dot_alpha_B = alpha @ Bik
+    dot_xi_C = xi @ Cik
+
+    xi_sq = xi * xi
+    alpha_sq = alpha * alpha
+
+    deriv[0] = (eta - a_i * (xi_sq * xi) + b_i * xi_sq - tau +
+                K11 * (dot_xi_A - xi) -
+                K12 * (dot_alpha_B - xi) +
+                IE_i + c_0 + local_coupling * xi)
+
+    deriv[1] = c_i - d_i * xi_sq - eta
+
+    deriv[2] = r * s * xi - r * tau - m_i
+
+    deriv[3] = (beta - e_i * (alpha_sq * alpha) + f_i * alpha_sq - gamma +
+                K21 * (dot_xi_C - alpha) +
+                II_i + c_0 + local_coupling * xi)
+
+    deriv[4] = h_i - p_i * alpha_sq - beta
+
+    deriv[5] = r * s * alpha - r * gamma - n_i
+
+    return deriv
 
 class ReducedSetHindmarshRose(ReducedSetBase):
     r"""
@@ -598,73 +614,21 @@ class ReducedSetHindmarshRose(ReducedSetBase):
     }
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
-        r"""
-        The equations of the population model for i-th mode at node q are:
-
-        .. math::
-                \dot{\xi}_i     &=  \eta_i-a_i\xi_i^3 + b_i\xi_i^2- \tau_i
-                                 + K_{11} \left[\sum_{k=1}^{o} A_{ik} \xi_k - \xi_i \right]
-                                 - K_{12} \left[\sum_{k=1}^{o} B_{ik} \alpha_k - \xi_i\right] + IE_i \\
-                                &\, + \left[\sum_{k=1}^{o} \mathbf{\Gamma}(\xi_{kq}, \xi_{kr}, u_{qr})\right]
-                                 + \left[\sum_{k=1}^{o} W_{\zeta}\cdot\xi_{kr} \right] \\
-                & \\
-                \dot{\eta}_i    &=  c_i-d_i\xi_i^2 -\tau_i \\
-                & \\
-                \dot{\tau}_i    &=  rs\xi_i - r\tau_i -m_i \\
-                & \\
-                \dot{\alpha}_i  &=  \beta_i - e_i \alpha_i^3 + f_i \alpha_i^2 - \gamma_i
-                                 + K_{21} \left[\sum_{k=1}^{o} C_{ik} \xi_k - \alpha_i \right] + II_i \\
-                                &\, +\left[\sum_{k=1}^{o}\mathbf{\Gamma}(\xi_{kq}, \xi_{kr}, u_{qr})\right]
-                                 + \left[\sum_{k=1}^{o}W_{\zeta}\cdot\xi_{kr}\right] \\
-                & \\
-                \dot{\beta}_i   &= h_i - p_i \alpha_i^2 - \beta_i \\
-                \dot{\gamma}_i  &= rs \alpha_i - r \gamma_i - n_i
-
-        """
-
         xi = state_variables[0, :]
         eta = state_variables[1, :]
         tau = state_variables[2, :]
         alpha = state_variables[3, :]
         beta = state_variables[4, :]
         gamma = state_variables[5, :]
-        derivative = numpy.empty_like(state_variables)
 
         c_0 = coupling[0, :].sum(axis=1)[:, numpy.newaxis]
-        # c_1 = coupling[1, :]
+        derivative = numpy.empty_like(state_variables)
 
-        derivative[0] = (
-            eta
-            - self.a_i * xi**3
-            + self.b_i * xi**2
-            - tau
-            + self.K11 * (numpy.dot(xi, self.Aik) - xi)
-            - self.K12 * (numpy.dot(alpha, self.Bik) - xi)
-            + self.IE_i
-            + c_0
-            + local_coupling * xi
-        )
-
-        derivative[1] = self.c_i - self.d_i * xi**2 - eta
-
-        derivative[2] = self.r * self.s * xi - self.r * tau - self.m_i
-
-        derivative[3] = (
-            beta
-            - self.e_i * alpha**3
-            + self.f_i * alpha**2
-            - gamma
-            + self.K21 * (numpy.dot(xi, self.Cik) - alpha)
-            + self.II_i
-            + c_0
-            + local_coupling * xi
-        )
-
-        derivative[4] = self.h_i - self.p_i * alpha**2 - beta
-
-        derivative[5] = self.r * self.s * alpha - self.r * gamma - self.n_i
-
-        return derivative
+        return _hr_dfun(xi, eta, tau, alpha, beta, gamma, c_0, local_coupling,
+                        self.a_i, self.b_i, self.c_i, self.d_i, self.e_i, self.f_i,
+                        self.h_i, self.p_i, self.A_ik, self.B_ik, self.C_ik,
+                        self.IE_i, self.II_i, self.m_i, self.n_i,
+                        self.r, self.s, self.K11, self.K12, self.K21, derivative)
 
     def update_derived_parameters(self, corrected_d_p=True):
         """
