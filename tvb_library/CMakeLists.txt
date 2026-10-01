@@ -32,6 +32,18 @@ find_package(Python 3.8
   REQUIRED COMPONENTS Interpreter Development.Module
   OPTIONAL_COMPONENTS Development.SABIModule)
 
+# The extension targets the cp312 stable ABI (pyproject py-api = cp312);
+# nanobind cannot build it against an older interpreter's headers.  On
+# Python < 3.12 install the pure-Python package without the extension: the
+# backend test surface is collection-ignored there (backend conftest.py),
+# and the cp312-abi3 wheels serve the compiled surface (support matrix in
+# tvb/simulator/backend/cpp_hybrid/README.md).
+if(Python_VERSION VERSION_LESS 3.12)
+  message(STATUS "Python ${Python_VERSION} < 3.12: skipping the cpp_hybrid "
+      "extension (cp312 stable ABI); building the pure-Python package only")
+  return()
+endif()
+
 # Import nanobind through CMake's find_package mechanism
 find_package(nanobind CONFIG REQUIRED)
 
