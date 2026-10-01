@@ -59,8 +59,16 @@ jobs:
       with:
         package-dir: tvb_library
       env:
-        # The extension targets the cp312 stable ABI (and the tvb hybrid code
-        # needs >=3.10), so only build/test CPython 3.12.
+        # Support matrix & decision (handoff item 7, recorded 2026-09): keep
+        # the cp312 stable-ABI pin - one cp312-abi3 wheel serves CPython
+        # >= 3.12 (3.12/3.13/3.14+); no cp310/cp311 wheels (3.10 EOLs Oct
+        # 2026, 3.11 Oct 2027; per-version ABI config not warranted).
+        # Rationale: tvb_library/tvb/simulator/backend/cpp_hybrid/README.md
+        # ("Support matrix & wheel policy"). OS matrix below: ubuntu x86_64 /
+        # macos-14 arm64 / windows x86_64. Portability caveat (predates this
+        # work): extension + runtime fallback compile with -march=native
+        # (CMakeLists.txt / dfungen.py), so wheels are tuned to the build
+        # runner's CPU.
         CIBW_BUILD: 'cp312-*'
         CIBW_SKIP: 'pp* *i686 *win32 *musl* *universal2 cp38-* cp39-* cp310-* cp311-*'
         CIBW_TEST_REQUIRES: numpy
