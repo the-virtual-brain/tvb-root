@@ -80,6 +80,38 @@ float32 bit-exactness parity with the numba reference hybrid backend depends on
 no fast-math / fast-FP contraction. `-fopenmp-simd` (no runtime libgomp
 dependency) enables the SIMD vectorization across the batch lane.
 
+## Support matrix & wheel policy (decision: keep the cp312 stable-ABI pin)
+
+Recorded 2026-09 (tvbkh handoff item 7). **Decision: do not widen the wheel
+matrix — keep `CIBW_BUILD: 'cp312-*'`** in both
+`.github/workflows/cpp-hybrid.yml` (tvbkh dev branch) and
+`.github/workflows/wheels.yml` (release pipeline; publishes to PyPI on tagged
+releases).
+
+| Dimension | Support |
+|---|---|
+| CPython | **≥ 3.12** — wheels are `cp312-abi3` (stable ABI): one wheel serves 3.12/3.13/3.14+; the module cannot load on < 3.12 by construction, whether installed from a wheel or built from the sdist |
+| Hybrid code syntax floor | ≥ 3.10 (PEP 604 unions) — the syntax is *not* the binding constraint; the compiled extension is |
+| OS / arch | Linux x86_64 (`ubuntu-latest`), macOS arm64 (`macos-14`), Windows x86_64 (`windows-latest`) |
+| Distributions | wheels + sdist (`pipx run build --sdist tvb_library`), from the CI workflows |
+
+Why not cp310/cp311: with the static `py-api = "cp312"`, cibuildwheel builds
+for 3.10/3.11 would **still** emit `cp312-abi3` wheels (the wheel tag follows
+the ABI compile target, not the build interpreter), so widening really means
+dropping the single-ABI pin, adding per-version `py-api` configuration and two
+extra C++ compile passes × 3 OSes — while CPython 3.10 reaches EOL in Oct 2026
+and 3.11 in Oct 2027. **Reopen if** a PyPI release needs 3.11 users, or 3.11
+demand appears before its Oct 2027 EOL (3.10 is EOL as of Oct 2026).
+
+**Portability caveat (predates this work):** every compiled artifact — the
+extension in wheels and editable builds, and the runtime g++ fallback
+(`dfungen.generate_lib`) — is compiled with `-march=native` (GNU flags in
+`tvb_library/CMakeLists.txt`, and `dfungen.py` for the fallback). CI wheels
+are therefore tuned to the build runner's CPU: x86_64 wheels assume the
+`ubuntu-latest` (AVX2-class) baseline, and older x86_64 CPUs may not be able
+to run them (SIGILL on unsupported instructions). This caveat predates the
+2026 cp312 wheel work.
+
 ## Build-time generation of the generic dfuns
 
 Models whose derivatives are declared as Python expression strings
@@ -95,7 +127,7 @@ flow (integration, coupling, monitors, sweeps) stays in the hand-written core.
 python tvb/simulator/backend/cpp_hybrid/dfungen.py \
        --emit <build>/generated/models_gen.cpp \
        --meta <build>/generated/models_gen.json \
-       --entry-name cph_builtin_dfun --strict
+       --entry-name cph_builtin_dfun --strict --only-supported
 ```
 
 and compiles the emitted translation unit **into `_cpp_hybrid`** with
@@ -119,6 +151,20 @@ and compiles the emitted translation unit **into `_cpp_hybrid`** with
 `state_variable_dfuns` model that cannot be configured, and any model that
 cannot be emitted a **build failure** listing every offender, instead of a
 silent shrink of the generated model set.
+
+`--only-supported` scopes discovery *and* the strict expectation to the
+model set the hybrid backends actually support (the 27 classes of
+`nb_hybrid._get_supported_models_classes`, mirrored by
+`dfungen._SUPPORTED_MODEL_CLASSES`/`_SUPPORTED_MODEL_MODULES`): the emitted
+table is exactly the kernels the extension ships (25 expression-driven ones;
+the two numba-only supported models have hand-written kernels 0..12).
+Modules outside that set are neither imported nor emitted, so unsupported
+model code in the tree cannot break or slow the build — while a supported
+model that cannot be generated still fails the build loudly.  A dfun model
+outside the supported set (e.g. `DecoBalancedExcInh`) is still runnable: the
+runtime fallback keeps full discovery and compiles it on first use.  (Handoff
+item 6, option 2; the runtime path intentionally defaults to full discovery
+so user-defined models keep working.)
 
 ### Why compile it into the extension
 
@@ -146,23 +192,54 @@ from before this feature, including the original 100-based id range.
 
 ### Why the build needs numpy, scipy, numba and six
 
-`dfungen` discovers models by importing **every module** under
-`tvb/simulator/models` and instantiating each concrete class, so those imports
-must work before the package's own dependencies are installed. The verified
-minimal set (omitting any one makes `dfungen --strict` fail with a
+`dfungen` emits the supported models' kernels by importing their modules
+(`--only-supported` scopes discovery to exactly those; in this tree every
+module under `tvb/simulator/models` holds at least one supported model, so
+the imported set is the same — the scoping is what keeps the build
+decoupled from unsupported model code) and instantiating each class, so those
+imports must work before the package's own dependencies are installed. The
+verified minimal set (omitting any one makes `dfungen --strict` fail with a
 `ModuleNotFoundError` naming it, or silently drop models):
 `numpy` (dfungen itself + every model module), `six` (`tvb.basic.neotraits._core`),
 `scipy` (neotraits `NArray`, `stefanescu_jirsa`, `cerebellar_mf`), `numba` (the
 numba-dfun model modules — without them those models are simply absent from the
 table). See `tvb_library/pyproject.toml` `[build-system] requires`.
 
+### Build cost of generation (handoff item 6)
+
+Measured on this machine (clean `pip install . --no-deps -q`, warm pip
+cache; 2026-09-30):
+
+| | wall | generation delta |
+|---|---|---|
+| generation ON (default) | ~22.6 s | — |
+| `-DTVB_CPP_GENERATE_MODELS=OFF` | ~17.2 s | ~5.4 s |
+
+Of the ~5.4 s delta, ~4.5 s is `dfungen` emission (model imports +
+instantiation/configure + expression translation) and ~1.4 s is the generated
+TU compile (`g++ -O3 -march=native`, measured standalone); the OFF switch is
+the documented escape hatch above.  The handoff's larger machine-specific
+deltas (pip ~47 s vs ~10 s; wheel ~20 s vs ~10 s) were recorded on the
+origin machine — same shape, different scale.
+
+The 26th discovery (`DecoBalancedExcInh`, a dfun model in the tree but
+outside the supported set) is no longer a built-in kernel: option 2 of the
+handoff went in, so the built-in table is exactly the supported set (25
+generic kernels; ids 100..124) and the build no longer imports/emits
+unsupported model code.  Incremental per-model emission (option 3, keyed by
+the Item-1 dfun fingerprint) was not taken: with `-flto` the link phase
+re-processes every TU anyway, so per-model caching would only skip the ~1.4 s
+front-end compile and the emission half of a *rebuild* — no clean-build gain
+for a moderate CMake rework; the `CONFIGURE_DEPENDS` glob + deps-manifest
+triggers already keep unchanged builds at zero regeneration cost.
+
 ### Model id ranges
 
 | Range | Owner | Lookup |
 |---|---|---|
 | **0..12** | hand-written kernels in `_core.cpp` (MPR, Generic2dOscillator, Kuramoto, SupHopf, Linear, ReducedWongWang, WilsonCowan, JansenRit, Epileptor, Epileptor2D, Zerlaut 1st/2nd order, CerebellarMF) | `_MODEL_IDS`, checked first, so these take precedence over a generated kernel for the same model |
-| **100..125** | the 26 built-in generic kernels compiled in at build time | `generic_model_table()`, ids assigned in sorted class-name order |
-| **126+** | runtime-compiled fallback library (`models_gen.so`) for models the build did not know about | emitted at `max(built-in id) + 1`, dispatch table gap-padded with `nullptr` over `100..125` |
+| **100..124** | the 25 built-in generic kernels compiled in at build time (the supported model set) | `generic_model_table()`, ids assigned in sorted class-name order |
+| **125+** | runtime-compiled fallback library (`models_gen.so`) for models the build did not cover (user-defined models, and in-tree dfun models outside the supported set such as `DecoBalancedExcInh`) | emitted at `max(built-in id) + 1`, dispatch table gap-padded with `nullptr` over `100..124` |
 
 The gap padding matters: ids are positional over sorted class names, so a user
 model sorting before every stock name (`AaaProbe`) would otherwise take id 100
@@ -186,7 +263,7 @@ nothing calls a null slot.
 * What is **not** caught: a shadowing class with the *same* state variables,
   coupling terms and parameters but **different equations**. Same buffer
   shapes, same packing — so it runs the stock equations silently. Avoid it by
-  not reusing stock model names; a distinct class name lands in the 126+ range
+  not reusing stock model names; a distinct class name lands in the 125+ range
   and gets its own generated kernel.
 
 ## Feature parity with nb_hybrid (all parity-tested, float32 tolerance)
@@ -196,9 +273,9 @@ matches `NbHybridBackend`:
 
 | Feature | Coverage | Parity test |
 |---|---|---|
-| **Models** (26 classes) | 13 hand-written dfuns (ids 0–12, incl. CerebellarMF) + generic expression-generated route (ids ≥ 100) covering every model declaring `state_variable_dfuns` — i.e. **all 26** | `test_cpp_hybrid_models.py` (31 items: 26 classes + CerebellarMF flag variants) |
+| **Models** (26 classes) | 13 hand-written dfuns (ids 0–12, incl. CerebellarMF) + generic expression-generated route (ids ≥ 100): 25 supported generic kernels compiled in at build time; the one in-tree dfun model outside the supported set (`DecoBalancedExcInh`) is runtime-compiled on first use | `test_cpp_hybrid_models.py` (31 items: 26 classes + CerebellarMF flag variants) |
 | **Coupling functions** | Linear, Scaling, Sigmoidal, Difference, Kuramoto, HyperbolicTangent, SigmoidalJansenRit (classic **and** legacy), PreSigmoidal (static **and** dynamic, incl. `globalT`) | `test_cpp_hybrid_coupling.py` (11 items) |
-| **Monitors** | Raw, RawVoi, TemporalAverage, SubSample, GlobalAverage, AfferentCoupling (+TemporalAverage), SpatialAverage, Projection, Bold — plumbing shared with nb_hybrid | `test_cpp_hybrid_monitors.py` (10 items) |
+| **Monitors** | Raw, RawVoi, TemporalAverage, SubSample, GlobalAverage, AfferentCoupling (+TemporalAverage), SpatialAverage, Projection, Bold. Bold's HRF convolution and Raw/SubSample collection run as **kernel monitor engines** inside the C++ step loop; the shared Python path remains the parity reference/fallback (`enable_kernel_monitors`) | `test_cpp_hybrid_monitors.py` (18 items) |
 | **Stimuli** | constant / pulse / sinusoid patterns (single-node and all-node spatial), **multiple subnetworks with stimuli simultaneously** | `test_cpp_hybrid_stimuli.py` (6 items) |
 | **Stochastic noise** | Additive noise, HeunStochastic/EulerStochastic, per-subnet RNG streams, **multiple stochastic subnetworks** | `test_cpp_hybrid_stimuli.py::test_stochastic_noise_parity`, `test_multi_subnet_stimuli_and_noise` |
 
