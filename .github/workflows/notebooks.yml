@@ -3,7 +3,6 @@ on: [push]
 
 jobs:
   build:
-    if: github.ref_name != 'tvbkh'  # tvbkh branch runs only the cpp-hybrid workflow
     name: Test and Inspect
     runs-on: windows-latest
     steps:

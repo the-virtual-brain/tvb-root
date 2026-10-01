@@ -3,7 +3,6 @@ on: [push]
 
 jobs:
   build:
-    if: github.ref_name != 'tvbkh'  # tvbkh branch runs only the cpp-hybrid workflow
     name: Frw-Tests (3.13 Win)
     runs-on: windows-latest
 

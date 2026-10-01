@@ -34,7 +34,6 @@ on:
 
 jobs:
   release:
-    if: github.ref_name != 'tvbkh'  # tvbkh branch runs only the cpp-hybrid workflow
     runs-on: ubuntu-latest
 
     outputs:
@@ -126,7 +125,6 @@ jobs:
           git push origin ${{ steps.get_version.outputs.version }}
 
   call-build-docker-image:
-    if: github.ref_name != 'tvbkh'  # tvbkh branch runs only the cpp-hybrid workflow
     needs: release
     uses: ./.github/workflows/build-docker-image.yml
     with:

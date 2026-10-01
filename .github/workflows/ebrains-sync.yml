@@ -6,7 +6,6 @@ on:
 
 jobs:
   to_ebrains_2:
-    if: github.ref_name != 'tvbkh'  # tvbkh branch runs only the cpp-hybrid workflow
     runs-on: ubuntu-latest
     steps:
       - name: syncmaster
