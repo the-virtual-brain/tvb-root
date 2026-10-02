@@ -679,6 +679,16 @@ class TestHybridSimulatorService(object):
         assert 'Bold' in str(excinfo.value)
         assert 'record nothing' in str(excinfo.value)
 
+    def test_the_length_rule_waits_until_the_length_is_known(self):
+        # the Monitors are configured before the simulation length is asked, so only the step size
+        # rule applies to them then
+        self.service.validate_monitors([BoldViewModel()], None, 0.1)
+
+        monitor = TemporalAverageViewModel()
+        monitor.period = 0.05
+        with pytest.raises(HybridSubnetworkException):
+            self.service.validate_monitors([monitor], None, 0.1)
+
     def test_the_raw_monitor_is_not_judged_on_its_period(self):
         # Raw records every integration step and documents its sampling period as ignored, so its
         # default of zero is not a period below dt

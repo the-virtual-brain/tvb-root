@@ -10,6 +10,7 @@
 <form method="post" action="{{ renderer.form_action_url }}" id="{{ renderer.form_action_url }}" enctype="multipart/form-data"
       {% if renderer.is_editor_section %} class="hybrid-editor-section hybrid-editor-level-{{ renderer.section_level }}" {% endif %}
       {% if renderer.is_dynamics_save_fragment %} class="hybrid-editor-actions" {% endif %}
+      {% if renderer.is_monitor_step %} class="hybrid-monitor-step" {% endif %}
       data-hybrid-context-url="{{ renderer.context_form_url if renderer.context_form_url else '' }}"
       data-hybrid-context-title="{{ renderer.context_title if renderer.context_title else '' }}"
       data-hybrid-modified="{{ 'true' if renderer.is_modified else 'false' }}"
@@ -30,9 +31,12 @@
     {% elif renderer.is_dynamics_save_fragment %}
         {#- the row of actions closing the Subnetwork editor: nothing to fill in -#}
     {% else %}
-        <fieldset {% if renderer.is_read_only %} disabled {% endif %}>
-            {% include 'burst/hybrid_form_fields.html' %}
-        </fieldset>
+        {#- The Subnetwork dynamics step has no field of its own, only the tabs below -#}
+        {% if not renderer.is_dynamics_summary_fragment %}
+            <fieldset {% if renderer.is_read_only %} disabled {% endif %}>
+                {% include 'burst/hybrid_form_fields.html' %}
+            </fieldset>
+        {% endif %}
 
         {#- The Subnetworks, and what each one is configured with. This is the only place this step
             describes them: a separate summary above said the same thing twice.
@@ -94,7 +98,9 @@
                     onclick="hybridSaveSubnetworkDynamics('{{ renderer.next_form_action_url }}')">Save and continue
             </button>
         {% elif renderer.is_launch_fragment %}
-            <button name="launch_simulation" type="button" class="btn btn-primary btn-next action-launch"
+            {#- a plain button, like the classic Cockpit's own Launch: the action-launch style hides the text for
+                an icon this column does not draw -#}
+            <button name="launch_simulation" type="button" class="btn btn-primary btn-next"
                     tabindex="1" {{ hide_buttons | safe }}
                     title="Launch this Hybrid simulation"
                     onclick="hybridLaunchSimulation(this.parentElement)">Launch

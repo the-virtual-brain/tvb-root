@@ -414,6 +414,96 @@ form[id="/burst/hybrid/set_subnetwork_dynamics"] + .hybrid-subnetwork-editor .hy
     padding: 4px 0 6px 0;
 }
 
+/**
+ * The Monitors section: the Monitor selection and each Monitor's parameters, outlined as one section
+ * like the Connectivity one. They are one wizard step each, so the outline is split over their
+ * fieldsets: the first step opens it, the ones under it carry its sides, and the last one on screen
+ * closes it. A finished step's hidden buttons take no room, which is what lets them meet; the step being
+ * configured keeps its buttons under the outline. The closing step - the output, the simulation length
+ * and name, and Launch - comes after the section, outside it.
+ */
+.hybrid-monitor-step > fieldset {
+    background: rgba(65, 146, 31, 0.05);
+    border: 2px solid #41921f;
+    border-bottom: none;
+    border-top: none;
+    margin: 0 24px;
+    padding-bottom: 4px;
+}
+
+.hybrid-monitor-step.is-locked > button {
+    display: none;
+}
+
+form:not(.hybrid-monitor-step) + .hybrid-monitor-step > fieldset {
+    border-radius: 4px 4px 0 0;
+    border-top: 2px solid #41921f;
+    margin-top: 4px;
+    padding-top: 4px;
+}
+
+.hybrid-monitor-step:not(:has(+ .hybrid-monitor-step)) > fieldset {
+    border-bottom: 2px solid #41921f;
+    border-radius: 0 0 4px 4px;
+    margin-bottom: 10px;
+}
+
+form:not(.hybrid-monitor-step) + .hybrid-monitor-step:not(:has(+ .hybrid-monitor-step)) > fieldset {
+    border-radius: 4px;
+}
+
+/* the section's own title for each Monitor's parameters, where the classic Cockpit shows its legend */
+.hybrid-monitor-step legend {
+    padding-top: 4px;
+}
+
+/**
+ * The closing step - the simulation length and name, under the warning about the output order when there
+ * is one - outlined like the other sections, with Previous and Launch outside it.
+ */
+form[id="/burst/hybrid/set_simulation_summary"] > fieldset {
+    background: rgba(65, 146, 31, 0.05);
+    border: 2px solid #41921f;
+    border-radius: 4px;
+    margin: 4px 24px 10px 24px;
+    padding-bottom: 4px;
+    padding-top: 4px;
+}
+
+form[id="/burst/hybrid/set_simulation_summary"].is-locked > fieldset {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: #8a8d96;
+}
+
+/* gray once none of its steps is the one being configured */
+#hybrid-simulator-forms:not(:has(.hybrid-monitor-step:not(.is-locked))) .hybrid-monitor-step > fieldset {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: #8a8d96;
+}
+
+/**
+ * The outlined sections are green while they are the one being configured, and gray once the user has
+ * moved on past them, the way a finished step's fields are greyed out. Stepping back makes them green
+ * again. It follows the class the client puts on a locked step:
+ *
+ * - the Connectivity section, while neither the Connectivity step nor the Subnetworks summary under it
+ *   is the step being configured;
+ * - the Subnetwork editor, once Save and continue has moved on, and with it the tabs joined to it;
+ * - the Projections list, once its Next has moved on.
+ */
+form[id="/burst/hybrid/set_connectivity"].is-locked:not(:has(+ form[id="/burst/hybrid/set_subnetworks"]:not(.is-locked))) > fieldset,
+form[id="/burst/hybrid/set_connectivity"] + form[id="/burst/hybrid/set_subnetworks"].is-locked > .hybrid-subnetworks-fieldset,
+.hybrid-subnetwork-editor:has(.hybrid-editor-actions.is-locked) .hybrid-editor-fields,
+form[id="/burst/hybrid/set_projections"].is-locked .hybrid-projections-list {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: #8a8d96;
+}
+
+form[id="/burst/hybrid/set_subnetwork_dynamics"]:has(+ .hybrid-subnetwork-editor .hybrid-editor-actions.is-locked) .hybrid-subnetwork-tabs {
+    --hybrid-tab-accent: #8a8d96;
+    --hybrid-tab-selected: #c2c4c9;
+}
+
 /* The Noise configures part of the Integrator, and the Equation part of that Noise: one tab each */
 .hybrid-editor-fields .hybrid-editor-level-1 {
     margin-left: 24px;
@@ -478,12 +568,10 @@ form[id="/burst/hybrid/set_subnetwork_dynamics"] + .hybrid-subnetwork-editor .hy
 }
 
 /**
- * The included Projections and the closing Simulation summary, listed on their wizard steps in the
- * configuration column. Both are read only, so they reuse the Subnetwork summary table's
- * dark-on-light rules and only add a header row.
+ * The included Projections, listed on their wizard step in the configuration column. Read only, so the
+ * list reuses the Subnetwork summary table's dark-on-light rules and only adds a header row.
  */
-table.hybrid-projections-summary th[scope="col"],
-table.hybrid-simulation-summary th[scope="col"] {
+table.hybrid-projections-summary th[scope="col"] {
     color: rgba(0, 0, 0, 0.6);
     font-size: 11px;
     font-weight: normal;
@@ -491,8 +579,7 @@ table.hybrid-simulation-summary th[scope="col"] {
     width: auto;
 }
 
-table.hybrid-projections-summary th[scope="row"],
-table.hybrid-simulation-summary th[scope="row"] {
+table.hybrid-projections-summary th[scope="row"] {
     width: 1%;
 }
 
@@ -530,6 +617,48 @@ table.hybrid-simulation-summary th[scope="row"] {
 
 .hybrid-projections-config .hybrid-projection-block {
     background: #d9e2d4;
+}
+
+/**
+ * The Connectivity and the Subnetworks it is divided into, outlined as one section, indented like the
+ * Subnetwork editor's block and the Projections list, in their green.
+ *
+ * They are two wizard steps, so the outline is split over them: the Connectivity step's fieldset closes it
+ * on its own while it is the only one of them on screen, and hands its lower edge to the Subnetworks
+ * summary once that is stacked right under it. The Connectivity step's hidden buttons take no room once it
+ * is locked, which is what lets the two halves meet; each step's own buttons stay outside the outline
+ * while it is the one being configured, like the editor's actions.
+ */
+form[id="/burst/hybrid/set_connectivity"] > fieldset,
+form[id="/burst/hybrid/set_connectivity"] + form[id="/burst/hybrid/set_subnetworks"] > .hybrid-subnetworks-fieldset {
+    background: rgba(65, 146, 31, 0.05);
+    border: 2px solid #41921f;
+    margin-left: 24px;
+    margin-right: 24px;
+}
+
+form[id="/burst/hybrid/set_connectivity"] > fieldset {
+    border-radius: 4px;
+    margin-bottom: 10px;
+    margin-top: 4px;
+    padding-bottom: 4px;
+    padding-top: 4px;
+}
+
+form[id="/burst/hybrid/set_connectivity"].is-locked > button {
+    display: none;
+}
+
+form[id="/burst/hybrid/set_connectivity"]:has(+ form[id="/burst/hybrid/set_subnetworks"]) > fieldset {
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    margin-bottom: 0;
+}
+
+form[id="/burst/hybrid/set_connectivity"] + form[id="/burst/hybrid/set_subnetworks"] > .hybrid-subnetworks-fieldset {
+    border-radius: 0 0 4px 4px;
+    border-top: none;
+    padding-bottom: 6px;
 }
 
 /**

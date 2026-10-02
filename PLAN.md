@@ -1895,6 +1895,23 @@ Monitor labels) are left for later.
   region Model once *Save and continue* moves on. The template also hides that button on a read only
   section. A Model change re-syncs the third column, which closes the Region Model panel.
 
+### One step size for every Subnetwork
+
+* The Subnetwork dynamics step no longer has a dt field. The step size is edited on the *Integration-step
+  size* of any Subnetwork's Integrator, and whatever is entered becomes `HybridSimulatorAdapterModel.dt`
+  and the step size of every Subnetwork's Integrator, saved and being edited (`_set_shared_dt`). Every
+  render copies that value onto all of them again (`_prepare_dynamics_draft`), and a new Integrator class
+  takes it too, so the Subnetworks never disagree. It is stored at once, not by *Save Configuration*,
+  and is not reported as an unsaved change.
+* A step size that is not positive is refused on that field (`_validate_integrator_params`); it used to
+  be accepted and only failed when the Projections were built.
+
+* With no field of its own, the Subnetwork dynamics step is not a step to fill in: Next on the Subnetworks
+  step opens it and goes straight on to the selected Subnetwork's editor (`hybridSubmitTo` posts the
+  dynamics step's own Next). *Previous* from the editor skips it the same way, back to the Subnetworks
+  step, and the grouping board in the third column (`hybridPreviousStep` drops every step under the one
+  it returns to).
+
 ### Unsaved changes
 
 * `subnetwork_choices` carries `is_modified` per Subnetwork; the tab shows *unsaved changes*. Every apply
@@ -2061,7 +2078,24 @@ own speed, where it used to be the raw weighted sum at 3.0 mm/ms.
 * The step lists the Projections added to the simulation (`burst/hybrid_projections_summary.html`): kind,
   source, target, coupling variables by name, coupling function and scale, speed; before any is added it
   says so once. The warnings about what is left uncoupled only start once something is added. The list
-  is outlined and indented like the Subnetwork editor's block, in its green. It is read only, and declares the Projections editor for the
+  is outlined and indented like the Subnetwork editor's block, in its green, and so are the Connectivity
+  and the Subnetworks summary under it, as one section. They are two steps, so that outline is split
+  over their fieldsets and joined with `:has()` once the summary is stacked under the Connectivity.
+  Each outlined section - Connectivity, the Subnetwork editor with its tabs, the Projections list, the
+  Monitors - is green while it is the one being configured and gray once the user moved on past it,
+  following the `is-locked` class the client puts on a finished step.
+* The Monitors section outlines the Monitor selection and every Monitor's parameter steps as one
+  (`is_monitor_step`), split over their fieldsets like the Connectivity section. The simulation length
+  moved from the Monitors step to the closing step, where it is asked with the simulation name, last,
+  outside the section: `launch_simulation` stores it and checks the Monitors against it
+  (`validate_monitors`). A Monitor's own step now only refuses a period below the integration step
+  size, and says why on the field; a period longer than the simulation is refused at launch, since the
+  length is not asked yet when the Monitors are configured. Moving on from the Projections opens the
+  Monitors step (`open_monitors`) rather than submitting it empty, which used to refuse it on arrival.
+* The closing step no longer summarises the Monitors: it keeps only the warning shown when the
+  Subnetworks watch different numbers of variables, over the simulation length and name. Its Launch
+  button is a plain one, labelled; the `action-launch` style hid its text for an icon this column does
+  not draw. The step is outlined like the other sections, with Previous and Launch outside it. It is read only, and declares the Projections editor for the
   third column (`configure_projections`), the way the Subnetworks step declares the board.
 * The editor (`burst/hybrid_projections_editor.html`) follows the Subnetwork editor's design: tabs on a
   baseline, and the selected Projection's editor in an outlined block the selected tab opens into

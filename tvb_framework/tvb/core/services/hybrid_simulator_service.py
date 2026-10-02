@@ -1024,6 +1024,8 @@ class HybridSimulatorService(object):
         it into ``istep = round(period / dt)``, which a period below ``dt`` rounds down to zero - and a
         Monitor then divides by it on its first sample.
 
+        :param simulation_length: None to leave out the rule about the length, while it is not asked yet
+
         :raise HybridSubnetworkException: naming the Monitor and what to change
         """
         for monitor in monitors or []:
@@ -1039,7 +1041,7 @@ class HybridSimulatorService(object):
                     "The {} Monitor samples every {} ms, below the {} ms integration step size. Give it "
                     "a sampling period of at least {} ms.".format(name, period, dt, dt))
 
-            if period > simulation_length:
+            if simulation_length is not None and period > simulation_length:
                 raise HybridSubnetworkException(
                     "The {} Monitor samples every {} ms, longer than the {} ms simulation, so it would "
                     "record nothing. Shorten its sampling period or lengthen the simulation."

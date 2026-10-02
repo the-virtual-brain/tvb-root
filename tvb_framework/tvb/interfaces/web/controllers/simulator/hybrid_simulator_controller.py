@@ -104,6 +104,8 @@ class HybridSimulatorURLs(object):
     SET_PROJECTION_INCLUDED_URL = '/burst/hybrid/set_projection_included'
     # the global configuration: what the simulation records, for how long, and what that produces
     SET_MONITORS_URL = '/burst/hybrid/set_monitors'
+    # opens the Monitors step without submitting it, which is what moving on from the Projections does
+    OPEN_MONITORS_URL = '/burst/hybrid/open_monitors'
     SET_MONITOR_PARAMS_URL = '/burst/hybrid/set_monitor_params'
     SET_MONITOR_EQUATION_URL = '/burst/hybrid/set_monitor_equation'
     SET_SIMULATION_SUMMARY_URL = '/burst/hybrid/set_simulation_summary'
@@ -195,13 +197,15 @@ class HybridSimulatorFragmentRenderingRules(object):
         self.projection_error = None
         # the legend a Monitor parameters step carries, the way the classic Cockpit titles its own
         self.monitor_name = None
-        # the closing step of the global configuration, describing what the simulation will record
+        # a step of the Monitors section: the Monitor selection and each Monitor's parameters, outlined
+        # as one section
+        self.is_monitor_step = False
+        # the closing step of the global configuration: the simulation length and name, and Launch
         self.is_simulation_summary_fragment = False
         # True on the step carrying the Launch button
         self.is_launch_fragment = False
-        self.monitor_rows = []
+        # how the Monitors will lay out what they record, for the warning when it is not region ordered
         self.output_layout = None
-        self.simulation_length = None
         # the Region Model panel: the Subnetwork being configured, its regions and the Dynamics on offer
         self.region_model_subnetwork = None
         self.region_model_rows = []
@@ -515,18 +519,16 @@ class HybridSimulatorController(BurstBaseController):
     @expose_fragment('hybrid_simulator_fragment')
     def set_subnetwork_dynamics(self, **data):
         """
-        The wizard step under which each Subnetwork's Model and Integrator are configured. Its own field
-        is the shared integration step size; the per Subnetwork configuration lives in the third column.
+        The wizard step under which each Subnetwork's Model and Integrator are configured. It carries the
+        Subnetwork tabs, and moving on from it opens the editor of the selected Subnetwork under it.
         """
         if cherrypy.request.method == POST_REQUEST:
-            # applying the shared dt is what submitting this step does, and then the editor of the
-            # selected Subnetwork opens under it
-            self._subnetwork_dynamics_step(data)
+            self._subnetwork_dynamics_step()
             return self._selected_subnetwork_editor().to_dict()
 
         return self._subnetwork_dynamics_step()
 
-    def _subnetwork_dynamics_step(self, data=None):
+    def _subnetwork_dynamics_step(self):
         self.context.add_last_loaded_form_url_to_session(HybridSimulatorURLs.SET_SUBNETWORK_DYNAMICS_URL)
         try:
             hybrid_simulator, _, subnetworks, _ = self._load_subnetworks_configuration()
@@ -534,15 +536,6 @@ class HybridSimulatorController(BurstBaseController):
             return self._back_to_connectivity(str(excep))
 
         form = HybridSubnetworkDynamicsFragment()
-        if data is not None:
-            form.fill_from_post(data)
-            if form.validate():
-                form.fill_trait(hybrid_simulator)
-                self.context.set_hybrid_simulator(hybrid_simulator)
-            else:
-                form.fill_from_trait(hybrid_simulator)
-        else:
-            form.fill_from_trait(hybrid_simulator)
 
         # the shared dt reaches every Subnetwork Integrator, the ones configured before it last changed
         # included, which is what keeps tvb.simulator.hybrid.Simulator from refusing the NetworkSet
@@ -638,19 +631,23 @@ class HybridSimulatorController(BurstBaseController):
         """
         Step 4: the Integrator parameters. Answers with the Noise parameters for a stochastic Integrator,
         and with the closing step otherwise.
+
+        The integration step size edited here is not this Subnetwork's own: every Subnetwork has to run
+        on the same one, so whatever is entered becomes the shared dt, and with it the step size of
+        every Subnetwork's Integrator, saved or being edited.
         """
         dynamics, hybrid_simulator = self._selected_dynamics()
 
         if cherrypy.request.method == POST_REQUEST:
-            # dt is rendered disabled, and a disabled input is not submitted, so the shared value is put
-            # back into the posted data the way the classic set_integrator_params does for a branch
-            data['dt'] = str(hybrid_simulator.dt)
-            form = get_form_for_integrator(type(dynamics.integrator))(is_dt_disabled=True)
+            if 'dt' not in data:
+                # a caller posting only the other parameters leaves the shared step size as it is
+                data['dt'] = str(hybrid_simulator.dt)
+            form = self._integrator_params_form(dynamics)
             form.fill_from_post(data)
-            if not form.validate():
+            if not self._validate_integrator_params(form):
                 return self._integrator_params_step_rules(dynamics, form).to_dict()
             form.fill_trait(dynamics.integrator)
-            dynamics.integrator.dt = hybrid_simulator.dt
+            self._set_shared_dt(hybrid_simulator, dynamics.integrator.dt)
 
         if not isinstance(dynamics.integrator, IntegratorStochasticViewModel):
             return self._editor_actions_rules().to_dict()
@@ -805,9 +802,9 @@ class HybridSimulatorController(BurstBaseController):
             connectivity, subnetworks, projections, reset)
         rules.unconnected_pairs = self.hybrid_simulator_service.pairs_without_projection(subnetworks, projections)
         rules.projection_warnings = self.hybrid_simulator_service.projection_warnings(subnetworks, projections)
-        # This step is entered by posting to its own url, so its Next has to post somewhere else, the
-        # same way the closing step of the Subnetwork configuration does.
-        rules.next_form_action_url = HybridSimulatorURLs.SET_MONITORS_URL
+        # Next opens the Monitors step rather than submitting it: this step's own form carries nothing
+        # for the Monitors, and submitting nothing would refuse them.
+        rules.next_form_action_url = HybridSimulatorURLs.OPEN_MONITORS_URL
         return rules
 
     def _projections_editor_rules(self, connectivity, subnetworks, projections, reset=(), edit=None,
@@ -1120,6 +1117,14 @@ class HybridSimulatorController(BurstBaseController):
         return self._monitors_step()
 
     @expose_fragment('hybrid_simulator_fragment')
+    def open_monitors(self, **data):
+        """
+        Open the Monitors step as the configuration holds it. Moving on from the Projections comes here:
+        posting the Projections to set_monitors would submit an empty Monitor selection, and refuse it.
+        """
+        return self._monitors_step()
+
+    @expose_fragment('hybrid_simulator_fragment')
     def set_monitor_params(self, current_monitor_name, **data):
         """
         The parameters of one Monitor. Answers with the next step of the Monitor chain, which is this
@@ -1164,14 +1169,17 @@ class HybridSimulatorController(BurstBaseController):
             form.fill_trait(monitor.hrf_kernel if is_equation else monitor)
 
             try:
-                # checked on this Monitor's own step rather than on the closing summary: a refusal has
-                # to hand back the step it is about, and the summary would instead answer with a step
-                # already on screen
-                self.hybrid_simulator_service.validate_monitors(
-                    [monitor], hybrid_simulator.simulation_length, hybrid_simulator.dt)
+                # Checked on this Monitor's own step rather than on the closing summary: a refusal has
+                # to hand back the step it is about. Only against the integration step size, though: the
+                # simulation length is asked last, on the closing step, and checked against at launch.
+                self.hybrid_simulator_service.validate_monitors([monitor], None, hybrid_simulator.dt)
             except HybridSubnetworkException as excep:
+                # on the field it is about, since a message set on the session does not reach a fragment
+                period_field = getattr(form, 'period', None)
+                if period_field is not None:
+                    period_field.errors.append(str(excep))
                 common.set_error_message(str(excep))
-                return self._monitor_chain_step(hybrid_simulator, index)
+                return self._monitor_chain_step(hybrid_simulator, index, form)
 
             self.context.set_hybrid_simulator(hybrid_simulator)
             return self._monitor_chain_step(hybrid_simulator, index + 1)
@@ -1249,6 +1257,7 @@ class HybridSimulatorController(BurstBaseController):
         self.context.add_last_loaded_form_url_to_session(url)
         rules = self._step_rules(form, url, previous_url)
         rules.monitor_name = self._monitor_legend(monitor, is_equation)
+        rules.is_monitor_step = True
         return rules.to_dict()
 
     @staticmethod
@@ -1274,15 +1283,15 @@ class HybridSimulatorController(BurstBaseController):
 
     def _monitors_step_rules(self, form):
         self.context.add_last_loaded_form_url_to_session(HybridSimulatorURLs.SET_MONITORS_URL)
-        return self._step_rules(form, HybridSimulatorURLs.SET_MONITORS_URL,
-                                HybridSimulatorURLs.SET_PROJECTIONS_URL)
+        rules = self._step_rules(form, HybridSimulatorURLs.SET_MONITORS_URL, HybridSimulatorURLs.SET_PROJECTIONS_URL)
+        rules.is_monitor_step = True
+        return rules
 
     def _simulation_summary_step(self):
         """
-        Describe what the configured Monitors will record.
-
-        Purely descriptive: a sampling period that could not record anything is refused on the step of
-        the Monitor it belongs to, on the way here.
+        The closing step: the simulation length and name, asked last, and the Launch button, under a
+        warning when the Monitors will not record in region order. The Monitors are checked against the
+        length when it is launched.
         """
         try:
             hybrid_simulator, _, subnetworks, _ = self._load_subnetworks_configuration()
@@ -1293,6 +1302,7 @@ class HybridSimulatorController(BurstBaseController):
         previous_url = chain[-1][0] if chain else HybridSimulatorURLs.SET_MONITORS_URL
 
         form = HybridLaunchFragment(default_simulation_name=self._default_simulation_name())
+        form.simulation_length.data = hybrid_simulator.simulation_length
 
         self.context.add_last_loaded_form_url_to_session(HybridSimulatorURLs.SET_SIMULATION_SUMMARY_URL)
         rules = HybridSimulatorFragmentRenderingRules(
@@ -1300,8 +1310,6 @@ class HybridSimulatorController(BurstBaseController):
             fragment_title="Simulation")
         rules.is_simulation_summary_fragment = True
         rules.is_launch_fragment = True
-        rules.simulation_length = hybrid_simulator.simulation_length
-        rules.monitor_rows = self._monitor_rows(hybrid_simulator)
         rules.output_layout = self.hybrid_simulator_service.output_layout(subnetworks)
         return rules.to_dict()
 
@@ -1334,6 +1342,18 @@ class HybridSimulatorController(BurstBaseController):
             self.logger.exception(excep)
             return {'error': str(excep)}
 
+        # the length is asked here, last, so the Monitors are checked against it here too
+        simulation_length = form.simulation_length.value
+        if not form.simulation_length.validate() or simulation_length is None or simulation_length <= 0:
+            return {'error': 'The simulation length has to be a positive number of milliseconds.'}
+        try:
+            self.hybrid_simulator_service.validate_monitors(hybrid_simulator.monitors, simulation_length,
+                                                            hybrid_simulator.dt)
+        except HybridSubnetworkException as excep:
+            return {'error': str(excep)}
+        hybrid_simulator.simulation_length = simulation_length
+        self.context.set_hybrid_simulator(hybrid_simulator)
+
         if not self.simulator_service.operation_service.fits_max_operation_size(
                 HybridSimulatorAdapter(), hybrid_simulator, self.context.project.id):
             return {'error': self.MAX_SIZE_ERROR_MSG}
@@ -1357,20 +1377,6 @@ class HybridSimulatorController(BurstBaseController):
         except Exception as excep:
             self.logger.exception("Could not launch the Hybrid simulation")
             return {'error': str(excep)}
-
-    def _monitor_rows(self, hybrid_simulator):
-        """
-        One row per configured Monitor: what it is called and how often it samples.
-        """
-        rows = []
-        for monitor in hybrid_simulator.monitors or []:
-            rows.append({
-                'name': self._monitor_legend(monitor, False).replace(' monitor', ''),
-                # Raw ignores its own period and records every integration step
-                'period': hybrid_simulator.dt if isinstance(monitor, RawViewModel) else float(monitor.period),
-                'is_raw': isinstance(monitor, RawViewModel)
-            })
-        return rows
 
     # ---------------------------------------------------------------- Region Model
 
@@ -1541,9 +1547,9 @@ class HybridSimulatorController(BurstBaseController):
         """
         draft = self.hybrid_simulator_service.prepare_dynamics_draft(subnetworks, self.context.dynamics_draft)
         self.hybrid_simulator_service.apply_shared_dt(draft, dt)
-        # The shared dt is a simulation wide setting applied on its own step, not part of the per
-        # Subnetwork draft, so the saved Integrators get it too. Leaving them behind would report a
-        # pending change that the user cannot save away.
+        # The shared dt is a simulation wide setting, not part of the per Subnetwork draft: it is stored
+        # the moment it is edited, on any Subnetwork's Integrator, so the saved Integrators get it too.
+        # Leaving them behind would report a pending change that the user cannot save away.
         self.hybrid_simulator_service.apply_shared_dt(
             {subnetwork.id: subnetwork.dynamics for subnetwork in subnetworks or []}, dt)
         self.context.set_dynamics_draft(draft)
@@ -1662,13 +1668,39 @@ class HybridSimulatorController(BurstBaseController):
         form.fill_from_trait(dynamics)
         return self._section_rules(form, HybridSimulatorURLs.SET_SUBNETWORK_INTEGRATOR_URL)
 
+    def _integrator_params_form(self, dynamics):
+        form = self.algorithm_service.prepare_adapter_form(
+            form_instance=get_form_for_integrator(type(dynamics.integrator))())
+        if hasattr(form, 'noise'):
+            # the Noise parameters are the next section
+            form.noise.display_subform = False
+        return form
+
+    @staticmethod
+    def _validate_integrator_params(form):
+        """
+        Validate the Integrator parameters. A step size that is not positive is refused here: the form
+        accepts any number, and one that is zero or negative only fails once the Projections are built.
+        """
+        is_valid = form.validate()
+        if is_valid and form.dt.value is not None and form.dt.value <= 0:
+            form.dt.errors.append('The integration step size has to be positive.')
+            is_valid = False
+        return is_valid
+
+    def _set_shared_dt(self, hybrid_simulator, dt):
+        """
+        Make dt the step size of the whole simulation, and so of every Subnetwork's Integrator, the
+        saved ones and the ones being edited alike.
+        """
+        hybrid_simulator.dt = dt
+        self.context.set_hybrid_simulator(hybrid_simulator)
+        _, _, subnetworks, _ = self._load_subnetworks_configuration()
+        self._prepare_dynamics_draft(subnetworks, dt)
+
     def _integrator_params_step_rules(self, dynamics, form=None):
         if form is None:
-            form = self.algorithm_service.prepare_adapter_form(
-                form_instance=get_form_for_integrator(type(dynamics.integrator))(is_dt_disabled=True))
-            if hasattr(form, 'noise'):
-                # the Noise parameters are the next section
-                form.noise.display_subform = False
+            form = self._integrator_params_form(dynamics)
             form.fill_from_trait(dynamics.integrator)
         return self._section_rules(form, HybridSimulatorURLs.SET_SUBNETWORK_INTEGRATOR_PARAMS_URL)
 
@@ -1698,12 +1730,15 @@ class HybridSimulatorController(BurstBaseController):
     @staticmethod
     def _editor_actions_rules():
         """
-        The row closing the Subnetwork editor: Previous back to the Subnetwork dynamics step, Save
-        Configuration storing the dynamics of every Subnetwork, and Save and continue storing them and
-        opening the Projections. Nothing moves on without saving.
+        The row closing the Subnetwork editor: Previous back to the Subnetworks step, Save Configuration
+        storing the dynamics of every Subnetwork, and Save and continue storing them and opening the
+        Projections. Nothing moves on without saving.
+
+        Previous skips the Subnetwork dynamics step, which only holds the Subnetwork tabs and opens this
+        editor on its own: stepping back to it would leave nothing to do there but step back again.
         """
         rules = HybridSimulatorFragmentRenderingRules(
-            None, HybridSimulatorURLs.SAVE_SUBNETWORK_DYNAMICS_URL, HybridSimulatorURLs.SET_SUBNETWORK_DYNAMICS_URL,
+            None, HybridSimulatorURLs.SAVE_SUBNETWORK_DYNAMICS_URL, HybridSimulatorURLs.SET_SUBNETWORKS_URL,
             is_dynamics_save_fragment=True, next_button_label='Save Configuration')
         rules.next_form_action_url = HybridSimulatorURLs.SET_PROJECTIONS_URL
         return rules

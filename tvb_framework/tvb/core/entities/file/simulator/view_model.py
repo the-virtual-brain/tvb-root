@@ -613,8 +613,8 @@ class HybridSimulatorAdapterModel(ViewModel):
         label='Integration step size (dt)',
         default=Integrator.dt.default,
         doc='The step size used by every Subnetwork Integrator. tvb.simulator.hybrid.Simulator requires '
-            'all Subnetworks to share it, so it is configured once for the whole Hybrid Simulator '
-            'instead of per Subnetwork.'
+            'all Subnetworks to share it, so it is edited on any Subnetwork\'s Integrator and applied to '
+            'every one of them.'
     )
 
     monitors = List(

@@ -72,18 +72,17 @@ class HybridSubnetworksFragment(ABCAdapterForm):
 
 class HybridSubnetworkDynamicsFragment(ABCAdapterForm):
     """
-    The wizard step under which each Subnetwork's Model and Integrator are configured.
+    The wizard step under which each Subnetwork's Model and Integrator are configured. It has no field
+    of its own: it carries the Subnetwork tabs, and the editor of the selected Subnetwork opens under it.
 
-    Its only field is the integration step size, which is shared by every Subnetwork:
-    tvb.simulator.hybrid.Simulator refuses a NetworkSet whose Subnetworks disagree on dt, so it is
-    configured once here instead of being editable on each Subnetwork's Integrator form. The
-    per-Subnetwork configuration itself happens in the contextual column.
+    The integration step size is edited on each Subnetwork's Integrator, and whatever is entered there
+    becomes the step size of every Subnetwork: tvb.simulator.hybrid.Simulator refuses a NetworkSet whose
+    Subnetworks disagree on dt, so there is only ever one, HybridSimulatorAdapterModel.dt.
     """
 
     def __init__(self):
         super(HybridSubnetworkDynamicsFragment, self).__init__()
-        self.dt = FloatField(HybridSimulatorAdapterModel.dt)
-        self.ordered_fields = (self.dt,)
+        self.ordered_fields = ()
 
     @staticmethod
     def get_view_model():
@@ -92,15 +91,11 @@ class HybridSubnetworkDynamicsFragment(ABCAdapterForm):
 
 class HybridMonitorsFragment(ABCAdapterForm):
     """
-    The wizard step saying what the simulation records, and for how long.
+    The wizard step saying what the simulation records.
 
     The Monitors are global: tvb.simulator.hybrid.Simulator observes every Subnetwork at once and hands
     one array to each Monitor, so there is one list for the whole configuration rather than one per
-    Subnetwork.
-
-    The simulation length sits here rather than on a step of its own. The classic Cockpit keeps it for
-    last because it shares that step with the Launch button; there is nothing to launch yet, and a
-    Monitor's sampling period only means something next to the length it is sampling.
+    Subnetwork. How long the simulation runs is asked on the closing step, with its name.
     """
 
     # The Hybrid Simulator has no surface, so the Monitors are the ones the classic Cockpit offers for a
@@ -109,11 +104,10 @@ class HybridMonitorsFragment(ABCAdapterForm):
 
     def __init__(self):
         super(HybridMonitorsFragment, self).__init__()
-        self.simulation_length = FloatField(HybridSimulatorAdapterModel.simulation_length)
         self.monitor_choices = get_ui_name_to_monitor_dict(self.IS_SURFACE_SIMULATION)
         self.monitors = MultiSelectField(List(of=str, label='Monitors', choices=tuple(self.monitor_choices.keys())),
                                          name='monitors')
-        self.ordered_fields = (self.simulation_length, self.monitors)
+        self.ordered_fields = (self.monitors,)
 
     def fill_from_trait(self, trait):
         # type: (HybridSimulatorAdapterModel) -> None
@@ -138,7 +132,8 @@ class HybridMonitorsFragment(ABCAdapterForm):
 
 class HybridLaunchFragment(ABCAdapterForm):
     """
-    The closing step of the Hybrid Simulator: what this simulation is called, next to the Launch button.
+    The closing step of the Hybrid Simulator: how long the simulation runs and what it is called, next
+    to the Launch button - the last things asked, the way the classic Cockpit asks them.
 
     The name is validated by the classic Cockpit's own rule, so that a Hybrid simulation cannot be named
     something the burst history could not show.
@@ -146,11 +141,12 @@ class HybridLaunchFragment(ABCAdapterForm):
 
     def __init__(self, default_simulation_name="simulation_1"):
         super(HybridLaunchFragment, self).__init__()
+        self.simulation_length = FloatField(HybridSimulatorAdapterModel.simulation_length)
         self.simulation_name = StrField(
             Attr(str, doc='Name for the current Hybrid simulation', default=default_simulation_name,
                  label='Simulation name'),
             name='input_simulation_name_id')
-        self.ordered_fields = (self.simulation_name,)
+        self.ordered_fields = (self.simulation_length, self.simulation_name)
 
     def fill_from_post(self, form_data):
         super(HybridLaunchFragment, self).fill_from_post(form_data)

@@ -85,7 +85,7 @@ class TestHybridRendering(BaseTransactionalControllerTest):
 
             # Next on the dynamics step applies the shared dt and opens the editor of the selected
             # Subnetwork, in this same column
-            editor_html = self.hybrid_controller.set_subnetwork_dynamics(dt='0.1')
+            editor_html = self.hybrid_controller.set_subnetwork_dynamics()
             model_html = editor_html
 
             # step 1 -> Model parameters
@@ -132,8 +132,10 @@ class TestHybridRendering(BaseTransactionalControllerTest):
         # the Model and Integrator are configured in this same column, so the dynamics step declares no
         # configuration for the third column, which hands it back to the Results view
         assert 'data-hybrid-context-url=""' in dynamics_step_html
-        # it lists the shared dt and offers the Subnetwork selector for the steps stacked under it
-        assert 'Integration step size' in dynamics_step_html
+        # it offers the Subnetwork selector for the editor stacked under it, and has no field of its own:
+        # the step size is edited on the Subnetworks' Integrators
+        assert 'name="dt"' not in dynamics_step_html
+        assert '<fieldset' not in dynamics_step_html
         assert 'hybridSelectSubnetwork(' in dynamics_step_html
         assert 'Subnetwork A' in dynamics_step_html
         # the selector keeps working once this step is locked, which is what that marker is read for
@@ -167,9 +169,10 @@ class TestHybridRendering(BaseTransactionalControllerTest):
                          integrator_params_html)
         assert '<select name="equation"' in noise_params_html
 
-        # dt shows on the Integrator parameters step, and cannot be edited there
-        assert 'name="dt"' in integrator_params_html
-        assert 'disabled' in integrator_params_html
+        # dt is edited on the Integrator parameters section, as the step size of every Subnetwork
+        dt_input = re.search(r'<input[^>]*name="dt"[^>]*>', integrator_params_html)
+        assert dt_input
+        assert 'disabled' not in dt_input.group(0)
 
         # a stochastic Integrator names its Noise in the box as well
         assert 'Stochastic Heun' in stochastic_step_html
@@ -218,7 +221,7 @@ class TestHybridRendering(BaseTransactionalControllerTest):
             assert 'hybridConfigureRegionModel()' in sections
             # and the row closing it carries the three actions
             last_form = html[html.rindex('<form'):]
-            assert 'hybridPreviousStep(' in last_form
+            assert "hybridPreviousStep(this.parentElement, '/burst/hybrid/set_subnetworks')" in last_form
             assert 'hybridSaveSubnetworkDynamics()' in last_form
             assert 'Save and continue' in last_form
         # the editor carries no title of its own: the selected tab names the Subnetwork
@@ -250,7 +253,7 @@ class TestHybridRendering(BaseTransactionalControllerTest):
             self.hybrid_controller.set_subnetworks()
             cherrypy.request.method = "POST"
             self.hybrid_controller.set_subnetworks()
-            self.hybrid_controller.set_subnetwork_dynamics(dt='0.1')
+            self.hybrid_controller.set_subnetwork_dynamics()
             # the action sits on the Model parameters step, which follows the Model class one
             model_html = self.hybrid_controller.set_subnetwork_model(model='Generic 2D Oscillator')
 
@@ -304,7 +307,7 @@ class TestHybridRendering(BaseTransactionalControllerTest):
             self.hybrid_controller.set_subnetworks()
             cherrypy.request.method = "POST"
             self.hybrid_controller.set_subnetworks()
-            self.hybrid_controller.set_subnetwork_dynamics(dt='0.1')
+            self.hybrid_controller.set_subnetwork_dynamics()
             self.hybrid_controller.set_subnetwork_model(model='Generic 2D Oscillator')
             self.hybrid_controller.set_subnetwork_model_params(**self.MODEL_PARAMS)
             self.hybrid_controller.set_subnetwork_integrator(integrator='Heun')
@@ -415,7 +418,7 @@ class TestHybridRendering(BaseTransactionalControllerTest):
         self.hybrid_controller.set_subnetworks()
         cherrypy.request.method = "POST"
         self.hybrid_controller.set_subnetworks()
-        self.hybrid_controller.set_subnetwork_dynamics(dt='0.1')
+        self.hybrid_controller.set_subnetwork_dynamics()
         self.hybrid_controller.set_subnetwork_model(model='Generic 2D Oscillator')
         self.hybrid_controller.set_subnetwork_model_params(**self.MODEL_PARAMS)
         self.hybrid_controller.set_subnetwork_integrator(integrator='Heun')
@@ -436,27 +439,35 @@ class TestHybridRendering(BaseTransactionalControllerTest):
             projections_html = self._reach_the_projections()
 
             # Next on the Projections step opens the global configuration
-            monitors_html = self.hybrid_controller.set_monitors()
+            monitors_html = self.hybrid_controller.open_monitors()
+
+            # the simulation length is asked on the closing step; the BOLD period below is checked
+            # against it, so a long one is set, the way an earlier pass through that step leaves it
+            self.hybrid_controller.context.hybrid_simulator.simulation_length = 6000.0
 
             # a plain Monitor followed by one carrying datatype fields
-            tavg_html = self.hybrid_controller.set_monitors(
-                simulation_length='6000.0', monitors=['Temporal average', 'EEG'])
+            tavg_html = self.hybrid_controller.set_monitors(monitors=['Temporal average', 'EEG'])
             eeg_html = self.hybrid_controller.set_monitor_params(
                 'TemporalAverageViewModel', period='1.0')
 
             # and a BOLD Monitor, which takes an Equation step of its own after its parameters
-            bold_html = self.hybrid_controller.set_monitors(
-                simulation_length='6000.0', monitors=['BOLD'])
+            bold_html = self.hybrid_controller.set_monitors(monitors=['BOLD'])
             equation_html = self.hybrid_controller.set_monitor_params(
                 'BoldViewModel', period='2000.0', hrf_kernel='Hrf Kernel: Mixture Of Gammas')
 
-        # the Projections step now carries a way onward
-        assert "hybridSubmitTo(this.parentElement, '/burst/hybrid/set_monitors')" in projections_html
+        # the Projections step now carries a way onward, which opens the Monitors step
+        assert "hybridSubmitTo(this.parentElement, '/burst/hybrid/open_monitors')" in projections_html
 
-        # the global configuration step asks what to record and for how long
+        # the global configuration step asks what to record - how long for is asked last - and opens
+        # without refusing anything
         assert 'action="/burst/hybrid/set_monitors"' in monitors_html
-        assert 'simulation_length' in monitors_html
+        assert 'simulation_length' not in monitors_html
         assert 'BOLD' in monitors_html
+        assert 'Field required' not in monitors_html
+        # it opens the Monitors section, which each Monitor's step continues
+        assert 'class="hybrid-monitor-step"' in monitors_html
+        assert 'class="hybrid-monitor-step"' in tavg_html
+        assert 'class="hybrid-monitor-step"' in equation_html
 
         # the first chosen Monitor's own step, with a legend and without the variables of interest
         assert 'action="/burst/hybrid/set_monitor_params/TemporalAverageViewModel"' in tavg_html
@@ -487,19 +498,27 @@ class TestHybridRendering(BaseTransactionalControllerTest):
             self.hybrid_controller.context.set_hybrid_simulator(self.hybrid_simulator)
 
             self._reach_the_projections()
-            self.hybrid_controller.set_monitors(simulation_length='100.0',
-                                                monitors=['Raw recording', 'Temporal average'])
+            self.hybrid_controller.context.hybrid_simulator.simulation_length = 100.0
+            self.hybrid_controller.set_monitors(monitors=['Raw recording', 'Temporal average'])
             summary_html = self.hybrid_controller.set_monitor_params(
                 'TemporalAverageViewModel', period='1.0')
 
         assert 'action="/burst/hybrid/set_simulation_summary"' in summary_html
-        assert 'hybrid-simulation-summary' in summary_html
-        assert 'Raw' in summary_html
-        assert 'every integration step' in summary_html
-        assert '100.0 ms of simulated time' in summary_html
-        # one Subnetwork, so the variable counts trivially agree and the output is region ordered
-        assert 'in the original region order' in summary_html
-        # and the step closes the wizard: a name for this simulation, and the Launch button
-        assert 'name="input_simulation_name_id"' in summary_html
+        # no summary of the Monitors any more
+        assert 'hybrid-simulation-summary' not in summary_html
+        assert 'Samples every' not in summary_html
+        # one Subnetwork, so the variable counts trivially agree: the output is region ordered, and there
+        # is nothing to warn about
+        assert 'different numbers of variables' not in summary_html
+        # it comes after the Monitors section, outside it
+        assert 'class="hybrid-monitor-step"' not in summary_html
+        # and the step closes the wizard: the simulation length and a name for it, asked last, in that
+        # order, and the Launch button, labelled
+        length_at = summary_html.index('name="simulation_length"')
+        name_at = summary_html.index('name="input_simulation_name_id"')
+        assert length_at < name_at
+        assert re.search(r'<input[^>]*name="simulation_length"[^>]*value="100.0"', summary_html)
+        launch = re.search(r'<button name="launch_simulation"[^>]*>\s*Launch', summary_html)
+        assert launch and 'action-launch' not in launch.group(0)
         assert 'hybridLaunchSimulation(this.parentElement)' in summary_html
         assert 'disabled="disabled"' not in summary_html

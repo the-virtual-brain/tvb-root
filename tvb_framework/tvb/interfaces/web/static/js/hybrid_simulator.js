@@ -430,6 +430,15 @@ function hybridSubmitTo(currentForm, url) {
 
             _lockHybridForm(currentForm);
             _appendHybridFragment(fragment);
+
+            // The Subnetwork dynamics step only holds the Subnetwork tabs, so arriving on it from the
+            // Subnetworks step goes straight on to the selected Subnetwork's editor, the way its own Next
+            // would, instead of waiting for that click.
+            const appended = document.getElementById(HYBRID_DYNAMICS_STEP_URL);
+            if (newForm !== null && newForm.id === HYBRID_DYNAMICS_STEP_URL && appended !== null &&
+                currentForm.id === HYBRID_SUBNETWORKS_STEP_URL) {
+                hybridSubmitTo(appended, HYBRID_DYNAMICS_STEP_URL);
+            }
         },
         error: function () {
             displayMessage("Hybrid simulator parameters could not be submitted.", "errorMessage");
@@ -438,8 +447,9 @@ function hybridSubmitTo(currentForm, url) {
 }
 
 /**
- * Step back: drop the current step and hand control back to the one above it, which is already on
- * screen. A form's id is its action url, which is how the previous step is found.
+ * Step back: drop the current step, and any step between it and the one it goes back to, and hand
+ * control back to that one, which is already on screen. A form's id is its action url, which is how the
+ * previous step is found.
  */
 function hybridPreviousStep(currentForm, previousUrl) {
     const previousForm = document.getElementById(previousUrl);
@@ -451,9 +461,9 @@ function hybridPreviousStep(currentForm, previousUrl) {
         return;
     }
 
-    // the Subnetwork editor is one step made of several forms, so it is left as a whole
-    const editor = currentForm.closest("[data-hybrid-editor]");
-    (editor !== null ? editor : currentForm).remove();
+    // Everything under the step returned to goes: the current step - the Subnetwork editor as a whole,
+    // it is one step made of several forms - and any step Previous skips on its way up.
+    _dropHybridStepsAfter(previousForm);
     _unlockHybridForm(previousForm);
     _afterHybridRender();
 }

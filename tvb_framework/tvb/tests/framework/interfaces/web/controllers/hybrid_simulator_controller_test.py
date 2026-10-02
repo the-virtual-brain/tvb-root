@@ -563,49 +563,121 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
             assert draft[subnetwork.id].model is not None
             assert draft[subnetwork.id].integrator is not None
 
-    def test_the_shared_dt_reaches_every_subnetwork_integrator(self):
+    def _edit_step_size(self, dt):
+        """Change the integration step size on the Integrator of the selected Subnetwork."""
+        cherrypy.request.method = "POST"
+        return self.hybrid_controller.set_subnetwork_integrator_params(dt=dt)
+
+    def _integrator_params_dt(self):
+        """The step size the Integrator section of the selected Subnetwork shows."""
+        cherrypy.request.method = "GET"
+        editor = self.hybrid_controller.subnetwork_editor()
+        section = editor['renderer'].editor_sections[3]
+        assert section.form_action_url == HybridSimulatorURLs.SET_SUBNETWORK_INTEGRATOR_PARAMS_URL
+        return section.form.dt.value
+
+    def test_the_dynamics_step_has_no_step_size_of_its_own(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            rendering_rules = self._open_dynamics_step()
+
+        # the step size is edited on the Subnetworks' Integrators, not on the step above them
+        assert not hasattr(rendering_rules['renderer'].form, 'dt')
+
+    def test_a_step_size_edited_on_one_subnetwork_reaches_every_subnetwork(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
             saved = self._two_subnetworks()
             self._open_dynamics_step()
-            # the shared dt is the dynamics step's own field, applied by submitting that step
-            cherrypy.request.method = "POST"
-            self.hybrid_controller.set_subnetwork_dynamics(dt='0.5')
+            self._open_subnetwork_editor()
+
+            self._edit_step_size('0.5')
             draft = self._dynamics_draft()
             hybrid_simulator = self.hybrid_controller.context.hybrid_simulator
-            saved_dts = [subnetwork.dynamics.integrator.dt for subnetwork in saved]
+            saved_dts = [subnetwork.dynamics.integrator.dt for subnetwork in self._saved_subnetworks()]
+
+            # and the other Subnetwork's Integrator shows it too
+            cherrypy.request.method = "POST"
+            self.hybrid_controller.select_subnetwork(subnetwork_id=saved[1].id)
+            shown_on_the_other = self._integrator_params_dt()
 
         assert hybrid_simulator.dt == 0.5
-        # including the Subnetworks configured before the value was last changed
-        for dynamics in draft.values():
-            assert dynamics.integrator.dt == 0.5
+        # every Integrator, the ones being edited and the saved ones alike
+        assert [dynamics.integrator.dt for dynamics in draft.values()] == [0.5, 0.5]
         assert saved_dts == [0.5, 0.5]
+        assert shown_on_the_other == 0.5
 
-    def test_applying_the_shared_dt_is_not_reported_as_an_unsaved_change(self):
+    def test_the_latest_step_size_wins_on_every_subnetwork(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            saved = self._two_subnetworks()
+            self._open_dynamics_step()
+            self._open_subnetwork_editor()
+
+            self._edit_step_size('0.5')
+            cherrypy.request.method = "POST"
+            self.hybrid_controller.select_subnetwork(subnetwork_id=saved[1].id)
+            self._edit_step_size('0.2')
+            draft = self._dynamics_draft()
+            saved_dts = [subnetwork.dynamics.integrator.dt for subnetwork in self._saved_subnetworks()]
+            hybrid_simulator = self.hybrid_controller.context.hybrid_simulator
+
+        assert hybrid_simulator.dt == 0.2
+        assert [dynamics.integrator.dt for dynamics in draft.values()] == [0.2, 0.2]
+        assert saved_dts == [0.2, 0.2]
+
+    def test_a_new_integrator_class_takes_the_shared_step_size(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            saved = self._two_subnetworks()
+            self._open_dynamics_step()
+            self._open_subnetwork_editor()
+
+            self._edit_step_size('0.5')
+            cherrypy.request.method = "POST"
+            self.hybrid_controller.set_subnetwork_integrator(integrator='Stochastic Heun')
+            draft = self._dynamics_draft()
+
+        # switching class does not bring back the new class's default step size
+        assert draft[saved[0].id].integrator.dt == 0.5
+
+    def test_editing_the_step_size_is_not_reported_as_an_unsaved_change(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
             self._two_subnetworks()
             self._open_dynamics_step()
-            cherrypy.request.method = "POST"
-            rendering_rules = self.hybrid_controller.set_subnetwork_dynamics(dt='0.5')
+            self._open_subnetwork_editor()
+            self._edit_step_size('0.5')
             column = self._dynamics_step()
 
-        # dt is a simulation wide setting applied on its own step, not a pending per Subnetwork edit
-        assert not rendering_rules['renderer'].is_modified
+        # dt is a simulation wide setting, stored as soon as it is edited, not a pending per Subnetwork edit
         assert not column['renderer'].is_modified
+        assert not any(choice['is_modified'] for choice in column['renderer'].subnetwork_choices)
+
+    def test_a_step_size_that_is_not_positive_is_refused(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._two_subnetworks()
+            self._open_dynamics_step()
+            self._open_subnetwork_editor()
+            before = self.hybrid_controller.context.hybrid_simulator.dt
+
+            answers = [self._edit_step_size(dt) for dt in ('0', '-1')]
+            after = self.hybrid_controller.context.hybrid_simulator.dt
+            draft = self._dynamics_draft()
+
+        # the section answers with itself and the error, and no Subnetwork's step size changes
+        for answer in answers:
+            renderer = answer['renderer']
+            assert renderer.form_action_url == HybridSimulatorURLs.SET_SUBNETWORK_INTEGRATOR_PARAMS_URL
+            assert renderer.form.dt.errors
+        assert after == before
+        assert [dynamics.integrator.dt for dynamics in draft.values()] == [before, before]
 
     def test_integrator_params_keep_the_shared_dt_when_it_is_not_posted(self):
-        """
-        dt is rendered disabled, and a disabled input is not submitted, so the step has to put the shared
-        value back into the posted data itself.
-        """
         with patch('cherrypy.session', self.sess_mock, create=True):
             self._configured_hybrid_simulator()
             self._open_dynamics_step()
-            cherrypy.request.method = "POST"
-            self.hybrid_controller.set_subnetwork_dynamics(dt='0.25')
             self._open_subnetwork_editor()
+            self._edit_step_size('0.25')
 
             self.hybrid_controller.set_subnetwork_integrator(integrator='Heun')
-            # deliberately no dt in the posted data, the way the browser submits that step
+            # no dt in the posted data: the shared step size is left as it is
             self.hybrid_controller.set_subnetwork_integrator_params()
             draft = self._dynamics_draft()
             saved = self._saved_subnetworks()
@@ -758,11 +830,12 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         assert [section.is_read_only for section in sections] == [False] * 5
         # the sections carry no Next or Previous of their own
         assert all(section.is_editor_section for section in sections[:-1])
-        # the row of actions goes back to the dynamics step, or stores the dynamics and moves on
+        # the row of actions goes back, or stores the dynamics and moves on
         actions = sections[-1]
         assert not actions.is_editor_section
         assert actions.is_dynamics_save_fragment
-        assert actions.previous_form_action_url == HybridSimulatorURLs.SET_SUBNETWORK_DYNAMICS_URL
+        # Previous skips the Subnetwork dynamics step, which only holds the tabs, back to the Subnetworks
+        assert actions.previous_form_action_url == HybridSimulatorURLs.SET_SUBNETWORKS_URL
         assert actions.next_form_action_url == HybridSimulatorURLs.SET_PROJECTIONS_URL
         # Set up region Model is offered on the Model parameters, the section it edits
         assert [section.include_region_model_button for section in sections] == [
@@ -1179,9 +1252,9 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         assert renderer.previous_form_action_url == HybridSimulatorURLs.SAVE_SUBNETWORK_DYNAMICS_URL
         assert renderer.is_projections_fragment
         assert renderer.fragment_title == "Projections"
-        # this step is entered by posting to its own url, so its Next has to post somewhere else
+        # its Next opens the Monitors step, rather than submitting it with nothing chosen
         assert renderer.next_button_enabled
-        assert renderer.next_form_action_url == HybridSimulatorURLs.SET_MONITORS_URL
+        assert renderer.next_form_action_url == HybridSimulatorURLs.OPEN_MONITORS_URL
 
     def test_the_closing_step_offers_a_way_onward(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
@@ -1641,15 +1714,22 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
 
     # ---------------------------------------------------------------- Monitors
 
-    def _monitors_step(self, **data):
+    def _monitors_step(self):
         """Open the Monitors step, the way pressing Next on the Projections step opens it."""
-        cherrypy.request.method = "POST" if data else "GET"
-        return self.hybrid_controller.set_monitors(**data)
+        cherrypy.request.method = "POST"
+        return self.hybrid_controller.open_monitors()
 
     def _choose_monitors(self, names, simulation_length='100.0'):
-        """Submit the Monitors step, which answers with the first Monitor that has parameters."""
+        """
+        Submit the Monitors step, which answers with the first Monitor that has parameters.
+
+        The simulation length is asked on the closing step, which comes after; it is set on the
+        configuration here, the way an earlier pass through that step leaves it, since a Monitor's
+        sampling period is checked against it.
+        """
+        self.hybrid_controller.context.hybrid_simulator.simulation_length = float(simulation_length)
         cherrypy.request.method = "POST"
-        return self.hybrid_controller.set_monitors(monitors=names, simulation_length=simulation_length)
+        return self.hybrid_controller.set_monitors(monitors=names)
 
     def _submit_monitor_params(self, monitor_name, **data):
         cherrypy.request.method = "POST"
@@ -1666,9 +1746,13 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         renderer = rendering_rules['renderer']
         assert renderer.form_action_url == HybridSimulatorURLs.SET_MONITORS_URL
         assert renderer.previous_form_action_url == HybridSimulatorURLs.SET_PROJECTIONS_URL
-        # both of this step's fields: what to record, and for how long
+        assert renderer.is_monitor_step
+        # what to record: how long for is asked last, on the closing step
         names = [field.name for field in renderer.form.ordered_fields]
-        assert names == ['simulation_length', 'monitors']
+        assert names == ['monitors']
+        # opened, not submitted: the configured Monitors are shown, and nothing is refused
+        assert renderer.form.monitors.data == ['Temporal average']
+        assert not renderer.form.monitors.errors
 
     def test_every_region_monitor_is_on_offer(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
@@ -1686,10 +1770,8 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
             self._configured_subnetwork()
             rendering_rules = self._choose_monitors(['Temporal average', 'BOLD'], simulation_length='6000.0')
             stored = [type(monitor).__name__ for monitor in self._configured_monitors()]
-            simulation_length = self.hybrid_controller.context.hybrid_simulator.simulation_length
 
         assert stored == ['TemporalAverageViewModel', 'BoldViewModel']
-        assert simulation_length == 6000.0
 
         renderer = rendering_rules['renderer']
         assert renderer.form_action_url == \
@@ -1745,15 +1827,29 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         assert renderer.monitor_name == 'BOLD monitor - haemodynamic response'
         assert kernel == 'MixtureOfGammas'
 
-    def test_a_sampling_period_that_records_nothing_is_refused(self):
+    def test_a_sampling_period_below_the_step_size_is_refused(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
             self._configured_subnetwork()
-            self._choose_monitors(['Temporal average'], simulation_length='100.0')
-            rendering_rules = self._submit_monitor_params('TemporalAverageViewModel', period='500.0')
+            self._choose_monitors(['Temporal average'])
+            rendering_rules = self._submit_monitor_params('TemporalAverageViewModel', period='0.001')
 
-        # the step hands itself back, which is what the client reads as a refusal of this step
-        assert rendering_rules['renderer'].form_action_url == \
+        # the step hands itself back, which is what the client reads as a refusal of this step, and
+        # says why on the field
+        renderer = rendering_rules['renderer']
+        assert renderer.form_action_url == \
                HybridSimulatorURLs.SET_MONITOR_PARAMS_URL + '/TemporalAverageViewModel'
+        assert 'integration step size' in str(renderer.form.period.errors)
+
+    def test_a_sampling_period_longer_than_the_simulation_waits_for_the_length(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_subnetwork()
+            # a BOLD Monitor samples every 2000 ms by default, longer than the default 1000 ms simulation
+            self._choose_monitors(['Temporal average'], simulation_length='1000.0')
+            rendering_rules = self._submit_monitor_params('TemporalAverageViewModel', period='2000.0')
+
+        # the length is asked last, on the closing step, so the Monitor's step does not refuse it: the
+        # launch does, if the length given there is still shorter
+        assert rendering_rules['renderer'].form_action_url == HybridSimulatorURLs.SET_SIMULATION_SUMMARY_URL
 
     def test_the_last_monitor_reaches_the_summary(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
@@ -1764,12 +1860,13 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         renderer = rendering_rules['renderer']
         assert renderer.form_action_url == HybridSimulatorURLs.SET_SIMULATION_SUMMARY_URL
         assert renderer.is_simulation_summary_fragment
+        assert not renderer.is_monitor_step
         assert renderer.fragment_title == "Simulation"
-        assert renderer.simulation_length == 100.0
-        assert renderer.monitor_rows == [{'name': 'Temporal average', 'period': 1.0, 'is_raw': False}]
-        # and it closes the wizard: the simulation name sits next to the Launch button
+        # and it closes the wizard: the simulation length and name are asked last, next to Launch
         assert renderer.is_launch_fragment
-        assert renderer.form.simulation_name is not None
+        assert [field.name for field in renderer.form.ordered_fields] == \
+               ['simulation_length', 'input_simulation_name_id']
+        assert renderer.form.simulation_length.value == 100.0
 
     def test_the_summary_reports_the_output_layout(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
@@ -1814,6 +1911,21 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         # and every region of the Connectivity is recorded, at its own position
         assert data.shape[2] == self.connectivity.number_of_regions
 
+    def test_the_closing_step_warns_when_the_output_is_not_region_ordered(self):
+        with patch.object(TvbProfile.current.web, 'RENDER_HTML', True), \
+                patch('cherrypy.session', self.sess_mock, create=True):
+            saved, _ = self._two_saved_subnetworks_at_the_projections()
+            # the first Subnetwork watches two variables, the second one
+            saved[0].dynamics.model.variables_of_interest = ('V', 'W')
+            self._choose_monitors(['Temporal average'])
+            html = self._submit_monitor_params('TemporalAverageViewModel', period='1.0')
+
+        assert 'The Subnetworks watch different numbers of variables' in html
+        assert '{}: 2'.format(saved[0].name) in html and '{}: 1'.format(saved[1].name) in html
+        # and nothing else is summarised above the simulation length
+        assert 'Samples every' not in html
+        assert html.index('different numbers of variables') < html.index('name="simulation_length"')
+
     # ---------------------------------------------------------------- Launch
 
     def _reach_the_launch_step(self, simulation_length='20.0'):
@@ -1830,20 +1942,40 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
                               'async_launch_and_prepare_simulation'):
                 # the endpoint answers the browser, so what comes back is serialized JSON
                 answer = json.loads(self.hybrid_controller.launch_simulation(
-                    input_simulation_name_id='my hybrid run'))
+                    simulation_length='30.0', input_simulation_name_id='my hybrid run'))
             assert 'id' in answer, answer
             burst = dao.get_burst_by_id(answer['id'])
+            simulation_length = self.hybrid_controller.context.hybrid_simulator.simulation_length
 
         assert burst.name == 'my hybrid run'
         assert burst.fk_project == self.test_project.id
+        # the length given with the launch is the one simulated
+        assert simulation_length == 30.0
+
+    def test_a_simulation_length_the_monitors_can_not_record_is_refused_at_launch(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._reach_the_launch_step()
+            with patch.object(self.hybrid_controller.simulator_service,
+                              'async_launch_and_prepare_simulation') as launch:
+                answers = [json.loads(self.hybrid_controller.launch_simulation(
+                               simulation_length=length, input_simulation_name_id='a hybrid run'))
+                           for length in ('0', '-5', '0.5')]
+            simulation_length = self.hybrid_controller.context.hybrid_simulator.simulation_length
+
+        # not positive, and shorter than the Temporal average's 1 ms sampling period
+        assert all('error' in answer for answer in answers), answers
+        assert 'positive' in answers[0]['error'] and 'positive' in answers[1]['error']
+        assert 'TemporalAverage' in answers[2]['error'] and 'record nothing' in answers[2]['error']
+        assert not launch.called
+        assert simulation_length == 20.0
 
     def test_an_unusable_simulation_name_is_refused(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
             self._reach_the_launch_step()
             with patch.object(self.hybrid_controller.simulator_service,
                               'async_launch_and_prepare_simulation'):
-                answer = json.loads(
-                    self.hybrid_controller.launch_simulation(input_simulation_name_id='bad/name'))
+                answer = json.loads(self.hybrid_controller.launch_simulation(
+                    simulation_length='20.0', input_simulation_name_id='bad/name'))
 
         assert 'error' in answer
         assert 'Invalid simulation name' in answer['error']
