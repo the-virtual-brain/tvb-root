@@ -161,9 +161,10 @@ class ModularityOCSM(BaseBCT):
         return [measure, value]
 
 
-class ModularityOpCSMU(ModularityOCSM):
+class ModularityOpCSMU(BaseUndirected):
     """
     """
+    _ui_group = BCT_GROUP_MODULARITY
     _ui_name = "Optimal Community Structure and Modularity (Undirected):"
     _ui_description = bct.modularity_und.__doc__
 
@@ -190,19 +191,6 @@ class DistanceDBIN(BaseBCT):
         connectivity = self.get_connectivity(view_model)
         result_arr = bct.distance_bin(connectivity.weights)
         measure = self.build_connectivity_measure(result_arr, connectivity, DISTANCE_MATRIX_TITLE)
-        return [measure]
-
-
-class DistanceDWEI(DistanceDBIN):
-    """
-    """
-    _ui_name = "Distance weighted matrix over a Weighted (directed/undirected) connection matrix"
-    _ui_description = bct.distance_wei.__doc__
-
-    def launch(self, view_model):
-        connectivity = self.get_connectivity(view_model)
-        result = bct.distance_wei(connectivity.weights)[0]
-        measure = self.build_connectivity_measure(result, connectivity, DISTANCE_MATRIX_TITLE)
         return [measure]
 
 
@@ -244,8 +232,7 @@ class DistanceNETW(DistanceDBIN):
         connectivity = self.get_connectivity(view_model)
         result = bct.findwalks(connectivity.weights)
 
-        measure1 = self.build_connectivity_measure(result[0], connectivity, "3D matrix")
-        measure2 = self.build_connectivity_measure(result[2], connectivity, "Walk length distribution")
+        measure = self.build_connectivity_measure(result[0], connectivity, "3D matrix")
         value = self.build_float_value_wrapper(result[1], title="Total number of walks found")
 
-        return [measure1, value, measure2]
+        return [measure, value]

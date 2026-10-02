@@ -26,14 +26,14 @@
 
 import bct
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
-from tvb.adapters.analyzers.bct_adapters import BaseBCT
+from tvb.adapters.analyzers.bct_adapters import BaseBCT, BaseUndirected
 
 BCT_GROUP_DEGREE = AlgorithmTransientGroup("Degree and Similarity Algorithms",
                                            "Brain Connectivity Toolbox", "bctdegree")
 BCT_GROUP_DENSITY = AlgorithmTransientGroup("Density Algorithms", "Brain Connectivity Toolbox", "bctdensity")
 
 
-class Degree(BaseBCT):
+class Degree(BaseUndirected):
     """
     """
     _ui_group = BCT_GROUP_DEGREE
@@ -47,10 +47,10 @@ class Degree(BaseBCT):
         return [measure_index]
 
 
-class DegreeIOD(Degree):
+class DegreeIOD(BaseBCT):
     """
     """
-
+    _ui_group = BCT_GROUP_DEGREE
     _ui_name = "Indegree and outdegree: Directed (binary/weighted) connection matrix"
     _ui_description = bct.degrees_dir.__doc__
 
@@ -90,9 +90,10 @@ class DegreeIOD(Degree):
 #         return [measure_index, value1, value2, value3]
 
 
-class MatchingIndex(Degree):
+class MatchingIndex(BaseBCT):
     """
     """
+    _ui_group = BCT_GROUP_DEGREE
     _ui_name = "Matching Index: Connection/adjacency matrix"
     _ui_description = bct.matching_ind.__doc__
 
@@ -112,7 +113,7 @@ class MatchingIndex(Degree):
 class Strength(Degree):
     """
     """
-    _ui_name = "Strength: Directed weighted connection matrix"
+    _ui_name = "Strength: Undirected weighted connection matrix"
     _ui_description = bct.strengths_und.__doc__
 
     def launch(self, view_model):
@@ -122,9 +123,10 @@ class Strength(Degree):
         return [measure_index]
 
 
-class StrengthISOS(Strength):
+class StrengthISOS(BaseBCT):
     """
     """
+    _ui_group = BCT_GROUP_DEGREE
     _ui_name = "Instrength and Outstrength"
     _ui_description = bct.strengths_dir.__doc__
 
@@ -173,9 +175,10 @@ class DensityDirected(BaseBCT):
         return [value1, value2, value3]
 
 
-class DensityUndirected(DensityDirected):
+class DensityUndirected(BaseUndirected):
     """
     """
+    _ui_group = BCT_GROUP_DENSITY
     _ui_name = "Density Undirected: Undirected (weighted/binary) connection matrix"
     _ui_description = bct.density_und.__doc__
 
