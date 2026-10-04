@@ -94,3 +94,97 @@ def test_cerebellar_mf_flags(overrides):
     cpp_out = _run(_cerebellarMF_with(**overrides), "cpp")
     for (t_nb, d_nb, c_nb), (t_cp, d_cp, c_cp) in zip(nb_out, cpp_out):
         np.testing.assert_allclose(d_cp, d_nb, rtol=1e-3, atol=1e-4)
+
+
+# ---------------------------------------------------------------------------
+# ZerlautAdaptationSecondOrder: the hand-written kernels (mako + C++) must
+# carry the corrected dC_ei equation (upstream tvb-root#800 / Carlu et al.
+# 2020 Eq. 17).  nb-vs-cpp parity alone cannot catch this — both kernels
+# shared the stale term order — so both are compared against the Python
+# model's own dfun with nonzero covariances, where the two orders differ.
+# ---------------------------------------------------------------------------
+
+def _zerlaut_heun_reference(model, x0, dt, nstep):
+    """Pure-Python Heun mirroring the generated kernels (no coupling): k1 at
+    the state, x1 = x + dt*k1 clamped to the model boundaries, k2 at x1,
+    x += dt/2*(k1+k2) clamped again."""
+    lo = {}
+    for k, name in enumerate(model.state_variables):
+        b = (model.state_variable_boundaries or {}).get(name)
+        if b is not None and b[0] is not None:
+            lo[k] = float(b[0])
+
+    def clamp(v):
+        for k, lo_v in lo.items():
+            v[k] = np.maximum(v[k], lo_v)
+        return v
+
+    zero_c = np.zeros((len(model.cvar),) + np.asarray(x0).shape[1:])
+    x = np.array(x0, dtype=np.float64)
+
+    def dfun(state):
+        return np.stack([np.asarray(a, dtype=np.float64)
+                         for a in model.dfun(state, zero_c, 0.0)])
+
+    for _ in range(nstep):
+        k1 = dfun(x)
+        x1 = clamp(x + dt * k1)
+        k2 = dfun(x1)
+        x = clamp(x + dt * 0.5 * (k1 + k2))
+    return x
+
+
+@pytest.mark.parametrize("e0", [0.05, 0.1])
+def test_zerlaut_second_order_matches_python_dfun(e0):
+    from tvb.simulator.models.zerlaut import ZerlautAdaptationSecondOrder
+
+    def build():
+        m = ZerlautAdaptationSecondOrder()
+        m.configure()
+        # nonzero, UNEQUAL covariances: the corrected and stale dC_ei term
+        # orders differ by (C_ee - C_ei)*(dfe_TF_i - dfe_TF_e)
+        # + (C_ii - C_ei)*(dfi_TF_e - dfi_TF_i), which vanishes when the
+        # covariances are equal — equal values would make the test blind
+        x0 = np.zeros((len(m.state_variables), 3, 1))
+        x0[0] = 0.01        # E (battery working regime)
+        x0[1] = 0.01        # I
+        x0[2] = 0.3         # C_ee
+        x0[3] = 0.05        # C_ei
+        x0[4] = 0.5         # C_ii
+        x0[5] = 50.0        # W_e
+        sn = Subnetwork(name="S", model=m, scheme=HeunDeterministic(dt=DT),
+                        nnodes=3)
+        sn.configure()
+        ns = NetworkSet(subnets=[sn], projections=[])
+        ns.configure()
+        return ns, x0
+
+    nstep = 300
+    ns, x0 = build()
+    _, snap_nb = NbHybridBackend().compile(ns, eager=True).run(
+        nstep, initial_states=[x0.copy()], return_snapshot=True)
+    ns2, x0_2 = build()
+    cpp_cn = CppHybridBackend().compile(ns2)
+    _, snap_cpp = cpp_cn.run(nstep, initial_states=[x0_2],
+                             return_snapshot=True)
+
+    ref = _zerlaut_heun_reference(
+        ZerlautAdaptationSecondOrder(), x0, DT, nstep)
+
+    for tag, state in (("nb", snap_nb["states"][0]),
+                       ("cpp", snap_cpp["states"][0])):
+        state = np.asarray(state, dtype=np.float64).reshape(
+            len(ref), ref.shape[1], ref.shape[2])
+        # the corrected term order is a dC_ei property: C_ei is the sensitive
+        # state; E follows through the 0.5*C_ei*d2f feedback
+        # tight enough to separate the two term orders (the corrected
+        # kernel matches the float64 reference to ~1e-8; the stale order
+        # drifts by ~1e-4 over 300 steps)
+        np.testing.assert_allclose(
+            state[3], ref[3], rtol=1e-4, atol=1e-6,
+            err_msg=f"ZerlautAdaptationSecondOrder C_ei ({tag} backend) "
+                    "diverged from the corrected Python dfun")
+        np.testing.assert_allclose(
+            state[0], ref[0], rtol=5e-3, atol=1e-6,
+            err_msg=f"ZerlautAdaptationSecondOrder E ({tag} backend) "
+                    "diverged from the corrected Python dfun")

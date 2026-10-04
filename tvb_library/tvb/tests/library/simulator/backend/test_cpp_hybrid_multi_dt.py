@@ -57,6 +57,7 @@ from tvb.simulator.noise import Additive
 from tvb.simulator.hybrid.network import NetworkSet
 from tvb.simulator.hybrid.subnetwork import Subnetwork
 from tvb.simulator.hybrid.inter_projection import InterProjection
+from tvb.simulator.hybrid.intra_projection import IntraProjection
 from tvb.simulator.hybrid.coupling import Linear as LinearCfun
 from tvb.simulator.hybrid.stimulus_utils import constant_stim
 from tvb.simulator.backend.nb_hybrid import NbHybridBackend
@@ -198,8 +199,11 @@ class _NaiveMultiDtOracle:
             # H: power of two >= horizon+2 like the C++ kernel
             Hh = 1
             src_out_horizons = []
-            for pr in self._all_projections(sn):
-                if pr.source is sn:
+            # intra projections live on the subnetwork itself
+            for pr in (sn.projections or []):
+                src_out_horizons.append(int(getattr(pr, '_horizon', 1)))
+            for pr in self._all_projections(self._ns):
+                if getattr(pr, "source", None) is sn:
                     src_out_horizons.append(int(getattr(pr, '_horizon', 1)))
             while Hh < (max(src_out_horizons, default=0) + 2):
                 Hh <<= 1
@@ -235,8 +239,14 @@ class _NaiveMultiDtOracle:
         by_name = {sn.name: i for i, sn in enumerate(network_set.subnets)}
         self.projections = []
         for pr in self._all_projections(network_set):
-            src_i = by_name[pr.source.name]
-            tgt_i = by_name[pr.target.name]
+            if getattr(pr, "source", None) is None:
+                # intra projection: source and target are the owning subnet
+                owner = next(sn for sn in network_set.subnets
+                             if pr in (sn.projections or []))
+                src_i = tgt_i = by_name[owner.name]
+            else:
+                src_i = by_name[pr.source.name]
+                tgt_i = by_name[pr.target.name]
             W = np.asarray(pr.weights.todense(), dtype=np.float32)
             # per-edge delays: idelays is flat over the weights' CSR entries
             # in CSR order (the projection configure keeps explicit-zero
@@ -308,21 +318,29 @@ class _NaiveMultiDtOracle:
                     if w == 0.0:
                         continue
                     d = int(pr["delays"][j, i])
-                    # pinned read rule (parity_audit.md section 6, decisions
-                    # 1/3): tau = (t-1)/k - d, i0 = floor(tau),
-                    # alpha = frac(tau) = ((t-1) mod k)/k; a zero-delay edge
-                    # has i1 = m+1 (not pushed yet) so alpha is zeroed and
-                    # the value holds x0 (zero-order hold)
-                    i0 = (t - 1) // k - d
-                    s0 = i0 % H
-                    s1 = (i0 + 1) % H
-                    x0 = src["buf"][cv, i, s0]
-                    x1 = src["buf"][cv, i, s1]
-                    if d >= 1:
-                        alpha = np.float32((t - 1) % k) / np.float32(k)
+                    if pr["src"] == pr["tgt"]:
+                        # intra-subnet projection (decision 3): exact
+                        # single-step read (t // k) - 1 - d, never
+                        # interpolated, at every master tick
+                        i0 = t // k - 1 - d
+                        s0 = i0 % H
+                        x = src["buf"][cv, i, s0]
                     else:
-                        alpha = np.float32(0.0)
-                    x = x0 + alpha * (x1 - x0)
+                        # pinned inter read rule (decisions 1/3):
+                        # tau = (t-1)/k - d, i0 = floor(tau),
+                        # alpha = frac(tau) = ((t-1) mod k)/k; a zero-delay
+                        # edge has i1 = m+1 (not pushed yet) so alpha is
+                        # zeroed and the value holds x0 (zero-order hold)
+                        i0 = (t - 1) // k - d
+                        s0 = i0 % H
+                        s1 = (i0 + 1) % H
+                        x0 = src["buf"][cv, i, s0]
+                        x1 = src["buf"][cv, i, s1]
+                        if d >= 1:
+                            alpha = np.float32((t - 1) % k) / np.float32(k)
+                        else:
+                            alpha = np.float32(0.0)
+                        x = x0 + alpha * (x1 - x0)
                     wsum = wsum + np.float32(w) * x
                 wsum = np.float32(pr["scale"]) * wsum
                 tgt["c"][pr["tgt_cvar"], j] += wsum
@@ -565,6 +583,54 @@ def test_linear_ramp_interpolation_bitexact(dt_src, dt_tgt, delay_steps):
 
 
 # ---------------------------------------------------------------------------
+# Slow intra-subnet projections read exactly, never interpolated (decision 3)
+# ---------------------------------------------------------------------------
+
+def _slow_intra_net(delay_steps, nnodes=3):
+    """A k=2 subnetwork with a delayed intra-subnet projection, next to a
+    k=1 subnet that sets the master clock (dt0 = 0.01)."""
+    A = _mpr_subnetwork("A", 0.01, nnodes=2)
+    B = _mpr_subnetwork("B", 0.02, nnodes=nnodes)
+    rng = np.random.RandomState(3)
+    W = np.zeros((nnodes, nnodes), np.float32)
+    for i in range(nnodes):
+        for j in range(nnodes):
+            if i != j and rng.rand() < 0.8:
+                W[i, j] = rng.rand() * 0.5
+    intra = IntraProjection(
+        source_cvar=np.array([0], dtype=np.int_),
+        target_cvar=np.array([0], dtype=np.int_),
+        weights=sp.csr_matrix(W),
+        lengths=sp.csr_matrix((W != 0) * float(delay_steps * 0.02)),
+        cv=1.0, dt=0.02, scale=0.05,
+    )
+    B.projections = [intra]
+    B.configure()
+    ns = NetworkSet(subnets=[A, B], projections=[])
+    ns.configure()
+    return ns
+
+
+@pytest.mark.parametrize("delay_steps", [0, 1, 2])
+def test_slow_intra_exact_read(delay_steps):
+    """Intra-subnet projections never interpolate (decision 3): at master
+    tick t the read is the exact source step (t // k) - 1 - delay — e.g. at
+    an integration tick of a k=2 subnet with delay 1, step t/2 - 1, NOT the
+    alpha=0.5 blend of steps t/2-1 and t/2 that the inter rule would give.
+    Both backends must agree, and the independent naive oracle (which
+    implements the pinned intra rule) must confirm the semantics."""
+    nstep = 40
+    ns = _slow_intra_net(delay_steps)
+    nb_out, cpp_out = _run_pair(ns, nstep)
+    _assert_parity(nb_out, cpp_out)
+    naive = _NaiveMultiDtOracle(ns).run(nstep, chunk_size=1)
+    for (t_nb, d_nb, c_nb), (t_nv, d_nv, c_nv) in zip(nb_out, naive):
+        np.testing.assert_allclose(t_nb, t_nv, rtol=0, atol=0)
+        np.testing.assert_allclose(d_nv, d_nb, rtol=RTOL, atol=ATOL)
+        np.testing.assert_allclose(c_nv, c_nb, rtol=RTOL, atol=ATOL)
+
+
+# ---------------------------------------------------------------------------
 # Stochastic parity (blocker G / decision 8)
 # ---------------------------------------------------------------------------
 
@@ -764,39 +830,52 @@ def test_cache_key_changes_with_dt_vector():
     assert ks[0] != ks[2], "dt vector must invalidate the kernel cache key"
 
 
-def test_cache_key_binds_inprocess_and_disk():
+def test_cache_key_binds_inprocess_and_disk(tmp_path, monkeypatch):
     """Decision 12: the in-process ``_COMPILED_FN_CACHE`` and the disk cache
-    (``~/.cache/tvb/nb_hybrid/nbhybrid_<key>.py``) are keyed by the same
+    (``<cache dir>/nb_hybrid/nbhybrid_<key>.py``) are keyed by the same
     SHA-256 of the rendered source, so a dt-vector change (different rendered
-    source) invalidates both paths together."""
+    source) invalidates both paths together.
+
+    Hermetic: the cache directory is overridden to a temp dir and the
+    in-process cache is emptied for the duration (restored afterwards), so
+    the assertions cannot be satisfied by artifacts left over from earlier
+    sessions or other tests.
+    """
     from tvb.simulator.backend.nb_hybrid import (
         NbHybridBackend as NHB,
         _COMPILED_FN_CACHE,
     )
     import numpy as _np
 
-    ns = _coupled_net(0.01, 0.02, delay_steps=1, scale=0.01)
-    key = _rendered_key(ns)
-    backend = NHB()
-    analysis = backend._analyse(ns)
-    fn = backend._build(
-        '<%include file="nb-hybrid-sim.py.mako"/>',
-        dict(analysis=analysis, np=_np, debug_nojit=False))
-    # in-process path: the compiled fn is stored under exactly this key
-    assert _COMPILED_FN_CACHE[key] is fn
-    # disk path: the artifact name embeds the same key
-    disk_artifact = NHB.get_cache_dir() / f"nbhybrid_{key}.py"
-    assert disk_artifact.exists(), (
-        "nb_hybrid disk cache artifact must be named by the rendered-source "
-        "SHA-256 key")
-    # a different dt vector is a different key -> a different artifact
-    # slot.  (0.02, 0.02): a degenerate all-k=1 vector no other test in
-    # this module builds, so its disk artifact cannot have been created
-    # by an earlier test in the same session (order-independence.)
-    key_deg = _rendered_key(_coupled_net(0.02, 0.02, delay_steps=1,
-                                         scale=0.01))
-    assert key_deg != key
-    assert not (NHB.get_cache_dir() / f"nbhybrid_{key_deg}.py").exists()
+    cache_dir = tmp_path / "nb_hybrid"
+    monkeypatch.setenv("TVB_NHYBRID_CACHE_DIR", str(cache_dir))
+    saved_cache = dict(_COMPILED_FN_CACHE)
+    _COMPILED_FN_CACHE.clear()
+    try:
+        ns = _coupled_net(0.01, 0.02, delay_steps=1, scale=0.01)
+        key = _rendered_key(ns)
+        backend = NHB()
+        analysis = backend._analyse(ns)
+        fn = backend._build(
+            '<%include file="nb-hybrid-sim.py.mako"/>',
+            dict(analysis=analysis, np=_np, debug_nojit=False))
+        # in-process path: the compiled fn is stored under exactly this key
+        assert _COMPILED_FN_CACHE[key] is fn
+        # disk path: the artifact name embeds the same key
+        assert NHB.get_cache_dir() == cache_dir
+        disk_artifact = cache_dir / f"nbhybrid_{key}.py"
+        assert disk_artifact.exists(), (
+            "nb_hybrid disk cache artifact must be named by the "
+            "rendered-source SHA-256 key")
+        # a different dt vector is a different key -> a different artifact
+        # slot, which nothing has created in this fresh cache dir
+        key_deg = _rendered_key(_coupled_net(0.02, 0.02, delay_steps=1,
+                                             scale=0.01))
+        assert key_deg != key
+        assert not (cache_dir / f"nbhybrid_{key_deg}.py").exists()
+    finally:
+        _COMPILED_FN_CACHE.clear()
+        _COMPILED_FN_CACHE.update(saved_cache)
 
 
 def test_cpp_topology_cache_key_includes_dt_vector():

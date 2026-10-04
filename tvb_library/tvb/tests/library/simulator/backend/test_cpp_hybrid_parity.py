@@ -49,9 +49,9 @@ def _projection(src, tgt, n_src, n_tgt, density=0.5, seed=42, scale=1.5):
     return proj
 
 
-def _network_set(nA=3, nB=4, coupled=True):
-    A = _mpr_subnetwork("A", nA)
-    B = _mpr_subnetwork("B", nB)
+def _network_set(nA=3, nB=4, coupled=True, integrator_cls=HeunDeterministic):
+    A = _mpr_subnetwork("A", nA, integrator_cls)
+    B = _mpr_subnetwork("B", nB, integrator_cls)
     projections = []
     if coupled:
         projections.append(_projection(A, B, nA, nB))
@@ -63,11 +63,11 @@ def _network_set(nA=3, nB=4, coupled=True):
 @pytest.mark.parametrize("integrator_cls", [HeunDeterministic, EulerDeterministic])
 def test_cpp_matches_numba_single(integrator_cls):
     nstep = 40
-    ns = _network_set(coupled=True)
+    ns = _network_set(coupled=True, integrator_cls=integrator_cls)
     nb = NbHybridBackend().compile(ns, eager=True)
     nb_out = nb.run(nstep)
 
-    ns2 = _network_set(coupled=True)
+    ns2 = _network_set(coupled=True, integrator_cls=integrator_cls)
     cpp = CppHybridBackend()
     cpp_out = cpp.run_network(ns2, nstep)
 

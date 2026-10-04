@@ -647,8 +647,11 @@ CPH_NOINLINE static void dfun_zerlaut2(float *dx, const float *x, int node,
     dI0[i] = (_TF_i - I + 0.5f*Cee*d2fefe_i + 0.5f*Cei*d2fefi_i + 0.5f*Cei*d2fife_i + 0.5f*Cii*d2fifi_i)/T;
     dCee0[i] = (_TF_e*(1.f/T - _TF_e)/Ne + (E - _TF_e)*(E - _TF_e)
                 + 2.f*Cee*dfe_TF_e + 2.f*Cei*dfi_TF_e - 2.f*Cee)/T;
-    dCei0[i] = ((_TF_e - E)*(_TF_i - I) + Cee*dfe_TF_e + Cei*dfe_TF_i
-                + Cei*dfi_TF_e + Cii*dfi_TF_i - 2.f*Cei)/T;
+    // dC_ei: matches zerlaut.py derivative[3] after the 2nd-order c_ei
+    // correction (upstream PR tvb-root#800): the four population-derivative
+    // terms were swapped relative to Carlu et al. 2020 Eq. 17
+    dCei0[i] = ((_TF_e - E)*(_TF_i - I) + Cee*dfe_TF_i + Cei*dfe_TF_e
+                + Cei*dfi_TF_i + Cii*dfi_TF_e - 2.f*Cei)/T;
     dCii0[i] = (_TF_i*(1.f/T - _TF_i)/Ni + (I - _TF_i)*(I - _TF_i)
                 + 2.f*Cii*dfi_TF_i + 2.f*Cei*dfe_TF_i - 2.f*Cii)/T;
     float muV_e, muV_i, d1;
@@ -1174,7 +1177,12 @@ template <int W> struct proj {
   void apply(const subnet<W> &src, subnet<W> &tgt, int t) const {
     const uint32_t Hm1 = src.H - 1;
     const uint32_t Ksrc = src.K;
-    const bool interp = Ksrc > 1;
+    // Decision 3 (parity_audit.md §6): intra-subnet projections never
+    // interpolate — they read the exact source step (t1/K) - 1 - delay
+    // (the state at the start of the own step being integrated) at every
+    // master tick; only inter-subnet reads with k_src > 1 interpolate.
+    const bool intra = (src_sn == tgt_sn);
+    const bool interp = Ksrc > 1 && !intra;
     const uint32_t t1 = (uint32_t)t + 1u;  // 1-based master tick
     const int nn = tgt.n_node;
     const int nms = src.n_modes, nmt = tgt.n_modes;
@@ -1218,7 +1226,9 @@ template <int W> struct proj {
         }
       } else {
         for (int nz = 0; nz < nnz_total; nz++) {
-          const uint32_t slot = ((uint32_t)t - 1u - del[nz]) & Hm1;
+          // exact single-slot read (legacy K == 1, or intra multi-dt —
+          // decision 3); see the slow-path branch below for the derivation
+          const uint32_t slot = (t1 / Ksrc - 2u - del[nz]) & Hm1;
           for (int m = 0; m < nms && m < 8; m++) {
             const float *b = sbuf1 +
                 (((size_t)idx[nz] * nms + m) * src.H + slot) * W;
@@ -1233,10 +1243,10 @@ template <int W> struct proj {
     // fast path: single source mode, no pre transform, one source cvar,
     // matching target — the dominant case (Linear.a * matvec).  Avoids the
     // per-edge v[] copy / mode loops for W==1 and openmps for wider W.
-    // Unavailable for interpolating projections (non-contiguous paired
-    // reads), so it requires src.K == 1.
+    // Requires a single-dt source (K == 1): its exact legacy slot is the
+    // only read the fast path performs, for intra and inter alike.
     if (nms == 1 && nmt == 1 && !has_pre && src_cvars.size() == 1 &&
-        !interp) {
+        Ksrc == 1) {
       const int scv = src_cvars[0];
       const float *sbuf = src.buf.data() +
           (size_t)scv * src.n_node * src.H * W;
@@ -1287,7 +1297,11 @@ template <int W> struct proj {
           alpha = (del[nz] == 0)
               ? 0.f : (float)((t1 - 1u) % Ksrc) / (float)Ksrc;
         } else {
-          s0 = s1 = ((uint32_t)t - 1u - del[nz]) & Hm1;
+          // exact single-slot read: the legacy K == 1 read and the
+          // multi-dt intra read (decision 3, step (t1/K) - 1 - delay)
+          // share one formula in the C++ slot convention (slot s holds
+          // step s+1); unwrapped negatives land on IC-prefilled slots
+          s0 = s1 = (t1 / Ksrc - 2u - del[nz]) & Hm1;
         }
         const float wgt = w[nz];
         for (int m = 0; m < nms && m < 8; m++) {

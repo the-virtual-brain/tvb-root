@@ -926,7 +926,9 @@ class CppHybridBackend:
             parts.append((pr.src_sn, pr.tgt_sn, pr.cfun_id,
                           pr.n_tgt_nodes, tuple(pr.src_cvars_list),
                           pr.tgt_cvar))
-        return hashlib.md5(repr(parts).encode()).hexdigest()
+        # cache key only, not security-sensitive (Sonar)
+        return hashlib.md5(repr(parts).encode(),
+                           usedforsecurity=False).hexdigest()
 
     def _build_sim(self, sim, analysis, network_set, width):
         """Populate an empty Sim from an analysis (no per-lane params)."""

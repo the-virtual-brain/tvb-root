@@ -29,7 +29,7 @@ warnings.filterwarnings('ignore')   # suppress experimental-API warnings
 import numpy as np
 import scipy.sparse as sp
 import matplotlib
-%matplotlib inline
+matplotlib.use('Agg')   # headless-safe when run as a plain script
 import matplotlib.pyplot as plt
 
 from tvb.simulator.models import MontbrioPazoRoxin, Linear

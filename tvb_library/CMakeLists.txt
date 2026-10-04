@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.15...3.26)
 
-project(tvb_library LANGUAGES CXX)
+# LANGUAGES NONE: no compiler is needed to decide whether this interpreter
+# gets the extension at all (the cp312 stable-ABI guard below may skip it),
+# and source installs on older interpreters must not fail for lack of a
+# C++ toolchain.  CXX is enabled after the guard, right before nanobind.
+project(tvb_library LANGUAGES NONE)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -27,10 +31,9 @@ if (NOT SKBUILD)
   after editing C++ files.")
 endif()
 
-# Try to import all Python components potentially needed by nanobind
-find_package(Python 3.8
-  REQUIRED COMPONENTS Interpreter Development.Module
-  OPTIONAL_COMPONENTS Development.SABIModule)
+# Interpreter only: the version guard below must run before anything that
+# needs development headers or a compiler
+find_package(Python 3.8 REQUIRED COMPONENTS Interpreter)
 
 # The extension targets the cp312 stable ABI (pyproject py-api = cp312);
 # nanobind cannot build it against an older interpreter's headers.  On
@@ -43,6 +46,12 @@ if(Python_VERSION VERSION_LESS 3.12)
       "extension (cp312 stable ABI); building the pure-Python package only")
   return()
 endif()
+
+# From here on the extension is built: compiler and development headers
+enable_language(CXX)
+find_package(Python 3.8
+  REQUIRED COMPONENTS Interpreter Development.Module
+  OPTIONAL_COMPONENTS Development.SABIModule)
 
 # Import nanobind through CMake's find_package mechanism
 find_package(nanobind CONFIG REQUIRED)

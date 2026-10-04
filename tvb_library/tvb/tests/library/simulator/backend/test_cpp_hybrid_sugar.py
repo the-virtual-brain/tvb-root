@@ -40,8 +40,12 @@ class TestNotebookSweep:
             assert w in (1, 8)  # the C++ core only instantiates these
 
     def test_bad_width_rejected(self):
-        with pytest.raises(ValueError):
-            nb.sweep(build_coupled_net(), 10, width=4)
+        # a valid sweep must be supplied: the missing-parameter check fires
+        # before the width validation, and an empty sweep would raise the
+        # wrong error (masking a width regression)
+        with pytest.raises(ValueError, match="width"):
+            nb.sweep(build_coupled_net(), 10, **{"A.eta": [0.1, 0.2]},
+                     width=4)
 
     def test_helpful_error_lists_params(self):
         with pytest.raises(ValueError) as e:

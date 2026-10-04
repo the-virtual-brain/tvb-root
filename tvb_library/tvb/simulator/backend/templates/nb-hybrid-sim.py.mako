@@ -44,9 +44,9 @@ proj_k = {p.name: subnet_k[p.source_subnet] for p in all_projs}
 # its alpha is zeroed and the value holds x0 exactly (decision 3 clamp,
 # zero-order hold).  i1 is also read but only scaled by that zeroed alpha
 # there, so it never contributes.
-def _slot_setup(H, K, indent):
+def _slot_setup(H, K, indent, intra=False):
     pad = " " * indent
-    if K > 1:
+    if K > 1 and not intra:
         # Pinned read rule (parity_audit.md section 6, decisions 1/3): the
         # read position in source-step units is tau = (t-1)/K - idelay (t is
         # the 1-based master tick), so i0 = floor(tau) = (t-1)//K - idelay
@@ -58,11 +58,15 @@ def _slot_setup(H, K, indent):
                 f"{pad}i0m = (i0 + {H}) % {H}\n"
                 f"{pad}i1m = (i0 + 1 + {H}) % {H}\n"
                 f"{pad}alpha_f = nb.float32((t - 1) % {K}) / nb.float32({K})\n")
-    return f"{pad}buf_idx = (t - 1 - idelays[ptr] + {H}) % {H}\n"
+    # single-slot exact read (decision 3, intra-subnet projections): the
+    # source state at the start of the own step being integrated, minus the
+    # delay — step (t // K) - 1 - idelay, never interpolated.  For K == 1
+    # this is bit-for-bit the legacy read (t - 1 - idelay).
+    return f"{pad}buf_idx = (t // {K} - 1 - idelays[ptr] + {H}) % {H}\n"
 
 
-def _read(buf, cv, node, mode, K):
-    if K > 1:
+def _read(buf, cv, node, mode, K, intra=False):
+    if K > 1 and not intra:
         # Zero-delay edges read i1 = m+1, a step not pushed yet (m = newest
         # pushed source step): clamp x1 := x0 (decision 3, zero-order hold)
         # by zeroing the blend weight; idelay >= 1 edges always have i1 <= m.
@@ -86,7 +90,8 @@ def _read(buf, cv, node, mode, K):
     mono_src = (nsrc_m == 1)
     mono_tgt = (ntgt_m == 1)
     K_src = proj_k[p.name]
-    interp = K_src > 1
+    intra = not is_inter
+    interp = K_src > 1 and not intra
     # pre_ct: coupling functions that apply PER-EDGE before weighting
     if ct in ('sigmoidal_jr', 'sigmoidal_jr_legacy', 'tanh', 'pre_sigmoidal', 'pre_sigmoidal_dynamic', 'difference', 'kuramoto'):
         pre_ct = ct
@@ -141,8 +146,8 @@ def compute_coupling_${p.name}(
         cv1 = source_cvar[1]
         for ptr in range(w_data.shape[0]):
             src_node = w_indices[ptr]
-${_slot_setup(source_horizons_map[p.source_subnet], K_src, 12)}
-            global_threshold += ${_read('srcbuf', 'cv1', 'src_node', '0', K_src)}
+${_slot_setup(source_horizons_map[p.source_subnet], K_src, 12, intra)}
+            global_threshold += ${_read('srcbuf', 'cv1', 'src_node', '0', K_src, intra)}
         global_threshold /= nb.float32(w_data.shape[0])
     % else:
     global_threshold = np.zeros(${nsrc_m}, dtype=np.float32)
@@ -150,9 +155,9 @@ ${_slot_setup(source_horizons_map[p.source_subnet], K_src, 12)}
         cv1 = source_cvar[1]
         for ptr in range(w_data.shape[0]):
             src_node = w_indices[ptr]
-${_slot_setup(source_horizons_map[p.source_subnet], K_src, 12)}
+${_slot_setup(source_horizons_map[p.source_subnet], K_src, 12, intra)}
             for m in range(${nsrc_m}):
-                global_threshold[m] += ${_read('srcbuf', 'cv1', 'src_node', 'm', K_src)}
+                global_threshold[m] += ${_read('srcbuf', 'cv1', 'src_node', 'm', K_src, intra)}
         for m in range(${nsrc_m}):
             global_threshold[m] /= nb.float32(w_data.shape[0])
     % endif
@@ -170,16 +175,16 @@ ${_slot_setup(source_horizons_map[p.source_subnet], K_src, 12)}
             for ptr in range(row_start, row_end):
                 w = w_data[ptr]
                 src_node = w_indices[ptr]
-${_slot_setup(source_horizons_map[p.source_subnet], K_src, 16)}
-                edge_val = ${_read('srcbuf', 'cv', 'src_node', '0', K_src)}
+${_slot_setup(source_horizons_map[p.source_subnet], K_src, 16, intra)}
+                edge_val = ${_read('srcbuf', 'cv', 'src_node', '0', K_src, intra)}
                 # Apply pre() PER-EDGE before weighting
                 % if pre_ct == 'sigmoidal_jr':
                 # Classic: cmin + (cmax-cmin)/(1+exp(r*(midpoint-diff)))
                 # cfun_params: [0]=a, [1]=cmin, [2]=cmax, [3]=r, [4]=midpoint
                 cv0 = source_cvar[0]
                 cv1 = source_cvar[1]
-                x0 = ${_read('srcbuf', 'cv0', 'src_node', '0', K_src)}
-                x1 = ${_read('srcbuf', 'cv1', 'src_node', '0', K_src)}
+                x0 = ${_read('srcbuf', 'cv0', 'src_node', '0', K_src, intra)}
+                x1 = ${_read('srcbuf', 'cv1', 'src_node', '0', K_src, intra)}
                 edge_val = cfun_params[1] + (cfun_params[2] - cfun_params[1]) / (nb.float32(1.0) + exp(cfun_params[3] * (cfun_params[4] - (x0 - x1))))
                 % elif pre_ct == 'sigmoidal_jr_legacy':
                 # Legacy: a * 2*e0 / (1+exp(r*(v0-x)))
@@ -194,8 +199,8 @@ ${_slot_setup(source_horizons_map[p.source_subnet], K_src, 16)}
                 # cfun_params: [0]=H, [1]=Q, [2]=G, [3]=P, [5]=globalT
                 cv0 = source_cvar[0]
                 cv1 = source_cvar[1]
-                x0 = ${_read('srcbuf', 'cv0', 'src_node', '0', K_src)}
-                x1 = ${_read('srcbuf', 'cv1', 'src_node', '0', K_src)}
+                x0 = ${_read('srcbuf', 'cv0', 'src_node', '0', K_src, intra)}
+                x1 = ${_read('srcbuf', 'cv1', 'src_node', '0', K_src, intra)}
                 if cfun_params[5] != nb.float32(0.0):
                     x1 = global_threshold
                 edge_val = cfun_params[0] * (cfun_params[1] + nb.float32(math.tanh(cfun_params[2] * (cfun_params[3] * x0 - x1))))
@@ -272,17 +277,17 @@ ${_slot_setup(source_horizons_map[p.source_subnet], K_src, 16)}
             for ptr in range(row_start, row_end):
                 w = w_data[ptr]
                 src_node = w_indices[ptr]
-${_slot_setup(source_horizons_map[p.source_subnet], K_src, 16)}
+${_slot_setup(source_horizons_map[p.source_subnet], K_src, 16, intra)}
                 for m in range(${nsrc_m}):
-                    edge_val = ${_read('srcbuf', 'cv', 'src_node', 'm', K_src)}
+                    edge_val = ${_read('srcbuf', 'cv', 'src_node', 'm', K_src, intra)}
                     # Apply pre() per-edge
                     % if pre_ct == 'sigmoidal_jr':
                     # Classic: cmin + (cmax-cmin)/(1+exp(r*(midpoint-diff)))
                     # cfun_params: [0]=a, [1]=cmin, [2]=cmax, [3]=r, [4]=midpoint
                     cv0 = source_cvar[0]
                     cv1 = source_cvar[1]
-                    x0 = ${_read('srcbuf', 'cv0', 'src_node', 'm', K_src)}
-                    x1 = ${_read('srcbuf', 'cv1', 'src_node', 'm', K_src)}
+                    x0 = ${_read('srcbuf', 'cv0', 'src_node', 'm', K_src, intra)}
+                    x1 = ${_read('srcbuf', 'cv1', 'src_node', 'm', K_src, intra)}
                     edge_val = cfun_params[1] + (cfun_params[2] - cfun_params[1]) / (nb.float32(1.0) + exp(cfun_params[3] * (cfun_params[4] - (x0 - x1))))
                     % elif pre_ct == 'sigmoidal_jr_legacy':
                     # Legacy: a * 2*e0 / (1+exp(r*(v0-x)))
@@ -297,8 +302,8 @@ ${_slot_setup(source_horizons_map[p.source_subnet], K_src, 16)}
                     # cfun_params: [0]=H, [1]=Q, [2]=G, [3]=P, [5]=globalT
                     cv0 = source_cvar[0]
                     cv1 = source_cvar[1]
-                    x0 = ${_read('srcbuf', 'cv0', 'src_node', 'm', K_src)}
-                    x1 = ${_read('srcbuf', 'cv1', 'src_node', 'm', K_src)}
+                    x0 = ${_read('srcbuf', 'cv0', 'src_node', 'm', K_src, intra)}
+                    x1 = ${_read('srcbuf', 'cv1', 'src_node', 'm', K_src, intra)}
                     if cfun_params[5] != nb.float32(0.0):
                         x1 = global_threshold[m]
                     edge_val = cfun_params[0] * (cfun_params[1] + nb.float32(math.tanh(cfun_params[2] * (cfun_params[3] * x0 - x1))))

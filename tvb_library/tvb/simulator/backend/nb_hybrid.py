@@ -2220,9 +2220,18 @@ class NbHybridBackend(MakoUtilMix):
         # Compute per-source-subnet max horizon for shared history buffers
         _all_projs = inter_projs + intra_projs
         source_horizons: dict = {}
-        for _p in _all_projs:
-            src = _p.source_subnet
-            source_horizons[src] = max(source_horizons.get(src, 1), _p.horizon)
+        for _p in inter_projs:
+            source_horizons[_p.source_subnet] = max(
+                source_horizons.get(_p.source_subnet, 1), _p.horizon)
+        for _p in intra_projs:
+            # intra reads reach one step deeper right after a push (the
+            # exact read i0 = t//k - 1 - delay at a tick where the source
+            # has m pushed steps gives i0 = m - 1 - delay, and the slot
+            # would alias step m when H == delay + 1): keep one extra
+            # IC-prefilled slot so the negative range never aliases
+            # (decisions 3/4)
+            source_horizons[_p.source_subnet] = max(
+                source_horizons.get(_p.source_subnet, 1), _p.horizon + 1)
         # Ensure every subnetwork has an entry (default 1 for subnets with no outgoing projections)
         for sn in subnets:
             if sn.name not in source_horizons:
@@ -2646,6 +2655,17 @@ class NbHybridBackend(MakoUtilMix):
     def _sweep_cuda(self, network_set, sweep_descriptor, sweep_values,
                      nstep, monitor, monitor_period, bold_period,
                      chunk_size, initial_states, node_indices):
+        # the CUDA sweep kernel integrates every subnet on every tick and
+        # writes history at t % H — it has no multi-dt support yet.  Refuse
+        # unequal dts so sweep(backend='auto') falls back to the CPU sweep
+        # (which implements the pinned multi-dt semantics); an explicit
+        # backend='cuda' re-raises.
+        dts = {float(sn.scheme.dt) for sn in network_set.subnets}
+        if len(dts) > 1:
+            raise NotImplementedError(
+                "the CUDA sweep kernel does not support multi-dt networks "
+                "yet; use backend='cpu' (the CPU sweep implements the "
+                "multi-dt master-clock semantics)")
         import time as _time_mod
         from tvb.simulator.backend.nb_hybrid_cuda_sweep_backend import NbHybridCUDASweepBackend
 
@@ -2750,17 +2770,11 @@ class NbHybridBackend(MakoUtilMix):
 
         per_step_tavg = result.tavg
         per_step_ctavg = result.ctavg
-        scheme = getattr(network_set.subnets[0], 'scheme', None)
-        if scheme is not None:
-            dt = float(scheme.dt)
-        else:
-            returned_times = np.asarray(result.times)
-            if returned_times.size > 1:
-                dt = float(returned_times[1] - returned_times[0])
-            elif returned_times.size == 1:
-                dt = float(returned_times[0])
-            else:
-                dt = 1.0
+        # multi-dt: sweep time axes (and Bold sampling) live on the master
+        # dt0 grid, exactly like the per-run outputs — NOT the first
+        # subnet's dt, which with dts ordered [0.02, 0.01] would stretch
+        # every master tick to 2 dt0
+        dt = _validate_multi_dt(network_set)
         per_step_times = np.arange(
             1, next(iter(per_step_tavg.values())).shape[1] + 1,
             dtype=np.float64,

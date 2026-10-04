@@ -57,10 +57,13 @@ def _as_timeremoved(ts, indices=None):
     """
     ts = np.asarray(ts, dtype=np.float64)
     if ts.ndim == 1:
-        # a single time series: assume time
-        ts = ts[None, :]
+        # a single time series (time first): give it a singleton region
+        # axis so the series stays ONE element after the move below and
+        # every feature reduces over the whole series (not per sample)
+        ts = ts[:, None]
     if indices is not None:
-        ts = np.take(ts, indices, axis=0)
+        # regions live on axis 1 of the time-first layout (axis 0 is time)
+        ts = np.take(ts, indices, axis=1)
     # move time axis (0) to the end
     ts = np.moveaxis(ts, 0, -1)
     if np.isnan(ts).any() or np.isinf(ts).any():
@@ -72,8 +75,11 @@ def _as_timeremoved(ts, indices=None):
 
 def _safe(fn):
     """Wrap fn(c, ts) -> scalar so failures yield NaN instead of raising."""
-    def _wrapped(ts, **kw):
-        d = _as_timeremoved(ts)
+    import functools
+
+    @functools.wraps(fn)
+    def _wrapped(ts, indices=None, **kw):
+        d = _as_timeremoved(ts, indices)
         if d is None:
             return np.nan
         return fn(d, **kw)
@@ -250,7 +256,13 @@ def psd_raw(ts, fs=1.0, indices=None):
         return np.array([np.nan])
     from scipy import signal
     freqs, psd = signal.welch(d, fs=fs, nperseg=min(256, d.shape[-1]), detrend=False)
-    return np.concatenate([freqs[None, ...], psd], axis=0)
+    # prepend the frequency grid as axis-0 row 0, broadcast across psd's
+    # other leading (mode, ...) axes so concatenation works for any rank
+    # (welch returns (leading..., n_freq))
+    frow = np.broadcast_to(
+        freqs.reshape((1,) * (psd.ndim - 1) + (-1,)),
+        (1,) + psd.shape[1:-1] + psd.shape[-1:])
+    return np.concatenate([frow, psd], axis=0)
 
 
 def spectrum_stats(ts, fs=1.0, indices=None):
@@ -322,7 +334,12 @@ def _accepted(fn, params):
         sig = inspect.signature(fn)
         ok = {}
         for k, v in params.items():
-            if k in sig.parameters and sig.parameters[k].kind is not inspect.Parameter.VAR_POSITIONAL:
+            # 'indices' is a universal option: the _safe wrapper and every
+            # spectral feature accept it even though the underlying fn does
+            # not declare it (functools.wraps shows fn's signature)
+            if k == "indices" or (
+                    k in sig.parameters
+                    and sig.parameters[k].kind is not inspect.Parameter.VAR_POSITIONAL):
                 ok[k] = v
         return ok
     except (TypeError, ValueError):
@@ -355,21 +372,53 @@ def compute_features(ts, features, **params):
 
 
 def feature_table(ts, features=None, **params):
-    """Return a tidy ``(n_regions, n_features)`` float table for a single
+    """Return a tidy ``(n_regions, n_components)`` float table for a single
     time-first series, best for one network / one monitor channel.  Only
     scalar-per-region features are included by default; ``psd_raw``,
     ``moments`` and ``spectrum_stats`` (which are multi-output) must be
-    requested explicitly and are column-joined consistently.
+    requested explicitly.
+
+    Layout: one row per region; each feature contributes one column per
+    output component (scalar features contribute one column).  Supplied
+    options (``fs``, ``bins``, ``order``, ``lo``/``hi``, ...) are forwarded
+    to every feature, which accepts the ones it knows.  ``psd_raw``'s
+    leading frequency header row is stripped (frequencies are implicit in
+    the column order, ``fs`` sets the spacing); its remaining per-region
+    spectra become one column per frequency bin.  Feature results are
+    never truncated: a feature whose region count disagrees with the table
+    raises instead.
     """
     if features is None:
         features = [k for k in FEATURES
                     if k not in ("psd_raw", "moments", "spectrum_stats",
                                  "spectrum_moments")]
-    fs = params.get("fs", 1.0)
-    rows = []
+    cols = []
+    n_regions = None
     for k in features:
-        v = np.asarray(compute_feature(ts, k, fs=fs), dtype=np.float64)
-        v = v.ravel()
-        rows.append(v)
-    n = min(len(r) for r in rows) if rows else 0
-    return np.stack([r[:n] for r in rows], axis=1)
+        v = np.asarray(compute_feature(ts, k, **params), dtype=np.float64)
+        if k == "psd_raw":
+            # axis-0 row 0 is the shared frequency grid header; the rest are
+            # per-region (per region-mode for higher-rank input) spectra,
+            # flattened to rows and transposed into frequency columns
+            if v.ndim < 2 or v.shape[0] < 1:
+                raise ValueError(f"psd_raw returned {v.shape}; expected "
+                                 "(1 + n_regions, ..., n_freq)")
+            v = v[1:].reshape(-1, v.shape[-1])   # (regions..., n_freq) columns
+        elif v.ndim == 2:
+            # multi-output features stack components on axis 0:
+            # (n_components, n_regions) -> (n_regions, n_components)
+            v = v.T
+        else:
+            v = v.reshape(-1, 1)               # (n_regions, 1)
+        if v.ndim != 2:
+            raise ValueError(f"feature {k!r} produced rank-{v.ndim} output")
+        if n_regions is None:
+            n_regions = v.shape[0]
+        elif v.shape[0] != n_regions:
+            raise ValueError(
+                f"feature {k!r} returned {v.shape[0]} region rows; the "
+                f"table has {n_regions} — refusing to truncate")
+        cols.append(v)
+    if not cols:
+        return np.empty((0, 0), dtype=np.float64)
+    return np.concatenate(cols, axis=1)
