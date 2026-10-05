@@ -31,6 +31,9 @@
 """
 
 import os
+import tempfile
+from unittest.mock import patch
+
 import pytest
 from datetime import datetime
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -57,15 +60,17 @@ class TestUtils(TransactionalTestCase):
         """
         file_names = []
         nr_of_files = 100
-        for _ in range(nr_of_files):
-            file_name, _ = get_unique_file_name("", "file_name")
-            fp = open(file_name, 'w')
-            fp.write('test')
-            fp.close()
-            file_names.append(file_name)
+        fixed_time = datetime(2026, 1, 2, 3, 4, 5, 678000)
+
+        with tempfile.TemporaryDirectory() as storage_folder, patch('tvb.core.utils.datetime') as mocked_datetime:
+            mocked_datetime.now.return_value = fixed_time
+            for _ in range(nr_of_files):
+                file_name, _ = get_unique_file_name(storage_folder, "file_name")
+                with open(file_name, 'w') as fp:
+                    fp.write('test')
+                file_names.append(file_name)
+
         assert len(file_names) == len(set(file_names)), 'No duplicate files should be generated.'
-        for file_n in file_names:
-            os.remove(file_n)
 
     def test_string2date(self):
         """
