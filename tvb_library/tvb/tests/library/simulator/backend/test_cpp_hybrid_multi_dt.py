@@ -743,6 +743,54 @@ def test_stimulus_master_grid_parity():
     assert not np.array_equal(nb_out[1][1], nb_out[0][1])
 
 
+def test_sweep_prange_stimulus_master_grid():
+    """Coupling-only CPU prange sweep (n_workers > 1): stimuli are evaluated
+    on the master dt0 grid (decision 7), exactly like the per-run path.
+
+    The prange stimulus builder used to call ``stim.get_coupling(step_idx)``
+    on the raw master-step index, which evaluates the pattern on the target
+    subnet's own dt: on a slow subnet (dt_j = k_j * dt0) a time-varying
+    stimulus then plays k_j times too fast and sweeps disagree with the
+    single-run results.
+    """
+    from tvb.simulator.hybrid.stimulus_utils import pulse_stim
+    from tvb.simulator.backend.nb_hybrid import NbHybridBackend
+
+    nstep = 40
+    A = _mpr_subnetwork("A", 0.01, nnodes=2)
+    B = _mpr_subnetwork("B", 0.02, nnodes=2)
+
+    def build(scale):
+        a = _mpr_subnetwork("A", 0.01, nnodes=2)
+        b = _mpr_subnetwork("B", 0.02, nnodes=2)
+        stim = pulse_stim(b, amplitude=1.0, onset=0.05, period=0.2,
+                          pulse_width=0.05, target_node=0, target_cvar=0,
+                          simulation_length=0.5)
+        b.stimuli = [stim]
+        b.configure()
+        proj = _projection(a, b, 0.01, delay_steps=1, scale=scale)
+        ns = NetworkSet(subnets=[a, b], projections=[proj])
+        ns.configure()
+        return ns
+
+    values = np.array([0.01, 0.05], np.float32)
+    backend = NbHybridBackend()
+    res = backend.sweep(build(float(values[0])),
+                        {"coupling_scale": values}, nstep=nstep,
+                        backend="cpu", n_workers=2)
+    assert res.backend == "cpu-prange"
+    for k, v in enumerate(values):
+        single = backend.run_network(build(float(v)), nstep)[1][1]
+        # the prange kernel is a separate njit(parallel=True) compilation of
+        # the same integration, so allow its float noise (the stimulus-timing
+        # bug this test guards fails loudly long before tolerances matter:
+        # raw get_coupling(step) outruns the pattern axis with an IndexError)
+        np.testing.assert_allclose(res.tavg["B"][k], single,
+                                   rtol=1e-3, atol=1e-4,
+                                   err_msg="prange sweep disagrees with the "
+                                           "single-run stimulus timing")
+
+
 # ---------------------------------------------------------------------------
 # Merge guard (blocker H / decision 9)
 # ---------------------------------------------------------------------------

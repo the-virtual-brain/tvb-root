@@ -404,12 +404,18 @@ def feature_table(ts, features=None, **params):
                 raise ValueError(f"psd_raw returned {v.shape}; expected "
                                  "(1 + n_regions, ..., n_freq)")
             v = v[1:].reshape(-1, v.shape[-1])   # (regions..., n_freq) columns
-        elif v.ndim == 2:
-            # multi-output features stack components on axis 0:
-            # (n_components, n_regions) -> (n_regions, n_components)
-            v = v.T
+        elif k in ("moments", "spectrum_stats", "spectrum_moments"):
+            # these stack their components on a NEW axis 0:
+            # (n_components, regions...) -> (regions..., n_components) columns
+            if v.ndim < 2:
+                v = v.reshape(-1, 1)
+            else:
+                v = v.reshape(v.shape[0], -1).T
         else:
-            v = v.reshape(-1, 1)               # (n_regions, 1)
+            # scalar per region(-mode) element: the leading shape IS the
+            # region-mode row space (time already reduced), so every
+            # element becomes a row and the single scalar a column
+            v = v.reshape(-1, 1)
         if v.ndim != 2:
             raise ValueError(f"feature {k!r} produced rank-{v.ndim} output")
         if n_regions is None:

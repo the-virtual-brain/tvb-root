@@ -106,7 +106,7 @@ class AaaProbe(Model):
     coupling_terms = Final(label="Coupling terms", default=["cx"])
     state_variable_dfuns = Final(
         label="Drift functions",
-        default={"x": "(-x + a * y + cx) / tau", "y": "b * x - y * y * y"},
+        default={"x": "(-x + a * y + cx) / tau + 0.0 * (x % 2.0)", "y": "b * x - y * y * y"},
     )
     variables_of_interest = List(
         of=str, label="VOI", choices=("x", "y"), default=("x", "y"))
@@ -1080,3 +1080,46 @@ def test_unsupported_stock_model_still_runs_via_runtime_fallback(
     assert "DecoBalancedExcInh" in cphb._GEN_IDS
     assert (isolated_backend / "models_gen.so").exists(), \
         "runtime library was not compiled"
+
+
+# ---------------------------------------------------------------------------
+# (k) modulo codegen + node-offset parameter reads (Copilot round 2)
+# ---------------------------------------------------------------------------
+
+def test_modulo_translates_to_a_call_not_infix_fmod():
+    """``x % 2`` must emit a cph_py_mod call, not the infix identifier fmod.
+
+    Translating modulo to the infix symbol ``fmod`` produced ``(x fmod 2.0)``,
+    which is not valid C++: a custom model using % reached compilation with
+    malformed generated source.  The helper also preserves Python's
+    signed-remainder semantics (fmod truncates toward zero).
+    """
+    ctx = {}
+    code = dfungen.translate("x % 2", {"x"}, ctx, set(), allow_mode=False)
+    assert "cph_py_mod(" in code
+    assert " fmod " not in code
+    assert ctx.get("uses_py_mod") is True
+
+
+def test_modulo_rejected_for_complex_valued_models():
+    """Python's complex type has no % operator; codegen must not fake one."""
+    with pytest.raises(ValueError, match="complex"):
+        dfungen.translate("x % 2", {"x"}, {"complex": True}, set(),
+                          allow_mode=False)
+
+
+def test_generated_kernels_read_node_offset_parameters(emitted_stock):
+    """Generated kernels must load parameters through the node-offset pointer.
+
+    ``Sim.set_subnet_params`` packs parameters node-major
+    (node, parameter, lane) and the integration stages pass the whole buffer,
+    so indexing ``parr[k * Wn + i]`` silently gives every node node 0's
+    parameters.  The hand-written kernels in _core.cpp compute
+    ``pk = p + node * n_parm * W``; the generated kernels must do the same.
+    """
+    src, _meta = emitted_stock
+    assert not re.search(r"= \(double\)parr\[", src), \
+        "generated kernel reads parameters without the node offset"
+    assert re.search(r"= \(double\)pk\[", src), \
+        "generated kernel does not load parameters through pk"
+    assert "(void)pk;" not in src

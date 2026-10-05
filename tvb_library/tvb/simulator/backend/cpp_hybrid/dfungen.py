@@ -123,8 +123,18 @@ class Expr2Cpp(ast.NodeVisitor):
             self.ctx["complex_maybe"] = True
             return f"cph_pow({l}, {r})"
         sym = {ast.Add: "+", ast.Sub: "-", ast.Mult: "*", ast.Div: "/",
-               ast.Mod: "fmod", ast.LShift: "<<", ast.RShift: ">>",
-               ast.BitAnd: "&", ast.BitOr: "|", ast.BitXor: "^"}.get(op)
+               ast.LShift: "<<", ast.RShift: ">>", ast.BitAnd: "&",
+               ast.BitOr: "|", ast.BitXor: "^"}.get(op)
+        if op is ast.Mod:
+            if self.ctx.get("complex"):
+                raise ValueError(
+                    "modulo is not supported for complex-valued models "
+                    "(Python's complex type has no % operator)")
+            # Python's % is floor-division remainder (sign of the divisor);
+            # C's fmod truncates toward zero.  Emit a helper instead of the
+            # infix "fmod" identifier, which produced invalid C++.
+            self.ctx["uses_py_mod"] = True
+            return f"cph_py_mod({l}, {r})"
         if sym is None:
             raise ValueError(f"unsupported binop {op}")
         return f"({l} {sym} {r})"
@@ -531,7 +541,10 @@ def _emit_model(mid, model, fns):
     the ordered global+spatial parameter list the kernel indexes ``parr`` with
     (the single source of truth for parameter packing), and ``n_cvar`` is the
     raw coupling-term count — callers clamp it to >= 1 to match the emitted
-    ``n_cvar`` local.  ``fns`` is unused (kept for call-site compatibility).
+    ``n_cvar`` local.  ``fns`` is a shared set of already-emitted helper
+    names (pass one set across a whole emit_sources run so helpers used by
+    several kernels are defined once per translation unit); ``None`` gives
+    the kernel a private set.
     """
     svars = list(model.state_variables)
     cvars = list(model.coupling_terms) if getattr(model, "coupling_terms", None) else []
@@ -588,6 +601,19 @@ def _emit_model(mid, model, fns):
             f"{decls}"
             f"  return {body};\n}}")
 
+    if ctx.get("uses_py_mod"):
+        # one definition per translation unit across all emitted kernels
+        if fns is None:
+            fns = set()
+        if "py_mod" not in fns:
+            fns.add("py_mod")
+            lines.append(
+                "static inline double cph_py_mod(double a, double b) {\n"
+                "  double r = fmod(a, b);\n"
+                "  if (r != 0.0 && ((r < 0.0) != (b < 0.0))) r += b;\n"
+                "  return r;\n"
+                "}")
+
     lines.append(
         f"static void {fn_name}(float *__restrict dxarr, "
         f"const float *__restrict xarr, "
@@ -608,14 +634,13 @@ def _emit_model(mid, model, fns):
                     f"  const double {dn}_lit[{d.size}] = "
                     f"{{ {', '.join(repr(float(x)) for x in d)} }};")
     lines.append("  const float *pk = parr + (size_t)node * n_parm * Wn;")
-    lines.append("  (void)pk;")
     lines.append("  for (int i = 0; i < Wn; i++) {")
     lines.append("    const double pi = M_PI; (void)pi;")
     for k, name in enumerate(params):
         if use_complex:
-            lines.append(f"    const std::complex<double> {name} = cplx((double)parr[{k} * Wn + i]);")
+            lines.append(f"    const std::complex<double> {name} = cplx((double)pk[{k} * Wn + i]);")
         else:
-            lines.append(f"    const double {name} = (double)parr[{k} * Wn + i];")
+            lines.append(f"    const double {name} = (double)pk[{k} * Wn + i];")
     for cname, cval in constants.items():
         lines.append(f"    const double {cname} = {float(cval)!r};")
     for si, sv in enumerate(svars):
@@ -728,7 +753,7 @@ def emit_sources(models: dict = None, strict: bool = False,
     for name, model in sorted(models.items()):
         try:
             code, n_parm, n_cvar, n_svar, parm_names = _emit_model(
-                mid, model, None)
+                mid, model, set())
         except Exception as exc:
             if strict:
                 failures.append((f"{type(model).__module__}.{name}", "emit",

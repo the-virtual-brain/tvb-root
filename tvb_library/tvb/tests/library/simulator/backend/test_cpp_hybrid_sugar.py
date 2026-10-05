@@ -104,3 +104,15 @@ class TestFeatures:
         for name in sorted(feat.FEATURES):
             v = np.asarray(feat.compute_feature(t, name, fs=10.0))
             assert np.isfinite(v).all(), name
+
+    def test_feature_table_multimode_rows(self):
+        # (samples, 3 regions, 2 modes): scalar features return (3, 2), which
+        # is the region-mode row space (NOT components-first) — the table
+        # must keep 6 rows so mixed lists concatenate instead of raising or
+        # transposing mean into 2 bogus rows
+        t = np.random.default_rng(5).standard_normal((256, 3, 2))
+        tab = feat.feature_table(t, features=["mean", "moments", "psd_raw"],
+                                 fs=10.0)
+        assert tab.shape[0] == 6
+        assert np.allclose(tab[:, 0], t.mean(axis=0).ravel())
+        assert np.isfinite(tab).all()
