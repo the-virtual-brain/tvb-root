@@ -3054,6 +3054,7 @@ _RALPH_MODELS = [
     ("tvb.simulator.models.wong_wang_exc_inh", "ReducedWongWangExcInh"),
     ("tvb.simulator.models.epileptor_rs", "EpileptorRestingState"),
     ("tvb.simulator.models.infinite_theta", "DumontGutkin"),
+    ("tvb.simulator.models.gast_solla_kennedy", "GastSollaKennedy"),
     ("tvb.simulator.models.jansen_rit", "ZetterbergJansen"),
     ("tvb.simulator.models.stefanescu_jirsa", "ReducedSetFitzHughNagumo"),
     ("tvb.simulator.models.stefanescu_jirsa", "ReducedSetHindmarshRose"),
