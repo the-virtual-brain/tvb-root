@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -23,11 +23,12 @@
 # https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
-
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
+
+import uuid
 
 import pytest
 
@@ -68,8 +69,9 @@ class TestAlgorithmService(TransactionalTestCase):
 
         self.algorithm_service = AlgorithmService()
         category = dao.get_uploader_categories()[0]
-        self.algorithm = dao.store_entity(model_operation.Algorithm(TEST_ADAPTER_VALID_MODULE,
-                                                                    TEST_ADAPTER_VALID_CLASS, category.id))
+        self.algorithm = dao.store_entity(
+            model_operation.Algorithm(TEST_ADAPTER_VALID_MODULE,
+                                      TEST_ADAPTER_VALID_CLASS, category.id))
 
     def transactional_teardown_method(self):
         dao.remove_entity(model_operation.Algorithm, self.algorithm.id)
@@ -95,7 +97,8 @@ class TestAlgorithmService(TransactionalTestCase):
     def test_get_visualizers_for_group(self, datatype_group_factory):
 
         group, _ = datatype_group_factory()
-        dt_group = dao.get_datatypegroup_by_op_group_id(group.fk_from_operation)
+        dt_group = dao.get_datatypegroup_by_op_group_id(
+            group.fk_from_operation)
         result = self.algorithm_service.get_visualizers_for_group(dt_group.gid)
         # Both discrete and isocline are expected due to the 2 ranges set in the factory
         assert 2 == len(result)
@@ -103,13 +106,16 @@ class TestAlgorithmService(TransactionalTestCase):
         assert IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_CLASS in result_classnames
         assert IntrospectionRegistry.DISCRETE_PSE_ADAPTER_CLASS in result_classnames
 
-    def test_get_launchable_algorithms(self, time_series_region_index_factory, connectivity_factory,
+    def test_get_launchable_algorithms(self, time_series_region_index_factory,
+                                       connectivity_factory,
                                        region_mapping_factory):
 
         conn = connectivity_factory()
         rm = region_mapping_factory()
-        ts = time_series_region_index_factory(connectivity=conn, region_mapping=rm)
-        result, has_operations_warning = self.algorithm_service.get_launchable_algorithms(ts.gid)
+        ts = time_series_region_index_factory(connectivity=conn,
+                                              region_mapping=rm)
+        result, has_operations_warning = self.algorithm_service.get_launchable_algorithms(
+            ts.gid)
         assert 'Analyze' in result
         assert 'View' in result
         assert has_operations_warning is False
@@ -118,7 +124,8 @@ class TestAlgorithmService(TransactionalTestCase):
         """
         Test for the get_algorithm_by_identifier.
         """
-        algo_ret = AlgorithmService.get_algorithm_by_identifier(self.algorithm.id)
+        algo_ret = AlgorithmService.get_algorithm_by_identifier(
+            self.algorithm.id)
         assert algo_ret.id == self.algorithm.id, "ID-s are different!"
         assert algo_ret.module == self.algorithm.module, "Modules are different!"
         assert algo_ret.fk_category == self.algorithm.fk_category, "Categories are different!"
@@ -128,7 +135,8 @@ class TestAlgorithmService(TransactionalTestCase):
         """
         Test flow for trying to build an adapter that does not inherit from ABCAdapter.
         """
-        group = dao.get_algorithm_by_module(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_INVALID_CLASS)
+        group = dao.get_algorithm_by_module(TEST_ADAPTER_VALID_MODULE,
+                                            TEST_ADAPTER_INVALID_CLASS)
         with pytest.raises(IntrospectionException):
             ABCAdapter.build_adapter(group)
 
@@ -136,8 +144,22 @@ class TestAlgorithmService(TransactionalTestCase):
         """
         Test preparation of an adapter.
         """
-        assert isinstance(self.algorithm, model_operation.Algorithm), "Can not find Adapter!"
+        assert isinstance(self.algorithm,
+                          model_operation.Algorithm), "Can not find Adapter!"
         adapter = self.algorithm_service.prepare_adapter(self.algorithm)
         assert isinstance(adapter, DummyAdapter1), "Adapter incorrectly built"
         assert adapter.get_form_class() == DummyAdapter1Form
         assert adapter.get_view_model() == DummyModel
+
+    def test_save_measure_points_selection_accepts_canonical_uuid(
+            self, connectivity_index_factory):
+        connectivity = connectivity_index_factory()
+        canonical_gid = str(uuid.UUID(connectivity.gid))
+
+        self.algorithm_service.save_measure_points_selection(
+            'selection', '[0, 1]', canonical_gid, self.test_project.id)
+
+        selections = self.algorithm_service.get_selections_for_project(
+            self.test_project.id, canonical_gid)
+        assert len(selections) == 1
+        assert selections[0].fk_datatype_gid == connectivity.gid
