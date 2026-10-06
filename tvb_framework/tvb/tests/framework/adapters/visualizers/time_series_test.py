@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -23,13 +23,12 @@
 # https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
-
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.adapters.visualizers.time_series import TimeSeriesDisplay
+from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer, TimeSeriesDisplay
 
 
 class TestTimeSeries(TransactionalTestCase):
@@ -46,7 +45,18 @@ class TestTimeSeries(TransactionalTestCase):
         view_model = viewer.get_view_model_class()()
         view_model.time_series = time_series_index.gid
         result = viewer.launch(view_model)
-        expected_keys = ['t0', 'shape', 'preview', 'labelsStateVar', 'labelsModes',
-                         'mainContent', 'labels', 'labels_json', 'figsize', 'dt']
+        expected_keys = [
+            't0', 'shape', 'preview', 'labelsStateVar', 'labelsModes',
+            'mainContent', 'labels', 'labels_json', 'figsize', 'dt'
+        ]
         for key in expected_keys:
             assert key in result
+
+    def test_connectivity_selection_gid_uses_database_format(
+            self, connectivity_factory):
+        connectivity = connectivity_factory()
+
+        params = ABCSpaceDisplayer.build_params_for_selectable_connectivity(
+            connectivity)
+
+        assert params['measurePointsSelectionGID'] == connectivity.gid.hex
