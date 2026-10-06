@@ -850,10 +850,10 @@ class ZerlautAdaptationSecondOrder(ZerlautAdaptationFirstOrder):
                          ) / self.T
         # Covariance excitatory-inhibitory or inhibitory-excitatory derivation
         derivative[3] = ((_TF_e - E) * (_TF_i - I)
-                         + C_ee * _diff_fe_TF_e
-                         + C_ei * _diff_fe_TF_i
-                         + C_ei * _diff_fi_TF_e
-                         + C_ii * _diff_fi_TF_i
+                         + C_ee * _diff_fe_TF_i
+                         + C_ei * _diff_fe_TF_e
+                         + C_ei * _diff_fi_TF_i
+                         + C_ii * _diff_fi_TF_e
                          - 2. * C_ei
                          ) / self.T
         # Covariance inhibitory-inhibitory derivation

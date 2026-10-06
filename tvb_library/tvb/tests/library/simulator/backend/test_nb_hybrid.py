@@ -468,11 +468,20 @@ class TestNbHybridCompatibilityCheck(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             NbHybridBackend().run_network(nets, nstep=5)
 
-    def test_rejects_mismatched_dt(self):
-        sn1 = _mpr_subnetwork("a", 3, HeunDeterministic)
+    def test_rejects_non_integer_dt_multiple(self):
+        """Multi-dt contract: per-subnet dts must be integer multiples of dt0.
+
+        dt_j = k_j * dt0 with integer k_j >= 1 is legal (k_j == 1 is the
+        single-dt case); dt_j that is not an integer multiple of the
+        smallest dt must raise ValueError so a mismatched clock cannot
+        silently produce wrong trajectories.  (The former blanket rejection
+        of any dt mismatch was relaxed when multi-dt support landed: dt * 2
+        with dt0 = DT is now a valid k = 2 subnetwork.)
+        """
+        sn1 = _mpr_subnetwork("a", 3, HeunDeterministic)  # dt = DT = dt0
         sn2 = _mpr_subnetwork("b", 3, EulerDeterministic)
-        # Give sn2 a different dt
-        sn2.scheme = EulerDeterministic(dt=DT * 2)
+        # 1.5 * DT is not an integer multiple of DT -> reject
+        sn2.scheme = EulerDeterministic(dt=DT * 1.5)
         sn1.configure()
         sn2.configure()
         nets = NetworkSet(subnets=[sn1, sn2], projections=[])

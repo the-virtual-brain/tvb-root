@@ -1,0 +1,231 @@
+name: cpp-hybrid
+
+# Branch-specific CI for the tvbkh development branch: build and test the
+# nanobind C++ hybrid simulator extension. All other workflows are guarded
+# with `if: github.ref_name != 'tvbkh'` while this branch is in development.
+
+on:
+  push:
+    branches:
+      - tvbkh
+  pull_request:
+    branches:
+      - tvbkh
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    name: Build & test cpp_hybrid (ubuntu)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install build toolchain
+        run: pip install nanobind scikit-build-core numpy scipy numba six pytest cmake ninja
+
+      - name: Editable install of tvb-library (builds the extension)
+        working-directory: tvb_library
+        run: pip install -e . --no-build-isolation -Ceditable.rebuild=true
+
+      - name: Verify the extension imports and binds
+        run: |
+          python -c "import tvb.simulator.backend.cpp_hybrid as cph; import tvb.simulator.backend.cpp_hybrid._cpp_hybrid as m; print(m.__file__); assert m.__file__.endswith(('.so', '.pyd'))"
+
+      - name: Run backend test suites (contract + sugar + multi-dt + monitors)
+        working-directory: tvb_library
+        run: |
+          python -m pytest tvb/tests/library/simulator/backend/test_cpp_hybrid_core.py \
+                            tvb/tests/library/simulator/backend/test_cpp_hybrid_parity.py \
+                            tvb/tests/library/simulator/backend/test_cpp_hybrid_sweep.py \
+                            tvb/tests/library/simulator/backend/test_cpp_hybrid_sugar.py \
+                            tvb/tests/library/simulator/backend/test_cpp_hybrid_multi_dt.py \
+                            tvb/tests/library/simulator/backend/test_cpp_hybrid_monitors.py \
+                            -q -p no:cacheprovider
+
+      # The nb_hybrid reference backend suite: every cpp_hybrid parity
+      # contract is defined against it (parity_audit.md), and the battery
+      # below re-runs the same tests against the C++ backend by patching
+      # NbHybridBackend = CppHybridBackend.
+      - name: Run the nb_hybrid reference suite
+        working-directory: tvb_library
+        run: |
+          python -m pytest tvb/tests/library/simulator/backend/test_nb_hybrid.py \
+                            -q -p no:cacheprovider
+
+      # Full battery (all of test_nb_hybrid.py against CppHybridBackend).
+      # The former 2-class spot-check was exactly the blind spot that let
+      # a heap-buffer-overflow in the ctavg accumulator (cacc missing
+      # n_modes, multi-mode subnets) ship: the mode-map classes crash the
+      # full battery, and only those classes were not run.
+      - name: Run the full backend battery (nb tests vs the C++ backend)
+        working-directory: tvb_library
+        run: |
+          python -m pytest tvb/tests/library/simulator/backend/test_cpp_hybrid_battery.py \
+                            -q -p no:cacheprovider
+
+      - name: Run the generated-kernel (buildgen) tests
+        working-directory: tvb_library
+        run: |
+          python -m pytest tvb/tests/library/simulator/backend/test_cpp_hybrid_buildgen.py \
+                            -q -p no:cacheprovider
+
+      - name: Auto-rebuild smoke test (touch _core.cpp, fresh import)
+        working-directory: tvb_library
+        run: |
+          touch tvb/simulator/backend/cpp_hybrid/_core.cpp
+          python -c "import tvb.simulator.backend.cpp_hybrid; print('rebuilt + import OK')"
+
+      - name: Build wheel (contains the compiled extension)
+        working-directory: tvb_library
+        run: |
+          pip wheel . --no-deps -w dist
+          python -c "import zipfile,glob; z=zipfile.ZipFile(glob.glob('dist/tvb_library*.whl')[0]); ext=[n for n in z.namelist() if n.endswith('.so')]; assert ext, 'extension missing from wheel'; print('wheel contains:', ext)"
+
+      # The permanent guarantee that a shipped wheel carries the build-time
+      # generated dfuns: install the wheel built above into a throwaway venv
+      # (nothing from the checkout on sys.path) and check the extension's
+      # built-in generic model table, then run a generic-route model with the
+      # runtime generator made unable to run.  If the wheel's extension had no
+      # generated kernels, that model would need g++ and this step would fail.
+      - name: Wheel carries the built-in generic kernels (throwaway venv)
+        working-directory: ${{ runner.temp }}
+        run: |
+          python -m venv wheel-venv
+          ./wheel-venv/bin/pip install "$GITHUB_WORKSPACE/tvb_library/dist/"tvb_library-*.whl
+          ./wheel-venv/bin/python - <<'PY'
+          import numpy as np
+          import tvb
+          from tvb.simulator.backend.cpp_hybrid import _cpp_hybrid, dfungen
+          from tvb.simulator.backend.cpp_hybrid.backend import CppHybridBackend
+
+          # must be the wheel in the throwaway venv, not the checkout
+          print("tvb package:", tvb.__file__)
+          print("extension:", _cpp_hybrid.__file__)
+          assert "wheel-venv" in tvb.__file__, tvb.__file__
+          assert _cpp_hybrid.__file__.endswith((".so", ".pyd")), _cpp_hybrid.__file__
+
+          table = _cpp_hybrid.generic_model_table()
+          assert table, "wheel extension carries no built-in generic model table"
+          ids = sorted(int(m["mid"]) for m in table.values())
+          print(f"built-in generic models: {len(table)}, ids {ids[0]}..{ids[-1]}")
+          assert ids == list(range(100, 100 + len(ids))), ids
+          # the build emits the SUPPORTED model set (--only-supported, 25
+          # expression-driven kernels; the two numba-only supported models
+          # are hand-written ids 0..12), so 26 is no longer the expectation
+          assert len(table) == 25, f"expected 25 built-in models, got {len(table)}"
+          # every SUPPORTED expression-driven model dfungen discovers in
+          # the installed package has a kernel (models outside the
+          # supported set intentionally stay on the runtime g++ fallback)
+          discovered = dfungen.collect_models(only_supported=True)
+          missing = sorted(set(discovered) - set(table))
+          assert not missing, f"models with no built-in kernel: {missing}"
+
+          def no_runtime_generation(*args, **kwargs):
+              raise AssertionError(
+                  "wheel backend fell back to runtime dfun generation "
+                  "(needs a compiler); the built-in kernels are missing")
+
+          dfungen.generate_lib = no_runtime_generation
+
+          from tvb.simulator.integrators import HeunDeterministic
+          from tvb.simulator.hybrid.network import NetworkSet
+          from tvb.simulator.hybrid.subnetwork import Subnetwork
+          from tvb.simulator.models.infinite_theta import CoombesByrne
+
+          model = CoombesByrne()
+          model.configure()
+          subnet = Subnetwork(name="S", model=model,
+                              scheme=HeunDeterministic(dt=0.01), nnodes=3)
+          subnet.configure()
+          net = NetworkSet(subnets=[subnet], projections=[])
+          net.configure()
+          data = np.asarray(CppHybridBackend().run_network(net, 20)[0][1])
+          assert data.shape == (20, 2, 3, 1), data.shape
+          assert np.all(np.isfinite(data)) and np.any(data != 0.0)
+          print("wheel generic model run OK:", data.shape)
+          PY
+
+  # Wheel building mirroring the original tvbk extension repo's wheels.yml:
+  # an sdist plus a cibuildwheel matrix, here building the tvb_library package
+  # (which embeds the compiled extension) instead of a standalone project.
+  build_sdist:
+    name: SDist (tvb_library + cpp ext)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build SDist
+        run: pipx run build --sdist tvb_library
+      - name: Check metadata
+        run: pipx run twine check tvb_library/dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-sdist
+          path: tvb_library/dist/*.tar.gz
+
+  build_wheels:
+    name: Wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-14, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pypa/cibuildwheel@v4.2.1
+        with:
+          package-dir: tvb_library
+        env:
+          # Wheel support matrix & decision (recorded 2026-09, handoff item 7):
+          # keep the cp312 stable-ABI pin; intentionally do NOT widen to
+          # cp310/cp311. Rationale is recorded in
+          # tvb_library/tvb/simulator/backend/cpp_hybrid/README.md
+          # ("Support matrix & wheel policy"):
+          #   - the extension is built against the CPython 3.12 stable ABI
+          #     (pyproject.toml [tool.scikit-build.wheel] py-api = cp312), so
+          #     one cp312-abi3 wheel serves CPython >= 3.12 (3.12/3.13/3.14+);
+          #     it cannot load on <3.12 by construction;
+          #   - hybrid Python code needs >= 3.10 (PEP 604), but CPython 3.10
+          #     reaches EOL Oct 2026 and 3.11 Oct 2027. With the static cp312
+          #     py-api, cibuildwheel cp310/cp311 builds would still emit
+          #     cp312-abi3 wheels (the tag follows the ABI compile target, not
+          #     the build interpreter), so widening needs per-version py-api
+          #     config plus two extra C++ compiles x 3 OSes - not warranted
+          #     on this dev branch (wheels go to artifacts, not PyPI).
+          #   - OS/arch matrix: ubuntu x86_64 / macos-14 arm64 / windows
+          #     x86_64 (below).
+          # Portability caveat (predates this work): the extension is compiled
+          # with -march=native (CMakeLists.txt GNU flags; also the runtime g++
+          # fallback in dfungen.py), so baked wheels are tuned to the build
+          # runner's CPU - x86_64 wheels assume the ubuntu-latest (AVX2-class)
+          # baseline; older CPUs may not run them.
+          CIBW_BUILD: 'cp312-*'
+          CIBW_SKIP: 'pp* *i686 *win32 *musl* *universal2 cp38-* cp39-* cp310-* cp311-*'
+          CIBW_TEST_REQUIRES: numpy
+          CIBW_TEST_COMMAND: >-
+            python -c "import tvb.simulator.backend.cpp_hybrid as cph; import tvb.simulator.backend.cpp_hybrid._cpp_hybrid as m; print(m.__file__); assert m.__file__.endswith(('.so', '.pyd'))"
+
+      - name: Verify clean directory
+        run: git diff --exit-code
+        shell: bash
+
+      - uses: actions/upload-artifact@v4
+        with:
+          path: wheelhouse/*.whl
+          name: dist-${{ matrix.os }}
+
+  collect:
+    name: Collect wheel artifacts
+    needs: [build-test, build_sdist, build_wheels]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dist-*
+          merge-multiple: true
+          path: dist
+      - run: find dist -type f | sort
