@@ -566,6 +566,30 @@ class ReducedSetHindmarshRose(ReducedSetBase):
     m_i = None
     n_i = None
 
+    @property
+    def A_ik(self):
+        return self.Aik
+
+    @A_ik.setter
+    def A_ik(self, value):
+        self.Aik = value
+
+    @property
+    def B_ik(self):
+        return self.Bik
+
+    @B_ik.setter
+    def B_ik(self, value):
+        self.Bik = value
+
+    @property
+    def C_ik(self):
+        return self.Cik
+
+    @C_ik.setter
+    def C_ik(self, value):
+        self.Cik = value
+
     dfun_mode = "combined"
     coupling_terms = ["c_xi", "c_alpha"]
     parameter_names = [
@@ -684,6 +708,7 @@ class ReducedSetHindmarshRose(ReducedSetBase):
         self.Aik = numpy.dot(intcVdI, intG1VdI).T
         self.Bik = numpy.dot(intcVdI, trapz(G2 * U, Iu, axis=1)[newaxis, :])
         self.Cik = numpy.dot(intcUdI, intG1VdI).T
+
 
         self.a_i = self.a * trapz(cV * V**3, Iv, axis=1)[newaxis, :]
         self.e_i = self.a * trapz(cU * U**3, Iu, axis=1)[newaxis, :]
