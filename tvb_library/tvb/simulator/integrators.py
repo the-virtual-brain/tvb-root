@@ -292,31 +292,56 @@ class HeunDeterministic(Integrator):
     """
 
     n_dx = 2
+    stages = 1
+
+    # def scheme(self, X, dfun, coupling, local_coupling, stimulus):
+    #     r"""
+    #     From [1]_:
+    #
+    #     .. math::
+    #         X_{n+1} &= X_n + dt (dX(t_n, X_n) +
+    #                              dX(t_{n+1}, \tilde{X}_{n+1})) / 2 \\
+    #         \tilde{X}_{n+1} &= X_n + dt dX(t_n, X_n)
+    #
+    #     cf. Equation 1.11, page 283.
+    #
+    #     """
+    #     #import pdb; pdb.set_trace()
+    #     m_dx_tn = dfun(X, coupling, local_coupling)
+    #     inter = X + self.dt * (m_dx_tn + stimulus)
+    #     self.integration_bound_and_clamp(inter)
+    #
+    #     dX = (m_dx_tn + dfun(inter, coupling, local_coupling)) * self.dt / 2.0
+    #
+    #     X_next = X + dX + self.dt * stimulus
+    #     self.integration_bound_and_clamp(X_next)
+    #
+    #     return X_next
 
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
-        r"""
-        From [1]_:
-
-        .. math::
-            X_{n+1} &= X_n + dt (dX(t_n, X_n) + 
-                                 dX(t_{n+1}, \tilde{X}_{n+1})) / 2 \\
-            \tilde{X}_{n+1} &= X_n + dt dX(t_n, X_n)
-
-        cf. Equation 1.11, page 283.
-
-        """
-        #import pdb; pdb.set_trace()
-        m_dx_tn = dfun(X, coupling, local_coupling)
+        # If batched coupling is passed, shape is (2, ...)
+        # Unpack batched stage couplings if provided, else use single coupling for all stages
+        if hasattr(coupling, "ndim") and coupling.ndim > X.ndim:
+            c_tn = coupling[0]
+            c_inter = coupling[1]
+        elif isinstance(coupling, (list, tuple)) and len(coupling) == 2:
+            c_tn = coupling[0]
+            c_inter = coupling[1]
+        else:
+            c_tn = coupling
+            c_inter = coupling
+        # Predictor stage at tn
+        m_dx_tn = dfun(X, c_tn, local_coupling)
         inter = X + self.dt * (m_dx_tn + stimulus)
         self.integration_bound_and_clamp(inter)
 
-        dX = (m_dx_tn + dfun(inter, coupling, local_coupling)) * self.dt / 2.0
+        # Corrector stage at tn+1 using c_inter
+        dX = (m_dx_tn + dfun(inter, c_inter, local_coupling)) * self.dt / 2.0
 
         X_next = X + dX + self.dt * stimulus
         self.integration_bound_and_clamp(X_next)
 
         return X_next
-
 
 class HeunStochastic(IntegratorStochastic):
     """
@@ -327,38 +352,76 @@ class HeunStochastic(IntegratorStochastic):
 
     n_dx = 2
 
+    # def scheme(self, X, dfun, coupling, local_coupling, stimulus):
+    #     """
+    #     From [2]_:
+    #
+    #     .. math::
+    #         X_i(t) = X_i(t-1) + dX(X_i(t)/2 + dX(X_i(t-1))) dt + g_i(X) Z_1
+    #
+    #     in our case, :math:`noise = Z_1`
+    #
+    #     See page 1180.
+    #
+    #     """
+    #     noise = self.noise.generate(X.shape)
+    #     noise_gfun = self.noise.gfun(X)
+    #     if (noise_gfun.shape != (1,) and noise.shape[0] != noise_gfun.shape[0]):
+    #         msg = str("Got shape %s for noise but require %s."
+    #                   " You need to reconfigure noise after you have changed your model."%(
+    #                    noise_gfun.shape, (noise.shape[0], noise.shape[1])))
+    #         raise Exception(msg)
+    #
+    #     m_dx_tn = dfun(X, coupling, local_coupling)
+    #
+    #     noise *= noise_gfun
+    #
+    #     inter = X + self.dt * m_dx_tn + noise + self.dt * stimulus
+    #     self.integration_bound_and_clamp(inter)
+    #
+    #     dX = (m_dx_tn + dfun(inter, coupling, local_coupling)) * self.dt / 2.0
+    #
+    #     X_next = X + dX + noise + self.dt * stimulus
+    #     self.integration_bound_and_clamp(X_next)
+    #
+    #     return X_next
+
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
-        """
-        From [2]_:
+        # Unpack batched stage couplings if provided, else use single coupling for all stages
+        if hasattr(coupling, "ndim") and coupling.ndim > X.ndim:
+            c_tn = coupling[0]
+            c_inter = coupling[1]
+        elif isinstance(coupling, (list, tuple)) and len(coupling) == 2:
+            c_tn = coupling[0]
+            c_inter = coupling[1]
+        else:
+            c_tn = coupling
+            c_inter = coupling
 
-        .. math::
-            X_i(t) = X_i(t-1) + dX(X_i(t)/2 + dX(X_i(t-1))) dt + g_i(X) Z_1
-
-        in our case, :math:`noise = Z_1`
-
-        See page 1180.
-
-        """
+        # Sample and scale Wiener noise increment
         noise = self.noise.generate(X.shape)
         noise_gfun = self.noise.gfun(X)
         if (noise_gfun.shape != (1,) and noise.shape[0] != noise_gfun.shape[0]):
             msg = str("Got shape %s for noise but require %s."
-                      " You need to reconfigure noise after you have changed your model."%(
-                       noise_gfun.shape, (noise.shape[0], noise.shape[1])))
+                      " You need to reconfigure noise after you have changed your model." % (
+                          noise_gfun.shape, (noise.shape[0], noise.shape[1])))
             raise Exception(msg)
-
-        m_dx_tn = dfun(X, coupling, local_coupling)
 
         noise *= noise_gfun
 
+        # Stage 1: Initial drift and predictor projection including noise kick
+        m_dx_tn = dfun(X, c_tn, local_coupling)
         inter = X + self.dt * m_dx_tn + noise + self.dt * stimulus
         self.integration_bound_and_clamp(inter)
 
-        dX = (m_dx_tn + dfun(inter, coupling, local_coupling)) * self.dt / 2.0
+        # Stage 2: Corrector drift evaluation using intermediate coupling
+        dX = (m_dx_tn + dfun(inter, c_inter, local_coupling)) * self.dt / 2.0
 
+        # Final state assembly retaining identical full-step noise increment
         X_next = X + dX + noise + self.dt * stimulus
         self.integration_bound_and_clamp(X_next)
 
+        print("DEBUG COUPLING SHAPE:", getattr(coupling, "shape", type(coupling)))
         return X_next
 
 

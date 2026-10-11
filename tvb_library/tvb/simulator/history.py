@@ -70,6 +70,9 @@ class BaseHistory(StaticAttr):
     def query(self, step, out=None):
         raise NotImplemented
 
+    def query_stages(self, step, stage_offsets=(0, 1)):
+        raise NotImplemented
+
     @classmethod
     def from_simulator(cls, sim, initial_conditions=None):
         """
@@ -200,6 +203,23 @@ class DenseHistory(BaseHistory):
         self.current_state = self.buffer[(step - 1) % self.n_time]
         return self.current_state, self.delayed_state
 
+    def query_stages(self, step, stage_offsets=(0, 1)):
+        r"""
+        Fetch delayed states for multiple integration stages in a single indexing operation.
+
+        :param step: Current simulation step index.
+        :param stage_offsets: Sequence of integer or rounded step offsets for each stage.
+        :return: (current_stages, delayed_stages)
+                 current_stages has shape (n_stages, n_cvar, n_node, n_mode)
+                 delayed_stages has shape (n_stages, n_node, n_cvar, n_node, n_mode)
+        """
+        offsets = numpy.asarray(stage_offsets, dtype=int)[:, numpy.newaxis, numpy.newaxis, numpy.newaxis]
+        time_idx = (step - 1 + offsets - self.es_idelays[numpy.newaxis, ...] + self.n_time) % self.n_time
+        delayed_stages = self.buffer[time_idx, self.es_icvar[numpy.newaxis, ...], self.es_node_ids[numpy.newaxis, ...]]
+        current_time_idx = (step - 1 + numpy.asarray(stage_offsets, dtype=int)) % self.n_time
+        current_stages = self.buffer[current_time_idx]
+        return current_stages, delayed_stages
+
     def update(self, step, new_state):
         self.buffer[step % self.n_time] = new_state[self.cvars]
 
@@ -247,6 +267,25 @@ class SparseHistory(DenseHistory):
         current, delayed = self.query_sparse(step)
         self.delayed_state.transpose((1, 0, 2, 3))[:, self.nnz_mask] = delayed
         return current, self.delayed_state
+
+    def query_stages(self, step, stage_offsets=(0, 1)):
+        r"""
+        Fetch delayed states across non-zero weight connections for multiple integration
+        stages in a single vectorized memory gather.
+
+        :param step: Current simulation step index.
+        :param stage_offsets: Sequence of integer or rounded step offsets for each stage.
+        :return: (current_stages, delayed_stages)
+                 current_stages has shape (n_stages, n_cvar, n_node, n_mode)
+                 delayed_stages has shape (n_stages, n_cvar, n_nnzw, n_mode)
+        """
+        offsets = numpy.asarray(stage_offsets, dtype=int).reshape((-1, 1))
+        time_indices = (step - 1 + offsets - self.nnz_idelays + self.n_time) % self.n_time
+        time_indices = (time_indices * self.time_stride)[:, :, numpy.newaxis]
+        delayed_stages = self.buffer.take(time_indices + self.const_indices[numpy.newaxis, ...])
+        current_time_idx = (step - 1 + numpy.asarray(stage_offsets, dtype=int)) % self.n_time
+        current_stages = self.buffer[current_time_idx]
+        return current_stages, delayed_stages
 
     def query_sparse(self, step):
         time_indices = ((step - 1 - self.nnz_idelays + self.n_time) % self.n_time) # type: numpy.ndarray
