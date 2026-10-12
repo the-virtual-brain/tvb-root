@@ -60,6 +60,24 @@ class TestHybridSimulatorService(object):
         assert list(self.subnetworks[0].node_indices) == list(range(self.NUMBER_OF_REGIONS))
         self._assert_valid_partition(self.subnetworks)
 
+    def test_region_labels_read_from_storage_are_strings(self, tmpdir):
+        from unittest.mock import patch
+        from tvb.adapters.datatypes.h5.connectivity_h5 import ConnectivityH5
+        from tvb.datatypes.connectivity import Connectivity
+
+        connectivity = Connectivity(region_labels=numpy.array(['lA1', 'rV2']), weights=numpy.ones((2, 2)),
+                                    tract_lengths=numpy.ones((2, 2)), centres=numpy.zeros((2, 3)))
+        path = str(tmpdir.join('Connectivity.h5'))
+        with ConnectivityH5(path) as conn_h5:
+            conn_h5.store(connectivity)
+
+        # H5 hands the labels back as bytes
+        with patch('tvb.core.neocom.h5.h5_file_for_gid', lambda gid: ConnectivityH5(path)):
+            labels = self.service.get_region_labels(connectivity.gid)
+
+        assert labels == ['lA1', 'rV2']
+        assert all(type(label) is str for label in labels)
+
     def test_default_names_do_not_repeat(self):
         names = set()
         for _ in range(30):

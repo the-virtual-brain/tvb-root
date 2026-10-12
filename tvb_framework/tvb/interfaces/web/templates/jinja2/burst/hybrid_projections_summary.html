@@ -15,8 +15,6 @@
             <th scope="col">From</th>
             <th scope="col">To</th>
             <th scope="col">Coupling variables</th>
-            <th scope="col">Coupling</th>
-            <th scope="col">Speed</th>
         </tr>
         {% for row in included_rows %}
             <tr class="hybrid-projection-row is-{{ row.kind | lower }}">
@@ -30,8 +28,6 @@
                               title="A Model changed, and no longer has the coupling variables chosen before">reset to the defaults</span>
                     {% endif %}
                 </td>
-                <td class="hybrid-summary-count">{{ row.coupling }} &times; {{ row.scale }}</td>
-                <td class="hybrid-summary-count">{{ row.cv }} mm/ms</td>
             </tr>
         {% endfor %}
     </table>

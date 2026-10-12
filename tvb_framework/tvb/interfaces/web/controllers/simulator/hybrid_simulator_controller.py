@@ -1013,8 +1013,8 @@ class HybridSimulatorController(BurstBaseController):
         candidate = copy.deepcopy(projection)
 
         if is_valid:
-            candidate.source_cvar = list(form.source_cvar.data)
-            candidate.target_cvar = list(form.target_cvar.data)
+            candidate.source_cvar = [form.source_cvar.data]
+            candidate.target_cvar = [form.target_cvar.data]
             candidate.scale = form.scale.data
             candidate.cv = form.cv.data
             coupling_class = form.coupling.data.value

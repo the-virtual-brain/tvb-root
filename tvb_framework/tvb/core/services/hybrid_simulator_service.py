@@ -127,7 +127,9 @@ class HybridSimulatorService(object):
         :return: the list of region labels of the given Connectivity, in the original node order
         """
         with h5.h5_file_for_gid(connectivity_gid) as conn_h5:
-            return [str(label) for label in conn_h5.get_region_labels()]
+            # H5 keeps them as bytes, which str() would show as b'...'
+            return [label.decode('utf-8') if isinstance(label, bytes) else str(label)
+                    for label in conn_h5.get_region_labels()]
 
     # ---------------------------------------------------------------- Subnetwork name helpers
 

@@ -354,7 +354,12 @@ class TestHybridRendering(BaseTransactionalControllerTest):
         # once added, it is listed by name, as it was set up before being added
         assert '<span class="hybrid-projection-kind is-intra">Intra</span>' in added_step_html
         assert 'V &rarr; V' in added_step_html
-        assert 'Kuramoto &times; 2.0' in added_step_html
+        # the list shows what connects what, nothing of how: that stays in the editor
+        for header in ('Kind', 'From', 'To', 'Coupling variables'):
+            assert '<th scope="col">{}</th>'.format(header) in added_step_html, header
+        assert '<th scope="col">Coupling</th>' not in added_step_html
+        assert '<th scope="col">Speed</th>' not in added_step_html
+        assert 'Kuramoto &times;' not in added_step_html and 'mm/ms' not in added_step_html
         # and the editor checks it in the Intra picker, counts it, and offers to remove it
         assert re.search(r'<option value="{}"[^>]*>✓ Subnetwork A</option>'.format(key), added_html)
         assert '1 of 1 added' in added_html
@@ -376,7 +381,8 @@ class TestHybridRendering(BaseTransactionalControllerTest):
         assert '<button type="button" tabindex="1" role="tab"' not in configure_html
         # and the Projection's editor is framed under it, in the colour of its kind
         assert 'class="hybrid-projection-block is-intra" id="hybrid-projection-editor"' in configure_html
-        assert 'Source coupling variables' in configure_html
+        assert 'Source coupling variable' in configure_html
+        assert '<select name="source_cvar"' in configure_html
         # opening it changes nothing, so the list on the step is not reloaded
         assert 'data-hybrid-changed="false"' in configure_html
         assert 'data-hybrid-changed="false"' in editor_html

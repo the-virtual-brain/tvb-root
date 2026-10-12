@@ -33,10 +33,9 @@ PreSigmoidal). Their forms are therefore built from each class's own traits rath
 ``coupling_forms``.
 """
 
-from tvb.basic.neotraits.api import Attr, EnumAttr, Float, Int, List, NArray
+from tvb.basic.neotraits.api import Attr, EnumAttr, Float, Int, NArray
 from tvb.core.entities.file.simulator.view_model import HybridCouplingFunctionsEnum
-from tvb.core.neotraits.forms import ArrayField, BoolField, Form, FloatField, IntField, MultiSelectField, \
-    Option, SelectField
+from tvb.core.neotraits.forms import ArrayField, BoolField, Form, FloatField, IntField, Option, SelectField
 
 
 class HybridCouplingForm(Form):
@@ -67,19 +66,28 @@ class HybridCouplingForm(Form):
         return None
 
 
-class NamesMultiSelectField(MultiSelectField):
+class CouplingVariableSelectField(SelectField):
     """
-    A multi select offering names as they are: the default one title-cases its labels, which would show
-    the Jansen-Rit variable y1 as Y1.
+    A drop down choosing one coupling variable by name. It is always a drop down, while SelectField turns
+    into radio buttons for a few choices, and it offers the names as they are: SelectField title-cases its
+    labels, which would show the Jansen-Rit variable y1 as Y1.
     """
+    template = 'form_fields/select_field.html'
+
+    def __init__(self, trait_attribute, name=None, disabled=False):
+        super(CouplingVariableSelectField, self).__init__(trait_attribute, name, disabled,
+                                                          display_none_choice=False)
+
+    def _prepare_template(self, choices):
+        pass
 
     def options(self):
-        for i, choice in enumerate(self.trait_attribute.element_choices):
+        for i, choice in enumerate(self.choices):
             yield Option(
                 id='{}_{}'.format(self.name, i),
                 value=choice,
                 label=str(choice),
-                checked=self.data is not None and choice in self.data
+                checked=self.value == choice
             )
 
 
@@ -89,20 +97,24 @@ class HybridProjectionForm(Form):
     it reads and writes, its scale, the conduction speed turning lengths into delays, and the coupling
     function itself.
 
-    The coupling variables offered are the source and target Models' own, so the form is built for a
-    given pair of Models. Its ad hoc Lists carry no field_name, so the controller fills them and reads
+    The coupling variables offered are the source and target Models' own - the state variables their
+    ``cvar`` names, the only ones the library accepts by name - so the form is built for a given pair of
+    Models. A single one is chosen on each side; the Projection keeps it as a one element list, which is
+    what the library takes. Its ad hoc Attrs carry no field_name, so the controller fills them and reads
     them itself.
     """
 
     def __init__(self, source_names, target_names):
         super(HybridProjectionForm, self).__init__()
-        self.source_cvar = NamesMultiSelectField(
-            List(of=str, label='Source coupling variables', choices=tuple(source_names),
-                 doc='The coupling variables of the source Model this Projection reads'),
+        self.source_cvar = CouplingVariableSelectField(
+            Attr(field_type=str, label='Source coupling variable', default=source_names[0],
+                 choices=tuple(source_names),
+                 doc='The coupling variable of the source Model this Projection reads'),
             name='source_cvar')
-        self.target_cvar = NamesMultiSelectField(
-            List(of=str, label='Target coupling variables', choices=tuple(target_names),
-                 doc='The coupling variables of the target Model this Projection writes into'),
+        self.target_cvar = CouplingVariableSelectField(
+            Attr(field_type=str, label='Target coupling variable', default=target_names[0],
+                 choices=tuple(target_names),
+                 doc='The coupling variable of the target Model this Projection writes into'),
             name='target_cvar')
         self.scale = FloatField(Float(label='Scale', default=1.0, required=True,
                                       doc='Factor applied to the weighted sum, after the coupling function'),
@@ -116,8 +128,8 @@ class HybridProjectionForm(Form):
             name='coupling')
 
     def fill_from_projection(self, projection):
-        self.source_cvar.data = list(projection.source_cvar)
-        self.target_cvar.data = list(projection.target_cvar)
+        self.source_cvar.data = projection.source_cvar[0] if projection.source_cvar else None
+        self.target_cvar.data = projection.target_cvar[0] if projection.target_cvar else None
         self.scale.data = projection.scale
         self.cv.data = projection.cv
         self.coupling.data = type(projection.coupling)

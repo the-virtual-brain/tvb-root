@@ -1436,6 +1436,36 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         assert list(projection.coupling.a) == [0.2]
         assert list(projection.coupling.b) == [0.1]
 
+    def test_the_coupling_variables_are_chosen_one_per_side_among_the_models_own(self):
+        from tvb.adapters.forms.hybrid_projection_forms import CouplingVariableSelectField, HybridProjectionForm
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._two_saved_subnetworks_at_the_projections()
+            inter_key = self._inter_key()
+            editor = self.hybrid_controller.select_projection(projection_key=inter_key)['renderer']
+            answer = self._post_projection(inter_key, source_cvar='V', target_cvar='V')
+            projection = self._projection(inter_key)
+
+        form = editor.projection_form
+        for field in (form.source_cvar, form.target_cvar):
+            assert isinstance(field, CouplingVariableSelectField)
+            # the coupling variables of Generic2dOscillator, W being only a state variable of it
+            assert field.choices == ['V']
+            assert field.value == 'V'
+        assert answer['renderer'].projection_applied
+        # a single variable each side, kept as the list the library takes
+        assert list(projection.source_cvar) == ['V'] and list(projection.target_cvar) == ['V']
+
+        # always a drop down, the names offered as they are, the stored one selected
+        jansen_rit = ['y1', 'y2']
+        html = str(HybridProjectionForm(jansen_rit, ['V']).source_cvar)
+        assert '<select name="source_cvar"' in html
+        assert 'type="radio"' not in html and 'type="checkbox"' not in html
+        assert '>y1</option>' in html and '>y2</option>' in html
+        form = HybridProjectionForm(jansen_rit, ['V'])
+        form.source_cvar.data = 'y2'
+        assert re.search(r'<option value="y2" selected', str(form.source_cvar))
+
     def test_a_new_coupling_function_starts_from_its_defaults(self):
         from tvb.simulator.hybrid.coupling import Kuramoto, Linear
 
