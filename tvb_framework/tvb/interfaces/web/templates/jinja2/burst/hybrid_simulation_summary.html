@@ -1,0 +1,14 @@
+{#- ============================================================================ -#}
+{#- The closing step of the global Hybrid Simulator configuration, above the     -#}
+{#- simulation length and name: a warning when the Monitors will not record in   -#}
+{#- region order, because the Subnetworks watch different numbers of variables.  -#}
+{#- ============================================================================ -#}
+{% if renderer.output_layout and not renderer.output_layout.is_merged %}
+    <p class="hybrid-projections-note hybrid-projections-warning">
+        The Subnetworks watch different numbers of variables
+        ({% for row in renderer.output_layout.rows %}<span class="hybrid-summary-region">{{ row.name }}: {{ row.variables|length }}</span>{% endfor %}),
+        so each Monitor records <span class="hybrid-summary-region">{{ renderer.output_layout.variables }} &times; {{ renderer.output_layout.nodes }}</span>:
+        the Subnetworks stacked one after another rather than placed at their Connectivity positions.
+        Give every Subnetwork the same number of variables to watch to record in region order instead.
+    </p>
+{% endif %}

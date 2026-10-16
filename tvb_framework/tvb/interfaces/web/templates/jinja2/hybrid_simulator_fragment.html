@@ -1,51 +1,122 @@
-{% import 'form_fields/generate_help_tooltip.html' as ght with context %}
-
+{#- The Subnetwork editor is not one step but several forms at once, one per section. -#}
+{% if renderer.is_subnetwork_editor %}
+    {% include 'burst/hybrid_subnetwork_editor.html' %}
+{% else %}
 {#- data-hybrid-context-url names the configuration this step exposes in the third column. Steps
-    declaring none leave that column empty, which is how it is cleared when moving on. -#}
+    declaring none leave that column empty, which is how it is cleared when moving on.
+
+    data-hybrid-modified and data-hybrid-error let the client tell a stored configuration from a refused
+    one: both answer with the same step, and a message set on the session only reaches a full page. -#}
 <form method="post" action="{{ renderer.form_action_url }}" id="{{ renderer.form_action_url }}" enctype="multipart/form-data"
+      {% if renderer.is_editor_section %} class="hybrid-editor-section hybrid-editor-level-{{ renderer.section_level }}" {% endif %}
+      {% if renderer.is_dynamics_save_fragment %} class="hybrid-editor-actions" {% endif %}
+      {% if renderer.is_monitor_step %} class="hybrid-monitor-step" {% endif %}
       data-hybrid-context-url="{{ renderer.context_form_url if renderer.context_form_url else '' }}"
-      data-hybrid-context-title="{{ renderer.context_title if renderer.context_title else '' }}">
+      data-hybrid-context-title="{{ renderer.context_title if renderer.context_title else '' }}"
+      data-hybrid-modified="{{ 'true' if renderer.is_modified else 'false' }}"
+      {% if renderer.error_message %} data-hybrid-error="{{ renderer.error_message }}" {% endif %}>
     {% if renderer.is_subnetworks_summary_fragment %}
         {% include 'burst/hybrid_subnetworks_summary.html' %}
-    {% else %}
+    {% elif renderer.is_projections_fragment %}
         <fieldset>
-            <dl>
-                {#- No step title here: the classic cockpit only shows a legend for monitor fragments,
-                    every other step exposes just its parameter labels. -#}
-                {% if renderer.form.ordered_fields %}
-                    {% set form_fields = renderer.form.ordered_fields %}
-                {% else %}
-                    {% set form_fields = renderer.form.fields %}
-                {% endif %}
-                {% for field in form_fields %}
-                    <dt {% if field.label_classes %} class="{{ field.label_classes|join(' ') }}" {% endif %}>
-                        <label for="{{ field.name }}">{{ field.label }}</label>
-                        {{ ght.generate_help_tooltip(field.label, field.doc) }}
-                    </dt>
-                    <dd>
-                        {{ field | safe }}
-                        <p class="errorMessage">
-                            {% for error in field.errors %}
-                                <span> {{ error }} </span>
-                            {% endfor %}
-                        </p>
-                    </dd>
-                {% endfor %}
-            </dl>
+            {% include 'burst/hybrid_projections_summary.html' %}
         </fieldset>
+    {% elif renderer.is_simulation_summary_fragment %}
+        <fieldset>
+            {% include 'burst/hybrid_simulation_summary.html' %}
+            {% if renderer.form %}
+                {% include 'burst/hybrid_form_fields.html' %}
+            {% endif %}
+        </fieldset>
+    {% elif renderer.is_dynamics_save_fragment %}
+        {#- the row of actions closing the Subnetwork editor: nothing to fill in -#}
+    {% else %}
+        {#- The Subnetwork dynamics step has no field of its own, only the tabs below -#}
+        {% if not renderer.is_dynamics_summary_fragment %}
+            <fieldset {% if renderer.is_read_only %} disabled {% endif %}>
+                {% include 'burst/hybrid_form_fields.html' %}
+            </fieldset>
+        {% endif %}
+
+        {#- The Subnetworks, and what each one is configured with. This is the only place this step
+            describes them: a separate summary above said the same thing twice.
+
+            Deliberately outside the fieldset and marked to stay live: once the user moves on, this step
+            is locked like every finished one, but switching Subnetwork is what rebuilds the editor below
+            it, so it has to keep working. -#}
+        {% if renderer.is_dynamics_summary_fragment %}
+            <div class="hybrid-subnetwork-tabs" role="tablist" data-hybrid-keep-enabled="true">
+                {% for choice in renderer.subnetwork_choices %}
+                    {#- A tab is as wide as the Subnetwork's name: what it is configured with is in the
+                        tooltip, and an unsaved draft is marked with a dot. -#}
+                    <button type="button" tabindex="1" role="tab"
+                            aria-selected="{{ 'true' if choice.is_selected else 'false' }}"
+                            class="hybrid-subnetwork-tab {{ 'is-selected' if choice.is_selected else '' }} {{ 'is-modified' if choice.is_modified else '' }}"
+                            title="{{ choice.name }}: {{ choice.count }} region{{ 's' if choice.count != 1 else '' }}, {{ choice.model }}, {{ choice.integrator }}{% if choice.noise %} with {{ choice.noise }} noise{% endif %}{{ ' (unsaved changes)' if choice.is_modified else '' }}"
+                            onclick="hybridSelectSubnetwork('{{ choice.id }}')">
+                        <span class="hybrid-tab-name">{{ choice.name }}</span>
+                        {%- if choice.is_modified %}
+                            <span class="hybrid-tab-modified" aria-label="unsaved changes"></span>
+                        {%- endif %}
+                    </button>
+                {% endfor %}
+            </div>
+        {% endif %}
     {% endif %}
 
-    {% if renderer.include_previous_button %}
-        <button name="previous" type="button" class="btn btn-primary" tabindex="1"
-                onclick="hybridPreviousStep(this.parentElement, '{{ renderer.previous_form_action_url }}')">{{ renderer.previous_button_label }}
+    {#- A read only step keeps its buttons so that stepping back can reveal them again, exactly as the
+        client's own locking leaves them. -#}
+    {% set hide_buttons = 'style="visibility: hidden"' if renderer.is_read_only else '' %}
+
+    {#- The classic Cockpit's Set up region Model, except that it fills the third column instead of
+        opening a page of its own. Offered only while its section can be edited. -#}
+    {% if renderer.include_region_model_button %}
+        <button type="button" class="btn btn-primary" tabindex="1" {{ hide_buttons | safe }}
+                id="configRegionModelParam" name="configRegionModelParam"
+                title="Place saved model configurations on this Subnetwork's regions"
+                onclick="hybridConfigureRegionModel()">Set up region Model
         </button>
     {% endif %}
 
-    <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1"
-            onclick="hybridSubmit(this.parentElement)"
-            {% if not renderer.next_button_enabled %}
-                disabled="disabled"
-                title="The next configuration step is not available yet"
-            {% endif %}>{{ renderer.next_button_label }}
-    </button>
+    {#- A section of the Subnetwork editor is applied as soon as it changes, so it carries no wizard
+        buttons of its own. -#}
+    {% if not renderer.is_editor_section %}
+        {% if renderer.include_previous_button %}
+            <button name="previous" type="button" class="btn btn-primary" tabindex="1" {{ hide_buttons | safe }}
+                    onclick="hybridPreviousStep(this.parentElement, '{{ renderer.previous_form_action_url }}')">{{ renderer.previous_button_label }}
+            </button>
+        {% endif %}
+
+        {% if renderer.is_dynamics_save_fragment %}
+            <button name="save" type="button" class="btn btn-primary" tabindex="1" {{ hide_buttons | safe }}
+                    title="Store the dynamics of every Subnetwork on the Hybrid Simulator configuration"
+                    onclick="hybridSaveSubnetworkDynamics()">{{ renderer.next_button_label }}
+            </button>
+            {#- Storing is the only way forward: the Projections are built from the stored dynamics. -#}
+            <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1" {{ hide_buttons | safe }}
+                    title="Store the dynamics of every Subnetwork, then continue to the Projections"
+                    onclick="hybridSaveSubnetworkDynamics('{{ renderer.next_form_action_url }}')">Save and continue
+            </button>
+        {% elif renderer.is_launch_fragment %}
+            {#- a plain button, like the classic Cockpit's own Launch: the action-launch style hides the text for
+                an icon this column does not draw -#}
+            <button name="launch_simulation" type="button" class="btn btn-primary btn-next"
+                    tabindex="1" {{ hide_buttons | safe }}
+                    title="Launch this Hybrid simulation"
+                    onclick="hybridLaunchSimulation(this.parentElement)">Launch
+            </button>
+        {% else %}
+            {#- A step that is entered by posting to its own url cannot move on by posting there again: the
+                client would take the answer for a rejection of this step rather than for the next one.
+                Such a step names where its Next posts instead. -#}
+            <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1" {{ hide_buttons | safe }}
+                    onclick="hybridSubmitTo(this.parentElement, '{{ renderer.next_form_action_url if renderer.next_form_action_url else renderer.form_action_url }}')"
+                    {% if not renderer.next_button_enabled %}
+                        disabled="disabled"
+                        title="The next configuration step is not available yet"
+                    {% endif %}>{{ renderer.next_button_label }}
+            </button>
+        {% endif %}
+    {% endif %}
 </form>
+{% endif %}
