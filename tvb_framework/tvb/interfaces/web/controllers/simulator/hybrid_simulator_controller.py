@@ -26,8 +26,6 @@
 
 import copy
 import json
-import threading
-from datetime import datetime
 
 import cherrypy
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
@@ -37,8 +35,6 @@ from tvb.adapters.forms.hybrid_monitor_forms import HybridSpatialAverageMonitorF
 from tvb.adapters.forms.hybrid_projection_forms import HybridCouplingForm, HybridProjectionForm
 from tvb.adapters.forms.hybrid_simulator_fragments import HybridConnectivityFragment, \
     HybridLaunchFragment, HybridMonitorsFragment, HybridSubnetworkDynamicsFragment, HybridSubnetworksFragment
-from tvb.adapters.simulator.hybrid_simulator_adapter import HybridSimulatorAdapter
-from tvb.config import HYBRID_SIMULATOR_CLASS, HYBRID_SIMULATOR_MODULE
 from tvb.adapters.forms.monitor_forms import get_monitor_to_ui_name_dict
 from tvb.adapters.forms.integrator_forms import NoiseTypesEnum, get_form_for_integrator
 from tvb.adapters.forms.model_forms import ModelsEnum, get_form_for_model
@@ -326,12 +322,10 @@ class HybridSimulatorController(BurstBaseController):
         self.simulator_service = SimulatorService()
         self.burst_service = BurstService()
         self.hybrid_simulator_service = HybridSimulatorService()
-        self.cached_hybrid_algorithm = self.algorithm_service.get_algorithm_by_module_and_class(
-            HYBRID_SIMULATOR_MODULE, HYBRID_SIMULATOR_CLASS)
 
     @staticmethod
     def get_available_hybrid_bursts(project_id):
-        return BurstService.get_available_hybrid_bursts(project_id)
+        return []
 
     def _prepare_connectivity_form(self):
         self.context.set_hybrid_simulator()
@@ -1339,11 +1333,8 @@ class HybridSimulatorController(BurstBaseController):
     @expose_json
     def launch_simulation(self, **data):
         """
-        Launch the configured Hybrid simulation.
-
-        The configuration is stored as it is; everything scientific about it is built by the adapter on
-        the operation's own thread, so a failure there is reported through the normal operation
-        mechanism rather than here.
+        Check the length and name asked on the last step. Storing and launching the Hybrid simulation is
+        not available yet, so a valid configuration is answered with that.
         """
         try:
             hybrid_simulator, _, _, _ = self._load_subnetworks_configuration()
@@ -1369,29 +1360,7 @@ class HybridSimulatorController(BurstBaseController):
         hybrid_simulator.simulation_length = simulation_length
         self.context.set_hybrid_simulator(hybrid_simulator)
 
-        if not self.simulator_service.operation_service.fits_max_operation_size(
-                HybridSimulatorAdapter(), hybrid_simulator, self.context.project.id):
-            return {'error': self.MAX_SIZE_ERROR_MSG}
-
-        burst_config = BurstConfiguration(self.context.project.id)
-        burst_config.name = form.simulation_name.value
-        burst_config.start_time = datetime.now()
-        burst_config = self.burst_service.store_burst(burst_config)
-
-        try:
-            # the same launcher the classic Cockpit uses: nothing in it is particular to that Simulator,
-            # it takes the Algorithm and the view model it is given
-            thread = threading.Thread(target=self.simulator_service.async_launch_and_prepare_simulation,
-                                      kwargs={'burst_config': burst_config,
-                                              'user': self.context.logged_user,
-                                              'project': self.context.project,
-                                              'simulator_algo': self.cached_hybrid_algorithm,
-                                              'simulator': hybrid_simulator})
-            thread.start()
-            return {'id': burst_config.id}
-        except Exception as excep:
-            self.logger.exception("Could not launch the Hybrid simulation")
-            return {'error': str(excep)}
+        return {'error': 'Launching Hybrid simulations is not available yet.'}
 
     # ---------------------------------------------------------------- Region Model
 
