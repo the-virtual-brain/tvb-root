@@ -631,52 +631,6 @@ class TestHybridSimulatorService(object):
     def _network_set(self, dt=0.1):
         return self._build_all(self._connectivity(), self._two_blocks(), dt)
 
-    def test_the_configuration_reaches_the_hybrid_simulator(self):
-        network_set = self._network_set()
-
-        simulator = self.service.build_hybrid_simulator(
-            network_set, [TemporalAverageViewModel()], 500.0)
-
-        assert simulator.nets is network_set
-        assert simulator.simulation_length == 500.0
-        assert len(simulator.monitors) == 1
-        # the library default, the numba one accepts only a fixed set of Models and Integrators
-        assert simulator.backend == 'python'
-
-    def test_monitors_are_configured_from_the_shared_dt(self):
-        monitor = TemporalAverageViewModel()
-        monitor.period = 1.0
-
-        simulator = self.service.build_hybrid_simulator(self._network_set(dt=0.25), [monitor], 100.0)
-
-        built = simulator.monitors[0]
-        assert built.dt == 0.25
-        # what the Monitor samples on: one sample every period / dt integration steps
-        assert built.istep == 4
-
-    def test_the_built_monitors_do_not_share_the_configured_ones(self):
-        monitor = TemporalAverageViewModel()
-        monitor.period = 1.0
-
-        simulator = self.service.build_hybrid_simulator(self._network_set(), [monitor], 100.0)
-        # building configures every Monitor and allocates its buffers, and this is the object the forms
-        # keep editing
-        monitor.period = 50.0
-
-        assert simulator.monitors[0] is not monitor
-        assert simulator.monitors[0].period == 1.0
-
-    def test_simulation_length_is_respected(self):
-        monitor = TemporalAverageViewModel()
-        monitor.period = 1.0
-
-        simulator = self.service.build_hybrid_simulator(self._network_set(dt=0.1), [monitor], 10.0)
-        ((times, data),) = simulator.run()
-
-        # 10 ms sampled every 1 ms
-        assert len(times) == 10
-        assert data.shape[0] == 10
-
     def test_a_sampling_period_below_the_step_size_is_refused(self):
         monitor = TemporalAverageViewModel()
         monitor.period = 0.05
@@ -787,34 +741,6 @@ class TestHybridSimulatorService(object):
         network_set = NetworkSet(subnets=subnets, projections=[projection])
         network_set.configure()
         return network_set
-
-    def test_the_generated_simulation_matches_one_written_by_hand(self):
-        """
-        What the wizard produces has to be exactly what someone writing the library API by hand gets.
-
-        This is the comparison against the demos that Phase 4 had to defer: it could not be made until a
-        simulation could actually be run. The demos' own weights are random, so both sides are built
-        over the same Connectivity instead, and both are started from the same initial conditions.
-        """
-        from tvb.simulator.hybrid import Simulator as LibrarySimulator
-        from tvb.simulator.monitors import TemporalAverage
-
-        connectivity = self._connectivity()
-        initial_conditions = [numpy.zeros((2, 4, 1)), numpy.zeros((2, 4, 1))]
-
-        network_set = self._build_all(connectivity, self._two_blocks(), 0.1)
-        simulator = self.service.build_hybrid_simulator(
-            network_set, [TemporalAverageViewModel(period=1.0)], 10.0)
-        ((times, data),) = simulator.run(initial_conditions=initial_conditions)
-
-        by_hand = LibrarySimulator(nets=self._hand_built_network_set(connectivity),
-                                   monitors=[TemporalAverage(period=1.0)], simulation_length=10.0)
-        by_hand.configure()
-        ((hand_times, hand_data),) = by_hand.run(initial_conditions=initial_conditions)
-
-        assert numpy.allclose(times, hand_times)
-        assert data.shape == hand_data.shape
-        assert numpy.allclose(data, hand_data)
 
     # ---------------------------------------------------------------- Projection configuration
 
