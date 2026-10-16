@@ -27,17 +27,34 @@
 """
 Service holding the Subnetwork grouping logic used by the Hybrid Simulator UI.
 
-The Subnetworks are kept as :class:`HybridSubnetworkViewModel` instances, which only store a name and
-the assigned Connectivity node indices. The mapping towards ``tvb.simulator.hybrid.Subnetwork`` is done
-in a later step of the Hybrid Simulator workflow.
+The Subnetworks are kept as :class:`HybridSubnetworkViewModel` instances, storing a stable identifier, a
+name, the assigned Connectivity node indices and the configured dynamics (Model and Integrator). The
+mapping towards ``tvb.simulator.hybrid.Subnetwork`` is done in a later step of the Hybrid Simulator
+workflow.
 
 .. moduleauthor:: TVB Team
 """
 
+import copy
+import json
+import keyword
+import re
+
+import numpy
+
 from tvb.basic.logger.builder import get_logger
-from tvb.core.entities.file.simulator.view_model import HybridSubnetworkViewModel
+from tvb.core.entities.file.simulator.view_model import HybridProjectionViewModel, HybridSubnetworkDynamics, \
+    HybridSubnetworkViewModel, coupling_label
 from tvb.core.neocom import h5
+from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.core.services.exceptions import ServicesBaseException
+from tvb.simulator.hybrid import NetworkSet
+from tvb.simulator.hybrid import Simulator as LibrarySimulator
+from tvb.simulator.hybrid import Subnetwork as LibrarySubnetwork
+from tvb.simulator.coupling import Linear as ClassicLinear
+from tvb.simulator.hybrid import coupling as hybrid_coupling
+from tvb.simulator.hybrid.projection_utils import create_inter_projection, create_intra_projection
+from tvb.simulator.monitors import Projection, Raw, SpatialAverage
 
 
 class HybridSubnetworkException(ServicesBaseException):
@@ -45,6 +62,44 @@ class HybridSubnetworkException(ServicesBaseException):
     Exception thrown when the requested Subnetwork operation would leave the Hybrid Simulator
     configuration in an invalid state.
     """
+
+
+class _ShimModel(object):
+    """The one thing ``Monitor._config_vois`` asks a Model for."""
+
+    def __init__(self, variables_of_interest):
+        self.variables_of_interest = variables_of_interest
+
+
+class _ShimIntegrator(object):
+    """The one thing ``Monitor._config_time`` asks an Integrator for."""
+
+    def __init__(self, dt):
+        self.dt = dt
+
+
+class ClassicSimulatorShim(object):
+    """
+    Stands in for the classic Simulator that ``Monitor.config_for_sim`` expects.
+
+    The Hybrid Simulator never calls ``config_for_sim`` - it calls ``_config_dt``, ``_config_stock`` and
+    ``record`` only - so a Projection Monitor is left without its gain matrix, its ``_state`` and its
+    ``_period_in_steps``, and a Spatial average without its ``spatial_mean``. All of those are assigned
+    inside ``config_for_sim``, and all it reads to assign them is what this object carries.
+
+    The Model it exposes has one variable of interest per variable the merged output holds, because
+    ``_config_vois`` sizes the Monitor's ``voi`` from it, and a Projection Monitor then sizes its
+    recording buffer from that.
+    """
+
+    def __init__(self, connectivity, number_of_variables, number_of_nodes, dt):
+        self.connectivity = connectivity
+        # the Hybrid Simulator has no surface, which is what makes these region Monitors
+        self.surface = None
+        self.is_surface_simulation = False
+        self.model = _ShimModel(['Variable {}'.format(index + 1) for index in range(number_of_variables)])
+        self.integrator = _ShimIntegrator(dt)
+        self.number_of_nodes = number_of_nodes
 
 
 class HybridSimulatorService(object):
@@ -72,7 +127,9 @@ class HybridSimulatorService(object):
         :return: the list of region labels of the given Connectivity, in the original node order
         """
         with h5.h5_file_for_gid(connectivity_gid) as conn_h5:
-            return [str(label) for label in conn_h5.get_region_labels()]
+            # H5 keeps them as bytes, which str() would show as b'...'
+            return [label.decode('utf-8') if isinstance(label, bytes) else str(label)
+                    for label in conn_h5.get_region_labels()]
 
     # ---------------------------------------------------------------- Subnetwork name helpers
 
@@ -155,9 +212,16 @@ class HybridSimulatorService(object):
         Build an independent copy of the given Subnetworks. The grouping operations change the
         HybridSubnetworkViewModel instances in place, so the draft edited on the board and the saved
         configuration must never share them, or editing the draft would also change what the wizard shows.
+
+        The identifier is carried over: it is what keeps the configured dynamics attached to the intended
+        Subnetwork across a copy. The dynamics are deep copied for the same reason the grouping is.
         """
-        return [HybridSubnetworkViewModel(name=subnetwork.name, node_indices=list(subnetwork.node_indices))
-                for subnetwork in subnetworks or []]
+        copies = []
+        for subnetwork in subnetworks or []:
+            copies.append(HybridSubnetworkViewModel(
+                id=subnetwork.id, name=subnetwork.name, node_indices=list(subnetwork.node_indices),
+                dynamics=copy.deepcopy(subnetwork.dynamics)))
+        return copies
 
     @classmethod
     def same_grouping(cls, subnetworks, other_subnetworks):
@@ -249,6 +313,822 @@ class HybridSimulatorService(object):
 
         target.node_indices = sorted(set(target.node_indices).union(moved))
         return subnetworks
+
+    # ---------------------------------------------------------------- Subnetwork dynamics
+
+    # Bookkeeping carried by every ViewModel, plus the RandomState of a stochastic Integrator. None of
+    # these describes a configuration choice, and gid differs between two copies of the same dynamics,
+    # so they are all left out when deciding whether something was actually edited.
+    NON_CONFIGURATION_ATTRS = ('operation_group_gid', 'ranges', 'range_values', 'is_metric_operation',
+                               'gid', 'create_date', 'random_stream')
+
+    @staticmethod
+    def find_subnetwork(subnetworks, subnetwork_id):
+        """
+        :return: the Subnetwork carrying the given identifier
+        :raise HybridSubnetworkException: when no Subnetwork carries it
+        """
+        for subnetwork in subnetworks or []:
+            if subnetwork.id == subnetwork_id:
+                return subnetwork
+        raise HybridSubnetworkException("This Subnetwork is no longer part of the configuration.")
+
+    @classmethod
+    def prepare_dynamics_draft(cls, subnetworks, draft):
+        """
+        Build the dynamics draft for the given Subnetworks: the dynamics being edited, keyed by Subnetwork
+        identifier.
+
+        Entries are seeded from the saved dynamics of every Subnetwork that has none in the draft yet, and
+        entries keyed by an identifier that no longer exists are dropped. That is what makes a Subnetwork
+        removal, or a regenerated grouping, discard its dynamics instead of reattaching them to whichever
+        Subnetwork happens to sit on the same position.
+
+        :return: the draft, a dict of Subnetwork identifier to HybridSubnetworkDynamics
+        """
+        draft = dict(draft or {})
+        known_ids = {subnetwork.id for subnetwork in subnetworks or []}
+
+        for orphan_id in set(draft.keys()).difference(known_ids):
+            del draft[orphan_id]
+
+        for subnetwork in subnetworks or []:
+            if subnetwork.id not in draft:
+                draft[subnetwork.id] = copy.deepcopy(subnetwork.dynamics)
+
+        return draft
+
+    @classmethod
+    def apply_shared_dt(cls, dynamics_by_id, dt):
+        """
+        Give every Integrator the shared step size. tvb.simulator.hybrid.Simulator refuses a NetworkSet
+        whose Subnetworks disagree on dt, so it is applied uniformly here rather than being editable per
+        Subnetwork.
+        """
+        for dynamics in (dynamics_by_id or {}).values():
+            if dynamics.integrator is not None:
+                dynamics.integrator.dt = dt
+        return dynamics_by_id
+
+    @classmethod
+    def store_dynamics(cls, subnetworks, dynamics_by_id):
+        """
+        Write the dynamics currently being edited onto the given Subnetworks. This is the only place the
+        saved dynamics change, which is what keeps the wizard summary showing the saved configuration
+        rather than the one being edited.
+        """
+        for subnetwork in subnetworks or []:
+            dynamics = (dynamics_by_id or {}).get(subnetwork.id)
+            if dynamics is not None:
+                subnetwork.dynamics = copy.deepcopy(dynamics)
+        return subnetworks
+
+    @classmethod
+    def same_dynamics(cls, subnetworks, dynamics_by_id):
+        """
+        :return: True when the dynamics being edited are the ones already saved on the given Subnetworks
+        """
+        for subnetwork in subnetworks or []:
+            dynamics = (dynamics_by_id or {}).get(subnetwork.id)
+            if dynamics is None:
+                continue
+            if cls.dynamics_signature(dynamics) != cls.dynamics_signature(subnetwork.dynamics):
+                return False
+        return True
+
+    @classmethod
+    def dynamics_signature(cls, dynamics):
+        """
+        :return: a comparable description of one Subnetwork's dynamics, covering the selected Model and
+                 Integrator classes and every configured parameter, nested Noise and Equation included
+        """
+        if dynamics is None:
+            return None
+        return (cls._trait_signature(dynamics.model), cls._trait_signature(dynamics.integrator))
+
+    @classmethod
+    def _trait_signature(cls, trait):
+        """
+        Describe a HasTraits instance by its class and its declared parameter values, recursing into
+        nested traits so that a Noise, or the Equation of a Multiplicative Noise, is covered as well.
+        """
+        if trait is None:
+            return None
+
+        values = []
+        for attr_name in sorted(type(trait).declarative_attrs):
+            if attr_name in cls.NON_CONFIGURATION_ATTRS:
+                continue
+            try:
+                value = getattr(trait, attr_name)
+            except Exception:
+                # an unassigned attribute is not a configured value
+                continue
+            values.append((attr_name, cls._value_signature(value)))
+
+        return type(trait).__name__, tuple(values)
+
+    @classmethod
+    def _value_signature(cls, value):
+        if isinstance(value, numpy.ndarray):
+            return numpy.array2string(value, precision=12, threshold=numpy.inf)
+        if hasattr(type(value), 'declarative_attrs'):
+            return cls._trait_signature(value)
+        if isinstance(value, (list, tuple)):
+            return tuple(cls._value_signature(item) for item in value)
+        return repr(value)
+
+    @classmethod
+    def validate_model_parameters(cls, subnetwork):
+        """
+        Make sure every Model parameter of the given Subnetwork broadcasts onto the nodes it owns.
+
+        A Model parameter is an array. tvb.simulator.hybrid.Subnetwork applies it to that Subnetwork's own
+        nodes, so a single shared value or one value per owned node are the only lengths that can work; an
+        array sized for the whole Connectivity, in particular, can not.
+
+        :raise HybridSubnetworkException: naming the Subnetwork, the parameter and the accepted lengths
+        """
+        model = subnetwork.dynamics.model if subnetwork.dynamics else None
+        if model is None:
+            return
+
+        nnodes = len(subnetwork.node_indices)
+        for attr_name in type(model).declarative_attrs:
+            if attr_name in cls.NON_CONFIGURATION_ATTRS:
+                continue
+            try:
+                value = getattr(model, attr_name)
+            except Exception:
+                continue
+            if not isinstance(value, numpy.ndarray) or value.ndim == 0:
+                continue
+            length = value.shape[0]
+            if length not in (1, nnodes):
+                raise HybridSubnetworkException(
+                    "Subnetwork '{}' owns {} regions, so its Model parameter '{}' needs either 1 value "
+                    "shared by all of them or {} values, but {} were given.".format(
+                        subnetwork.name, nnodes, attr_name, nnodes, length))
+
+    # ---------------------------------------------------------------- Region Model setup
+
+    @staticmethod
+    def dynamics_for_model(dynamics, model):
+        """
+        The saved Dynamics that can be placed on this Subnetwork's regions: the ones built on the same
+        Model class it is configured with.
+
+        Restricting the offer is what keeps the Model class chosen on the wizard step the only place it
+        is decided. The classic Cockpit instead overwrites the Simulator's Model with whatever class the
+        chosen Dynamics happen to carry.
+        """
+        model_class_name = type(model).__name__ if model is not None else None
+        return [dynamic for dynamic in dynamics or [] if dynamic.model_class == model_class_name]
+
+    @staticmethod
+    def parameters_of_dynamic(dynamic):
+        """
+        :return: the Model parameter values a Dynamic holds, as a plain dict
+        """
+        return dict(json.loads(dynamic.model_parameters))
+
+    @classmethod
+    def apply_dynamics_to_model(cls, model, node_indices, assignment, dynamics_by_id):
+        """
+        Write the Dynamics placed on this Subnetwork's regions onto its Model, as one array per
+        parameter in the Subnetwork's own node order.
+
+        :param node_indices: this Subnetwork's Connectivity node indices, in order
+        :param assignment: what each of them is configured with, as node index to Dynamic id
+        :param dynamics_by_id: the available Dynamics
+        :raise HybridSubnetworkException: when a region has no Dynamic placed on it yet, since a Model
+                                          parameter has to hold a value for every node of the Subnetwork
+        """
+        ordered_parameters = []
+        for node_index in node_indices:
+            dynamic = dynamics_by_id.get(assignment.get(node_index))
+            if dynamic is None:
+                raise HybridSubnetworkException(
+                    "Every region needs a Model configuration before it can be applied; "
+                    "{} of them do not have one yet.".format(cls.unassigned_count(node_indices, assignment)))
+            ordered_parameters.append(cls.parameters_of_dynamic(dynamic))
+
+        # the same grouping the classic Set up region Model does, so both produce the same arrays
+        grouped = SerializationManager.group_parameter_values_by_name(ordered_parameters)
+
+        for parameter_name, values in grouped.items():
+            if not hasattr(type(model), parameter_name):
+                # a Dynamic may carry values this Model class does not declare, leave those alone
+                continue
+            setattr(model, parameter_name, cls._contract_constant(values))
+
+        return model
+
+    @staticmethod
+    def _contract_constant(values):
+        """
+        One value per node, or a single shared one when they are all the same. Both broadcast onto the
+        Subnetwork, and the contracted form is what the classic Cockpit stores as well.
+        """
+        if len(set(values)) == 1:
+            values = values[:1]
+        return numpy.array(values, dtype=numpy.float64)
+
+    @staticmethod
+    def unassigned_count(node_indices, assignment):
+        """
+        :return: how many of this Subnetwork's regions have no Model configuration placed on them yet
+        """
+        return len([node_index for node_index in node_indices if assignment.get(node_index) is None])
+
+    @classmethod
+    def region_model_rows(cls, node_indices, region_labels, assignment, dynamics_by_id):
+        """
+        One row per region of this Subnetwork, for the Region Model panel: the original Connectivity
+        index, its label, and the Model configuration currently placed on it.
+        """
+        rows = []
+        for node_index in node_indices:
+            dynamic = dynamics_by_id.get(assignment.get(node_index))
+            rows.append({
+                'index': node_index,
+                'label': region_labels[node_index] if node_index < len(region_labels) else str(node_index),
+                'dynamic_id': dynamic.id if dynamic is not None else None,
+                'dynamic_name': dynamic.name if dynamic is not None else ''
+            })
+        return rows
+
+    @staticmethod
+    def place_dynamic_on_regions(assignment, node_indices, dynamic_id):
+        """
+        Put the given Model configuration on the given regions, leaving the others as they are.
+
+        :return: the updated assignment, as node index to Dynamic id
+        """
+        assignment = dict(assignment or {})
+        for node_index in node_indices or []:
+            assignment[node_index] = dynamic_id
+        return assignment
+
+    @staticmethod
+    def restrict_assignment(assignment, node_indices):
+        """
+        Drop what was placed on regions this Subnetwork no longer owns, so a regrouping cannot leave a
+        stale configuration behind.
+        """
+        owned = set(node_indices or [])
+        return {node_index: dynamic_id for node_index, dynamic_id in (assignment or {}).items()
+                if node_index in owned}
+
+    # ---------------------------------------------------------------- tvb_library naming
+
+    @classmethod
+    def to_identifiers(cls, subnetworks):
+        """
+        Map the Subnetwork display names onto valid, unique Python identifiers.
+
+        tvb.simulator.hybrid.NetworkSet builds a namedtuple out of its Subnetworks' names, joining them
+        with spaces and splitting the result back into field names, so every name reaching tvb_library has
+        to be an identifier. Display names are not (the default 'Subnetwork A' already is not), and
+        sanitizing can collide where the display names do not ('Sub A' and 'Sub-A' both yield 'Sub_A'),
+        so collisions are disambiguated here.
+
+        :return: a dict of Subnetwork identifier to the tvb_library name to use for it
+        """
+        identifiers = {}
+        used = set()
+
+        for position, subnetwork in enumerate(subnetworks or []):
+            candidate = cls._sanitize_identifier(subnetwork.name, position)
+            unique = candidate
+            suffix = 2
+            while unique in used:
+                unique = '{}_{}'.format(candidate, suffix)
+                suffix += 1
+            used.add(unique)
+            identifiers[subnetwork.id] = unique
+
+        return identifiers
+
+    @classmethod
+    def _sanitize_identifier(cls, name, position):
+        candidate = re.sub(r'\W+', '_', (name or '').strip()).strip('_')
+        if not candidate or candidate[0].isdigit():
+            candidate = 'subnetwork_{}'.format(candidate) if candidate else 'subnetwork_{}'.format(position)
+        if keyword.iskeyword(candidate):
+            candidate = candidate + '_'
+        return candidate
+
+    # ---------------------------------------------------------------- tvb_library translation
+
+    @classmethod
+    def build_library_subnetworks(cls, subnetworks, dt):
+        """
+        Turn the configuration gathered in the web UI into ``tvb.simulator.hybrid.Subnetwork`` objects.
+
+        The Integrator view models subclass the library Integrators, so one can be handed to ``scheme``
+        directly. Model and Integrator are deep copied first: the objects on the configuration are the
+        ones the forms keep editing, and ``configure`` mutates what it is given.
+
+        :param dt: the shared integration step size, given to every Integrator
+        :return: one library Subnetwork per configured Subnetwork, in configuration order
+        """
+        identifiers = cls.to_identifiers(subnetworks)
+        built = []
+
+        for subnetwork in subnetworks or []:
+            model = copy.deepcopy(subnetwork.dynamics.model)
+            model.configure()
+
+            scheme = copy.deepcopy(subnetwork.dynamics.integrator)
+            scheme.dt = dt
+            scheme.configure()
+
+            node_indices = numpy.array(sorted(subnetwork.node_indices), dtype=numpy.int_)
+            built.append(LibrarySubnetwork(
+                # NetworkSet builds a namedtuple out of these, so they have to be identifiers
+                name=identifiers[subnetwork.id],
+                model=model,
+                scheme=scheme,
+                nnodes=len(node_indices),
+                node_indices=node_indices))
+
+        return built
+
+    @staticmethod
+    def default_source_cvar(model):
+        """
+        :return: the state variable index of the model's first coupling variable, which is what a
+                 projection's ``source_cvar`` indexes in the history buffer
+        """
+        return int(model.cvar[0])
+
+    # A projection's target_cvar is a slot in the target model's cvar list, not a state variable index,
+    # so the first coupling variable of any model is always slot 0.
+    DEFAULT_TARGET_CVAR = 0
+
+    @classmethod
+    def build_network_set(cls, connectivity, subnetworks, dt, projections=None):
+        """
+        Build the ``NetworkSet`` the configuration describes: the IntraProjection of every Subnetwork and
+        the InterProjection of every connected ordered pair, all sliced out of the Connectivity, as the
+        given Projection configurations set them up.
+
+        Weights and lengths are sliced by ``tvb.simulator.hybrid.projection_utils``, which indexes them
+        as ``(target, source)`` - the Connectivity's own orientation - rather than by this service.
+
+        The configurations are reconciled with the grouping first, on a copy, so a Projection nobody
+        configured is built with the defaults and the given list is left alone. An excluded Projection
+        is not built.
+
+        :param projections: the ``HybridProjectionViewModel`` list; None builds every Projection with
+                            the defaults
+        :return: the NetworkSet, configured
+        """
+        configurations, _ = cls.reconcile_projections(connectivity, subnetworks, copy.deepcopy(projections or []))
+        built = cls.build_library_subnetworks(subnetworks, dt)
+        built_by_id = {subnetwork.id: subnet for subnetwork, subnet in zip(subnetworks, built)}
+
+        for subnet in built:
+            subnet.projections = []
+
+        inter_projections = []
+        for configuration in configurations:
+            if not configuration.included:
+                continue
+            source = built_by_id[configuration.source_id]
+            target = built_by_id[configuration.target_id]
+            settings = dict(source_cvar=list(configuration.source_cvar),
+                            target_cvar=list(configuration.target_cvar),
+                            connectivity=connectivity, dt=dt, cv=configuration.cv, scale=configuration.scale,
+                            # each build gets its own, the configuration keeps being edited
+                            coupling=copy.deepcopy(configuration.coupling))
+            if configuration.is_intra:
+                source.projections.append(create_intra_projection(source, **settings))
+            else:
+                inter_projections.append(create_inter_projection(
+                    source_subnet=source, target_subnet=target,
+                    source_indices=source.node_indices, target_indices=target.node_indices, **settings))
+
+        for subnet in built:
+            subnet.configure()
+
+        network_set = NetworkSet(subnets=built, projections=inter_projections)
+        network_set.configure()
+        return network_set
+
+    # ---------------------------------------------------------------- Projection configuration
+
+    @staticmethod
+    def coupling_variable_names(model):
+        """
+        :return: the names of the model's coupling variables, which is what a Projection reads from its
+                 source Model and writes into its target Model
+        """
+        return [str(model.state_variables[int(index)]) for index in numpy.atleast_1d(model.cvar)]
+
+    @staticmethod
+    def default_coupling():
+        """
+        :return: the coupling function a new Projection gets: Linear, with the classic Simulator's
+                 defaults rather than the hybrid Linear's own, so a Hybrid simulation starts from the same
+                 coupling strength a classic one does
+        """
+        return hybrid_coupling.Linear(a=numpy.array(ClassicLinear.a.default, dtype=float),
+                                      b=numpy.array(ClassicLinear.b.default, dtype=float))
+
+    @staticmethod
+    def default_speed(connectivity):
+        """
+        :return: the conduction speed a new Projection gets: the Connectivity's own. A Projection carries
+                 a single speed, so a Connectivity holding one per tract gives their mean.
+        """
+        speed = getattr(connectivity, 'speed', None)
+        if speed is None or numpy.size(speed) == 0:
+            return 3.0
+        return float(numpy.mean(speed))
+
+    @staticmethod
+    def projection_key(projection):
+        """:return: what identifies a Projection on the page: its ordered pair of Subnetworks"""
+        return '{}:{}'.format(projection.source_id, projection.target_id)
+
+    @classmethod
+    def new_projection(cls, source, target, connectivity):
+        """
+        The configuration of a Projection nobody configured yet: the first coupling variable of each side,
+        a scale of 1, the Connectivity's conduction speed and the default coupling function. It is not
+        part of the simulation until the user adds it.
+        """
+        return HybridProjectionViewModel(
+            source_id=source.id, target_id=target.id, included=False,
+            source_cvar=[cls.coupling_variable_names(source.dynamics.model)[0]],
+            target_cvar=[cls.coupling_variable_names(target.dynamics.model)[0]],
+            scale=1.0, cv=cls.default_speed(connectivity), coupling=cls.default_coupling())
+
+    @classmethod
+    def projection_pairs(cls, connectivity, subnetworks):
+        """
+        :return: the ordered Subnetwork pairs a Projection exists for: every Subnetwork to itself, then
+                 every pair with any non zero weight from the first to the second
+        """
+        pairs = [(subnetwork, subnetwork) for subnetwork in subnetworks or []]
+        for source in subnetworks or []:
+            for target in subnetworks or []:
+                if source is not target and cls.are_connected(connectivity, source, target):
+                    pairs.append((source, target))
+        return pairs
+
+    @classmethod
+    def reconcile_projections(cls, connectivity, subnetworks, projections):
+        """
+        Bring the Projection configurations in line with the grouping: a pair that still exists keeps its
+        configuration, a new pair gets the defaults, and the configuration of a pair that no longer exists
+        is dropped. A coupling variable the Subnetwork's current Model does not have falls back to that
+        Model's first one.
+
+        :return: the configurations, in the order the Projections are listed and built, and the ones whose
+                 coupling variables had to be reset
+        """
+        existing = {(projection.source_id, projection.target_id): projection for projection in projections or []}
+        reconciled = []
+        reset = []
+
+        for source, target in cls.projection_pairs(connectivity, subnetworks):
+            projection = existing.get((source.id, target.id))
+            if projection is None:
+                reconciled.append(cls.new_projection(source, target, connectivity))
+                continue
+
+            source_names = cls.coupling_variable_names(source.dynamics.model)
+            target_names = cls.coupling_variable_names(target.dynamics.model)
+            was_reset = False
+            if not projection.source_cvar or any(name not in source_names for name in projection.source_cvar):
+                projection.source_cvar = [source_names[0]]
+                was_reset = True
+            if not projection.target_cvar or any(name not in target_names for name in projection.target_cvar):
+                projection.target_cvar = [target_names[0]]
+                was_reset = True
+            if was_reset:
+                reset.append(projection)
+            reconciled.append(projection)
+
+        return reconciled, reset
+
+    @staticmethod
+    def validate_projection(projection):
+        """
+        What the library only refuses once the simulation runs, refused while it is configured.
+
+        :return: the reasons, keyed by the field they concern; empty when the configuration is valid
+        """
+        errors = {}
+        sources = len(projection.source_cvar or [])
+        targets = len(projection.target_cvar or [])
+        # BaseProjection.apply: as many source as target coupling variables, or a single one on a side
+        if sources and targets and sources != targets and sources != 1 and targets != 1:
+            errors['target_cvar'] = ('{} source and {} target coupling variables: there have to be as many of '
+                                     'each, or a single one on either side.'.format(sources, targets))
+        if projection.cv is None or projection.cv <= 0:
+            errors['cv'] = 'The conduction speed has to be positive.'
+        if projection.scale is None or not numpy.isfinite(projection.scale):
+            errors['scale'] = 'The scale has to be a number.'
+        return errors
+
+    @classmethod
+    def describe_projections(cls, connectivity, subnetworks, projections, reset=()):
+        """
+        Describe the configured Projections for the wizard step, the excluded ones included, so the
+        configuration can be inspected, and changed, without leaving the page.
+
+        The connection counts and delays come from the Connectivity block a Projection is sliced from,
+        so they are there for an excluded Projection as well.
+        """
+        by_id = {subnetwork.id: subnetwork for subnetwork in subnetworks or []}
+        reset_keys = {cls.projection_key(projection) for projection in reset or ()}
+        rows = []
+
+        for projection in projections or []:
+            source = by_id[projection.source_id]
+            target = by_id[projection.target_id]
+            block = numpy.ix_(sorted(target.node_indices), sorted(source.node_indices))
+            weights = numpy.asarray(connectivity.weights)[block]
+            connected = weights != 0
+            lengths = numpy.asarray(connectivity.tract_lengths)[block] if connectivity.tract_lengths is not None \
+                else numpy.zeros_like(weights)
+            longest = float(lengths[connected].max()) if numpy.any(connected) else 0.0
+
+            rows.append({
+                'key': cls.projection_key(projection),
+                'kind': 'Intra' if projection.is_intra else 'Inter',
+                'source': source.name,
+                'target': target.name,
+                'included': bool(projection.included),
+                'shape': '{} x {}'.format(*weights.shape),
+                'connections': int(numpy.count_nonzero(connected)),
+                'source_cvar': list(projection.source_cvar),
+                'target_cvar': list(projection.target_cvar),
+                'coupling': coupling_label(projection.coupling),
+                'scale': projection.scale,
+                'cv': projection.cv,
+                'max_delay': longest / projection.cv if projection.cv else None,
+                'was_reset': cls.projection_key(projection) in reset_keys
+            })
+        return rows
+
+    @staticmethod
+    def pairs_without_projection(subnetworks, projections):
+        """
+        :return: the ordered Subnetwork pairs the Connectivity holds no weight for, and which so have no
+                 Projection at all - worked out from the configurations rather than from a built
+                 NetworkSet, which leaves the excluded Projections out as well
+        """
+        configured = {(projection.source_id, projection.target_id) for projection in projections or []}
+        return [{'source': source.name, 'target': target.name}
+                for source in subnetworks or [] for target in subnetworks or []
+                if source is not target and (source.id, target.id) not in configured]
+
+    @staticmethod
+    def projection_warnings(subnetworks, projections):
+        """
+        :return: what leaving Projections out leaves uncoupled, once any Projection is added: a
+                 Subnetwork whose IntraProjection is not added, and a pair of Subnetworks between which no
+                 Projection is. Before any is added, nothing is coupled, and saying so for every one of
+                 them would only repeat it.
+        """
+        names = {subnetwork.id: subnetwork.name for subnetwork in subnetworks or []}
+        warnings = []
+        if not any(projection.included for projection in projections or []):
+            return warnings
+
+        for projection in projections or []:
+            if projection.is_intra and not projection.included:
+                warnings.append("The regions of {} are not coupled to one another: its IntraProjection is "
+                                "not added.".format(names[projection.source_id]))
+
+        pairs = {}
+        for projection in projections or []:
+            if projection.is_intra:
+                continue
+            pair = frozenset((projection.source_id, projection.target_id))
+            pairs.setdefault(pair, []).append(projection)
+        for subnetwork in subnetworks or []:
+            for other in subnetworks or []:
+                if names[subnetwork.id] >= names[other.id]:
+                    continue
+                between = pairs.get(frozenset((subnetwork.id, other.id)))
+                if between and not any(projection.included for projection in between):
+                    warnings.append("{} and {} are simulated independently: no Projection between them is "
+                                    "added.".format(subnetwork.name, other.name))
+        return warnings
+
+    @staticmethod
+    def are_connected(connectivity, source, target):
+        """
+        :return: True when this Connectivity holds any non zero weight from the source Subnetwork's
+                 nodes to the target's
+        """
+        block = connectivity.weights[numpy.ix_(target.node_indices, source.node_indices)]
+        return bool(numpy.any(block))
+
+    @staticmethod
+    def describe_network_set(network_set):
+        """
+        Describe the generated NetworkSet for the wizard step, so the configuration can be inspected
+        without leaving the page.
+        """
+        def cvars(value):
+            return [int(index) for index in numpy.atleast_1d(value)]
+
+        rows = []
+
+        for subnet in network_set.subnets:
+            for projection in subnet.projections:
+                rows.append({
+                    'kind': 'Intra',
+                    'source': subnet.name,
+                    'target': subnet.name,
+                    'shape': '{} x {}'.format(*projection.weights.shape),
+                    'connections': int(projection.weights.nnz),
+                    'source_cvar': cvars(projection.source_cvar),
+                    'target_cvar': cvars(projection.target_cvar)
+                })
+
+        for projection in network_set.projections:
+            rows.append({
+                'kind': 'Inter',
+                'source': projection.source.name,
+                'target': projection.target.name,
+                'shape': '{} x {}'.format(*projection.weights.shape),
+                'connections': int(projection.weights.nnz),
+                'source_cvar': cvars(projection.source_cvar),
+                'target_cvar': cvars(projection.target_cvar)
+            })
+
+        return rows
+
+    @classmethod
+    def unconnected_pairs(cls, network_set):
+        """
+        :return: the ordered Subnetwork pairs left without an InterProjection, so the step can say so
+                 rather than quietly leaving them out
+        """
+        connected = {(projection.source.name, projection.target.name)
+                     for projection in network_set.projections}
+        pairs = []
+        for source in network_set.subnets:
+            for target in network_set.subnets:
+                if source is target or (source.name, target.name) in connected:
+                    continue
+                pairs.append({'source': source.name, 'target': target.name})
+        return pairs
+
+    # ---------------------------------------------------------------- Global configuration
+
+    @staticmethod
+    def output_layout(subnetworks):
+        """
+        Describe the array the global Monitors are going to record.
+
+        ``NetworkSet.observe`` places every Subnetwork's observation at its original Connectivity
+        position when all of them carry ``node_indices`` **and** expose the same number of variables of
+        interest, and concatenates them Subnetwork after Subnetwork otherwise. The Subnetworks built
+        here always carry ``node_indices``, so the number of variables of interest is the only thing
+        left deciding it.
+
+        :return: whether the output is connectome ordered, its variable and node counts, and what each
+                 Subnetwork watches, so the step can report the layout rather than impose one
+        """
+        rows = []
+        for subnetwork in subnetworks or []:
+            model = subnetwork.dynamics.model
+            rows.append({'name': subnetwork.name,
+                         'variables': [str(variable) for variable in model.variables_of_interest]})
+
+        counts = {len(row['variables']) for row in rows}
+        is_merged = len(counts) == 1
+
+        if is_merged:
+            variables = next(iter(counts))
+            nodes = max(max(subnetwork.node_indices) for subnetwork in subnetworks) + 1
+        else:
+            variables = sum(len(row['variables']) for row in rows)
+            nodes = sum(len(subnetwork.node_indices) for subnetwork in subnetworks or [])
+
+        return {'is_merged': is_merged, 'variables': variables, 'nodes': nodes, 'rows': rows}
+
+    @classmethod
+    def validate_monitors(cls, monitors, simulation_length, dt):
+        """
+        Refuse the Monitors that cannot record anything over this simulation.
+
+        Both rules come from what the library does with a sampling period: ``Monitor._config_dt`` turns
+        it into ``istep = round(period / dt)``, which a period below ``dt`` rounds down to zero - and a
+        Monitor then divides by it on its first sample.
+
+        :param simulation_length: None to leave out the rule about the length, while it is not asked yet
+
+        :raise HybridSubnetworkException: naming the Monitor and what to change
+        """
+        for monitor in monitors or []:
+            # Raw records every integration step; its period is documented as ignored
+            if isinstance(monitor, Raw):
+                continue
+
+            name = cls.monitor_name(monitor)
+            period = float(monitor.period)
+
+            if period < dt:
+                raise HybridSubnetworkException(
+                    "The {} Monitor samples every {} ms, below the {} ms integration step size. Give it "
+                    "a sampling period of at least {} ms.".format(name, period, dt, dt))
+
+            if simulation_length is not None and period > simulation_length:
+                raise HybridSubnetworkException(
+                    "The {} Monitor samples every {} ms, longer than the {} ms simulation, so it would "
+                    "record nothing. Shorten its sampling period or lengthen the simulation."
+                    .format(name, period, simulation_length))
+
+    @staticmethod
+    def monitor_name(monitor):
+        """
+        :return: the Monitor class name without the view model suffix, for a message or a summary
+        """
+        return type(monitor).__name__.replace('ViewModel', '')
+
+    # the Monitors whose output is indexed in Connectivity region order: a gain matrix is
+    # (n_sensors, n_regions) and a cortical or hemisphere mask is one entry per region
+    REGION_ORDERED_MONITORS = (Projection, SpatialAverage)
+
+    @classmethod
+    def build_hybrid_simulator(cls, network_set, monitors, simulation_length, connectivity=None, layout=None):
+        """
+        Build the ``tvb.simulator.hybrid.Simulator`` the configuration describes.
+
+        The Monitor view models subclass the library Monitors, so one can be handed to ``monitors``
+        directly - the same reuse the Integrators already get. They are deep copied first: constructing
+        the Simulator configures every Monitor's ``dt`` and sampling step and allocates its buffers, and
+        the objects on the configuration are the ones the forms keep editing.
+
+        When a ``connectivity`` and a ``layout`` are given, the Monitors that need a classic Simulator
+        are handed one. **The order matters and is the reason this happens here** rather than before the
+        copy or after the Simulator exists: ``Projection.config_for_sim`` sizes its recording buffer from
+        ``len(self.voi)`` while ``voi`` is still a concrete index array, and ``Simulator.__init__``
+        replaces ``voi`` with ``slice(None)`` right after - which selects those very same rows. Done in
+        the other order, ``len()`` is applied to a slice and raises.
+
+        The backend is left at the library default, ``"python"``. The numba one only accepts a fixed set
+        of Model classes and Heun/Euler Integrators, so choosing it is follow-up work.
+
+        :return: the Simulator, configured
+        """
+        built_monitors = [copy.deepcopy(monitor) for monitor in monitors or []]
+
+        if connectivity is not None and layout is not None:
+            shim = ClassicSimulatorShim(connectivity, layout['variables'], layout['nodes'],
+                                        cls._scheme_dt(network_set))
+            for monitor in built_monitors:
+                if isinstance(monitor, cls.REGION_ORDERED_MONITORS):
+                    monitor.config_for_sim(shim)
+
+        simulator = LibrarySimulator(nets=network_set, monitors=built_monitors,
+                                     simulation_length=simulation_length)
+        simulator.configure()
+        return simulator
+
+    @staticmethod
+    def _scheme_dt(network_set):
+        """
+        :return: the integration step size the Subnetworks share, which Simulator.validate_dts has
+                 already made sure is one value
+        """
+        return network_set.subnets[0].scheme.dt
+
+    @classmethod
+    def validate_monitors_for_layout(cls, monitors, layout):
+        """
+        Refuse the Monitors that cannot mean anything over the output this configuration produces.
+
+        A gain matrix and a cortical or hemisphere mask are indexed in Connectivity region order, so they
+        are meaningful only when column *i* of the recorded array is region *i*. Over concatenated output
+        they would weight the wrong nodes and return a number rather than fail, which is the one thing
+        worth refusing outright.
+
+        :raise HybridSubnetworkException: naming the Monitor and the Subnetworks that disagree
+        """
+        if layout['is_merged']:
+            return
+
+        for monitor in monitors or []:
+            if not isinstance(monitor, cls.REGION_ORDERED_MONITORS):
+                continue
+            counts = ', '.join('{} watches {}'.format(row['name'], len(row['variables']))
+                               for row in layout['rows'])
+            raise HybridSubnetworkException(
+                "The {} Monitor records in Connectivity region order, which this configuration does not "
+                "produce: the Subnetworks watch different numbers of variables ({}). Give every "
+                "Subnetwork the same number of variables to watch, or drop this Monitor."
+                .format(cls.monitor_name(monitor), counts))
 
     # ---------------------------------------------------------------- Helpers
 

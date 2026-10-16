@@ -25,9 +25,12 @@
 #
 
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.forms.monitor_forms import get_monitor_to_ui_name_dict, get_ui_name_to_monitor_dict
+from tvb.adapters.forms.simulator_fragments import SimulatorFinalFragment
+from tvb.basic.neotraits.api import Attr, List
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities.file.simulator.view_model import HybridSimulatorAdapterModel
-from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.forms import FloatField, MultiSelectField, StrField, TraitDataTypeSelectField
 
 
 class HybridConnectivityFragment(ABCAdapterForm):
@@ -61,6 +64,95 @@ class HybridSubnetworksFragment(ABCAdapterForm):
     The Subnetwork grouping step has no traited fields, the Connectivity regions are assigned to Subnetworks
     through a dedicated interactive component. This form only keeps the step inside the Hybrid Simulator wizard.
     """
+
+    @staticmethod
+    def get_view_model():
+        return HybridSimulatorAdapterModel
+
+
+class HybridSubnetworkDynamicsFragment(ABCAdapterForm):
+    """
+    The wizard step under which each Subnetwork's Model and Integrator are configured. It has no field
+    of its own: it carries the Subnetwork tabs, and the editor of the selected Subnetwork opens under it.
+
+    The integration step size is edited on each Subnetwork's Integrator, and whatever is entered there
+    becomes the step size of every Subnetwork: tvb.simulator.hybrid.Simulator refuses a NetworkSet whose
+    Subnetworks disagree on dt, so there is only ever one, HybridSimulatorAdapterModel.dt.
+    """
+
+    def __init__(self):
+        super(HybridSubnetworkDynamicsFragment, self).__init__()
+        self.ordered_fields = ()
+
+    @staticmethod
+    def get_view_model():
+        return HybridSimulatorAdapterModel
+
+
+class HybridMonitorsFragment(ABCAdapterForm):
+    """
+    The wizard step saying what the simulation records.
+
+    The Monitors are global: tvb.simulator.hybrid.Simulator observes every Subnetwork at once and hands
+    one array to each Monitor, so there is one list for the whole configuration rather than one per
+    Subnetwork. How long the simulation runs is asked on the closing step, with its name.
+    """
+
+    # The Hybrid Simulator has no surface, so the Monitors are the ones the classic Cockpit offers for a
+    # region simulation. That leaves out BOLD Region ROI, which is a surface only Monitor.
+    IS_SURFACE_SIMULATION = False
+
+    def __init__(self):
+        super(HybridMonitorsFragment, self).__init__()
+        self.monitor_choices = get_ui_name_to_monitor_dict(self.IS_SURFACE_SIMULATION)
+        self.monitors = MultiSelectField(List(of=str, label='Monitors', choices=tuple(self.monitor_choices.keys())),
+                                         name='monitors')
+        self.ordered_fields = (self.monitors,)
+
+    def fill_from_trait(self, trait):
+        # type: (HybridSimulatorAdapterModel) -> None
+        super(HybridMonitorsFragment, self).fill_from_trait(trait)
+        names = get_monitor_to_ui_name_dict(self.IS_SURFACE_SIMULATION)
+        self.monitors.data = [names[type(monitor)] for monitor in trait.monitors or []
+                              if type(monitor) in names]
+
+    def monitors_from_post(self):
+        """
+        :return: one Monitor view model per chosen name, in the order they were chosen. The ad hoc List
+                 the selector is built on carries no field_name, so fill_trait skips it and the Monitors
+                 are built here instead - the same split the classic Cockpit makes.
+        """
+        return [self.monitor_choices[name]() for name in self.monitors.value or []
+                if name in self.monitor_choices]
+
+    @staticmethod
+    def get_view_model():
+        return HybridSimulatorAdapterModel
+
+
+class HybridLaunchFragment(ABCAdapterForm):
+    """
+    The closing step of the Hybrid Simulator: how long the simulation runs and what it is called, next
+    to the Launch button - the last things asked, the way the classic Cockpit asks them.
+
+    The name is validated by the classic Cockpit's own rule, so that a Hybrid simulation cannot be named
+    something the burst history could not show.
+    """
+
+    def __init__(self, default_simulation_name="simulation_1"):
+        super(HybridLaunchFragment, self).__init__()
+        self.simulation_length = FloatField(HybridSimulatorAdapterModel.simulation_length)
+        self.simulation_name = StrField(
+            Attr(str, doc='Name for the current Hybrid simulation', default=default_simulation_name,
+                 label='Simulation name'),
+            name='input_simulation_name_id')
+        self.ordered_fields = (self.simulation_length, self.simulation_name)
+
+    def fill_from_post(self, form_data):
+        super(HybridLaunchFragment, self).fill_from_post(form_data)
+        validation_result = SimulatorFinalFragment.is_burst_name_ok(self.simulation_name.value)
+        if validation_result is not True:
+            raise ValueError(validation_result)
 
     @staticmethod
     def get_view_model():

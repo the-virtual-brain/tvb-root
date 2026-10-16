@@ -35,6 +35,21 @@ class HybridSimulatorContext(object):
     # Hybrid Simulator configuration so that the wizard keeps showing the last saved grouping until
     # the user explicitly saves the one on the board.
     KEY_SUBNETWORKS_DRAFT = 'hybrid_simulator_subnetworks_draft'
+    # The Model/Integrator configuration being edited, keyed by Subnetwork identifier. Held apart from
+    # the Hybrid Simulator configuration for the same reason the grouping draft is: the wizard step keeps
+    # summarising the saved dynamics until the user explicitly saves the ones being edited.
+    KEY_DYNAMICS_DRAFT = 'hybrid_simulator_dynamics_draft'
+    # Identifier of the Subnetwork whose dynamics the contextual column is currently configuring
+    KEY_SELECTED_SUBNETWORK = 'hybrid_simulator_selected_subnetwork'
+    # Which saved Dynamic is placed on which region, per Subnetwork, for the Region Model panel. Kept
+    # next to the dynamics draft rather than derived from the Model, since the parameter arrays alone
+    # cannot say which Dynamic produced them.
+    KEY_REGION_MODEL = 'hybrid_simulator_region_model'
+    # The Projection the contextual column is editing, by its ordered pair of Subnetwork identifiers
+    KEY_SELECTED_PROJECTION = 'hybrid_simulator_selected_projection'
+    # The last Projection of each kind opened, which the Intra and Inter tabs point at while the other
+    # kind is selected
+    KEY_LAST_PROJECTION_BY_KIND = 'hybrid_simulator_last_projection_by_kind'
 
     @property
     def project(self):
@@ -56,6 +71,30 @@ class HybridSimulatorContext(object):
     def subnetworks_draft(self):
         return common.get_from_session(self.KEY_SUBNETWORKS_DRAFT)
 
+    @property
+    def dynamics_draft(self):
+        return common.get_from_session(self.KEY_DYNAMICS_DRAFT)
+
+    @property
+    def selected_subnetwork(self):
+        return common.get_from_session(self.KEY_SELECTED_SUBNETWORK)
+
+    @property
+    def region_model(self):
+        return common.get_from_session(self.KEY_REGION_MODEL)
+
+    @property
+    def selected_projection(self):
+        return common.get_from_session(self.KEY_SELECTED_PROJECTION)
+
+    @property
+    def last_projection_by_kind(self):
+        return common.get_from_session(self.KEY_LAST_PROJECTION_BY_KIND) or {}
+
+    @staticmethod
+    def set_last_projection_by_kind(last_by_kind):
+        common.add2session(HybridSimulatorContext.KEY_LAST_PROJECTION_BY_KIND, last_by_kind)
+
     def set_hybrid_simulator(self, hybrid_simulator=None):
         if not hybrid_simulator and not self.hybrid_simulator:
             hybrid_simulator = HybridSimulatorAdapterModel()
@@ -70,9 +109,34 @@ class HybridSimulatorContext(object):
     def clear_subnetworks_draft():
         common.remove_from_session(HybridSimulatorContext.KEY_SUBNETWORKS_DRAFT)
 
+    @staticmethod
+    def set_dynamics_draft(dynamics_by_id):
+        common.add2session(HybridSimulatorContext.KEY_DYNAMICS_DRAFT, dynamics_by_id)
+
+    @staticmethod
+    def set_region_model(region_model):
+        common.add2session(HybridSimulatorContext.KEY_REGION_MODEL, region_model)
+
+    @staticmethod
+    def clear_dynamics_draft():
+        common.remove_from_session(HybridSimulatorContext.KEY_DYNAMICS_DRAFT)
+        common.remove_from_session(HybridSimulatorContext.KEY_SELECTED_SUBNETWORK)
+        common.remove_from_session(HybridSimulatorContext.KEY_REGION_MODEL)
+
+    @staticmethod
+    def set_selected_subnetwork(subnetwork_id):
+        common.add2session(HybridSimulatorContext.KEY_SELECTED_SUBNETWORK, subnetwork_id)
+
+    @staticmethod
+    def set_selected_projection(projection_key):
+        common.add2session(HybridSimulatorContext.KEY_SELECTED_PROJECTION, projection_key)
+
     def reset_hybrid_simulator(self):
         self.set_hybrid_simulator(HybridSimulatorAdapterModel())
         self.clear_subnetworks_draft()
+        self.clear_dynamics_draft()
+        common.remove_from_session(HybridSimulatorContext.KEY_SELECTED_PROJECTION)
+        common.remove_from_session(HybridSimulatorContext.KEY_LAST_PROJECTION_BY_KIND)
 
     @staticmethod
     def add_last_loaded_form_url_to_session(last_loaded_form_url):
@@ -83,3 +147,8 @@ class HybridSimulatorContext(object):
         common.remove_from_session(HybridSimulatorContext.KEY_HYBRID_SIMULATOR_CONFIG)
         common.remove_from_session(HybridSimulatorContext.KEY_LAST_LOADED_FORM_URL)
         common.remove_from_session(HybridSimulatorContext.KEY_SUBNETWORKS_DRAFT)
+        common.remove_from_session(HybridSimulatorContext.KEY_DYNAMICS_DRAFT)
+        common.remove_from_session(HybridSimulatorContext.KEY_SELECTED_SUBNETWORK)
+        common.remove_from_session(HybridSimulatorContext.KEY_REGION_MODEL)
+        common.remove_from_session(HybridSimulatorContext.KEY_SELECTED_PROJECTION)
+        common.remove_from_session(HybridSimulatorContext.KEY_LAST_PROJECTION_BY_KIND)

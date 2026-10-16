@@ -40,6 +40,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter
+from tvb.adapters.simulator.hybrid_simulator_adapter import HybridSimulatorAdapter
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.adapters.visualizers.pse_discrete import DiscretePSEAdapter
@@ -118,6 +119,9 @@ class IntrospectionRegistry(object):
 
     SIMULATOR_MODULE = SimulatorAdapter.__module__
     SIMULATOR_CLASS = SimulatorAdapter.__name__
+
+    HYBRID_SIMULATOR_MODULE = HybridSimulatorAdapter.__module__
+    HYBRID_SIMULATOR_CLASS = HybridSimulatorAdapter.__name__
 
     CONNECTIVITY_MODULE = ConnectivityViewer.__module__
     CONNECTIVITY_CLASS = ConnectivityViewer.__name__

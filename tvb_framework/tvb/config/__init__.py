@@ -45,6 +45,9 @@ TVB_IMPORTER_CLASS = "TVBImporter"
 SIMULATOR_MODULE = "tvb.adapters.simulator.simulator_adapter"
 SIMULATOR_CLASS = "SimulatorAdapter"
 
+HYBRID_SIMULATOR_MODULE = "tvb.adapters.simulator.hybrid_simulator_adapter"
+HYBRID_SIMULATOR_CLASS = "HybridSimulatorAdapter"
+
 CONNECTIVITY_CREATOR_MODULE = 'tvb.adapters.creators.connectivity_creator'
 CONNECTIVITY_CREATOR_CLASS = 'ConnectivityCreator'
 
