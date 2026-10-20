@@ -69,7 +69,7 @@ pipeline {
                 archiveArtifacts artifacts: 'TRIVY_OUTPUT/trivy-report.*', fingerprint: true, allowEmptyArchive: false
             }
         }
-    }
+
         stage ('Build TVB documentation') {
             steps {
                 withDockerContainer(image: '${FULL_DOCKER_IMAGE_NAME}') {
