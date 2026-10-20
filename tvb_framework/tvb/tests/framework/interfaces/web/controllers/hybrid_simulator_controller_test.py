@@ -25,8 +25,9 @@
 #
 
 import json
+import os
 from unittest.mock import patch
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import cherrypy
 from cherrypy.lib.sessions import RamSession
@@ -35,6 +36,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.simulator.view_model import HybridSimulatorAdapterModel
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
 from tvb.interfaces.web.controllers.common import KEY_PROJECT, KEY_USER
 from tvb.interfaces.web.controllers.simulator.hybrid_simulator_controller import HybridSimulatorController, \
     HybridSimulatorURLs
@@ -235,6 +237,42 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
 
         assert rendering_rules['renderer'].form_action_url == HybridSimulatorURLs.SET_CONNECTIVITY_URL
         assert rendering_rules['renderer'].is_first_fragment
+
+    def _select_unavailable_connectivity(self):
+        """Keep in session a Connectivity GID which is no longer found in the database."""
+        hybrid_simulator = HybridSimulatorAdapterModel()
+        hybrid_simulator.connectivity = uuid4()
+        self.hybrid_controller.context.set_hybrid_simulator(hybrid_simulator)
+
+    def test_unavailable_connectivity_returns_to_first_fragment(self):
+        cherrypy.request.method = "GET"
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._select_unavailable_connectivity()
+            subnetworks_step = self.hybrid_controller.set_subnetworks()
+            saved_step = self.hybrid_controller.save_subnetworks()
+            board = self.hybrid_controller.configure_subnetworks()
+            state = json.loads(self.hybrid_controller.add_subnetwork())
+
+        for rendering_rules in (subnetworks_step, saved_step):
+            assert rendering_rules['renderer'].form_action_url == HybridSimulatorURLs.SET_CONNECTIVITY_URL
+            assert rendering_rules['renderer'].is_first_fragment
+        assert board['renderer'].load_error
+        assert board['renderer'].subnetworks is None
+        assert state['status'] == 'error'
+        assert state['subnetworks'] == []
+
+    def test_connectivity_without_data_file_returns_to_first_fragment(self):
+        cherrypy.request.method = "GET"
+        os.remove(h5.path_for_stored_index(self.connectivity))
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            rendering_rules = self._configured_hybrid_simulator()
+            state = json.loads(self.hybrid_controller.add_subnetwork())
+
+        assert rendering_rules['renderer'].form_action_url == HybridSimulatorURLs.SET_CONNECTIVITY_URL
+        assert rendering_rules['renderer'].is_first_fragment
+        assert state['status'] == 'error'
 
     # ---------------------------------------------------------------- editing the board
 

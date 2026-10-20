@@ -34,10 +34,13 @@ in a later step of the Hybrid Simulator workflow.
 .. moduleauthor:: TVB Team
 """
 
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.simulator.view_model import HybridSubnetworkViewModel
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
 from tvb.core.services.exceptions import ServicesBaseException
+from tvb.storage.h5.file.exceptions import FileStorageException
 
 
 class HybridSubnetworkException(ServicesBaseException):
@@ -66,13 +69,23 @@ class HybridSimulatorService(object):
 
     # ---------------------------------------------------------------- Connectivity accessors
 
-    @staticmethod
-    def get_region_labels(connectivity_gid):
+    def get_region_labels(self, connectivity_gid):
         """
         :return: the list of region labels of the given Connectivity, in the original node order
+        :raises HybridSubnetworkException: when the Connectivity can no longer be read, for example after
+                 it was removed while still selected in the Hybrid Simulator configuration
         """
-        with h5.h5_file_for_gid(connectivity_gid) as conn_h5:
-            return [str(label) for label in conn_h5.get_region_labels()]
+        connectivity_index = load_entity_by_gid(connectivity_gid)
+        if not isinstance(connectivity_index, ConnectivityIndex):
+            raise HybridSubnetworkException("The selected Connectivity is no longer available. "
+                                            "Please select another one.")
+        try:
+            with h5.h5_file_for_index(connectivity_index) as conn_h5:
+                return [str(label) for label in conn_h5.get_region_labels()]
+        except FileStorageException as excep:
+            self.logger.exception(excep)
+            raise HybridSubnetworkException("The data of the selected Connectivity could not be read. "
+                                            "Please select another one.")
 
     # ---------------------------------------------------------------- Subnetwork name helpers
 
