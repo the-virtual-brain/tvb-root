@@ -178,6 +178,12 @@ function _renderHybridStack(stepUrls) {
             success: function (response) {
                 const fragment = _asFragment(response);
                 const form = fragment.querySelector("form");
+                if (form !== null && form.id !== stepUrls[index]) {
+                    // the server answered with another step, e.g. the Connectivity is no longer available,
+                    // so that step is all there is left to configure
+                    _replaceHybridFragments(response);
+                    return;
+                }
                 renderWithMathjax($(container), fragment);
                 if (!isLastStep && form !== null) {
                     _lockHybridForm(form);
@@ -192,6 +198,17 @@ function _renderHybridStack(stepUrls) {
     }
 
     loadNext();
+}
+
+/**
+ * Bring back on screen, after a page reload, the wizard steps up to the one the user was configuring.
+ * The page itself only renders the first step.
+ */
+function restoreHybridWizard(lastStepUrl) {
+    const upTo = HYBRID_WIZARD_STEPS.indexOf(lastStepUrl);
+    if (upTo > 0) {
+        _renderHybridStack(HYBRID_WIZARD_STEPS.slice(0, upTo + 1));
+    }
 }
 
 function resetToNewHybridSimulator() {
@@ -264,6 +281,12 @@ function hybridSubmit(currentForm) {
  * screen. A form's id is its action url, which is how the previous step is found.
  */
 function hybridPreviousStep(currentForm, previousUrl) {
+    // stepping back requests nothing from the server, so tell it which step a page reload should show
+    doAjaxCall({
+        type: "POST",
+        url: "/burst/hybrid/set_fragment_url/",
+        data: {url: previousUrl}
+    });
     const previousForm = document.getElementById(previousUrl);
 
     if (previousForm === null) {

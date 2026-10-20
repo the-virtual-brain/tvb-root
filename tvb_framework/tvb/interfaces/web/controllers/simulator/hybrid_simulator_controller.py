@@ -51,6 +51,9 @@ class HybridSimulatorURLs(object):
     REMOVE_SUBNETWORK_URL = '/burst/hybrid/remove_subnetwork'
     RENAME_SUBNETWORK_URL = '/burst/hybrid/rename_subnetwork'
     MOVE_REGIONS_URL = '/burst/hybrid/move_regions'
+    SET_FRAGMENT_URL = '/burst/hybrid/set_fragment_url'
+    # the wizard steps, in order: the ones a page reload may bring back on screen
+    WIZARD_STEPS = (SET_CONNECTIVITY_URL, SET_SUBNETWORKS_URL)
 
 
 class HybridSimulatorFragmentRenderingRules(object):
@@ -157,13 +160,15 @@ class HybridSimulatorController(BurstBaseController):
         template_specification = dict(mainContent="burst/main_hybrid_simulator", title="Hybrid Simulator",
                                       includedResources='project/included_resources')
 
-        if not self.context.last_loaded_fragment_url:
+        if self.context.last_loaded_fragment_url not in HybridSimulatorURLs.WIZARD_STEPS:
             self.context.add_last_loaded_form_url_to_session(HybridSimulatorURLs.SET_CONNECTIVITY_URL)
 
         form = self._prepare_connectivity_form()
         rendering_rules = self._connectivity_rendering_rules(form)
 
         template_specification['burst_list'] = self.get_available_hybrid_bursts(self.context.project.id)
+        # the step the user was configuring, which the page brings back on screen after a reload
+        template_specification['last_form_url'] = self.context.last_loaded_fragment_url
         template_specification.update(**rendering_rules.to_dict())
 
         cherrypy.response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
@@ -171,6 +176,16 @@ class HybridSimulatorController(BurstBaseController):
         cherrypy.response.headers['Expires'] = '0'
 
         return self.fill_default_attributes(template_specification, subsection='hybrid')
+
+    @expose_json
+    def set_fragment_url(self, url=None, **data):
+        """
+        Remember the wizard step the user stepped back to, which is not otherwise requested from the server.
+        """
+        if url in HybridSimulatorURLs.WIZARD_STEPS:
+            self.context.add_last_loaded_form_url_to_session(url)
+        else:
+            self.logger.error("Cannot remember '{}' as the last Hybrid Simulator step.".format(url))
 
     @expose_fragment('burst/hybrid_burst_history')
     def load_hybrid_history(self):

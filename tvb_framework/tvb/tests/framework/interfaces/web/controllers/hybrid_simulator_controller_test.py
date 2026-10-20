@@ -107,7 +107,45 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         assert result_dict['renderer'].form_action_url == HybridSimulatorURLs.SET_CONNECTIVITY_URL
         assert result_dict['renderer'].fragment_title == "Connectivity"
         assert result_dict['burst_list'] == []
+        assert result_dict['last_form_url'] == HybridSimulatorURLs.SET_CONNECTIVITY_URL
         assert not result_dict['errors']
+
+    def _index(self):
+        cherrypy.request.method = "GET"
+        with patch('cherrypy.session', self.sess_mock, create=True), \
+                patch('tvb.interfaces.web.controllers.decorators.TvbProfile.is_first_run', return_value=False):
+            return self.hybrid_controller.index()
+
+    def test_index_after_reload_points_at_the_step_being_configured(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+
+        result_dict = self._index()
+
+        # the page renders the first step, the client then brings back the rest up to this one
+        assert result_dict['renderer'].form_action_url == HybridSimulatorURLs.SET_CONNECTIVITY_URL
+        assert result_dict['last_form_url'] == HybridSimulatorURLs.SET_SUBNETWORKS_URL
+
+    def test_stepping_back_is_remembered_for_the_next_reload(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            self.hybrid_controller.set_fragment_url(url=HybridSimulatorURLs.SET_CONNECTIVITY_URL)
+
+        assert self._index()['last_form_url'] == HybridSimulatorURLs.SET_CONNECTIVITY_URL
+
+    def test_set_fragment_url_ignores_unknown_steps(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            self.hybrid_controller.set_fragment_url(url="/burst/set_model")
+            self.hybrid_controller.set_fragment_url()
+
+        assert self._index()['last_form_url'] == HybridSimulatorURLs.SET_SUBNETWORKS_URL
+
+    def test_index_falls_back_to_first_step_for_an_unknown_last_step(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self.hybrid_controller.context.add_last_loaded_form_url_to_session("/burst/hybrid/removed_step")
+
+        assert self._index()['last_form_url'] == HybridSimulatorURLs.SET_CONNECTIVITY_URL
 
     def test_connectivity_step_configures_nothing_in_the_third_column(self):
         cherrypy.request.method = "GET"
