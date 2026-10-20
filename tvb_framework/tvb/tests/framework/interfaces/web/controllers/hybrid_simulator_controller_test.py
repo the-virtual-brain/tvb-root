@@ -532,6 +532,34 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         assert rendering_rules['renderer'].is_first_fragment
         assert not draft
 
+    def test_switching_project_drops_the_hybrid_configuration(self):
+        other_project = TestFactory.create_project(self.test_user, "HybridSimulatorController_Other_Project")
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            self.hybrid_controller.add_subnetwork()
+            self.hybrid_controller._mark_selected(other_project)
+
+            hybrid_simulator = self.hybrid_controller.context.hybrid_simulator
+            draft = self._draft_subnetworks()
+            last_loaded_fragment_url = self.hybrid_controller.context.last_loaded_fragment_url
+
+        assert hybrid_simulator is None
+        assert draft is None
+        assert last_loaded_fragment_url is None
+
+    def test_reselecting_the_same_project_keeps_the_hybrid_configuration(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            self.hybrid_controller.add_subnetwork()
+            self.hybrid_controller._mark_selected(self.test_project)
+
+            saved = self._saved_subnetworks()
+            draft = self._draft_subnetworks()
+
+        assert len(saved) == 1
+        assert len(draft) == 2
+
     def test_hybrid_history_excludes_classic_bursts_for_now(self):
         classic_burst = BurstConfiguration(self.test_project.id)
         classic_burst.name = 'classic_burst'
