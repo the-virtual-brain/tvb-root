@@ -73,8 +73,8 @@ class HybridSimulatorURLs(object):
     RENAME_SUBNETWORK_URL = '/burst/hybrid/rename_subnetwork'
     MOVE_REGIONS_URL = '/burst/hybrid/move_regions'
     SET_FRAGMENT_URL = '/burst/hybrid/set_fragment_url'
-    # the wizard steps, in order: the ones a page reload may bring back on screen
-    WIZARD_STEPS = (SET_CONNECTIVITY_URL, SET_SUBNETWORKS_URL)
+    # what every url of the Hybrid Simulator starts with, the steps remembered for a page reload included
+    HYBRID_URL_PREFIX = '/burst/hybrid/'
     # the wizard step under which every Subnetwork's dynamics are configured, holding the shared dt
     SET_SUBNETWORK_DYNAMICS_URL = '/burst/hybrid/set_subnetwork_dynamics'
     SELECT_SUBNETWORK_URL = '/burst/hybrid/select_subnetwork'
@@ -153,6 +153,10 @@ class HybridSimulatorFragmentRenderingRules(object):
         # somewhere else, and it may not equal the answer's url or the client would take the answer
         # for a rejection of this step rather than for the next one.
         self.next_form_action_url = None
+        # The url answering with the step after this one, followed after a page reload to bring the
+        # steps back on screen, the way the classic Cockpit follows each step's action url. None for
+        # the last step.
+        self.next_step_url = None
         # True for a step rendered as the record of something already configured: fields disabled and
         # buttons hidden, which is what the client's own locking does at runtime.
         self.is_read_only = False
@@ -339,8 +343,10 @@ class HybridSimulatorController(BurstBaseController):
     def _connectivity_rendering_rules(form):
         # No context_form_url: the Connectivity step configures nothing in the third column, which is
         # what empties that column again when the user steps back to it.
-        return HybridSimulatorFragmentRenderingRules(
+        rules = HybridSimulatorFragmentRenderingRules(
             form, HybridSimulatorURLs.SET_CONNECTIVITY_URL, is_first_fragment=True, fragment_title="Connectivity")
+        rules.next_step_url = HybridSimulatorURLs.SET_SUBNETWORKS_URL
+        return rules
 
     @expose_page
     @settings
@@ -349,15 +355,15 @@ class HybridSimulatorController(BurstBaseController):
         template_specification = dict(mainContent="burst/main_hybrid_simulator", title="Hybrid Simulator",
                                       includedResources='project/included_resources')
 
-        if self.context.last_loaded_fragment_url not in HybridSimulatorURLs.WIZARD_STEPS:
+        if not self.context.last_loaded_fragment_url:
             self.context.add_last_loaded_form_url_to_session(HybridSimulatorURLs.SET_CONNECTIVITY_URL)
 
         form = self._prepare_connectivity_form()
         rendering_rules = self._connectivity_rendering_rules(form)
 
         template_specification['burst_list'] = self.get_available_hybrid_bursts(self.context.project.id)
-        # the step the user was configuring, which the page brings back on screen after a reload
-        template_specification['last_form_url'] = self.context.last_loaded_fragment_url
+        # the step the user was configuring, up to which the page brings the steps back after a reload
+        template_specification['last_form_url'] = self._last_step_on_screen()
         template_specification.update(**rendering_rules.to_dict())
 
         cherrypy.response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
@@ -371,10 +377,22 @@ class HybridSimulatorController(BurstBaseController):
         """
         Remember the wizard step the user stepped back to, which is not otherwise requested from the server.
         """
-        if url in HybridSimulatorURLs.WIZARD_STEPS:
+        if url is not None and url.startswith(HybridSimulatorURLs.HYBRID_URL_PREFIX):
             self.context.add_last_loaded_form_url_to_session(url)
         else:
             self.logger.error("Cannot remember '{}' as the last Hybrid Simulator step.".format(url))
+
+    def _last_step_on_screen(self):
+        """
+        The step the user was configuring. While a Subnetwork's dynamics are configured that is the
+        editor under the Subnetwork dynamics step, though the step is what is remembered: the editor is
+        opened by the step on its own, and Previous from the Projections goes back to its row of actions.
+        """
+        last_url = self.context.last_loaded_fragment_url
+        if last_url in (HybridSimulatorURLs.SET_SUBNETWORK_DYNAMICS_URL,
+                        HybridSimulatorURLs.SAVE_SUBNETWORK_DYNAMICS_URL):
+            return HybridSimulatorURLs.SUBNETWORK_EDITOR_URL
+        return last_url
 
     @expose_fragment('burst/hybrid_burst_history')
     def load_hybrid_history(self):
@@ -814,6 +832,7 @@ class HybridSimulatorController(BurstBaseController):
         # Next opens the Monitors step rather than submitting it: this step's own form carries nothing
         # for the Monitors, and submitting nothing would refuse them.
         rules.next_form_action_url = HybridSimulatorURLs.OPEN_MONITORS_URL
+        rules.next_step_url = HybridSimulatorURLs.SET_MONITORS_URL
         return rules
 
     def _projections_editor_rules(self, connectivity, subnetworks, projections, reset=(), edit=None,
@@ -1267,6 +1286,7 @@ class HybridSimulatorController(BurstBaseController):
         rules = self._step_rules(form, url, previous_url)
         rules.monitor_name = self._monitor_legend(monitor, is_equation)
         rules.is_monitor_step = True
+        rules.next_step_url = self._monitor_step_after(hybrid_simulator, index)
         return rules.to_dict()
 
     @staticmethod
@@ -1294,7 +1314,18 @@ class HybridSimulatorController(BurstBaseController):
         self.context.add_last_loaded_form_url_to_session(HybridSimulatorURLs.SET_MONITORS_URL)
         rules = self._step_rules(form, HybridSimulatorURLs.SET_MONITORS_URL, HybridSimulatorURLs.SET_PROJECTIONS_URL)
         rules.is_monitor_step = True
+        rules.next_step_url = self._monitor_step_after(self.context.hybrid_simulator, -1)
         return rules
+
+    def _monitor_step_after(self, hybrid_simulator, index):
+        """
+        :return: the url of the Monitor chain step after the given position, or of the closing summary
+                 once the chain is exhausted; -1 stands for the Monitors step opening the chain
+        """
+        chain = self._monitor_chain(hybrid_simulator)
+        if index + 1 < len(chain):
+            return chain[index + 1][0]
+        return HybridSimulatorURLs.SET_SIMULATION_SUMMARY_URL
 
     def _simulation_summary_step(self):
         """
@@ -1569,6 +1600,7 @@ class HybridSimulatorController(BurstBaseController):
             dynamics_by_id=draft, selected_subnetwork=self._selected_subnetwork(subnetworks).id,
             is_modified=not self.hybrid_simulator_service.same_dynamics(subnetworks, draft))
         rules.error_message = error_message
+        rules.next_step_url = HybridSimulatorURLs.SUBNETWORK_EDITOR_URL
         return rules
 
     @staticmethod
@@ -1627,6 +1659,7 @@ class HybridSimulatorController(BurstBaseController):
         rules.is_subnetwork_editor = True
         rules.editor_subnetwork_name = subnetwork_name
         rules.editor_sections = sections
+        rules.next_step_url = HybridSimulatorURLs.SET_PROJECTIONS_URL
         return rules
 
     def _model_step_rules(self, dynamics):
@@ -1730,7 +1763,7 @@ class HybridSimulatorController(BurstBaseController):
     # ---------------------------------------------------------------- Helpers
 
     def _subnetworks_step_rules(self, region_labels, subnetworks, draft):
-        return HybridSimulatorFragmentRenderingRules(
+        rules = HybridSimulatorFragmentRenderingRules(
             HybridSubnetworksFragment(), HybridSimulatorURLs.SET_SUBNETWORKS_URL,
             HybridSimulatorURLs.SET_CONNECTIVITY_URL, is_subnetworks_summary_fragment=True,
             fragment_title="Subnetworks", region_labels=region_labels, subnetworks=subnetworks,
@@ -1738,6 +1771,8 @@ class HybridSimulatorController(BurstBaseController):
             is_modified=self._is_modified(subnetworks, draft),
             # The dynamics step configures the saved Subnetworks, so it only opens over a saved grouping.
             next_button_enabled=not self._is_modified(subnetworks, draft))
+        rules.next_step_url = HybridSimulatorURLs.SET_SUBNETWORK_DYNAMICS_URL
+        return rules
 
     def _back_to_connectivity(self, message):
         common.set_error_message(message)

@@ -14,6 +14,7 @@
       data-hybrid-context-url="{{ renderer.context_form_url if renderer.context_form_url else '' }}"
       data-hybrid-context-title="{{ renderer.context_title if renderer.context_title else '' }}"
       data-hybrid-modified="{{ 'true' if renderer.is_modified else 'false' }}"
+      {% if renderer.next_step_url %} data-hybrid-next-url="{{ renderer.next_step_url }}" {% endif %}
       {% if renderer.error_message %} data-hybrid-error="{{ renderer.error_message }}" {% endif %}>
     {% if renderer.is_subnetworks_summary_fragment %}
         {% include 'burst/hybrid_subnetworks_summary.html' %}

@@ -31,6 +31,7 @@ from unittest.mock import patch
 from uuid import UUID, uuid4
 
 import cherrypy
+import pytest
 from cherrypy.lib.sessions import RamSession
 
 from tvb.adapters.forms.model_forms import ModelsEnum
@@ -155,11 +156,69 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
 
         assert self._index()['last_form_url'] == HybridSimulatorURLs.SET_SUBNETWORKS_URL
 
-    def test_index_falls_back_to_first_step_for_an_unknown_last_step(self):
+    @pytest.mark.parametrize('previous_step', [HybridSimulatorURLs.SET_PROJECTIONS_URL,
+                                               HybridSimulatorURLs.SET_MONITORS_URL,
+                                               HybridSimulatorURLs.SET_MONITOR_PARAMS_URL + '/BoldViewModel'])
+    def test_stepping_back_to_a_later_step_is_remembered(self, previous_step):
         with patch('cherrypy.session', self.sess_mock, create=True):
-            self.hybrid_controller.context.add_last_loaded_form_url_to_session("/burst/hybrid/removed_step")
+            self._configured_hybrid_simulator()
+            self.hybrid_controller.set_fragment_url(url=previous_step)
 
-        assert self._index()['last_form_url'] == HybridSimulatorURLs.SET_CONNECTIVITY_URL
+        assert self._index()['last_form_url'] == previous_step
+
+    @pytest.mark.parametrize('previous_step', [HybridSimulatorURLs.SET_SUBNETWORK_DYNAMICS_URL,
+                                               HybridSimulatorURLs.SAVE_SUBNETWORK_DYNAMICS_URL])
+    def test_index_after_reload_on_the_dynamics_points_at_the_editor(self, previous_step):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_hybrid_simulator()
+            # the dynamics step is remembered while its editor is open, and Previous from the
+            # Projections goes back to the row of actions closing that editor
+            self.hybrid_controller.set_fragment_url(url=previous_step)
+
+        assert self._index()['last_form_url'] == HybridSimulatorURLs.SUBNETWORK_EDITOR_URL
+
+    def _get_step(self, url):
+        """Request a wizard step by its url, the way the client does when it follows a step's next url."""
+        cherrypy.request.method = "GET"
+        for monitor_url, method in ((HybridSimulatorURLs.SET_MONITOR_PARAMS_URL, 'set_monitor_params'),
+                                    (HybridSimulatorURLs.SET_MONITOR_EQUATION_URL, 'set_monitor_equation')):
+            if url.startswith(monitor_url + '/'):
+                return getattr(self.hybrid_controller, method)(url[len(monitor_url) + 1:])
+        method = {HybridSimulatorURLs.SET_SUBNETWORKS_URL: 'set_subnetworks',
+                  HybridSimulatorURLs.SET_SUBNETWORK_DYNAMICS_URL: 'set_subnetwork_dynamics',
+                  HybridSimulatorURLs.SUBNETWORK_EDITOR_URL: 'subnetwork_editor',
+                  HybridSimulatorURLs.SET_PROJECTIONS_URL: 'set_projections',
+                  HybridSimulatorURLs.SET_MONITORS_URL: 'set_monitors',
+                  HybridSimulatorURLs.SET_SIMULATION_SUMMARY_URL: 'set_simulation_summary'}[url]
+        return getattr(self.hybrid_controller, method)()
+
+    def test_each_step_names_the_one_after_it_up_to_the_closing_step(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_subnetwork()
+            self._choose_monitors(['Temporal average', 'BOLD'], simulation_length='6000.0')
+
+            # what the client does after a reload: follow each step's next url from the first step
+            steps = []
+            renderer = self._index()['renderer']
+            while renderer.next_step_url is not None:
+                renderer = self._get_step(renderer.next_step_url)['renderer']
+                steps.append(renderer.form_action_url)
+
+        assert steps == [HybridSimulatorURLs.SET_SUBNETWORKS_URL, HybridSimulatorURLs.SET_SUBNETWORK_DYNAMICS_URL,
+                         HybridSimulatorURLs.SUBNETWORK_EDITOR_URL, HybridSimulatorURLs.SET_PROJECTIONS_URL,
+                         HybridSimulatorURLs.SET_MONITORS_URL,
+                         HybridSimulatorURLs.SET_MONITOR_PARAMS_URL + '/TemporalAverageViewModel',
+                         HybridSimulatorURLs.SET_MONITOR_PARAMS_URL + '/BoldViewModel',
+                         HybridSimulatorURLs.SET_MONITOR_EQUATION_URL + '/BoldViewModel',
+                         HybridSimulatorURLs.SET_SIMULATION_SUMMARY_URL]
+
+    def test_the_monitors_step_names_the_summary_when_no_monitor_has_parameters(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_subnetwork()
+            self._choose_monitors(['Raw recording'])
+            renderer = self._get_step(HybridSimulatorURLs.SET_MONITORS_URL)['renderer']
+
+        assert renderer.next_step_url == HybridSimulatorURLs.SET_SIMULATION_SUMMARY_URL
 
     def test_connectivity_step_configures_nothing_in_the_third_column(self):
         cherrypy.request.method = "GET"

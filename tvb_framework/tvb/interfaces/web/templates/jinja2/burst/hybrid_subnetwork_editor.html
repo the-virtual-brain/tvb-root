@@ -11,7 +11,8 @@
 {% if renderer.load_error %}
     <p class="errorMessage">{{ renderer.load_error }}</p>
 {% else %}
-    <div class="hybrid-subnetwork-editor" id="hybrid-subnetwork-editor" data-hybrid-editor="true">
+    <div class="hybrid-subnetwork-editor" id="hybrid-subnetwork-editor" data-hybrid-editor="true"
+         data-hybrid-next-url="{{ renderer.next_step_url }}">
         {#- The Model and Integrator of this one Subnetwork, indented and outlined so they read apart
             from the fields of the whole simulation around them. The row of actions stays outside:
             it stores the dynamics of every Subnetwork, not only of this one. -#}

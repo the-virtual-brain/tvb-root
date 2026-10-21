@@ -345,14 +345,63 @@ function _renderHybridStack(stepUrls) {
 }
 
 /**
+ * The wizard step found in the given element: its url, the url answering with the step after it, and a
+ * form of it to lock. The Subnetwork editor is one step made of several forms, named after its sections,
+ * so it is told apart by its marker instead.
+ */
+function _hybridStepIn(element) {
+    const editor = element.querySelector("[data-hybrid-editor]");
+    if (editor !== null) {
+        return {url: HYBRID_SUBNETWORK_EDITOR_URL, nextUrl: editor.dataset.hybridNextUrl || "",
+            form: editor.querySelector("form")};
+    }
+    const form = element.querySelector("form");
+    if (form === null) {
+        return null;
+    }
+    return {url: form.id, nextUrl: form.dataset.hybridNextUrl || "", form: form};
+}
+
+/**
  * Bring back on screen, after a page reload, the wizard steps up to the one the user was configuring.
- * The page itself only renders the first step.
+ * The page itself only renders the first step; each step names the one after it, which is followed
+ * until the last one is reached, the way renderAllSimulatorForms does it for the classic Cockpit.
  */
 function restoreHybridWizard(lastStepUrl) {
-    const upTo = HYBRID_WIZARD_STEPS.indexOf(lastStepUrl);
-    if (upTo > 0) {
-        _renderHybridStack(HYBRID_WIZARD_STEPS.slice(0, upTo + 1));
+    const container = _hybridFormsDiv();
+
+    function loadAfter(step) {
+        if (step === null || step.url === lastStepUrl || step.nextUrl === "") {
+            _afterHybridRender();
+            return;
+        }
+        doAjaxCall({
+            type: "GET",
+            url: step.nextUrl,
+            success: function (response) {
+                const fragment = _asFragment(response);
+                const nextStep = _hybridStepIn(fragment);
+                // An answer naming a step already on screen is a refusal sending the user back there,
+                // e.g. the Projections refused over unsaved dynamics: that is where the user carries on.
+                const earlierForm = nextStep === null ? null : document.getElementById(nextStep.url);
+                if (earlierForm !== null) {
+                    _dropHybridStepsAfter(earlierForm);
+                    earlierForm.replaceWith(fragment);
+                    _afterHybridRender();
+                    _showHybridError(document.getElementById(nextStep.url));
+                    return;
+                }
+                _lockHybridForm(step.form);
+                renderWithMathjax($(container), fragment);
+                loadAfter(nextStep);
+            },
+            error: function () {
+                displayMessage("Hybrid simulator parameters could not be loaded.", "errorMessage");
+            }
+        });
     }
+
+    loadAfter(_hybridStepIn(container));
 }
 
 function resetToNewHybridSimulator() {
