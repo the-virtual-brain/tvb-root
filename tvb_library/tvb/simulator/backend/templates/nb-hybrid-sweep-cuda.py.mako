@@ -885,18 +885,6 @@ def run_sweep(
                 % endfor
                 % endif
 
-                ## clamp intermediate state before the Heun correction
-                % for sv in svars:
-                % if sv in lo_map and lo_map[sv] != float('-inf'):
-                if _i1_${sv}[m] < np.float32(${lo_map[sv]}):
-                    _i1_${sv}[m] = np.float32(${lo_map[sv]})
-                % endif
-                % if sv in hi_map and hi_map[sv] != float('inf'):
-                if _i1_${sv}[m] > np.float32(${hi_map[sv]}):
-                    _i1_${sv}[m] = np.float32(${hi_map[sv]})
-                % endif
-                % endfor
-
             ## Recompute cross-mode intermediates from i1 arrays (correct per-mk indexing)
             % for _op_name, _op_mat, _op_svar in _dm_ops:
             _${_op_name}_i1 = cuda.local.array((${n_modes},), dtype=numba.float32)
@@ -1037,18 +1025,6 @@ def run_sweep(
                 i1_${sv} = ${sv} + dt_f * d0_${sv}
                 % endfor
                 % endif
-
-                ## clamp intermediate
-                % for sv in svars:
-                % if sv in lo_map and lo_map[sv] != float('-inf'):
-                if i1_${sv} < np.float32(${lo_map[sv]}):
-                    i1_${sv} = np.float32(${lo_map[sv]})
-                % endif
-                % if sv in hi_map and hi_map[sv] != float('inf'):
-                if i1_${sv} > np.float32(${hi_map[sv]}):
-                    i1_${sv} = np.float32(${hi_map[sv]})
-                % endif
-                % endfor
 
                 ## dfun at intermediate (k2)
                 (d1_${', d1_'.join(svars)},) = dfun_${sn.name}(${', '.join(['i1_' + s for s in svars])}, ${', '.join(cterms)}, ${sn.name}_sp, i, sweep_params, tid)
