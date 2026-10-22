@@ -13,7 +13,9 @@ pip install -e . --no-deps
 cd ..
 
 cd tvb_library
-pip install -e . --no-deps
+rem non-editable: the compiled nanobind extension ships in the install;
+rem an editable install would re-run cmake on every tvb import
+pip install . --no-deps
 cd ..
 
 cd tvb_contrib

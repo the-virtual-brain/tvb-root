@@ -124,6 +124,28 @@ A coverage report can be generated with:
     py.test --cov-config .coveragerc --cov=tvb tvb/tests/ --cov-branch --cov-report xml:[file_where_xml_will_be_generated]
 
 
+# C++ hybrid simulator backend (cpp_hybrid) — support matrix
+
+The compiled nanobind hybrid-simulator backend
+(`tvb.simulator.backend.cpp_hybrid`) ships inside the `tvb-library` package.
+Its wheel support matrix (decision recorded 2026-09, tvbkh handoff item 7):
+
+- **Python:** `cp312-abi3` stable-ABI wheels — CPython **≥ 3.12**
+  (3.12/3.13/3.14+; the extension cannot load on older interpreters). No
+  cp310/cp311 wheels are built: the hybrid Python code needs ≥ 3.10 (PEP 604),
+  but CPython 3.10 reaches EOL Oct 2026 and 3.11 Oct 2027, so the extra CI
+  matrix is not warranted. Full rationale:
+  `tvb_library/tvb/simulator/backend/cpp_hybrid/README.md`.
+- **OS/arch:** Linux x86_64, macOS arm64, Windows x86_64 (built by
+  `.github/workflows/cpp-hybrid.yml` on the tvbkh branch; release builds in
+  `.github/workflows/wheels.yml`).
+- **Portability caveat (predates this work):** the extension and the runtime
+  g++ fallback compile with `-march=native`, so binary wheels are tuned to the
+  build runner's CPU — x86_64 wheels assume the CI runner's AVX2-class
+  baseline, and older CPUs may not be able to run them.
+
+---
+
 # Relevant TVB Resources
 
 - For issue tracking we are using Jira: http://req.thevirtualbrain.org

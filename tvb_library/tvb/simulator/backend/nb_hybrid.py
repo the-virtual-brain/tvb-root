@@ -401,6 +401,7 @@ def _apply_monitors(
     bold_states: Optional[dict] = None,
     bold_raw_outputs: Optional[list] = None,
     temporal_raw_outputs: Optional[list] = None,
+    kernel_streams: Optional[dict] = None,
 ) -> list:
     """Transform per-subnet (times, data, ctavg) tuples into monitor-dispatched output.
 
@@ -412,6 +413,12 @@ def _apply_monitors(
         Each monitor determines which view / transform of the raw data to return.
     dt : float
         Integration time step (ms).
+    kernel_streams : dict, optional
+        ``{monitor_index: [(times, data), ... per subnet]}`` produced by the
+        C++ kernel monitor engines (Bold HRF convolution, Raw/SubSample
+        collection).  When present for a monitor, the kernel stream is used
+        directly; otherwise this pure-Python path remains the reference
+        implementation every backend shares.
 
     Returns
     -------
@@ -501,6 +508,10 @@ def _apply_monitors(
                 else:
                     per_subnet.append((times, data.mean(axis=-2, keepdims=True)))
             elif isinstance(m, Bold):
+                # Kernel engine stream (C++ side convolution) when available
+                if kernel_streams and monitor_index in kernel_streams:
+                    per_subnet.append(kernel_streams[monitor_index][si])
+                    continue
                 # Keep the mutable HRF stocks outside the topology-specific
                 # compiled kernel and drive TVB's monitor with every state.
                 if bold_raw_outputs is not None:
@@ -568,6 +579,9 @@ def _apply_monitors(
                             continue
                     per_subnet.append((times, sa_data))
             elif isinstance(m, SubSample):
+                if kernel_streams and monitor_index in kernel_streams:
+                    per_subnet.append(kernel_streams[monitor_index][si])
+                    continue
                 period = float(m.period)
                 istep = max(1, int(round(period / dt)))
                 # Step-based selection (1-indexed) to match Python monitor semantics
@@ -627,6 +641,9 @@ def _apply_monitors(
                         np.empty((0,) + sample_data.shape[1:], dtype=np.float64),
                     ))
             elif isinstance(m, Raw):
+                if kernel_streams and monitor_index in kernel_streams:
+                    per_subnet.append(kernel_streams[monitor_index][si])
+                    continue
                 per_subnet.append((times, data))
             else:
                 raise NotImplementedError(
@@ -673,6 +690,69 @@ def _apply_monitors(
     return results
 
 
+def _validate_multi_dt(network_set: NetworkSet) -> float:
+    """Validate per-subnetwork dts; return the master-clock base dt (dt0).
+
+    Every subnetwork's dt must be an integer multiple of the smallest dt
+    (dt0 = min over subnets); ``k_j = round(dt_j / dt0) >= 1`` is the number
+    of master ticks per subnet step.  Raises ValueError otherwise.  The
+    single-dt case (all equal) trivially satisfies the rule with all k = 1.
+    """
+    import numpy as _np
+
+    dts = [float(sn.scheme.dt) for sn in network_set.subnets]
+    dt0 = min(dts)
+    for sn, dt_j in zip(network_set.subnets, dts):
+        k = int(round(dt_j / dt0))
+        if k < 1 or not _np.isclose(dt_j, k * dt0, rtol=1e-9, atol=1e-12):
+            raise ValueError(
+                "All subnetworks must use dts that are integer multiples of "
+                f"the smallest dt {dt0}. Got dt={dt_j} in '{sn.name}' "
+                f"({dt_j / dt0:.6g} master ticks, not an integer >= 1)."
+            )
+    return dt0
+
+
+def _stim_master_grid(stim, dt0: float, last_step: int):
+    """Return a Stim whose temporal pattern is configured on the master grid.
+
+    Multi-dt decision 7 (parity_audit.md §6): stimuli are evaluated on the
+    master dt0 grid, one evaluation per master step, indexed by the global
+    step.  ``Stim.configure`` builds the pattern's time axis on the target
+    subnet's own dt (``target.scheme.dt``), which for a slow subnet
+    (dt_j = k_j * dt0, k_j > 1) is the wrong resolution for master-step
+    indexing: step indices would sample the wrong times and outrun the
+    axis (IndexError).  This returns a deep copy whose pattern is
+    configured on a dt0-resolution axis covering step indices
+    0..last_step.  The original object is returned unchanged when its
+    axis is already dt0-resolution and long enough — the single-dt case,
+    so degenerate (all k_j = 1) runs keep bit-identical stimulus values.
+    """
+    import copy
+
+    n_needed = int(last_step) + 1
+    time = getattr(stim, "time", None)
+    if (getattr(stim, "dt", None) is not None
+            and float(stim.dt) == float(dt0)
+            and time is not None
+            and len(np.asarray(time)) >= n_needed):
+        return stim
+    # neotraits arrays do not survive a full Stim deepcopy (NArray traits
+    # come back object-dtype), so copy shallowly and give the copy its own
+    # (deep-copied) pattern; the pattern's lazily-configured caches are
+    # rebuilt by the same configure sequence Stim.configure performs.
+    stim = copy.copy(stim)
+    stim.stimulus = copy.deepcopy(stim.stimulus)
+    stim.dt = float(dt0)
+    stim.time = np.arange(0.0, n_needed * dt0, dt0)
+    if hasattr(stim.stimulus, "configure_time"):
+        stim.stimulus.configure_time(
+            np.asarray(stim.time).reshape((1, -1)))
+    if hasattr(stim.stimulus, "configure_space"):
+        stim.stimulus.configure_space()
+    return stim
+
+
 def _can_merge_subnets(subnet_infos: list) -> bool:
     """Check if all subnets have node_indices and same voi count."""
     if not subnet_infos:
@@ -682,7 +762,17 @@ def _can_merge_subnets(subnet_infos: list) -> bool:
         return False
     # All must have same voi count
     voi_counts = [len(si.model.variables_of_interest) for si in subnet_infos]
-    return len(set(voi_counts)) == 1
+    if len(set(voi_counts)) != 1:
+        return False
+    # All must share the same dt (multi-dt support, parity_audit.md §6
+    # decision 9): merging per-subnet outputs onto one node axis would
+    # silently erase the per-subnet dt distinction, so merged views require
+    # provably equal dt (equal k_j).  A subnet info without a dt cannot be
+    # proven equal, so it refuses the merge as well (no silent 0.0 default).
+    dts = [getattr(si, "dt", None) for si in subnet_infos]
+    if any(dt_val is None for dt_val in dts):
+        return False
+    return len({float(dt_val) for dt_val in dts}) == 1
 
 
 def _merge_subnet_outputs(
@@ -935,6 +1025,8 @@ class SubnetworkInfo:
     node_indices: Optional[np.ndarray] = None  # connectome positions, shape (n_nodes,)
     clamp_indices: Optional[np.ndarray] = None  # configured state-variable indices
     clamp_values: Optional[np.ndarray] = None  # shape (n_clamps, n_nodes, n_modes)
+    dt: float = 0.0  # integration timestep (ms); multi-dt supported
+    k: int = 1  # steps per master tick: dt == k * dt0
 
 
 @dataclasses.dataclass
@@ -986,6 +1078,11 @@ class NetworkAnalysis:
     stimuli_by_subnet: dict = dataclasses.field(default_factory=dict)
     # source_horizons: dict mapping source subnet name -> max horizon across outgoing projections
     source_horizons: dict = dataclasses.field(default_factory=dict)
+    # dt0: master-clock base timestep (ms). All subnet dts are integer
+    # multiples of dt0 (dt_j = k_j * dt0); the master clock ticks at dt0 and
+    # each subnet integrates only on its own ticks. 0.0 means single-dt
+    # (backward compatible: consumers fall back to the first subnet's dt).
+    dt0: float = 0.0
 
     @property
     def all_projections(self) -> List[ProjectionInfo]:
@@ -1170,7 +1267,9 @@ class CompiledNetworkFn:
             positions, and monitor runtime state for :meth:`resume`.
         """
         # Resolve chunk_size: auto-compute from monitor periods when not specified
-        dt = self._network_set.subnets[0].scheme.dt
+        # (multi-dt: monitor periods and the chunk grid live on the master
+        # dt0 clock, so istep = round(period / dt0)).
+        dt = _validate_multi_dt(self._network_set)
         if chunk_size is None:
             if monitors is not None:
                 chunk_size = _compute_chunk_size(monitors, dt)
@@ -1664,6 +1763,10 @@ class NbHybridBackend(MakoUtilMix):
         # TODO §8.4: use lazy chunk-by-chunk path when estimated stim_arr_mb
         #   exceeds _STIM_LAZY_THRESHOLD_MB (or TVB_HYBRID_LAZY_STIM_MB env var).
         #   See _compute_stimulus_lazy() for the planned implementation.
+        # Multi-dt decision 7: the pattern is evaluated on the master dt0
+        # grid (index = global master step), not the subnet's own dt grid.
+        stim_dt0 = (analysis.dt0 if analysis.dt0
+                    else float(network_set.subnets[0].scheme.dt))
         for sn_info in analysis.subnetworks:
             if sn_info.has_stimulus:
                 n_cvar = len(sn_info.model.cvar)
@@ -1671,7 +1774,9 @@ class NbHybridBackend(MakoUtilMix):
                     (n_cvar, sn_info.n_nodes, sn_info.n_modes, nstep),
                     dtype=np.float32,
                 )
-                for stim in analysis.stimuli_by_subnet[sn_info.name]:
+                for stim in (_stim_master_grid(s, stim_dt0, step_offset + nstep)
+                             for s in
+                             analysis.stimuli_by_subnet[sn_info.name]):
                     target_slots = np.asarray(stim.target_cvar)
                     if target_slots.ndim != 1 or target_slots.size == 0:
                         raise ValueError(
@@ -1772,9 +1877,9 @@ class NbHybridBackend(MakoUtilMix):
         _bold_v0 = np.float32(0.0)
         _bold_dt = np.float32(0.0)
         if _bold_mon is not None:
-            dt = network_set.subnets[0].scheme.dt
+            dt = _validate_multi_dt(network_set)
             _bold_dt = np.float32(dt)
-            # Extract Bold period in steps
+            # Extract Bold period in steps (master dt0 grid)
             bold_period = float(_bold_mon.period)  # ms
             _bold_istep = max(1, int(round(bold_period / dt)))
             # Compute Balloon model parameters
@@ -1934,7 +2039,7 @@ class NbHybridBackend(MakoUtilMix):
             HeunStochastic,
             EulerStochastic,
         )
-        dt0 = network_set.subnets[0].scheme.dt
+        dt0 = _validate_multi_dt(network_set)
         for projection in network_set.projections:
             _cfun_type(projection)
         for sn in network_set.subnets:
@@ -1963,11 +2068,6 @@ class NbHybridBackend(MakoUtilMix):
                 raise NotImplementedError(
                     f"NbHybridBackend only supports Heun/EulerDeterministic or Stochastic; "
                     f"subnetwork '{sn.name}' uses {type(sn.scheme).__name__}"
-                )
-            if sn.scheme.dt != dt0:
-                raise ValueError(
-                    "All subnetworks must share the same dt. "
-                    f"Expected {dt0}, got {sn.scheme.dt} in '{sn.name}'"
                 )
             # Model-specific validation (look up classes from lazy cache)
             _model_cls_by_name = {m.__name__: m for m in _supported_models}
@@ -2022,6 +2122,8 @@ class NbHybridBackend(MakoUtilMix):
 
     def _analyse(self, network_set: NetworkSet) -> "NetworkAnalysis":
         from tvb.simulator.noise import Additive
+
+        dt0 = _validate_multi_dt(network_set)
 
         # Build stimulus lookup: subnet name -> list of Stim objects
         stims_by_subnet: dict = {sn.name: [] for sn in network_set.subnets}
@@ -2079,6 +2181,8 @@ class NbHybridBackend(MakoUtilMix):
                     node_indices=getattr(sn, 'node_indices', None),
                     clamp_indices=clamp_indices,
                     clamp_values=clamp_values,
+                    dt=float(sn.scheme.dt),
+                    k=max(1, int(round(float(sn.scheme.dt) / dt0))),
                 )
             )
 
@@ -2119,9 +2223,18 @@ class NbHybridBackend(MakoUtilMix):
         # Compute per-source-subnet max horizon for shared history buffers
         _all_projs = inter_projs + intra_projs
         source_horizons: dict = {}
-        for _p in _all_projs:
-            src = _p.source_subnet
-            source_horizons[src] = max(source_horizons.get(src, 1), _p.horizon)
+        for _p in inter_projs:
+            source_horizons[_p.source_subnet] = max(
+                source_horizons.get(_p.source_subnet, 1), _p.horizon)
+        for _p in intra_projs:
+            # intra reads reach one step deeper right after a push (the
+            # exact read i0 = t//k - 1 - delay at a tick where the source
+            # has m pushed steps gives i0 = m - 1 - delay, and the slot
+            # would alias step m when H == delay + 1): keep one extra
+            # IC-prefilled slot so the negative range never aliases
+            # (decisions 3/4)
+            source_horizons[_p.source_subnet] = max(
+                source_horizons.get(_p.source_subnet, 1), _p.horizon + 1)
         # Ensure every subnetwork has an entry (default 1 for subnets with no outgoing projections)
         for sn in subnets:
             if sn.name not in source_horizons:
@@ -2133,6 +2246,7 @@ class NbHybridBackend(MakoUtilMix):
             intra_projections=intra_projs,
             stimuli_by_subnet=stims_by_subnet,
             source_horizons=source_horizons,
+            dt0=dt0,
         )
 
     def _build_projection_info(self, p, is_inter: bool) -> "ProjectionInfo":
@@ -2544,6 +2658,17 @@ class NbHybridBackend(MakoUtilMix):
     def _sweep_cuda(self, network_set, sweep_descriptor, sweep_values,
                      nstep, monitor, monitor_period, bold_period,
                      chunk_size, initial_states, node_indices):
+        # the CUDA sweep kernel integrates every subnet on every tick and
+        # writes history at t % H — it has no multi-dt support yet.  Refuse
+        # unequal dts so sweep(backend='auto') falls back to the CPU sweep
+        # (which implements the pinned multi-dt semantics); an explicit
+        # backend='cuda' re-raises.
+        dts = {float(sn.scheme.dt) for sn in network_set.subnets}
+        if len(dts) > 1:
+            raise NotImplementedError(
+                "the CUDA sweep kernel does not support multi-dt networks "
+                "yet; use backend='cpu' (the CPU sweep implements the "
+                "multi-dt master-clock semantics)")
         import time as _time_mod
         from tvb.simulator.backend.nb_hybrid_cuda_sweep_backend import NbHybridCUDASweepBackend
 
@@ -2648,17 +2773,11 @@ class NbHybridBackend(MakoUtilMix):
 
         per_step_tavg = result.tavg
         per_step_ctavg = result.ctavg
-        scheme = getattr(network_set.subnets[0], 'scheme', None)
-        if scheme is not None:
-            dt = float(scheme.dt)
-        else:
-            returned_times = np.asarray(result.times)
-            if returned_times.size > 1:
-                dt = float(returned_times[1] - returned_times[0])
-            elif returned_times.size == 1:
-                dt = float(returned_times[0])
-            else:
-                dt = 1.0
+        # multi-dt: sweep time axes (and Bold sampling) live on the master
+        # dt0 grid, exactly like the per-run outputs — NOT the first
+        # subnet's dt, which with dts ordered [0.02, 0.01] would stretch
+        # every master tick to 2 dt0
+        dt = _validate_multi_dt(network_set)
         per_step_times = np.arange(
             1, next(iter(per_step_tavg.values())).shape[1] + 1,
             dtype=np.float64,

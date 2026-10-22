@@ -26,6 +26,54 @@ inter_projs = analysis.inter_projections
 intra_projs = analysis.intra_projections
 all_projs = analysis.all_projections
 source_horizons_map = analysis.source_horizons
+# Master-clock base dt (multi-dt): every subnet steps every k_j master ticks.
+# dt0 == 0 means a hand-built single-dt analysis; fall back to the first dt.
+dt0 = analysis.dt0 if analysis.dt0 else float(subnets[0].integrator.dt)
+subnet_k = {sn.name: max(1, int(round(float(sn.integrator.dt) / dt0))) for sn in subnets}
+proj_k = {p.name: subnet_k[p.source_subnet] for p in all_projs}
+
+# Multi-dt read plumbing (see decisions 1-3 in parity_audit.md §6).
+#
+# Single-dt (k_src == 1) emits the original single-slot read verbatim so the
+# degenerate gate is bit-for-bit.  Multi-dt emits the pinned interpolated
+# read:  tau = (t-1)/k_src - delay  (the source-step position at the master
+# time of the start of the target's step, the k=1 read generalized),
+# i0 = floor(tau), alpha = frac(tau), value = x0 + alpha*(x1-x0) where
+# x0/x1 come from source steps (i0, i0+1), slots (i0, i0+1) mod H.  A
+# zero-delay edge has i1 = m+1 (not pushed yet, m = newest pushed step), so
+# its alpha is zeroed and the value holds x0 exactly (decision 3 clamp,
+# zero-order hold).  i1 is also read but only scaled by that zeroed alpha
+# there, so it never contributes.
+def _slot_setup(H, K, indent, intra=False):
+    pad = " " * indent
+    if K > 1 and not intra:
+        # Pinned read rule (parity_audit.md section 6, decisions 1/3): the
+        # read position in source-step units is tau = (t-1)/K - idelay (t is
+        # the 1-based master tick), so i0 = floor(tau) = (t-1)//K - idelay
+        # and alpha = frac(tau) = ((t-1) mod K)/K (idelays are integers).
+        # Slot s holds the state after source step s: x0 = slot i0, x1 =
+        # slot i0+1.  (t-1) is the master time at the start of the target's
+        # step, the exact generalization of the k=1 read (t-1-idelay).
+        return (f"{pad}i0 = (t - 1) // {K} - idelays[ptr]\n"
+                f"{pad}i0m = (i0 + {H}) % {H}\n"
+                f"{pad}i1m = (i0 + 1 + {H}) % {H}\n"
+                f"{pad}alpha_f = nb.float32((t - 1) % {K}) / nb.float32({K})\n")
+    # single-slot exact read (decision 3, intra-subnet projections): the
+    # source state at the start of the own step being integrated, minus the
+    # delay — step (t // K) - 1 - idelay, never interpolated.  For K == 1
+    # this is bit-for-bit the legacy read (t - 1 - idelay).
+    return f"{pad}buf_idx = (t // {K} - 1 - idelays[ptr] + {H}) % {H}\n"
+
+
+def _read(buf, cv, node, mode, K, intra=False):
+    if K > 1 and not intra:
+        # Zero-delay edges read i1 = m+1, a step not pushed yet (m = newest
+        # pushed source step): clamp x1 := x0 (decision 3, zero-order hold)
+        # by zeroing the blend weight; idelay >= 1 edges always have i1 <= m.
+        return (f"({buf}[{cv}, {node}, {mode}, i0m] + "
+                f"(alpha_f if idelays[ptr] >= 1 else nb.float32(0.0)) * "
+                f"({buf}[{cv}, {node}, {mode}, i1m] - {buf}[{cv}, {node}, {mode}, i0m]))")
+    return f"{buf}[{cv}, {node}, {mode}, buf_idx]"
 %>
 
 ## ============================================================
@@ -41,6 +89,9 @@ source_horizons_map = analysis.source_horizons
     is_inter = p.is_inter
     mono_src = (nsrc_m == 1)
     mono_tgt = (ntgt_m == 1)
+    K_src = proj_k[p.name]
+    intra = not is_inter
+    interp = K_src > 1 and not intra
     # pre_ct: coupling functions that apply PER-EDGE before weighting
     if ct in ('sigmoidal_jr', 'sigmoidal_jr_legacy', 'tanh', 'pre_sigmoidal', 'pre_sigmoidal_dynamic', 'difference', 'kuramoto'):
         pre_ct = ct
@@ -95,8 +146,8 @@ def compute_coupling_${p.name}(
         cv1 = source_cvar[1]
         for ptr in range(w_data.shape[0]):
             src_node = w_indices[ptr]
-            buf_idx = (t - 1 - idelays[ptr] + ${source_horizons_map[p.source_subnet]}) % ${source_horizons_map[p.source_subnet]}
-            global_threshold += srcbuf[cv1, src_node, 0, buf_idx]
+${_slot_setup(source_horizons_map[p.source_subnet], K_src, 12, intra)}
+            global_threshold += ${_read('srcbuf', 'cv1', 'src_node', '0', K_src, intra)}
         global_threshold /= nb.float32(w_data.shape[0])
     % else:
     global_threshold = np.zeros(${nsrc_m}, dtype=np.float32)
@@ -104,9 +155,9 @@ def compute_coupling_${p.name}(
         cv1 = source_cvar[1]
         for ptr in range(w_data.shape[0]):
             src_node = w_indices[ptr]
-            buf_idx = (t - 1 - idelays[ptr] + ${source_horizons_map[p.source_subnet]}) % ${source_horizons_map[p.source_subnet]}
+${_slot_setup(source_horizons_map[p.source_subnet], K_src, 12, intra)}
             for m in range(${nsrc_m}):
-                global_threshold[m] += srcbuf[cv1, src_node, m, buf_idx]
+                global_threshold[m] += ${_read('srcbuf', 'cv1', 'src_node', 'm', K_src, intra)}
         for m in range(${nsrc_m}):
             global_threshold[m] /= nb.float32(w_data.shape[0])
     % endif
@@ -124,16 +175,16 @@ def compute_coupling_${p.name}(
             for ptr in range(row_start, row_end):
                 w = w_data[ptr]
                 src_node = w_indices[ptr]
-                buf_idx = (t - 1 - idelays[ptr] + ${source_horizons_map[p.source_subnet]}) % ${source_horizons_map[p.source_subnet]}
-                edge_val = srcbuf[cv, src_node, 0, buf_idx]
+${_slot_setup(source_horizons_map[p.source_subnet], K_src, 16, intra)}
+                edge_val = ${_read('srcbuf', 'cv', 'src_node', '0', K_src, intra)}
                 # Apply pre() PER-EDGE before weighting
                 % if pre_ct == 'sigmoidal_jr':
                 # Classic: cmin + (cmax-cmin)/(1+exp(r*(midpoint-diff)))
                 # cfun_params: [0]=a, [1]=cmin, [2]=cmax, [3]=r, [4]=midpoint
                 cv0 = source_cvar[0]
                 cv1 = source_cvar[1]
-                x0 = srcbuf[cv0, src_node, 0, buf_idx]
-                x1 = srcbuf[cv1, src_node, 0, buf_idx]
+                x0 = ${_read('srcbuf', 'cv0', 'src_node', '0', K_src, intra)}
+                x1 = ${_read('srcbuf', 'cv1', 'src_node', '0', K_src, intra)}
                 edge_val = cfun_params[1] + (cfun_params[2] - cfun_params[1]) / (nb.float32(1.0) + exp(cfun_params[3] * (cfun_params[4] - (x0 - x1))))
                 % elif pre_ct == 'sigmoidal_jr_legacy':
                 # Legacy: a * 2*e0 / (1+exp(r*(v0-x)))
@@ -148,8 +199,8 @@ def compute_coupling_${p.name}(
                 # cfun_params: [0]=H, [1]=Q, [2]=G, [3]=P, [5]=globalT
                 cv0 = source_cvar[0]
                 cv1 = source_cvar[1]
-                x0 = srcbuf[cv0, src_node, 0, buf_idx]
-                x1 = srcbuf[cv1, src_node, 0, buf_idx]
+                x0 = ${_read('srcbuf', 'cv0', 'src_node', '0', K_src, intra)}
+                x1 = ${_read('srcbuf', 'cv1', 'src_node', '0', K_src, intra)}
                 if cfun_params[5] != nb.float32(0.0):
                     x1 = global_threshold
                 edge_val = cfun_params[0] * (cfun_params[1] + nb.float32(math.tanh(cfun_params[2] * (cfun_params[3] * x0 - x1))))
@@ -226,17 +277,17 @@ def compute_coupling_${p.name}(
             for ptr in range(row_start, row_end):
                 w = w_data[ptr]
                 src_node = w_indices[ptr]
-                buf_idx = (t - 1 - idelays[ptr] + ${source_horizons_map[p.source_subnet]}) % ${source_horizons_map[p.source_subnet]}
+${_slot_setup(source_horizons_map[p.source_subnet], K_src, 16, intra)}
                 for m in range(${nsrc_m}):
-                    edge_val = srcbuf[cv, src_node, m, buf_idx]
+                    edge_val = ${_read('srcbuf', 'cv', 'src_node', 'm', K_src, intra)}
                     # Apply pre() per-edge
                     % if pre_ct == 'sigmoidal_jr':
                     # Classic: cmin + (cmax-cmin)/(1+exp(r*(midpoint-diff)))
                     # cfun_params: [0]=a, [1]=cmin, [2]=cmax, [3]=r, [4]=midpoint
                     cv0 = source_cvar[0]
                     cv1 = source_cvar[1]
-                    x0 = srcbuf[cv0, src_node, m, buf_idx]
-                    x1 = srcbuf[cv1, src_node, m, buf_idx]
+                    x0 = ${_read('srcbuf', 'cv0', 'src_node', 'm', K_src, intra)}
+                    x1 = ${_read('srcbuf', 'cv1', 'src_node', 'm', K_src, intra)}
                     edge_val = cfun_params[1] + (cfun_params[2] - cfun_params[1]) / (nb.float32(1.0) + exp(cfun_params[3] * (cfun_params[4] - (x0 - x1))))
                     % elif pre_ct == 'sigmoidal_jr_legacy':
                     # Legacy: a * 2*e0 / (1+exp(r*(v0-x)))
@@ -251,8 +302,8 @@ def compute_coupling_${p.name}(
                     # cfun_params: [0]=H, [1]=Q, [2]=G, [3]=P, [5]=globalT
                     cv0 = source_cvar[0]
                     cv1 = source_cvar[1]
-                    x0 = srcbuf[cv0, src_node, m, buf_idx]
-                    x1 = srcbuf[cv1, src_node, m, buf_idx]
+                    x0 = ${_read('srcbuf', 'cv0', 'src_node', 'm', K_src, intra)}
+                    x1 = ${_read('srcbuf', 'cv1', 'src_node', 'm', K_src, intra)}
                     if cfun_params[5] != nb.float32(0.0):
                         x1 = global_threshold[m]
                     edge_val = cfun_params[0] * (cfun_params[1] + nb.float32(math.tanh(cfun_params[2] * (cfun_params[3] * x0 - x1))))
@@ -988,20 +1039,24 @@ def network_chunk(
         % endif
         % endfor
 
-        ## integrate each subnetwork in-place
+        ## integrate each subnetwork in-place (multi-dt: only subnets due on
+        ## this master tick, i.e. t % k == 0, integrate with their own dt).
         ## A chunk-sized noise array has exactly `nstep` steps, so its shape
         ## disambiguates the per-chunk path (t_local) from the full-run/sweep
         ## path (global t - data_offset - 1).
         % for sn in subnets:
+        if t % ${subnet_k[sn.name]} == 0:
         % if sn.is_stochastic:
-        _t_noise_${sn.name} = t_local if ${sn.name}_noise.shape[3] == nstep else t - data_offset - 1
+            _t_noise_${sn.name} = t_local if ${sn.name}_noise.shape[3] == nstep else t - data_offset - 1
         % endif
-        integrate_${sn.name}(${sn.name}_state, ${sn.name}_c${',' if sn.is_stochastic else ''} ${'%s_noise, _t_noise_%s' % (sn.name, sn.name) if sn.is_stochastic else ''}, ${sn.name}_sp)
+            integrate_${sn.name}(${sn.name}_state, ${sn.name}_c${',' if sn.is_stochastic else ''} ${'%s_noise, _t_noise_%s' % (sn.name, sn.name) if sn.is_stochastic else ''}, ${sn.name}_sp)
         % endfor
 
-        ## update shared source buffers (one write per source subnet)
+        ## update shared source buffers (one write per source subnet, on its
+        ## own ticks; slot index is the subnet's own step count (t // k))
         % for sn in subnets:
-        ${sn.name}_srcbuf[:, :, :, t % ${source_horizons_map[sn.name]}] = ${sn.name}_state
+        if t % ${subnet_k[sn.name]} == 0:
+            ${sn.name}_srcbuf[:, :, :, (t // ${subnet_k[sn.name]}) % ${source_horizons_map[sn.name]}] = ${sn.name}_state
         % endfor
 
         ## accumulate temporal average
@@ -1169,7 +1224,7 @@ def run_network(
     ${sn.name}_bold_outputs = []
     ${sn.name}_bold_times = []
     % endfor
-    time_step = np.float32(${subnets[0].integrator.dt})
+    time_step = np.float32(${dt0})
 
     t_global = step_offset + 1
     end_step = step_offset + nstep

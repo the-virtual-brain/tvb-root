@@ -367,11 +367,14 @@ def dfun_${sn.name}(E, I, C_ee, C_ei, C_ii, W_e, W_i, ou_drift, Coupling_Term, _
               ) / T
 
     ## dC_ei/dt
+    ## (matches zerlaut.py derivative[3] after the 2nd-order c_ei
+    ## correction, upstream PR tvb-root#800: the four population-derivative
+    ## terms were swapped relative to Carlu et al. 2020 Eq. 17)
     d_C_ei = ((_TF_e - E) * (_TF_i - I)
-              + C_ee * _dfe_TF_e
-              + C_ei * _dfe_TF_i
-              + C_ei * _dfi_TF_e
-              + C_ii * _dfi_TF_i
+              + C_ee * _dfe_TF_i
+              + C_ei * _dfe_TF_e
+              + C_ei * _dfi_TF_i
+              + C_ii * _dfi_TF_e
               - nb.float32(2.0) * C_ei
               ) / T
 
