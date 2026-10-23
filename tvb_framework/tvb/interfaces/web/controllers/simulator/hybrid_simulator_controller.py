@@ -688,6 +688,10 @@ class HybridSimulatorController(BurstBaseController):
         and with the closing step otherwise.
         """
         dynamics, _ = self._selected_dynamics()
+        if not isinstance(dynamics.integrator, IntegratorStochasticViewModel):
+            # the Integrator was made deterministic after this section was rendered, so there is no
+            # Noise left to configure; what was posted is dropped, the way the editor drops the section
+            return self._editor_actions_rules().to_dict()
         noise = dynamics.integrator.noise
 
         if cherrypy.request.method == POST_REQUEST:
@@ -708,7 +712,12 @@ class HybridSimulatorController(BurstBaseController):
         Step 6: the parameters of the Equation of a Multiplicative Noise. Answers with the closing step.
         """
         dynamics, _ = self._selected_dynamics()
-        equation = dynamics.integrator.noise.b
+        noise = getattr(dynamics.integrator, 'noise', None)
+        if not isinstance(noise, MultiplicativeNoiseViewModel):
+            # the Integrator or its Noise changed after this section was rendered, and no longer has
+            # an Equation to configure
+            return self._editor_actions_rules().to_dict()
+        equation = noise.b
 
         if cherrypy.request.method == POST_REQUEST:
             form = get_form_for_equation(type(equation))()
@@ -1137,7 +1146,7 @@ class HybridSimulatorController(BurstBaseController):
             form.fill_trait(hybrid_simulator)
             # the Monitor selector is built on an ad hoc List carrying no field_name, so fill_trait
             # skips it and the Monitors are built here, the way the classic Cockpit builds its own
-            hybrid_simulator.monitors = form.monitors_from_post()
+            hybrid_simulator.monitors = form.monitors_from_post(hybrid_simulator.monitors)
             self.context.set_hybrid_simulator(hybrid_simulator)
 
             return self._monitor_chain_step(hybrid_simulator, 0)
@@ -1194,13 +1203,16 @@ class HybridSimulatorController(BurstBaseController):
             if not form.validate():
                 return self._monitor_chain_step(hybrid_simulator, index, form)
 
-            form.fill_trait(monitor.hrf_kernel if is_equation else monitor)
+            # filled onto a copy, which only replaces the stored Monitor once accepted: a refused value
+            # must not stay on the configuration the user steps away from
+            candidate = copy.deepcopy(monitor)
+            form.fill_trait(candidate.hrf_kernel if is_equation else candidate)
 
             try:
                 # Checked on this Monitor's own step rather than on the closing summary: a refusal has
                 # to hand back the step it is about. Only against the integration step size, though: the
                 # simulation length is asked last, on the closing step, and checked against at launch.
-                self.hybrid_simulator_service.validate_monitors([monitor], None, hybrid_simulator.dt)
+                self.hybrid_simulator_service.validate_sampling_periods([candidate], hybrid_simulator.dt)
             except HybridSubnetworkException as excep:
                 # on the field it is about, since a message set on the session does not reach a fragment
                 period_field = getattr(form, 'period', None)
@@ -1209,6 +1221,8 @@ class HybridSimulatorController(BurstBaseController):
                 common.set_error_message(str(excep))
                 return self._monitor_chain_step(hybrid_simulator, index, form)
 
+            hybrid_simulator.monitors = [candidate if stored is monitor else stored
+                                         for stored in hybrid_simulator.monitors]
             self.context.set_hybrid_simulator(hybrid_simulator)
             return self._monitor_chain_step(hybrid_simulator, index + 1)
 
@@ -1384,8 +1398,10 @@ class HybridSimulatorController(BurstBaseController):
         if not form.simulation_length.validate() or simulation_length is None or simulation_length <= 0:
             return {'error': 'The simulation length has to be a positive number of milliseconds.'}
         try:
-            self.hybrid_simulator_service.validate_monitors(hybrid_simulator.monitors, simulation_length,
-                                                            hybrid_simulator.dt)
+            # the step size again too: it is shared through the session, so another tab can change it after
+            # the Monitors were checked
+            self.hybrid_simulator_service.validate_sampling_periods(hybrid_simulator.monitors, hybrid_simulator.dt)
+            self.hybrid_simulator_service.validate_recording_within(hybrid_simulator.monitors, simulation_length)
         except HybridSubnetworkException as excep:
             return {'error': str(excep)}
         hybrid_simulator.simulation_length = simulation_length

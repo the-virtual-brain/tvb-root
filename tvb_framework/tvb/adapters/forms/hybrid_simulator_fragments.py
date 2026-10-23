@@ -116,14 +116,19 @@ class HybridMonitorsFragment(ABCAdapterForm):
         self.monitors.data = [names[type(monitor)] for monitor in trait.monitors or []
                               if type(monitor) in names]
 
-    def monitors_from_post(self):
+    def monitors_from_post(self, configured_monitors=()):
         """
+        :param configured_monitors: the Monitors configured so far. A Monitor chosen again keeps how it
+               was configured, so stepping back past this step and on again does not reset it - unlike
+               the classic Cockpit, which builds every Monitor anew.
         :return: one Monitor view model per chosen name, in the order they were chosen. The ad hoc List
                  the selector is built on carries no field_name, so fill_trait skips it and the Monitors
                  are built here instead - the same split the classic Cockpit makes.
         """
-        return [self.monitor_choices[name]() for name in self.monitors.value or []
-                if name in self.monitor_choices]
+        configured = {type(monitor): monitor for monitor in configured_monitors or []}
+        monitor_classes = [self.monitor_choices[name] for name in self.monitors.value or []
+                           if name in self.monitor_choices]
+        return [configured.get(monitor_class) or monitor_class() for monitor_class in monitor_classes]
 
     @staticmethod
     def get_view_model():

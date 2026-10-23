@@ -36,7 +36,8 @@ from cherrypy.lib.sessions import RamSession
 
 from tvb.adapters.forms.model_forms import ModelsEnum
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.simulator.view_model import HybridSimulatorAdapterModel
+from tvb.core.entities.file.simulator.view_model import BoldViewModel, HybridSimulatorAdapterModel, \
+    TemporalAverageViewModel
 from tvb.core.entities.model.model_burst import Dynamic
 from tvb.simulator.integrators import HeunDeterministic
 from tvb.core.entities.model.model_burst import BurstConfiguration
@@ -998,6 +999,46 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         # and a deterministic one takes both away again
         assert HybridSimulatorURLs.SET_SUBNETWORK_NOISE_PARAMS_URL not in self._editor_urls(deterministic)
         assert len(self._editor_urls(deterministic)) == 5
+
+    def _post_after_the_noise_changed(self, integrator, noise, section):
+        """
+        Make the selected Subnetwork's Integrator stochastic with a Multiplicative Noise, change it to the
+        given classes, then post the given Noise section as it was rendered before that change.
+        """
+        self._configured_hybrid_simulator()
+        self._open_dynamics_step()
+        self._open_subnetwork_editor()
+        saved = self._saved_subnetworks()
+
+        cherrypy.request.method = "POST"
+        self.hybrid_controller.set_subnetwork_integrator(integrator='Stochastic Heun')
+        self.hybrid_controller.set_subnetwork_integrator_params(noise='Multiplicative')
+        self.hybrid_controller.set_subnetwork_integrator(integrator=integrator)
+        if noise is not None:
+            self.hybrid_controller.set_subnetwork_integrator_params(noise=noise)
+
+        cherrypy.request.method = "POST"
+        if section == HybridSimulatorURLs.SET_SUBNETWORK_NOISE_PARAMS_URL:
+            rendering_rules = self.hybrid_controller.set_subnetwork_noise_params(
+                nsig='[7.0]', ntau='0.0', noise_seed='42')
+        else:
+            rendering_rules = self.hybrid_controller.set_subnetwork_noise_equation_params()
+        return rendering_rules, self._dynamics_draft()[saved[0].id].integrator
+
+    @pytest.mark.parametrize('integrator, noise, section', [
+        ('Heun', None, HybridSimulatorURLs.SET_SUBNETWORK_NOISE_PARAMS_URL),
+        ('Heun', None, HybridSimulatorURLs.SET_SUBNETWORK_NOISE_EQUATION_PARAMS_URL),
+        ('Stochastic Heun', 'Additive', HybridSimulatorURLs.SET_SUBNETWORK_NOISE_EQUATION_PARAMS_URL)])
+    def test_a_noise_section_posted_after_it_went_away_is_dropped(self, integrator, noise, section):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            rendering_rules, integrator_after = self._post_after_the_noise_changed(integrator, noise, section)
+
+        # answered as the editor's closing row instead of failing, and nothing is applied
+        assert rendering_rules['renderer'].is_dynamics_save_fragment
+        if noise is None:
+            assert type(integrator_after).__name__ == 'HeunDeterministicViewModel'
+        else:
+            assert type(integrator_after.noise).__name__ == 'AdditiveNoiseViewModel'
 
     def test_a_model_change_reloads_its_parameters(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
@@ -2027,6 +2068,61 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
         assert renderer.form_action_url == \
                HybridSimulatorURLs.SET_MONITOR_PARAMS_URL + '/TemporalAverageViewModel'
         assert 'integration step size' in str(renderer.form.period.errors)
+
+    def test_a_refused_sampling_period_is_not_kept_on_the_configuration(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_subnetwork()
+            self._choose_monitors(['Temporal average'])
+            self._submit_monitor_params('TemporalAverageViewModel', period='1.0')
+            self._submit_monitor_params('TemporalAverageViewModel', period='0.001')
+            # what stepping away and back, or a page reload, shows again
+            cherrypy.request.method = "GET"
+            rendering_rules = self.hybrid_controller.set_monitor_params('TemporalAverageViewModel')
+            monitors = self._configured_monitors()
+
+        assert monitors[0].period == 1.0
+        assert rendering_rules['renderer'].form.period.value == 1.0
+
+    def test_an_accepted_sampling_period_is_stored(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_subnetwork()
+            self._choose_monitors(['Temporal average', 'BOLD'], simulation_length='6000.0')
+            self._submit_monitor_params('TemporalAverageViewModel', period='2.0')
+            monitors = self._configured_monitors()
+
+        # stored on the Monitor it was entered for, the others left in place
+        assert [type(monitor).__name__ for monitor in monitors] == ['TemporalAverageViewModel', 'BoldViewModel']
+        assert monitors[0].period == 2.0
+
+    def test_a_monitor_chosen_again_keeps_its_configuration(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_subnetwork()
+            self._choose_monitors(['Temporal average'], simulation_length='6000.0')
+            self._submit_monitor_params('TemporalAverageViewModel', period='2.0')
+            configured = self._configured_monitors()[0]
+
+            # back past the Monitors step and on again, now with BOLD chosen first
+            self._choose_monitors(['BOLD', 'Temporal average'], simulation_length='6000.0')
+            monitors = self._configured_monitors()
+
+        # the selection's order, the Temporal average as it was configured, and a new BOLD Monitor
+        assert [type(monitor).__name__ for monitor in monitors] == ['BoldViewModel', 'TemporalAverageViewModel']
+        assert monitors[1] is configured
+        assert monitors[1].period == 2.0
+        assert monitors[0].period == BoldViewModel().period
+
+    def test_a_monitor_left_out_and_chosen_again_starts_anew(self):
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self._configured_subnetwork()
+            self._choose_monitors(['Temporal average'], simulation_length='6000.0')
+            self._submit_monitor_params('TemporalAverageViewModel', period='2.0')
+
+            self._choose_monitors(['BOLD'], simulation_length='6000.0')
+            self._choose_monitors(['Temporal average'], simulation_length='6000.0')
+            monitors = self._configured_monitors()
+
+        # only the Monitors still chosen are kept, so leaving one out drops its configuration
+        assert monitors[0].period == TemporalAverageViewModel().period
 
     def test_a_sampling_period_longer_than_the_simulation_waits_for_the_length(self):
         with patch('cherrypy.session', self.sess_mock, create=True):

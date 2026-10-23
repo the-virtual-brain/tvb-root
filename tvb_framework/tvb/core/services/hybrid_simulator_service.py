@@ -988,37 +988,45 @@ class HybridSimulatorService(object):
 
         return {'is_merged': is_merged, 'variables': variables, 'nodes': nodes, 'rows': rows}
 
-    @classmethod
-    def validate_monitors(cls, monitors, simulation_length, dt):
+    @staticmethod
+    def _sampling_monitors(monitors):
         """
-        Refuse the Monitors that cannot record anything over this simulation.
+        The Monitors whose sampling period counts: Raw records every integration step, and documents its
+        period as ignored.
+        """
+        return [monitor for monitor in monitors or [] if not isinstance(monitor, Raw)]
 
-        Both rules come from what the library does with a sampling period: ``Monitor._config_dt`` turns
-        it into ``istep = round(period / dt)``, which a period below ``dt`` rounds down to zero - and a
-        Monitor then divides by it on its first sample.
-
-        :param simulation_length: None to leave out the rule about the length, while it is not asked yet
+    @classmethod
+    def validate_sampling_periods(cls, monitors, dt):
+        """
+        Refuse the Monitors sampling more often than the integration step. The library turns a sampling
+        period into ``istep = round(period / dt)`` in ``Monitor._config_dt``, which a period below ``dt``
+        rounds down to zero - and a Monitor then divides by it on its first sample.
 
         :raise HybridSubnetworkException: naming the Monitor and what to change
         """
-        for monitor in monitors or []:
-            # Raw records every integration step; its period is documented as ignored
-            if isinstance(monitor, Raw):
-                continue
-
-            name = cls.monitor_name(monitor)
+        for monitor in cls._sampling_monitors(monitors):
             period = float(monitor.period)
-
             if period < dt:
                 raise HybridSubnetworkException(
                     "The {} Monitor samples every {} ms, below the {} ms integration step size. Give it "
-                    "a sampling period of at least {} ms.".format(name, period, dt, dt))
+                    "a sampling period of at least {} ms.".format(cls.monitor_name(monitor), period, dt, dt))
 
-            if simulation_length is not None and period > simulation_length:
+    @classmethod
+    def validate_recording_within(cls, monitors, simulation_length):
+        """
+        Refuse the Monitors sampling less often than once over the whole simulation, which would record
+        nothing.
+
+        :raise HybridSubnetworkException: naming the Monitor and what to change
+        """
+        for monitor in cls._sampling_monitors(monitors):
+            period = float(monitor.period)
+            if period > simulation_length:
                 raise HybridSubnetworkException(
                     "The {} Monitor samples every {} ms, longer than the {} ms simulation, so it would "
                     "record nothing. Shorten its sampling period or lengthen the simulation."
-                    .format(name, period, simulation_length))
+                    .format(cls.monitor_name(monitor), period, simulation_length))
 
     @staticmethod
     def monitor_name(monitor):

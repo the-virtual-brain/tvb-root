@@ -636,7 +636,7 @@ class TestHybridSimulatorService(object):
         monitor.period = 0.05
 
         with pytest.raises(HybridSubnetworkException) as excinfo:
-            self.service.validate_monitors([monitor], 100.0, 0.1)
+            self.service.validate_sampling_periods([monitor], 0.1)
 
         # rounding that period to integration steps gives zero, which the Monitor then divides by
         assert 'TemporalAverage' in str(excinfo.value)
@@ -646,25 +646,21 @@ class TestHybridSimulatorService(object):
         monitor = BoldViewModel()
 
         with pytest.raises(HybridSubnetworkException) as excinfo:
-            self.service.validate_monitors([monitor], 100.0, 0.1)
+            self.service.validate_recording_within([monitor], 100.0)
 
         assert 'Bold' in str(excinfo.value)
         assert 'record nothing' in str(excinfo.value)
 
-    def test_the_length_rule_waits_until_the_length_is_known(self):
-        # the Monitors are configured before the simulation length is asked, so only the step size
-        # rule applies to them then
-        self.service.validate_monitors([BoldViewModel()], None, 0.1)
-
-        monitor = TemporalAverageViewModel()
-        monitor.period = 0.05
-        with pytest.raises(HybridSubnetworkException):
-            self.service.validate_monitors([monitor], None, 0.1)
+    def test_the_step_size_rule_leaves_the_length_alone(self):
+        # the Monitors are configured before the simulation length is asked, so a period longer than any
+        # simulation is no concern of this rule
+        self.service.validate_sampling_periods([BoldViewModel()], 0.1)
 
     def test_the_raw_monitor_is_not_judged_on_its_period(self):
         # Raw records every integration step and documents its sampling period as ignored, so its
         # default of zero is not a period below dt
-        self.service.validate_monitors([RawViewModel()], 100.0, 0.1)
+        self.service.validate_sampling_periods([RawViewModel()], 0.1)
+        self.service.validate_recording_within([RawViewModel()], 100.0)
 
     def test_output_is_connectome_ordered_when_the_subnetworks_agree(self):
         subnetworks = self._two_blocks()
