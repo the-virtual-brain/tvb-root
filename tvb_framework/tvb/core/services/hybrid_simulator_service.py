@@ -96,7 +96,7 @@ class HybridSimulatorService(object):
                                             "Please select another one.")
         try:
             with h5.h5_file_for_index(connectivity_index) as conn_h5:
-                return [label.decode('utf-8') if isinstance(label, bytes) else str(label) for label in conn_h5.get_region_labels()]
+                return conn_h5.get_region_labels().tolist()
         except FileStorageException as excep:
             self.logger.exception(excep)
             raise HybridSubnetworkException("The data of the selected Connectivity could not be read. "

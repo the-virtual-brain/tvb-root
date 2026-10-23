@@ -62,6 +62,7 @@ class TestHybridSimulatorService(object):
 
     def test_region_labels_read_from_storage_are_strings(self, tmpdir):
         from unittest.mock import patch
+        from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
         from tvb.adapters.datatypes.h5.connectivity_h5 import ConnectivityH5
         from tvb.datatypes.connectivity import Connectivity
 
@@ -72,7 +73,9 @@ class TestHybridSimulatorService(object):
             conn_h5.store(connectivity)
 
         # H5 hands the labels back as bytes
-        with patch('tvb.core.neocom.h5.h5_file_for_gid', lambda gid: ConnectivityH5(path)):
+        with patch('tvb.core.services.hybrid_simulator_service.load_entity_by_gid',
+                   lambda gid: ConnectivityIndex()), \
+                patch('tvb.core.neocom.h5.h5_file_for_index', lambda index: ConnectivityH5(path)):
             labels = self.service.get_region_labels(connectivity.gid)
 
         assert labels == ['lA1', 'rV2']
