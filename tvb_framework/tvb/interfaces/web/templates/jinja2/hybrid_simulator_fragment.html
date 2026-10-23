@@ -96,7 +96,7 @@
             {#- Storing is the only way forward: the Projections are built from the stored dynamics. -#}
             <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1" {{ hide_buttons | safe }}
                     title="Store the dynamics of every Subnetwork, then continue to the Projections"
-                    onclick="hybridSaveSubnetworkDynamics('{{ renderer.next_form_action_url }}')">Save and continue
+                    onclick="hybridSaveSubnetworkDynamics('{{ renderer.next_form_action_url }}')">Next
             </button>
         {% elif renderer.is_launch_fragment %}
             {#- a plain button, like the classic Cockpit's own Launch: the action-launch style hides the text for

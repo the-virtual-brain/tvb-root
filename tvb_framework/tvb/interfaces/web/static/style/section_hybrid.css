@@ -488,7 +488,7 @@ form[id="/burst/hybrid/set_simulation_summary"].is-locked > fieldset {
  *
  * - the Connectivity section, while neither the Connectivity step nor the Subnetworks summary under it
  *   is the step being configured;
- * - the Subnetwork editor, once Save and continue has moved on, and with it the tabs joined to it;
+ * - the Subnetwork editor, once its Next has moved on, and with it the tabs joined to it;
  * - the Projections list, once its Next has moved on.
  */
 form[id="/burst/hybrid/set_connectivity"].is-locked:not(:has(+ form[id="/burst/hybrid/set_subnetworks"]:not(.is-locked))) > fieldset,

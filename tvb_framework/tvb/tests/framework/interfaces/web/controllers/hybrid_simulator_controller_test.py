@@ -1440,7 +1440,7 @@ class TestHybridSimulatorController(BaseTransactionalControllerTest):
 
         renderer = rendering_rules['renderer']
         assert renderer.is_dynamics_save_fragment
-        # its own action stores the dynamics, so Save and continue opens the Projections afterwards
+        # its own action stores the dynamics, so Next stores them and opens the Projections afterwards
         assert renderer.form_action_url == HybridSimulatorURLs.SAVE_SUBNETWORK_DYNAMICS_URL
         assert renderer.next_form_action_url == HybridSimulatorURLs.SET_PROJECTIONS_URL
 

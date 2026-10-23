@@ -182,7 +182,7 @@ class TestHybridRendering(BaseTransactionalControllerTest):
         assert 'hybridSaveSubnetworkDynamics()' in save_step_html
         assert 'Save Configuration' in save_step_html
         assert "hybridSaveSubnetworkDynamics('/burst/hybrid/set_projections')" in save_step_html
-        assert 'Save and continue' in save_step_html
+        assert re.search(r'name="next"[^>]*>Next\s*</button>', save_step_html)
         assert "hybridSubmitTo(this.parentElement, '/burst/hybrid/set_projections')" not in save_step_html
         assert 'This Subnetwork is configured' not in save_step_html
 
@@ -223,7 +223,7 @@ class TestHybridRendering(BaseTransactionalControllerTest):
             last_form = html[html.rindex('<form'):]
             assert "hybridPreviousStep(this.parentElement, '/burst/hybrid/set_subnetworks')" in last_form
             assert 'hybridSaveSubnetworkDynamics()' in last_form
-            assert 'Save and continue' in last_form
+            assert re.search(r'name="next"[^>]*>Next\s*</button>', last_form)
         # the editor carries no title of its own: the selected tab names the Subnetwork
         assert 'Dynamics of' not in selected_html
         # the Model and Integrator sections are framed apart from the simulation wide fields, and the

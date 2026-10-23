@@ -737,9 +737,34 @@ document.addEventListener("submit", function (event) {
 });
 
 /**
- * Configure another Subnetwork. Whatever was stacked under the Subnetwork dynamics step is dropped and
- * the editor of the newly selected Subnetwork takes its place. What was edited for the Subnetwork being
- * left is kept: the server holds the draft of every one.
+ * Put another Subnetwork's editor in place of the one on screen, locked like the finished step it
+ * belongs to.
+ */
+function _showHybridEditorReadOnly(editor, response) {
+    const fragment = _asFragment(response);
+    const newEditor = fragment.querySelector("[data-hybrid-editor]");
+    if (newEditor === null) {
+        // The Subnetwork could not be opened. The editor on screen stays: the Projections step goes
+        // back to its row of actions.
+        displayMessage("This Subnetwork could not be opened.", "errorMessage");
+        return;
+    }
+    editor.replaceWith(fragment);
+    const newForm = newEditor.querySelector("form");
+    if (newForm !== null) {
+        _lockHybridForm(newForm);
+    }
+    _typesetHybrid(newEditor);
+    if (typeof setupMenuEvents === "function") {
+        setupMenuEvents();
+    }
+}
+
+/**
+ * Configure another Subnetwork. While the editor is the step being configured, whatever was stacked
+ * under the Subnetwork dynamics step is dropped and the editor of the newly selected Subnetwork takes
+ * its place. What was edited for the Subnetwork being left is kept: the server holds the draft of every
+ * one. Once the user has moved on, the editor of the selected Subnetwork is only shown, locked.
  */
 function hybridSelectSubnetwork(subnetworkId) {
     _queueHybridRequest(function (done) {
@@ -748,12 +773,21 @@ function hybridSelectSubnetwork(subnetworkId) {
             done();
             return;
         }
+        // Once the user has moved on from the editor it only shows what each Subnetwork is configured
+        // with: Previous back to it is the way to edit again, so the steps after it stay as they are.
+        const editor = _hybridFormsDiv().querySelector("[data-hybrid-editor]");
+        const isReadOnly = editor !== null && !editor.contains(_activeHybridForm());
 
         doAjaxCall({
             type: "POST",
             url: "/burst/hybrid/select_subnetwork/",
             data: {subnetwork_id: subnetworkId},
             success: function (response) {
+                if (isReadOnly) {
+                    _showHybridEditorReadOnly(editor, response);
+                    _refreshHybridDynamicsStep(done);
+                    return;
+                }
                 _dropHybridStepsAfter(dynamicsForm);
                 _appendHybridFragment(_asFragment(response));
                 // the selector shows which Subnetwork is being configured, so it has to be redrawn too
@@ -802,8 +836,8 @@ function _refreshHybridDynamicsStep(done) {
 }
 
 /**
- * Store the dynamics configured for every Subnetwork, then, for Save and continue, open the step the
- * editor continues to. The answer is the Subnetwork dynamics step, which replaces the one on screen; a
+ * Store the dynamics configured for every Subnetwork, then, for Next, open the step the editor
+ * continues to. The answer is the Subnetwork dynamics step, which replaces the one on screen; a
  * refused save carries its reason on it, and then nothing moves on.
  */
 function hybridSaveSubnetworkDynamics(continueUrl) {

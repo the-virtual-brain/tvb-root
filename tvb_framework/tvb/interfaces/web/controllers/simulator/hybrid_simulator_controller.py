@@ -1764,8 +1764,8 @@ class HybridSimulatorController(BurstBaseController):
     def _editor_actions_rules():
         """
         The row closing the Subnetwork editor: Previous back to the Subnetworks step, Save Configuration
-        storing the dynamics of every Subnetwork, and Save and continue storing them and opening the
-        Projections. Nothing moves on without saving.
+        storing the dynamics of every Subnetwork, and Next storing them and opening the Projections.
+        Nothing moves on without saving.
 
         Previous skips the Subnetwork dynamics step, which only holds the Subnetwork tabs and opens this
         editor on its own: stepping back to it would leave nothing to do there but step back again.
