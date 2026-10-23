@@ -81,6 +81,8 @@ var HYBRID_REGION_MODEL = (function () {
         item.appendChild(createElement("span",
             row.dynamic_name ? "hybrid-region-dynamic" : "hybrid-region-dynamic is-empty",
             row.dynamic_name || "not configured"));
+        // half a column is narrow, so the label and the configuration may be cut short on screen
+        item.title = row.index + " " + row.label + ": " + (row.dynamic_name || "not configured");
         return item;
     }
 
@@ -88,6 +90,8 @@ var HYBRID_REGION_MODEL = (function () {
         if (list === null) {
             return;
         }
+        // the list is two columns filled top to bottom, so it takes half as many rows as regions
+        list.style.gridTemplateRows = "repeat(" + Math.max(1, Math.ceil(state.rows.length / 2)) + ", auto)";
         list.innerHTML = "";
         state.rows.forEach(function (row) {
             list.appendChild(renderRow(row));

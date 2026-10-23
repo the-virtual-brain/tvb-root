@@ -528,20 +528,50 @@ form[id="/burst/hybrid/set_subnetwork_dynamics"]:has(+ .hybrid-subnetwork-editor
     margin-right: 4px;
 }
 
+/* The panel takes the height of the third column, and its region list whatever the hint and the
+   toolbars above leave. On a screen too short for even the list's minimum, the column scrolls as a
+   whole, the way it does for every other configuration shown there. */
+#main.columnized .view-column:has(.hybrid-region-model-panel),
+#hybrid-context-column:has(.hybrid-region-model-panel),
+.hybrid-region-model-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+#hybrid-context-column:has(.hybrid-region-model-panel),
+.hybrid-region-model-panel {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+/* Two columns, filled top to bottom, so the list reads on from the bottom of the first column to the
+   top of the second; hybrid_region_model.js sets how many rows that takes. Scrolls when they do not
+   fit. */
 .hybrid-region-model-list {
+    align-content: start;
+    column-gap: 6px;
+    display: grid;
+    flex: 1 1 auto;
+    grid-auto-flow: column;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     list-style: none;
     margin: 0;
-    max-height: 420px;
+    min-height: 120px;
     overflow-y: auto;
     padding: 0;
 }
 
-/* The configuration placed on a region, after its index and label. */
+/* The configuration placed on a region, after its index and label. Half a column is narrow, so it
+   gives way to the label rather than pushing it out, and the region's tooltip carries both in full. */
 .hybrid-region-dynamic {
     color: rgba(250, 247, 228, 0.85);
-    flex: 0 0 auto;
+    flex: 0 1 auto;
     margin-left: auto;
+    max-width: 50%;
+    overflow: hidden;
     padding-left: 8px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* A region with nothing on it yet cannot take part in the parameter arrays, so say so. */
