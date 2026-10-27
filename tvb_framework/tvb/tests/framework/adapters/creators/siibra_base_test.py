@@ -29,7 +29,9 @@ import numpy as np
 import pandas as pd
 import pandas.core.frame
 import pytest
-import siibra
+
+siibra = pytest.importorskip("siibra")
+
 from tvb.adapters.creators import siibra_base as sb
 from tvb.datatypes import connectivity, graph
 from tvb.tests.framework.core.base_testcase import BaseTestCase
