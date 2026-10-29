@@ -54,16 +54,6 @@ class TestSiibraBase(BaseTestCase):
         self.monkey_parcellation = siibra.parcellations[MONKEY_PARCELLATION]
 
     @pytest.fixture()
-    def create_weights_and_tracts(self, create_test_atlases_and_parcellations):
-        """
-        Return all the weights and tracts available in siibra for default atlas and parcellation
-        """
-        weights = siibra.get_features(self.julich_parcellation_3_0, siibra.modalities.StreamlineCounts)
-        tracts = siibra.get_features(self.julich_parcellation_3_0, siibra.modalities.StreamlineLengths)
-        self.weights = weights
-        self.tracts = tracts
-
-    @pytest.fixture()
     def create_siibra_functional_connectivities(self, create_test_atlases_and_parcellations):
         """
         Return all the functional connectivities available in siibra for default atlas and parcellation
