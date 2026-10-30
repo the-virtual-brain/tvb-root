@@ -627,6 +627,10 @@ function initializeMatrix(){
 
     function onClick(ev){
         var hit = _canvasHit(this, ev);
+        if (hit == null || hit.region !== 'cell') {
+            // a click outside a cell closes the edit popup
+            hideNodeDetails();
+        }
         if (hit == null){
             return;
         }
