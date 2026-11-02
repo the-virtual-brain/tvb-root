@@ -49,6 +49,7 @@ width: 40%;
 #main .view-column.matrix-controller {
 float: none;
 margin-right: 0;
+overflow-x: hidden;
 width: auto;
 }
 
