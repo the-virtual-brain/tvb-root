@@ -47,8 +47,9 @@ width: 40%;
 }
 
 #main .view-column.matrix-controller {
+float: none;
 margin-right: 0;
-width: 59%;
+width: auto;
 }
 
 /* !-------------------------------------------- */
