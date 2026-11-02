@@ -15,7 +15,7 @@ scikit-image
 cython
 numexpr
 psutil
-pytest<9.2
+pytest
 pytest-cov
 pytest-xdist
 pytest-benchmark
