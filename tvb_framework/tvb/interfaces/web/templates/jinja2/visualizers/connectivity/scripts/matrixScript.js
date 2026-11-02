@@ -307,27 +307,31 @@ function _hideTooltip() {
  * The menu is fixed-positioned, so cellRect viewport coordinates are used directly.
  */
 function _positionEditMenu(inputDiv, cellRect) {
-    var menuWidth = 200;
-    var menuHeight = 214;
+    var menu = inputDiv.querySelector('aside.menu-cell');
+    var menuWidth = menu.offsetWidth;
+    var menuHeight = menu.offsetHeight;
     var pad = 6;
 
-    var x = cellRect.left + cellRect.width + pad;
-    if (x + menuWidth > $('body').width() - 15) {
-        x = cellRect.left - menuWidth - pad;                // flip to the left
+    // Keep the menu inside the visible part of the CONTROL panel (the page footer covers the window bottom).
+    var panel = document.getElementById('scrollable-matrix-section');
+    var panelRect = panel.getBoundingClientRect();
+    var minX = Math.max(panelRect.left, 0) + pad;
+    var maxX = Math.min(panelRect.left + panel.clientWidth, window.innerWidth) - menuWidth - pad;
+    var minY = Math.max(panelRect.top, 0) + pad;
+    var maxY = Math.min(panelRect.top + panel.clientHeight, window.innerHeight) - menuHeight - pad;
+
+    var x = cellRect.left + cellRect.width + pad;           // right of the cell
+    if (x > maxX) {
+        x = cellRect.left - menuWidth - pad;                // left of the cell
     }
-    if (x < 0) {
-        x = 5;
+    if (x < minX) {
+        x = maxX;                                           // no side fits: right edge of the panel, over the matrix
     }
-    var y = cellRect.top;
-    if (y + menuHeight > $(window).height()) {
-        y = $(window).height() - menuHeight - 10;           // flip up
-    }
-    if (y < 0) {
-        y = 5;
-    }
+    var y = Math.min(cellRect.top, maxY);                   // move up when it does not fit below
+
     inputDiv.style.position = 'fixed';
-    inputDiv.style.left = x + 'px';
-    inputDiv.style.top = y + 'px';
+    inputDiv.style.left = Math.max(x, minX) + 'px';
+    inputDiv.style.top = Math.max(y, minY) + 'px';
 }
 
 /**
@@ -342,10 +346,6 @@ function changeSingleCell(hit) {
 
     MATRIX_editedCell = {prefix: hit.prefix, i: i, j: j};
 
-    var inputDiv = document.getElementById('editNodeValues');
-    inputDiv.style.display = 'block';
-    _positionEditMenu(inputDiv, hit.cellRect);
-
     var labelInfoSource = document.getElementById('selectedSourceNodeDetails');
     var labelInfoTarget = document.getElementById('selectedTargetNodeDetails');
     if (labelInfoSource != null) {
@@ -354,6 +354,11 @@ function changeSingleCell(hit) {
     if (labelInfoTarget != null) {
         labelInfoTarget.innerHTML = GVAR_pointsLabels[j];
     }
+
+    var inputDiv = document.getElementById('editNodeValues');
+    inputDiv.style.display = 'block';
+    // Positioned after the labels are set, so the measured height includes long region names.
+    _positionEditMenu(inputDiv, hit.cellRect);
 
     document.getElementById('weightsValue').value = _matrixByPrefix(hit.prefix).values[i][j];
     // Keep the "td_<prefix>_<i>_<j>" identifier the edit helpers below parse indices from.
