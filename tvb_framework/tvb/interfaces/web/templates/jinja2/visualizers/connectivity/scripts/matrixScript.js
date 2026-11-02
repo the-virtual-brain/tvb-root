@@ -677,7 +677,7 @@ function initializeMatrix(){
     var resizeTimer;
     $(window).resize(function(){
         clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(MATRIX_drawCanvas, 200);
+        resizeTimer = setTimeout(MATRIX_colorTable, 200);
     });
 
     MATRIX_colorTable();
