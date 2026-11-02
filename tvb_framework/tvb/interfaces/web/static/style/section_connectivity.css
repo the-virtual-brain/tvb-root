@@ -476,8 +476,8 @@ z-index: 200;
 -moz-box-shadow: 2px 2px 10px 0 rgba(0, 0, 0, 0.7);
 box-shadow: 2px 2px 10px 0 rgba(0, 0, 0, 0.7);
 
-left: -210px; /* this value isn't seriously used, right? */
-top: 0; /* this value isn't seriously used, right? */
+left: 0;
+top: 0;
 }
 
 .ss-connectivity aside.menu-cell mark {
