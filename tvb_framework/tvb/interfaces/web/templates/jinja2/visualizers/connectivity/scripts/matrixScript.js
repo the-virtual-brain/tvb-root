@@ -415,6 +415,10 @@ function saveNodeDetails() {
             selectedMatrix.values[idx][jdx] = newValue;
             CONN_lineWidthsBins[idx][jdx] = CONN_getLineWidthValue(newValue);
         }
+        if (newValue == 0) {
+            // As in cutOutgoingLines: an edge set to 0 is no longer drawn in the 3D view.
+            GVAR_connectivityMatrix[idx][jdx] = 0;
+        }
     }
     document.getElementById('editNodeValues').style.display = 'none';
     MATRIX_editedCell = null;
