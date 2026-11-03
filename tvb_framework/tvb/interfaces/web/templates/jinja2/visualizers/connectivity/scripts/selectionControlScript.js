@@ -93,8 +93,8 @@ function getOperationArguments() {
 function doGroupOperation() {
     //Selected operation
     var operationsSelect = document.getElementById('con-op-operation');
-    var selectedOp = parseInt(operationsSelect.options[operationsSelect.selectedIndex].value);
-    selectedOp = OP_DICTIONARY[selectedOp]['operation'];
+    var selectedOpIndex = Number.parseInt(operationsSelect.options[operationsSelect.selectedIndex].value);
+    var selectedOp = OP_DICTIONARY[selectedOpIndex]['operation'];
     //Selected edges type
     var edgesSelect = document.getElementById('con-op-edges-type');
     var selectedEdgeType = parseInt(edgesSelect.options[edgesSelect.selectedIndex].value);
@@ -102,7 +102,7 @@ function doGroupOperation() {
     var quantity = getOperationArguments();
 
     document.getElementById('con-op-arguments').value = '';
-        if (!isFinite(quantity)) {
+    if (!Number.isFinite(quantity)) {
         displayMessage("Operation failed. Be sure you provided the correct arguments.", "errorMessage");
         return false;
     }
@@ -148,5 +148,3 @@ function doGroupOperation() {
         displayMessage("Operation failed. Be sure you provided the correct arguments.", "errorMessage");
     }
 }
-
-
