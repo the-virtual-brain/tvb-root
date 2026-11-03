@@ -302,7 +302,7 @@ function _matrixTooltip() {
 function _showTooltip(ev, prefix, i, j) {
     var value = _matrixByPrefix(prefix).values[i][j];
     var t = _matrixTooltip();
-    t.textContent = GVAR_pointsLabels[i] + ' ← ' + GVAR_pointsLabels[j] + ' = ' + value;
+    t.textContent = GVAR_pointsLabels[i] + ' → ' + GVAR_pointsLabels[j] + ' = ' + value;
     t.style.left = (ev.clientX + 14) + 'px';
     t.style.top = (ev.clientY + 12) + 'px';
     t.style.display = 'block';
