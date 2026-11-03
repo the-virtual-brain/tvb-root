@@ -380,7 +380,7 @@ function saveNodeDetails() {
     var idx = indexes[0];
     var jdx = indexes[1];
 
-    if (isNaN(newValue)) {
+    if (!isFinite(newValue)) {
         displayMessage('The value you entered is not a valid float. Original value is kept.', 'warningMessage');
     } else {
         var selectedMatrix = GVAR_interestAreaVariables[GVAR_selectedAreaType];
