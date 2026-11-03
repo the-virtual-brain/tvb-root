@@ -328,10 +328,13 @@ function ConnStepPlotInitColorBuffers() {
     plotColorBuffers = [];
     var stepValue = (maxSelectedDelayValue - minSelectedDelayValue) / nrOfSteps;
     plotColorBuffers.push(generateColors((maxSelectedDelayValue + minSelectedDelayValue) / 2, maxSelectedDelayValue - minSelectedDelayValue));
-    // In order to avoid floating number approximations which keep the loop for one more iteration just approximate by
-    // substracting 0.1
-    for (var tractValue = minSelectedDelayValue + stepValue / 2; tractValue < parseInt(maxSelectedDelayValue) - 0.1; tractValue = tractValue + stepValue) {
-        plotColorBuffers.push(generateColors(tractValue, stepValue));
+    // One slice per step, counted by index so rounding cannot drop or add a slice.
+    // When From equals To there is nothing to split and only the full matrix is shown.
+    if (stepValue > 0) {
+        for (var step = 0; step < nrOfSteps; step++) {
+            var tractValue = minSelectedDelayValue + stepValue * (step + 0.5);
+            plotColorBuffers.push(generateColors(tractValue, stepValue));
+        }
     } 
     var theme = ColSchGetTheme().connectivityStepPlot;
     gl.clearColor(theme.backgroundColor[0], theme.backgroundColor[1], theme.backgroundColor[2], theme.backgroundColor[3]);
