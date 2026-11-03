@@ -292,7 +292,7 @@ function _matrixTooltip() {
         t = document.createElement('div');
         t.id = 'matrixCellTooltip';
         t.style.cssText = 'position:fixed;display:none;pointer-events:none;z-index:10000;' +
-            'background:rgba(46,45,38,0.92);color:#FAF7E4;font-size:11px;padding:3px 6px;' +
+            'background:rgba(46,45,38,0.92);color:#FAF7E4;font-size:13px;padding:4px 8px;' +
             'border-radius:3px;white-space:nowrap;';
         document.body.appendChild(t);
     }
@@ -303,9 +303,14 @@ function _showTooltip(ev, prefix, i, j) {
     var value = _matrixByPrefix(prefix).values[i][j];
     var t = _matrixTooltip();
     t.textContent = GVAR_pointsLabels[i] + ' → ' + GVAR_pointsLabels[j] + ' = ' + value;
-    t.style.left = (ev.clientX + 14) + 'px';
-    t.style.top = (ev.clientY + 12) + 'px';
     t.style.display = 'block';
+    // Measured after the text is set: when the tooltip does not fit right of the cursor, show it on the left.
+    var x = ev.clientX + 14;
+    if (x + t.offsetWidth > document.documentElement.clientWidth) {
+        x = ev.clientX - 14 - t.offsetWidth;
+    }
+    t.style.left = Math.max(x, 0) + 'px';
+    t.style.top = (ev.clientY + 12) + 'px';
 }
 
 function _hideTooltip() {
