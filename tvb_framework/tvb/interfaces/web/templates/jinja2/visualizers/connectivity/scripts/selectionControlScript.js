@@ -102,8 +102,12 @@ function doGroupOperation() {
     var quantity = getOperationArguments();
 
     document.getElementById('con-op-arguments').value = '';
-    if (isNaN(quantity)) {
+        if (!isFinite(quantity)) {
         displayMessage("Operation failed. Be sure you provided the correct arguments.", "errorMessage");
+        return false;
+    }
+    if (selectedOp === divideSelectionBy && quantity === 0) {
+        displayMessage("Division by 0 is not allowed. The matrix was not changed.", "errorMessage");
         return false;
     }
 
@@ -116,22 +120,22 @@ function doGroupOperation() {
                 switch(selectedEdgeType) {
                     case 1:
                         if (GFUNC_isNodeAddedToInterestArea(i) && GFUNC_isNodeAddedToInterestArea(j)) {
-                            values[i][j] = selectedOp(values[i][j], quantity);
+                            values[i][j] = Math.max(0, selectedOp(values[i][j], quantity));
                         }
                         break;
                     case 2:
                         if (GFUNC_isNodeAddedToInterestArea(i) && !GFUNC_isNodeAddedToInterestArea(j)) {
-                            values[i][j] = selectedOp(values[i][j], quantity);
+                            values[i][j] = Math.max(0, selectedOp(values[i][j], quantity));
                         }
                         break;
                     case 3:
                         if (!GFUNC_isNodeAddedToInterestArea(i) && GFUNC_isNodeAddedToInterestArea(j)) {
-                            values[i][j] = selectedOp(values[i][j], quantity);
+                            values[i][j] = Math.max(0, selectedOp(values[i][j], quantity));
                         }
                         break;
                     case 4:
                         if (!GFUNC_isNodeAddedToInterestArea(i) && !GFUNC_isNodeAddedToInterestArea(j)) {
-                            values[i][j] = selectedOp(values[i][j], quantity);
+                            values[i][j] = Math.max(0, selectedOp(values[i][j], quantity));
                         }
                         break;
                 }
