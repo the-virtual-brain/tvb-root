@@ -138,6 +138,29 @@
 						</nav>
 					</li>
 
+					<!--! Quadrant selector -->
+					<li>
+						<nav class="inline-menu quadrant-selector">
+							<button id="quadrantSelectorButton" class="action action-menu">Q 1</button>
+
+							<div class="extension">
+								<div class="dropdown-pane">
+									<mark>Select a quadrant to work with:</mark>
+									<ul>
+										{% for i in range(4) %}
+											<li class="quadrant-display quadrant-{{ i }} {{ 'active' if i==0 else '' }}"
+												style="margin: 0 1px 5px 0;"
+												tabindex="7"
+												onclick="selectHemisphere({{ i }}); hideMenus(); event?.stopPropagation();" onkeypress="fireOnClick(this)">
+												<a href="#" title="Select this quadrant" onclick="selectHemisphere({{ i }})">Quadrant {{ i+1 }}</a>
+											</li>
+										{% endfor %}
+									</ul>
+								</div>
+							</div>
+						</nav>
+					</li>
+
                     <li class="selector-storage">
 						{% import 'visualizers/commons/channel_selector_button.html' as csb %}
 						{{ csb.drawRegionSelectorButton(connectivity_entity.title, groupedLabels, initialSelection, buttonTitle="Select Nodes") }}
@@ -154,10 +177,10 @@
 				<div id="div-matrix-weights" class="matrix-viewer">
 
 					<div class="matrix-table">
-						{{ mwq.draw2DConnectivityMatrix('leftHemisphere', 0, pointsLabels, 0, leftHemisphereCount, 0, leftHemisphereCount, 'w') }}
-						{{ mwq.draw2DConnectivityMatrix('leftRightQuarter', 2, pointsLabels, 0, leftHemisphereCount, leftHemisphereCount, nodeCount, 'w') }}
-						{{ mwq.draw2DConnectivityMatrix('rightLeftQuarter', 1, pointsLabels, leftHemisphereCount, nodeCount, 0, leftHemisphereCount, 'w') }}
-						{{ mwq.draw2DConnectivityMatrix('rightHemisphere', 3, pointsLabels, leftHemisphereCount, nodeCount, leftHemisphereCount, nodeCount, 'w') }}
+						{{ mwq.draw2DConnectivityMatrix('leftHemisphere', 0, leftHemisphereCount, 0, leftHemisphereCount, 'w') }}
+						{{ mwq.draw2DConnectivityMatrix('leftRightQuarter', 0, leftHemisphereCount, leftHemisphereCount, nodeCount, 'w') }}
+						{{ mwq.draw2DConnectivityMatrix('rightLeftQuarter', leftHemisphereCount, nodeCount, 0, leftHemisphereCount, 'w') }}
+						{{ mwq.draw2DConnectivityMatrix('rightHemisphere', leftHemisphereCount, nodeCount, leftHemisphereCount, nodeCount, 'w') }}
 					</div>
 
 					{{ drawMatrixLegendArea('weights-legend') }}
@@ -167,10 +190,10 @@
 				<!--! Matrices: Tracts -->
 				<div id="div-matrix-tracts" class="matrix-viewer">
 					<div class="matrix-table">
-						{{ mwq.draw2DConnectivityMatrix('leftHemisphereTracts', 0, pointsLabels, 0, leftHemisphereCount, 0, leftHemisphereCount, 't') }}
-						{{ mwq.draw2DConnectivityMatrix('leftRightQuarterTracts', 2, pointsLabels, 0, leftHemisphereCount, leftHemisphereCount, nodeCount, 't') }}
-						{{ mwq.draw2DConnectivityMatrix('rightLeftQuarterTracts', 1, pointsLabels, leftHemisphereCount, nodeCount, 0, leftHemisphereCount, 't') }}
-						{{ mwq.draw2DConnectivityMatrix('rightHemisphereTracts', 3, pointsLabels, leftHemisphereCount, nodeCount, leftHemisphereCount, nodeCount, 't') }}
+						{{ mwq.draw2DConnectivityMatrix('leftHemisphereTracts', 0, leftHemisphereCount, 0, leftHemisphereCount, 't') }}
+						{{ mwq.draw2DConnectivityMatrix('leftRightQuarterTracts', 0, leftHemisphereCount, leftHemisphereCount, nodeCount, 't') }}
+						{{ mwq.draw2DConnectivityMatrix('rightLeftQuarterTracts', leftHemisphereCount, nodeCount, 0, leftHemisphereCount, 't') }}
+						{{ mwq.draw2DConnectivityMatrix('rightHemisphereTracts', leftHemisphereCount, nodeCount, leftHemisphereCount, nodeCount, 't') }}
 					</div>
 
 					{{ drawMatrixLegendArea('tracts-legend') }}

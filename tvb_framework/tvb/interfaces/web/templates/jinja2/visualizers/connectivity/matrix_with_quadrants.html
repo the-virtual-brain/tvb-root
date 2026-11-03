@@ -1,27 +1,5 @@
-{% macro draw2DConnectivityMatrix(hemisphereId, nr, pointsLabels, startHemisphereIdx, endHemisphereIdx, startHemisphereIdy, endHemisphereIdy, prefix) -%}
+{% macro draw2DConnectivityMatrix(hemisphereId, startHemisphereIdx, endHemisphereIdx, startHemisphereIdy, endHemisphereIdy, prefix) -%}
   <div id="{{ hemisphereId }}" class="matrix-quadrant">
-
-    <!--! Quadrant selector -->
-    <nav class="inline-menu quadrant-selector">
-        <button class="action action-menu">Q {{ nr+1 }}</button>
-
-        <div class="extension">
-            <div class="dropdown-pane">
-                <mark>Select a quadrant to work with:</mark>
-                <ul>
-                    {% for i in range(4) %}
-                        <li class="{{ 'active' if nr==i else '' }}"
-                            style="margin: 0 1px 5px 0;"
-                            tabindex="7"
-                            onclick="selectHemisphere({{ i }})" onkeypress="fireOnClick(this)">
-                            <a href="#" title="Select this quadrant" onclick="selectHemisphere({{ i }})">Quadrant {{ i+1 }}</a>
-                        </li>
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
-    </nav>
-
     <!--! The matrix is drawn on a single canvas instead of an N*N HTML table, so it scales to large connectivities. -->
     <canvas class="matrix-canvas" id="canvas_{{ hemisphereId }}"
             data-prefix="{{ prefix }}"
