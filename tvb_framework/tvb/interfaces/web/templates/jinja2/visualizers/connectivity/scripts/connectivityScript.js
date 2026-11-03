@@ -621,6 +621,8 @@ function selectHemisphere(index) {
     $(".quadrant-"+ index).each(function () {
         $(this).addClass('active');
     });
+    // A single quadrant button serves all quadrants, so its text follows the selected one.
+    $("#quadrantSelectorButton").text("Q " + (index + 1));
 
     for (var k=0; k<hemispheres.length; k++){
         $("#" + hemispheres[k]).hide();

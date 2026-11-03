@@ -403,18 +403,13 @@ height: 100%;
 /* !MATRIX COMPONENT: Quadrant selector */
 /* !-------------------------------------------- */
 
-.ss-connectivity .matrix thead th:first-child {
-background: none;
-font-size: 12px;
-position: relative;
-}
-
 .ss-connectivity .matrix .quadrant-selector .extension {
 left: 0;
 right: auto;
 }
 
 .ss-connectivity .matrix .quadrant-selector .dropdown-pane {
+text-align: center;
 width: 214px;
 }
 
