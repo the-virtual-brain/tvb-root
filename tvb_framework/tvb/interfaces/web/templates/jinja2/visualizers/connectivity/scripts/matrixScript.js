@@ -602,12 +602,36 @@ function _updateLegendColors(){
 
 
 /**
+ * Reserve room on the right of the matrix for the legend labels, so long values do not cover the last columns.
+ * @return true when the reserved room changed and the matrix has to be redrawn
+ * @private
+ */
+function _reserveLegendSpace() {
+    var selectedMatrix = GVAR_interestAreaVariables[GVAR_selectedAreaType];
+    var labels = document.getElementById('table-' + selectedMatrix.legend_div_id);
+    var padding = Math.max(45, labels.offsetWidth + 10) + 'px';     // 45px is the default from the CSS
+    var changed = false;
+    $('.matrix-table').each(function () {
+        if (this.style.paddingRight !== padding) {
+            this.style.paddingRight = padding;
+            changed = true;
+        }
+    });
+    return changed;
+}
+
+/**
  * Redraw the matrix and its legend. Kept under the historical name because it is the
  * hook called from the color scheme, tab-switch and selection code.
  */
 function MATRIX_colorTable() {
     MATRIX_drawCanvas();
     _updateLegendColors();
+    if (_reserveLegendSpace()) {
+        // The legend labels changed width, so the matrix gets a new width: draw both again.
+        MATRIX_drawCanvas();
+        _updateLegendColors();
+    }
 }
 
 function saveSubConnectivity(submitUrl, originalConnectivityId,  isBranch) {
