@@ -84,8 +84,8 @@ function _canvasGeometry(canvas) {
     var d = canvas.dataset;
     var g = {
         prefix: d.prefix,
-        colStart: parseInt(d.colStart, 10), colEnd: parseInt(d.colEnd, 10),
-        rowStart: parseInt(d.rowStart, 10), rowEnd: parseInt(d.rowEnd, 10)
+        colStart: Number.parseInt(d.colStart, 10), colEnd: Number.parseInt(d.colEnd, 10),
+        rowStart: Number.parseInt(d.rowStart, 10), rowEnd: Number.parseInt(d.rowEnd, 10)
     };
     g.nCols = g.colEnd - g.colStart;
     g.nRows = g.rowEnd - g.rowStart;
@@ -99,6 +99,99 @@ function _canvasGeometry(canvas) {
 }
 
 /**
+ * Draw the matrix cells, with a light overlay on cells whose row and column are both selected.
+ */
+function _drawCells(ctx, g, matrix, rowSel, colSel) {
+    // Cells. Math.ceil on the size avoids sub-pixel gaps between adjacent rects.
+    var cwCeil = Math.ceil(g.cw);
+    var chCeil = Math.ceil(g.ch);
+    for (var r = 0; r < g.nRows; r++) {
+        var i = g.rowStart + r;
+        var y = MATRIX_LABEL_GUTTER + r * g.ch;
+        for (var c = 0; c < g.nCols; c++) {
+            var j = g.colStart + c;
+            ctx.fillStyle = ColSch_getGradientColorString(matrix.values[i][j], matrix.min_val, matrix.max_val);
+            ctx.fillRect(MATRIX_LABEL_GUTTER + c * g.cw, y, cwCeil, chCeil);
+            if (rowSel[r] && colSel[c]) {                   // interest-area intersection overlay
+                ctx.fillStyle = 'rgba(250, 247, 228, 0.28)';
+                ctx.fillRect(MATRIX_LABEL_GUTTER + c * g.cw, y, cwCeil, chCeil);
+            }
+        }
+    }
+}
+
+/**
+ * Draw a grid outlining every cell. Drawn as nRows+nCols lines (not a stroke per cell)
+ * and only when cells are large enough that the grid does not swamp the colors.
+ */
+function _drawGrid(ctx, g) {
+    if (g.cw < MATRIX_MIN_GRID_CELL || g.ch < MATRIX_MIN_GRID_CELL) {
+        return;
+    }
+    ctx.strokeStyle = 'rgba(46, 45, 38, 0.35)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (var c = 0; c <= g.nCols; c++) {
+        var lineX = Math.round(MATRIX_LABEL_GUTTER + c * g.cw) + 0.5;   // half-pixel => crisp 1px line
+        ctx.moveTo(lineX, MATRIX_LABEL_GUTTER);
+        ctx.lineTo(lineX, MATRIX_LABEL_GUTTER + g.nRows * g.ch);
+    }
+    for (var r = 0; r <= g.nRows; r++) {
+        var lineY = Math.round(MATRIX_LABEL_GUTTER + r * g.ch) + 0.5;
+        ctx.moveTo(MATRIX_LABEL_GUTTER, lineY);
+        ctx.lineTo(MATRIX_LABEL_GUTTER + g.nCols * g.cw, lineY);
+    }
+    ctx.stroke();
+}
+
+/**
+ * Draw the column labels and the row labels of a quadrant.
+ */
+function _drawLabels(ctx, g, rowSel, colSel) {
+    ctx.font = '9px sans-serif';
+
+    // Column labels along the top gutter, rotated to read bottom-to-top (as the old table did).
+    // When cells are narrower than the label spacing we draw every colStep-th label to avoid overlap.
+    var colStep = Math.max(1, Math.ceil(MATRIX_LABEL_MIN_SPACING / g.cw));
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    for (var c = 0; c < g.nCols; c += colStep) {
+        ctx.save();
+        ctx.translate(MATRIX_LABEL_GUTTER + c * g.cw + g.cw / 2, MATRIX_LABEL_GUTTER - 3);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillStyle = colSel[c] ? '#2E2D26' : '#7e7b66';
+        ctx.fillText(_fitLabel(ctx, '' + GVAR_pointsLabels[g.colStart + c], MATRIX_LABEL_GUTTER - 6), 0, 0);
+        ctx.restore();
+    }
+
+    // Row labels along the left gutter.
+    var rowStep = Math.max(1, Math.ceil(MATRIX_LABEL_MIN_SPACING / g.ch));
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (var r = 0; r < g.nRows; r += rowStep) {
+        ctx.fillStyle = rowSel[r] ? '#2E2D26' : '#7e7b66';
+        ctx.fillText(_fitLabel(ctx, '' + GVAR_pointsLabels[g.rowStart + r], MATRIX_LABEL_GUTTER - 6),
+                     MATRIX_LABEL_GUTTER - 4, MATRIX_LABEL_GUTTER + r * g.ch + g.ch / 2);
+    }
+}
+
+/**
+ * Draw the border of the cell being edited, if it falls inside this quadrant.
+ */
+function _drawEditedCell(ctx, g) {
+    var cell = MATRIX_editedCell;
+    if (cell?.prefix === g.prefix &&
+            cell.i >= g.rowStart && cell.i < g.rowEnd &&
+            cell.j >= g.colStart && cell.j < g.colEnd) {
+        ctx.strokeStyle = '#0047a4';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(MATRIX_LABEL_GUTTER + (cell.j - g.colStart) * g.cw + 1,
+                       MATRIX_LABEL_GUTTER + (cell.i - g.rowStart) * g.ch + 1,
+                       g.cw - 2, g.ch - 2);
+    }
+}
+
+/**
  * Draw a single quadrant canvas: cells, selection overlay, labels and the edited-cell border.
  */
 function _drawQuadrant(canvas) {
@@ -108,12 +201,9 @@ function _drawQuadrant(canvas) {
     }
 
     var matrix = _matrixByPrefix(g.prefix);
-    var values = matrix.values;
-    if (!values || !values.length) {
+    if (!matrix.values?.length) {
         return;
     }
-    var minValue = matrix.min_val;
-    var maxValue = matrix.max_val;
 
     var dpr = window.devicePixelRatio || 1;
     canvas.style.height = g.cssH + 'px';
@@ -126,88 +216,17 @@ function _drawQuadrant(canvas) {
     // Which rows/cols are part of the interest area (computed once per axis, not per cell).
     var rowSel = [];
     var colSel = [];
-    var r, c, i, j, x, y;
-    for (r = 0; r < g.nRows; r++) {
+    for (var r = 0; r < g.nRows; r++) {
         rowSel[r] = GFUNC_isNodeAddedToInterestArea(g.rowStart + r);
     }
-    for (c = 0; c < g.nCols; c++) {
+    for (var c = 0; c < g.nCols; c++) {
         colSel[c] = GFUNC_isNodeAddedToInterestArea(g.colStart + c);
     }
 
-    // Cells. Math.ceil on the size avoids sub-pixel gaps between adjacent rects.
-    var cwCeil = Math.ceil(g.cw);
-    var chCeil = Math.ceil(g.ch);
-    for (r = 0; r < g.nRows; r++) {
-        i = g.rowStart + r;
-        y = MATRIX_LABEL_GUTTER + r * g.ch;
-        for (c = 0; c < g.nCols; c++) {
-            j = g.colStart + c;
-            ctx.fillStyle = ColSch_getGradientColorString(values[i][j], minValue, maxValue);
-            ctx.fillRect(MATRIX_LABEL_GUTTER + c * g.cw, y, cwCeil, chCeil);
-            if (rowSel[r] && colSel[c]) {                   // interest-area intersection overlay
-                ctx.fillStyle = 'rgba(250, 247, 228, 0.28)';
-                ctx.fillRect(MATRIX_LABEL_GUTTER + c * g.cw, y, cwCeil, chCeil);
-            }
-        }
-    }
-
-    // Cell contour: a grid outlining every cell. Drawn as nRows+nCols lines (not a stroke per cell)
-    // and only when cells are large enough that the grid does not swamp the colors.
-    if (g.cw >= MATRIX_MIN_GRID_CELL && g.ch >= MATRIX_MIN_GRID_CELL) {
-        ctx.strokeStyle = 'rgba(46, 45, 38, 0.35)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        for (c = 0; c <= g.nCols; c++) {
-            var lineX = Math.round(MATRIX_LABEL_GUTTER + c * g.cw) + 0.5;   // half-pixel => crisp 1px line
-            ctx.moveTo(lineX, MATRIX_LABEL_GUTTER);
-            ctx.lineTo(lineX, MATRIX_LABEL_GUTTER + g.nRows * g.ch);
-        }
-        for (r = 0; r <= g.nRows; r++) {
-            var lineY = Math.round(MATRIX_LABEL_GUTTER + r * g.ch) + 0.5;
-            ctx.moveTo(MATRIX_LABEL_GUTTER, lineY);
-            ctx.lineTo(MATRIX_LABEL_GUTTER + g.nCols * g.cw, lineY);
-        }
-        ctx.stroke();
-    }
-
-    ctx.font = '9px sans-serif';
-
-    // Column labels along the top gutter, rotated to read bottom-to-top (as the old table did).
-    // When cells are narrower than the label spacing we draw every colStep-th label to avoid overlap.
-    var colStep = Math.max(1, Math.ceil(MATRIX_LABEL_MIN_SPACING / g.cw));
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    for (c = 0; c < g.nCols; c += colStep) {
-        j = g.colStart + c;
-        ctx.save();
-        ctx.translate(MATRIX_LABEL_GUTTER + c * g.cw + g.cw / 2, MATRIX_LABEL_GUTTER - 3);
-        ctx.rotate(-Math.PI / 2);
-        ctx.fillStyle = colSel[c] ? '#2E2D26' : '#7e7b66';
-        ctx.fillText(_fitLabel(ctx, '' + GVAR_pointsLabels[j], MATRIX_LABEL_GUTTER - 6), 0, 0);
-        ctx.restore();
-    }
-
-    // Row labels along the left gutter.
-    var rowStep = Math.max(1, Math.ceil(MATRIX_LABEL_MIN_SPACING / g.ch));
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-    for (r = 0; r < g.nRows; r += rowStep) {
-        i = g.rowStart + r;
-        ctx.fillStyle = rowSel[r] ? '#2E2D26' : '#7e7b66';
-        ctx.fillText(_fitLabel(ctx, '' + GVAR_pointsLabels[i], MATRIX_LABEL_GUTTER - 6),
-                     MATRIX_LABEL_GUTTER - 4, MATRIX_LABEL_GUTTER + r * g.ch + g.ch / 2);
-    }
-
-    // Edited-cell border, if it falls inside this quadrant.
-    if (MATRIX_editedCell && MATRIX_editedCell.prefix === g.prefix &&
-            MATRIX_editedCell.i >= g.rowStart && MATRIX_editedCell.i < g.rowEnd &&
-            MATRIX_editedCell.j >= g.colStart && MATRIX_editedCell.j < g.colEnd) {
-        ctx.strokeStyle = '#0047a4';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(MATRIX_LABEL_GUTTER + (MATRIX_editedCell.j - g.colStart) * g.cw + 1,
-                       MATRIX_LABEL_GUTTER + (MATRIX_editedCell.i - g.rowStart) * g.ch + 1,
-                       g.cw - 2, g.ch - 2);
-    }
+    _drawCells(ctx, g, matrix, rowSel, colSel);
+    _drawGrid(ctx, g);
+    _drawLabels(ctx, g, rowSel, colSel);
+    _drawEditedCell(ctx, g);
 }
 
 /**
@@ -215,10 +234,9 @@ function _drawQuadrant(canvas) {
  * used after edits, selection changes, quadrant/tab switches and resizes.
  */
 function MATRIX_drawCanvas() {
-    var canvases = document.getElementsByClassName('matrix-canvas');
-    for (var k = 0; k < canvases.length; k++) {
-        if (canvases[k].offsetWidth > 0) {                  // skip hidden quadrants
-            _drawQuadrant(canvases[k]);
+    for (var canvas of document.getElementsByClassName('matrix-canvas')) {
+        if (canvas.offsetWidth > 0) {                       // skip hidden quadrants
+            _drawQuadrant(canvas);
         }
     }
 }
@@ -380,7 +398,7 @@ function saveNodeDetails() {
     var idx = indexes[0];
     var jdx = indexes[1];
 
-    if (!isFinite(newValue)) {
+    if (!Number.isFinite(newValue)) {
         displayMessage('The value you entered is not a valid float. Original value is kept.', 'warningMessage');
     } else {
         var selectedMatrix = GVAR_interestAreaVariables[GVAR_selectedAreaType];
@@ -653,53 +671,59 @@ function saveSubConnectivity(submitUrl, originalConnectivityId,  isBranch) {
 }
 
 /**
+ * Click on a matrix canvas: open the popup of a cell, or change the selection from a region label.
+ */
+function _onMatrixClick(ev) {
+    var hit = _canvasHit(ev.currentTarget, ev);
+    if (hit?.region !== 'cell') {
+        // a click outside a cell closes the edit popup
+        hideNodeDetails();
+    }
+    if (hit == null) {
+        return;
+    }
+    if (hit.region === 'cell') {
+        changeSingleCell(hit);
+    } else if (hit.region === 'row') {
+        changeEntireRow(hit.i);
+    } else if (hit.region === 'col') {
+        changeEntireColumn(hit.j);
+    }
+}
+
+/**
+ * Mouse move on a matrix canvas: highlight the two regions of the cell in 3D and show the tooltip.
+ */
+function _onMatrixMouseMove(ev) {
+    var hit = _canvasHit(ev.currentTarget, ev);
+    if (hit?.region === 'cell') {
+        highlightedPointIndex1 = hit.i;
+        highlightedPointIndex2 = hit.j;
+        _showTooltip(ev, hit.prefix, hit.i, hit.j);
+    } else {
+        _onMatrixMouseLeave();
+    }
+}
+
+/**
+ * Mouse leaves a matrix canvas (or is not over a cell): remove the highlight and the tooltip.
+ */
+function _onMatrixMouseLeave() {
+    highlightedPointIndex1 = -1;
+    highlightedPointIndex2 = -1;
+    _hideTooltip();
+}
+
+/**
  * Bind events for the connectivity matrix canvases.
  */
 function initializeMatrix(){
     _matrixTooltip();
 
-    function onClick(ev){
-        var hit = _canvasHit(this, ev);
-        if (hit == null || hit.region !== 'cell') {
-            // a click outside a cell closes the edit popup
-            hideNodeDetails();
-        }
-        if (hit == null){
-            return;
-        }
-        if (hit.region === 'cell'){
-            changeSingleCell(hit);
-        } else if (hit.region === 'row'){
-            changeEntireRow(hit.i);
-        } else if (hit.region === 'col'){
-            changeEntireColumn(hit.j);
-        }
-    }
-
-    function onMove(ev){
-        var hit = _canvasHit(this, ev);
-        if (hit != null && hit.region === 'cell'){
-            highlightedPointIndex1 = hit.i;
-            highlightedPointIndex2 = hit.j;
-            _showTooltip(ev, hit.prefix, hit.i, hit.j);
-        } else {
-            highlightedPointIndex1 = -1;
-            highlightedPointIndex2 = -1;
-            _hideTooltip();
-        }
-    }
-
-    function onLeave(){
-        highlightedPointIndex1 = -1;
-        highlightedPointIndex2 = -1;
-        _hideTooltip();
-    }
-
-    var canvases = document.getElementsByClassName('matrix-canvas');
-    for (var k = 0; k < canvases.length; k++){
-        canvases[k].addEventListener('click', onClick);
-        canvases[k].addEventListener('mousemove', onMove);
-        canvases[k].addEventListener('mouseleave', onLeave);
+    for (var canvas of document.getElementsByClassName('matrix-canvas')) {
+        canvas.addEventListener('click', _onMatrixClick);
+        canvas.addEventListener('mousemove', _onMatrixMouseMove);
+        canvas.addEventListener('mouseleave', _onMatrixMouseLeave);
     }
 
     // Redraw on resize so cells keep filling the available width. Throttled to avoid thrashing.
