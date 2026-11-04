@@ -301,8 +301,15 @@ function _matrixTooltip() {
 
 function _showTooltip(ev, prefix, i, j) {
     var value = _matrixByPrefix(prefix).values[i][j];
+    _showTooltipText(ev, GVAR_pointsLabels[i] + ' → ' + GVAR_pointsLabels[j] + ' = ' + value);
+}
+
+/**
+ * Show the tooltip with the given text next to the cursor, kept inside the window.
+ */
+function _showTooltipText(ev, text) {
     var t = _matrixTooltip();
-    t.textContent = GVAR_pointsLabels[i] + ' → ' + GVAR_pointsLabels[j] + ' = ' + value;
+    t.textContent = text;
     t.style.display = 'block';
     // Measured after the text is set: when the tooltip does not fit right of the cursor, show it on the left.
     var x = ev.clientX + 14;
@@ -697,7 +704,7 @@ function _onMatrixClick(ev) {
 }
 
 /**
- * Mouse move on a matrix canvas: highlight the two regions of the cell in 3D and show the tooltip.
+ * Mouse move on a matrix canvas: highlight the regions in 3D and show the tooltip, for a cell or a region label.
  */
 function _onMatrixMouseMove(ev) {
     var hit = _canvasHit(ev.currentTarget, ev);
@@ -705,6 +712,14 @@ function _onMatrixMouseMove(ev) {
         highlightedPointIndex1 = hit.i;
         highlightedPointIndex2 = hit.j;
         _showTooltip(ev, hit.prefix, hit.i, hit.j);
+    } else if (hit?.region === 'row') {
+        highlightedPointIndex1 = hit.i;
+        highlightedPointIndex2 = -1;
+        _showTooltipText(ev, hit.i + ': ' + GVAR_pointsLabels[hit.i]);
+    } else if (hit?.region === 'col') {
+        highlightedPointIndex1 = -1;
+        highlightedPointIndex2 = hit.j;
+        _showTooltipText(ev, hit.j + ': ' + GVAR_pointsLabels[hit.j]);
     } else {
         _onMatrixMouseLeave();
     }
