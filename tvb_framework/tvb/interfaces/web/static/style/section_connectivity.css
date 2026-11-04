@@ -278,6 +278,7 @@ color: #fff;
 /* !-------------------------------------------- */
 
 .ss-connectivity .matrix-control {
+margin-bottom: 5px;
 }
 
 .ss-connectivity .matrix-control > li {
@@ -361,10 +362,6 @@ width: 100%;
 /* !-------------------------------------------- */
 
 /* -- The matrix is drawn on a canvas; labels, colors and selection are painted by matrixScript.js */
-.ss-connectivity .matrix-quadrant {
-padding-top: 5px;
-}
-
 .ss-connectivity .matrix-canvas {
 display: block;
 width: 100%;
