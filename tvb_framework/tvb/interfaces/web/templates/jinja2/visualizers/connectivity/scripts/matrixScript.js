@@ -663,8 +663,18 @@ function _updateLegendColors(){
     var selectedMatrix = GVAR_interestAreaVariables[GVAR_selectedAreaType];
     var div_id = selectedMatrix.legend_div_id;
     var legendDiv = document.getElementById(div_id);
+    var labelsDiv = document.getElementById('table-' + div_id).parentElement;
 
-    var height = Math.max($("#div-matrix-weights")[0].clientHeight, $("#div-matrix-tracts")[0].clientHeight);
+    var canvas = $(legendDiv).closest('.matrix-viewer').find('.matrix-canvas:visible')[0];
+    if (!canvas) {
+        return;
+    }
+    var top = canvas.offsetTop + MATRIX_LABEL_GUTTER;
+    var height = canvas.clientHeight - MATRIX_LABEL_GUTTER;
+    for (var div of [legendDiv, labelsDiv]) {
+        div.style.top = top + 'px';
+        div.style.height = height + 'px';
+    }
     ColSch_updateLegendColors(legendDiv, height);
 
     ColSch_updateLegendLabels('#table-' + div_id, selectedMatrix.min_val, selectedMatrix.max_val, height);
