@@ -99,9 +99,9 @@ function _canvasGeometry(canvas) {
 }
 
 /**
- * Draw the matrix cells, with a light overlay on cells whose row and column are both selected.
+ * Draw the matrix cells.
  */
-function _drawCells(ctx, g, matrix, rowSel, colSel) {
+function _drawCells(ctx, g, matrix) {
     // Cells. Math.ceil on the size avoids sub-pixel gaps between adjacent rects.
     var cwCeil = Math.ceil(g.cw);
     var chCeil = Math.ceil(g.ch);
@@ -112,10 +112,6 @@ function _drawCells(ctx, g, matrix, rowSel, colSel) {
             var j = g.colStart + c;
             ctx.fillStyle = ColSch_getGradientColorString(matrix.values[i][j], matrix.min_val, matrix.max_val);
             ctx.fillRect(MATRIX_LABEL_GUTTER + c * g.cw, y, cwCeil, chCeil);
-            if (rowSel[r] && colSel[c]) {                   // interest-area intersection overlay
-                ctx.fillStyle = 'rgba(250, 247, 228, 0.28)';
-                ctx.fillRect(MATRIX_LABEL_GUTTER + c * g.cw, y, cwCeil, chCeil);
-            }
         }
     }
 }
@@ -143,6 +139,44 @@ function _drawGrid(ctx, g) {
     }
     ctx.stroke();
 }
+
+/**
+ * Draw a raised border on the cells whose row and column regions are both selected, only when cells are large enough.
+ */
+function _drawSelectedCells(ctx, g, rowSel, colSel) {
+    if (g.cw < MATRIX_MIN_GRID_CELL || g.ch < MATRIX_MIN_GRID_CELL) {
+        return;
+    }
+    var light = new Path2D();
+    var dark = new Path2D();
+    for (var r = 0; r < g.nRows; r++) {
+        if (!rowSel[r]) {
+            continue;
+        }
+        // Half-pixel positions inside the cell, so the 1px lines are crisp and do not cover the grid.
+        var top = Math.round(MATRIX_LABEL_GUTTER + r * g.ch) + 1.5;
+        var bottom = Math.round(MATRIX_LABEL_GUTTER + (r + 1) * g.ch) - 0.5;
+        for (var c = 0; c < g.nCols; c++) {
+            if (!colSel[c]) {
+                continue;
+            }
+            var left = Math.round(MATRIX_LABEL_GUTTER + c * g.cw) + 1.5;
+            var right = Math.round(MATRIX_LABEL_GUTTER + (c + 1) * g.cw) - 0.5;
+            light.moveTo(left, bottom);
+            light.lineTo(left, top);
+            light.lineTo(right, top);
+            dark.moveTo(right, top);
+            dark.lineTo(right, bottom);
+            dark.lineTo(left, bottom);
+        }
+    }
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgb(250, 247, 228)';
+    ctx.stroke(light);
+    ctx.strokeStyle = 'rgb(50, 50, 50)';
+    ctx.stroke(dark);
+}
+
 /**
  * Set the label style: selected regions in dark bold text, unselected regions in orange normal text.
  */
@@ -197,7 +231,7 @@ function _drawEditedCell(ctx, g) {
 }
 
 /**
- * Draw a single quadrant canvas: cells, selection overlay, labels and the edited-cell border.
+ * Draw a single quadrant canvas: cells, selected-cell borders, labels and the edited-cell border.
  */
 function _drawQuadrant(canvas) {
     var g = _canvasGeometry(canvas);
@@ -228,8 +262,9 @@ function _drawQuadrant(canvas) {
         colSel[c] = GFUNC_isNodeAddedToInterestArea(g.colStart + c);
     }
 
-    _drawCells(ctx, g, matrix, rowSel, colSel);
+    _drawCells(ctx, g, matrix);
     _drawGrid(ctx, g);
+    _drawSelectedCells(ctx, g, rowSel, colSel);
     _drawLabels(ctx, g, rowSel, colSel);
     _drawEditedCell(ctx, g);
 }
