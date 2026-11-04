@@ -1723,7 +1723,10 @@ background-position: 0 -579px;
 }
 #main .view-column .action-all-on:before,
 #main .controller .action-all-on:before,
-#overlay .action-all-on:before {
+#overlay .action-all-on:before,
+#main .view-column .action-hemisphere:before,
+#main .controller .action-hemisphere:before,
+#overlay .action-hemisphere:before {
 background-position: 0 -746px;
 }
 #main .view-column .action-all-off:before,
