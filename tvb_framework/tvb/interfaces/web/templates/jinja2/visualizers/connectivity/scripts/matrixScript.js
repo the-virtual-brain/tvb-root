@@ -143,13 +143,18 @@ function _drawGrid(ctx, g) {
     }
     ctx.stroke();
 }
+/**
+ * Set the label style: selected regions in dark bold text, unselected regions in orange normal text.
+ */
+function _setLabelStyle(ctx, isSelected) {
+    ctx.font = isSelected ? 'bold 9px sans-serif' : '9px sans-serif';
+    ctx.fillStyle = isSelected ? '#2E2D26' : '#B85C00';
+}
 
 /**
  * Draw the column labels and the row labels of a quadrant.
  */
 function _drawLabels(ctx, g, rowSel, colSel) {
-    ctx.font = '9px sans-serif';
-
     // Column labels along the top gutter, rotated to read bottom-to-top (as the old table did).
     // When cells are narrower than the label spacing we draw every colStep-th label to avoid overlap.
     var colStep = Math.max(1, Math.ceil(MATRIX_LABEL_MIN_SPACING / g.cw));
@@ -159,7 +164,7 @@ function _drawLabels(ctx, g, rowSel, colSel) {
         ctx.save();
         ctx.translate(MATRIX_LABEL_GUTTER + c * g.cw + g.cw / 2, MATRIX_LABEL_GUTTER - 3);
         ctx.rotate(-Math.PI / 2);
-        ctx.fillStyle = colSel[c] ? '#2E2D26' : '#7e7b66';
+        _setLabelStyle(ctx, colSel[c]);
         ctx.fillText(_fitLabel(ctx, '' + GVAR_pointsLabels[g.colStart + c], MATRIX_LABEL_GUTTER - 6), 0, 0);
         ctx.restore();
     }
@@ -169,7 +174,7 @@ function _drawLabels(ctx, g, rowSel, colSel) {
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
     for (var r = 0; r < g.nRows; r += rowStep) {
-        ctx.fillStyle = rowSel[r] ? '#2E2D26' : '#7e7b66';
+        _setLabelStyle(ctx, rowSel[r]);
         ctx.fillText(_fitLabel(ctx, '' + GVAR_pointsLabels[g.rowStart + r], MATRIX_LABEL_GUTTER - 6),
                      MATRIX_LABEL_GUTTER - 4, MATRIX_LABEL_GUTTER + r * g.ch + g.ch / 2);
     }
