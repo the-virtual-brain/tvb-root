@@ -23,6 +23,10 @@
 # https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
+import pytest
+
+pytest.importorskip("siibra")
+
 from tvb.adapters.creators.siibra_creator import SiibraCreator, SiibraModel
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
