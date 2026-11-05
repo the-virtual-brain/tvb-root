@@ -99,21 +99,20 @@ class SiibraModel(ViewModel):
     subject_ids = Str(
         label='Subjects',
         required=True,
-        default='101309',
+        default='000',
         doc="""The list of all subject IDs for which the structural and optionally functional connectivities are 
         computed. Depending on the selected cohort, you can specify the IDs in the following ways: <br/>
-        a) For the "HCP" cohort, the subject IDs are: 000,001,002, etc. (Julich 2.9 & 3.0.3), 
-        101309, 102008, etc. (Julich 3.1). Each subject has exactly one subject ID associated to them. 
-        Thus, there are 3 ways to specify the IDs:<br/>
+        a) For the "HCP" cohort, the subject IDs are: 000,001,002, etc. Each subject has exactly one 
+        subject ID associated to them. Thus, there are 3 ways to specify the IDs:<br/>
         1. individually, delimited by a semicolon symbol: 000;001;002. <br/>
         2. As a range, specifying the first and last IDs: 000-050 will retrieve all the subjects starting with 
         subject 000 until subject 050 (51 subjects). <br/>
         A combination of the 2 methods is also supported: 000-005;010 will retrieve all the subjects starting with 
         subject 000 until subject 005 (6 subjects) AND subject 010 (so 7 subjects in total)<br/> <br/>
-        b) For "1000BRAINS" cohort, the subject IDs have to parts: first part is the subject ID, which has the form:
-         0001, 0002, etc., and the second part is the scanning session index, which has the form _1, _2. All subjects 
-         had between 1 and 2 scanning sessions. Thus, the final IDs will look like: 0001_1, 0001_2, 0002_1, etc. and 
-         there are 3 ways to specify the IDs: <br/>
+        b) For "1000BRAINS" cohort, the subject IDs have two parts: first part is the subject ID, which has the form:
+        0001, 0002, etc., and the second part is the scanning session index, which has the form _1, _2. All subjects 
+        had between 1 and 2 scanning sessions. Thus, the final IDs will look like: 0001_1, 0001_2, 0002_1, etc. and 
+        there are 3 ways to specify the IDs: <br/>
         1. individually and specifying the exact ID, including the session index "_1" or "_2". Multiple IDs can be 
         mentioned by using a semicolon symbol to delimit them: 0001_1;0017_1;0017_2. <br/>
         2. individually, and without specifying the session index. In this case, all available sessions for that subject 
