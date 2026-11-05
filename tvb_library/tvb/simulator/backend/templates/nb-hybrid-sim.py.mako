@@ -558,23 +558,6 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'_n
             _i1_${svar}[m] = _i1_${svar}[m] + _nsig_arr[${k2}, i, m, t_abs]
             % endfor
             % endif
-            % for k, svar in enumerate(svars):
-            <%
-                lo = lo_map.get(svar)
-                hi = hi_map.get(svar)
-            %>
-            % if lo is not None:
-            if _i1_${svar}[m] < nb.float32(${lo}):
-                _i1_${svar}[m] = nb.float32(${lo})
-            % endif
-            % if hi is not None:
-            if _i1_${svar}[m] > nb.float32(${hi}):
-                _i1_${svar}[m] = nb.float32(${hi})
-            % endif
-            % if k in clamp_pos:
-            _i1_${svar}[m] = _${sn.name}_clamp_values[${clamp_pos[k]}, i, m]
-            % endif
-            % endfor
 
         ## Recompute cross-mode intermediates from i1 states
         % for _op_name, _op_mat, _op_svar in _dm_ops:
@@ -659,23 +642,6 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'_n
         % for svar in svars:
         i1${svar} = ${svar} + dt * d0_${svar}
         % endfor
-        % for k, svar in enumerate(svars):
-        <%
-            lo = lo_map.get(svar)
-            hi = hi_map.get(svar)
-        %>
-        % if lo is not None:
-        if i1${svar} < nb.float32(${lo}):
-            i1${svar} = nb.float32(${lo})
-        % endif
-        % if hi is not None:
-        if i1${svar} > nb.float32(${hi}):
-            i1${svar} = nb.float32(${hi})
-        % endif
-        % if k in clamp_pos:
-        i1${svar} = _${sn.name}_clamp_values[${clamp_pos[k]}, i, 0]
-        % endif
-        % endfor
         (${', '.join(['d1_' + s for s in svars])},) = dfun_${sn.name}(${i1svars_str}, ${cterms_str}, _sp, i)
         % for svar in svars:
         n${svar} = ${svar} + dt * nb.float32(0.5) * (d0_${svar} + d1_${svar})
@@ -683,23 +649,6 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'_n
         % elif int_type == "heun_stochastic":
         % for k2, svar in enumerate(svars):
         i1${svar} = ${svar} + dt * d0_${svar} + _nsig_arr[${k2}, i, 0, t_abs]
-        % endfor
-        % for k, svar in enumerate(svars):
-        <%
-            lo = lo_map.get(svar)
-            hi = hi_map.get(svar)
-        %>
-        % if lo is not None:
-        if i1${svar} < nb.float32(${lo}):
-            i1${svar} = nb.float32(${lo})
-        % endif
-        % if hi is not None:
-        if i1${svar} > nb.float32(${hi}):
-            i1${svar} = nb.float32(${hi})
-        % endif
-        % if k in clamp_pos:
-        i1${svar} = _${sn.name}_clamp_values[${clamp_pos[k]}, i, 0]
-        % endif
         % endfor
         (${', '.join(['d1_' + s for s in svars])},) = dfun_${sn.name}(${i1svars_str}, ${cterms_str}, _sp, i)
         % for k2, svar in enumerate(svars):
@@ -751,23 +700,6 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'_n
             % for svar in svars:
             i1${svar} = ${svar} + dt * d0_${svar}
             % endfor
-            % for k, svar in enumerate(svars):
-            <%
-                lo = lo_map.get(svar)
-                hi = hi_map.get(svar)
-            %>
-            % if lo is not None:
-            if i1${svar} < nb.float32(${lo}):
-                i1${svar} = nb.float32(${lo})
-            % endif
-            % if hi is not None:
-            if i1${svar} > nb.float32(${hi}):
-                i1${svar} = nb.float32(${hi})
-            % endif
-            % if k in clamp_pos:
-            i1${svar} = _${sn.name}_clamp_values[${clamp_pos[k]}, i, m]
-            % endif
-            % endfor
             (${', '.join(['d1_' + s for s in svars])},) = dfun_${sn.name}(${i1svars_str}, ${cterms_str}, _sp, i)
             % for svar in svars:
             n${svar} = ${svar} + dt * nb.float32(0.5) * (d0_${svar} + d1_${svar})
@@ -775,23 +707,6 @@ def integrate_${sn.name}(state, coupling${',' if sn.is_stochastic else ''} ${'_n
             % elif int_type == "heun_stochastic":
             % for k2, svar in enumerate(svars):
             i1${svar} = ${svar} + dt * d0_${svar} + _nsig_arr[${k2}, i, m, t_abs]
-            % endfor
-            % for k, svar in enumerate(svars):
-            <%
-                lo = lo_map.get(svar)
-                hi = hi_map.get(svar)
-            %>
-            % if lo is not None:
-            if i1${svar} < nb.float32(${lo}):
-                i1${svar} = nb.float32(${lo})
-            % endif
-            % if hi is not None:
-            if i1${svar} > nb.float32(${hi}):
-                i1${svar} = nb.float32(${hi})
-            % endif
-            % if k in clamp_pos:
-            i1${svar} = _${sn.name}_clamp_values[${clamp_pos[k]}, i, m]
-            % endif
             % endfor
             (${', '.join(['d1_' + s for s in svars])},) = dfun_${sn.name}(${i1svars_str}, ${cterms_str}, _sp, i)
             % for k2, svar in enumerate(svars):

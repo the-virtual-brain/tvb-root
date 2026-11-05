@@ -84,6 +84,86 @@ class TestIntegrators(BaseTestCase):
         self._test_scheme(heun_det)
         self._test_scheme(heun_sto)
 
+    def test_heun_predictor_not_clamped_before_second_dfun(self):
+        """
+        Regression test for https://github.com/the-virtual-brain/tvb-root/issues/781
+
+        HeunDeterministic/HeunStochastic must evaluate the second slope (k2)
+        at the genuine Euler predictor point, not at a state that has been
+        clamped to a configured boundary. Clamping the predictor before
+        evaluating k2 silently drops Heun's method from 2nd-order to
+        1st-order accuracy on every step where a boundary is crossed
+        mid-step, because k2 no longer approximates the true slope at the
+        genuine predictor point.
+
+        Setup: dfun(x) = -50*x with a lower boundary of 0.0. Starting from
+        x0 = 0.05, the Euler predictor (x0 + dt * dfun(x0)) is -0.20, well
+        below the boundary:
+          - if the predictor is (incorrectly) clamped to 0.0 before k2 is
+            evaluated, k2 = dfun(0.0) = 0.0, giving X_next = -0.075, which
+            is then clamped to exactly 0.0 by the final bound-and-clamp.
+          - if the predictor is left unclamped (correct), k2 = dfun(-0.20)
+            = 10.0, giving X_next = 0.425, comfortably inside [0, inf) so
+            the final clamp leaves it untouched.
+        These two outcomes are far enough apart to unambiguously tell which
+        behaviour is in effect.
+        """
+        dt = 0.1
+        bounded_state_variable_indices = numpy.r_[0]
+        state_variable_boundaries = numpy.array([[0.0, numpy.finfo("double").max]])
+        x0 = numpy.array([[[0.05]]])
+
+        def dfun(state, coupling, local_coupling):
+            return -50.0 * state
+
+        pre_fix_clamped_result = 0.0
+        expected_result = 0.425
+
+        for integrator in (integrators.HeunDeterministic(), integrators.HeunStochastic()):
+            integrator.dt = dt
+            integrator.bounded_state_variable_indices = bounded_state_variable_indices
+            integrator.state_variable_boundaries = state_variable_boundaries
+            try:
+                # Silence the stochastic term so this integrator is deterministic too
+                integrator.noise.nsig = numpy.array([0.0])
+                integrator.noise.dt = dt
+            except AttributeError:
+                pass
+            integrator.configure()
+
+            result = integrator.scheme(x0.copy(), dfun, 0.0, 0.0, 0.0)
+
+            assert not numpy.allclose(result.flat[0], pre_fix_clamped_result, atol=1e-6), (
+                f"{type(integrator).__name__} still clamps the predictor before "
+                f"evaluating the second slope (got the pre-fix result "
+                f"{pre_fix_clamped_result})"
+            )
+            numpy.testing.assert_allclose(
+                result.flat[0], expected_result, atol=1e-6,
+                err_msg=f"{type(integrator).__name__}.scheme() did not match the "
+                        f"expected unclamped-predictor result",
+            )
+
+    def test_rk4_intermediates_not_clamped(self):
+        """
+        RK4 must evaluate k2, k3, k4 at the genuine intermediate states, as
+        Heun does (issue #781). dfun(x) = -50*x, dt = 0.1, x0 = 0.05, lower
+        boundary 0.0. The unclamped intermediates are -0.075, 0.2375, -1.1375,
+        so k = (-2.5, 3.75, -11.875, 56.875) and
+        x1 = 0.05 + 0.1/6 * (-2.5 + 2*3.75 + 2*(-11.875) + 56.875) = 0.685416...
+        Clamping any intermediate to 0.0 gives a different value.
+        """
+        integrator = integrators.RungeKutta4thOrderDeterministic()
+        integrator.dt = 0.1
+        integrator.bounded_state_variable_indices = numpy.r_[0]
+        integrator.state_variable_boundaries = numpy.array([[0.0, numpy.finfo("double").max]])
+        integrator.configure()
+
+        result = integrator.scheme(
+            numpy.array([[[0.05]]]), lambda s, c, lc: -50.0 * s, 0.0, 0.0, 0.0)
+
+        numpy.testing.assert_allclose(result.flat[0], 0.05 + 0.1 / 6 * 38.125, atol=1e-9)
+
     def test_euler(self):
         euler_det = integrators.EulerDeterministic()
         euler_sto = integrators.EulerStochastic()

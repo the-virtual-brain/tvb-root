@@ -69,7 +69,10 @@ from tvb.simulator.hybrid.coupling import Linear
 # Shared constants
 # ---------------------------------------------------------------------------
 
-DT = 0.1
+# KIonEx's firing-rate variable x is stiff: explicit Heun is unstable for
+# dt >= 0.05 here. Clamping the Heun predictor used to mask this; it is not a
+# valid stabiliser, so the step must be small enough for the scheme itself.
+DT = 0.02
 N_NODES = 8
 N_STEPS = 50
 SIMULATION_LENGTH = N_STEPS * DT   # ms
