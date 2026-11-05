@@ -429,16 +429,21 @@ background-color: #706E68;
 -moz-transition: background-color .5s ease;
 }
 
-.ss-connectivity .matrix .quadrant-selector li.active a, 
-.ss-connectivity .matrix .quadrant-selector li a:hover {
+.ss-connectivity .matrix .quadrant-selector li.active button,
+.ss-connectivity .matrix .quadrant-selector li button:hover {
 color: #FAF7E4;
 -webkit-transition: color .5s ease;
 -moz-transition: color .5s ease;
 }
 
-.ss-connectivity .matrix .quadrant-selector li a {
+.ss-connectivity .matrix .quadrant-selector li button {
+background: none;
+border: none;
 color: #2E2D26;
+cursor: pointer;
+font: inherit;
 height: 100%;
+padding: 0;
 width: 100%;
 -webkit-transition: color .5s ease;
 -moz-transition: color .5s ease;
