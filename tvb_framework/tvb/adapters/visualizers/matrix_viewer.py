@@ -126,7 +126,7 @@ class ABCMappedArraySVGVisualizer(ABCSpaceDisplayer):
         # type: (DataTypeMatrix) -> list
         if hasattr(datatype_matrix, "fk_connectivity_gid"):
             with h5.h5_file_for_gid(datatype_matrix.fk_connectivity_gid) as conn_h5:
-                labels = list(conn_h5.region_labels.load())
+                labels = conn_h5.get_region_labels().tolist()
             return labels
 
         if hasattr(datatype_matrix, "fk_source_gid"):

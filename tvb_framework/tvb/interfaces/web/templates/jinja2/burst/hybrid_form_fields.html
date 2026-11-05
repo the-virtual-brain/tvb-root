@@ -1,0 +1,31 @@
+{#- ============================================================================ -#}
+{#- The fields of one wizard step. Shared by the ordinary steps and by the       -#}
+{#- closing one, which carries a summary above its single field.                 -#}
+{#- ============================================================================ -#}
+{% import 'form_fields/generate_help_tooltip.html' as ght with context %}
+<dl>
+    {#- No step title here: the classic cockpit only shows a legend for monitor fragments, every other
+        step exposes just its parameter labels. -#}
+    {% if renderer.monitor_name %}
+        <legend>{{ renderer.monitor_name }}</legend>
+    {% endif %}
+    {% if renderer.form.ordered_fields %}
+        {% set form_fields = renderer.form.ordered_fields %}
+    {% else %}
+        {% set form_fields = renderer.form.fields %}
+    {% endif %}
+    {% for field in form_fields %}
+        <dt {% if field.label_classes %} class="{{ field.label_classes|join(' ') }}" {% endif %}>
+            <label for="{{ field.name }}">{{ field.label }}</label>
+            {{ ght.generate_help_tooltip(field.label, field.doc) }}
+        </dt>
+        <dd>
+            {{ field | safe }}
+            <p class="errorMessage">
+                {% for error in field.errors %}
+                    <span> {{ error }} </span>
+                {% endfor %}
+            </p>
+        </dd>
+    {% endfor %}
+</dl>

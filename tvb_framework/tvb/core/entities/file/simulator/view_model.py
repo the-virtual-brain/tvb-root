@@ -23,7 +23,9 @@
 # https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 
-from tvb.basic.neotraits.api import Attr, List, EnumAttr, TupleEnum
+import uuid
+
+from tvb.basic.neotraits.api import Attr, Float, List, EnumAttr, TupleEnum
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
@@ -39,6 +41,8 @@ from tvb.simulator.integrators import HeunDeterministic, Integrator, IntegratorS
     Dopri5Stochastic, Dop853, Dop853Stochastic
 from tvb.simulator.monitors import Monitor, EEG, MEG, iEEG, Raw, SubSample, SpatialAverage, GlobalAverage, \
     TemporalAverage, Projection, Bold, BoldRegionROI
+from tvb.simulator.models import Model, Generic2dOscillator
+from tvb.simulator.hybrid import coupling as hybrid_coupling
 from tvb.simulator.noise import Noise, Additive, Multiplicative
 from tvb.simulator.simulator import Simulator
 
@@ -408,12 +412,52 @@ class SimulatorAdapterModel(ViewModel, Simulator):
         return variables_of_interest_indexes
 
 
+class HybridSubnetworkDynamics(ViewModel):
+    """
+    The Model and the Integrator configured for one Hybrid Simulator Subnetwork.
+
+    Kept as a separate object because it is what the reused Simulator Cockpit forms are filled from and
+    into: SimulatorModelFragment and SimulatorIntegratorFragment only require a 'model' and an
+    'integrator' attribute, so they operate on this without any change.
+    """
+
+    model = Attr(
+        field_type=Model,
+        required=False,
+        label=Simulator.model.label,
+        doc=Simulator.model.doc
+    )
+
+    integrator = Attr(
+        field_type=IntegratorViewModel,
+        required=False,
+        label=Simulator.integrator.label,
+        doc=Simulator.integrator.doc
+    )
+
+    def __init__(self, **kwargs):
+        super(HybridSubnetworkDynamics, self).__init__(**kwargs)
+        # A trait default would be one shared instance for every Subnetwork, and the parameter editing
+        # forms change these in place, so each one has to get its own.
+        if self.model is None:
+            self.model = Generic2dOscillator()
+        if self.integrator is None:
+            self.integrator = IntegratorViewModelsEnum.HEUN.instance
+
+
 class HybridSubnetworkViewModel(ViewModel):
     """
-    Configuration of a single Hybrid Simulator Subnetwork, as gathered from the web UI.
-    It only keeps the name and the Connectivity nodes assigned to it. The corresponding
+    Configuration of a single Hybrid Simulator Subnetwork, as gathered from the web UI: the name, the
+    Connectivity nodes assigned to it and the dynamics configured for it. The corresponding
     tvb.simulator.hybrid.Subnetwork instances are built from this configuration at a later step.
     """
+
+    id = Attr(
+        field_type=str,
+        label='Identifier',
+        doc='Generated identifier, stable across renaming, reordering and the removal of other '
+            'Subnetworks, so that the configured dynamics stay attached to the intended Subnetwork'
+    )
 
     name = Attr(
         field_type=str,
@@ -426,6 +470,123 @@ class HybridSubnetworkViewModel(ViewModel):
         label='Node indices',
         doc='Indices of the assigned nodes, in the original Connectivity ordering'
     )
+
+    dynamics = Attr(
+        field_type=HybridSubnetworkDynamics,
+        required=False,
+        label='Dynamics',
+        doc='The Model and the Integrator configured for this Subnetwork'
+    )
+
+    def __init__(self, **kwargs):
+        super(HybridSubnetworkViewModel, self).__init__(**kwargs)
+        try:
+            has_id = bool(self.id)
+        except (AttributeError, TypeError, ValueError):
+            has_id = False
+        if not has_id:
+            self.id = uuid.uuid4().hex
+        if self.dynamics is None:
+            self.dynamics = HybridSubnetworkDynamics()
+
+    @property
+    def model(self):
+        return self.dynamics.model
+
+    @property
+    def integrator(self):
+        return self.dynamics.integrator
+
+
+class HybridCouplingFunctionsEnum(TupleEnum):
+    """
+    The coupling functions a Hybrid Simulator Projection can use: the ones of tvb.simulator.hybrid.coupling,
+    whose hooks are called differently from the classic Simulator's.
+    """
+    LINEAR = (hybrid_coupling.Linear, "Linear")
+    SCALING = (hybrid_coupling.Scaling, "Scaling")
+    SIGMOIDAL = (hybrid_coupling.Sigmoidal, "Sigmoidal")
+    HYPERBOLIC_TANGENT = (hybrid_coupling.HyperbolicTangent, "Hyperbolic tangent")
+    SIGMOIDAL_JANSEN_RIT = (hybrid_coupling.SigmoidalJansenRit, "Sigmoidal Jansen-Rit")
+    PRESIGMOIDAL = (hybrid_coupling.PreSigmoidal, "Presigmoidal")
+    DIFFERENCE = (hybrid_coupling.Difference, "Difference")
+    KURAMOTO = (hybrid_coupling.Kuramoto, "Kuramoto")
+
+
+def coupling_label(coupling):
+    """
+    :return: the name the coupling function selector gives the class of this coupling function
+    """
+    for member in HybridCouplingFunctionsEnum:
+        if member.value is type(coupling):
+            return str(member)
+    return type(coupling).__name__
+
+
+class HybridProjectionViewModel(ViewModel):
+    """
+    Configuration of one Projection of the Hybrid Simulator: an IntraProjection when it goes from a
+    Subnetwork to itself, an InterProjection otherwise. Its weights and lengths are not configured here,
+    they are always sliced out of the Connectivity by the Subnetwork grouping.
+
+    Subnetworks are referred to by identifier, so the configuration survives renaming them, and coupling
+    variables by name, so a change of Model can tell which of them are no longer valid.
+    """
+
+    source_id = Attr(
+        field_type=str,
+        label='Source Subnetwork',
+        doc='Identifier of the Subnetwork whose activity this Projection reads'
+    )
+
+    target_id = Attr(
+        field_type=str,
+        label='Target Subnetwork',
+        doc='Identifier of the Subnetwork this Projection delivers its coupling to'
+    )
+
+    included = Attr(
+        field_type=bool,
+        default=False,
+        label='Included',
+        doc='Whether this Projection is part of the simulation. None is until the user adds it; one left '
+            'out is kept, so it can be added again with its settings, but it is not built.'
+    )
+
+    source_cvar = List(
+        of=str,
+        label='Source coupling variables',
+        doc='The coupling variables of the source Model this Projection reads'
+    )
+
+    target_cvar = List(
+        of=str,
+        label='Target coupling variables',
+        doc='The coupling variables of the target Model this Projection writes into'
+    )
+
+    scale = Float(
+        default=1.0,
+        label='Scale',
+        doc='Factor applied to the weighted sum, after the coupling function'
+    )
+
+    cv = Float(
+        default=3.0,
+        label='Conduction speed',
+        doc='Conduction speed turning the Connectivity tract lengths into delays, in mm/ms'
+    )
+
+    coupling = Attr(
+        field_type=hybrid_coupling.Coupling,
+        required=False,
+        label='Coupling function',
+        doc='The function applied around the weighted sum of the delayed source activity'
+    )
+
+    @property
+    def is_intra(self):
+        return self.source_id == self.target_id
 
 
 class HybridSimulatorAdapterModel(ViewModel):
@@ -441,3 +602,39 @@ class HybridSimulatorAdapterModel(ViewModel):
         label='Subnetworks',
         doc='Partition of the Connectivity nodes into Subnetworks'
     )
+
+    projections = List(
+        of=HybridProjectionViewModel,
+        label='Projections',
+        doc='How every Projection generated from the Connectivity and the grouping is configured'
+    )
+
+    dt = Float(
+        label='Integration step size (dt)',
+        default=Integrator.dt.default,
+        doc='The step size used by every Subnetwork Integrator. tvb.simulator.hybrid.Simulator requires '
+            'all Subnetworks to share it, so it is edited on any Subnetwork\'s Integrator and applied to '
+            'every one of them.'
+    )
+
+    monitors = List(
+        of=MonitorViewModel,
+        default=(TemporalAverageViewModel(),),
+        label=Simulator.monitors.label,
+        doc='The Monitors recording the whole Hybrid Simulator. They are global: '
+            'tvb.simulator.hybrid.Simulator observes every Subnetwork at once and hands one array to '
+            'each Monitor.'
+    )
+
+    simulation_length = Float(
+        label=Simulator.simulation_length.label,
+        default=Simulator.simulation_length.default,
+        doc=Simulator.simulation_length.doc
+    )
+
+    def __init__(self, **kwargs):
+        super(HybridSimulatorAdapterModel, self).__init__(**kwargs)
+        # A trait default is one shared instance for every Hybrid Simulator configuration, and the
+        # parameter forms edit the Monitors in place, so this one gets its own. Same reason
+        # SimulatorAdapterModel re-instantiates its own default Monitor.
+        self.monitors = [type(self.monitors[0])()]

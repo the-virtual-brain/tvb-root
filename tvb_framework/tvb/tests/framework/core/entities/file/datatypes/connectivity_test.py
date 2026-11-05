@@ -50,6 +50,18 @@ def test_store_load_connectivity(tmph5factory, connectivity_factory):
     assert conn_stored.region_labels.shape[0] == 2
 
 
+def test_get_region_labels_as_strings(tmph5factory):
+    connectivity = Connectivity(region_labels=numpy.array(['lA1', 'rV2']), weights=numpy.ones((2, 2)),
+                                tract_lengths=numpy.ones((2, 2)), centres=numpy.zeros((2, 3)))
+    with ConnectivityH5(tmph5factory()) as conn_h5:
+        conn_h5.store(connectivity)
+        # stored as bytes, which is what the dataset read on its own hands back
+        assert isinstance(conn_h5.region_labels.load()[0], bytes)
+        labels = conn_h5.get_region_labels()
+
+    assert labels.tolist() == ['lA1', 'rV2']
+
+
 def test_store_partial_connectivity(tmph5factory):
     partial_conn = Connectivity(
         region_labels=numpy.array(["a", "b"]),
