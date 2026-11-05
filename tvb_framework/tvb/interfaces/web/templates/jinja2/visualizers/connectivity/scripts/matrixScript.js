@@ -178,11 +178,11 @@ function _drawSelectedCells(ctx, g, rowSel, colSel) {
 }
 
 /**
- * Set the label style: selected regions in dark bold text, unselected regions in orange normal text.
+ * Set the label style: selected regions in dark bold text, unselected regions in gray normal text.
  */
 function _setLabelStyle(ctx, isSelected) {
     ctx.font = isSelected ? 'bold 9px sans-serif' : '9px sans-serif';
-    ctx.fillStyle = isSelected ? '#2E2D26' : '#B85C00';
+    ctx.fillStyle = isSelected ? '#2E2D26' : '#55534A';
 }
 
 /**
