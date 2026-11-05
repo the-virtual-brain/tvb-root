@@ -105,7 +105,7 @@
     		
 					<!--! Node/Edge operations -->
 					<li class="selection-ops">
-						<nav class="inline-menu">
+						<nav class="inline-menu" aria-label="Edge operations">
 							<button class="action action-menu">Edge Operations</button>
 
 							<div class="extension">
@@ -140,7 +140,7 @@
 
 					<!--! Quadrant selector -->
 					<li>
-						<nav class="inline-menu quadrant-selector">
+						<nav class="inline-menu quadrant-selector" aria-label="Quadrant selector">
 							<button id="quadrantSelectorButton" class="action action-menu">Q 1</button>
 
 							<div class="extension">
@@ -149,10 +149,9 @@
 									<ul>
 										{% for i in range(4) %}
 											<li class="quadrant-display quadrant-{{ i }} {{ 'active' if i==0 else '' }}"
-												style="margin: 0 1px 5px 0;"
-												tabindex="7"
-												onclick="selectHemisphere({{ i }}); hideMenus(); event?.stopPropagation();" onkeypress="fireOnClick(this)">
-												<a href="#" title="Select this quadrant" onclick="selectHemisphere({{ i }})">Quadrant {{ i+1 }}</a>
+												style="margin: 0 1px 5px 0;">
+												<button type="button" title="Select this quadrant"
+														onclick="selectHemisphere({{ i }}); hideMenus(); event?.stopPropagation();">Quadrant {{ i+1 }}</button>
 											</li>
 										{% endfor %}
 									</ul>
