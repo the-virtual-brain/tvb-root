@@ -757,6 +757,21 @@ header .message-container li.msg-transient.transient-long {
 100% { opacity: 0; }
 }
 
+/* For users who prefer reduced motion the message only fades out, without sliding up. */
+@media (prefers-reduced-motion: reduce) {
+header .message-container li.msg-transient {
+animation-name: msg-fading-reduced;
+}
+}
+
+@keyframes msg-fading-reduced {
+0%  { opacity: 0; }
+10% { opacity: 1; }
+90% { opacity: 1; }
+99% { opacity: 0; }
+100% { opacity: 0; }
+}
+
 header .message-container li.msg-sticky {
 display: block;
 opacity: 1;
@@ -1723,7 +1738,10 @@ background-position: 0 -579px;
 }
 #main .view-column .action-all-on:before,
 #main .controller .action-all-on:before,
-#overlay .action-all-on:before {
+#overlay .action-all-on:before,
+#main .view-column .action-hemisphere:before,
+#main .controller .action-hemisphere:before,
+#overlay .action-hemisphere:before {
 background-position: 0 -746px;
 }
 #main .view-column .action-all-off:before,
@@ -1981,7 +1999,6 @@ background-image: url("./img/tab_idle_left.png");
 }
 
 .tabswitcher li:after {
-background-color: transparent, transparent;
 background-image: url("./img/tab_off_right.png"), url("./img/tab_off_mid.png");
 background-repeat: no-repeat, no-repeat;
 background-position: right 0, -2px 0;

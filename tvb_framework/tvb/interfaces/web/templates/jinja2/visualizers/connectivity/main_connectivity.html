@@ -105,7 +105,7 @@
     		
 					<!--! Node/Edge operations -->
 					<li class="selection-ops">
-						<nav class="inline-menu">
+						<nav class="inline-menu" aria-label="Edge operations">
 							<button class="action action-menu">Edge Operations</button>
 
 							<div class="extension">
@@ -138,6 +138,28 @@
 						</nav>
 					</li>
 
+					<!--! Quadrant selector -->
+					<li>
+						<nav class="inline-menu quadrant-selector" aria-label="Quadrant selector">
+							<button id="quadrantSelectorButton" class="action action-menu">Q 1</button>
+
+							<div class="extension">
+								<div class="dropdown-pane">
+									<mark>Select a quadrant to work with:</mark>
+									<ul>
+										{% for i in range(4) %}
+											<li class="quadrant-display quadrant-{{ i }} {{ 'active' if i==0 else '' }}"
+												style="margin: 0 1px 5px 0;">
+												<button type="button" title="Select this quadrant"
+														onclick="selectHemisphere({{ i }}); hideMenus(); event?.stopPropagation();">Quadrant {{ i+1 }}</button>
+											</li>
+										{% endfor %}
+									</ul>
+								</div>
+							</div>
+						</nav>
+					</li>
+
                     <li class="selector-storage">
 						{% import 'visualizers/commons/channel_selector_button.html' as csb %}
 						{{ csb.drawRegionSelectorButton(connectivity_entity.title, groupedLabels, initialSelection, buttonTitle="Select Nodes") }}
@@ -154,10 +176,10 @@
 				<div id="div-matrix-weights" class="matrix-viewer">
 
 					<div class="matrix-table">
-						{{ mwq.draw2DConnectivityMatrix('leftHemisphere', 0, pointsLabels, 0, leftHemisphereCount, 0, leftHemisphereCount, 'w') }}
-						{{ mwq.draw2DConnectivityMatrix('leftRightQuarter', 2, pointsLabels, 0, leftHemisphereCount, leftHemisphereCount, nodeCount, 'w') }}
-						{{ mwq.draw2DConnectivityMatrix('rightLeftQuarter', 1, pointsLabels, leftHemisphereCount, nodeCount, 0, leftHemisphereCount, 'w') }}
-						{{ mwq.draw2DConnectivityMatrix('rightHemisphere', 3, pointsLabels, leftHemisphereCount, nodeCount, leftHemisphereCount, nodeCount, 'w') }}
+						{{ mwq.draw2DConnectivityMatrix('leftHemisphere', 0, leftHemisphereCount, 0, leftHemisphereCount, 'w') }}
+						{{ mwq.draw2DConnectivityMatrix('leftRightQuarter', 0, leftHemisphereCount, leftHemisphereCount, nodeCount, 'w') }}
+						{{ mwq.draw2DConnectivityMatrix('rightLeftQuarter', leftHemisphereCount, nodeCount, 0, leftHemisphereCount, 'w') }}
+						{{ mwq.draw2DConnectivityMatrix('rightHemisphere', leftHemisphereCount, nodeCount, leftHemisphereCount, nodeCount, 'w') }}
 					</div>
 
 					{{ drawMatrixLegendArea('weights-legend') }}
@@ -167,10 +189,10 @@
 				<!--! Matrices: Tracts -->
 				<div id="div-matrix-tracts" class="matrix-viewer">
 					<div class="matrix-table">
-						{{ mwq.draw2DConnectivityMatrix('leftHemisphereTracts', 0, pointsLabels, 0, leftHemisphereCount, 0, leftHemisphereCount, 't') }}
-						{{ mwq.draw2DConnectivityMatrix('leftRightQuarterTracts', 2, pointsLabels, 0, leftHemisphereCount, leftHemisphereCount, nodeCount, 't') }}
-						{{ mwq.draw2DConnectivityMatrix('rightLeftQuarterTracts', 1, pointsLabels, leftHemisphereCount, nodeCount, 0, leftHemisphereCount, 't') }}
-						{{ mwq.draw2DConnectivityMatrix('rightHemisphereTracts', 3, pointsLabels, leftHemisphereCount, nodeCount, leftHemisphereCount, nodeCount, 't') }}
+						{{ mwq.draw2DConnectivityMatrix('leftHemisphereTracts', 0, leftHemisphereCount, 0, leftHemisphereCount, 't') }}
+						{{ mwq.draw2DConnectivityMatrix('leftRightQuarterTracts', 0, leftHemisphereCount, leftHemisphereCount, nodeCount, 't') }}
+						{{ mwq.draw2DConnectivityMatrix('rightLeftQuarterTracts', leftHemisphereCount, nodeCount, 0, leftHemisphereCount, 't') }}
+						{{ mwq.draw2DConnectivityMatrix('rightHemisphereTracts', leftHemisphereCount, nodeCount, leftHemisphereCount, nodeCount, 't') }}
 					</div>
 
 					{{ drawMatrixLegendArea('tracts-legend') }}
@@ -179,28 +201,19 @@
 
 			</div>
 
-			{% with %}
-				{% set start_points_x = ([0, leftHemisphereCount, 0, leftHemisphereCount] | string) %}
-				{% set end_points_x = ([leftHemisphereCount, nodeCount, leftHemisphereCount, nodeCount] | string) %}
-				{% set start_points_y = ([0, leftHemisphereCount, leftHemisphereCount, 0] | string) %}
-				{% set end_points_y = ([leftHemisphereCount, nodeCount, nodeCount, leftHemisphereCount] | string) %}
-
-				<script type="text/javascript">
-					$(document).ready(function() {
-						// todo: warning the jsons below are huge, practically the whole connectivity in json
-						prepareConnectivity2D({{ leftHemisphereJson | safe }}, {{ bothHemisphereJson | safe }}, {{ rightHemisphereJson | safe}});
-						//Do all the required initializations and draw the right table view of the connectivity matrix
-						GFUNC_storeMinMax('{{ weightsMin }}', '{{ weightsNonZeroMin }}', '{{ weightsMax }}', '{{ tractsMin }}', '{{ tractsNonZeroMin }}', '{{ tractsMax }}');
-						TBL_storeHemisphereDetails({{ start_points_x }}, {{ end_points_x }}, {{ start_points_y }}, {{ end_points_y }});
-						prepareConnectivity('{{ urlWeights }}', '{{ urlTracts }}', '{{ urlPositions | safe }}', '{{ urlVertices | safe }}', '{{ urlTriangles | safe }}',
-						'{{ urlNormals | safe }}', '{{ urlLabels | safe }}', false, '{{ conductionSpeed }}', '{{ raysArray }}', '{{ colorsArray }}');
-						GVAR_baseSelection = '{{ base_selection }}';
-						GFUN_initSelectionComponent("{{ measurePointsSelectionGID }}", "{{ hemisphereOrderUrl }}");
-						GFUN_initializeConnectivityFull();
-					});
-				</script>
-
-			{% endwith %}
+			<script type="text/javascript">
+				$(document).ready(function() {
+					// todo: warning the jsons below are huge, practically the whole connectivity in json
+					prepareConnectivity2D({{ leftHemisphereJson | safe }}, {{ bothHemisphereJson | safe }}, {{ rightHemisphereJson | safe}});
+					//Do all the required initializations and draw the right table view of the connectivity matrix
+					GFUNC_storeMinMax('{{ weightsMin }}', '{{ weightsNonZeroMin }}', '{{ weightsMax }}', '{{ tractsMin }}', '{{ tractsNonZeroMin }}', '{{ tractsMax }}');
+					prepareConnectivity('{{ urlWeights }}', '{{ urlTracts }}', '{{ urlPositions | safe }}', '{{ urlVertices | safe }}', '{{ urlTriangles | safe }}',
+					'{{ urlNormals | safe }}', '{{ urlLabels | safe }}', false, '{{ conductionSpeed }}', '{{ raysArray }}', '{{ colorsArray }}');
+					GVAR_baseSelection = '{{ base_selection }}';
+					GFUN_initSelectionComponent("{{ measurePointsSelectionGID }}", "{{ hemisphereOrderUrl }}");
+					GFUN_initializeConnectivityFull();
+				});
+			</script>
 
 			<input type="hidden" id="currentlyEditedNode"/>
 
