@@ -36,8 +36,10 @@
 
 // Width in css pixels reserved for the row/column label gutters on each canvas.
 var MATRIX_LABEL_GUTTER = 66;
-// Minimum on-screen spacing (css px) between two axis labels. When cells are smaller than this we
-// draw only every k-th label, so labels stay readable even for very large connectivities (e.g. 998
+// Cell size (css px) from which every axis label is drawn: the 9px labels fit one next to the other.
+var MATRIX_LABEL_FULL_SPACING = 10;
+// Minimum on-screen spacing (css px) between two axis labels when cells are smaller than MATRIX_LABEL_FULL_SPACING.
+// Then we draw only every k-th label, so labels stay readable even for very large connectivities (e.g. 998
 // regions). The exact label for any cell is always available via the hover tooltip.
 var MATRIX_LABEL_MIN_SPACING = 11;
 // Cell contour (grid) lines are only drawn when cells are at least this big; below it the grid would
@@ -186,12 +188,22 @@ function _setLabelStyle(ctx, isSelected) {
 }
 
 /**
+ * Return k, to draw every k-th label on an axis with the given cell size (css px).
+ */
+function _labelStep(cellSize) {
+    if (cellSize >= MATRIX_LABEL_FULL_SPACING) {
+        return 1;
+    }
+    return Math.max(1, Math.ceil(MATRIX_LABEL_MIN_SPACING / cellSize));
+}
+
+/**
  * Draw the column labels and the row labels of a quadrant.
  */
 function _drawLabels(ctx, g, rowSel, colSel) {
     // Column labels along the top gutter, rotated to read bottom-to-top (as the old table did).
-    // When cells are narrower than the label spacing we draw every colStep-th label to avoid overlap.
-    var colStep = Math.max(1, Math.ceil(MATRIX_LABEL_MIN_SPACING / g.cw));
+    // When cells are too narrow for all labels we draw every colStep-th label to avoid overlap.
+    var colStep = _labelStep(g.cw);
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     for (var c = 0; c < g.nCols; c += colStep) {
@@ -204,7 +216,7 @@ function _drawLabels(ctx, g, rowSel, colSel) {
     }
 
     // Row labels along the left gutter.
-    var rowStep = Math.max(1, Math.ceil(MATRIX_LABEL_MIN_SPACING / g.ch));
+    var rowStep = _labelStep(g.ch);
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
     for (var r = 0; r < g.nRows; r += rowStep) {
