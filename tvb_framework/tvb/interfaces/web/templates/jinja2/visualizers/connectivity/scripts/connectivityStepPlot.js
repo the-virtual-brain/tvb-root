@@ -128,8 +128,8 @@ function createConnectivityMatrix() {
     // Create arrays from start for performance reasons 
     var vertices = new Float32Array(nrElems * nrElems * 4 * 3);
     var normals = new Float32Array(nrElems * nrElems * 4 * 3);
-    var indices = new Uint16Array(nrElems * nrElems * 2 * 3);
-    var linesIndices = new Uint16Array(nrElems * nrElems * 2 * 4);
+    var indices = new Uint32Array(nrElems * nrElems * 2 * 3);
+    var linesIndices = new Uint32Array(nrElems * nrElems * 2 * 4);
 
     var linearIndex = -1;
 
@@ -347,6 +347,10 @@ function ConnStepPlotInitColorBuffers() {
 function conectivitySpaceTime_initCanvas() {
     var canvas = document.getElementById(CONNECTIVITY_SPACE_TIME_CANVAS_ID);
     initGL(canvas);
+    // WebGL 1 draws with 32-bit indices only when this extension is enabled.
+    if (!gl.getExtension('OES_element_index_uint')) {
+        displayMessage("This browser does not support 32-bit WebGL indices needed by Space Time.", "errorMessage");
+    }
     var theme = ColSchGetTheme().connectivityStepPlot;
     gl.clearColor(theme.backgroundColor[0], theme.backgroundColor[1], theme.backgroundColor[2], theme.backgroundColor[3]);
     plotSize = parseInt(canvas.clientWidth / 3);    // Compute the size of one connectivity plot depending on the canvas width
@@ -407,17 +411,17 @@ function drawFullMatrix(doPick, idx) {
         var currentPickColor = colorsForPicking[idx];
         gl.uniform3f(GL_shaderProgram.pickingColor, currentPickColor[0], currentPickColor[1], currentPickColor[2]);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-        gl.drawElements(gl.TRIANGLES, indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+        gl.drawElements(gl.TRIANGLES, indexBuffer.numItems, gl.UNSIGNED_INT, 0);
     } else {
         gl.bindBuffer(gl.ARRAY_BUFFER, plotColorBuffers[idx]);
         gl.vertexAttribPointer(GL_shaderProgram.vertexColorAttribute, 3, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-        gl.drawElements(gl.TRIANGLES, indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+        gl.drawElements(gl.TRIANGLES, indexBuffer.numItems, gl.UNSIGNED_INT, 0);
         gl.uniform3f(GL_shaderProgram.lineColor, theme.lineColor[0], theme.lineColor[1], theme.lineColor[2]);
         gl.uniform1i(GL_shaderProgram.drawLines, true);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, linesIndexBuffer);
         gl.lineWidth(1.0);
-        gl.drawElements(gl.LINES, linesIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+        gl.drawElements(gl.LINES, linesIndexBuffer.numItems, gl.UNSIGNED_INT, 0);
         gl.uniform1i(GL_shaderProgram.drawLines, false);
         
         // Now draw the square outline
