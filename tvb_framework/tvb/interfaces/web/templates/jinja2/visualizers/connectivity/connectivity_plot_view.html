@@ -1,15 +1,6 @@
 <div>
 	{% macro drawConnectivityPlotViewer() -%}
 		<div id="monitor-plot-id" class="monitor-container">
-
-			<script id="shader-plot-fs" type="x-shader/x-fragment">
-				{% include 'visualizers/commons/shading/fragment_connectivity_plot.glsl' %}
-			</script>
-			
-			<script id="shader-plot-vs" type="x-shader/x-vertex">
-				{% include 'visualizers/commons/shading/vertex_connectivity_plot.glsl' %}
-			</script>
-
 			{% if not isSingleMode %}
 			<!-- Toolbar -->
 				<ul class="toolbar-inline monitor-control">

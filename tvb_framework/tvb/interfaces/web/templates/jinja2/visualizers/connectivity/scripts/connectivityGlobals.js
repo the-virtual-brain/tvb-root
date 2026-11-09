@@ -134,7 +134,7 @@ function _onColorSchemeChanged(){
     if(SELECTED_TAB === CONNECTIVITY_TAB){
         ConnPlotUpdateColors();
     }else if(SELECTED_TAB === CONNECTIVITY_SPACE_TIME_TAB){
-        ConnStepPlotInitColorBuffers();
+        ConnStepPlotCreateMatrices();
     }
 }
 
