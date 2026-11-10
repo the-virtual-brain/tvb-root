@@ -44,8 +44,8 @@ from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.interfaces.web.controllers.common import KEY_PROJECT, KEY_USER
-from tvb.interfaces.web.controllers.simulator.hybrid_simulator_controller import HybridSimulatorController, \
-    HybridSimulatorURLs
+from tvb.interfaces.web.controllers.simulator.hybrid_simulator_controller import HybridSimulatorController
+from tvb.interfaces.web.controllers.simulator.hybrid_simulator_wizzard_urls import HybridSimulatorURLs
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
