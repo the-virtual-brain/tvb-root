@@ -23,11 +23,11 @@ var fullMatrixColors = null;        // Colors for the full connectivity matrix
 var outlineVerticeBuffer = null;    // Vertices for the full matrix outline square
 var outlineNormalsBuffer = null;    // Normals for the full matrix outline square
 var outlineLinesBuffer = null;        // The line indices for thr full matrix outline square
-var plotColorBuffers = [];            // A list of color buffers for the various space-time connectivity matrices
-var verticesBuffer = [];            // A list of vertex buffers for the various space-time connectivity matrices
-var normalsBuffer = [];                // A list of normal buffers for the various space-time connecitivty matrices
-var indexBuffer = [];                // A list of triangles index buffers for the various space-time connectivity matrices
-var linesIndexBuffer = [];            // A list of line index buffers for the various space-time connectivity matrices
+var plotTextures = [];                // One texture per space-time connectivity matrix, with one texel per matrix cell
+var verticesBuffer = null;            // The 4 corners of the rectangle on which a matrix texture is drawn
+var textureCoordsBuffer = null;       // The texture coordinates of these 4 corners
+var gridLinesBuffer = null;           // The lines between the matrix cells, or null when the cells are too small to show them
+var SPACE_TIME_MIN_GRID_CELL = 3;     // Smallest cell size (in plot units, about css px) for which the lines between cells are drawn
 
 var plotSize = 250;                    // Default plot size of 250 pixels
 var defaultZ = -2.0;                // Default plot Z position of -2.0
@@ -42,7 +42,7 @@ var clickedMatrix = -1;
 var backupTranslations = [];
 var backupRotations = [];
 var animationStarted = false;
-var alphaValueSpaceTime = 1.0;                // original alpha value for default plot        
+var alphaValueSpaceTime = 1.0;                // original alpha value for default plot
 var backupAlphaValue = alphaValueSpaceTime;    // backup used in animations
 var minSelectedDelayValue = -1;
 var maxSelectedDelayValue = -1;
@@ -88,9 +88,9 @@ function initShaders_SPACETIME() {
     GL_shaderProgram.lineColor = gl.getUniformLocation(GL_shaderProgram, "uLineColor");
     GL_shaderProgram.isPicking = gl.getUniformLocation(GL_shaderProgram, "isPicking");
     GL_shaderProgram.pickingColor = gl.getUniformLocation(GL_shaderProgram, "pickingColor");
-    
-    GL_shaderProgram.vertexColorAttribute = gl.getAttribLocation(GL_shaderProgram, "aVertexColor");
-    gl.enableVertexAttribArray(GL_shaderProgram.vertexColorAttribute);
+
+    GL_shaderProgram.samplerUniform = gl.getUniformLocation(GL_shaderProgram, "uSampler");
+    GL_shaderProgram.textureCoordAttribute = gl.getAttribLocation(GL_shaderProgram, "aTextureCoord");
 }
 
 
@@ -117,6 +117,8 @@ function _GL_createBuffer(data, type){
 
 /*
  * Create the required buffers for the space-time plot.
+ * Each matrix is a single rectangle with a texture holding one texel per cell, so the number of
+ * vertices does not depend on the number of regions.
  */
 function createConnectivityMatrix() {
     var nrElems = GVAR_interestAreaVariables[GVAR_selectedAreaType].values.length;
@@ -125,67 +127,37 @@ function createConnectivityMatrix() {
     var startY = - plotSize / 2;
     // The size of a matrix element
     var elementSize = plotSize / nrElems;
-    // Create arrays from start for performance reasons 
-    var vertices = new Float32Array(nrElems * nrElems * 4 * 3);
-    var normals = new Float32Array(nrElems * nrElems * 4 * 3);
-    var indices = new Uint16Array(nrElems * nrElems * 2 * 3);
-    var linesIndices = new Uint16Array(nrElems * nrElems * 2 * 4);
 
-    var linearIndex = -1;
-
-    for (var i = 0; i < nrElems; i++) {
-        for (var j = 0; j < nrElems; j++) {
-            linearIndex += 1;
-            // For each separate element, compute the position of the 4 required vertices
-            // depending on the position from the connectivity matrix
-            var upperLeftX = startX + j * elementSize;
-            var upperLeftY = startY + i * elementSize;
-
-            // Since the vertex array is flatten, and there are 4 vertices per one element,
-            // in order to fill the position in the vertice array we need to fill all 12 elements
-            var elemVertices = [
-                upperLeftX, upperLeftY, defaultZ,
-                upperLeftX + elementSize, upperLeftY, defaultZ, //upper right
-                upperLeftX, upperLeftY + elementSize, defaultZ, //lower left
-                upperLeftX + elementSize, upperLeftY + elementSize, defaultZ // lower right
-            ];
-
-            var indexBase = 4 * linearIndex;
-
-            // For the normals it's easier since we only need one normal for each vertex
-            var elemNormals = [
-                0, 0, -1,
-                0, 0, -1,
-                0, 0, -1,
-                0, 0, -1
-            ];
-
-            // We have 2 triangles, which again are flatten so we need to fill 6 index elements
-            var elemIndices = [
-                indexBase + 0, indexBase + 1, indexBase + 2,
-                indexBase + 1, indexBase + 2, indexBase + 3
-            ];
-
-            // For the lines we have 4 lines per element, flatten again, so 8 index elements to fill
-            var elemLines = [
-                indexBase + 0, indexBase + 1,
-                indexBase + 1, indexBase + 3,
-                indexBase + 2, indexBase + 3,
-                indexBase + 2, indexBase + 0
-            ];
-
-            vertices.set(elemVertices, 3 * 4 * linearIndex);
-            normals.set(elemNormals, 3 * 4 * linearIndex);
-            indices.set(elemIndices, 3 * 2 * linearIndex);
-            linesIndices.set(elemLines, 4 * 2 * linearIndex);
-        }
-    }
-    // Now create all the required buffers having the computed data.
-    verticesBuffer = _GL_createBuffer(vertices);
-    normalsBuffer = _GL_createBuffer(normals);
-    indexBuffer = _GL_createBuffer(indices, gl.ELEMENT_ARRAY_BUFFER);
-    linesIndexBuffer = _GL_createBuffer(linesIndices, gl.ELEMENT_ARRAY_BUFFER);
+    // The 4 corners, in the order used to draw the rectangle as a triangle strip
+    verticesBuffer = _GL_createBuffer(new Float32Array([
+        startX, startY, defaultZ,
+        startX + plotSize, startY, defaultZ,
+        startX, startY + plotSize, defaultZ,
+        startX + plotSize, startY + plotSize, defaultZ
+    ]));
+    // Texture column j and row i are the matrix cell (i, j), placed as the cells were placed before
+    textureCoordsBuffer = _GL_createBuffer(new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]));
+    gridLinesBuffer = elementSize >= SPACE_TIME_MIN_GRID_CELL ? createGridLines(startX, startY, elementSize, nrElems) : null;
     createOutlineSquare(startX, startY, elementSize, nrElems);
+}
+
+/*
+ * Compute the lines between the matrix cells: nrElems + 1 vertical and nrElems + 1 horizontal lines.
+ */
+function createGridLines(startX, startY, elementSize, nrElems) {
+    var width = nrElems * elementSize;
+    var lines = new Float32Array((nrElems + 1) * 4 * 3);
+    for (var k = 0; k <= nrElems; k++) {
+        var x = startX + k * elementSize;
+        var y = startY + k * elementSize;
+        lines.set([
+            x, startY, defaultZ, x, startY + width, defaultZ,
+            startX, y, defaultZ, startX + width, y, defaultZ
+        ], k * 4 * 3);
+    }
+    var buffer = _GL_createBuffer(lines);
+    buffer.numItems = lines.length / 3;    // number of vertices
+    return buffer;
 }
 
 /*
@@ -208,30 +180,29 @@ function createOutlineSquare(startX, startY, elementSize, nrElems) {
 
 
 /*
- * Generate a color buffer which represents the state of the weights for 
+ * Generate a texture which represents the state of the weights for
  * a given 'interval' centered around a given tract value
- * 
+ *
  * @param tractValue: the center of the interval
  * @param intervalLength: the length of the interval
- * 
- * @returns: a color buffer, where for the connections that fall in the defined interval,
- *              a gradient color is assigned based on the weights strenght, and for the 
- *              rest the color black is used.
+ *
+ * @returns: a texture with one texel per matrix cell, where for the connections that fall in the defined interval,
+ *              a gradient color is assigned based on the weights strenght, and for the
+ *              rest the no value color is used.
  */
-function generateColors(tractValue, intervalLength) {
+function generateTexture(tractValue, intervalLength) {
     var theme = ColSchGetTheme().connectivityStepPlot;
     var matrixWeightsValues = GVAR_interestAreaVariables[1].values;
     var matrixTractsValues = GVAR_interestAreaVariables[2].values;
     var minWeightsValue = GVAR_interestAreaVariables[1].min_val;
     var maxWeightsValue = GVAR_interestAreaVariables[1].max_val;
     var nrElems = matrixWeightsValues.length;
-    var colors = new Float32Array(nrElems * nrElems * 3 * 4);
+    var texels = new Uint8Array(nrElems * nrElems * 4);
     var linearIndex = -1;
 
     for (var i = 0; i < nrElems; i++) {
         for (var j = 0; j < nrElems; j++) {
             linearIndex += 1;
-            // For each element generate 4 identical colors corresponding to the 4 vertices used for the element
             var delayValue = matrixTractsValues[i][nrElems - j - 1] / conductionSpeed;
             var weight = matrixWeightsValues[i][nrElems - j - 1];
 
@@ -245,20 +216,25 @@ function generateColors(tractValue, intervalLength) {
                 color = theme.noValueColor;
             }
 
-            color = [].concat(color, color, color, color);
-            colors.set(color, 3 * 4 * linearIndex);
+            texels.set([color[0] * 255, color[1] * 255, color[2] * 255, 255], 4 * linearIndex);
         }
     }
-    var buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
-    return buffer;
+    var texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    // No filtering, so that each cell keeps its own color.
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    // WebGL 1 needs CLAMP_TO_EDGE for textures whose size is not a power of 2.
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, nrElems, nrElems, 0, gl.RGBA, gl.UNSIGNED_BYTE, texels);
+    return texture;
 }
 
 
 /**
  * Update the header with information about matrices.
- */ 
+ */
 function updateSpaceTimeHeader() {
 
     function parseFloatDefault(valueUI, defaultValue){
@@ -325,17 +301,20 @@ function updateSpaceTimeHeader() {
 
 function ConnStepPlotInitColorBuffers() {
     initColorsForPicking();
-    plotColorBuffers = [];
+    for (var texture of plotTextures) {
+        gl.deleteTexture(texture);
+    }
+    plotTextures = [];
     var stepValue = (maxSelectedDelayValue - minSelectedDelayValue) / nrOfSteps;
-    plotColorBuffers.push(generateColors((maxSelectedDelayValue + minSelectedDelayValue) / 2, maxSelectedDelayValue - minSelectedDelayValue));
+    plotTextures.push(generateTexture((maxSelectedDelayValue + minSelectedDelayValue) / 2, maxSelectedDelayValue - minSelectedDelayValue));
     // One slice per step, counted by index so rounding cannot drop or add a slice.
     // When From equals To there is nothing to split and only the full matrix is shown.
     if (stepValue > 0) {
         for (var step = 0; step < nrOfSteps; step++) {
             var tractValue = minSelectedDelayValue + stepValue * (step + 0.5);
-            plotColorBuffers.push(generateColors(tractValue, stepValue));
+            plotTextures.push(generateTexture(tractValue, stepValue));
         }
-    } 
+    }
     var theme = ColSchGetTheme().connectivityStepPlot;
     gl.clearColor(theme.backgroundColor[0], theme.backgroundColor[1], theme.backgroundColor[2], theme.backgroundColor[3]);
     drawSceneSpaceTime();
@@ -361,14 +340,14 @@ function conectivitySpaceTime_initCanvas() {
         plotTranslations.push([-parseInt(canvas.clientWidth / 8) + parseInt(canvas.clientWidth / 2.2 / nrOfSteps) * i, 0.0, 0.0]); // Values tested that display nicely for 6 plots at least
         plotRotations.push([80 - i * nrOfSteps, [0, 1, 0]]);
     }
-    
+
     if (minSelectedDelayValue < 0) {
         minSelectedDelayValue = GVAR_interestAreaVariables[2].min_val / conductionSpeed;
     }
     if (maxSelectedDelayValue < 0) {
         maxSelectedDelayValue = GVAR_interestAreaVariables[2].max_val / conductionSpeed;
     }
-    
+
     clickedMatrix = -1;
 
     _connectivitySpaceTimeUpdateLegend();
@@ -390,36 +369,42 @@ function _connectivitySpaceTimeUpdateLegend(){
 function drawFullMatrix(doPick, idx) {
     var theme = ColSchGetTheme().connectivityStepPlot;
     mvPushMatrix();
-    
-    // Translate and rotate to get a good view 
+
+    // Translate and rotate to get a good view
     mvTranslate(plotTranslations[idx]);
     mvRotate(plotRotations[idx][0], plotRotations[idx][1]);
     mvRotate(180, [0, 0, 1]);
-    
-    // Draw the actual matrix.
+
+    // Draw the actual matrix: one rectangle with the texture of this plot.
     gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
     gl.vertexAttribPointer(GL_shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
-//    gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
-//    gl.vertexAttribPointer(GL_shaderProgram.vertexNormalAttribute, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(GL_shaderProgram.textureCoordAttribute);
+    gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordsBuffer);
+    gl.vertexAttribPointer(GL_shaderProgram.textureCoordAttribute, 2, gl.FLOAT, false, 0, 0);
     setMatrixUniforms();
-    
+
     if (doPick) {
         var currentPickColor = colorsForPicking[idx];
         gl.uniform3f(GL_shaderProgram.pickingColor, currentPickColor[0], currentPickColor[1], currentPickColor[2]);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-        gl.drawElements(gl.TRIANGLES, indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     } else {
-        gl.bindBuffer(gl.ARRAY_BUFFER, plotColorBuffers[idx]);
-        gl.vertexAttribPointer(GL_shaderProgram.vertexColorAttribute, 3, gl.FLOAT, false, 0, 0);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-        gl.drawElements(gl.TRIANGLES, indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
-        gl.uniform3f(GL_shaderProgram.lineColor, theme.lineColor[0], theme.lineColor[1], theme.lineColor[2]);
-        gl.uniform1i(GL_shaderProgram.drawLines, true);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, linesIndexBuffer);
-        gl.lineWidth(1.0);
-        gl.drawElements(gl.LINES, linesIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
-        gl.uniform1i(GL_shaderProgram.drawLines, false);
-        
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, plotTextures[idx]);
+        gl.uniform1i(GL_shaderProgram.samplerUniform, 0);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        // The lines below have more vertices than the texture coordinates buffer, and they do not use it.
+        gl.disableVertexAttribArray(GL_shaderProgram.textureCoordAttribute);
+
+        if (gridLinesBuffer) {
+            gl.uniform3f(GL_shaderProgram.lineColor, theme.lineColor[0], theme.lineColor[1], theme.lineColor[2]);
+            gl.uniform1i(GL_shaderProgram.drawLines, true);
+            gl.bindBuffer(gl.ARRAY_BUFFER, gridLinesBuffer);
+            gl.vertexAttribPointer(GL_shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+            gl.lineWidth(1.0);
+            gl.drawArrays(gl.LINES, 0, gridLinesBuffer.numItems);
+            gl.uniform1i(GL_shaderProgram.drawLines, false);
+        }
+
         // Now draw the square outline
         if (idx == clickedMatrix) {
             gl.uniform3f(GL_shaderProgram.lineColor, theme.selectedOutlineColor[0], theme.selectedOutlineColor[1], theme.selectedOutlineColor[2]);
@@ -553,7 +538,7 @@ function drawSceneSpaceTime() {
         gl.uniform3f(GL_shaderProgram.pickingColor, 1, 1, 1);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        for (var ii = 0; ii < plotColorBuffers.length; ii++) {
+        for (var ii = 0; ii < plotTextures.length; ii++) {
             drawFullMatrix(false, ii);
         }
     } else {
@@ -564,7 +549,7 @@ function drawSceneSpaceTime() {
            gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        for (var i = 0; i < plotColorBuffers.length; i++) {
+        for (var i = 0; i < plotTextures.length; i++) {
             drawFullMatrix(true, i);
         }
         clickedMatrix = GL_getPickedIndex();
@@ -574,6 +559,5 @@ function drawSceneSpaceTime() {
             doZoomInAnimation();
         }
     }
-    
-}
 
+}
