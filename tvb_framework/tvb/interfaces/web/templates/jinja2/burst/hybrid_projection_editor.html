@@ -1,0 +1,68 @@
+{#- ============================================================================ -#}
+{#- The editor of the selected Projection, framed under its tab in the third     -#}
+{#- column, in the colour of its kind. Every change is applied as soon as it is  -#}
+{#- made: static/js/hybrid_simulator.js posts the fields of this block, and the  -#}
+{#- answer is the whole Projections editor again.                               -#}
+{#-                                                                             -#}
+{#- It is a block rather than a form: its fields are read and posted by the     -#}
+{#- client. They sit in a fieldset, which is what gives the wizard's fields      -#}
+{#- their layout. Adding the Projection to the simulation, or removing it, is    -#}
+{#- stored the moment its button is pressed.                                     -#}
+{#- ============================================================================ -#}
+{% set editor = renderer %}
+{% set row = editor.projection_row %}
+<div class="hybrid-projection-block is-{{ row.kind | lower }}" id="hybrid-projection-editor"
+     data-projection-key="{{ row.key }}"
+     data-hybrid-applied="{{ 'true' if editor.projection_applied else 'false' }}">
+    <p class="hybrid-projection-summary">
+        {% if row.kind == 'Intra' %}
+            Within <strong>{{ row.source }}</strong>
+        {% else %}
+            From <strong>{{ row.source }}</strong> to <strong>{{ row.target }}</strong>
+        {% endif %}
+        &middot; {{ row.connections }} connections
+        {% if row.max_delay is not none %}&middot; longest delay {{ '%.2f' | format(row.max_delay) }} ms{% endif %}
+        {% if row.included %}
+            <span class="hybrid-projection-added">&#10003; in the simulation</span>
+        {% else %}
+            <span class="hybrid-projection-excluded">not in the simulation</span>
+        {% endif %}
+        {% if row.was_reset %}
+            <span class="hybrid-projection-reset">coupling variables reset to the defaults: a Model changed</span>
+        {% endif %}
+    </p>
+
+    <fieldset class="hybrid-projection-fields">
+
+    {% with renderer = {'form': editor.projection_form} %}
+        {% include 'burst/hybrid_form_fields.html' %}
+    {% endwith %}
+
+    {#- the parameters of the chosen coupling function belong to it, so they sit one tab in -#}
+    <div class="hybrid-editor-level-1">
+        <h5 class="hybrid-editor-group">{{ row.coupling }} parameters</h5>
+        {% with renderer = {'form': editor.coupling_form} %}
+            {% include 'burst/hybrid_form_fields.html' %}
+        {% endwith %}
+    </div>
+
+    </fieldset>
+
+    <div class="hybrid-projection-actions">
+        {% if row.included %}
+            <button type="button" class="btn btn-primary" tabindex="1" id="hybrid-projection-toggle"
+                    title="Leave this Projection out of the simulation; it keeps its settings"
+                    onclick="hybridSetProjectionIncluded('{{ row.key }}', false)">Remove from the simulation
+            </button>
+        {% else %}
+            <button type="button" class="btn btn-primary btn-next" tabindex="1" id="hybrid-projection-toggle"
+                    title="Make this Projection part of the simulation, as it is set up here"
+                    onclick="hybridSetProjectionIncluded('{{ row.key }}', true)">Add to the simulation
+            </button>
+        {% endif %}
+    </div>
+
+    {% if editor.projection_error %}
+        <p class="errorMessage">{{ editor.projection_error }}</p>
+    {% endif %}
+</div>

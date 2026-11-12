@@ -145,7 +145,7 @@ class ABCSpaceDisplayer(ABCDisplayer):
                 return []
 
             with h5.h5_file_for_gid(connectivity_gid) as conn_h5:
-                return list(conn_h5.region_labels.load())
+                return conn_h5.get_region_labels().tolist()
 
         if isinstance(ts_h5, TimeSeriesSensorsH5):
             sensors_gid = ts_h5.sensors.load()

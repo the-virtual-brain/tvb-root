@@ -50,7 +50,7 @@ class ConnectivityH5(H5File):
         return self.centres.load()
 
     def get_region_labels(self):
-        return self.region_labels.load()
+        return self.region_labels.load().astype(MEMORY_STRING)
 
     def store(self, datatype, scalars_only=False, store_references=True):
         # type: (Connectivity, bool, bool) -> None
@@ -60,4 +60,4 @@ class ConnectivityH5(H5File):
     def load_into(self, datatype):
         # type: (Connectivity) -> None
         super(ConnectivityH5, self).load_into(datatype)
-        datatype.region_labels = self.region_labels.load().astype(MEMORY_STRING)
+        datatype.region_labels = self.get_region_labels()
