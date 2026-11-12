@@ -109,7 +109,7 @@ jobs:
         id: get_version
         run: |
           FILENAME=$((ls dist/*.tar.gz || ls dist/*.whl) | head -n 1)
-          VERSION=$(echo "$FILENAME" | grep -oP '(?<=-)\d+\.\d+\.\d+(?=\.tar\.gz|\.whl)')
+          VERSION=$(basename "$FILENAME" | grep -oP '(?<=-)\d+\.\d+\.\d+(?:(?:a|b|rc)\d+)?(?=\.tar\.gz|\.whl)')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Extracted version: $VERSION"
         # REGEX breakdown:
