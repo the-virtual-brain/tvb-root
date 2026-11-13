@@ -621,6 +621,8 @@ function selectHemisphere(index) {
     $(".quadrant-"+ index).each(function () {
         $(this).addClass('active');
     });
+    // A single quadrant button serves all quadrants, so its text follows the selected one.
+    $("#quadrantSelectorButton").text("Q " + (index + 1));
 
     for (var k=0; k<hemispheres.length; k++){
         $("#" + hemispheres[k]).hide();
@@ -630,6 +632,8 @@ function selectHemisphere(index) {
     $("#" + hemispheres[index]+'Tracts').show();
     var inputDiv = document.getElementById('editNodeValues');
     inputDiv.style.display = 'none';
+    // The quadrant just shown has a width now, so (re)draw its canvas.
+    MATRIX_drawCanvas();
 }
 
 

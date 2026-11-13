@@ -66,6 +66,7 @@ function RegionSelectComponent(dom, settings){
     });
     $dom.find(settings.checkSelector).click(function(){ self.checkAll();} );
     $dom.find(settings.uncheckSelector).click(function(){ self.clearAll();} );
+    $dom.find(settings.hemisphereSelector).click(function(){ self._toggleGroup(this);} );
     $dom.find(settings.saveSelectionButtonSelector).click(function(){ self._onNewSelection(); });
 
     $dom.find(settings.applySelector).click(function(){
@@ -78,6 +79,7 @@ RegionSelectComponent.prototype.defaults = {
     applySelector: '.action-view',
     checkSelector: '.action-all-on',
     uncheckSelector: '.action-all-off',
+    hemisphereSelector: '.action-hemisphere',
     boxesSelector: 'input[type=checkbox]',
     textboxSelector : 'input[type=text]',
     saveSelectionButtonSelector : '.action-store',
@@ -99,6 +101,7 @@ RegionSelectComponent.prototype.destroy = function(){
     this._dropDown.off();
     this.$dom.find(this.settings.checkSelector).off();
     this.$dom.find(this.settings.uncheckSelector).off();
+    this.$dom.find(this.settings.hemisphereSelector).off();
     this.$dom.find(this.settings.saveSelectionButtonSelector).off();
     this.$dom.find(this.settings.applySelector).off();
     this.$dom.off("selectionChange");
@@ -266,6 +269,23 @@ RegionSelectComponent.prototype.clearAll = function(){
 
 RegionSelectComponent.prototype.checkAll = function(){
     this.val(this._allValues);
+};
+
+/**
+ * Select all the regions of a group (a hemisphere), or clear them when they are all selected already.
+ * The selection of the other groups does not change.
+ * @param button the group button, inside the section that holds the group checkboxes
+ * @private
+ */
+RegionSelectComponent.prototype._toggleGroup = function(button){
+    var self = this;
+    var groupValues = $(button).closest('.submatrix').find(self.settings.boxesSelector).map(function(){ return this.value; }).get();
+    var allSelected = groupValues.every(function(value){ return self._selectedValues.includes(value); });
+    // Keep the values in the dom order, as a click on the checkboxes does.
+    var newValues = self._allValues.filter(function(value){
+        return groupValues.includes(value) ? !allSelected : self._selectedValues.includes(value);
+    });
+    self.val(newValues);
 };
 
 /**
