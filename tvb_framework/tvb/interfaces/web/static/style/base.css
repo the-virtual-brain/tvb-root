@@ -412,6 +412,13 @@ top: 42px;
 z-index: 510; /* above footer graphics of the dropdown */
 }
 
+#s-analyze header nav ul {
+max-height: calc(100vh - 160px);
+overflow-y: auto;
+scrollbar-width: thin;
+scrollbar-color: #646a6f transparent;
+}
+
 header nav li {
 background: transparent url("./img/nav/img_ss_generic1.png") 0 0 no-repeat;
 float: left;
