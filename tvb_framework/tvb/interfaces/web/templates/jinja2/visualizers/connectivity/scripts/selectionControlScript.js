@@ -93,8 +93,8 @@ function getOperationArguments() {
 function doGroupOperation() {
     //Selected operation
     var operationsSelect = document.getElementById('con-op-operation');
-    var selectedOp = parseInt(operationsSelect.options[operationsSelect.selectedIndex].value);
-    selectedOp = OP_DICTIONARY[selectedOp]['operation'];
+    var selectedOpIndex = Number.parseInt(operationsSelect.options[operationsSelect.selectedIndex].value);
+    var selectedOp = OP_DICTIONARY[selectedOpIndex]['operation'];
     //Selected edges type
     var edgesSelect = document.getElementById('con-op-edges-type');
     var selectedEdgeType = parseInt(edgesSelect.options[edgesSelect.selectedIndex].value);
@@ -102,8 +102,12 @@ function doGroupOperation() {
     var quantity = getOperationArguments();
 
     document.getElementById('con-op-arguments').value = '';
-    if (isNaN(quantity)) {
+    if (!Number.isFinite(quantity)) {
         displayMessage("Operation failed. Be sure you provided the correct arguments.", "errorMessage");
+        return false;
+    }
+    if (selectedOp === divideSelectionBy && quantity === 0) {
+        displayMessage("Division by 0 is not allowed. The matrix was not changed.", "errorMessage");
         return false;
     }
 
@@ -116,22 +120,22 @@ function doGroupOperation() {
                 switch(selectedEdgeType) {
                     case 1:
                         if (GFUNC_isNodeAddedToInterestArea(i) && GFUNC_isNodeAddedToInterestArea(j)) {
-                            values[i][j] = selectedOp(values[i][j], quantity);
+                            values[i][j] = Math.max(0, selectedOp(values[i][j], quantity));
                         }
                         break;
                     case 2:
                         if (GFUNC_isNodeAddedToInterestArea(i) && !GFUNC_isNodeAddedToInterestArea(j)) {
-                            values[i][j] = selectedOp(values[i][j], quantity);
+                            values[i][j] = Math.max(0, selectedOp(values[i][j], quantity));
                         }
                         break;
                     case 3:
                         if (!GFUNC_isNodeAddedToInterestArea(i) && GFUNC_isNodeAddedToInterestArea(j)) {
-                            values[i][j] = selectedOp(values[i][j], quantity);
+                            values[i][j] = Math.max(0, selectedOp(values[i][j], quantity));
                         }
                         break;
                     case 4:
                         if (!GFUNC_isNodeAddedToInterestArea(i) && !GFUNC_isNodeAddedToInterestArea(j)) {
-                            values[i][j] = selectedOp(values[i][j], quantity);
+                            values[i][j] = Math.max(0, selectedOp(values[i][j], quantity));
                         }
                         break;
                 }
@@ -144,5 +148,3 @@ function doGroupOperation() {
         displayMessage("Operation failed. Be sure you provided the correct arguments.", "errorMessage");
     }
 }
-
-
