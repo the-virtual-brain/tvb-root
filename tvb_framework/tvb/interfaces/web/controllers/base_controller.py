@@ -44,6 +44,7 @@ from tvb.core.services.project_service import ProjectService
 from tvb.core.services.user_service import UserService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.decorators import using_template
+from tvb.interfaces.web.entities.context_hybrid_simulator import HybridSimulatorContext
 from tvb.interfaces.web.entities.context_simulator import SimulatorContext
 from tvb.interfaces.web.structure import WebStructure
 from tvb.storage.storage_interface import StorageInterface
@@ -103,6 +104,8 @@ class BaseController(object):
 
         self.burst_submenu = [dict(link=self.build_path('/burst'), subsection=WebStructure.SUB_SECTION_BURST,
                                    title='Simulation Cockpit', description='Manage simulations'),
+                              # dict(link=self.build_path('/burst/hybrid'), subsection='hybrid',
+                              #      title='Hybrid Simulator', description='Configure hybrid simulations'),
                               dict(link=self.build_path('/burst/dynamic'), subsection='dynamic',
                                    title='Phase plane', description='Configure model dynamics')]
 
@@ -144,6 +147,7 @@ class BaseController(object):
         if previous_project is None or previous_project.id != project.id:
             # Clean Burst selection from session in case of a different project.
             SimulatorContext().clean_project_data_from_session()
+            HybridSimulatorContext.clean_project_data_from_session()
             # Store in DB new project selection
             user = common.get_from_session(common.KEY_USER)
             if user is not None:

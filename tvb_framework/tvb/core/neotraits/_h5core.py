@@ -24,6 +24,7 @@
 #
 #
 from datetime import datetime
+import json
 import importlib
 import typing
 import uuid
@@ -162,7 +163,9 @@ class H5File(object):
                 try:
                     setattr(datatype, f_name, value)
                 except TraitFinalAttributeError:
-                    if getattr(datatype, f_name) != value:
+                    current = getattr(datatype, f_name, None)
+                    current = json.loads(json.dumps(current))
+                    if current != value:
                         raise
                     else:
                         LOGGER.info(

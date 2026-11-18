@@ -74,19 +74,23 @@ def get_unique_file_name(storage_folder, file_name, try_number=0):
     Compute non-existent file name, in storage_folder.
     Try file_name, and if already exists, try adding a number.
     """
-    # TODO this method should be re-tought
     name, ext = os.path.splitext(file_name)
     date = str(datetime.now())
     date = date.replace(' ', '').replace(':', '').replace('.', '').replace('-', '')
-    if try_number > 0:
-        file_ = '%s-%s%s' % (name, date, ext)
-    else:
-        file_ = file_name
-    full_path = os.path.join(storage_folder, file_)
-    if os.path.exists(full_path):
-        # Try another name, by appending the consecutive try_number
-        return get_unique_file_name(storage_folder, file_name, try_number + 1)
-    return full_path, file_
+    while True:
+        if try_number == 0:
+            file_ = file_name
+        elif try_number == 1:
+            file_ = '%s-%s%s' % (name, date, ext)
+        else:
+            file_ = '%s-%s-%s%s' % (name, date, try_number, ext)
+
+        full_path = os.path.join(storage_folder, file_)
+        if not os.path.exists(full_path):
+            return full_path, file_
+
+        # The clock resolution can return the same timestamp on consecutive attempts.
+        try_number += 1
 
 
 ################## PATH related methods end here ###############

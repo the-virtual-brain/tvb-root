@@ -1,5 +1,5 @@
 numpy
-siibra<=1.0.1a10
+siibra
 cryptography
 sqlalchemy
 psycopg2

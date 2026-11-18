@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -23,22 +23,22 @@
 # https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
-
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
 import pytest
+import uuid
 
-from tvb.tests.framework.adapters.dummy_adapter1 import DummyAdapter1Form, DummyAdapter1, DummyModel
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.config.init.introspector_registry import IntrospectionRegistry
-from tvb.core.adapters.exceptions import IntrospectionException
 from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.adapters.exceptions import IntrospectionException
 from tvb.core.entities.model import model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.services.algorithm_service import AlgorithmService
+from tvb.tests.framework.adapters.dummy_adapter1 import DummyAdapter1, DummyAdapter1Form, DummyModel
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 TEST_ADAPTER_VALID_MODULE = "tvb.tests.framework.adapters.dummy_adapter1"
 TEST_ADAPTER_VALID_CLASS = "DummyAdapter1"
@@ -103,8 +103,8 @@ class TestAlgorithmService(TransactionalTestCase):
         assert IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_CLASS in result_classnames
         assert IntrospectionRegistry.DISCRETE_PSE_ADAPTER_CLASS in result_classnames
 
-    def test_get_launchable_algorithms(self, time_series_region_index_factory, connectivity_factory,
-                                       region_mapping_factory):
+    def test_get_launchable_algorithms(self, time_series_region_index_factory,
+                                       connectivity_factory, region_mapping_factory):
 
         conn = connectivity_factory()
         rm = region_mapping_factory()
@@ -141,3 +141,16 @@ class TestAlgorithmService(TransactionalTestCase):
         assert isinstance(adapter, DummyAdapter1), "Adapter incorrectly built"
         assert adapter.get_form_class() == DummyAdapter1Form
         assert adapter.get_view_model() == DummyModel
+
+    def test_save_measure_points_selection_accepts_canonical_uuid(self, connectivity_index_factory):
+        connectivity = connectivity_index_factory()
+        canonical_gid = str(uuid.UUID(connectivity.gid))
+        operation = dao.get_operation_by_id(connectivity.fk_from_operation)
+        project_id = operation.fk_launched_in
+
+        self.algorithm_service.save_measure_points_selection('selection', '[0, 1]',
+                                                             canonical_gid, project_id)
+
+        selections = self.algorithm_service.get_selections_for_project(project_id, canonical_gid)
+        assert len(selections) == 1
+        assert selections[0].fk_datatype_gid == connectivity.gid

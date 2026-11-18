@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -23,7 +23,6 @@
 # https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
-
 """
 A Javascript displayer for time series, using SVG.
 
@@ -34,25 +33,24 @@ A Javascript displayer for time series, using SVG.
 import json
 from abc import ABCMeta
 from six import add_metaclass
-
-from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5, TimeSeriesSensorsH5, TimeSeriesH5
-from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
-from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import TraitDataTypeSelectField
-from tvb.core.neocom import h5
-from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
-from tvb.core.utils import TVBJSONEncoder
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.time_series import TimeSeries
+
+from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5, TimeSeriesRegionH5, TimeSeriesSensorsH5
+from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
+from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import DataTypeGidAttr, ViewModel
+from tvb.core.utils import TVBJSONEncoder
 
 
 class TimeSeriesModel(ViewModel):
     time_series = DataTypeGidAttr(
-        linked_datatype=TimeSeries,
-        label="Time series to be displayed in a 2D form."
-    )
+            linked_datatype=TimeSeries,
+            label="Time series to be displayed in a 2D form.")
 
 
 class TimeSeriesForm(ABCAdapterForm):
@@ -60,8 +58,10 @@ class TimeSeriesForm(ABCAdapterForm):
     def __init__(self):
         super(TimeSeriesForm, self).__init__()
 
-        self.time_series = TraitDataTypeSelectField(TimeSeriesModel.time_series, name='time_series',
-                                                    conditions=self.get_filters())
+        self.time_series = TraitDataTypeSelectField(
+                TimeSeriesModel.time_series,
+                name='time_series',
+                conditions=self.get_filters())
 
     @staticmethod
     def get_view_model():
@@ -77,9 +77,14 @@ class TimeSeriesForm(ABCAdapterForm):
 
     @staticmethod
     def get_filters():
-        return FilterChain(fields=[FilterChain.datatype + '.time_series_type'], operations=["in"],
-                           values=[['TimeSeriesEEG', 'TimeSeriesSEEG', 'TimeSeriesMEG', 'TimeSeriesRegion',
-                                    'TimeSeriesSurface']])
+        return FilterChain(fields=[FilterChain.datatype + '.time_series_type'],
+                           operations=["in"],
+                           values=[[
+                                   'TimeSeriesEEG', 'TimeSeriesSEEG',
+                                   'TimeSeriesMEG', 'TimeSeriesRegion',
+                                   'TimeSeriesSurface'
+                                   ]
+                                   ])
 
 
 @add_metaclass(ABCMeta)
@@ -88,18 +93,26 @@ class ABCSpaceDisplayer(ABCDisplayer):
     @staticmethod
     def build_params_for_selectable_connectivity(connectivity):
         # type: (Connectivity) -> dict
-        return {'measurePointsSelectionGID': connectivity.gid,
-                'initialSelection': connectivity.saved_selection or list(range(len(connectivity.region_labels))),
-                'groupedLabels': connectivity.get_grouped_space_labels()}
+        return {
+                'measurePointsSelectionGID': connectivity.gid.hex,
+                'initialSelection': connectivity.saved_selection
+                    or list(range(len(connectivity.region_labels))),
+                'groupedLabels': connectivity.get_grouped_space_labels()
+                }
 
     def build_params_for_subselectable_ts(self, ts_h5):
         """
         creates a template dict with the initial selection to be
         displayed in a time series viewer
         """
-        return {'measurePointsSelectionGID': ts_h5.get_measure_points_selection_gid(),
+        selection_gid = ts_h5.get_measure_points_selection_gid()
+        if hasattr(selection_gid, 'hex'):
+            selection_gid = selection_gid.hex
+        return {
+                'measurePointsSelectionGID': selection_gid,
                 'initialSelection': ts_h5.get_default_selection(),
-                'groupedLabels': self.get_grouped_space_labels(ts_h5)}
+                'groupedLabels': self.get_grouped_space_labels(ts_h5)
+                }
 
     def get_grouped_space_labels(self, ts_h5):
         """
@@ -177,17 +190,26 @@ class TimeSeriesDisplay(ABCSpaceDisplayer):
             for n in range(min(self.MAX_PREVIEW_DATA_LENGTH, shape[2])):
                 labels.append("Node-" + str(n))
 
-        pars = {'baseURL': URLGenerator.build_base_h5_url(time_series_index.gid),
-                'labels': labels, 'labels_json': json.dumps(labels, cls=TVBJSONEncoder),
-                'ts_title': time_series_index.title, 'preview': preview, 'figsize': figsize,
-                'shape': repr(shape), 't0': ts[0],
+        pars = {
+                'baseURL': URLGenerator.build_base_h5_url(time_series_index.gid),
+                'labels': labels,
+                'labels_json': json.dumps(labels, cls=TVBJSONEncoder),
+                'ts_title': time_series_index.title,
+                'preview': preview,
+                'figsize': figsize,
+                'shape': repr(shape),
+                't0': ts[0],
                 'dt': ts[1] - ts[0] if len(ts) > 1 else 1,
-                'labelsStateVar': state_variables, 'labelsModes': list(range(shape[3]))
+                'labelsStateVar': state_variables,
+                'labelsModes': list(range(shape[3]))
                 }
         pars.update(self.build_params_for_subselectable_ts(h5_file))
         h5_file.close()
 
-        return self.build_display_result("time_series/view", pars, pages=dict(controlPage="time_series/control"))
+        return self.build_display_result(
+                "time_series/view",
+                pars,
+                pages=dict(controlPage="time_series/control"))
 
     def launch(self, view_model):
         # type: (TimeSeriesModel) -> dict

@@ -53,6 +53,7 @@ from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.decorators import check_user, expose_json, check_admin
 from tvb.interfaces.web.controllers.decorators import handle_error, using_template, settings, jsonify
+from tvb.interfaces.web.entities.context_hybrid_simulator import HybridSimulatorContext
 from tvb.interfaces.web.entities.context_simulator import SimulatorContext
 from tvb.interfaces.web.structure import WebStructure
 from tvb.storage.storage_interface import StorageInterface
@@ -181,6 +182,7 @@ class UserController(BaseController):
         if current_project is not None and storage_interface.encryption_enabled():
             storage_interface.set_project_inactive(current_project)
         SimulatorContext().clean_project_data_from_session()
+        HybridSimulatorContext.clean_project_data_from_session()
         common.set_info_message("Thank you for using The Virtual Brain!")
 
         common.expire_session()

@@ -54,6 +54,7 @@ from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, 
 from tvb.interfaces.web.controllers.decorators import settings, check_user, handle_error
 from tvb.interfaces.web.controllers.flow_controller import FlowController
 from tvb.interfaces.web.entities.context_overlay import OverlayTabDefinition
+from tvb.interfaces.web.entities.context_hybrid_simulator import HybridSimulatorContext
 from tvb.interfaces.web.entities.context_simulator import SimulatorContext
 from tvb.interfaces.web.structure import WebStructure
 from tvb.storage.h5.utils import string2bool
@@ -146,6 +147,7 @@ class ProjectController(BaseController):
         prj = common.get_current_project()
         if prj is not None and prj.id == int(project_id):
             SimulatorContext().clean_project_data_from_session()
+            HybridSimulatorContext.clean_project_data_from_session()
 
     @staticmethod
     def _has_edit_permission(user, project=None):

@@ -194,9 +194,10 @@ class ParticipationCoefficient(BaseBCT):
         return [measure_index]
 
 
-class ParticipationCoefficientSign(ParticipationCoefficient):
+class ParticipationCoefficientSign(BaseUndirected):
     """
     """
+    _ui_group = BCT_GROUP_CENTRALITY
     _ui_name = "Participation Coefficient Sign"
     _ui_description = bct.participation_coef_sign.__doc__
 

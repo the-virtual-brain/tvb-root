@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need to download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -23,7 +23,6 @@
 # https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications
 #
 #
-
 """
 Service layer, for executing computational steps in the application.
 Code related to launching/duplicating operations is placed here.
@@ -32,20 +31,21 @@ Code related to launching/duplicating operations is placed here.
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 import os
+import uuid
 from inspect import getmro
 from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.storage.storage_interface import StorageInterface
+
+from tvb.core.adapters.abcadapter import ABCAdapter, ABCAdapterForm
 from tvb.core.adapters.abcuploader import ABCUploaderForm
 from tvb.core.entities.filters.chain import FilterChain, InvalidFilterChainInput
 from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 from tvb.core.entities.model.model_project import User
 from tvb.core.entities.storage import dao
-from tvb.core.neotraits.forms import TraitDataTypeSelectField, TraitUploadField, TEMPORARY_PREFIX, UserSessionStrField
+from tvb.core.neotraits.forms import TEMPORARY_PREFIX, TraitDataTypeSelectField, TraitUploadField, UserSessionStrField
 from tvb.core.services.exceptions import OperationException
 from tvb.core.utils import date2string
-from tvb.storage.storage_interface import StorageInterface
 
 
 class AlgorithmService(object):
@@ -103,7 +103,10 @@ class AlgorithmService(object):
 
         return display_name
 
-    def fill_selectfield_with_datatypes(self, field, project_id, extra_conditions=None):
+    def fill_selectfield_with_datatypes(self,
+                                        field,
+                                        project_id,
+                                        extra_conditions=None):
         # type: (TraitDataTypeSelectField, int, list) -> None
         filtering_conditions = FilterChain()
 
@@ -112,17 +115,25 @@ class AlgorithmService(object):
 
         filtering_conditions += field.conditions
         filtering_conditions += extra_conditions
-        datatypes, _ = dao.get_values_of_datatype(project_id, field.datatype_index, filtering_conditions)
+        datatypes, _ = dao.get_values_of_datatype(project_id,
+                                                  field.datatype_index,
+                                                  filtering_conditions)
         datatype_options = []
         for datatype in datatypes:
-            display_name = self._prepare_dt_display_name(field.datatype_index, datatype)
+            display_name = self._prepare_dt_display_name(
+                    field.datatype_index, datatype)
             datatype_options.append((datatype, display_name))
         field.datatype_options = datatype_options
 
-    def _fill_form_with_datatypes(self, form, project_id, user, extra_conditions=None):
+    def _fill_form_with_datatypes(self,
+                                  form,
+                                  project_id,
+                                  user,
+                                  extra_conditions=None):
         for form_field in form.trait_fields:
             if isinstance(form_field, TraitDataTypeSelectField):
-                self.fill_selectfield_with_datatypes(form_field, project_id, extra_conditions)
+                self.fill_selectfield_with_datatypes(form_field, project_id,
+                                                     extra_conditions)
             elif isinstance(form_field, UserSessionStrField):
                 # set the value of input field on load from user session, if exists
                 # e.g. EBRAINS token
@@ -130,8 +141,12 @@ class AlgorithmService(object):
                 form_field.unvalidated_data = pref
         return form
 
-    def prepare_adapter_form(self, adapter_instance=None, form_instance=None,
-                             project_id=None, user=None, extra_conditions=None):
+    def prepare_adapter_form(self,
+                             adapter_instance=None,
+                             form_instance=None,
+                             project_id=None,
+                             user=None,
+                             extra_conditions=None):
         # type: (ABCAdapter, ABCAdapterForm, int, User, []) -> ABCAdapterForm
         form = None
         if form_instance is not None:
@@ -142,19 +157,23 @@ class AlgorithmService(object):
         if form is None:
             raise OperationException("Cannot prepare None form")
 
-        form = self._fill_form_with_datatypes(form, project_id, user, extra_conditions)
+        form = self._fill_form_with_datatypes(form, project_id, user,
+                                              extra_conditions)
         return form
 
     def _prepare_upload_post_data(self, form, post_data, project_id):
         for form_field in form.trait_fields:
-            if isinstance(form_field, TraitUploadField) and form_field.name in post_data:
+            if isinstance(form_field,
+                          TraitUploadField) and form_field.name in post_data:
                 field = post_data[form_field.name]
                 file_name = None
                 if hasattr(field, 'file') and field.file is not None:
                     project = dao.get_project_by_id(project_id)
-                    temporary_storage = self.storage_interface.get_temp_folder(project.name)
+                    temporary_storage = self.storage_interface.get_temp_folder(
+                            project.name)
                     try:
-                        uq_name = date2string(datetime.now(), True) + '_' + str(0)
+                        uq_name = date2string(datetime.now(),
+                                              True) + '_' + str(0)
                         file_name = TEMPORARY_PREFIX + uq_name + '_' + field.filename
                         file_name = os.path.join(temporary_storage, file_name)
 
@@ -169,7 +188,9 @@ class AlgorithmService(object):
 
     def fill_adapter_form(self, adapter_instance, post_data, project_id, user):
         # type: (ABCAdapter, dict, int, User) -> ABCAdapterForm
-        form = self.prepare_adapter_form(adapter_instance=adapter_instance, project_id=project_id, user=user)
+        form = self.prepare_adapter_form(adapter_instance=adapter_instance,
+                                         project_id=project_id,
+                                         user=user)
         if isinstance(form, ABCUploaderForm):
             self._prepare_upload_post_data(form, post_data, project_id)
 
@@ -179,7 +200,9 @@ class AlgorithmService(object):
             form.fill_from_post(post_data)
 
         for field in form.fields:
-            if isinstance(field, UserSessionStrField) and field.name in post_data and post_data[field.name]:
+            if isinstance(
+                    field, UserSessionStrField
+                    ) and field.name in post_data and post_data[field.name]:
                 # These attributes will end in session on the current user
                 setattr(user, field.key, post_data[field.name])
 
@@ -195,7 +218,8 @@ class AlgorithmService(object):
             adapter_instance = ABCAdapter.build_adapter(stored_adapter)
             return adapter_instance
         except Exception:
-            self.logger.exception('Not found:' + adapter_name + ' in:' + adapter_module)
+            self.logger.exception('Not found:' + adapter_name + ' in:' +
+                                  adapter_module)
             raise OperationException("Could not prepare " + adapter_name)
 
     @staticmethod
@@ -244,8 +268,9 @@ class AlgorithmService(object):
         groups_list = []
         for adapter in stored_adapters:
             # For empty groups, this time, we fill the actual adapter
-            group = AlgorithmTransientGroup(adapter.group_name or adapter.displayname,
-                                            adapter.group_description or adapter.description)
+            group = AlgorithmTransientGroup(
+                    adapter.group_name or adapter.displayname,
+                    adapter.group_description or adapter.description)
             group = AlgorithmService._find_group(groups_list, group)
             group.children.append(adapter)
         return categories[0], groups_list
@@ -271,18 +296,20 @@ class AlgorithmService(object):
         :return: dict(category_name: List AlgorithmTransientGroup)
         """
         categories = dao.get_launchable_categories()
-        datatype_instance, filtered_adapters, has_operations_warning = self._get_launchable_algorithms(datatype_gid,
-                                                                                                       categories)
+        datatype_instance, filtered_adapters, has_operations_warning = self._get_launchable_algorithms(
+                datatype_gid, categories)
 
         categories_dict = dict()
         for c in categories:
             categories_dict[c.id] = c.displayname
 
-        return self._group_adapters_by_category(filtered_adapters, categories_dict), has_operations_warning
+        return self._group_adapters_by_category(
+                filtered_adapters, categories_dict), has_operations_warning
 
     def _get_launchable_algorithms(self, datatype_gid, categories):
         datatype_instance = dao.get_datatype_by_gid(datatype_gid)
-        return self.get_launchable_algorithms_for_datatype(datatype_instance, categories)
+        return self.get_launchable_algorithms_for_datatype(
+                datatype_instance, categories)
 
     def get_launchable_algorithms_for_datatype(self, datatype, categories):
         data_class = datatype.__class__
@@ -290,22 +317,29 @@ class AlgorithmService(object):
         for one_class in getmro(data_class):
             # from tvb.basic.traits.types_mapped import MappedType
 
-            if issubclass(one_class, DataType) and one_class.__name__ not in all_compatible_classes:
+            if issubclass(
+                    one_class, DataType
+                    ) and one_class.__name__ not in all_compatible_classes:
                 all_compatible_classes.append(one_class.__name__)
 
-        self.logger.debug("Searching in categories: " + str(categories) + " for classes " + str(all_compatible_classes))
+        self.logger.debug("Searching in categories: " + str(categories) +
+                          " for classes " + str(all_compatible_classes))
         categories_ids = [categ.id for categ in categories]
-        launchable_adapters = dao.get_applicable_adapters(all_compatible_classes, categories_ids)
+        launchable_adapters = dao.get_applicable_adapters(
+                all_compatible_classes, categories_ids)
 
         filtered_adapters = []
         has_operations_warning = False
         for stored_adapter in launchable_adapters:
-            filter_chain = FilterChain.from_json(stored_adapter.datatype_filter)
+            filter_chain = FilterChain.from_json(
+                    stored_adapter.datatype_filter)
             try:
-                if not filter_chain or filter_chain.get_python_filter_equivalent(datatype):
+                if not filter_chain or filter_chain.get_python_filter_equivalent(
+                        datatype):
                     filtered_adapters.append(stored_adapter)
             except (TypeError, InvalidFilterChainInput):
-                self.logger.exception("Could not evaluate filter on " + str(stored_adapter))
+                self.logger.exception("Could not evaluate filter on " +
+                                      str(stored_adapter))
                 has_operations_warning = True
 
         return datatype, filtered_adapters, has_operations_warning
@@ -323,7 +357,8 @@ class AlgorithmService(object):
             else:
                 groups_list = []
                 categories_dict[category_name] = groups_list
-            group = AlgorithmTransientGroup(adapter.group_name, adapter.group_description)
+            group = AlgorithmTransientGroup(adapter.group_name,
+                                            adapter.group_description)
             group = self._find_group(groups_list, group)
             group.children.append(adapter)
         return categories_dict
@@ -344,21 +379,26 @@ class AlgorithmService(object):
         this selection will not be returned.
         :returns: List of ConnectivitySelection entities.
         """
-        return dao.get_selections_for_project(project_id, datatype_gid)
+        return dao.get_selections_for_project(project_id,
+                                              uuid.UUID(str(datatype_gid)).hex)
 
     @staticmethod
-    def save_measure_points_selection(ui_name, selected_nodes, datatype_gid, project_id):
+    def save_measure_points_selection(ui_name, selected_nodes, datatype_gid,
+                                      project_id):
         """
         Store in DB a ConnectivitySelection.
         """
-        select_entities = dao.get_selections_for_project(project_id, datatype_gid, ui_name)
+        datatype_gid = uuid.UUID(str(datatype_gid)).hex
+        select_entities = dao.get_selections_for_project(
+                project_id, datatype_gid, ui_name)
 
         if select_entities:
             # when the name of the new selection is within the available selections then update that selection:
             select_entity = select_entities[0]
             select_entity.selected_nodes = selected_nodes
         else:
-            select_entity = MeasurePointsSelection(ui_name, selected_nodes, datatype_gid, project_id)
+            select_entity = MeasurePointsSelection(ui_name, selected_nodes,
+                                                   datatype_gid, project_id)
 
         dao.store_entity(select_entity)
 
@@ -371,11 +411,13 @@ class AlgorithmService(object):
         return dao.get_stored_pse_filters(datatype_group_gid)
 
     @staticmethod
-    def save_pse_filter(ui_name, datatype_group_gid, threshold_value, applied_on):
+    def save_pse_filter(ui_name, datatype_group_gid, threshold_value,
+                        applied_on):
         """
         Store in DB a PSE filter.
         """
-        select_entities = dao.get_stored_pse_filters(datatype_group_gid, ui_name)
+        select_entities = dao.get_stored_pse_filters(datatype_group_gid,
+                                                     ui_name)
 
         if select_entities:
             # when the UI name is already in DB, update the existing entity
@@ -383,6 +425,7 @@ class AlgorithmService(object):
             select_entity.threshold_value = threshold_value
             select_entity.applied_on = applied_on  # this is the type, as in applied on size or color
         else:
-            select_entity = StoredPSEFilter(ui_name, datatype_group_gid, threshold_value, applied_on)
+            select_entity = StoredPSEFilter(ui_name, datatype_group_gid,
+                                            threshold_value, applied_on)
 
         dao.store_entity(select_entity)
