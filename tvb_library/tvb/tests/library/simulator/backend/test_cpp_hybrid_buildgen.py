@@ -5,7 +5,7 @@ What the feature guarantees, and what each test below pins down:
 
 * ``CMakeLists.txt`` runs ``dfungen --emit --strict --only-supported`` and
   compiles the emitted TU into ``_cpp_hybrid`` (``CPH_HAVE_BUILTIN_GEN=1``), so
-  the 25 supported stock generic-route models are served by kernels that ship
+  the 26 supported stock generic-route models are served by kernels that ship
   inside the extension.  A stock generic model therefore needs **no compiler
   at runtime** (a).
 * The extension's ``generic_model_table()`` is the authority for those models:
@@ -65,8 +65,13 @@ GENERIC_FIRST = dfungen._FIRST_MODEL_ID
 PROBE_NAME = "AaaProbe"
 #: the models the runtime fallback library is built with in these tests: the
 #: probe plus two stock generic models, so the fallback's own id assignment is
-#: observable without compiling all 27 kernels (which costs ~8 s of g++)
+#: observable without compiling all 28 supported models (which costs ~8 s of g++)
 RUNTIME_MODEL_NAMES = (PROBE_NAME, "CoombesByrne", "DumontGutkin")
+
+_SKIP_WASM_RUNTIME_COMPILE = pytest.mark.skipif(
+    sys.platform == "emscripten",
+    reason="Runtime C++ compilation via dfungen.generate_lib is unavailable in Emscripten/WASM",
+)
 
 _PROBE_SOURCE = '''
 """A user-defined model, for tests of the runtime dfun fallback."""
@@ -264,7 +269,7 @@ def _run_cpp(model):
 # (a) stock generic models need no compiler at runtime
 # ---------------------------------------------------------------------------
 
-@pytest.mark.parametrize("model_name", ["CoombesByrne", "DumontGutkin"])
+@pytest.mark.parametrize("model_name", ["CoombesByrne", "DumontGutkin", "GastSollaKennedy"])
 def test_stock_generic_model_needs_no_compiler(model_name, isolated_backend,
                                                monkeypatch):
     """A generic-route model runs with ``generate_lib`` unable to run.
@@ -322,9 +327,15 @@ def test_builtin_table_matches_emitted_metadata(emitted_stock):
     src, meta = emitted_stock
     table = _cpp_hybrid.generic_model_table()
 
+    from tvb.simulator.backend.nb_hybrid import _get_supported_models_classes
+    expected_n = sum(
+        1 for c in _get_supported_models_classes() if dfungen._declares_dfuns(c)
+    )
     assert table, "extension carries no built-in generic model table"
-    assert len(table) >= 25, (f"built-in coverage shrank: {len(table)} models "
-                              f"(the supported stock set has 25)")
+    assert len(table) == expected_n >= 26, (
+        f"built-in coverage shrank: {len(table)} models "
+        f"(the supported stock set has {expected_n})"
+    )
     assert set(table) == set(meta)
     assert len(table) == len(meta), (sorted(table), sorted(meta))
 
@@ -423,6 +434,7 @@ def test_hand_written_kernels_take_precedence_over_the_builtin_table():
 # (c) user models get ids strictly above the built-in range
 # ---------------------------------------------------------------------------
 
+@_SKIP_WASM_RUNTIME_COMPILE
 def test_user_model_ids_are_disjoint_from_builtin_range(probe_class,
                                                         isolated_backend,
                                                         small_runtime_model_set):
@@ -541,6 +553,7 @@ def test_emit_sources_gap_pads_the_dispatch_table(start_id,
 # (e) no built-in table keeps the original 100-based range
 # ---------------------------------------------------------------------------
 
+@_SKIP_WASM_RUNTIME_COMPILE
 def test_runtime_range_starts_at_100_without_builtin_kernels(isolated_backend,
                                                             small_runtime_model_set,
                                                             monkeypatch):
@@ -639,6 +652,7 @@ def test_matching_parameters_are_accepted():
 # (g) the runtime fallback still matches the numba reference
 # ---------------------------------------------------------------------------
 
+@_SKIP_WASM_RUNTIME_COMPILE
 def test_runtime_fallback_model_matches_numba(probe_class, isolated_backend,
                                               small_runtime_model_set,
                                               monkeypatch):
@@ -784,7 +798,7 @@ def test_builtin_table_signatures_match_model_dfun_signature(emitted_stock):
     ``model_dfun_signature`` is the single canonical function; the meta dict
     and the extension table were both produced by it at emission time, so
     recomputing it on a fresh instance of the same class must reproduce the
-    stored value for all 25 supported stock generic models (ids 100..124) -
+    stored value for all supported stock generic models (26 models, ids 100..125) -
     otherwise the guard would reject stock models.
     """
     _, meta = emitted_stock
@@ -873,6 +887,7 @@ def test_identical_class_is_accepted(shadow_pkg):
 # (i) the runtime library excludes built-in models (no dead stock kernels)
 # ---------------------------------------------------------------------------
 
+@_SKIP_WASM_RUNTIME_COMPILE
 def test_runtime_library_has_no_builtin_kernels(probe_class, isolated_backend,
                                                 small_runtime_model_set):
     """A user model triggers the runtime library; stock models stay out.
@@ -885,8 +900,12 @@ def test_runtime_library_has_no_builtin_kernels(probe_class, isolated_backend,
     kernel and gap-pads the built-in range with ``nullptr`` — the built-in
     ids fall through to the prebuilt extension's table.
     """
+    from tvb.simulator.backend.nb_hybrid import _get_supported_models_classes
+    expected_n = sum(
+        1 for c in _get_supported_models_classes() if dfungen._declares_dfuns(c)
+    )
     builtin = cphb._builtin_model_table()
-    assert len(builtin) >= 25
+    assert len(builtin) == expected_n >= 26
     builtin_ids = sorted(int(m["mid"]) for m in builtin.values())
     assert builtin_ids == list(range(GENERIC_FIRST, GENERIC_FIRST +
                                      len(builtin_ids)))
@@ -932,6 +951,7 @@ def test_runtime_library_has_no_builtin_kernels(probe_class, isolated_backend,
                           builtin["CoombesByrne"]["parm_names"]]
 
 
+@_SKIP_WASM_RUNTIME_COMPILE
 def test_generate_lib_exclude_filters_discovered_models(isolated_backend,
                                                         small_runtime_model_set):
     """``generate_lib(exclude=...)`` drops the named models before emission.
@@ -981,7 +1001,7 @@ def test_generate_lib_exclude_filters_discovered_models(isolated_backend,
 # (j) supported-set scoping (handoff item 6, option 2)
 # ---------------------------------------------------------------------------
 # The build emits only the models the hybrid backends actually support (the
-# 27 classes of nb_hybrid._get_supported_models_classes) -- CMake passes
+# 28 classes of nb_hybrid._get_supported_models_classes) -- CMake passes
 # ``--only-supported`` -- so the built-in table is exactly the documented
 # support list and unsupported model code in the tree cannot break or slow
 # the build.  The runtime fallback keeps full discovery, so a dfun model
@@ -1057,6 +1077,7 @@ def test_supported_only_strict_mode_stays_loud_but_scoped(monkeypatch):
     assert poison in str(excinfo.value)
 
 
+@_SKIP_WASM_RUNTIME_COMPILE
 def test_unsupported_stock_model_still_runs_via_runtime_fallback(
         isolated_backend):
     """A dfun model outside the supported set still simulates.
@@ -1064,7 +1085,7 @@ def test_unsupported_stock_model_still_runs_via_runtime_fallback(
     Option-2 scoping removes non-supported models from the built-in table;
     support itself is unchanged because the runtime fallback keeps full
     discovery.  DecoBalancedExcInh -- an in-tree dfun model that is not one
-    of the supported 27 -- must run through the runtime-compiled library.
+    of the supported 28 -- must run through the runtime-compiled library.
     """
     table = cphb._builtin_model_table()
     assert "DecoBalancedExcInh" not in table
@@ -1123,3 +1144,10 @@ def test_generated_kernels_read_node_offset_parameters(emitted_stock):
     assert re.search(r"= \(double\)pk\[", src), \
         "generated kernel does not load parameters through pk"
     assert "(void)pk;" not in src
+
+
+def test_generate_lib_raises_in_emscripten(monkeypatch, tmp_path):
+    """Runtime g++/ctypes compilation is unavailable under Emscripten/WASM."""
+    monkeypatch.setattr(sys, "platform", "emscripten")
+    with pytest.raises(NotImplementedError, match="Emscripten"):
+        dfungen.generate_lib(tmp_path)

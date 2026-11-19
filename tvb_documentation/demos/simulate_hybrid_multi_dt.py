@@ -18,9 +18,9 @@
 # - that the numba reference backend (`nb_hybrid`) and the compiled C++
 #   backend (`cpp_hybrid`) agree to tolerance on the same multi-dt network.
 #
-# The semantics demonstrated here are the pinned specification in
-# `tvb_library/tvb/simulator/backend/cpp_hybrid/parity_audit.md` §6
-# ("Multi-dt support"); both backends implement exactly those decisions.
+# Both the Numba (`nb_hybrid`) and compiled C++ (`cpp_hybrid`) backends
+# follow these multirate scheduling, coupling-interpolation, and master-grid
+# monitoring rules so results remain consistent across backends.
 
 # %% Imports
 import warnings
@@ -28,8 +28,6 @@ warnings.filterwarnings('ignore')   # suppress experimental-API warnings
 
 import numpy as np
 import scipy.sparse as sp
-import matplotlib
-matplotlib.use('Agg')   # headless-safe when run as a plain script
 import matplotlib.pyplot as plt
 
 from tvb.simulator.models import MontbrioPazoRoxin, Linear
@@ -308,9 +306,6 @@ plt.show()
 #   requires all merged subnetworks to share the same dt.
 # - The **kernel caches** (numba disk/in-process and the C++ topology key)
 #   include the dt vector, so changing any dt recompiles.
-#
-# The full pinned specification — including the RNG draw order, resume /
-# snapshot semantics and the cache-key contract — is
-# `tvb_library/tvb/simulator/backend/cpp_hybrid/parity_audit.md` §6, and the
-# parity tests live in
-# `tvb_library/tvb/tests/library/simulator/backend/test_cpp_hybrid_multi_dt.py`.
+# - **Single-dt compatibility**: when every subnetwork uses the same dt,
+#   `dt0` equals that common step (`k_j = 1` for all subnetworks), reducing
+#   seamlessly to standard single-rate execution.

@@ -11,6 +11,7 @@ Mirrors the :class:`~tvb.simulator.backend.nb_hybrid.NbHybridBackend` API.
 from __future__ import annotations
 
 import dataclasses
+import sys
 from typing import List, Optional
 
 import numpy as np
@@ -79,7 +80,7 @@ _MODEL_IDS = {
 # per-model parameter attribute order (must match the C++ dfuns; this is the
 # nb_hybrid gufunc argument order for each model)
 _MODEL_PARM_NAMES = {
-    "MontbrioPazoRoxin": ["tau", "I", "Delta", "J", "eta", "cr"],
+    "MontbrioPazoRoxin": ["tau", "I", "Delta", "J", "eta", "cr", "cv"],
     "Generic2dOscillator": ["tau", "I", "a", "b", "c", "d", "e", "f", "g",
                             "beta", "alpha", "gamma"],
     "Kuramoto": ["omega"],
@@ -234,6 +235,11 @@ class SubnetworkInfo:
     def has_stimulus(self):
         return bool(self.stimuli)
     parm_index: dict = dataclasses.field(default_factory=dict)
+    integ_id: int = 1
+    sv_lo: Optional[np.ndarray] = None
+    sv_hi: Optional[np.ndarray] = None
+    clamp_indices: Optional[np.ndarray] = None
+    clamp_values: Optional[np.ndarray] = None
 
 
 @dataclasses.dataclass
@@ -336,9 +342,11 @@ class CompiledCppSim:
         self._sim = sim
         self._width = width
         self._bold_states = None
+        self._kmon_armed_keys = set()
 
     def warmup(self) -> float:
         return 0.0  # no JIT: nothing to warm up
+
     def run(
         self,
         nstep: int,
@@ -346,6 +354,8 @@ class CompiledCppSim:
         initial_states: Optional[list] = None,
         monitors: Optional[list] = None,
         return_snapshot: bool = False,
+        _step_offset: int = 0,
+        _resuming: bool = False,
         **kwargs,
     ):
         """Run the simulation for *nstep* steps.
@@ -361,6 +371,8 @@ class CompiledCppSim:
             )
         if monitors is not None:
             self._backend._validate_monitors(monitors, chunk_size)
+        if kwargs.get("_monitor_states") is not None:
+            self._bold_states = _copy_monitor_states(kwargs["_monitor_states"])
         execution_chunk_size = chunk_size
         kernel_monitors = monitors
         has_bold = has_temporal_average = False
@@ -371,10 +383,26 @@ class CompiledCppSim:
             has_temporal_average = any(
                 isinstance(m, TemporalAverage) for m in monitors)
             if self._backend.enable_kernel_monitors:
-                kernel_collect = [
-                    (mi, m) for mi, m in enumerate(monitors)
-                    if self._backend._kernel_collectable(m)
-                ]
+                for mi, m in enumerate(monitors):
+                    if not self._backend._kernel_collectable(m):
+                        continue
+                    mkey = (mi, type(m).__name__)
+                    if isinstance(m, Bold):
+                        has_py_bold = (
+                            self._bold_states is not None
+                            and any(
+                                k[0] == "bold" and k[1] == mi
+                                for k in self._bold_states
+                            )
+                        )
+                        if has_py_bold:
+                            continue
+                        if ((return_snapshot or _resuming)
+                                and mkey not in self._kmon_armed_keys):
+                            continue
+                    elif _resuming and mkey not in self._kmon_armed_keys:
+                        continue
+                    kernel_collect.append((mi, m))
             if has_bold or has_temporal_average:
                 # Stateful monitors consume every observed state.
                 execution_chunk_size = 1
@@ -385,11 +413,15 @@ class CompiledCppSim:
             # The kernel engines read per-step rows; without chunk_size == 1
             # fall back to the Python reference path.
             kernel_collect = []
+        self._kmon_armed_keys = {
+            (mi, type(m).__name__) for mi, m in kernel_collect
+        }
         outputs, kernel_streams = self._backend._run_compiled(
             self._sim, self._analysis, self._network_set,
             nstep=nstep, chunk_size=execution_chunk_size,
             initial_states=initial_states, monitors=kernel_monitors,
             width=self._width, kernel_collect=kernel_collect,
+            _skip_init=_resuming, _step_offset=_step_offset,
         )
         if monitors is not None:
             bold_raw_outputs = outputs if has_bold else None
@@ -408,10 +440,15 @@ class CompiledCppSim:
             return outputs
         snap = {
             "states": [
-                _squeeze_lane(np.asarray(self._sim.get_subnet_state(i)))
+                _squeeze_lane(np.asarray(self._sim.get_subnet_state(i))).copy()
                 for i in range(len(self._analysis.subnets))
             ],
-            "buffers": {},
+            "buffers": {
+                sn.name: np.asarray(
+                    self._sim.get_subnet_buf(i), dtype=np.float32
+                ).copy()
+                for i, sn in enumerate(self._analysis.subnets)
+            },
             "step": int(self._sim.t_abs()),
             "rng_states": self._backend._get_rng_states(
                 self._analysis, self._network_set,
@@ -432,9 +469,38 @@ class CompiledCppSim:
         states = snapshot["states"]
         self._backend._init_states(
             self._sim, self._analysis, self._network_set, states, self._width)
-        outs = self.run(nstep, chunk_size, states, monitors,
-                        return_snapshot=return_snapshot)
-        return outs
+        buffers = snapshot.get("buffers") or {}
+        for i, sn in enumerate(self._analysis.subnets):
+            if sn.name in buffers:
+                self._sim.set_subnet_buf(
+                    i, np.ascontiguousarray(buffers[sn.name], dtype=np.float32))
+        step_offset = int(snapshot.get("step", 0))
+        self._sim.set_t_abs(step_offset)
+        rng_states = snapshot.get("rng_states")
+        if rng_states is not None:
+            stoch_idx = 0
+            for sn_info in self._analysis.subnets:
+                if sn_info.is_stochastic:
+                    sn_obj = next(
+                        s for s in self._network_set.subnets
+                        if s.name == sn_info.name
+                    )
+                    sn_obj.scheme.noise.random_stream.set_state(
+                        rng_states[stoch_idx]
+                    )
+                    stoch_idx += 1
+        if snapshot.get("monitor_states") is not None:
+            self._bold_states = _copy_monitor_states(
+                snapshot.get("monitor_states"))
+        return self.run(
+            nstep,
+            chunk_size,
+            initial_states=None,
+            monitors=monitors,
+            return_snapshot=return_snapshot,
+            _step_offset=step_offset,
+            _resuming=True,
+        )
 
 
 class CppHybridBackend:
@@ -532,18 +598,24 @@ class CppHybridBackend:
                 )
         for p in self._all_projections(network_set):
             cfun_name = type(p.cfun).__name__ if p.cfun is not None else None
-            if cfun_name is None:
-                continue  # passthrough projections are supported
-            if cfun_name not in _CFUN_IDS:
+            if cfun_name is not None and cfun_name not in _CFUN_IDS:
                 raise NotImplementedError(
                     f"CppHybridBackend does not support coupling {cfun_name}. "
                     f"Supported: {sorted(_CFUN_IDS)}"
                 )
-            if np.size(p.target_cvar) != 1:
-                raise NotImplementedError(
-                    "CppHybridBackend currently supports a single target "
-                    "cvar per projection."
+            n_src = np.size(p.source_cvar)
+            n_tgt = np.size(p.target_cvar)
+            if n_src < 1 or n_tgt < 1:
+                raise ValueError(
+                    "Projection must define non-empty source_cvar and target_cvar."
                 )
+            if n_src > 1 and n_tgt > 1 and n_src != n_tgt:
+                cfun_type = _cfun_type(p)
+                if cfun_type not in ("sigmoidal_jr", "pre_sigmoidal_dynamic"):
+                    raise NotImplementedError(
+                        f"CppHybridBackend does not support unmatched "
+                        f"multi-to-multi cvar mapping ({n_src} -> {n_tgt})."
+                    )
 
     @staticmethod
     def _all_projections(network_set: NetworkSet) -> list:
@@ -565,6 +637,7 @@ class CppHybridBackend:
             model_id, n_parm, n_cvar_m, n_svar_m, parm_names = \
                 self._model_key(sn.model)
             params = self._params_for_model(sn.model, parm_names)  # (n_parm,)
+            n_svar = int(sn.model.nvar) if n_svar_m is None else n_svar_m
             svar_names = tuple(str(n) for n in sn.model.state_variables)
             # voi entries: (kind, a, b) with kind 0 = state var a,
             # kind 1 = derived difference a - b (nb_hybrid parses simple
@@ -581,6 +654,37 @@ class CppHybridBackend:
                     else:
                         voi.extend([0, svar_names.index(expr), 0])
             is_stoch = isinstance(sn.scheme, (HeunStochastic, EulerStochastic))
+            integ_id = 1 if isinstance(
+                sn.scheme, (HeunDeterministic, HeunStochastic)) else 0
+            sv_lo = sv_hi = None
+            svb = getattr(sn.model, "state_variable_boundaries", None)
+            if svb:
+                sv_lo = np.full(n_svar, -np.inf, dtype=np.float32)
+                sv_hi = np.full(n_svar, np.inf, dtype=np.float32)
+                _f32_max = float(np.finfo(np.float32).max)
+                for sv_name, bounds in svb.items():
+                    idx = svar_names.index(sv_name)
+                    if (bounds[0] is not None and np.isfinite(bounds[0])
+                            and abs(float(bounds[0])) <= _f32_max):
+                        sv_lo[idx] = np.float32(bounds[0])
+                    if (bounds[1] is not None and np.isfinite(bounds[1])
+                            and abs(float(bounds[1])) <= _f32_max):
+                        sv_hi[idx] = np.float32(bounds[1])
+            clamp_indices = clamp_values = None
+            if getattr(sn.scheme, "clamped_state_variable_values", None) is not None:
+                cidx = np.asarray(
+                    sn.scheme.clamped_state_variable_indices, dtype=np.int32
+                ).ravel()
+                if cidx.size > 0:
+                    clamp_indices = cidx
+                    values = np.asarray(
+                        sn.scheme.clamped_state_variable_values,
+                        dtype=np.float32,
+                    )
+                    clamp_values = np.broadcast_to(
+                        values,
+                        (len(clamp_indices), sn.nnodes, sn.model.number_of_modes),
+                    ).copy()
             model_name = type(sn.model).__name__
             nsig = None
             seed = 0
@@ -593,7 +697,7 @@ class CppHybridBackend:
                 stimuli=list(sn.stimuli or []),
                 name=sn.name,
                 n_nodes=int(sn.nnodes),
-                n_svar=int(sn.model.nvar) if n_svar_m is None else n_svar_m,
+                n_svar=n_svar,
                 n_parm=len(parm_names),
                 n_modes=int(getattr(sn.model, "number_of_modes", 1)),
                 n_cvar=(int(sn.model.cvar.size) if n_cvar_m is None
@@ -612,10 +716,15 @@ class CppHybridBackend:
                 dt=float(sn.scheme.dt),
                 k=max(1, int(round(float(sn.scheme.dt) / dt0))),
                 parm_index={k: i for i, k in enumerate(parm_names)},
+                integ_id=integ_id,
+                sv_lo=sv_lo,
+                sv_hi=sv_hi,
+                clamp_indices=clamp_indices,
+                clamp_values=clamp_values,
             ))
 
         projections = []
-        inter_set = {id(p) for p in (network_set.projections or [])}
+        tgt_models = {sn.name: sn.model for sn in network_set.subnets}
         entries = []
         for sn in network_set.subnets:
             for p in (sn.projections or []):
@@ -629,12 +738,9 @@ class CppHybridBackend:
             idelays = np.atleast_1d(p.idelays).astype(np.int32)
             idelays = idelays[nz_mask] if idelays.size else idelays
             horizon = int(p._horizon)
-            # source_cvar indexes the source model's state variables directly
             # source_cvar entries index state variables directly
             src_cvars_list = [int(v) for v in np.atleast_1d(p.source_cvar)]
-            src_cvar_state = src_cvars_list[0]
-            n_src_cvars = len(src_cvars_list)
-            tgt_cvar = int(np.atleast_1d(p.target_cvar)[0])
+            target_cvars_list = [int(v) for v in np.atleast_1d(p.target_cvar)]
             cfun_name = type(p.cfun).__name__ if p.cfun is not None else None
             if cfun_name is None:
                 cfun_id, cfun_params, n_cfun_parm = (
@@ -642,6 +748,9 @@ class CppHybridBackend:
             else:
                 cfun_id = _CFUN_TYPE_IDS[_cfun_type(p)]
                 cfun_params = self._cfun_params(p.cfun)
+                if cfun_id == 8 and getattr(p.cfun, "use_classic", 1):
+                    cfun_params = cfun_params.copy()
+                    cfun_params[0] *= cfun_params[0]
                 n_cfun_parm = len(_CPP_CFUN_PARAM_ATTRS[cfun_name])
             if is_inter:
                 pr_name = (getattr(p, "name", None)
@@ -651,10 +760,6 @@ class CppHybridBackend:
                 pr_name = getattr(p, "name", None) or "intra"
                 lookup = (f"{tgt_name}.{pr_name}"
                           if pr_name == "intra" else pr_name)
-            # target state var for per-edge pre(x_i): model.cvar[target_cvar]
-            tgt_state_cvar = int(
-                np.asarray(p.target.model.cvar, dtype=np.int32)[tgt_cvar]
-            ) if is_inter else 0
             if is_inter:
                 _mm = getattr(p, "mode_map", None)
                 mode_map = (
@@ -666,31 +771,67 @@ class CppHybridBackend:
                 )
             else:
                 mode_map = None
-            projections.append(ProjectionInfo(
-                ts=self._target_scales(p),
-                target_scales=self._target_scales_raw(p),
-                target_cvars_list=[int(v) for v in np.atleast_1d(p.target_cvar)],
-                tgt_state_cvar=tgt_state_cvar,
-                mode_map=mode_map,
-                name=pr_name,
-                lookup=lookup,
-                is_inter=is_inter,
-                src_sn=subnet_index[src_name],
-                tgt_sn=subnet_index[tgt_name],
-                w=weights_csr.data.astype(np.float32),
-                idx=weights_csr.indices.astype(np.uint32),
-                ptr=weights_csr.indptr.astype(np.uint32),
-                idelays=idelays.astype(np.uint32),
-                horizon=horizon,
-                cfun_id=cfun_id,
-                src_cvar=src_cvar_state,
-                src_cvars_list=src_cvars_list,
-                n_src_cvars=n_src_cvars,
-                tgt_cvar=tgt_cvar,
-                n_cfun_parm=n_cfun_parm,
-                scale=float(p.scale),
-                cfun_params=cfun_params,
-            ))
+
+            tgt_model = p.target.model if is_inter else tgt_models[tgt_name]
+            tgt_model_cvar = np.asarray(tgt_model.cvar, dtype=np.int32)
+            tsc = self._target_scales_raw(p)
+            is_collapsing = cfun_id in (6, 9)  # sigmoidal_jr, pre_sigmoidal_dynamic
+            w_data = weights_csr.data.astype(np.float32)
+            w_idx = weights_csr.indices.astype(np.uint32)
+            w_ptr = weights_csr.indptr.astype(np.uint32)
+            del_arr = idelays.astype(np.uint32)
+
+            if len(target_cvars_list) == 1:
+                tgt = target_cvars_list[0]
+                tgt_state_cvar = int(tgt_model_cvar[tgt])
+                ts = (float(tsc[0]) if tsc is not None and tsc.size > 0
+                      else 1.0)
+                if is_collapsing or len(src_cvars_list) == 1:
+                    channel_pairs = [(list(src_cvars_list), tgt, ts, tgt_state_cvar)]
+                else:
+                    channel_pairs = [
+                        ([sc], tgt, ts, tgt_state_cvar)
+                        for sc in src_cvars_list
+                    ]
+            else:
+                channel_pairs = []
+                for ch, tgt in enumerate(target_cvars_list):
+                    if is_collapsing or len(src_cvars_list) == 1:
+                        srcs = list(src_cvars_list)
+                    else:
+                        srcs = [src_cvars_list[ch]]
+                    ts = (float(tsc[ch]) if tsc is not None and ch < tsc.size
+                          else (float(tsc[0]) if tsc is not None and tsc.size == 1
+                                else 1.0))
+                    tgt_state_cvar = int(tgt_model_cvar[tgt])
+                    channel_pairs.append((srcs, tgt, ts, tgt_state_cvar))
+
+            for srcs, tgt, ts, tgt_state_cvar in channel_pairs:
+                projections.append(ProjectionInfo(
+                    ts=ts,
+                    target_scales=tsc,
+                    target_cvars_list=[tgt],
+                    tgt_state_cvar=tgt_state_cvar,
+                    mode_map=mode_map,
+                    name=pr_name,
+                    lookup=lookup,
+                    is_inter=is_inter,
+                    src_sn=subnet_index[src_name],
+                    tgt_sn=subnet_index[tgt_name],
+                    w=w_data,
+                    idx=w_idx,
+                    ptr=w_ptr,
+                    idelays=del_arr,
+                    horizon=horizon,
+                    cfun_id=cfun_id,
+                    src_cvar=srcs[0],
+                    src_cvars_list=srcs,
+                    n_src_cvars=len(srcs),
+                    tgt_cvar=tgt,
+                    n_cfun_parm=n_cfun_parm,
+                    scale=float(p.scale),
+                    cfun_params=cfun_params,
+                ))
 
         # per-source-subnet horizon = max outgoing projection horizon
         for pr in projections:
@@ -920,12 +1061,21 @@ class CppHybridBackend:
         import hashlib
         parts = []
         for sn in analysis.subnets:
-            parts.append((sn.model_name, sn.n_nodes, sn.n_modes,
-                          sn.n_svar, sn.n_cvar, sn.horizon, sn.dt, sn.k))
+            parts.append((
+                sn.model_name, sn.n_nodes, sn.n_modes,
+                sn.n_svar, sn.n_cvar, sn.horizon, sn.dt, sn.k,
+                sn.integ_id,
+                tuple(sn.sv_lo.tolist()) if sn.sv_lo is not None else None,
+                tuple(sn.sv_hi.tolist()) if sn.sv_hi is not None else None,
+                (tuple(sn.clamp_indices.tolist())
+                 if sn.clamp_indices is not None else None),
+            ))
         for pr in analysis.all_projections:
-            parts.append((pr.src_sn, pr.tgt_sn, pr.cfun_id,
-                          pr.n_tgt_nodes, tuple(pr.src_cvars_list),
-                          pr.tgt_cvar))
+            parts.append((
+                pr.src_sn, pr.tgt_sn, pr.cfun_id,
+                pr.n_tgt_nodes, tuple(pr.src_cvars_list),
+                pr.tgt_cvar, pr.tgt_state_cvar, pr.ts,
+            ))
         # cache key only, not security-sensitive (Sonar)
         return hashlib.md5(repr(parts).encode(),
                            usedforsecurity=False).hexdigest()
@@ -936,45 +1086,40 @@ class CppHybridBackend:
             sim.add_subnet(
                 sn.n_nodes, sn.n_svar, sn.n_parm, sn.n_cvar,
                 sn.model_id, sn.horizon, sn.n_modes,
-                k=sn.k, dt=float(sn.dt),
+                k=sn.k, dt=float(sn.dt), integ_id=sn.integ_id,
             )
             sim.set_voi_specs(i, sn.voi)
+            if sn.sv_lo is not None:
+                sim.set_subnet_bounds(
+                    i,
+                    np.ascontiguousarray(sn.sv_lo, dtype=np.float32),
+                    np.ascontiguousarray(sn.sv_hi, dtype=np.float32),
+                )
+            if sn.clamp_indices is not None:
+                sim.set_subnet_clamps(
+                    i,
+                    np.ascontiguousarray(sn.clamp_indices, dtype=np.int32),
+                    np.ascontiguousarray(sn.clamp_values, dtype=np.float32),
+                )
         integ_id = 1 if isinstance(
             network_set.subnets[0].scheme,
             (HeunDeterministic, HeunStochastic)) else 0
         sim.set_opts(integ_id, analysis.dt, 1)
-        pix = 0
         for i, pr in enumerate(analysis.projections):
-            tsc = pr.target_scales
-            srcs_all = pr.src_cvars_list if pr.src_cvars_list else [pr.src_cvar]
-            n_src = len(srcs_all)
-            split = (tsc is not None and int(tsc.size) > 1
-                     and int(tsc.size) == n_src
-                     and pr.target_cvars_list and len(pr.target_cvars_list) == n_src)
-            channels = list(range(n_src)) if split else [None]
-            for ch in channels:
-                if ch is not None:
-                    srcs = [srcs_all[ch]]
-                    tgt = pr.target_cvars_list[ch]
-                    tsp = float(tsc[ch])
-                else:
-                    srcs = srcs_all
-                    tgt = pr.tgt_cvar
-                    tsp = float(getattr(pr, "ts", 1.0))
-                sim.add_projection(
-                    pr.src_sn, pr.tgt_sn, pr.w, pr.idx, pr.ptr,
-                    np.asarray(pr.idelays, dtype=np.uint32), pr.cfun_id,
-                    np.asarray(srcs, dtype=np.int32),
-                    tgt, pr.n_cfun_parm, np.float32(pr.scale),
-                    np.float32(tsp),
-                    int(getattr(pr, "tgt_state_cvar", 0)),
-                    pr.mode_map,
-                )
-                cp = np.broadcast_to(
-                    pr.cfun_params[:, None], (max(pr.n_cfun_parm, 0), width)
-                ).copy() if pr.n_cfun_parm else np.zeros((0, width), np.float32)
-                sim.set_cfun_params(pix, cp)
-                pix += 1
+            srcs = pr.src_cvars_list if pr.src_cvars_list else [pr.src_cvar]
+            sim.add_projection(
+                pr.src_sn, pr.tgt_sn, pr.w, pr.idx, pr.ptr,
+                np.asarray(pr.idelays, dtype=np.uint32), pr.cfun_id,
+                np.asarray(srcs, dtype=np.int32),
+                pr.tgt_cvar, pr.n_cfun_parm, np.float32(pr.scale),
+                np.float32(getattr(pr, "ts", 1.0)),
+                int(getattr(pr, "tgt_state_cvar", 0)),
+                pr.mode_map,
+            )
+            cp = np.broadcast_to(
+                pr.cfun_params[:, None], (max(pr.n_cfun_parm, 0), width)
+            ).copy() if pr.n_cfun_parm else np.zeros((0, width), np.float32)
+            sim.set_cfun_params(i, cp)
         for i, sn in enumerate(analysis.subnets):
             pp = np.broadcast_to(
                 sn.params[None, :, None],
@@ -998,11 +1143,12 @@ class CppHybridBackend:
             # core expects (n_svar, n_node, n_modes, W)
             sim.set_subnet_state(i, np.ascontiguousarray(x0))
 
-    def _build_stim_arrays(self, analysis, nstep, width):
+    def _build_stim_arrays(self, analysis, nstep, width, step_offset=0):
         """Per-subnetwork stimulus arrays, layout (nstep, n_cvar, n_nodes, W).
 
         Stimulus for step t (0-based within the run) is evaluated at global
-        step t+1, matching the nb_hybrid convention (stim[t - offset - 1]).
+        step step_offset + t + 1, matching the nb_hybrid convention
+        (stim[t - offset - 1]).
         Multi-dt decision 7: the pattern is evaluated on the master dt0 grid
         (index = master step), via nb_hybrid._stim_master_grid.
         """
@@ -1014,17 +1160,19 @@ class CppHybridBackend:
             nm = sn.n_modes
             arr = np.zeros(
                 (nstep, sn.n_cvar, sn.n_nodes, nm, width), np.float32)
-            for stim in (_stim_master_grid(s, analysis.dt, int(nstep))
-                         for s in sn.stimuli):
+            for stim in (_stim_master_grid(
+                    s, analysis.dt, step_offset + int(nstep))
+                    for s in sn.stimuli):
                 target_slots = np.asarray(stim.target_cvar).astype(np.intp)
-                for step_idx in range(1, nstep + 1):
+                for step_idx in range(step_offset + 1,
+                                      step_offset + int(nstep) + 1):
                     sc = np.asarray(stim.get_coupling(step_idx), dtype=np.float32)
                     if sc.ndim == 2:
                         sc = sc[:, :, np.newaxis]
                     sc = np.broadcast_to(
                         sc, (target_slots.size, sn.n_nodes, nm))
                     for li, slot in enumerate(target_slots):
-                        arr[step_idx - 1, slot, :, :, 0] += sc[li]
+                        arr[step_idx - step_offset - 1, slot, :, :, 0] += sc[li]
             if width > 1:
                 arr = np.repeat(arr, width, axis=4)
             stims.append(np.ascontiguousarray(arr))
@@ -1125,7 +1273,7 @@ class CppHybridBackend:
     def _run_compiled(
         self, sim, analysis, network_set, nstep=100, chunk_size=None,
         initial_states=None, monitors=None, width=1, _init_only=False,
-        kernel_collect=None,
+        kernel_collect=None, _skip_init=False, _step_offset=0,
     ):
         """Run the C++ core and return ``(results, kernel_streams)``.
 
@@ -1151,7 +1299,8 @@ class CppHybridBackend:
             atts = [self._monitor_attach_spec(mi, m, n_voi, analysis.dt)
                     for mi, m in kernel_collect]
             sim.set_monitors(si, atts)
-        sim.monitor_begin_run()
+        if not _skip_init:
+            sim.monitor_begin_run()
         K = len(kernel_collect)
 
         # per-chunk stochastic noise generation (Python-side RNG, like nb_hybrid)
@@ -1167,9 +1316,11 @@ class CppHybridBackend:
             for sn in stoch:
                 rngs.append(sn_objs[sn.name].scheme.noise.random_stream)
 
-        self._init_states(sim, analysis, network_set, initial_states, width)
+        if not _skip_init:
+            self._init_states(sim, analysis, network_set, initial_states, width)
 
-        stims = self._build_stim_arrays(analysis, int(nstep), width)
+        stims = self._build_stim_arrays(
+            analysis, int(nstep), width, step_offset=_step_offset)
         # Align stimulus arrays with subnetwork order (None where absent);
         # the core accepts a per-subnet sequence.
         stim_iter = iter(stims)
@@ -1183,6 +1334,7 @@ class CppHybridBackend:
             # chunk-wise loop to draw noise per chunk (sequential RNG stream)
             all_outs = None
             remaining = int(nstep)
+            done = 0
             chunk_results = []
             while remaining > 0:
                 this_chunk = min(remaining, max(cs, 1))
@@ -1197,8 +1349,15 @@ class CppHybridBackend:
                         np.repeat(dw[..., np.newaxis], width,
                                   axis=4)).astype(np.float32)
                     noise_by_sn[analysis.subnets.index(sn)] = nz
-                outs = sim.run(this_chunk, 0, noise_by_sn, stim_obj)
+                chunk_stim = (
+                    [None if sa is None
+                     else np.ascontiguousarray(sa[done:done + this_chunk])
+                     for sa in stim_by_sn]
+                    if stim_obj is not None else None
+                )
+                outs = sim.run(this_chunk, cs, noise_by_sn, chunk_stim)
                 chunk_results.append(outs)
+                done += this_chunk
                 remaining -= this_chunk
             # concatenate chunk outputs along the chunk axis
             n_out = len(chunk_results[0])
@@ -1219,16 +1378,17 @@ class CppHybridBackend:
             # float32 quantization, parity_audit.md section 6): the nb
             # template emits the per-chunk midpoint as ((2*t_global +
             # this_chunk - 1) / 2) * float32(dt0) with 1-based t_global =
-            # c*cs + 1, i.e. the mean of the first and last master tick of
-            # the chunk, scaled by float64(float32(dt0)) - the float32
-            # dt0 the nb reference multiplies in, quantized once.  For
-            # chunk_size == 1 this is exactly t * dt0 on the master grid,
+            # step_offset + c*cs + 1, i.e. the mean of the first and last
+            # master tick of the chunk, scaled by float64(float32(dt0)) -
+            # the float32 dt0 the nb reference multiplies in, quantized once.
+            # For chunk_size == 1 this is exactly t * dt0 on the master grid,
             # which is what the multi-dt oracle and the nb backend emit.
             # A partial final chunk uses its own bounds (like nb and the
             # naive oracle); the fixed (cs+1)/2 offset would be wrong there.
             n_chunks = tavg.shape[0]
-            steps_lo = np.arange(n_chunks) * cs + 1
-            steps_hi = np.minimum(steps_lo - 1 + cs, int(nstep))
+            steps_lo = _step_offset + np.arange(n_chunks) * cs + 1
+            steps_hi = _step_offset + np.minimum(
+                np.arange(n_chunks) * cs + cs, int(nstep))
             dt0_q = float(np.float32(analysis.dt))
             times = (steps_lo + steps_hi) * 0.5 * dt0_q
             results.append((times, tavg, ctavg))
@@ -1289,16 +1449,20 @@ class CppHybridBackend:
             vals = group_values[:, d]  # (group_size,)
             if tgt[0] == "cfun":
                 _, pname, pidx = tgt
-                pi = next(
-                    i for i, pr in enumerate(analysis.projections)
-                    if pr.name == pname or pr.lookup == pname
-                    or pr.lookup.endswith("." + pname)
-                )
-                pr = analysis.projections[pi]
-                cp = np.broadcast_to(
-                    pr.cfun_params[:, None], (pr.n_cfun_parm, width)).copy()
-                cp[pidx, :group_size] = vals
-                sim.set_cfun_params(pi, cp)
+                matched = False
+                for pi, pr in enumerate(analysis.projections):
+                    if (pr.name == pname or pr.lookup == pname
+                            or pr.lookup.endswith("." + pname)):
+                        matched = True
+                        if pr.n_cfun_parm:
+                            cp = np.broadcast_to(
+                                pr.cfun_params[:, None],
+                                (pr.n_cfun_parm, width),
+                            ).copy()
+                            cp[pidx, :group_size] = vals
+                            sim.set_cfun_params(pi, cp)
+                if not matched:
+                    raise ValueError(f"Projection '{pname}' not found in sweep")
             else:
                 _, sname, attr = tgt
                 si = next(i for i, sn in enumerate(analysis.subnets)
@@ -1338,7 +1502,7 @@ class CppHybridBackend:
         Parameters mirror :meth:`NbHybridBackend.sweep`.
         """
         import time as _time_mod
-        from concurrent.futures import ThreadPoolExecutor
+        from tvb.simulator.backend.nb_hybrid import _can_merge_subnets
 
         if monitor != "tavg":
             raise NotImplementedError(
@@ -1353,6 +1517,10 @@ class CppHybridBackend:
 
         targets, sweep_values = self._resolve_sweep(network_set, params)
         analysis = self._analyse(network_set)
+        if any(sn.is_stochastic for sn in analysis.subnets):
+            raise NotImplementedError(
+                "CppHybridBackend.sweep does not support stochastic integrators."
+            )
         results, workers, elapsed = self._sweep_impl(
             network_set, analysis, targets, sweep_values, nstep,
             initial_states, width, n_workers, _time_mod,
@@ -1360,7 +1528,6 @@ class CppHybridBackend:
         )
 
         # assemble per-subnet tavg over all sweeps
-        n_sweeps = sweep_values.shape[0]
         tavg = {sn.name: [] for sn in analysis.subnets}
         ctavg = {sn.name: [] for sn in analysis.subnets}
         for lo, hi, outs in results:
@@ -1374,9 +1541,42 @@ class CppHybridBackend:
         for name in tavg:
             tavg[name] = np.concatenate(tavg[name], axis=0)
             ctavg[name] = np.concatenate(ctavg[name], axis=0)
-        merged = np.concatenate(
-            [tavg[sn.name] for sn in analysis.subnets], axis=3
-        ) if len(analysis.subnets) > 1 else tavg[analysis.subnets[0].name]
+        same_shape = len({(v.shape[2], v.shape[4]) for v in tavg.values()}) == 1
+        same_dt = len({float(sn.dt) for sn in analysis.subnets}) == 1
+        if len(analysis.subnets) == 1:
+            merged = tavg[analysis.subnets[0].name]
+        elif same_shape and same_dt:
+            if node_indices:
+                n_global = max(
+                    max(indices) for indices in node_indices.values()) + 1
+                ref = next(iter(tavg.values()))
+                merged = np.zeros(
+                    (ref.shape[0], ref.shape[1], ref.shape[2],
+                     n_global, ref.shape[4]),
+                    dtype=ref.dtype,
+                )
+                for sn in analysis.subnets:
+                    if sn.name in node_indices:
+                        merged[:, :, :, node_indices[sn.name], :] = tavg[sn.name]
+            elif _can_merge_subnets(analysis.subnets):
+                n_global = max(
+                    int(sn.node_indices.max())
+                    for sn in analysis.subnets
+                ) + 1
+                ref = next(iter(tavg.values()))
+                merged = np.zeros(
+                    (ref.shape[0], ref.shape[1], ref.shape[2],
+                     n_global, ref.shape[4]),
+                    dtype=ref.dtype,
+                )
+                for sn in analysis.subnets:
+                    merged[:, :, :, sn.node_indices, :] = tavg[sn.name]
+            else:
+                merged = np.concatenate(
+                    [tavg[sn.name] for sn in analysis.subnets], axis=3
+                )
+        else:
+            merged = None
         n_samples = tavg[analysis.subnets[0].name].shape[1]
         times = (np.arange(n_samples) + 0.5) * analysis.dt
         return SweepResult(
@@ -1394,8 +1594,6 @@ class CppHybridBackend:
     def _sweep_impl(self, network_set, analysis, targets, sweep_values, nstep,
                     initial_states, width, n_workers, _time_mod, label,
                     progress=False):
-        from concurrent.futures import ThreadPoolExecutor
-
         n_sweeps = sweep_values.shape[0]
         n_groups = (n_sweeps + width - 1) // width
         t0 = _time_mod.perf_counter()
@@ -1412,20 +1610,37 @@ class CppHybridBackend:
             outs = sim.run(int(nstep), 0, None, None)
             return lo, hi, outs
 
-        workers = n_workers or min(n_groups, max(1, _default_workers()))
+        if sys.platform == "emscripten":
+            workers = 1
+        else:
+            workers = n_workers or min(n_groups, max(1, _default_workers()))
         results = [None] * n_groups
-        with ThreadPoolExecutor(max_workers=workers) as ex:
-            futures = [ex.submit(run_group, gi) for gi in range(n_groups)]
-            it = futures
+        if workers == 1:
+            it = range(n_groups)
             if progress:
                 try:
                     import tqdm.auto
                     it = tqdm.auto.tqdm(
-                        futures, total=n_groups, desc=label, unit="lane-group")
+                        it, total=n_groups, desc=label, unit="lane-group")
                 except Exception:
-                    it = futures
-            for gi, fut in enumerate(it):
-                results[gi] = fut.result()
+                    it = range(n_groups)
+            for gi in it:
+                results[gi] = run_group(gi)
+        else:
+            from concurrent.futures import ThreadPoolExecutor
+            with ThreadPoolExecutor(max_workers=workers) as ex:
+                futures = [ex.submit(run_group, gi) for gi in range(n_groups)]
+                it = futures
+                if progress:
+                    try:
+                        import tqdm.auto
+                        it = tqdm.auto.tqdm(
+                            futures, total=n_groups, desc=label,
+                            unit="lane-group")
+                    except Exception:
+                        it = futures
+                for gi, fut in enumerate(it):
+                    results[gi] = fut.result()
         elapsed = _time_mod.perf_counter() - t0
         return results, workers, elapsed
 
@@ -1466,6 +1681,10 @@ class CppHybridBackend:
             else:
                 targets.append(("model", desc["subnet"], desc["param"]))
         analysis = self._analyse(network_set)
+        if any(sn.is_stochastic for sn in analysis.subnets):
+            raise NotImplementedError(
+                "CppHybridBackend.run_sweep does not support stochastic integrators."
+            )
         results, workers, elapsed = self._sweep_impl(
             network_set, analysis, targets, sweep_values, nstep,
             initial_states, 8, None, _time_mod, "cpp-simd"
@@ -1490,5 +1709,7 @@ class CppHybridBackend:
 
 
 def _default_workers():
+    if sys.platform == "emscripten":
+        return 1
     import os
     return max(1, (os.cpu_count() or 2) // 2)

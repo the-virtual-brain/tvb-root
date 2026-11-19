@@ -86,6 +86,20 @@ def bench_sweep(n, nstep, values):
     t0 = time.perf_counter()
     cpp.sweep(ns0, {"coupling_scale": values}, nstep=nstep)
     t_sweep = time.perf_counter() - t0
+    # Numba cpu-prange sweep (4 workers)
+    time_run(
+        lambda: nb.sweep(
+            ns0, {"coupling_scale": values}, nstep=nstep,
+            backend="cpu", n_workers=4,
+        ),
+        warmup=1, reps=1,
+    )
+    t0 = time.perf_counter()
+    nb.sweep(
+        ns0, {"coupling_scale": values}, nstep=nstep,
+        backend="cpu", n_workers=4,
+    )
+    t_nb_prange = time.perf_counter() - t0
     # per-point numba runs (one per value)
     def nb_points():
         for v in values:
@@ -95,7 +109,7 @@ def bench_sweep(n, nstep, values):
     t0 = time.perf_counter()
     nb_points()
     t_points = time.perf_counter() - t0
-    return t_sweep, t_points
+    return t_sweep, t_nb_prange, t_points
 
 
 def main():
@@ -107,13 +121,15 @@ def main():
               f"numba={tn*1e3:.1f}ms ({tn/nstep*1e6:.1f}us/step) "
               f"x{numba_speedup(tc, tn):.2f}")
     print("=" * 70)
-    print("Parameter sweep: {n_vals} values of coupling_scale")
     n, nstep = 300, 300
-    values = np.array([0.0, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0], np.float32)
-    t_sweep, t_points = bench_sweep(n, nstep, values)
+    values = np.linspace(0.2, 2.0, 8, dtype=np.float32)
+    print(f"Parameter sweep: {len(values)} values of coupling_scale")
+    t_sweep, t_nb_prange, t_points = bench_sweep(n, nstep, values)
     print(f"  cpp SIMD sweep(8-lane)={t_sweep*1e3:.1f}ms  "
-          f"numba per-point(8 runs)={t_points*1e3:.1f}ms  "
-          f"x{numba_speedup(t_sweep, t_points):.2f}")
+          f"numba prange(4 workers)={t_nb_prange*1e3:.1f}ms  "
+          f"numba per-point({len(values)} runs)={t_points*1e3:.1f}ms  "
+          f"x{numba_speedup(t_sweep, t_nb_prange):.2f} vs prange, "
+          f"x{numba_speedup(t_sweep, t_points):.2f} vs per-point")
 
 
 def numba_speedup(tc, tn):

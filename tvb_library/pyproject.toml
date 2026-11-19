@@ -37,8 +37,8 @@
 # emits them by importing the modules of those models and instantiating each
 # class — so real imports are unavoidable and must exist before the package's
 # own dependencies are installed.  Discovery is scoped with --only-supported
-# to the 27 models the hybrid backends support (nb_hybrid.
-# _get_supported_models_classes): 25 of them are expression-driven and their
+# to the 28 models the hybrid backends support (nb_hybrid.
+# _get_supported_models_classes): 26 of them are expression-driven and their
 # modules are exactly the numba-dfun modules; modules outside that set are
 # neither imported nor emitted.  Minimal verified set (each one makes
 # dfungen --strict fail with a ModuleNotFoundError naming it when omitted):
@@ -138,6 +138,18 @@ Homepage = "https://www.thevirtualbrain.org"
 minimum-version = "build-system.requires"
 # Setuptools-style build caching in a local directory
 build-dir = "build/{wheel_tag}"
+
+[tool.scikit-build.sdist]
+# Exclude pre-existing editable/inplace binaries and backups from sdists and
+# from wheel source-package collection (so pure-Python/WASM wheels built with
+# -DTVB_CPP_BUILD_EXTENSION=OFF never bundle a host .so, while normal compiled
+# wheels still retain the extension staged by CMake install()).
+exclude = [
+    "tvb/simulator/backend/cpp_hybrid/*.so",
+    "tvb/simulator/backend/cpp_hybrid/*.pyd",
+    "tvb/simulator/backend/cpp_hybrid/*.dylib",
+    "tvb/simulator/backend/cpp_hybrid/*.bak",
+]
 
 [tool.scikit-build.wheel]
 # Pure-Python package tree collected into the wheel (hatchling's

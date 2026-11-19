@@ -20,7 +20,6 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
-#include <thread>
 #include <vector>
 
 namespace nb = nanobind;
@@ -210,7 +209,7 @@ static constexpr int MOD_CRBL = 12;    // CerebellarMF   // ZerlautAdaptationSec
 INLINE static void model_dims(int model_id, int &n_svar, int &n_parm,
                               int &n_cvar) {
   switch (model_id) {
-  case MOD_MPR:      n_svar = 2; n_parm = 6;  n_cvar = 2; break;
+  case MOD_MPR:      n_svar = 2; n_parm = 7;  n_cvar = 2; break;
   case MOD_G2D:      n_svar = 2; n_parm = 12; n_cvar = 1; break;
   case MOD_KURAMOTO: n_svar = 1; n_parm = 1;  n_cvar = 1; break;
   case MOD_SUPHOPF:  n_svar = 2; n_parm = 2;  n_cvar = 2; break;
@@ -231,24 +230,27 @@ INLINE static void model_dims(int model_id, int &n_svar, int &n_parm,
 #define XOFF(sv) ((size_t)((sv) * n_node * n_modes + node * n_modes + mode) * W)
 #define COFF(cv) ((size_t)((cv) * n_node * n_modes + node * n_modes + mode) * W)
 
-// MontbrioPazoRoxin: svars (r, V); params (tau, I, Delta, J, eta, cr)
+// MontbrioPazoRoxin: svars (r, V); params (tau, I, Delta, J, eta, cr[, cv])
 template <int W>
 CPH_NOINLINE static void dfun_mpr(float *dx, const float *x, int node, int mode,
                             int n_node, int n_modes, const float *c,
-                            const float *p, int n_parm) {
+                            const float *p, int n_parm, int n_cvar) {
   const float *r0 = x + XOFF(0);
   const float *V0 = x + XOFF(1);
   float *dr = dx + XOFF(0);
   float *dV = dx + XOFF(1);
   const float *c0 = c + COFF(0);
+  const float *c1 = (n_cvar >= 2) ? (c + COFF(1)) : nullptr;
   const float *pk = p + (size_t)node * n_parm * W;
   for (int i = 0; i < W; i++) {
     float tau = pk[0 * W + i], I = pk[1 * W + i], Delta = pk[2 * W + i],
-          J = pk[3 * W + i], eta = pk[4 * W + i], cr = pk[5 * W + i];
+          J = pk[3 * W + i], eta = pk[4 * W + i], cr = pk[5 * W + i],
+          cv = (n_parm >= 7) ? pk[6 * W + i] : 0.f;
     float r = r0[i] * (r0[i] > 0.f);
     float V = V0[i];
     dr[i] = (1.f / tau) * (Delta / (M_PI_F * tau) + 2.f * r * V);
-    dV[i] = (1.f / tau) * (V * V + eta + J * tau * r + I + cr * c0[i] -
+    dV[i] = (1.f / tau) * (V * V + eta + J * tau * r + I + cr * c0[i] +
+                           (c1 ? cv * c1[i] : 0.f) -
                            M_PI_F * M_PI_F * r * r * tau * tau);
   }
 }
@@ -896,7 +898,8 @@ CPH_NOINLINE static void dfun_crbl(float *dx, const float *x, int node, int mode
 template <int W>
 CPH_NOINLINE static void dfun_dispatch(int model_id, float *dx, const float *x,
                                  int node, int mode, int n_node, int n_modes,
-                                 const float *c, const float *p, int n_parm) {
+                                 const float *c, const float *p, int n_parm,
+                                 int n_cvar) {
   if (model_id >= 100) {
     // generic (expression-generated) dfuns: x/c laid out node-major
     // (n_svar, n_node, n_modes, W); works for single- and multi-mode.
@@ -919,7 +922,7 @@ CPH_NOINLINE static void dfun_dispatch(int model_id, float *dx, const float *x,
                              std::to_string(model_id));
   }
   switch (model_id) {
-  case MOD_MPR: dfun_mpr<W>(dx, x, node, mode, n_node, n_modes, c, p, n_parm); break;
+  case MOD_MPR: dfun_mpr<W>(dx, x, node, mode, n_node, n_modes, c, p, n_parm, n_cvar); break;
   case MOD_G2D: dfun_g2d<W>(dx, x, node, mode, n_node, n_modes, c, p, n_parm); break;
   case MOD_KURAMOTO: dfun_kuramoto<W>(dx, x, node, mode, n_node, n_modes, c, p, n_parm); break;
   case MOD_SUPHOPF: dfun_suphopf<W>(dx, x, node, mode, n_node, n_modes, c, p, n_parm); break;
@@ -1065,6 +1068,7 @@ template <int W> struct kmon {
 template <int W> struct subnet {
   int n_node = 0, n_svar = 2, n_parm = 0, n_cvar = 1, n_modes = 1;
   int model_id = MOD_MPR;
+  int integ_id = -1;  // -1 = inherit simw::integ_id; 0 = euler, 1 = heun
   uint32_t K = 1;     // steps per master tick: dt == K * dt0 (multi-dt)
   float dt = 0.001f;  // this subnet's own integration step (float32 of dt_j)
   std::vector<voispec> voi_specs;
@@ -1072,6 +1076,9 @@ template <int W> struct subnet {
   std::vector<float> c;               // (n_cvar, n_node, n_modes, W)
   std::vector<float> p;               // (n_node, n_parm, W)
   std::vector<float> buf;             // (n_svar, n_node, n_modes, H, W)
+  std::vector<float> sv_lo, sv_hi;    // optional (n_svar,) state bounds
+  std::vector<int> clamp_idx;         // optional clamped svar indices
+  std::vector<float> clamp_val;       // (n_clamps, n_node, n_modes)
   uint32_t H = 0;
 
   void alloc(int n_node_, int n_svar_, int n_parm_, int n_cvar_, int model_id_,
@@ -1085,6 +1092,47 @@ template <int W> struct subnet {
     c.assign((size_t)n_cvar * n_node * n_modes * W, 0.f);
     p.assign((size_t)n_node * n_parm * W, 0.f);
     buf.assign((size_t)n_svar * n_node * n_modes * H * W, 0.f);
+    sv_lo.clear();
+    sv_hi.clear();
+    clamp_idx.clear();
+    clamp_val.clear();
+  }
+
+  void apply_constraints(float *target) {
+    clamp_dispatch<W>(model_id, target, 0, n_node, n_modes);
+    if (sv_lo.size() == (size_t)n_svar && sv_hi.size() == (size_t)n_svar) {
+      const size_t stride = (size_t)n_node * n_modes * W;
+      for (int sv = 0; sv < n_svar; sv++) {
+        const float lo = sv_lo[sv];
+        const float hi = sv_hi[sv];
+        const bool has_lo = std::isfinite(lo);
+        const bool has_hi = std::isfinite(hi);
+        if (!has_lo && !has_hi) continue;
+        float *base = target + (size_t)sv * stride;
+        for (size_t idx = 0; idx < stride; idx++) {
+          float v = base[idx];
+          if (has_lo && v < lo) v = lo;
+          if (has_hi && v > hi) v = hi;
+          base[idx] = v;
+        }
+      }
+    }
+    if (!clamp_idx.empty()) {
+      for (size_t cpos = 0; cpos < clamp_idx.size(); cpos++) {
+        const int sv = clamp_idx[cpos];
+        for (int j = 0; j < n_node; j++) {
+          for (int m = 0; m < n_modes; m++) {
+            const float cv = clamp_val[
+                (cpos * (size_t)n_node + (size_t)j) * (size_t)n_modes +
+                (size_t)m];
+            float *dst = target +
+                (((size_t)sv * (size_t)n_node + (size_t)j) * (size_t)n_modes +
+                 (size_t)m) * W;
+            for (int i = 0; i < W; i++) dst[i] = cv;
+          }
+        }
+      }
+    }
   }
 
   void push_state(int t) {
@@ -1105,7 +1153,7 @@ template <int W> struct subnet {
     for (int j = 0; j < n_node; j++)
       for (int m = 0; m < n_modes; m++)
         dfun_dispatch<W>(model_id, dx.data(), x.data(), j, m, n_node, n_modes,
-                         c.data(), p.data(), n_parm);
+                         c.data(), p.data(), n_parm, n_cvar);
     if (noise) {
       // noise layout (n_svar, n_node, n_modes, W) for this step
       for (size_t k = 0; k < x.size(); k++)
@@ -1113,32 +1161,32 @@ template <int W> struct subnet {
     } else {
       for (size_t k = 0; k < x.size(); k++) x[k] += dt * dx[k];
     }
-    clamp_dispatch<W>(model_id, x.data(), 0, n_node, n_modes);
+    apply_constraints(x.data());
   }
 
   void step_heun(float dt, const float *noise) {
     for (int j = 0; j < n_node; j++)
       for (int m = 0; m < n_modes; m++)
         dfun_dispatch<W>(model_id, dx.data(), x.data(), j, m, n_node, n_modes,
-                         c.data(), p.data(), n_parm);
+                         c.data(), p.data(), n_parm, n_cvar);
     if (noise) {
       for (size_t k = 0; k < x.size(); k++) xi[k] = x[k] + dt * dx[k] + noise[k];
     } else {
       for (size_t k = 0; k < x.size(); k++) xi[k] = x[k] + dt * dx[k];
     }
-    clamp_dispatch<W>(model_id, xi.data(), 0, n_node, n_modes);
+    apply_constraints(xi.data());
     // coupling stays fixed across stages (matches nb_hybrid)
     for (int j = 0; j < n_node; j++)
       for (int m = 0; m < n_modes; m++)
         dfun_dispatch<W>(model_id, dxi.data(), xi.data(), j, m, n_node, n_modes,
-                         c.data(), p.data(), n_parm);
+                         c.data(), p.data(), n_parm, n_cvar);
     if (noise) {
       for (size_t k = 0; k < x.size(); k++)
         x[k] += dt * 0.5f * (dx[k] + dxi[k]) + noise[k];
     } else {
       for (size_t k = 0; k < x.size(); k++) x[k] += dt * 0.5f * (dx[k] + dxi[k]);
     }
-    clamp_dispatch<W>(model_id, x.data(), 0, n_node, n_modes);
+    apply_constraints(x.data());
   }
 };
 
@@ -1537,7 +1585,8 @@ template <int W> struct simw {
             const float *nz = nullptr;
             if (const float *nptr = noise_ps[s])
               nz = nptr + ((size_t)step) * (size_t)sub.n_svar * sub.n_node * sub.n_modes * W;
-            if (integ_id == 1)
+            const int sub_integ = (sub.integ_id >= 0) ? sub.integ_id : integ_id;
+            if (sub_integ == 1)
               sub.step_heun(sub.dt, nz);
             else
               sub.step_euler(sub.dt, nz);
@@ -1672,7 +1721,7 @@ struct sim {
 
   void add_subnet(int n_node, int n_svar, int n_parm, int n_cvar,
                   int model_id, int horizon, int n_modes, uint32_t k = 1,
-                  float dt = 0.001f) {
+                  float dt = 0.001f, int integ_id = -1) {
     // round the history length up to a power of two >= horizon+2 so that
     // slot masking with (H-1) is valid
     uint32_t H = 1;
@@ -1683,6 +1732,7 @@ struct sim {
       s.alloc(n_node, n_svar, n_parm, n_cvar, model_id, H, n_modes);
       s.K = k;
       s.dt = dt;
+      s.integ_id = integ_id;
       s8->sn.push_back(std::move(s));
       s8->voi_specs.push_back({});
     } else {
@@ -1691,6 +1741,7 @@ struct sim {
       s.alloc(n_node, n_svar, n_parm, n_cvar, model_id, H, n_modes);
       s.K = k;
       s.dt = dt;
+      s.integ_id = integ_id;
       s1->sn.push_back(std::move(s));
       s1->voi_specs.push_back({});
     }
@@ -1815,6 +1866,10 @@ struct sim {
     return 0;
   }
 
+  void set_t_abs(uint64_t t) {
+    dispatch([&](auto &s) { s.t_abs = t; });
+  }
+
   nb::ndarray<nb::numpy, float> get_subnet_state(int si) {
     nb::ndarray<nb::numpy, float> out;
     dispatch([&](auto &s) {
@@ -1826,6 +1881,89 @@ struct sim {
       std::memcpy(dst, sn.x.data(), sn.x.size() * sizeof(float));
     });
     return out;
+  }
+
+  nb::ndarray<nb::numpy, float> get_subnet_buf(int si) {
+    nb::ndarray<nb::numpy, float> out;
+    dispatch([&](auto &s) {
+      if (si < 0 || (size_t)si >= s.sn.size())
+        throw std::runtime_error("bad subnet index");
+      auto &sn = s.sn[si];
+      const int W = std::remove_reference_t<decltype(s)>::W_CONST;
+      out = make_owned_array<float>({(size_t)sn.n_svar, (size_t)sn.n_node,
+                                     (size_t)sn.n_modes, (size_t)sn.H,
+                                     (size_t)W});
+      std::memcpy(out.data(), sn.buf.data(), sn.buf.size() * sizeof(float));
+    });
+    return out;
+  }
+
+  void set_subnet_buf(int si, nb::ndarray<nb::numpy, float> v) {
+    dispatch([&](auto &s) {
+      if (si < 0 || (size_t)si >= s.sn.size())
+        throw std::runtime_error("bad subnet index");
+      auto &sn = s.sn[si];
+      const int W = std::remove_reference_t<decltype(s)>::W_CONST;
+      auto V = v.view<nb::ndim<5>>();
+      if ((int)V.shape(0) != sn.n_svar || (int)V.shape(1) != sn.n_node ||
+          (int)V.shape(2) != sn.n_modes || (uint32_t)V.shape(3) != sn.H ||
+          (int)V.shape(4) != W)
+        throw std::runtime_error("bad buffer shape");
+      size_t pos = 0;
+      for (int sv = 0; sv < sn.n_svar; sv++)
+        for (int j = 0; j < sn.n_node; j++)
+          for (int m = 0; m < sn.n_modes; m++)
+            for (uint32_t h = 0; h < sn.H; h++)
+              for (int i = 0; i < W; i++)
+                sn.buf[pos++] = V(sv, j, m, h, i);
+    });
+  }
+
+  void set_subnet_bounds(int si, nb::ndarray<nb::numpy, float> lo,
+                         nb::ndarray<nb::numpy, float> hi) {
+    dispatch([&](auto &s) {
+      if (si < 0 || (size_t)si >= s.sn.size())
+        throw std::runtime_error("bad subnet index");
+      auto &sn = s.sn[si];
+      auto L = lo.view<nb::ndim<1>>();
+      auto H = hi.view<nb::ndim<1>>();
+      if ((int)L.shape(0) != sn.n_svar || (int)H.shape(0) != sn.n_svar)
+        throw std::runtime_error("bad subnet bounds shape");
+      sn.sv_lo.resize(sn.n_svar);
+      sn.sv_hi.resize(sn.n_svar);
+      for (int k = 0; k < sn.n_svar; k++) {
+        sn.sv_lo[k] = L(k);
+        sn.sv_hi[k] = H(k);
+      }
+    });
+  }
+
+  void set_subnet_clamps(int si, nb::ndarray<nb::numpy, int> indices,
+                         nb::ndarray<nb::numpy, float> values) {
+    dispatch([&](auto &s) {
+      if (si < 0 || (size_t)si >= s.sn.size())
+        throw std::runtime_error("bad subnet index");
+      auto &sn = s.sn[si];
+      auto I = indices.view<nb::ndim<1>>();
+      auto V = values.view<nb::ndim<3>>();
+      const size_t nc = I.shape(0);
+      if (V.shape(0) != nc || (int)V.shape(1) != sn.n_node ||
+          (int)V.shape(2) != sn.n_modes)
+        throw std::runtime_error("bad clamp shape");
+      sn.clamp_idx.resize(nc);
+      for (size_t c = 0; c < nc; c++) {
+        const int sv = I(c);
+        if (sv < 0 || sv >= sn.n_svar)
+          throw std::runtime_error("clamp state variable index out of range");
+        sn.clamp_idx[c] = sv;
+      }
+      sn.clamp_val.resize(nc * (size_t)sn.n_node * (size_t)sn.n_modes);
+      for (size_t c = 0; c < nc; c++)
+        for (int j = 0; j < sn.n_node; j++)
+          for (int m = 0; m < sn.n_modes; m++)
+            sn.clamp_val[(c * (size_t)sn.n_node + (size_t)j) * (size_t)sn.n_modes +
+                         (size_t)m] = V(c, j, m);
+    });
   }
 
   void set_cfun_params(int pi, nb::ndarray<nb::numpy, float> v) {
@@ -1915,7 +2053,7 @@ std::vector<float> dbg_mpr_dfun(float r, float V, float c,
   float p[6];
   for (int k = 0; k < 6; k++) p[k] = P(k);
   float cc[1] = {c};
-  dfun_mpr<1>(dx, x, 0, 0, 1, 1, cc, p, 6);
+  dfun_mpr<1>(dx, x, 0, 0, 1, 1, cc, p, 6, 1);
   return {dx[0], dx[1]};
 }
 
@@ -1928,10 +2066,10 @@ std::vector<float> dbg_mpr_heun(float r, float V, float c,
   float p[6];
   for (int k = 0; k < 6; k++) p[k] = P(k);
   float cc[1] = {c};
-  dfun_mpr<1>(dx, x, 0, 0, 1, 1, cc, p, 6);
+  dfun_mpr<1>(dx, x, 0, 0, 1, 1, cc, p, 6, 1);
   for (int k = 0; k < 2; k++) xi[k] = x[k] + dt * dx[k];
   xi[0] = xi[0] * (xi[0] > 0.f);
-  dfun_mpr<1>(dxi, xi, 0, 0, 1, 1, cc, p, 6);
+  dfun_mpr<1>(dxi, xi, 0, 0, 1, 1, cc, p, 6, 1);
   for (int k = 0; k < 2; k++) x[k] += dt * 0.5f * (dx[k] + dxi[k]);
   x[0] = x[0] * (x[0] > 0.f);
   return {x[0], x[1], dx[0], dx[1], dxi[0], dxi[1]};
@@ -1955,7 +2093,7 @@ NB_MODULE(_cpp_hybrid, m) {
       .def("add_subnet", &cph::sim::add_subnet, nb::arg("n_node"),
            nb::arg("n_svar"), nb::arg("n_parm"), nb::arg("n_cvar"),
            nb::arg("model_id"), nb::arg("horizon"), nb::arg("n_modes"),
-           nb::arg("k") = 1, nb::arg("dt") = 0.001f)
+           nb::arg("k") = 1, nb::arg("dt") = 0.001f, nb::arg("integ_id") = -1)
       .def("add_projection", &cph::sim::add_projection, nb::arg("src_sn"),
            nb::arg("tgt_sn"), nb::arg("w"), nb::arg("idx"), nb::arg("ptr"),
            nb::arg("del"), nb::arg("cfun_id"), nb::arg("src_cvars"),
@@ -1964,6 +2102,10 @@ NB_MODULE(_cpp_hybrid, m) {
            nb::arg("mode_map") = nb::none())
       .def("set_subnet_params", &cph::sim::set_subnet_params)
       .def("set_subnet_state", &cph::sim::set_subnet_state)
+      .def("set_subnet_bounds", &cph::sim::set_subnet_bounds, nb::arg("si"),
+           nb::arg("lo"), nb::arg("hi"))
+      .def("set_subnet_clamps", &cph::sim::set_subnet_clamps, nb::arg("si"),
+           nb::arg("indices"), nb::arg("values"))
       .def("set_cfun_params", &cph::sim::set_cfun_params)
       .def("set_voi", &cph::sim::set_voi)
       .def("set_voi_specs", &cph::sim::set_voi_specs)
@@ -1973,7 +2115,11 @@ NB_MODULE(_cpp_hybrid, m) {
            nb::arg("atts"))
       .def("monitor_begin_run", &cph::sim::monitor_begin_run)
       .def("get_subnet_state", &cph::sim::get_subnet_state)
+      .def("get_subnet_buf", &cph::sim::get_subnet_buf, nb::arg("si"))
+      .def("set_subnet_buf", &cph::sim::set_subnet_buf, nb::arg("si"),
+           nb::arg("v"))
       .def("t_abs", &cph::sim::t_abs)
+      .def("set_t_abs", &cph::sim::set_t_abs, nb::arg("t"))
       .def("run", &cph::sim::run, nb::arg("nstep"), nb::arg("chunk_size") = 0,
            nb::arg("noise") = nb::none(), nb::arg("stim") = nb::none());
 }

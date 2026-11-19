@@ -27,6 +27,9 @@ Example
 
 from __future__ import annotations
 
+import os
+import sys
+
 import numpy as np
 
 from .backend import CppHybridBackend, SweepResult
@@ -35,7 +38,8 @@ __all__ = ["sweep", "available_sweep_params", "default_width"]
 
 
 def _default_workers():
-    import os
+    if sys.platform == "emscripten":
+        return 1
     return max(1, (os.cpu_count() or 2) // 2)
 
 
@@ -103,8 +107,8 @@ def sweep(
         Valid key forms (see :func:`available_sweep_params`):
         ``'coupling_scale'`` alias, ``'{proj_name}.{attr}'`` projection cfun
         attribute, or ``'{subnet}.{param}'`` model parameter.  All arrays must
-        be the same length (the sweep is the Cartesian cross, one scalar per
-        listed dimension).
+        have the same length and are paired elementwise (lockstep zip); pass
+        flattened ``np.meshgrid`` arrays when a full Cartesian grid is desired.
     """
     params = {name: np.asarray(vals, dtype=np.float32) for name, vals in sweeps.items()}
     if not params:

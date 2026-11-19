@@ -1,8 +1,6 @@
 # %% [markdown]
 # # Getting Started with Hybrid Brain Simulation
 #
-# This is **Notebook 1 of 3** in the TVB Hybrid Simulation series.
-#
 # Classic TVB simulates a single homogeneous network — every node runs the same
 # model with the same equations.  The **Hybrid Simulation API** lifts that
 # restriction: you can partition your network into *subnetworks*, assign a
@@ -15,7 +13,7 @@
 # - How to connect two subnetworks with an `InterProjection`
 # - How to assemble a `NetworkSet` and run a `Simulator`
 # - How to extract per-subnetwork time series from the concatenated output
-# - How to verify numerical reproducibility
+# - How to verify numerical reproducibility and cross-check the C++ backend
 #
 # **Setup**: 38-node cortex (JansenRit) + 38-node thalamus
 # (ReducedSetFitzHughNagumo), connected by a one-directional
@@ -27,8 +25,6 @@ warnings.filterwarnings('ignore')   # suppress experimental-API warnings
 
 import numpy as np
 import scipy.sparse as sp
-import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from tvb.simulator.models import JansenRit, ReducedSetFitzHughNagumo
@@ -70,10 +66,10 @@ print(f"dt={dt} ms | nnodes={nnodes} per subnetwork | length={simulation_length}
 # spontaneously generates alpha-band (~10 Hz) oscillations.
 #
 # **ReducedSetFitzHughNagumo** is a population-level reduction of the classic
-# FitzHugh–Nagumo neuron.  It generates excitable or oscillatory dynamics
-# depending on its inputs.  `NetworkSet.observe()` sums over modes before
-# monitor output, so the default `number_of_modes = 3` works without
-# modification.
+# FitzHugh–Nagumo neuron.  Under its default parameters it generates intrinsic
+# limit-cycle oscillations whose amplitude and baseline are modulated by external
+# inputs.  `NetworkSet.observe()` sums over modes before monitor output, so the
+# default `number_of_modes = 3` works without modification.
 
 # %% Build cortex subnetwork
 cortex = Subnetwork(
@@ -151,9 +147,9 @@ print("target_cvar slot :", proj_ctx_to_thal.target_cvar)   # [0] (slot of xi)
 #
 # `NetworkSet` collects all subnetworks and inter-projections into one model.
 # `Simulator` owns the network and a list of TVB monitors.  After
-# `sim.configure()`, `sim.run(random_state=42)` draws initial conditions
-# from each model's `state_variable_range` using the given seed, then
-# advances the system for `simulation_length` milliseconds.
+# `sim.configure()`, `sim.run(...)` advances the system for `simulation_length`
+# milliseconds from either explicit `initial_conditions` or randomly drawn
+# initial conditions (controlled by `random_state`).
 #
 # The monitor returns one `(times, data)` tuple.  `data` has shape
 # `(n_time, total_vois, total_nodes, 1)` where VOIs and nodes from each
@@ -218,8 +214,8 @@ print("No NaN in output — OK.")
 #
 # We plot the mean signal over all nodes for one representative VOI in each
 # subnetwork.  **JansenRit `y1`** (excitatory PSP) exhibits alpha-band
-# oscillations; **FHN `xi`** shows sustained oscillatory drive imposed by the
-# cortical input.
+# oscillations; **FHN `xi`** oscillates under the combined influence of its
+# intrinsic limit-cycle dynamics and the excitatory cortical drive.
 
 # %% Plot coupled time series
 fig, axes = plt.subplots(1, 2, figsize=(12, 4))
@@ -249,10 +245,11 @@ print("Coupled time series plotted.")
 # %% [markdown]
 # ## Coupled vs uncoupled comparison
 #
-# To demonstrate that the projection actually changes thalamic dynamics, we
-# run a second simulation with `projections=[]`.  Without cortical drive the
-# thalamus settles to a stable fixed point; with coupling it is pushed into
-# a sustained oscillation.
+# To demonstrate that the projection alters thalamic dynamics, we run a second
+# simulation with `projections=[]`.  Under default parameters from zero initial
+# conditions, the uncoupled `ReducedSetFitzHughNagumo` thalamus already exhibits
+# intrinsic limit-cycle oscillations; adding cortical `y1` drive shifts its
+# baseline and modulates the oscillation amplitude.
 
 # %% Uncoupled run
 fhn_uc = ReducedSetFitzHughNagumo()
@@ -293,21 +290,24 @@ print(f"Coupled   thalamus ξ amplitude (last 500 ms): {thal_coupled[-500:].max(
 print(f"Uncoupled thalamus ξ amplitude (last 500 ms): {thal_uncoupled[-500:].max() - thal_uncoupled[-500:].min():.4f}")
 
 # %% [markdown]
-# The uncoupled thalamus converges to a fixed point (amplitude ≈ 0) while the
-# coupled thalamus oscillates continuously, driven by the rhythmic cortical input.
+# Both conditions oscillate continuously: under default parameters from zero ICs,
+# the uncoupled thalamus settles onto its larger intrinsic limit cycle
+# (peak-to-peak mean `xi` amplitude ~5.79), whereas cortical drive shifts the
+# operating point and compresses the coupled thalamic oscillation to ~2.17.
 
 # %% [markdown]
 # ## Reproducibility
 #
-# Passing the same `random_state` integer to `sim.run()` seeds the initial
-# condition draw from each model's `state_variable_range`.  Two independent
-# simulator instances with the same seed must produce bit-for-bit identical
-# output.
+# Under deterministic integration (`HeunDeterministic`), two independent
+# simulator instances started from identical initial conditions must produce
+# bit-for-bit identical output (`np.array_equal`).  Here we verify exact
+# reproducibility both for explicit `initial_conditions` on the coupled
+# `JansenRit` + `ReducedSetFitzHughNagumo` network (avoiding `JansenRit`'s
+# `[-500, 500]` default `y1` sampling range) and for `random_state=42` on a
+# bounded `Generic2dOscillator` subnetwork.
 
 # %% Reproducibility check
-# Two independent simulator instances with the same fixed initial conditions
-# must produce bit-for-bit identical output (deterministic integration).
-def _build_sim():
+def _build_sim(backend="python"):
     """Create a fresh coupled simulator from scratch."""
     jr  = JansenRit()
     fhn_ = ReducedSetFitzHughNagumo()
@@ -319,22 +319,62 @@ def _build_sim():
     proj_ = InterProjection(source=ctx_, target=thal_, source_cvar='y1', target_cvar='xi',
                              weights=W_, lengths=L_, cv=7.0, dt=dt, scale=0.1)
     nets_ = NetworkSet(subnets=[ctx_, thal_], projections=[proj_])
-    s_    = Simulator(nets=nets_, simulation_length=simulation_length, monitors=[TemporalAverage(period=1.0)])
+    s_    = Simulator(nets=nets_, simulation_length=simulation_length,
+                      monitors=[TemporalAverage(period=1.0)], backend=backend)
     s_.configure()
     return s_
 
 sim_r1 = _build_sim()
 sim_r2 = _build_sim()
 
-# Pass the same initial conditions to both — integration is deterministic,
-# so bit-identical output is guaranteed regardless of random_state.
+# 1. Explicit initial conditions on the hybrid cortex-thalamus simulator
 ic_r = [np.zeros((6, nnodes, 1)), np.zeros((4, nnodes, 3))]
 ((_, y_r1),) = sim_r1.run(initial_conditions=ic_r)
 ((_, y_r2),) = sim_r2.run(initial_conditions=ic_r)
 
-assert np.allclose(y_r1, y_r2), "Expected identical output for same initial conditions!"
-print("\u2713 Reproducibility confirmed: two independent runs with zero ICs are identical.")
+assert np.array_equal(y_r1, y_r2), "Expected bit-identical output for same initial conditions!"
+print("\u2713 Reproducibility confirmed (explicit ICs): two independent runs are bit-identical.")
 print(f"  max |y_r1 - y_r2| = {np.abs(y_r1 - y_r2).max():.2e}")
+
+# 2. Seeded random_state=42 on a bounded Generic2dOscillator simulator
+from tvb.simulator.models import Generic2dOscillator
+
+def _build_g2d_sim():
+    sn_ = Subnetwork(name='g2d', model=Generic2dOscillator(),
+                     scheme=HeunDeterministic(dt=dt), nnodes=10).configure()
+    return Simulator(nets=NetworkSet(subnets=[sn_], projections=[]),
+                     simulation_length=100.0, monitors=[TemporalAverage(period=1.0)])
+
+sim_g1 = _build_g2d_sim()
+sim_g2 = _build_g2d_sim()
+((_, y_g1),) = sim_g1.run(random_state=42)
+((_, y_g2),) = sim_g2.run(random_state=42)
+assert np.array_equal(y_g1, y_g2), "Expected bit-identical output for same random_state!"
+print("\u2713 Reproducibility confirmed (random_state=42): two independent runs are bit-identical.")
+
+# %% [markdown]
+# ## Compiled C++ backend cross-check
+#
+# Passing `backend="cpp"` to `Simulator` runs the exact same `NetworkSet`
+# through the compiled SIMD C++ backend (single-precision `float32` state
+# updates vs double-precision `float64` in pure Python).
+
+# %% C++ backend cross-check
+import time
+
+t0_cpp = time.perf_counter()
+sim_cpp = _build_sim(backend="cpp")
+((_, y_cpp),) = sim_cpp.run(initial_conditions=ic_r)
+dt_cpp = time.perf_counter() - t0_cpp
+
+early_diff_cpp = np.abs(y[:100] - y_cpp[:100]).max()
+ctx_diff_cpp = np.abs(y[:, :n_cortex_vois, :cortex.nnodes] - y_cpp[:, :n_cortex_vois, :cortex.nnodes]).max()
+thal_cpp_mean = y_cpp[:, n_cortex_vois, cortex.nnodes:, 0].mean(axis=1)
+thal_cpp_amp = thal_cpp_mean[-500:].max() - thal_cpp_mean[-500:].min()
+print(f"C++ backend finished in {dt_cpp:.3f}s")
+print(f"  max diff (first 100 ms): {early_diff_cpp:.2e} | max cortex diff (1000 ms): {ctx_diff_cpp:.2e}")
+print(f"  coupled thalamus ξ amplitude (last 500 ms): {thal_cpp_amp:.4f} (Python: {thal_coupled[-500:].max() - thal_coupled[-500:].min():.4f})")
+assert not np.any(np.isnan(y_cpp)), "NaN in C++ backend output!"
 
 # %% [markdown]
 # ## Summary
@@ -349,14 +389,19 @@ print(f"  max |y_r1 - y_r2| = {np.abs(y_r1 - y_r2).max():.2e}")
 #    simulation.
 # 4. Extracted per-subnetwork arrays from the concatenated output by indexing
 #    on VOI counts and node counts.
-# 5. Compared coupled vs uncoupled thalamus and confirmed that cortical drive
-#    induces sustained oscillations in an otherwise quiescent thalamus.
-# 6. Checked that `random_state` ensures reproducible results across
-#    independent simulator instances.
+# 5. Compared coupled vs uncoupled thalamus and quantified how cortical drive
+#    modulates the thalamus's intrinsic limit-cycle oscillations (~5.79
+#    uncoupled vs ~2.17 coupled peak-to-peak mean `xi` amplitude).
+# 6. Verified bit-identical reproducibility for both explicit `initial_conditions`
+#    and `random_state=42`, and cross-checked `Simulator(..., backend="cpp")`.
 #
-# **Next in the series**
+# **Companion notebooks**
 #
-# - *Notebook 2* — Coupling functions, axonal delays, IntraProjection, and
-#   multi-cvar topologies.
-# - *Notebook 3* — External stimulation, per-subnetwork monitors,
-#   connectome-ordered output, and `add_projection_from_connectivity`.
+# - `simulate_hybrid_stimuli_and_advanced.ipynb` — External stimulation,
+#   per-subnetwork monitors, connectome-ordered output, and structural wiring.
+# - `simulate_hybrid_stochastic_and_bold.ipynb` — Stochastic integration and
+#   the BOLD monitor.
+# - `simulate_hybrid_parameter_sweeps.ipynb` / `cpp_hybrid_sweep.ipynb` —
+#   Multi-core and SIMD parameter sweeps.
+# - `simulate_hybrid_multi_dt.ipynb` — Per-subnetwork integration time steps
+#   (multi-dt).

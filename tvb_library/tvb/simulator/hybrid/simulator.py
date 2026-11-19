@@ -28,9 +28,9 @@
 Top-level simulator for hybrid network models
 
 ``Simulator`` owns a ``NetworkSet`` and a list of TVB ``Monitor`` objects.  It
-validates that all subnetworks share the same integration time step, wires up
-the monitors, and drives the time loop that calls ``NetworkSet.step`` at every
-iteration.
+validates integration time steps across subnetworks (uniform for the Python
+backend; integer-multiple multirate for compiled Numba/C++ backends), wires up
+the monitors, and executes the simulation loop.
 
 Typical usage::
 
@@ -57,7 +57,7 @@ class Simulator(t.HasTraits):
     """Simulator for hybrid network models.
 
     The Simulator class manages the simulation of a hybrid network model,
-    including configuration of monitors and time stepping.
+    including configuration of monitors, backend selection, and time stepping.
 
     Attributes
     ----------
@@ -67,9 +67,13 @@ class Simulator(t.HasTraits):
         List of monitors for recording data
     simulation_length : float
         Total simulation time in milliseconds
+    backend : str, default="python"
+        Execution backend: ``"python"`` (pure Python ``NetworkSet.step``),
+        ``"numba"`` (JIT-compiled ``NbHybridBackend``), or ``"cpp"`` (SIMD
+        C++ ``CppHybridBackend``).
     """
 
-    _BACKEND_OPTIONS = ("python", "numba")
+    _BACKEND_OPTIONS = ("python", "numba", "cpp")
 
     nets: NetworkSet = t.Attr(NetworkSet)
     monitors: List[Monitor] = t.List(of=Monitor)
@@ -81,6 +85,14 @@ class Simulator(t.HasTraits):
             raise ValueError(
                 f"backend must be one of {self._BACKEND_OPTIONS}, got {backend!r}"
             )
+        if backend == "cpp":
+            try:
+                from tvb.simulator.backend.cpp_hybrid import CppHybridBackend  # noqa: F401
+            except ImportError as exc:
+                raise ImportError(
+                    "backend='cpp' requires the compiled '_cpp_hybrid' extension "
+                    "(Python >= 3.12 or WASM build with '_cpp_hybrid')."
+                ) from exc
         self.backend = backend
         super().__init__(**kwargs)
         self.validate_dts()
@@ -115,31 +127,38 @@ class Simulator(t.HasTraits):
                 monitor._config_stock(total_vois, num_nodes, 1)
 
     def validate_dts(self):
-        """Assert uniform integration time step and configure monitors.
+        """Validate integration time steps across subnetworks and configure monitors.
 
-        Reads the time step ``dt`` from the first subnetwork's integration
-        scheme and asserts that every other subnetwork uses the same value.
-        All monitors are then configured with this shared ``dt`` and their
-        ``voi`` attribute is set to ``slice(None)`` so they record all
-        variables of interest.
+        For ``backend == "python"``, every subnetwork must share the same
+        ``dt`` as the first subnetwork (``NetworkSet.step`` is single-rate).
+        For compiled backends (``"numba"``, ``"cpp"``), each subnetwork's
+        ``dt`` must be an integer multiple of the smallest ``dt`` across
+        subnetworks (``self._dt0``).  All global monitors are then configured
+        with ``self._dt0`` and ``voi = slice(None)``.
 
         Raises
         ------
-        AssertionError
-            If any subnetwork has a different ``dt`` from the first.
+        ValueError
+            If ``backend == "python"`` and subnetworks differ in ``dt``, or if
+            a compiled backend receives non-integer-multiple ``dt`` values.
 
         Notes
         -----
-        Called automatically during ``__init__``; the validated step size is
-        stored as ``self._dt0`` for use by ``configure`` and ``run``.
+        Called automatically during ``__init__``; the validated base step size
+        is stored as ``self._dt0`` for use by ``configure`` and ``run``.
         """
-        self._dt0 = self.nets.subnets[0].scheme.dt
-        for sn in self.nets.subnets[1:]:
-            if self._dt0 != sn.scheme.dt:
-                raise ValueError(
-                    f"dt mismatch across subnetworks: expected {self._dt0}, "
-                    f"got {sn.scheme.dt} for subnetwork '{sn.name}'"
-                )
+        if self.backend == "python":
+            self._dt0 = self.nets.subnets[0].scheme.dt
+            for sn in self.nets.subnets[1:]:
+                if self._dt0 != sn.scheme.dt:
+                    raise ValueError(
+                        f"dt mismatch across subnetworks: expected {self._dt0}, "
+                        f"got {sn.scheme.dt} for subnetwork '{sn.name}'"
+                    )
+        else:
+            from tvb.simulator.backend.nb_hybrid import _validate_multi_dt
+
+            self._dt0 = _validate_multi_dt(self.nets)
         for monitor in self.monitors:
             monitor: Monitor
             monitor._config_dt(self._dt0)
@@ -218,6 +237,8 @@ class Simulator(t.HasTraits):
 
         if self.backend == "numba":
             return self._run_numba(initial_conditions, random_state)
+        if self.backend == "cpp":
+            return self._run_cpp(initial_conditions, random_state)
         return self._run_python(initial_conditions, random_state)
 
     def _resolve_ics(self, initial_conditions, random_state):
@@ -261,51 +282,156 @@ class Simulator(t.HasTraits):
         """Run simulation using the NbHybridBackend."""
         from tvb.simulator.backend.nb_hybrid import NbHybridBackend
 
+        return self._run_compiled_backend(
+            NbHybridBackend(), initial_conditions, random_state
+        )
+
+    def _run_cpp(self, initial_conditions=None, random_state=None):
+        """Run simulation using the CppHybridBackend."""
+        from tvb.simulator.backend.cpp_hybrid import CppHybridBackend
+
+        return self._run_compiled_backend(
+            CppHybridBackend(), initial_conditions, random_state
+        )
+
+    def _run_compiled_backend(self, be, initial_conditions=None, random_state=None):
+        """Run simulation using a compiled hybrid backend."""
         x = self._resolve_ics(initial_conditions, random_state)
         self.nets.init_projection_buffers(x)
         ics = [np.asarray(xi, dtype=np.float64) for xi in x]
         nstep = int(math.ceil(self.simulation_length / self._dt0))
 
-        be = NbHybridBackend()
+        has_recorders = any(sn.monitors for sn in self.nets.subnets)
+        saved_rng_states = None
+        if self.monitors and has_recorders:
+            from tvb.simulator.integrators import IntegratorStochastic
+
+            saved_rng_states = [
+                (
+                    sn.scheme.noise.random_stream,
+                    sn.scheme.noise.random_stream.get_state(),
+                )
+                for sn in self.nets.subnets
+                if isinstance(sn.scheme, IntegratorStochastic)
+            ]
+
+        result = []
         if self.monitors:
             raw = be.run_network(
-                self.nets, nstep=nstep, monitors=self.monitors,
+                self.nets,
+                nstep=nstep,
+                monitors=self.monitors,
                 initial_states=ics,
             )
-            # raw is list[list[tuple(times, data)]] indexed by [monitor][subnet]
-            # Merged monitors (GlobalAverage, SpatialAverage, Projection)
-            # return a single-element list from _apply_monitors.
-            result = []
-            for mon_idx in range(len(self.monitors)):
-                mon_raw = raw[mon_idx]
-                times, subnet_data = zip(*mon_raw)
-                times = tuple(
-                    (np.rint(np.asarray(t, dtype=np.float64) / self._dt0 * 2.0) / 2.0)
-                    * self._dt0
-                    for t in times
-                )
-                # Merged monitor: single-element list, use directly
-                if len(mon_raw) == 1:
-                    result.append((times[0], subnet_data[0]))
-                else:
-                    # Per-subnet data: reassemble into merged or flat layout
-                    t = times[0]
-                    if not all(np.array_equal(t, other) for other in times[1:]):
-                        raise ValueError("Monitor time grids differ across subnetworks")
-                    total_nodes = sum(sn.nnodes for sn in self.nets.subnets)
-                    total_vois = len(self.nets.subnets[0].model.variables_of_interest)
-                    n_modes = self.nets.subnets[0].model.number_of_modes
-                    # Determine if merged mode (node_indices set)
-                    if self.nets._is_merged_mode():
-                        data = np.zeros((len(t), total_vois, total_nodes, n_modes),
-                                        dtype=np.float64)
-                        for sn_idx, sn in enumerate(self.nets.subnets):
-                            data[:, :, sn.node_indices, :] = subnet_data[sn_idx]
-                    else:
-                        data = np.concatenate(subnet_data, axis=2)
-                    result.append((t, data))
-            return result
-        else:
-            # No monitors: run and return empty list (matching Python path)
+            result = self._reassemble_monitor_outputs(raw)
+
+        if has_recorders:
+            if saved_rng_states is not None:
+                for stream, state in saved_rng_states:
+                    stream.set_state(state)
+            raw_steps = be.run_network(
+                self.nets,
+                nstep=nstep,
+                chunk_size=1,
+                initial_states=ics,
+            )
+            self._record_subnet_monitors(raw_steps, nstep)
+        elif not self.monitors:
+            # No monitors or recorders: run and return empty list (matching Python path)
             be.run_network(self.nets, nstep=nstep, initial_states=ics)
-            return []
+
+        return result
+
+    def _reassemble_monitor_outputs(self, raw):
+        """Reassemble compiled backend monitor outputs into ``(times, data)`` pairs."""
+        # raw is list[list[tuple(times, data)]] indexed by [monitor][subnet].
+        # Merged monitors (GlobalAverage, SpatialAverage, Projection)
+        # return a single-element list from _apply_monitors.
+        result = []
+        for mon_raw in raw:
+            times, subnet_data = zip(*mon_raw)
+            times = tuple(
+                (np.rint(np.asarray(t, dtype=np.float64) / self._dt0 * 2.0) / 2.0)
+                * self._dt0
+                for t in times
+            )
+            # Single-subnet or merged monitor: single-element list, use directly
+            if len(mon_raw) == 1:
+                result.append((times[0], subnet_data[0]))
+                continue
+
+            t = times[0]
+            if not all(np.array_equal(t, other) for other in times[1:]):
+                raise ValueError("Monitor time grids differ across subnetworks")
+
+            voi_counts = {d.shape[1] for d in subnet_data}
+            mode_counts = {d.shape[3] for d in subnet_data}
+            if (
+                self.nets._is_merged_mode()
+                and len(voi_counts) == 1
+                and all(
+                    d.shape[2] == len(sn.node_indices)
+                    for sn, d in zip(self.nets.subnets, subnet_data)
+                )
+            ):
+                # Merged mode: scatter per-subnet nodes into connectome order.
+                # Use d.shape[3] (observed output has modes summed to 1)
+                # rather than model.number_of_modes.
+                total_nodes = (
+                    max(int(ix) for sn in self.nets.subnets for ix in sn.node_indices)
+                    + 1
+                )
+                total_vois = subnet_data[0].shape[1]
+                n_modes = max(mode_counts)
+                data = np.zeros(
+                    (len(t), total_vois, total_nodes, n_modes), dtype=np.float64
+                )
+                for sn, d in zip(self.nets.subnets, subnet_data):
+                    data[:, :, sn.node_indices, : d.shape[3]] = d
+            elif len(voi_counts) == 1 and len(mode_counts) == 1:
+                # Unmerged with identical VOI counts: concatenate nodes only
+                data = np.concatenate(subnet_data, axis=2)
+            else:
+                # Unmerged with heterogeneous VOI counts: block-diagonal
+                # VOI + node placement matching NetworkSet.observe(flat=True)
+                total_vois = sum(d.shape[1] for d in subnet_data)
+                total_nodes = sum(d.shape[2] for d in subnet_data)
+                n_modes = max(mode_counts)
+                data = np.zeros(
+                    (len(t), total_vois, total_nodes, n_modes), dtype=np.float64
+                )
+                voi_off = 0
+                node_off = 0
+                for d in subnet_data:
+                    nv, nn, nm = d.shape[1], d.shape[2], d.shape[3]
+                    data[:, voi_off : voi_off + nv, node_off : node_off + nn, :nm] = d
+                    voi_off += nv
+                    node_off += nn
+            result.append((t, data))
+        return result
+
+    def _record_subnet_monitors(self, raw_steps, nstep):
+        """Feed per-subnetwork Recorder instances from chunk_size=1 raw outputs."""
+        from tvb.simulator.monitors import (
+            AfferentCoupling,
+            AfferentCouplingTemporalAverage,
+        )
+
+        for si, sn in enumerate(self.nets.subnets):
+            if not sn.monitors:
+                continue
+            _, tavg, ctavg = raw_steps[si]
+            k_j = max(1, int(round(float(sn.scheme.dt) / self._dt0)))
+            for step in range(1, nstep + 1):
+                if step % k_j != 0:
+                    continue
+                sn_step = step // k_j
+                for rec in sn.monitors:
+                    if isinstance(
+                        rec.monitor,
+                        (AfferentCoupling, AfferentCouplingTemporalAverage),
+                    ):
+                        sample = ctavg[step - 1]
+                    else:
+                        sample = tavg[step - 1]
+                    rec.record(sn_step, sample)

@@ -23,6 +23,8 @@ import importlib
 import inspect
 import json
 import os
+import shlex
+import shutil
 import subprocess
 import sys
 import textwrap
@@ -342,7 +344,7 @@ def model_dfun_signature(model) -> str:
 _FIRST_MODEL_ID = 100
 
 #: the model set the hybrid backends actually support, mirroring
-#: ``nb_hybrid._get_supported_models_classes`` (27 classes).  The build-time
+#: ``nb_hybrid._get_supported_models_classes`` (28 classes).  The build-time
 #: emission path (``only_supported=True``, what CMakeLists invokes with
 #: ``--only-supported``) scopes discovery and emission to exactly this set:
 #: the kernels the extension ships are the kernels the documented support list
@@ -365,6 +367,7 @@ _SUPPORTED_MODEL_CLASSES = frozenset((
     "EpileptorRestingState",
     "GastSchmidtKnosche_SD",
     "GastSchmidtKnosche_SF",
+    "GastSollaKennedy",
     "Generic2dOscillator",
     "Hopfield",
     "JansenRit",
@@ -392,6 +395,7 @@ _SUPPORTED_MODEL_MODULES = frozenset((
     "epileptor",
     "epileptor_rs",
     "epileptorcodim3",
+    "gast_solla_kennedy",
     "hopfield",
     "infinite_theta",
     "jansen_rit",
@@ -729,7 +733,7 @@ def emit_sources(models: dict = None, strict: bool = False,
     as a single ``DfunGenerationError`` instead of being skipped.
 
     ``only_supported=True`` (the build-time mode; CMake passes
-    ``--only-supported``) scopes discovery to the supported model set — the 27
+    ``--only-supported``) scopes discovery to the supported model set — the 28
     classes of ``nb_hybrid._get_supported_models_classes`` — so the emitted
     table is exactly the kernels the extension ships, and unsupported model
     code in the tree cannot break or slow the build.  Ignored when ``models``
@@ -875,6 +879,25 @@ extern "C" CPH_GEN_EXPORT const cph_gen_entry *cph_builtin_entry(int idx) {{
     return "\n".join(src), meta
 
 
+def _compiler_supports_flag(cxx_cmd: list, flag: str, cache_dir: Path) -> bool:
+    """Return True if *cxx_cmd* accepts *flag* when compiling a trivial C++ unit."""
+    pid = os.getpid()
+    probe_src = cache_dir / f"_flag_probe_{pid}.cpp"
+    probe_obj = cache_dir / f"_flag_probe_{pid}.o"
+    try:
+        probe_src.write_text("int _cph_flag_probe = 0;\n")
+        res = subprocess.run(
+            [*cxx_cmd, flag, "-c", str(probe_src), "-o", str(probe_obj)],
+            capture_output=True,
+        )
+        return res.returncode == 0
+    except OSError:
+        return False
+    finally:
+        probe_src.unlink(missing_ok=True)
+        probe_obj.unlink(missing_ok=True)
+
+
 def generate_lib(cache_dir: Path, extra_models: dict = None,
                  start_id: int = _FIRST_MODEL_ID, exclude=None):
     """Generate + compile the generic dfun shared library (the runtime g++ /
@@ -890,7 +913,7 @@ def generate_lib(cache_dir: Path, extra_models: dict = None,
     emission.  The backend passes the built-in table's names, so stock models
     are never re-emitted into the runtime library: the prebuilt extension
     already serves them, and re-compiling dead copies of them (the old
-    behaviour emitted all 26 stock kernels alongside the user model) cost a
+    behaviour emitted all 27 stock kernels alongside the user model) cost a
     g++ pass and left dead code in the cache.  Only models the build did not
     cover get kernels here, assigned contiguously from ``start_id`` over the
     *remaining* sorted name set; the dispatch table keeps its front gap
@@ -902,6 +925,24 @@ def generate_lib(cache_dir: Path, extra_models: dict = None,
     to the integer id used in the dispatch table (ids >= 100) and meta is the
     emit_sources metadata.
     """
+    if sys.platform == "emscripten":
+        raise NotImplementedError(
+            "Runtime C++ compilation via dfungen.generate_lib is unavailable "
+            "in WebAssembly/Emscripten; use built-in generated kernels."
+        )
+
+    cxx_env = os.environ.get("CXX")
+    if cxx_env:
+        cxx_cmd = shlex.split(cxx_env)
+    else:
+        found = shutil.which("g++") or shutil.which("clang++")
+        if not found:
+            raise RuntimeError(
+                "No C++ compiler found (checked $CXX, g++, clang++); "
+                "cannot compile runtime dfun library."
+            )
+        cxx_cmd = [found]
+
     cache_dir = Path(cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
     models = collect_models()
@@ -916,9 +957,21 @@ def generate_lib(cache_dir: Path, extra_models: dict = None,
     src_path.write_text(src)
     so_path = cache_dir / "models_gen.so"
     inc = np.get_include()
-    cmd = (f"g++ -O3 -march=native -fopenmp-simd -std=c++17 -fPIC -shared "
-           f"-I{inc} {src_path} -o {so_path}")
-    subprocess.run(cmd, shell=True, check=True, capture_output=True)
+    cmd = [
+        *cxx_cmd,
+        "-O3",
+        "-std=c++17",
+        "-fPIC",
+        "-shared",
+        "-ffp-contract=off",
+        "-Wno-unknown-pragmas",
+    ]
+    if _compiler_supports_flag(cxx_cmd, "-march=native", cache_dir):
+        cmd.append("-march=native")
+    if _compiler_supports_flag(cxx_cmd, "-fopenmp-simd", cache_dir):
+        cmd.append("-fopenmp-simd")
+    cmd.extend([f"-I{inc}", str(src_path), "-o", str(so_path)])
+    subprocess.run(cmd, check=True, capture_output=True)
     model_ids = {name: m["mid"] for name, m in meta.items()}
     return so_path, model_ids, meta
 
@@ -946,7 +999,7 @@ def _main(argv=None) -> int:
                              "emitted, instead of skipping it")
     parser.add_argument("--only-supported", action="store_true",
                         help="discover and emit only the supported model set "
-                             "(the 27 classes of "
+                             "(the 28 classes of "
                              "nb_hybrid._get_supported_models_classes); "
                              "unsupported model modules are neither imported "
                              "nor emitted (the build-time mode)")

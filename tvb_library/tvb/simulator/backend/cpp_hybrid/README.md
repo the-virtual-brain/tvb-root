@@ -69,7 +69,7 @@ For a higher-level entry point, use `backend.CppHybridBackend` or the notebook
 
 ## Compiler flags & numerical parity
 
-GNU-only flags (see `tvb_library/CMakeLists.txt`):
+GNU/Clang flags (see `tvb_library/CMakeLists.txt`):
 
 ```
 -O3 -march=native -funroll-loops -fopenmp-simd -ffp-contract=off
@@ -78,7 +78,9 @@ GNU-only flags (see `tvb_library/CMakeLists.txt`):
 We deliberately keep **`-ffp-contract=off`** and do **not** use `-ffast-math`:
 float32 bit-exactness parity with the numba reference hybrid backend depends on
 no fast-math / fast-FP contraction. `-fopenmp-simd` (no runtime libgomp
-dependency) enables the SIMD vectorization across the batch lane.
+dependency) enables the SIMD vectorization across the batch lane (`-march=native`
+is omitted when cross-compiling or building multi-arch macOS wheels, and
+Emscripten builds use `-msimd128`).
 
 ## Support matrix & wheel policy (decision: keep the cp312 stable-ABI pin)
 
@@ -153,10 +155,10 @@ cannot be emitted a **build failure** listing every offender, instead of a
 silent shrink of the generated model set.
 
 `--only-supported` scopes discovery *and* the strict expectation to the
-model set the hybrid backends actually support (the 27 classes of
+model set the hybrid backends actually support (the 28 classes of
 `nb_hybrid._get_supported_models_classes`, mirrored by
 `dfungen._SUPPORTED_MODEL_CLASSES`/`_SUPPORTED_MODEL_MODULES`): the emitted
-table is exactly the kernels the extension ships (25 expression-driven ones;
+table is exactly the kernels the extension ships (26 expression-driven ones;
 the two numba-only supported models have hand-written kernels 0..12).
 Modules outside that set are neither imported nor emitted, so unsupported
 model code in the tree cannot break or slow the build — while a supported
@@ -170,11 +172,11 @@ so user-defined models keep working.)
 
 The generated kernels get the *same* compile flags as the hand-written ones:
 `-O3 -march=native -funroll-loops -fopenmp-simd -ffp-contract=off`. The runtime
-fallback (`dfungen.generate_lib`, g++ + ctypes) compiles with
-`-O3 -march=native -fopenmp-simd -std=c++17` and **omits `-ffp-contract=off`**
-(and `-funroll-loops`), so a fallback-compiled model is only float32-tolerance
-equal to the numba reference, not bit-exact. Compiling at build time also
-removes a g++ call and a `models_gen.cpp`/`models_gen.so` pair from every
+fallback (`dfungen.generate_lib`, `$CXX`/`g++`/`clang++` + ctypes) compiles
+with `-O3 -std=c++17 -fPIC -shared -ffp-contract=off -Wno-unknown-pragmas`
+(plus `-march=native` and `-fopenmp-simd` when supported) and omits
+`-funroll-loops`. Compiling at build time also
+removes a compiler call and a `models_gen.cpp`/`models_gen.so` pair from every
 first run: a stock generic model needs no compiler at runtime at all
 (`test_cpp_hybrid_buildgen.py` proves it by making `generate_lib` raise).
 
@@ -222,10 +224,10 @@ the documented escape hatch above.  The handoff's larger machine-specific
 deltas (pip ~47 s vs ~10 s; wheel ~20 s vs ~10 s) were recorded on the
 origin machine — same shape, different scale.
 
-The 26th discovery (`DecoBalancedExcInh`, a dfun model in the tree but
+The 27th discovery (`DecoBalancedExcInh`, a dfun model in the tree but
 outside the supported set) is no longer a built-in kernel: option 2 of the
-handoff went in, so the built-in table is exactly the supported set (25
-generic kernels; ids 100..124) and the build no longer imports/emits
+handoff went in, so the built-in table is exactly the supported set (26
+generic kernels; ids 100..125) and the build no longer imports/emits
 unsupported model code.  Incremental per-model emission (option 3, keyed by
 the Item-1 dfun fingerprint) was not taken: with `-flto` the link phase
 re-processes every TU anyway, so per-model caching would only skip the ~1.4 s
@@ -238,8 +240,8 @@ triggers already keep unchanged builds at zero regeneration cost.
 | Range | Owner | Lookup |
 |---|---|---|
 | **0..12** | hand-written kernels in `_core.cpp` (MPR, Generic2dOscillator, Kuramoto, SupHopf, Linear, ReducedWongWang, WilsonCowan, JansenRit, Epileptor, Epileptor2D, Zerlaut 1st/2nd order, CerebellarMF) | `_MODEL_IDS`, checked first, so these take precedence over a generated kernel for the same model |
-| **100..124** | the 25 built-in generic kernels compiled in at build time (the supported model set) | `generic_model_table()`, ids assigned in sorted class-name order |
-| **125+** | runtime-compiled fallback library (`models_gen.so`) for models the build did not cover (user-defined models, and in-tree dfun models outside the supported set such as `DecoBalancedExcInh`) | emitted at `max(built-in id) + 1`, dispatch table gap-padded with `nullptr` over `100..124` |
+| **100..125** | the 26 built-in generic kernels compiled in at build time (the supported model set) | `generic_model_table()`, ids assigned in sorted class-name order |
+| **126+** | runtime-compiled fallback library (`models_gen.so`) for models the build did not cover (user-defined models, and in-tree dfun models outside the supported set such as `DecoBalancedExcInh`) | emitted at `max(built-in id) + 1`, dispatch table gap-padded with `nullptr` over `100..125` |
 
 The gap padding matters: ids are positional over sorted class names, so a user
 model sorting before every stock name (`AaaProbe`) would otherwise take id 100
@@ -263,7 +265,7 @@ nothing calls a null slot.
 * What is **not** caught: a shadowing class with the *same* state variables,
   coupling terms and parameters but **different equations**. Same buffer
   shapes, same packing — so it runs the stock equations silently. Avoid it by
-  not reusing stock model names; a distinct class name lands in the 125+ range
+  not reusing stock model names; a distinct class name lands in the 126+ range
   and gets its own generated kernel.
 
 ## Feature parity with nb_hybrid (all parity-tested, float32 tolerance)
@@ -273,7 +275,7 @@ matches `NbHybridBackend`:
 
 | Feature | Coverage | Parity test |
 |---|---|---|
-| **Models** (26 classes) | 13 hand-written dfuns (ids 0–12, incl. CerebellarMF) + generic expression-generated route (ids ≥ 100): 25 supported generic kernels compiled in at build time; the one in-tree dfun model outside the supported set (`DecoBalancedExcInh`) is runtime-compiled on first use | `test_cpp_hybrid_models.py` (31 items: 26 classes + CerebellarMF flag variants) |
+| **Models** (28 supported classes) | 13 hand-written dfuns (ids 0–12, incl. CerebellarMF) + generic expression-generated route (ids ≥ 100): 26 supported generic kernels compiled in at build time; the in-tree dfun model outside the supported set (`DecoBalancedExcInh`) is runtime-compiled on first use | `test_cpp_hybrid_models.py` (28 classes + CerebellarMF flag variants + Zerlaut 2nd-order check) |
 | **Coupling functions** | Linear, Scaling, Sigmoidal, Difference, Kuramoto, HyperbolicTangent, SigmoidalJansenRit (classic **and** legacy), PreSigmoidal (static **and** dynamic, incl. `globalT`) | `test_cpp_hybrid_coupling.py` (11 items) |
 | **Monitors** | Raw, RawVoi, TemporalAverage, SubSample, GlobalAverage, AfferentCoupling (+TemporalAverage), SpatialAverage, Projection, Bold. Bold's HRF convolution and Raw/SubSample collection run as **kernel monitor engines** inside the C++ step loop; the shared Python path remains the parity reference/fallback (`enable_kernel_monitors`) | `test_cpp_hybrid_monitors.py` (18 items) |
 | **Stimuli** | constant / pulse / sinusoid patterns (single-node and all-node spatial), **multiple subnetworks with stimuli simultaneously** | `test_cpp_hybrid_stimuli.py` (6 items) |
