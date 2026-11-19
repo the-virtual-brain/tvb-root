@@ -121,8 +121,11 @@ template <int W> CPH_NOINLINE static void cfun_post(int id,
                              ((double)cx[i] - (double)p[2 * W + i]) /
                              (double)p[1 * W + i])));
     break;
-  case 3: case 4: case 6:  // Difference / Kuramoto / SJR: a*gx
+  case 3: case 6:  // Difference / SJR: a*gx
     for (int i = 0; i < W; i++) cx[i] = p[0 * W + i] * cx[i];
+    break;
+  case 4:  // Kuramoto: a * inv_N * gx
+    for (int i = 0; i < W; i++) cx[i] = p[0 * W + i] * p[1 * W + i] * cx[i];
     break;
   case 5: case 7: case -1: default:  // identity post
     break;
@@ -246,7 +249,9 @@ CPH_NOINLINE static void dfun_mpr(float *dx, const float *x, int node, int mode,
     float tau = pk[0 * W + i], I = pk[1 * W + i], Delta = pk[2 * W + i],
           J = pk[3 * W + i], eta = pk[4 * W + i], cr = pk[5 * W + i],
           cv = (n_parm >= 7) ? pk[6 * W + i] : 0.f;
-    float r = r0[i] * (r0[i] > 0.f);
+    // Match MontbrioPazoRoxin.dfun / state_variable_dfuns: do not clamp inside
+    // dfun (post-stage clamp_mpr enforces r >= 0 on xi and x).
+    float r = r0[i];
     float V = V0[i];
     dr[i] = (1.f / tau) * (Delta / (M_PI_F * tau) + 2.f * r * V);
     dV[i] = (1.f / tau) * (V * V + eta + J * tau * r + I + cr * c0[i] +
@@ -813,46 +818,46 @@ CPH_NOINLINE static void dfun_crbl(float *dx, const float *x, int node, int mode
     double GrC = GrC0[i], GoC = GoC0[i], MLI = MLI0[i], PC = PC0[i],
            noise = nz0[i];
     double mossy = c_mossy[i], parallel = c_par[i];
-    bool legacy_ee = CRBL(p, 82) != 0.0;
-    bool add_nz    = CRBL(p, 83) != 0.0;
+    bool legacy_ee = CRBL(pk, 82) != 0.0;
+    bool add_nz    = CRBL(pk, 83) != 0.0;
     double P_grc[5], P_goc[5], P_mli[5], P_pc[5];
     for (int k = 0; k < 5; k++) {
-      P_grc[k] = CRBL(p, 62 + k);
-      P_goc[k] = CRBL(p, 67 + k);
-      P_mli[k] = CRBL(p, 72 + k);
-      P_pc[k]  = CRBL(p, 77 + k);
+      P_grc[k] = CRBL(pk, 62 + k);
+      P_goc[k] = CRBL(pk, 67 + k);
+      P_mli[k] = CRBL(pk, 72 + k);
+      P_pc[k]  = CRBL(pk, 77 + k);
     }
-    double gL_grc = CRBL(p, 0), gL_goc = CRBL(p, 1), gL_mli = CRBL(p, 2),
-           gL_pc = CRBL(p, 3);
-    double EL_grc = CRBL(p, 4), EL_goc = CRBL(p, 5), EL_mli = CRBL(p, 6),
-           EL_pc = CRBL(p, 7);
-    double Cm_grc = CRBL(p, 8), Cm_goc = CRBL(p, 9), Cm_mli = CRBL(p, 10),
-           Cm_pc = CRBL(p, 11);
-    double E_e = CRBL(p, 12), E_i = CRBL(p, 13);
-    double Q_mf_grc = CRBL(p, 14), Q_mf_goc = CRBL(p, 15);
-    double Q_grc_goc = CRBL(p, 16), Q_grc_mli = CRBL(p, 17),
-           Q_grc_pc = CRBL(p, 18);
-    double Q_goc_grc = CRBL(p, 19), Q_goc_goc = CRBL(p, 20);
-    double Q_mli_mli = CRBL(p, 21), Q_mli_pc = CRBL(p, 22);
-    double tau_mf_grc = CRBL(p, 23), tau_mf_goc = CRBL(p, 24);
-    double tau_grc_goc = CRBL(p, 25), tau_grc_mli = CRBL(p, 26),
-           tau_grc_pc = CRBL(p, 27);
-    double tau_goc_grc = CRBL(p, 28), tau_goc_goc = CRBL(p, 29);
-    double tau_mli_mli = CRBL(p, 30), tau_mli_pc = CRBL(p, 31);
-    double K_mossy_grc = CRBL(p, 32), K_mossy_goc = CRBL(p, 33);
-    double K_grc_goc = CRBL(p, 34), K_grc_mli = CRBL(p, 35),
-           K_grc_pc = CRBL(p, 36);
-    double K_goc_goc = CRBL(p, 37), K_mli_mli = CRBL(p, 38),
-           K_mli_pc = CRBL(p, 39);
-    double alpha_grc = CRBL(p, 45), alpha_goc = CRBL(p, 46),
-           alpha_mli = CRBL(p, 47), alpha_pc = CRBL(p, 48);
-    double T = CRBL(p, 49);
-    double tau_OU = CRBL(p, 50), weight_noise = CRBL(p, 51);
-    double eie = CRBL(p, 52), eiin = CRBL(p, 53), ein_ex = CRBL(p, 54);
-    double fm = CRBL(p, 55), fp = CRBL(p, 56);
-    double mf_to_grc = CRBL(p, 57), mf_to_goc = CRBL(p, 58);
-    double pf_to_goc = CRBL(p, 59), pf_to_mli = CRBL(p, 60),
-           pf_to_pc = CRBL(p, 61);
+    double gL_grc = CRBL(pk, 0), gL_goc = CRBL(pk, 1), gL_mli = CRBL(pk, 2),
+           gL_pc = CRBL(pk, 3);
+    double EL_grc = CRBL(pk, 4), EL_goc = CRBL(pk, 5), EL_mli = CRBL(pk, 6),
+           EL_pc = CRBL(pk, 7);
+    double Cm_grc = CRBL(pk, 8), Cm_goc = CRBL(pk, 9), Cm_mli = CRBL(pk, 10),
+           Cm_pc = CRBL(pk, 11);
+    double E_e = CRBL(pk, 12), E_i = CRBL(pk, 13);
+    double Q_mf_grc = CRBL(pk, 14), Q_mf_goc = CRBL(pk, 15);
+    double Q_grc_goc = CRBL(pk, 16), Q_grc_mli = CRBL(pk, 17),
+           Q_grc_pc = CRBL(pk, 18);
+    double Q_goc_grc = CRBL(pk, 19), Q_goc_goc = CRBL(pk, 20);
+    double Q_mli_mli = CRBL(pk, 21), Q_mli_pc = CRBL(pk, 22);
+    double tau_mf_grc = CRBL(pk, 23), tau_mf_goc = CRBL(pk, 24);
+    double tau_grc_goc = CRBL(pk, 25), tau_grc_mli = CRBL(pk, 26),
+           tau_grc_pc = CRBL(pk, 27);
+    double tau_goc_grc = CRBL(pk, 28), tau_goc_goc = CRBL(pk, 29);
+    double tau_mli_mli = CRBL(pk, 30), tau_mli_pc = CRBL(pk, 31);
+    double K_mossy_grc = CRBL(pk, 32), K_mossy_goc = CRBL(pk, 33);
+    double K_grc_goc = CRBL(pk, 34), K_grc_mli = CRBL(pk, 35),
+           K_grc_pc = CRBL(pk, 36);
+    double K_goc_goc = CRBL(pk, 37), K_mli_mli = CRBL(pk, 38),
+           K_mli_pc = CRBL(pk, 39);
+    double alpha_grc = CRBL(pk, 45), alpha_goc = CRBL(pk, 46),
+           alpha_mli = CRBL(pk, 47), alpha_pc = CRBL(pk, 48);
+    double T = CRBL(pk, 49);
+    double tau_OU = CRBL(pk, 50), weight_noise = CRBL(pk, 51);
+    double eie = CRBL(pk, 52), eiin = CRBL(pk, 53), ein_ex = CRBL(pk, 54);
+    double fm = CRBL(pk, 55), fp = CRBL(pk, 56);
+    double mf_to_grc = CRBL(pk, 57), mf_to_goc = CRBL(pk, 58);
+    double pf_to_goc = CRBL(pk, 59), pf_to_mli = CRBL(pk, 60),
+           pf_to_pc = CRBL(pk, 61);
 
     double wn = weight_noise * noise;
     double Fe_tod1 = mossy * fm * mf_to_grc + wn;
@@ -1243,50 +1248,62 @@ template <int W> struct proj {
     // globalT (PreSigmoidal dynamic, globalT=1): mean of the delayed
     // threshold (second source cvar) over ALL projection edges, per source
     // mode — matches nb_hybrid's PreSigmoidal.pre() global-threshold path.
-    float gthr[8 * W];
-    bool use_gT = (cfun_id == 9 && n_cfun_parm > 5 &&
-                   cfp[(size_t)5 * W] != 0.f);
-    if (use_gT) {
-      const int nnz_total = (int)ptr[ptr.size() - 1];
-      const int cv1 = src_cvars[1];
-      const float *sbuf1 = src.buf.data() +
-          (size_t)cv1 * src.n_node * nms * src.H * W;
-      for (int m = 0; m < nms && m < 8; m++)
-        for (int i = 0; i < W; i++) gthr[m * W + i] = 0.f;
-      if (interp) {
-        for (int nz = 0; nz < nnz_total; nz++) {
-          // i0 is the source-STEP index of x0 (slot s holds step s+1,
-          // so s0 = (i0-1) and s1 = i0 read steps i0 and i0+1)
-          const uint32_t i0 = (t1 - 1u) / Ksrc - del[nz];
-          // zero-delay edges: i1 = m+1 not pushed; hold x0 (decision 3)
-          const float alpha = (del[nz] == 0)
-              ? 0.f : (float)((t1 - 1u) % Ksrc) / (float)Ksrc;
-          const uint32_t s0 = (i0 - 1u) & Hm1;
-          const uint32_t s1 = i0 & Hm1;
-          for (int m = 0; m < nms && m < 8; m++) {
-            const float *b0 = sbuf1 +
-                (((size_t)idx[nz] * nms + m) * src.H + s0) * W;
-            const float *b1 = sbuf1 +
-                (((size_t)idx[nz] * nms + m) * src.H + s1) * W;
-            for (int i = 0; i < W; i++)
-              gthr[m * W + i] += b0[i] + alpha * (b1[i] - b0[i]);
-          }
-        }
-      } else {
-        for (int nz = 0; nz < nnz_total; nz++) {
-          // exact single-slot read (legacy K == 1, or intra multi-dt —
-          // decision 3); see the slow-path branch below for the derivation
-          const uint32_t slot = (t1 / Ksrc - 2u - del[nz]) & Hm1;
-          for (int m = 0; m < nms && m < 8; m++) {
-            const float *b = sbuf1 +
-                (((size_t)idx[nz] * nms + m) * src.H + slot) * W;
-            for (int i = 0; i < W; i++) gthr[m * W + i] += b[i];
-          }
+    // Check all SIMD lanes so mixed globalT sweeps (e.g. lane 0 = 0, lane k = 1)
+    // compute gthr whenever any lane enables globalT.
+    bool any_gT = false;
+    if (cfun_id == 9 && n_cfun_parm > 5 && src_cvars.size() >= 2) {
+      for (int i = 0; i < W; i++) {
+        if (cfp[(size_t)5 * W + i] != 0.f) {
+          any_gT = true;
+          break;
         }
       }
-      const float inv = 1.0f / (float)nnz_total;
-      for (int m = 0; m < nms && m < 8; m++)
-        for (int i = 0; i < W; i++) gthr[m * W + i] *= inv;
+    }
+    if (any_gT) {
+      if (gthr_buf.size() < (size_t)nms * W)
+        gthr_buf.resize((size_t)nms * W);
+      float *gthr = gthr_buf.data();
+      std::fill_n(gthr, (size_t)nms * W, 0.f);
+      const int nnz_total = ptr.empty() ? 0 : (int)ptr.back();
+      if (nnz_total > 0) {
+        const int cv1 = src_cvars[1];
+        const float *sbuf1 = src.buf.data() +
+            (size_t)cv1 * src.n_node * nms * src.H * W;
+        if (interp) {
+          for (int nz = 0; nz < nnz_total; nz++) {
+            // i0 is the source-STEP index of x0 (slot s holds step s+1,
+            // so s0 = (i0-1) and s1 = i0 read steps i0 and i0+1)
+            const uint32_t i0 = (t1 - 1u) / Ksrc - del[nz];
+            // zero-delay edges: i1 = m+1 not pushed; hold x0 (decision 3)
+            const float alpha = (del[nz] == 0)
+                ? 0.f : (float)((t1 - 1u) % Ksrc) / (float)Ksrc;
+            const uint32_t s0 = (i0 - 1u) & Hm1;
+            const uint32_t s1 = i0 & Hm1;
+            for (int m = 0; m < nms; m++) {
+              const float *b0 = sbuf1 +
+                  (((size_t)idx[nz] * nms + m) * src.H + s0) * W;
+              const float *b1 = sbuf1 +
+                  (((size_t)idx[nz] * nms + m) * src.H + s1) * W;
+              for (int i = 0; i < W; i++)
+                gthr[(size_t)m * W + i] += b0[i] + alpha * (b1[i] - b0[i]);
+            }
+          }
+        } else {
+          for (int nz = 0; nz < nnz_total; nz++) {
+            // exact single-slot read (legacy K == 1, or intra multi-dt —
+            // decision 3); see the slow-path branch below for the derivation
+            const uint32_t slot = (t1 / Ksrc - 2u - del[nz]) & Hm1;
+            for (int m = 0; m < nms; m++) {
+              const float *b = sbuf1 +
+                  (((size_t)idx[nz] * nms + m) * src.H + slot) * W;
+              for (int i = 0; i < W; i++) gthr[(size_t)m * W + i] += b[i];
+            }
+          }
+        }
+        const float inv = 1.0f / (float)nnz_total;
+        for (int m = 0; m < nms; m++)
+          for (int i = 0; i < W; i++) gthr[(size_t)m * W + i] *= inv;
+      }
     }
     // fast path: single source mode, no pre transform, one source cvar,
     // matching target — the dominant case (Linear.a * matvec).  Avoids the
@@ -1298,9 +1315,9 @@ template <int W> struct proj {
       const int scv = src_cvars[0];
       const float *sbuf = src.buf.data() +
           (size_t)scv * src.n_node * src.H * W;
-      const float ts_scale = scale * ts;
+      const float ts_scale = scale * ts * (float)mode_map[0];
       for (int j = 0; j < nn; j++) {
-        float cx[8 * W];
+        float cx[W];
         for (int i = 0; i < W; i++) cx[i] = 0.f;
         const int i0 = ptr[j], i1 = ptr[j + 1];
         for (int nz = i0; nz < i1; nz++) {
@@ -1315,19 +1332,25 @@ template <int W> struct proj {
       }
       return;
     }
+    // Lazily size scratch buffers outside node/edge loops (zero steady-state allocs).
+    if (xi_buf.size() < (size_t)nmt * W) xi_buf.resize((size_t)nmt * W);
+    if (cx_buf.size() < (size_t)nms * W) cx_buf.resize((size_t)nms * W);
+    const size_t n_v = std::max<size_t>(src_cvars.size(), 2);
+    if (v_buf.size() < n_v * W) v_buf.resize(n_v * W);
+    float *xi = xi_buf.data();
+    float *cx = cx_buf.data();
+    float *v = v_buf.data();
+    const float *gthr = gthr_buf.data();
+
     // mode_map: (nms, nmt) row-major
     for (int j = 0; j < nn; j++) {
       // target state for per-edge pre(x_i): current state at tgt_state_cvar
-      float xi[8 * W];
-      for (int m = 0; m < nmt && m < 8; m++) {
+      for (int m = 0; m < nmt; m++) {
         const float *xv = tgt.x.data() +
             ((size_t)tgt_state_cvar * nn * nmt + j * nmt + m) * W;
-        for (int i = 0; i < W; i++) xi[m * W + i] = xv[i];
+        for (int i = 0; i < W; i++) xi[(size_t)m * W + i] = xv[i];
       }
-      float cx[8 * W];
-      for (int m = 0; m < nms && m < 8; m++) {
-        for (int i = 0; i < W; i++) cx[m * W + i] = 0.f;
-      }
+      std::fill_n(cx, (size_t)nms * W, 0.f);
       const int i0 = ptr[j], i1 = ptr[j + 1];
       for (int nz = i0; nz < i1; nz++) {
         // value written at step (t - 1 - delay); slots are (step & H-1).
@@ -1352,8 +1375,7 @@ template <int W> struct proj {
           s0 = s1 = (t1 / Ksrc - 2u - del[nz]) & Hm1;
         }
         const float wgt = w[nz];
-        for (int m = 0; m < nms && m < 8; m++) {
-          float v[4 * W];  // up to 4 source cvars
+        for (int m = 0; m < nms; m++) {
           for (size_t cv = 0; cv < src_cvars.size(); cv++) {
             const float *sbuf = src.buf.data() +
                 (size_t)src_cvars[cv] * src.n_node * nms * src.H * W;
@@ -1365,37 +1387,46 @@ template <int W> struct proj {
               v[cv * W + i] = b0[i] + alpha * (b1[i] - b0[i]);
           }
           if (has_pre) {
-            if (use_gT)
-              for (int i = 0; i < W; i++) v[W + i] = gthr[m * W + i];
-            cfun_pre<W>(cfun_id, v, cfp.data(), xi + (nmt < 8 ? 0 : 0) * W);
-            for (int i = 0; i < W; i++) cx[m * W + i] += wgt * v[i];
+            if (any_gT) {
+              for (int i = 0; i < W; i++) {
+                if (cfp[(size_t)5 * W + i] != 0.f)
+                  v[W + i] = gthr[(size_t)m * W + i];
+              }
+            }
+            const int xi_m = (m < nmt) ? m : 0;
+            cfun_pre<W>(cfun_id, v, cfp.data(), xi + (size_t)xi_m * W);
+            for (int i = 0; i < W; i++) cx[(size_t)m * W + i] += wgt * v[i];
           } else {
             for (int i = 0; i < W; i++) {
               float acc = 0.f;
               for (size_t cv = 0; cv < src_cvars.size(); cv++)
                 acc += v[cv * W + i];
-              cx[m * W + i] += wgt * acc;
+              cx[(size_t)m * W + i] += wgt * acc;
             }
           }
         }
       }
       // post per source mode, then mode-mix into target modes
 
-      for (int m = 0; m < nms && m < 8; m++)
-        cfun_post<W>(cfun_id, cx + m * W, cfp.data());
+      for (int m = 0; m < nms; m++)
+        cfun_post<W>(cfun_id, cx + (size_t)m * W, cfp.data());
 
-      for (int mt = 0; mt < nmt && mt < 8; mt++) {
+      for (int mt = 0; mt < nmt; mt++) {
         float *dst = out + ((size_t)j * nmt + mt) * W;
         for (int i = 0; i < W; i++) {
           float acc = 0.f;
-          for (int m = 0; m < nms && m < 8; m++)
-            acc += cx[m * W + i] * (float)mode_map[m * nmt + mt];
+          for (int m = 0; m < nms; m++)
+            acc += cx[(size_t)m * W + i] * (float)mode_map[(size_t)m * nmt + mt];
           dst[i] += scale * ts * acc;
         }
       }
     }
   }
   mutable std::vector<float> mode_map;  // (nms, nmt) row-major
+  mutable std::vector<float> gthr_buf;  // (nms * W) globalT scratch
+  mutable std::vector<float> xi_buf;    // (nmt * W) target state scratch
+  mutable std::vector<float> cx_buf;    // (nms * W) per-mode weighted sum scratch
+  mutable std::vector<float> v_buf;     // (max(src_cvars, 2) * W) edge cvar scratch
 };
 
 // ---- simulator (one per width instantiation) -------------------------------

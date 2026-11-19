@@ -308,3 +308,251 @@ def test_mixed_per_subnet_integrators_parity(integ_a, integ_b):
         build(integ_a, integ_a), NSTEP, initial_states=[x.copy() for x in ics],
     )
     assert np.max(np.abs(cpp_out[1][1] - all_same[1][1])) > 1e-5
+
+
+def _mm_subnetwork(name, n_nodes, n_modes, cr=1.0, cv=0.0):
+    model = MontbrioPazoRoxin(
+        cr=np.array([cr], dtype=np.float64),
+        cv=np.array([cv], dtype=np.float64),
+    )
+    model.number_of_modes = n_modes
+    model.configure()
+    scheme = HeunDeterministic(dt=DT)
+    sn = Subnetwork(name=name, model=model, scheme=scheme, nnodes=n_nodes)
+    sn.configure()
+    return sn
+
+
+def test_fast_path_inter_mode_map_parity():
+    """1-mode InterProjection fast path applies mode_map[0] cleanly."""
+    ics = _initial_states_pair()
+
+    def build(mm_val):
+        A = _subnetwork("A", 3)
+        B = _subnetwork("B", 4)
+        proj = _projection(
+            A, B, Linear(a=np.array([1.0]), b=np.array([0.0])),
+            source_cvar=(0,), target_cvar=(0,),
+        )
+        # InterProjection.mode_map is NArray(dtype=np.int_); assign via __dict__
+        # so fractional mode_map weights pass directly to both backends.
+        proj.__dict__["mode_map"] = np.array([[mm_val]], dtype=np.float64)
+        ns = NetworkSet(subnets=[A, B], projections=[proj])
+        ns.configure()
+        return ns
+
+    nb_out = NbHybridBackend().compile(build(2.5), eager=True).run(
+        NSTEP, initial_states=[x.copy() for x in ics],
+    )
+    cpp_out = CppHybridBackend().run_network(
+        build(2.5), NSTEP, initial_states=[x.copy() for x in ics],
+    )
+    _assert_close(nb_out, cpp_out, check_ctavg=True)
+
+    # Must scale ctavg by 2.5 relative to mode_map=[[1.0]].
+    unit_out = CppHybridBackend().run_network(
+        build(1.0), NSTEP, initial_states=[x.copy() for x in ics],
+    )
+    assert np.max(np.abs(cpp_out[1][2])) > 1e-3
+    np.testing.assert_allclose(
+        cpp_out[1][2], 2.5 * unit_out[1][2], rtol=1e-4, atol=1e-5,
+    )
+
+
+@pytest.mark.parametrize(
+    "cfun",
+    [
+        Difference(a=np.array([1.2])),
+        KuramotoCfun(a=np.array([1.2])),
+    ],
+)
+def test_multimode_pre_xi_parity(cfun):
+    """Multi-mode Difference/Kuramoto index target state xi at mode m, not 0."""
+    n_modes = 3
+    rng = np.random.RandomState(11)
+    ic_a = rng.uniform(0.1, 0.4, (2, 3, n_modes)).astype(np.float64)
+    ic_b = rng.uniform(0.1, 0.4, (2, 4, n_modes)).astype(np.float64)
+    # Separate modes distinctly so reading mode 0 for modes 1..2 diverges.
+    for m in range(n_modes):
+        ic_a[:, :, m] += 0.6 * m
+        ic_b[:, :, m] -= 0.7 * m
+    ics = [ic_a, ic_b]
+
+    def build():
+        A = _mm_subnetwork("A", 3, n_modes)
+        B = _mm_subnetwork("B", 4, n_modes)
+        proj = _projection(
+            A, B, cfun,
+            source_cvar=(0,), target_cvar=(0,),
+        )
+        proj.mode_map = np.eye(n_modes, dtype=np.int_)
+        ns = NetworkSet(subnets=[A, B], projections=[proj])
+        ns.configure()
+        return ns
+
+    nb_out = NbHybridBackend().compile(build(), eager=True).run(
+        NSTEP, initial_states=[x.copy() for x in ics],
+    )
+    cpp_out = CppHybridBackend().run_network(
+        build(), NSTEP, initial_states=[x.copy() for x in ics],
+    )
+    _assert_close(nb_out, cpp_out, check_ctavg=True)
+    # Coupling across modes must remain distinct.
+    assert np.max(np.abs(cpp_out[1][2][..., 1] - cpp_out[1][2][..., 0])) > 1e-2
+
+
+def test_kuramoto_multi_cvar_inv_n_parity():
+    """Multi-cvar Kuramoto (source_cvar=(0, 1)) applies inv_N = 0.5."""
+    ics = _initial_states_pair()
+
+    def build():
+        A = _subnetwork("A", 3)
+        B = _subnetwork("B", 4)
+        proj = _projection(
+            A, B, KuramotoCfun(a=np.array([1.2])),
+            source_cvar=(0, 1), target_cvar=(0,),
+        )
+        ns = NetworkSet(subnets=[A, B], projections=[proj])
+        ns.configure()
+        return ns
+
+    nb_out = NbHybridBackend().compile(build(), eager=True).run(
+        NSTEP, initial_states=[x.copy() for x in ics],
+    )
+    cpp_out = CppHybridBackend().run_network(
+        build(), NSTEP, initial_states=[x.copy() for x in ics],
+    )
+    _assert_close(nb_out, cpp_out, check_ctavg=True)
+
+
+def test_presigmoidal_dynamic_global_t_empty_connectivity():
+    """PreSigmoidal(dynamic=True, globalT=True) on 0-nnz connectivity has no NaN/Inf.
+
+    NbHybridBackend currently raises ZeroDivisionError on empty CSR with
+    globalT=True, so CppHybridBackend is cross-checked against an equivalent
+    uncoupled C++ run (finite output, zero ctavg, identical trajectories).
+    """
+    ics = _initial_states_pair()
+
+    def build(with_empty_proj=True):
+        A = _subnetwork("A", 3)
+        B = _subnetwork("B", 4)
+        projs = []
+        if with_empty_proj:
+            empty = sp.csr_matrix((4, 3), dtype=np.float32)
+            projs.append(InterProjection(
+                source=A, target=B,
+                source_cvar=np.array([0, 1], dtype=np.int_),
+                target_cvar=np.array([0], dtype=np.int_),
+                weights=empty, lengths=empty,
+                cfun=PreSigmoidal(dynamic=True, globalT=True),
+                scale=1.5, cv=1.0, dt=DT,
+            ))
+        ns = NetworkSet(subnets=[A, B], projections=projs)
+        ns.configure()
+        return ns
+
+    cpp_empty = CppHybridBackend().run_network(
+        build(True), NSTEP, initial_states=[x.copy() for x in ics],
+    )
+    cpp_uncoupled = CppHybridBackend().run_network(
+        build(False), NSTEP, initial_states=[x.copy() for x in ics],
+    )
+    for (_, d_cp, c_cp), (_, d_uc, _) in zip(cpp_empty, cpp_uncoupled):
+        assert np.all(np.isfinite(d_cp))
+        assert np.all(np.isfinite(c_cp))
+        np.testing.assert_allclose(d_cp, d_uc, rtol=1e-6, atol=1e-7)
+    np.testing.assert_allclose(cpp_empty[1][2], 0.0, atol=1e-7)
+
+
+def test_presigmoidal_dynamic_mixed_global_t_sweep_parity():
+    """Mixed globalT=0/1 SIMD lanes match independent W=1 runs."""
+    ics = _initial_states_pair()
+
+    def build(global_t):
+        A = _subnetwork("A", 3)
+        B = _subnetwork("B", 4)
+        # Use non-saturating G=1.5 so local vs global threshold diverges
+        # measurably (default G=60 saturates tanh to 1.0 for both).
+        proj = _projection(
+            A, B, PreSigmoidal(dynamic=True, globalT=global_t, G=np.array([1.5])),
+            source_cvar=(0, 1), target_cvar=(0,),
+        )
+        ns = NetworkSet(subnets=[A, B], projections=[proj])
+        ns.configure()
+        return ns
+
+    # Lane 0 has globalT=0, lane 1 has globalT=1 (catches lane-0-only check
+    # and confirms per-lane threshold selection).
+    sweep_vals = np.array([0.0, 1.0, 0.0, 1.0], dtype=np.float32)
+    desc = [{"type": "cfun", "projection": "A_to_B", "param_idx": 5}]
+    cpp_backend = CppHybridBackend()
+    sweep_out = cpp_backend.run_sweep(
+        build(False), sweep_vals, nstep=NSTEP,
+        initial_states=[x.copy() for x in ics],
+        sweep_descriptor=desc,
+    )
+    ref_local = cpp_backend.run_network(
+        build(False), NSTEP, initial_states=[x.copy() for x in ics],
+    )
+    ref_global = cpp_backend.run_network(
+        build(True), NSTEP, initial_states=[x.copy() for x in ics],
+    )
+
+    np.testing.assert_allclose(
+        sweep_out[0][1][1], ref_local[1][1], rtol=1e-4, atol=1e-5,
+    )
+    np.testing.assert_allclose(
+        sweep_out[0][1][2], ref_local[1][2], rtol=1e-4, atol=1e-5,
+    )
+    np.testing.assert_allclose(
+        sweep_out[1][1][1], ref_global[1][1], rtol=1e-4, atol=1e-5,
+    )
+    np.testing.assert_allclose(
+        sweep_out[1][1][2], ref_global[1][2], rtol=1e-4, atol=1e-5,
+    )
+    assert np.max(np.abs(sweep_out[0][1][2] - sweep_out[1][1][2])) > 1e-4
+
+
+@pytest.mark.parametrize(
+    "cfun",
+    [
+        Linear(a=np.array([0.8]), b=np.array([0.05])),
+        Difference(a=np.array([0.9])),
+    ],
+)
+def test_n_modes_gt_8_parity(cfun):
+    """n_modes = 10 (> 8 stack cap) matches NbHybridBackend without dropping modes."""
+    n_modes = 10
+    rng = np.random.RandomState(23)
+    ic_a = rng.uniform(0.1, 0.5, (2, 3, n_modes)).astype(np.float64)
+    ic_b = rng.uniform(0.1, 0.5, (2, 4, n_modes)).astype(np.float64)
+    # Give modes 8 and 9 distinct amplitude so dropping them is detectable.
+    ic_a[:, :, 8] += 0.8
+    ic_a[:, :, 9] += 1.4
+    ic_b[:, :, 8] -= 0.4
+    ic_b[:, :, 9] -= 0.9
+    ics = [ic_a, ic_b]
+
+    mm = np.eye(n_modes, dtype=np.int_)
+    mm[8, 0] = 1
+    mm[9, 9] = 2
+
+    def build():
+        A = _mm_subnetwork("A", 3, n_modes)
+        B = _mm_subnetwork("B", 4, n_modes)
+        proj = _projection(A, B, cfun, source_cvar=(0,), target_cvar=(0,))
+        proj.mode_map = mm
+        ns = NetworkSet(subnets=[A, B], projections=[proj])
+        ns.configure()
+        return ns
+
+    nb_out = NbHybridBackend().compile(build(), eager=True).run(
+        NSTEP, initial_states=[x.copy() for x in ics],
+    )
+    cpp_out = CppHybridBackend().run_network(
+        build(), NSTEP, initial_states=[x.copy() for x in ics],
+    )
+    _assert_close(nb_out, cpp_out, check_ctavg=True)
+    assert np.max(np.abs(cpp_out[1][2][:, 0, :, 8])) > 1e-3
+    assert np.max(np.abs(cpp_out[1][2][:, 0, :, 9])) > 1e-3

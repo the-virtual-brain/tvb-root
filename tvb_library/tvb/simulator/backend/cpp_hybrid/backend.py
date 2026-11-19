@@ -572,6 +572,24 @@ class CppHybridBackend:
             model_name = type(sn.model).__name__
             if not self._model_supported(model_name):
                 self._model_key(sn.model)  # raises if unsupported
+            mro_names = {c.__name__ for c in type(sn.model).__mro__}
+            if "EpileptorRestingState" in mro_names and bool(
+                np.any(np.asarray(getattr(sn.model, "modification", False)))
+            ):
+                raise NotImplementedError(
+                    "CppHybridBackend: EpileptorRestingState with "
+                    "modification=True is not supported. "
+                    "Set model.modification = numpy.array([False])."
+                )
+            if "Hopfield" in mro_names and bool(
+                np.any(np.asarray(getattr(sn.model, "dynamic", False)))
+            ):
+                raise NotImplementedError(
+                    "CppHybridBackend: Hopfield with dynamic=True is not "
+                    "supported. The hybrid codegen path only supports static "
+                    "threshold (dynamic=False). "
+                    "Set model.dynamic = numpy.array([False])."
+                )
             if (sn.model.number_of_modes != 1
                     and type(sn.model).__name__ not in _MODEL_IDS
                     and getattr(sn.model, "dfun_mode", None) != "combined"):
@@ -636,7 +654,9 @@ class CppHybridBackend:
         for sn in network_set.subnets:
             model_id, n_parm, n_cvar_m, n_svar_m, parm_names = \
                 self._model_key(sn.model)
-            params = self._params_for_model(sn.model, parm_names)  # (n_parm,)
+            params = self._params_for_model(
+                sn.model, parm_names, n_nodes=int(sn.nnodes)
+            )  # (n_nodes, n_parm)
             n_svar = int(sn.model.nvar) if n_svar_m is None else n_svar_m
             svar_names = tuple(str(n) for n in sn.model.state_variables)
             # voi entries: (kind, a, b) with kind 0 = state var a,
@@ -747,7 +767,9 @@ class CppHybridBackend:
                     _PASSTHROUGH_CFUN, np.zeros(0, np.float32), 0)
             else:
                 cfun_id = _CFUN_TYPE_IDS[_cfun_type(p)]
-                cfun_params = self._cfun_params(p.cfun)
+                cfun_params = self._cfun_params(
+                    p.cfun, n_src_cvar=len(src_cvars_list)
+                )
                 if cfun_id == 8 and getattr(p.cfun, "use_classic", 1):
                     cfun_params = cfun_params.copy()
                     cfun_params[0] *= cfun_params[0]
@@ -937,12 +959,36 @@ class CppHybridBackend:
             return
         name = type(model).__name__
         got = dfungen.model_dfun_signature(model)
-        if got != expected:
-            raise ValueError(
-                f"{name}: a dfun kernel for this class name exists but was "
-                f"generated from different equations (dfun fingerprint "
-                f"{got} != {expected}); rename the class or rebuild the "
-                f"extension")
+        if got == expected:
+            return
+        # Generic kernels are emitted from a default instance where scalar
+        # traits live in global_parameter_names; when a runtime instance sets
+        # per-node arrays on any parameter, Model.spatial_parameter_names
+        # shifts that name out of global_parameter_names without changing the
+        # equations.  Verify the equations still match under the kernel's split.
+        if list(model.spatial_parameter_names):
+            table = [str(p) for p in meta.get("parm_names", ())]
+            own = (list(model.global_parameter_names)
+                   + list(model.spatial_parameter_names))
+            if set(table) == set(own) and len(table) == len(own):
+                class _SigProxy:
+                    def __init__(self, m, g_names, s_names):
+                        self._m = m
+                        self.global_parameter_names = g_names
+                        self.spatial_parameter_names = s_names
+
+                    def __getattr__(self, attr):
+                        return getattr(self._m, attr)
+
+                for split in range(len(table), -1, -1):
+                    proxy = _SigProxy(model, table[:split], table[split:])
+                    if dfungen.model_dfun_signature(proxy) == expected:
+                        return
+        raise ValueError(
+            f"{name}: a dfun kernel for this class name exists but was "
+            f"generated from different equations (dfun fingerprint "
+            f"{got} != {expected}); rename the class or rebuild the "
+            f"extension")
 
     def _model_key(self, model):
         """Return (model_id, n_parm, n_cvar, n_svar, parm_names) for a model
@@ -976,31 +1022,72 @@ class CppHybridBackend:
                 int(meta["n_svar"]), parm)
 
     @staticmethod
-    def _cfun_params(cfun) -> np.ndarray:
+    def _cfun_params(cfun, n_src_cvar: int = 1) -> np.ndarray:
         """(n_parm,) float32 cfun parameter values, ordered like nb_hybrid."""
         attrs = _CPP_CFUN_PARAM_ATTRS[type(cfun).__name__]
         params = np.zeros(max(idx for _, idx in attrs) + 1, dtype=np.float32)
+        cfun_name = type(cfun).__name__
         for name, idx in attrs:
-            # some cfuns (e.g. Kuramoto.inv_N) are post-scaling conventions
-            # already covered by the C++ kernel; default missing attrs to 1.0
             v = getattr(cfun, name, None)
-            params[idx] = 1.0 if v is None else float(np.asarray(v).ravel()[0])
+            if v is None:
+                if cfun_name == "Kuramoto" and name == "inv_N":
+                    params[idx] = (1.0 / n_src_cvar) if n_src_cvar > 0 else 1.0
+                else:
+                    params[idx] = 1.0
+            else:
+                params[idx] = float(np.asarray(v).ravel()[0])
         return params
 
     @staticmethod
-    def _params_for_model(model, names) -> np.ndarray:
-        """(n_parm,) float32 — handles '<attr>:<idx>' array-element expansion
-        (Zerlaut P_e:/P_i:, CerebellarMF P_grc:/P_goc:/P_mli:/P_pc:)."""
-        vals = []
-        for k in names:
+    def _params_for_model(model, names, n_nodes: int = 1) -> np.ndarray:
+        """(n_nodes, n_parm) float32 — preserves per-node spatial parameters.
+
+        Handles ``'<attr>:<idx>'`` array-element expansion (Zerlaut
+        ``P_e:/P_i:``, CerebellarMF ``P_grc:/P_goc:/P_mli:/P_pc:``),
+        broadcasts scalar/length-1 attributes across *n_nodes*, and distributes
+        length-*n_nodes* arrays per node.
+        """
+        n_nodes = int(n_nodes)
+        n_parm = len(names)
+        out = np.empty((n_nodes, n_parm), dtype=np.float32)
+        model_name = type(model).__name__
+        for col_i, k in enumerate(names):
             if ":" in k:
                 base, idx_s = k.split(":", 1)
-                arr = np.asarray(getattr(model, base), dtype=np.float32).ravel()
-                vals.append(float(arr[int(idx_s)]))
+                idx = int(idx_s)
+                raw = np.asarray(getattr(model, base), dtype=np.float32)
+                if raw.ndim == 1:
+                    if idx >= raw.size:
+                        raise ValueError(
+                            f"{model_name}.{base}: index {idx} out of range "
+                            f"for shape {raw.shape}"
+                        )
+                    out[:, col_i] = float(raw[idx])
+                elif raw.ndim == 2 and raw.shape[0] == n_nodes and raw.shape[1] > idx:
+                    out[:, col_i] = raw[:, idx]
+                elif raw.ndim == 2 and raw.shape[0] == 1 and raw.shape[1] > idx:
+                    out[:, col_i] = float(raw[0, idx])
+                else:
+                    raise ValueError(
+                        f"{model_name}.{base}: expected 1D coefficient array "
+                        f"or (n_nodes={n_nodes}, n_coeff) with n_coeff > {idx}, "
+                        f"got shape {raw.shape}"
+                    )
             else:
-                vals.append(float(np.asarray(
-                    getattr(model, k), dtype=np.float32).ravel()[0]))
-        return np.asarray(vals, dtype=np.float32)
+                raw = np.asarray(getattr(model, k), dtype=np.float32)
+                flat = raw.ravel()
+                if flat.size == 1:
+                    out[:, col_i] = float(flat[0])
+                elif flat.size == n_nodes and (
+                    raw.ndim <= 1 or raw.squeeze().ndim <= 1
+                ):
+                    out[:, col_i] = flat
+                else:
+                    raise ValueError(
+                        f"{model_name}.{k}: expected length 1 or {n_nodes} "
+                        f"(n_nodes), got shape {raw.shape} (size {flat.size})"
+                    )
+        return out
 
     @staticmethod
     def _target_scales(p) -> float:
@@ -1122,7 +1209,7 @@ class CppHybridBackend:
             sim.set_cfun_params(i, cp)
         for i, sn in enumerate(analysis.subnets):
             pp = np.broadcast_to(
-                sn.params[None, :, None],
+                sn.params[:, :, None],
                 (sn.n_nodes, sn.n_parm, width),
             ).copy()
             sim.set_subnet_params(i, pp)
@@ -1445,6 +1532,8 @@ class CppHybridBackend:
         group_values: (width, n_dims)
         """
         group_size = group_values.shape[0]
+        cp_by_proj = {}
+        pp_by_sn = {}
         for d, tgt in enumerate(targets):
             vals = group_values[:, d]  # (group_size,)
             if tgt[0] == "cfun":
@@ -1455,12 +1544,14 @@ class CppHybridBackend:
                             or pr.lookup.endswith("." + pname)):
                         matched = True
                         if pr.n_cfun_parm:
-                            cp = np.broadcast_to(
-                                pr.cfun_params[:, None],
-                                (pr.n_cfun_parm, width),
-                            ).copy()
+                            cp = cp_by_proj.get(pi)
+                            if cp is None:
+                                cp = np.broadcast_to(
+                                    pr.cfun_params[:, None],
+                                    (pr.n_cfun_parm, width),
+                                ).copy()
+                                cp_by_proj[pi] = cp
                             cp[pidx, :group_size] = vals
-                            sim.set_cfun_params(pi, cp)
                 if not matched:
                     raise ValueError(f"Projection '{pname}' not found in sweep")
             else:
@@ -1469,12 +1560,18 @@ class CppHybridBackend:
                           if sn.name == sname)
                 sn = analysis.subnets[si]
                 k = sn.parm_index[attr]
-                pp = np.broadcast_to(
-                    sn.params[None, :, None],
-                    (sn.n_nodes, sn.n_parm, width),
-                ).copy()
+                pp = pp_by_sn.get(si)
+                if pp is None:
+                    pp = np.broadcast_to(
+                        sn.params[:, :, None],
+                        (sn.n_nodes, sn.n_parm, width),
+                    ).copy()
+                    pp_by_sn[si] = pp
                 pp[:, k, :group_size] = vals[None, :]
-                sim.set_subnet_params(si, pp)
+        for pi, cp in cp_by_proj.items():
+            sim.set_cfun_params(pi, cp)
+        for si, pp in pp_by_sn.items():
+            sim.set_subnet_params(si, pp)
 
     def sweep(
         self,
@@ -1578,7 +1675,8 @@ class CppHybridBackend:
         else:
             merged = None
         n_samples = tavg[analysis.subnets[0].name].shape[1]
-        times = (np.arange(n_samples) + 0.5) * analysis.dt
+        dt0_q = float(np.float32(analysis.dt))
+        times = np.arange(1, n_samples + 1, dtype=np.float64) * dt0_q
         return SweepResult(
             tavg=tavg,
             merged_tavg=merged,
@@ -1697,12 +1795,13 @@ class CppHybridBackend:
             lane = tid % width
             lo, hi, outs = results[gi]
             per_sn = []
+            dt0_q = float(np.float32(analysis.dt))
             for i, sn in enumerate(analysis.subnets):
                 arr = np.asarray(outs[2 * i], dtype=np.float32)
                 ct = np.asarray(outs[2 * i + 1], dtype=np.float32)
                 data = arr[:, :, :, lane:lane + 1]
                 ctavg = ct[:, :, :, lane:lane + 1]
-                times = (np.arange(data.shape[0]) + 0.5) * analysis.dt
+                times = np.arange(1, data.shape[0] + 1, dtype=np.float64) * dt0_q
                 per_sn.append((times, data, ctavg))
             out.append(per_sn)
         return out

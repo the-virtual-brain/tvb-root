@@ -883,6 +883,103 @@ def test_identical_class_is_accepted(shadow_pkg):
     assert list(parm) == [str(p) for p in table["parm_names"]]
 
 
+def test_model_dfun_signature_invariant_to_spatial_parameters():
+    """Converting parameters between scalar and spatial arrays keeps signature and slot order.
+
+    ``Model.global_parameter_names`` and ``Model.spatial_parameter_names``
+    partition ``model.parameter_names`` by array size, so setting a parameter
+    to a per-node vector moves it from global to spatial.  Neither
+    ``model_dfun_signature`` nor emitted ``parm_names`` slot ordering may
+    change when a leading, middle, or trailing parameter becomes spatial.
+    """
+    from tvb.simulator.models.gast_solla_kennedy import GastSollaKennedy
+    from tvb.simulator.models.infinite_theta import CoombesByrne
+
+    cb_scalar = CoombesByrne()
+    cb_scalar.configure()
+    cb_sig = dfungen.model_dfun_signature(cb_scalar)
+    _, cb_meta_scalar = dfungen.emit_sources(models={"CoombesByrne": cb_scalar})
+
+    for kwargs in (
+        {"eta": np.array([-5.0, -4.0, -3.0])},
+        {"Delta": np.array([0.4, 0.5, 0.6])},
+        {"Delta": np.array([0.4, 0.5, 0.6]), "eta": np.array([-5.0, -4.0, -3.0])},
+    ):
+        cb_spat = CoombesByrne(**kwargs)
+        cb_spat.configure()
+        assert cb_spat.spatial_parameter_names
+        assert dfungen.model_dfun_signature(cb_spat) == cb_sig
+        _, cb_meta_spat = dfungen.emit_sources(models={"CoombesByrne": cb_spat})
+        assert cb_meta_spat["CoombesByrne"]["parm_names"] == cb_meta_scalar["CoombesByrne"]["parm_names"]
+        assert cb_meta_spat["CoombesByrne"]["signature"] == cb_sig
+        model_id, n_parm, _cvar, _svar, parm = CppHybridBackend()._model_key(cb_spat)
+        assert model_id == int(cphb._builtin_model_table()["CoombesByrne"]["mid"])
+        assert n_parm == len(parm)
+        assert list(parm) == cb_meta_scalar["CoombesByrne"]["parm_names"]
+
+    gsk_scalar = GastSollaKennedy()
+    gsk_scalar.configure()
+    gsk_sig = dfungen.model_dfun_signature(gsk_scalar)
+    _, gsk_meta_scalar = dfungen.emit_sources(models={"GastSollaKennedy": gsk_scalar})
+
+    for kwargs in (
+        {"I": np.array([1.0, 2.0, 3.0])},
+        {"C": np.array([10.0, 12.0, 14.0]), "I_i": np.array([0.0, 1.0, 2.0])},
+    ):
+        gsk_spat = GastSollaKennedy(**kwargs)
+        gsk_spat.configure()
+        assert gsk_spat.spatial_parameter_names
+        assert dfungen.model_dfun_signature(gsk_spat) == gsk_sig
+        _, gsk_meta_spat = dfungen.emit_sources(models={"GastSollaKennedy": gsk_spat})
+        assert gsk_meta_spat["GastSollaKennedy"]["parm_names"] == gsk_meta_scalar["GastSollaKennedy"]["parm_names"]
+        assert gsk_meta_spat["GastSollaKennedy"]["signature"] == gsk_sig
+        model_id, n_parm, _cvar, _svar, parm = CppHybridBackend()._model_key(gsk_spat)
+        assert model_id == int(cphb._builtin_model_table()["GastSollaKennedy"]["mid"])
+        assert n_parm == len(parm)
+        assert list(parm) == gsk_meta_scalar["GastSollaKennedy"]["parm_names"]
+
+
+def test_model_dfun_signature_sensitive_to_constants_mode_and_derived_matrices():
+    """Genuine changes to constants, dfun_mode, derived_matrix_data, or parm set flip the hash."""
+    from tvb.basic.neotraits.api import Final
+    from tvb.simulator.models.k_ion_exchange import KIonEx
+    from tvb.simulator.models.stefanescu_jirsa import ReducedSetFitzHughNagumo
+
+    class MutConstKIonEx(KIonEx):
+        dfun_constants = Final(
+            label="Physical constants (mutated)",
+            default={**KIonEx.dfun_constants.default, "g_Cl": 9.9},
+        )
+
+    kion_base = KIonEx()
+    kion_base.configure()
+    kion_mut = MutConstKIonEx()
+    kion_mut.configure()
+    assert dfungen.model_dfun_signature(kion_mut) != dfungen.model_dfun_signature(kion_base)
+
+    rsfn_base = ReducedSetFitzHughNagumo()
+    rsfn_base.configure()
+    sig_rsfn = dfungen.model_dfun_signature(rsfn_base)
+
+    rsfn_dm = ReducedSetFitzHughNagumo()
+    rsfn_dm.configure()
+    rsfn_dm.e_i = rsfn_dm.e_i + 0.1
+    assert dfungen.model_dfun_signature(rsfn_dm) != sig_rsfn
+
+    rsfn_mode = ReducedSetFitzHughNagumo()
+    rsfn_mode.configure()
+    rsfn_mode.dfun_mode = None
+    assert dfungen.model_dfun_signature(rsfn_mode) != sig_rsfn
+
+    cb_base = _stock_model("CoombesByrne")
+    cb_extra = _coombesbyrne_with_params(list(cb_base.parameter_names) + ["bogus"])
+    assert dfungen.model_dfun_signature(cb_extra) != dfungen.model_dfun_signature(cb_base)
+    cb_renamed = _coombesbyrne_with_params(
+        ["etax" if n == "eta" else n for n in cb_base.parameter_names]
+    )
+    assert dfungen.model_dfun_signature(cb_renamed) != dfungen.model_dfun_signature(cb_base)
+
+
 # ---------------------------------------------------------------------------
 # (i) the runtime library excludes built-in models (no dead stock kernels)
 # ---------------------------------------------------------------------------

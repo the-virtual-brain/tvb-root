@@ -261,22 +261,43 @@ def _plain_value(value):
     raise TypeError(f"cannot canonicalize {type(value).__name__} value {value!r}")
 
 
+def _model_parm_list(model) -> list:
+    """Canonical ordered parameter list for ``model``.
+
+    TVB's ``Model.global_parameter_names`` and
+    ``Model.spatial_parameter_names`` partition ``model.parameter_names`` by
+    runtime array size (``size == 1`` vs ``size != 1``).  Using
+    ``model.parameter_names`` when it matches that union keeps both the
+    emitted ``parr`` slot order and ``model_dfun_signature`` invariant when a
+    parameter changes between scalar and per-node spatial array.
+    """
+    globals_ = list(model.global_parameter_names)
+    spatial = list(model.spatial_parameter_names)
+    combined = globals_ + spatial
+    raw_names = getattr(model, "parameter_names", None)
+    if raw_names is not None:
+        parm_names = [str(p) for p in raw_names]
+        if len(parm_names) == len(combined) and set(parm_names) == set(combined):
+            return parm_names
+    return combined
+
+
 def model_dfun_signature(model) -> str:
     """sha256 fingerprint of a model's dfun definition.
 
     Canonical JSON over everything ``emit_sources`` turns into a C++ kernel:
     state variables, coupling terms, state-variable dfuns, dfun
-    intermediates, helpers and constants, the packed global+spatial parameter
-    names, ``dfun_mode`` and - for combined-mode models - the derived-matrix
-    names, ops and data.  Computed identically at emission time (stored in
-    ``meta`` and emitted into the table row) and at validation time
-    (``backend._model_key``), so a user class that shadows a built-in class
-    name with different equations is caught: same name, different
-    fingerprint.
+    intermediates, helpers and constants, the canonical parameter list
+    (invariant to scalar vs per-node spatial sizing), ``dfun_mode`` and - for
+    combined-mode models - the derived-matrix names, ops and data.  Computed
+    identically at emission time (stored in ``meta`` and emitted into the
+    table row) and at validation time (``backend._model_key``), so a user
+    class that shadows a built-in class name with different equations is
+    caught: same name, different fingerprint.
 
     Canonicalization mirrors the emitter's view of the model: expressions are
     normalized like ``translate`` normalizes them (``_{m}`` -> ``_m``),
-    parameter names keep their packed order (global+spatial),
+    parameter names keep their canonical packed order (``_model_parm_list``),
     helper/intermediate tuples keep declaration order (their order is
     semantic), dict keys are sorted at serialization time, and numpy values
     are widened deterministically - derived-matrix data exactly as the kernel
@@ -322,8 +343,7 @@ def model_dfun_signature(model) -> str:
         "dfun_constants": {str(k): _const(v) for k, v in
                            dict(getattr(model, "dfun_constants", None)
                                 or {}).items()},
-        "global_parameter_names": list(model.global_parameter_names),
-        "spatial_parameter_names": list(model.spatial_parameter_names),
+        "parameter_names": _model_parm_list(model),
         "dfun_mode": getattr(model, "dfun_mode", None),
         "derived_matrix_names": dm_names,
         "derived_matrix_ops": dm_ops,
@@ -542,19 +562,17 @@ def _emit_model(mid, model, fns):
     """Emit one per-model dfun kernel, named ``dfun_gen_<mid>``, for ``model``.
 
     Returns ``(code, n_parm, n_cvar, n_svar, parm_names)``; ``parm_names`` is
-    the ordered global+spatial parameter list the kernel indexes ``parr`` with
-    (the single source of truth for parameter packing), and ``n_cvar`` is the
-    raw coupling-term count — callers clamp it to >= 1 to match the emitted
-    ``n_cvar`` local.  ``fns`` is a shared set of already-emitted helper
-    names (pass one set across a whole emit_sources run so helpers used by
-    several kernels are defined once per translation unit); ``None`` gives
-    the kernel a private set.
+    the ordered parameter list (from :func:`_model_parm_list`) the kernel
+    indexes ``parr`` with (the single source of truth for parameter packing),
+    and ``n_cvar`` is the raw coupling-term count — callers clamp it to >= 1 to
+    match the emitted ``n_cvar`` local.  ``fns`` is a shared set of
+    already-emitted helper names (pass one set across a whole emit_sources run
+    so helpers used by several kernels are defined once per translation unit);
+    ``None`` gives the kernel a private set.
     """
     svars = list(model.state_variables)
     cvars = list(model.coupling_terms) if getattr(model, "coupling_terms", None) else []
-    globals_ = list(model.global_parameter_names)
-    spatial = list(model.spatial_parameter_names)
-    params = globals_ + spatial
+    params = _model_parm_list(model)
     constants = getattr(model, "dfun_constants", None) or {}
     helpers = getattr(model, "dfun_helpers", None) or []
     inter = getattr(model, "dfun_intermediates", None) or []
@@ -698,7 +716,7 @@ def emit_sources(models: dict = None, strict: bool = False,
     Pure code emission: nothing is written to disk and nothing is compiled.
     Returns ``(source_text, meta)`` where ``meta`` maps model class name to
     ``dict(mid, n_parm, n_cvar, n_svar, parm_names, signature)``.
-    ``parm_names`` is the ordered global+spatial parameter list the emitted
+    ``parm_names`` is the ordered parameter list the emitted
     kernel indexes ``parr`` with, so callers can pack parameters without
     re-deriving them; ``signature`` is ``model_dfun_signature(model)``, the
     canonical sha256 fingerprint of the dfun definition the kernel was
