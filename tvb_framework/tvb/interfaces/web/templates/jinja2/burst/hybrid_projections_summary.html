@@ -1,0 +1,55 @@
+{#- ============================================================================ -#}
+{#- The Projections added to the simulation, listed on the wizard step. Read     -#}
+{#- only: they are set up and added in the third column, and show up here once   -#}
+{#- they are, the way the Subnetworks do once they are grouped on the board.     -#}
+{#- ============================================================================ -#}
+{% set included_rows = renderer.projection_rows | selectattr('included') | list %}
+
+{#- outlined like the Subnetwork editor's block, so it reads apart from the steps around it -#}
+<div class="hybrid-projections-list">
+
+{% if included_rows %}
+    <table class="hybrid-subnetworks-summary hybrid-projections-summary">
+        <tr>
+            <th scope="col">Kind</th>
+            <th scope="col">From</th>
+            <th scope="col">To</th>
+            <th scope="col">Coupling variables</th>
+        </tr>
+        {% for row in included_rows %}
+            <tr class="hybrid-projection-row is-{{ row.kind | lower }}">
+                <th scope="row"><span class="hybrid-projection-kind is-{{ row.kind | lower }}">{{ row.kind }}</span></th>
+                <td>{{ row.source }}</td>
+                <td>{{ row.target }}</td>
+                <td class="hybrid-summary-count">
+                    {{ row.source_cvar | join(', ') }} &rarr; {{ row.target_cvar | join(', ') }}
+                    {% if row.was_reset %}
+                        <span class="hybrid-projection-reset"
+                              title="A Model changed, and no longer has the coupling variables chosen before">reset to the defaults</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+{% else %}
+    <p class="hybrid-projections-note hybrid-projections-warning">
+        No Projection is added yet: every Subnetwork is simulated on its own, and none of its regions are
+        coupled. Add Projections in the right column.
+    </p>
+{% endif %}
+
+{% for warning in renderer.projection_warnings %}
+    <p class="hybrid-projections-note hybrid-projections-warning">{{ warning }}</p>
+{% endfor %}
+
+{% if renderer.unconnected_pairs %}
+    <p class="hybrid-projections-note">
+        No InterProjection was generated for
+        {% for pair in renderer.unconnected_pairs %}
+            <span class="hybrid-summary-region">{{ pair.source }} &rarr; {{ pair.target }}</span>
+        {% endfor %}
+        &mdash; this Connectivity holds no weight between those regions in that direction, so a
+        projection would only carry zeros.
+    </p>
+{% endif %}
+</div>

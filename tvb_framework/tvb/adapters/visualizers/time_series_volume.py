@@ -192,7 +192,7 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
 
         connectivity_gid = volume_rm_h5.connectivity.load()
         with h5.h5_file_for_gid(connectivity_gid) as connectivity_h5:
-            label = connectivity_h5.region_labels.load()[idx]
+            label = connectivity_h5.get_region_labels()[idx]
 
         background, back_min, back_max = None, None, None
         if idx < 0:

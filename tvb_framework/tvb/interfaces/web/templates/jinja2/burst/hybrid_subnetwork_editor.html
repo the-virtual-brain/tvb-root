@@ -1,0 +1,31 @@
+{#- ============================================================================ -#}
+{#- The editor of one Subnetwork's dynamics: every section of it at once, all    -#}
+{#- editable and filled from the draft, framed apart from the simulation wide   -#}
+{#- fields, and closed by the row of actions storing them. Answered when a Subnetwork is picked, when the Subnetwork dynamics     -#}
+{#- step moves on, and again after a class changed in one of its sections.      -#}
+{#-                                                                             -#}
+{#- Each section is its own form posting to its own url: one form for all of    -#}
+{#- them is not possible, since an Equation names its fields after its          -#}
+{#- parameters and those collide with the parameters of some Models.            -#}
+{#- ============================================================================ -#}
+{% if renderer.load_error %}
+    <p class="errorMessage">{{ renderer.load_error }}</p>
+{% else %}
+    <div class="hybrid-subnetwork-editor" id="hybrid-subnetwork-editor" data-hybrid-editor="true"
+         data-hybrid-next-url="{{ renderer.next_step_url }}">
+        {#- The Model and Integrator of this one Subnetwork, indented and outlined so they read apart
+            from the fields of the whole simulation around them. The row of actions stays outside:
+            it stores the dynamics of every Subnetwork, not only of this one. -#}
+        <div class="hybrid-editor-fields">
+            {% for section in renderer.editor_sections[:-1] %}
+                {% with renderer = section %}
+                    {% include 'hybrid_simulator_fragment.html' %}
+                {% endwith %}
+            {% endfor %}
+        </div>
+
+        {% with renderer = renderer.editor_sections[-1] %}
+            {% include 'hybrid_simulator_fragment.html' %}
+        {% endwith %}
+    </div>
+{% endif %}

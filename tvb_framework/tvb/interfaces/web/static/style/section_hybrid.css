@@ -117,9 +117,11 @@ table.hybrid-subnetworks-summary th {
     font-size: 11px;
 }
 
-/* The board holds a grouping the Subnetworks step does not list yet, so say so loudly. */
+/* The board holds a grouping the Subnetworks step does not list yet, so say so loudly.
+   This amber is the one used for every warning on this column: it clears 4.5:1 against the column's
+   dark ground at these small sizes, which the darker #e8b84b it replaced did not. */
 .hybrid-subnetworks-status.is-modified {
-    color: #e8b84b;
+    color: #ffdd99;
     font-weight: bold;
 }
 
@@ -217,7 +219,7 @@ button.hybrid-remove-subnetwork:hover {
 }
 
 .hybrid-region-count.is-empty {
-    color: #e8b84b;
+    color: #ffdd99;
 }
 
 button.hybrid-subnetwork-action {
@@ -286,4 +288,588 @@ button.hybrid-subnetwork-action:disabled {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/**
+ * Per Subnetwork Model/Integrator configuration. It lives in the configuration column together with the
+ * rest of the wizard, so the reused Simulator Cockpit form markup is styled by base.css exactly as it is
+ * for the classic cockpit and needs nothing from here.
+ */
+
+/**
+ * One tab per Subnetwork, for choosing which one the editor below configures. It sits on the Subnetwork
+ * dynamics step and keeps working once that step is locked, so it must not read as disabled.
+ *
+ * The strip is indented like the editor's outlined block, and its baseline has the block's colour. Once
+ * the editor is open under the locked step, that baseline becomes the block's top edge and the selected
+ * tab opens into it. The colours are opaque on purpose: the selected tab covers the baseline to join the
+ * block, which a translucent background would let show through.
+ */
+.hybrid-subnetwork-tabs {
+    --hybrid-tab-accent: #41921f;
+    --hybrid-tab-selected: #b3c4ab;
+    align-items: flex-end;
+    border-bottom: 2px solid var(--hybrid-tab-accent);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin: 4px 24px 10px 24px;
+    padding-left: 8px;
+}
+
+.hybrid-subnetwork-tab {
+    background: #b8babf;
+    border: 1px solid #878a94;
+    border-bottom: none;
+    border-radius: 5px 5px 0 0;
+    align-items: center;
+    color: #3e4252;
+    cursor: pointer;
+    display: flex;
+    font-size: 11px;
+    gap: 5px;
+    padding: 4px 10px 5px 10px;
+}
+
+.hybrid-subnetwork-tab:hover {
+    background: #c4c6cb;
+}
+
+.hybrid-subnetwork-tab.is-selected {
+    background: var(--hybrid-tab-selected);
+    border: 2px solid var(--hybrid-tab-accent);
+    border-bottom: none;
+    /* reaches over the baseline, so the selected tab and what is under it read as one surface */
+    margin-bottom: -2px;
+    padding: 4px 10px 7px 10px;
+    position: relative;
+}
+
+.hybrid-subnetwork-tab:focus-visible {
+    outline: 2px solid var(--hybrid-tab-accent);
+    outline-offset: -3px;
+}
+
+.hybrid-tab-name {
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.hybrid-subnetwork-tab:not(.is-selected) .hybrid-tab-name {
+    font-weight: normal;
+}
+
+/* a Subnetwork whose draft holds something Save Configuration has not stored yet */
+.hybrid-tab-modified {
+    background: #e2a21b;
+    border-radius: 50%;
+    height: 7px;
+    width: 7px;
+}
+
+/**
+ * The editor open under the locked Subnetwork dynamics step: the tabs sit right on its outlined block.
+ * That step's hidden buttons would otherwise keep a row of space between them, and the strip's baseline
+ * stands in for the block's top edge.
+ */
+form[id="/burst/hybrid/set_subnetwork_dynamics"].is-locked > button {
+    display: none;
+}
+
+form[id="/burst/hybrid/set_subnetwork_dynamics"].is-locked .hybrid-subnetwork-tabs {
+    margin-bottom: 0;
+}
+
+form[id="/burst/hybrid/set_subnetwork_dynamics"] + .hybrid-subnetwork-editor {
+    border-top: none;
+    margin-top: 0;
+    padding-top: 0;
+}
+
+form[id="/burst/hybrid/set_subnetwork_dynamics"] + .hybrid-subnetwork-editor .hybrid-editor-fields {
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+}
+
+/**
+ * The Subnetwork editor: every section of one Subnetwork's dynamics at once. The sections read as one
+ * block, so only the first carries the rule the wizard draws between steps.
+ */
+.hybrid-subnetwork-editor {
+    border-top: 1px solid rgba(0, 0, 0, 0.15);
+    margin-top: 6px;
+    padding-top: 10px;
+}
+
+/**
+ * The Model and Integrator fields of the Subnetwork being configured. Indented on both sides and
+ * outlined, so they read apart from the fields of the whole simulation above and below them. The
+ * outline takes the colour of the selected Subnetwork on the dynamics step, which is what it configures.
+ */
+.hybrid-editor-fields {
+    background: rgba(65, 146, 31, 0.05);
+    border: 2px solid #41921f;
+    border-radius: 4px;
+    margin: 0 24px 10px 24px;
+    padding: 4px 0 6px 0;
+}
+
+/**
+ * The Monitors section: the Monitor selection and each Monitor's parameters, outlined as one section
+ * like the Connectivity one. They are one wizard step each, so the outline is split over their
+ * fieldsets: the first step opens it, the ones under it carry its sides, and the last one on screen
+ * closes it. A finished step's hidden buttons take no room, which is what lets them meet; the step being
+ * configured keeps its buttons under the outline. The closing step - the output, the simulation length
+ * and name, and Launch - comes after the section, outside it.
+ */
+.hybrid-monitor-step > fieldset {
+    background: rgba(65, 146, 31, 0.05);
+    border: 2px solid #41921f;
+    border-bottom: none;
+    border-top: none;
+    margin: 0 24px;
+    padding-bottom: 4px;
+}
+
+.hybrid-monitor-step.is-locked > button {
+    display: none;
+}
+
+form:not(.hybrid-monitor-step) + .hybrid-monitor-step > fieldset {
+    border-radius: 4px 4px 0 0;
+    border-top: 2px solid #41921f;
+    margin-top: 4px;
+    padding-top: 4px;
+}
+
+.hybrid-monitor-step:not(:has(+ .hybrid-monitor-step)) > fieldset {
+    border-bottom: 2px solid #41921f;
+    border-radius: 0 0 4px 4px;
+    margin-bottom: 10px;
+}
+
+form:not(.hybrid-monitor-step) + .hybrid-monitor-step:not(:has(+ .hybrid-monitor-step)) > fieldset {
+    border-radius: 4px;
+}
+
+/* the section's own title for each Monitor's parameters, where the classic Cockpit shows its legend */
+.hybrid-monitor-step legend {
+    padding-top: 4px;
+}
+
+/**
+ * The closing step - the simulation length and name, under the warning about the output order when there
+ * is one - outlined like the other sections, with Previous and Launch outside it.
+ */
+form[id="/burst/hybrid/set_simulation_summary"] > fieldset {
+    background: rgba(65, 146, 31, 0.05);
+    border: 2px solid #41921f;
+    border-radius: 4px;
+    margin: 4px 24px 10px 24px;
+    padding-bottom: 4px;
+    padding-top: 4px;
+}
+
+form[id="/burst/hybrid/set_simulation_summary"].is-locked > fieldset {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: #8a8d96;
+}
+
+/* gray once none of its steps is the one being configured */
+#hybrid-simulator-forms:not(:has(.hybrid-monitor-step:not(.is-locked))) .hybrid-monitor-step > fieldset {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: #8a8d96;
+}
+
+/**
+ * The outlined sections are green while they are the one being configured, and gray once the user has
+ * moved on past them, the way a finished step's fields are greyed out. Stepping back makes them green
+ * again. It follows the class the client puts on a locked step:
+ *
+ * - the Connectivity section, while neither the Connectivity step nor the Subnetworks summary under it
+ *   is the step being configured;
+ * - the Subnetwork editor, once its Next has moved on, and with it the tabs joined to it;
+ * - the Projections list, once its Next has moved on.
+ */
+form[id="/burst/hybrid/set_connectivity"].is-locked:not(:has(+ form[id="/burst/hybrid/set_subnetworks"]:not(.is-locked))) > fieldset,
+form[id="/burst/hybrid/set_connectivity"] + form[id="/burst/hybrid/set_subnetworks"].is-locked > .hybrid-subnetworks-fieldset,
+.hybrid-subnetwork-editor:has(.hybrid-editor-actions.is-locked) .hybrid-editor-fields,
+form[id="/burst/hybrid/set_projections"].is-locked .hybrid-projections-list {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: #8a8d96;
+}
+
+form[id="/burst/hybrid/set_subnetwork_dynamics"]:has(+ .hybrid-subnetwork-editor .hybrid-editor-actions.is-locked) .hybrid-subnetwork-tabs {
+    --hybrid-tab-accent: #8a8d96;
+    --hybrid-tab-selected: #c2c4c9;
+}
+
+/* The Noise configures part of the Integrator, and the Equation part of that Noise: one tab each */
+.hybrid-editor-fields .hybrid-editor-level-1 {
+    margin-left: 24px;
+}
+
+.hybrid-editor-fields .hybrid-editor-level-2 {
+    margin-left: 48px;
+}
+
+/* Set up region Model, which the Model parameters section carries under its fields */
+.hybrid-editor-fields .hybrid-editor-section > button {
+    margin: 0 10px 6px 10px;
+}
+
+/**
+ * Set up region Model, shown in the third column. This is the right hand section of the classic page,
+ * so it sits on that column's dark ground and needs light text, like the Subnetwork board above it.
+ */
+.hybrid-region-model-label {
+    color: rgba(250, 247, 228, 0.85);
+    font-size: 11px;
+    margin-right: 4px;
+}
+
+/* The panel takes the height of the third column, and its region list whatever the hint and the
+   toolbars above leave. On a screen too short for even the list's minimum, the column scrolls as a
+   whole, the way it does for every other configuration shown there. */
+#main.columnized .view-column:has(.hybrid-region-model-panel),
+#hybrid-context-column:has(.hybrid-region-model-panel),
+.hybrid-region-model-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+#hybrid-context-column:has(.hybrid-region-model-panel),
+.hybrid-region-model-panel {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+/* Two columns, filled top to bottom, so the list reads on from the bottom of the first column to the
+   top of the second; hybrid_region_model.js sets how many rows that takes. Scrolls when they do not
+   fit. */
+.hybrid-region-model-list {
+    align-content: start;
+    column-gap: 6px;
+    display: grid;
+    flex: 1 1 auto;
+    grid-auto-flow: column;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    list-style: none;
+    margin: 0;
+    min-height: 120px;
+    overflow-y: auto;
+    padding: 0;
+}
+
+/* The configuration placed on a region, after its index and label. Half a column is narrow, so it
+   gives way to the label rather than pushing it out, and the region's tooltip carries both in full. */
+.hybrid-region-dynamic {
+    color: rgba(250, 247, 228, 0.85);
+    flex: 0 1 auto;
+    margin-left: auto;
+    max-width: 50%;
+    overflow: hidden;
+    padding-left: 8px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* A region with nothing on it yet cannot take part in the parameter arrays, so say so. */
+.hybrid-region-dynamic.is-empty {
+    color: #ffdd99;
+    font-style: italic;
+}
+
+/* The parameter values of the selected configuration, from the shared dynamic_detail fragment. */
+.hybrid-region-values-pane {
+    background: rgba(250, 247, 228, 0.08);
+    border: 1px solid rgba(250, 247, 228, 0.25);
+    border-radius: 3px;
+    color: rgba(250, 247, 228, 0.9);
+    font-size: 11px;
+    margin-bottom: 6px;
+    max-height: 160px;
+    overflow-y: auto;
+    padding: 6px;
+}
+
+.hybrid-region-values-pane table {
+    width: 100%;
+}
+
+/**
+ * The included Projections, listed on their wizard step in the configuration column. Read only, so the
+ * list reuses the Subnetwork summary table's dark-on-light rules and only adds a header row.
+ */
+table.hybrid-projections-summary th[scope="col"] {
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 11px;
+    font-weight: normal;
+    white-space: nowrap;
+    width: auto;
+}
+
+table.hybrid-projections-summary th[scope="row"] {
+    width: 1%;
+}
+
+.hybrid-projections-note {
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 11px;
+    margin: 6px 10px 0 10px;
+}
+
+/**
+ * The Projections editor sits in the third column, which has no inset of its own around the step's
+ * design, and a darker ground: the tabs and the block reach the column's edges, and the block takes the
+ * light ground of the configuration column so its fields read the same as there.
+ */
+.hybrid-projections-config .hybrid-projection-tabs {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.hybrid-projections-config .hybrid-projection-block {
+    margin-left: 0;
+    margin-right: 0;
+    /* the fieldset inside gives the fields their inset */
+    padding: 4px 0 6px 0;
+}
+
+.hybrid-projections-config .hybrid-projection-summary {
+    margin: 2px 10px 6px 10px;
+}
+
+.hybrid-projection-fields {
+    border: none;
+    margin-bottom: 0;
+}
+
+.hybrid-projections-config .hybrid-projection-block {
+    background: #d9e2d4;
+}
+
+/**
+ * The Connectivity and the Subnetworks it is divided into, outlined as one section, indented like the
+ * Subnetwork editor's block and the Projections list, in their green.
+ *
+ * They are two wizard steps, so the outline is split over them: the Connectivity step's fieldset closes it
+ * on its own while it is the only one of them on screen, and hands its lower edge to the Subnetworks
+ * summary once that is stacked right under it. The Connectivity step's hidden buttons take no room once it
+ * is locked, which is what lets the two halves meet; each step's own buttons stay outside the outline
+ * while it is the one being configured, like the editor's actions.
+ */
+form[id="/burst/hybrid/set_connectivity"] > fieldset,
+form[id="/burst/hybrid/set_connectivity"] + form[id="/burst/hybrid/set_subnetworks"] > .hybrid-subnetworks-fieldset {
+    background: rgba(65, 146, 31, 0.05);
+    border: 2px solid #41921f;
+    margin-left: 24px;
+    margin-right: 24px;
+}
+
+form[id="/burst/hybrid/set_connectivity"] > fieldset {
+    border-radius: 4px;
+    margin-bottom: 10px;
+    margin-top: 4px;
+    padding-bottom: 4px;
+    padding-top: 4px;
+}
+
+form[id="/burst/hybrid/set_connectivity"].is-locked > button {
+    display: none;
+}
+
+form[id="/burst/hybrid/set_connectivity"]:has(+ form[id="/burst/hybrid/set_subnetworks"]) > fieldset {
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    margin-bottom: 0;
+}
+
+form[id="/burst/hybrid/set_connectivity"] + form[id="/burst/hybrid/set_subnetworks"] > .hybrid-subnetworks-fieldset {
+    border-radius: 0 0 4px 4px;
+    border-top: none;
+    padding-bottom: 6px;
+}
+
+/**
+ * The Projections added to the simulation, on their step: outlined and indented like the Subnetwork
+ * editor's block, in its green, so they read apart from the steps around them.
+ */
+.hybrid-projections-list {
+    background: rgba(65, 146, 31, 0.05);
+    border: 2px solid #41921f;
+    border-radius: 4px;
+    margin: 4px 14px 10px 14px;
+    padding: 4px 10px 8px 10px;
+}
+
+.hybrid-projections-list .hybrid-projections-note {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+/* A Subnetwork left uncoupled by excluding Projections */
+.hybrid-projections-warning {
+    color: #a06800;
+}
+
+/**
+ * The Projections editor, in the Subnetwork editor's design: the Intra and Inter tabs on a baseline, and
+ * under them the selected one's editor in an outlined block the selected tab opens into. Green, the
+ * Subnetwork editor's colour, marks the selected tab, whichever kind it is; the tabs' labels and pickers
+ * tell the kinds apart. The selected tab and its colour come from the Subnetwork tabs' own rules.
+ */
+.hybrid-projection-tabs {
+    gap: 2px;
+    margin-bottom: 0;
+    padding-left: 4px;
+}
+
+/**
+ * Narrower than the Subnetwork tabs, so the Projections of two Subnetworks fit on one row: the selected
+ * one is told by its colour and its joining the block rather than by a bolder, wider, name.
+ */
+.hybrid-projection-tab,
+.hybrid-projection-tab.is-selected {
+    padding-left: 7px;
+    padding-right: 7px;
+}
+
+.hybrid-projection-tab .hybrid-tab-name,
+.hybrid-projection-tab.is-selected .hybrid-tab-name {
+    font-weight: normal;
+}
+
+.hybrid-projection-group {
+    align-self: center;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+    margin: 0 1px 0 6px;
+    text-transform: uppercase;
+}
+
+.hybrid-projection-group:first-child {
+    margin-left: 0;
+}
+
+.hybrid-picker-tab .hybrid-projection-group {
+    color: #3e4252;
+}
+
+/**
+ * The Intra and Inter tabs: their label and their pickers, which choose the Projection each opens -
+ * the Subnetwork for an IntraProjection, the From and To pair for an InterProjection. There can be as
+ * many InterProjections as ordered pairs of Subnetworks, too many for a tab each.
+ */
+.hybrid-picker-tab {
+    gap: 6px;
+}
+
+.hybrid-picker-tab .hybrid-projection-group {
+    margin: 0;
+}
+
+.hybrid-inter-picker {
+    align-items: center;
+    display: flex;
+    font-size: 11px;
+    gap: 3px;
+}
+
+.hybrid-inter-picker select {
+    font-size: 11px;
+    max-width: 160px;
+}
+
+.hybrid-inter-count {
+    color: #a06800;
+    font-size: 10px;
+    font-style: italic;
+    white-space: nowrap;
+}
+
+.hybrid-picker-tab .hybrid-inter-count {
+    color: rgba(0, 0, 0, 0.55);
+    font-style: normal;
+}
+
+/* adding the Projection to the simulation, or removing it, under its fields */
+.hybrid-projection-actions {
+    clear: both;
+    margin: 6px 10px 0 10px;
+}
+
+/**
+ * The editor of the selected Projection, joined to the baseline above it. Its field rows are floated the
+ * way a step's are, so it contains them itself - it is not a fieldset - and it gives them the inset a
+ * step's fieldset does.
+ */
+.hybrid-projection-block {
+    border: 2px solid;
+    border-radius: 0 0 4px 4px;
+    border-top: none;
+    display: flow-root;
+    margin: 0 24px 10px 24px;
+    padding: 4px 10px 6px 10px;
+}
+
+.hybrid-projection-block .hybrid-editor-level-1 {
+    clear: both;
+    display: flow-root;
+}
+
+/* in the selected tab's green, whichever kind of Projection it edits */
+.hybrid-projection-block {
+    background: rgba(65, 146, 31, 0.05);
+    border-color: #41921f;
+}
+
+.hybrid-projection-summary {
+    color: #3e4252;
+    font-size: 11px;
+    margin: 2px 0 6px 0;
+}
+
+.hybrid-projection-block .hybrid-editor-level-1 {
+    margin-left: 24px;
+}
+
+.hybrid-projection-block .hybrid-editor-group {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    clear: both;
+    color: #3e4252;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    margin: 8px 0 4px 0;
+    padding-bottom: 2px;
+    text-transform: uppercase;
+}
+
+.hybrid-projection-added {
+    color: #2f6e14;
+    font-size: 10px;
+    font-weight: bold;
+    margin-left: 4px;
+}
+
+.hybrid-projection-excluded,
+.hybrid-projection-reset {
+    color: #a06800;
+    font-size: 10px;
+    font-style: italic;
+    margin-left: 4px;
+}
+
+/**
+ * Links in the third column. base.css gives a bare link a dark grey, which is close to invisible on
+ * this column's dark ground, so they are the column's own cream and underlined.
+ */
+.hybrid-context-column .hybrid-subnetworks-hint a {
+    color: #faf7e4;
+    text-decoration: underline;
+}
+
+.hybrid-context-column .hybrid-subnetworks-hint a:hover {
+    color: #ffffff;
 }

@@ -1,0 +1,80 @@
+{#- ============================================================================ -#}
+{#- The Projections editor, shown in the third column next to the Projections    -#}
+{#- step: an Intra tab choosing among the IntraProjections, one per Subnetwork,  -#}
+{#- an Inter tab choosing among the InterProjections, and under the selected    -#}
+{#- tab its editor, the way the Subnetwork editor sits under the Subnetwork tabs.-#}
+{#-                                                                             -#}
+{#- data-hybrid-changed says the answer follows a change of the configuration,  -#}
+{#- which is when the list on the step is refreshed.                            -#}
+{#- ============================================================================ -#}
+<div class="hybrid-context-config hybrid-projections-config" id="hybrid-projections-config"
+     data-hybrid-changed="{{ 'true' if renderer.is_modified else 'false' }}">
+    {% if renderer.load_error %}
+        <p class="errorMessage">{{ renderer.load_error }}</p>
+    {% else %}
+        <p class="hybrid-subnetworks-hint">
+            No Projection is part of the simulation until it is added: pick one, set it up and add it. The
+            step lists the ones added, marked here with a check. Changes apply as soon as they are made,
+            and a Projection removed again keeps its settings. The weights and tract lengths are the
+            Connectivity's, between the regions of the Subnetworks.
+        </p>
+        {% set selected_row = renderer.projection_row %}
+        <div class="hybrid-subnetwork-tabs hybrid-projection-tabs {{ 'is-inter' if selected_row and selected_row.kind == 'Inter' else 'is-intra' }}"
+             role="tablist">
+            {#- The IntraProjections share a single tab, one per Subnetwork: its picker chooses the Subnetwork,
+                and clicking the tab itself opens the one it points at. -#}
+            {% if renderer.intra_projection %}
+                {% set intra_selected = selected_row and selected_row.kind == 'Intra' %}
+                <div role="tab" tabindex="1" aria-selected="{{ 'true' if intra_selected else 'false' }}"
+                     class="hybrid-subnetwork-tab hybrid-projection-tab hybrid-picker-tab hybrid-intra-tab is-intra {{ 'is-selected' if intra_selected else '' }}"
+                     title="Edit the IntraProjection of the Subnetwork chosen here"
+                     onclick="hybridSelectProjection('{{ renderer.intra_projection }}')">
+                    <span class="hybrid-projection-group is-intra">Intra</span>
+                    <label class="hybrid-inter-picker">Within
+                        <select id="hybrid-intra-subnetwork" tabindex="1" onclick="event.stopPropagation()"
+                                onchange="hybridSelectProjection(this.value)">
+                            {% for option in renderer.intra_options %}
+                                <option value="{{ option.key }}" {{ 'selected' if option.is_selected else '' }}>{{ '✓ ' if option.included else '' }}{{ option.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <span class="hybrid-inter-count">{{ renderer.intra_added }} of {{ renderer.intra_options | length }} added</span>
+                </div>
+            {% endif %}
+
+            {#- The InterProjections share a single tab: there can be one per ordered pair of Subnetworks, too
+                many for a tab each, so its From and To pickers choose among them. Clicking the tab itself opens
+                the pair they point at. -#}
+            {% if renderer.inter_projection %}
+                {% set inter_selected = selected_row and selected_row.kind == 'Inter' %}
+                <div role="tab" tabindex="1" aria-selected="{{ 'true' if inter_selected else 'false' }}"
+                     class="hybrid-subnetwork-tab hybrid-projection-tab hybrid-picker-tab hybrid-inter-tab is-inter {{ 'is-selected' if inter_selected else '' }}"
+                     title="Edit the InterProjection chosen here"
+                     onclick="hybridSelectProjection('{{ renderer.inter_projection }}')">
+                    <span class="hybrid-projection-group is-inter">Inter</span>
+                    <label class="hybrid-inter-picker">From
+                        <select id="hybrid-inter-source" tabindex="1" onclick="event.stopPropagation()"
+                                onchange="hybridSelectInterProjection()">
+                            {% for source in renderer.inter_sources %}
+                                <option value="{{ source.id }}" {{ 'selected' if source.is_selected else '' }}>{{ source.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label class="hybrid-inter-picker">To
+                        <select id="hybrid-inter-target" tabindex="1" onclick="event.stopPropagation()"
+                                onchange="hybridSelectInterProjection()">
+                            {% for target in renderer.inter_targets %}
+                                <option value="{{ target.id }}" {{ 'selected' if target.is_selected else '' }}>{{ '✓ ' if target.included else '' }}{{ target.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <span class="hybrid-inter-count">{{ renderer.inter_added }} of {{ renderer.inter_total }} added</span>
+                </div>
+            {% endif %}
+        </div>
+
+        {% if selected_row %}
+            {% include 'burst/hybrid_projection_editor.html' %}
+        {% endif %}
+    {% endif %}
+</div>
