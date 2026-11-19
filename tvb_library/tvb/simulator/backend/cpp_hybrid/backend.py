@@ -29,6 +29,7 @@ from tvb.simulator.backend.nb_hybrid import (
     _cfun_type,
     _apply_monitors,
     _aggregate_raw_outputs,
+    _can_merge_subnets,
     _compute_chunk_size,
     _copy_monitor_states,
     NbHybridBackend,
@@ -196,6 +197,7 @@ class ProjectionInfo:
     ts: float = 1.0
     tgt_state_cvar: int = 0
     cfun_params: np.ndarray = None
+    cfun_use_classic: bool = False
     mode_map: np.ndarray = None
     target_scales: np.ndarray = None
     target_cvars_list: list = dataclasses.field(default_factory=lambda: None)
@@ -228,6 +230,7 @@ class SubnetworkInfo:
     is_stochastic: bool = False
     noise_nsig: np.ndarray = None
     noise_seed: int = 0
+    noise_ntau: float = 0.0
     stimuli: list = dataclasses.field(default_factory=list)
     node_indices: np.ndarray = None
 
@@ -272,6 +275,7 @@ class SweepResult:
     raw: Optional[dict] = None
     bold: Optional[dict] = None
     param_keys: Optional[list] = None
+    online_features: Optional[dict] = None
 
     # --- notebook sugar --------------------------------------------------
     def squeezed(self, subnet=None):
@@ -321,9 +325,39 @@ class SweepResult:
         sweeping a parameter and plotting each feature against it.
         """
         from . import features as _feat
-        ts = self.ts(svar=svar, subnet=subnet)   # (sweep, node, time)
         out = {}
+        remaining = []
+        # Fast path: reuse Tier-1 online streaming features if already computed.
+        onl_src = None
+        if self.online_features is not None and not params.get("indices"):
+            if subnet is not None and subnet in self.online_features:
+                onl_src = self.online_features[subnet]
+            elif subnet is None and len(self.online_features) == 1:
+                onl_src = next(iter(self.online_features.values()))
+        order_req = int(params.get("order", 4))
         for k in feature_names:
+            if (onl_src is not None and isinstance(k, str) and k in onl_src
+                    and (k != "moments" or order_req == 4)):
+                arr = onl_src[k]
+                if k == "moments":
+                    out[k] = arr[:, :, svar, :].transpose(1, 0, 2)
+                else:
+                    out[k] = arr[:, svar, :]
+            else:
+                remaining.append(k)
+        if not remaining:
+            return out
+
+        ts = self.ts(svar=svar, subnet=subnet)   # (sweep, node, time)
+        str_feats = [k for k in remaining if isinstance(k, str)]
+        call_feats = [k for k in remaining if not isinstance(k, str)]
+        if str_feats:
+            # Batch C++ path over (time, sweep, node)
+            ts_t = np.moveaxis(ts, -1, 0)        # (time, sweep, node)
+            for k, val in _feat.compute_features(
+                    ts_t, str_feats, fs=fs, **params):
+                out[k] = np.asarray(val, dtype=np.float64)
+        for k in call_feats:
             res = np.empty(ts.shape[:2], dtype=np.float64)
             for si in range(ts.shape[0]):
                 cur = np.moveaxis(ts[si], -1, 0)     # (time, node)
@@ -343,6 +377,9 @@ class CompiledCppSim:
         self._width = width
         self._bold_states = None
         self._kmon_armed_keys = set()
+        self._pending_kmon_states = None
+        self._pending_kmon_global_states = None
+        self._pending_cpp_rng_states = None
 
     def warmup(self) -> float:
         return 0.0  # no JIT: nothing to warm up
@@ -356,6 +393,8 @@ class CompiledCppSim:
         return_snapshot: bool = False,
         _step_offset: int = 0,
         _resuming: bool = False,
+        rng_mode: str = "numpy",
+        subnet_monitors: Optional[dict] = None,
         **kwargs,
     ):
         """Run the simulation for *nstep* steps.
@@ -363,8 +402,26 @@ class CompiledCppSim:
         Mirrors :meth:`NbHybridBackend.run`.  With no monitors returns a list
         per subnetwork of ``(times, data, ctavg)``.  With monitors returns
         ``list[monitor][subnetwork]`` of ``(times, data)``.
+        When *subnet_monitors* is provided (dict ``{sn.name: [Monitor, ...]}``
+        or list aligned to subnets), returns ``(outputs, subnet_results)``
+        (or ``(outputs, snapshot, subnet_results)`` if *return_snapshot* is
+        True), collecting per-subnet monitors in the same single simulation
+        pass with ``cadence_K = sn.k`` and ``dt = sn.dt``.
         """
+        if rng_mode not in ("numpy", "philox"):
+            raise ValueError(
+                f"Unsupported rng_mode {rng_mode!r}; expected 'numpy' or 'philox'."
+            )
+        if rng_mode == "numpy":
+            for sn_info in self._analysis.subnets:
+                if sn_info.is_stochastic and sn_info.noise_ntau > 0.0:
+                    raise NotImplementedError(
+                        f"Colored OU noise (ntau={sn_info.noise_ntau} > 0) in "
+                        f"subnetwork '{sn_info.name}' requires rng_mode='philox'."
+                    )
+
         dt = float(min(sn.scheme.dt for sn in self._network_set.subnets))
+        explicit_chunk_size = chunk_size
         if chunk_size is None:
             chunk_size = (
                 _compute_chunk_size(monitors, dt) if monitors is not None else 1
@@ -373,71 +430,298 @@ class CompiledCppSim:
             self._backend._validate_monitors(monitors, chunk_size)
         if kwargs.get("_monitor_states") is not None:
             self._bold_states = _copy_monitor_states(kwargs["_monitor_states"])
-        execution_chunk_size = chunk_size
-        kernel_monitors = monitors
-        has_bold = has_temporal_average = False
-        kernel_collect = []
+
+        # Normalize optional per-subnet monitors (e.g. hybrid Recorder monitors)
+        sn_mons_map = None
+        if subnet_monitors is not None:
+            if isinstance(subnet_monitors, dict):
+                sn_mons_map = {
+                    sn.name: [getattr(m, "monitor", m)
+                              for m in subnet_monitors.get(sn.name, ())]
+                    for sn in self._analysis.subnets
+                }
+            else:
+                sn_mons_map = {
+                    sn.name: [getattr(m, "monitor", m)
+                              for m in (subnet_monitors[si]
+                                        if si < len(subnet_monitors) else ())]
+                    for si, sn in enumerate(self._analysis.subnets)
+                }
+
+        from tvb.simulator.monitors import (
+            AfferentCoupling,
+            AfferentCouplingTemporalAverage,
+            Bold,
+            GlobalAverage,
+            Projection,
+            Raw,
+            SpatialAverage,
+            SubSample,
+            TemporalAverage,
+        )
+
+        n_sn = len(self._analysis.subnets)
+        should_merge = (n_sn > 1) and _can_merge_subnets(self._analysis.subnets)
+        kernel_global_specs = []   # (mi, m) attached via set_global_monitors
+        kernel_persn_specs = []    # (mi, m) attached via set_monitors(si, ...)
+        py_global_indices = set()
+        kernel_mon_indices = set()
+        has_py_bold = False
+        has_py_tavg = False
+
         if monitors is not None:
-            from tvb.simulator.monitors import Bold, TemporalAverage
-            has_bold = any(isinstance(m, Bold) for m in monitors)
-            has_temporal_average = any(
-                isinstance(m, TemporalAverage) for m in monitors)
-            if self._backend.enable_kernel_monitors:
-                for mi, m in enumerate(monitors):
-                    if not self._backend._kernel_collectable(m):
-                        continue
-                    mkey = (mi, type(m).__name__)
-                    if isinstance(m, Bold):
-                        has_py_bold = (
-                            self._bold_states is not None
-                            and any(
-                                k[0] == "bold" and k[1] == mi
-                                for k in self._bold_states
-                            )
+            for mi, m in enumerate(monitors):
+                if isinstance(m, Projection):
+                    if (getattr(m, "_gain", None) is None
+                            and getattr(m, "projection", None) is None):
+                        raise ValueError(
+                            f"Projection monitor {type(m).__name__} has no gain matrix "
+                            "configured. Set the gain matrix before running (e.g. via "
+                            "config_for_sim or by setting m._gain directly)."
                         )
-                        if has_py_bold:
+                can_kernel = (
+                    self._backend.enable_kernel_monitors
+                    and self._backend._kernel_collectable(m)
+                )
+                if can_kernel and self._bold_states is not None:
+                    # Respect externally supplied Python monitor state dicts
+                    if isinstance(m, Bold) and any(
+                        k[0] == "bold" and k[1] == mi for k in self._bold_states
+                    ):
+                        can_kernel = False
+                    elif isinstance(m, TemporalAverage) and not isinstance(
+                        m, AfferentCouplingTemporalAverage
+                    ) and any(
+                        k[0] == "temporal_average" and k[1] == mi
+                        for k in self._bold_states
+                    ):
+                        can_kernel = False
+
+                if can_kernel and isinstance(m, (GlobalAverage, SpatialAverage, Projection)):
+                    if should_merge or n_sn == 1:
+                        total_nodes = (
+                            max(int(sn.node_indices.max())
+                                for sn in self._analysis.subnets) + 1
+                            if should_merge
+                            else self._analysis.subnets[0].n_nodes
+                        )
+                        if isinstance(m, SpatialAverage) and getattr(m, "spatial_mean", None) is not None:
+                            if np.asarray(m.spatial_mean).shape[1] != total_nodes:
+                                can_kernel = False
+                        if isinstance(m, Projection):
+                            if np.asarray(m.gain).shape[1] != total_nodes:
+                                can_kernel = False
+                        if can_kernel:
+                            kernel_global_specs.append((mi, m))
+                            kernel_mon_indices.add(mi)
                             continue
-                        if ((return_snapshot or _resuming)
-                                and mkey not in self._kmon_armed_keys):
+                    else:
+                        # Unmerged multi-subnet: per-subnet if shapes match each subnet
+                        if isinstance(m, SpatialAverage) and getattr(m, "spatial_mean", None) is not None:
+                            sm_cols = np.asarray(m.spatial_mean).shape[1]
+                            if not all(sn.n_nodes == sm_cols for sn in self._analysis.subnets):
+                                can_kernel = False
+                        if isinstance(m, Projection):
+                            g_cols = np.asarray(m.gain).shape[1]
+                            if not all(sn.n_nodes == g_cols for sn in self._analysis.subnets):
+                                can_kernel = False
+                        if can_kernel:
+                            kernel_persn_specs.append((mi, m))
+                            kernel_mon_indices.add(mi)
                             continue
-                    elif _resuming and mkey not in self._kmon_armed_keys:
-                        continue
-                    kernel_collect.append((mi, m))
-            if has_bold or has_temporal_average:
-                # Stateful monitors consume every observed state.
-                execution_chunk_size = 1
-                kernel_monitors = []
-                if self._bold_states is None:
-                    self._bold_states = {}
-        if kernel_collect and execution_chunk_size != 1:
-            # The kernel engines read per-step rows; without chunk_size == 1
-            # fall back to the Python reference path.
-            kernel_collect = []
+
+                if can_kernel:
+                    kernel_persn_specs.append((mi, m))
+                    kernel_mon_indices.add(mi)
+                else:
+                    py_global_indices.add(mi)
+                    if isinstance(m, Bold):
+                        has_py_bold = True
+                    if isinstance(m, TemporalAverage):
+                        has_py_tavg = True
+
+        # Partition per-subnet monitors (Recorder monitors)
+        sn_kernel_specs = {sn.name: [] for sn in self._analysis.subnets}
+        sn_py_fallbacks = {sn.name: [] for sn in self._analysis.subnets}
+        need_py_sn_tavg = False
+        need_py_sn_ctavg = False
+        if sn_mons_map is not None:
+            for sn in self._analysis.subnets:
+                for ri, rm in enumerate(sn_mons_map.get(sn.name, ())):
+                    if (self._backend.enable_kernel_monitors
+                            and self._backend._kernel_collectable(rm)):
+                        sn_kernel_specs[sn.name].append((ri, rm))
+                    else:
+                        sn_py_fallbacks[sn.name].append((ri, rm))
+                        need_py_sn_tavg = True
+                        if isinstance(rm, AfferentCoupling):
+                            need_py_sn_ctavg = True
+
+        need_tavg = (
+            (monitors is None and subnet_monitors is None)
+            or bool(py_global_indices)
+            or need_py_sn_tavg
+        )
+        need_ctavg = (
+            (monitors is None and subnet_monitors is None)
+            or bool(py_global_indices)
+            or need_py_sn_ctavg
+        )
+
+        execution_chunk_size = chunk_size
+        if has_py_bold or has_py_tavg or need_py_sn_tavg:
+            # Python fallback stateful monitors / Recorders consume every step.
+            execution_chunk_size = 1
+            if self._bold_states is None:
+                self._bold_states = {}
+
         self._kmon_armed_keys = {
-            (mi, type(m).__name__) for mi, m in kernel_collect
+            (mi, type(monitors[mi]).__name__) for mi in kernel_mon_indices
         }
-        outputs, kernel_streams = self._backend._run_compiled(
+
+        outputs, kernel_streams, subnet_streams = self._backend._run_compiled(
             self._sim, self._analysis, self._network_set,
             nstep=nstep, chunk_size=execution_chunk_size,
-            initial_states=initial_states, monitors=kernel_monitors,
-            width=self._width, kernel_collect=kernel_collect,
-            _skip_init=_resuming, _step_offset=_step_offset,
+            initial_states=initial_states, monitors=monitors,
+            width=self._width,
+            kernel_persn=kernel_persn_specs,
+            kernel_global=kernel_global_specs,
+            sn_kernel_monitors=sn_kernel_specs if sn_mons_map is not None else None,
+            explicit_chunk_size=explicit_chunk_size,
+            need_tavg=need_tavg,
+            need_ctavg=need_ctavg,
+            _skip_init=_resuming,
+            _step_offset=_step_offset,
+            _return_snapshot=return_snapshot,
+            rng_mode=rng_mode,
+            _pending_kmon_states=self._pending_kmon_states,
+            _pending_kmon_global_states=self._pending_kmon_global_states,
+            _pending_cpp_rng_states=self._pending_cpp_rng_states,
         )
+        self._pending_kmon_states = None
+        self._pending_kmon_global_states = None
+        self._pending_cpp_rng_states = None
+
+        # Assemble per-subnet Recorder results if requested
+        subnet_results = None
+        if sn_mons_map is not None:
+            subnet_results = {}
+            for si, sn in enumerate(self._analysis.subnets):
+                total_r = len(sn_mons_map.get(sn.name, ()))
+                res_list = [None] * total_r
+                for ri, stream in subnet_streams.get(sn.name, ()):
+                    res_list[ri] = stream
+                if sn_py_fallbacks[sn.name]:
+                    import copy as _copy
+                    _, tavg_s, ctavg_s = outputs[si]
+                    k_j = sn.k
+                    for ri, rm in sn_py_fallbacks[sn.name]:
+                        mon_inst = _copy.deepcopy(rm)
+                        if hasattr(mon_inst, "_config_dt"):
+                            mon_inst._config_dt(float(sn.dt))
+                        if hasattr(mon_inst, "compute_hrf"):
+                            mon_inst.compute_hrf()
+                        src_arr = (
+                            ctavg_s if isinstance(mon_inst, AfferentCoupling)
+                            else tavg_s
+                        )
+                        if hasattr(mon_inst, "_config_stock"):
+                            if (getattr(mon_inst, "variables_of_interest", None) is None
+                                    or mon_inst.variables_of_interest.size == 0):
+                                mon_inst.voi = np.arange(src_arr.shape[1], dtype=int)
+                            else:
+                                mon_inst.voi = np.asarray(
+                                    mon_inst.variables_of_interest, dtype=int)
+                            mon_inst._config_stock(*src_arr.shape[1:])
+                        elif getattr(mon_inst, "voi", None) is None:
+                            voi_a = getattr(mon_inst, "variables_of_interest", None)
+                            mon_inst.voi = (
+                                np.asarray(voi_a, dtype=int)
+                                if voi_a is not None and np.asarray(voi_a).size > 0
+                                else np.arange(src_arr.shape[1], dtype=int)
+                            )
+                        ts_l, ds_l = [], []
+                        for step1 in range(1, nstep + 1):
+                            if step1 % k_j != 0:
+                                continue
+                            sn_step = step1 // k_j
+                            ty = mon_inst.sample(sn_step, src_arr[step1 - 1])
+                            if ty is not None:
+                                ts_l.append(ty[0])
+                                ds_l.append(ty[1])
+                        if ts_l:
+                            res_list[ri] = (
+                                np.asarray(ts_l, dtype=np.float64),
+                                np.stack(ds_l).astype(np.float32),
+                            )
+                        else:
+                            res_list[ri] = (
+                                np.zeros(0, dtype=np.float64),
+                                np.empty((0,) + src_arr.shape[1:], dtype=np.float32),
+                            )
+                subnet_results[sn.name] = res_list
+
+        # Assemble global monitor outputs
         if monitors is not None:
-            bold_raw_outputs = outputs if has_bold else None
-            temporal_raw_outputs = outputs if has_temporal_average else None
-            if has_bold or has_temporal_average:
-                outputs = _aggregate_raw_outputs(outputs, chunk_size)
-            outputs = _apply_monitors(
-                outputs, monitors, dt, chunk_size=chunk_size,
-                monitor_data=None, subnet_infos=self._analysis.subnetworks,
-                bold_states=self._bold_states,
-                bold_raw_outputs=bold_raw_outputs,
-                temporal_raw_outputs=temporal_raw_outputs,
-                kernel_streams=kernel_streams or None,
-            )
+            if len(monitors) == 0:
+                outputs = []
+            elif not py_global_indices:
+                # All monitors served by C++ kmon engines!
+                # Keep _apply_monitors call when all are legacy-shortcut types
+                # (Raw/SubSample/Bold) so kernel-stream spy tests stay intact.
+                all_shortcut = all(
+                    isinstance(m, (Raw, SubSample, Bold))
+                    and not isinstance(m, AfferentCoupling)
+                    for m in monitors
+                )
+                if all_shortcut:
+                    dummy_raw = [
+                        (np.empty(0, dtype=np.float64),
+                         np.empty((0,), dtype=np.float32),
+                         np.empty((0,), dtype=np.float32))
+                        for _ in self._analysis.subnets
+                    ]
+                    outputs = _apply_monitors(
+                        dummy_raw, monitors, dt, chunk_size=chunk_size,
+                        monitor_data=None,
+                        subnet_infos=self._analysis.subnetworks,
+                        bold_states=self._bold_states,
+                        kernel_streams=kernel_streams or None,
+                    )
+                else:
+                    outputs = [kernel_streams[mi] for mi in range(len(monitors))]
+            else:
+                bold_raw_outputs = outputs if has_py_bold else None
+                temporal_raw_outputs = outputs if has_py_tavg else None
+                if has_py_bold or has_py_tavg or need_py_sn_tavg:
+                    outputs = _aggregate_raw_outputs(outputs, chunk_size)
+                # Substitute Raw() placeholder for kernel-handled monitors not in
+                # nb_hybrid's kernel_streams shortcut, then overwrite from kernel_streams.
+                proxy_mons = [
+                    (Raw() if (mi in kernel_streams and not (
+                        isinstance(m, (Raw, SubSample, Bold))
+                        and not isinstance(m, AfferentCoupling)
+                    )) else m)
+                    for mi, m in enumerate(monitors)
+                ]
+                outputs = _apply_monitors(
+                    outputs, proxy_mons, dt, chunk_size=chunk_size,
+                    monitor_data=None, subnet_infos=self._analysis.subnetworks,
+                    bold_states=self._bold_states,
+                    bold_raw_outputs=bold_raw_outputs,
+                    temporal_raw_outputs=temporal_raw_outputs,
+                    kernel_streams=kernel_streams or None,
+                )
+                for mi, stream in kernel_streams.items():
+                    outputs[mi] = stream
+        elif subnet_monitors is not None:
+            outputs = []
+
         if not return_snapshot:
+            if subnet_monitors is not None:
+                return outputs, subnet_results
             return outputs
+
         snap = {
             "states": [
                 _squeeze_lane(np.asarray(self._sim.get_subnet_state(i))).copy()
@@ -454,7 +738,12 @@ class CompiledCppSim:
                 self._analysis, self._network_set,
             ),
             "monitor_states": _copy_monitor_states(self._bold_states),
+            "kmon_states": self._sim.get_monitor_states(),
+            "kmon_global_states": self._sim.get_global_monitor_states(),
+            "cpp_rng_states": self._sim.get_rng_states(),
         }
+        if subnet_monitors is not None:
+            return outputs, snap, subnet_results
         return outputs, snap
 
     def resume(
@@ -464,7 +753,9 @@ class CompiledCppSim:
         chunk_size: int = None,
         return_snapshot: bool = False,
         monitors: Optional[list] = None,
-    ) -> list:
+        rng_mode: str = "numpy",
+        subnet_monitors: Optional[dict] = None,
+    ):
         """Resume from a snapshot returned by :meth:`run`."""
         states = snapshot["states"]
         self._backend._init_states(
@@ -492,6 +783,9 @@ class CompiledCppSim:
         if snapshot.get("monitor_states") is not None:
             self._bold_states = _copy_monitor_states(
                 snapshot.get("monitor_states"))
+        self._pending_kmon_states = snapshot.get("kmon_states")
+        self._pending_kmon_global_states = snapshot.get("kmon_global_states")
+        self._pending_cpp_rng_states = snapshot.get("cpp_rng_states")
         return self.run(
             nstep,
             chunk_size,
@@ -500,6 +794,8 @@ class CompiledCppSim:
             return_snapshot=return_snapshot,
             _step_offset=step_offset,
             _resuming=True,
+            rng_mode=rng_mode,
+            subnet_monitors=subnet_monitors,
         )
 
 
@@ -708,11 +1004,13 @@ class CppHybridBackend:
             model_name = type(sn.model).__name__
             nsig = None
             seed = 0
+            ntau = 0.0
             if is_stoch:
                 nsig = np.asarray(sn.scheme.noise.nsig, dtype=np.float64).ravel()
                 if nsig.size == 1:
                     nsig = np.full(sn.model.nvar, float(nsig[0]))
                 seed = int(getattr(sn.scheme.noise, "noise_seed", 0) or 0)
+                ntau = float(getattr(sn.scheme.noise, "ntau", 0.0) or 0.0)
             subnets.append(SubnetworkInfo(
                 stimuli=list(sn.stimuli or []),
                 name=sn.name,
@@ -730,6 +1028,7 @@ class CppHybridBackend:
                 is_stochastic=is_stoch,
                 noise_nsig=nsig,
                 noise_seed=seed,
+                noise_ntau=ntau,
                 node_indices=(np.asarray(sn.node_indices, dtype=np.int64)
                              if getattr(sn, "node_indices", None) is not None
                              else None),
@@ -762,6 +1061,7 @@ class CppHybridBackend:
             src_cvars_list = [int(v) for v in np.atleast_1d(p.source_cvar)]
             target_cvars_list = [int(v) for v in np.atleast_1d(p.target_cvar)]
             cfun_name = type(p.cfun).__name__ if p.cfun is not None else None
+            cfun_use_classic = False
             if cfun_name is None:
                 cfun_id, cfun_params, n_cfun_parm = (
                     _PASSTHROUGH_CFUN, np.zeros(0, np.float32), 0)
@@ -773,6 +1073,7 @@ class CppHybridBackend:
                 if cfun_id == 8 and getattr(p.cfun, "use_classic", 1):
                     cfun_params = cfun_params.copy()
                     cfun_params[0] *= cfun_params[0]
+                    cfun_use_classic = True
                 n_cfun_parm = len(_CPP_CFUN_PARAM_ATTRS[cfun_name])
             if is_inter:
                 pr_name = (getattr(p, "name", None)
@@ -853,6 +1154,7 @@ class CppHybridBackend:
                     n_cfun_parm=n_cfun_parm,
                     scale=float(p.scale),
                     cfun_params=cfun_params,
+                    cfun_use_classic=cfun_use_classic,
                 ))
 
         # per-source-subnet horizon = max outgoing projection horizon
@@ -1302,42 +1604,110 @@ class CppHybridBackend:
 
     @staticmethod
     def _kernel_collectable(m):
-        """True when *m* is handled by the kernel-side monitor engines.
-
-        The engines cover Bold's HRF convolution plus Raw/SubSample
-        collection.  AfferentCoupling (a Raw subclass whose output is the
-        coupling stream, not the observed state) and BoldRegionROI (Raw-like
-        state collection with an additional region-ROI reduction in Python)
-        stay on the Python reference path.
-        """
+        """True when *m* is handled by the C++ ``kmon<W>`` monitor engines."""
         from tvb.simulator.monitors import (
-            Raw, SubSample, Bold, AfferentCoupling, BoldRegionROI)
-        if isinstance(m, Bold) and not isinstance(m, BoldRegionROI):
-            return True
-        if isinstance(m, SubSample):
-            return True
-        if isinstance(m, Raw) and not isinstance(m, AfferentCoupling):
-            return True
-        return False
+            Raw,
+            SubSample,
+            Bold,
+            BoldRegionROI,
+            TemporalAverage,
+            AfferentCoupling,
+            GlobalAverage,
+            SpatialAverage,
+            Projection,
+        )
+        if isinstance(m, BoldRegionROI):
+            return False
+        if isinstance(m, Projection):
+            return (getattr(m, "_gain", None) is not None
+                    or getattr(m, "projection", None) is not None)
+        return isinstance(
+            m,
+            (
+                Bold,
+                SubSample,
+                TemporalAverage,
+                AfferentCoupling,
+                GlobalAverage,
+                SpatialAverage,
+                Raw,
+            ),
+        )
 
-    def _monitor_attach_spec(self, mi, m, n_voi, dt):
-        """Build the C++ engine attachment tuple for monitor *mi* on a
-        subnet whose per-step observed row has *n_voi* entries.
+    @staticmethod
+    def _monitor_voi_list(m):
+        voi = getattr(m, "variables_of_interest", None)
+        if voi is None:
+            return []
+        arr = np.asarray(voi, dtype=np.int32).ravel()
+        return arr.tolist() if arr.size > 0 else []
 
-        Mirrors the reference runtime construction in nb_hybrid._apply_monitors
-        so the engine gets byte-identical configuration.
-        """
+    def _monitor_attach_spec(
+        self,
+        slot,
+        m,
+        n_src_v,
+        n_space,
+        dt,
+        cadence_K=1,
+        explicit_chunk_size=None,
+        nstep=0,
+        is_resuming=False,
+        return_snapshot=False,
+    ):
+        """Build a C++ ``kmon<W>`` spec dict for monitor *m*."""
         import copy
         from tvb.datatypes import equations
-        from tvb.simulator.monitors import Bold, SubSample
+        from tvb.simulator.monitors import (
+            AfferentCoupling,
+            AfferentCouplingTemporalAverage,
+            Bold,
+            GlobalAverage,
+            Projection,
+            Raw,
+            RawVoi,
+            SpatialAverage,
+            SubSample,
+            TemporalAverage,
+        )
+
+        eff_dt = float(dt)
+        ck = int(max(1, cadence_K))
+        if isinstance(m, AfferentCouplingTemporalAverage):
+            istep = max(1, int(round(float(m.period) / eff_dt)))
+            return {
+                "slot": int(slot),
+                "kind": 5,  # KMON_CTAVG
+                "istep": istep,
+                "cadence_K": ck,
+                "dt": eff_dt,
+                "midpoint_time": True,
+                "voi": self._monitor_voi_list(m),
+            }
+        if isinstance(m, AfferentCoupling):
+            return {
+                "slot": int(slot),
+                "kind": 5,  # KMON_CTAVG
+                "istep": 1,
+                "cadence_K": ck,
+                "dt": eff_dt,
+                "midpoint_time": False,
+                "voi": self._monitor_voi_list(m),
+            }
+        if isinstance(m, TemporalAverage):
+            istep = max(1, int(round(float(m.period) / eff_dt)))
+            return {
+                "slot": int(slot),
+                "kind": 4,  # KMON_TAVG
+                "istep": istep,
+                "cadence_K": ck,
+                "dt": eff_dt,
+                "voi": self._monitor_voi_list(m),
+            }
         if isinstance(m, Bold):
-            if (m.variables_of_interest is None
-                    or m.variables_of_interest.size == 0):
-                voi = np.arange(n_voi, dtype=np.int32)
-            else:
-                voi = np.asarray(m.variables_of_interest, dtype=np.int32)
+            voi = self._monitor_voi_list(m)
             tmp = copy.deepcopy(m)
-            tmp._config_dt(dt)
+            tmp._config_dt(eff_dt)
             tmp.compute_hrf()
             first_order = isinstance(
                 m.hrf_kernel, equations.FirstOrderVolterra)
@@ -1346,54 +1716,388 @@ class CppHybridBackend:
                     if first_order else 1.0)
             hrf = np.asarray(tmp.hemodynamic_response_function,
                              dtype=np.float64).ravel()
-            return (mi, 3, int(tmp.istep), int(tmp._interim_istep),
-                    int(tmp._stock_steps), k1v0, bool(first_order),
-                    voi, hrf, float(dt))
+            return {
+                "slot": int(slot),
+                "kind": 3,  # KMON_BOLD
+                "istep": max(1, int(tmp.istep)),
+                "cadence_K": ck,
+                "dt": eff_dt,
+                "interim_istep": max(1, int(tmp._interim_istep)),
+                "stock_steps": max(1, int(tmp._stock_steps)),
+                "k1v0": k1v0,
+                "first_order": bool(first_order),
+                "voi": voi,
+                "hrf": hrf,
+            }
         if isinstance(m, SubSample):
-            istep = max(1, int(round(float(m.period) / dt)))
-            return (mi, 2, istep, 1, 0, 1.0, False,
-                    np.zeros(0, dtype=np.int32), None, float(dt))
-        # Raw / RawVoi: collect every observed row
-        return (mi, 1, 1, 1, 0, 1.0, False,
-                np.zeros(0, dtype=np.int32), None, float(dt))
+            istep = max(1, int(round(float(m.period) / eff_dt)))
+            return {
+                "slot": int(slot),
+                "kind": 2,  # KMON_SUBSAMPLE
+                "istep": istep,
+                "cadence_K": ck,
+                "dt": eff_dt,
+                "voi": self._monitor_voi_list(m),
+            }
+        if isinstance(m, GlobalAverage):
+            if explicit_chunk_size is not None and ck == 1:
+                istep = max(1, int(explicit_chunk_size))
+            else:
+                istep = max(1, int(round(float(m.period) / eff_dt)))
+            return {
+                "slot": int(slot),
+                "kind": 6,  # KMON_GLOBAL_AVG
+                "istep": istep,
+                "cadence_K": ck,
+                "dt": eff_dt,
+                "voi": self._monitor_voi_list(m),
+            }
+        if isinstance(m, SpatialAverage):
+            istep = (max(1, int(round(float(m.period) / eff_dt)))
+                     if getattr(m, "period", None) else 1)
+            if explicit_chunk_size is not None and ck == 1:
+                cs_i = max(1, int(explicit_chunk_size))
+                if cs_i >= istep or (
+                    nstep > 0 and nstep < istep
+                    and not is_resuming and not return_snapshot
+                ):
+                    istep = cs_i
+            sm = getattr(m, "spatial_mean", None)
+            if sm is None:
+                sm_arr = np.eye(max(1, int(n_space)), dtype=np.float32)
+            else:
+                sm_arr = np.ascontiguousarray(sm, dtype=np.float32)
+            return {
+                "slot": int(slot),
+                "kind": 7,  # KMON_SPATIAL_AVG
+                "istep": istep,
+                "cadence_K": ck,
+                "dt": eff_dt,
+                "voi": self._monitor_voi_list(m),
+                "spatial_mean": sm_arr,
+            }
+        if isinstance(m, Projection):
+            istep = (max(1, int(round(float(m.period) / eff_dt)))
+                     if getattr(m, "period", None) else 1)
+            if explicit_chunk_size is not None and ck == 1:
+                cs_i = max(1, int(explicit_chunk_size))
+                if cs_i >= istep or (
+                    nstep > 0 and nstep < istep
+                    and not is_resuming and not return_snapshot
+                ):
+                    istep = cs_i
+            gain_arr = np.ascontiguousarray(m.gain, dtype=np.float32)
+            ref_vec = None
+            rv = getattr(m, "_ref_vec", None)
+            if rv is not None:
+                rv_mask = getattr(m, "_ref_vec_mask", None)
+                if rv_mask is not None:
+                    ref_vec = np.zeros(gain_arr.shape[0], dtype=np.float32)
+                    ref_vec[np.asarray(rv_mask, dtype=bool)] = np.asarray(
+                        rv, dtype=np.float32)
+                else:
+                    ref_vec = np.ascontiguousarray(
+                        rv, dtype=np.float32).ravel()
+            return {
+                "slot": int(slot),
+                "kind": 8,  # KMON_PROJECTION
+                "istep": istep,
+                "cadence_K": ck,
+                "dt": eff_dt,
+                "voi": self._monitor_voi_list(m),
+                "gain": gain_arr,
+                "ref_vec": ref_vec,
+            }
+        if isinstance(m, RawVoi):
+            return {
+                "slot": int(slot),
+                "kind": 1,  # KMON_RAW
+                "istep": 1,
+                "cadence_K": ck,
+                "dt": eff_dt,
+                "voi": self._monitor_voi_list(m),
+            }
+        # Raw: collect every observed VOI row
+        return {
+            "slot": int(slot),
+            "kind": 1,  # KMON_RAW
+            "istep": 1,
+            "cadence_K": ck,
+            "dt": eff_dt,
+            "voi": [],
+        }
+
+    @staticmethod
+    def _lower_subnet_stimuli(sn_info, dt0, total_steps):
+        """Lower a subnet's Stim list to ``(cph_stim_specs, legacy_stims)``."""
+        from tvb.datatypes import equations as _eqs
+        from tvb.datatypes.patterns import SpatioTemporalPattern
+
+        eq_map = (
+            (_eqs.Linear, 1, ("a", "b")),
+            (_eqs.Sinusoid, 2, ("amp", "frequency")),
+            (_eqs.Cosine, 3, ("amp", "frequency")),
+            (_eqs.PulseTrain, 4, ("T", "tau", "amp", "onset")),
+            (_eqs.Alpha, 5, ("onset", "alpha", "beta")),
+            (_eqs.GeneralizedSigmoid, 6, ("low", "high", "midpoint", "sigma")),
+            (_eqs.Gaussian, 7, ("amp", "sigma", "midpoint", "offset")),
+            (_eqs.DoubleGaussian, 8, (
+                "amp_1", "sigma_1", "midpoint_1",
+                "amp_2", "sigma_2", "midpoint_2")),
+            (_eqs.Sigmoid, 9, ("amp", "radius", "sigma", "offset")),
+        )
+
+        specs = []
+        legacy = []
+        for s in (sn_info.stimuli or ()):
+            target_slots = np.asarray(s.target_cvar)
+            if target_slots.ndim != 1 or target_slots.size == 0:
+                raise ValueError(
+                    f"Stimulus for subnetwork '{sn_info.name}' must have a "
+                    "non-empty one-dimensional target_cvar array; "
+                    f"got shape {target_slots.shape}."
+                )
+            if target_slots.dtype.kind not in "iu":
+                raise ValueError(
+                    f"Stimulus for subnetwork '{sn_info.name}' has "
+                    f"non-integer target_cvar {target_slots.tolist()}."
+                )
+            target_slots = target_slots.astype(np.int32, copy=False)
+            if np.any(target_slots < 0) or np.any(target_slots >= sn_info.n_cvar):
+                raise ValueError(
+                    f"Stimulus for subnetwork '{sn_info.name}' has target "
+                    f"slots {target_slots.tolist()} outside "
+                    f"[0, {sn_info.n_cvar - 1}]."
+                )
+
+            pat = getattr(s, "stimulus", None)
+            if not isinstance(pat, SpatioTemporalPattern):
+                legacy.append(s)
+                continue
+
+            if getattr(pat, "_spatial_pattern", None) is None and hasattr(
+                pat, "configure_space"
+            ):
+                pat.configure_space()
+            sp_raw = getattr(pat, "_spatial_pattern", None)
+            if sp_raw is None:
+                legacy.append(s)
+                continue
+            sp_arr = np.asarray(sp_raw, dtype=np.float64)
+            if sp_arr.ndim == 1:
+                sp_arr = sp_arr[:, np.newaxis]
+            if getattr(s, "weights", None) is not None:
+                sp_arr = s.weights @ sp_arr
+            if sp_arr.shape[0] > sn_info.n_nodes:
+                sp_arr = sp_arr[:sn_info.n_nodes]
+            sp_vec = np.ascontiguousarray(sp_arr, dtype=np.float32).ravel()
+            if sp_vec.size != sn_info.n_nodes:
+                legacy.append(s)
+                continue
+
+            temp = getattr(pat, "temporal", None)
+            if temp is None:
+                legacy.append(s)
+                continue
+
+            matched = None
+            temp_cls = type(temp)
+            # PulseTrain has discontinuous step boundaries (var > onset, phase < tau);
+            # when dt0 is not exact in binary float32 (e.g. 0.1 ms), simw's float32
+            # dt causes step*float32(dt) to drift across boundaries vs float64 arange.
+            # Evaluate it on the float64 master grid as compact 1D STIM_DISCRETE_1D.
+            if (temp_cls is _eqs.PulseTrain
+                    and float(dt0) != float(np.float32(dt0))):
+                matched = None
+            else:
+                for eq_cls, eq_kind, pkeys in eq_map:
+                    if temp_cls is eq_cls:
+                        matched = (eq_kind, pkeys)
+                        break
+
+            if matched is not None:
+                eq_kind, pkeys = matched
+                eq_params = [float(temp.parameters[k]) for k in pkeys]
+                specs.append({
+                    "n_node": int(sn_info.n_nodes),
+                    "target_cvars": target_slots.tolist(),
+                    "spatial": sp_vec,
+                    "lane_varying": False,
+                    "eq_kind": int(eq_kind),
+                    "onset_t0": 0.0,
+                    "dt0": float(dt0),
+                    "eq_params": eq_params,
+                    "scale": float(s.projection_scale),
+                })
+            else:
+                # Arbitrary custom temporal equation -> 1D master-grid table
+                t_grid = np.arange(
+                    0, int(total_steps) + 1, dtype=np.float64) * float(dt0)
+                t_1d = np.ascontiguousarray(
+                    temp.evaluate(t_grid), dtype=np.float32).ravel()
+                specs.append({
+                    "n_node": int(sn_info.n_nodes),
+                    "target_cvars": target_slots.tolist(),
+                    "spatial": sp_vec,
+                    "lane_varying": False,
+                    "eq_kind": 0,  # STIM_DISCRETE_1D
+                    "dt0": float(dt0),
+                    "temporal_1d": t_1d,
+                    "step_offset": 0,
+                    "scale": float(s.projection_scale),
+                })
+        return specs, legacy
+
+    def _build_legacy_stim_arrays(self, analysis, legacy_by_sn, nstep, width,
+                                  step_offset=0):
+        """Legacy 5D dense stimulus fallback for non-separable stimuli."""
+        from tvb.simulator.backend.nb_hybrid import _stim_master_grid
+        if not any(legacy_by_sn):
+            return None
+        stim_by_sn = []
+        for sn, leg_list in zip(analysis.subnets, legacy_by_sn):
+            if not leg_list:
+                stim_by_sn.append(None)
+                continue
+            nm = sn.n_modes
+            arr = np.zeros(
+                (nstep, sn.n_cvar, sn.n_nodes, nm, width), np.float32)
+            for stim in (_stim_master_grid(
+                    s, analysis.dt, step_offset + int(nstep))
+                    for s in leg_list):
+                target_slots = np.asarray(stim.target_cvar).astype(np.intp)
+                for step_idx in range(step_offset + 1,
+                                      step_offset + int(nstep) + 1):
+                    sc = np.asarray(stim.get_coupling(step_idx), dtype=np.float32)
+                    if sc.ndim == 2:
+                        sc = sc[:, :, np.newaxis]
+                    sc = np.broadcast_to(
+                        sc, (target_slots.size, sn.n_nodes, nm))
+                    for li, slot in enumerate(target_slots):
+                        arr[step_idx - step_offset - 1, slot, :, :, 0] += sc[li]
+            if width > 1:
+                arr = np.repeat(arr, width, axis=4)
+            stim_by_sn.append(np.ascontiguousarray(arr))
+        return stim_by_sn
 
     def _run_compiled(
         self, sim, analysis, network_set, nstep=100, chunk_size=None,
         initial_states=None, monitors=None, width=1, _init_only=False,
         kernel_collect=None, _skip_init=False, _step_offset=0,
+        kernel_persn=None, kernel_global=None, sn_kernel_monitors=None,
+        explicit_chunk_size=None, need_tavg=True, need_ctavg=True,
+        _return_snapshot=False, rng_mode="numpy",
+        _pending_kmon_states=None, _pending_kmon_global_states=None,
+        _pending_cpp_rng_states=None,
     ):
-        """Run the C++ core and return ``(results, kernel_streams)``.
-
-        ``results`` is the per-subnet ``(times, tavg, ctavg)`` list; when
-        ``kernel_collect`` (list of ``(monitor_index, monitor)``) is given and
-        ``chunk_size == 1``, monitor engines are armed on every subnet and
-        their ``(times, data)`` streams are returned per monitor index in
-        ``kernel_streams``.  Without engines the layout is unchanged and
-        ``kernel_streams`` is empty.
-        """
+        """Run the C++ core and return ``(results, kernel_streams, subnet_streams)``."""
         self._validate_monitors(monitors, chunk_size)
         self._validate_horizons(analysis)
         cs = int(chunk_size) if chunk_size else 1
 
-        if kernel_collect and cs != 1:
-            kernel_collect = []  # engines need per-step rows; use Python path
-        if kernel_collect is None:
-            kernel_collect = []
+        # Backward compat if an internal caller passes legacy `kernel_collect`
+        if kernel_persn is None:
+            kernel_persn = list(kernel_collect or ())
+        if kernel_global is None:
+            kernel_global = []
 
-        # arm (or clear) the kernel monitor engines on every subnet
-        for si in range(len(analysis.subnets)):
-            n_voi = len(analysis.subnets[si].voi) // 3
-            atts = [self._monitor_attach_spec(mi, m, n_voi, analysis.dt)
-                    for mi, m in kernel_collect]
+        n_sn = len(analysis.subnets)
+        should_merge = (n_sn > 1) and _can_merge_subnets(analysis.subnets)
+
+        # 1. Arm per-subnet monitors (global persn monitors + Recorder monitors)
+        persn_counts = [0] * n_sn
+        sn_mon_map_idx = [[] for _ in range(n_sn)]  # (kind_tag, key, slot_pos)
+        for si, sn in enumerate(analysis.subnets):
+            n_voi = len(sn.voi) // 3
+            atts = []
+            for mi, m in kernel_persn:
+                atts.append(self._monitor_attach_spec(
+                    mi, m, n_voi, sn.n_nodes, analysis.dt,
+                    cadence_K=1,
+                    explicit_chunk_size=explicit_chunk_size,
+                    nstep=int(nstep),
+                    is_resuming=_skip_init,
+                    return_snapshot=_return_snapshot,
+                ))
+                sn_mon_map_idx[si].append(("global_persn", mi))
+            if sn_kernel_monitors is not None:
+                for ri, rm in sn_kernel_monitors.get(sn.name, ()):
+                    atts.append(self._monitor_attach_spec(
+                        10000 + ri, rm, n_voi, sn.n_nodes, float(sn.dt),
+                        cadence_K=sn.k,
+                        explicit_chunk_size=None,
+                        nstep=int(nstep),
+                        is_resuming=_skip_init,
+                        return_snapshot=_return_snapshot,
+                    ))
+                    sn_mon_map_idx[si].append(("recorder", ri))
             sim.set_monitors(si, atts)
+            persn_counts[si] = len(atts)
+
+        # 2. Arm multi-subnet / single-subnet global monitors
+        if kernel_global:
+            gather_specs = []
+            total_nodes = (
+                max(int(sn.node_indices.max()) for sn in analysis.subnets) + 1
+                if should_merge
+                else analysis.subnets[0].n_nodes
+            )
+            for sn in analysis.subnets:
+                gather_specs.append({
+                    "n_voi": len(sn.voi) // 3,
+                    "n_node": int(sn.n_nodes),
+                    "voi_offset": 0,
+                    "node_offset": 0,
+                    "node_indices": (
+                        sn.node_indices.astype(np.int32).tolist()
+                        if should_merge else None
+                    ),
+                })
+            n_voi_g = len(analysis.subnets[0].voi) // 3
+            g_atts = [
+                self._monitor_attach_spec(
+                    mi, m, n_voi_g, total_nodes, analysis.dt,
+                    cadence_K=1,
+                    explicit_chunk_size=explicit_chunk_size,
+                    nstep=int(nstep),
+                    is_resuming=_skip_init,
+                    return_snapshot=_return_snapshot,
+                )
+                for mi, m in kernel_global
+            ]
+            sim.set_global_monitors(gather_specs, g_atts)
+        else:
+            sim.set_global_monitors(
+                [{"n_voi": len(sn.voi) // 3, "n_node": int(sn.n_nodes),
+                  "voi_offset": 0, "node_offset": 0}
+                 for sn in analysis.subnets],
+                [],
+            )
+
+        # Restore kmon states on resume if provided
+        if _pending_kmon_states is not None:
+            sim.set_monitor_states(_pending_kmon_states)
+        if _pending_kmon_global_states is not None:
+            sim.set_global_monitor_states(_pending_kmon_global_states)
+
         if not _skip_init:
             sim.monitor_begin_run()
-        K = len(kernel_collect)
 
-        # per-chunk stochastic noise generation (Python-side RNG, like nb_hybrid)
-        noise_obj = None
+        # 3. Configure RNG (NumPy external chunked OR C++ Philox4x32-10)
         stoch = [sn for sn in analysis.subnets if sn.is_stochastic]
-        if stoch:
+        use_philox = (rng_mode == "philox") and bool(stoch)
+        sim.set_rng_states([{"enabled": False} for _ in range(n_sn)])
+        if use_philox:
+            for si, sn in enumerate(analysis.subnets):
+                if sn.is_stochastic:
+                    gfun = np.sqrt(2.0 * sn.noise_nsig * sn.dt).astype(np.float32)
+                    seed = int(sn.noise_seed) & 0xFFFFFFFFFFFFFFFF
+                    sim.set_subnet_rng(
+                        si, seed, gfun, ntau=float(sn.noise_ntau))
+            if _pending_cpp_rng_states is not None:
+                sim.set_rng_states(_pending_cpp_rng_states)
+
+        if stoch and not use_philox:
             noise_std = [
                 np.sqrt(2.0 * sn.noise_nsig * sn.dt) for sn in stoch
             ]
@@ -1406,32 +2110,39 @@ class CppHybridBackend:
         if not _skip_init:
             self._init_states(sim, analysis, network_set, initial_states, width)
 
-        stims = self._build_stim_arrays(
-            analysis, int(nstep), width, step_offset=_step_offset)
-        # Align stimulus arrays with subnetwork order (None where absent);
-        # the core accepts a per-subnet sequence.
-        stim_iter = iter(stims)
-        stim_by_sn = [next(stim_iter) if sn.stimuli else None
-                      for sn in analysis.subnets]
-        stim_obj = stim_by_sn if stims else None
+        # 4. Lower separable stimuli to C++ `cph::stim_spec<W>` (with legacy fallback)
+        sim.clear_stim_specs()
+        legacy_by_sn = []
+        for si, sn in enumerate(analysis.subnets):
+            if sn.stimuli:
+                sp_list, leg_list = self._lower_subnet_stimuli(
+                    sn, analysis.dt, _step_offset + int(nstep))
+                if sp_list:
+                    sim.set_stim_specs(si, sp_list)
+                legacy_by_sn.append(leg_list)
+            else:
+                legacy_by_sn.append([])
+        stim_by_sn = self._build_legacy_stim_arrays(
+            analysis, legacy_by_sn, int(nstep), width,
+            step_offset=_step_offset)
 
-        if not stoch:
-            outs = sim.run(int(nstep), cs, None, stim_obj)
+        if not stoch or use_philox:
+            outs = sim.run(
+                int(nstep), cs, None, stim_by_sn,
+                need_tavg=bool(need_tavg), need_ctavg=bool(need_ctavg),
+            )
         else:
-            # chunk-wise loop to draw noise per chunk (sequential RNG stream)
-            all_outs = None
+            # Chunk-wise loop to draw NumPy MT19937 noise per chunk
             remaining = int(nstep)
             done = 0
             chunk_results = []
             while remaining > 0:
                 this_chunk = min(remaining, max(cs, 1))
-                # one noise array per subnetwork (None where deterministic)
-                noise_by_sn = [None] * len(analysis.subnets)
+                noise_by_sn = [None] * n_sn
                 for sn, std, rng in zip(stoch, noise_std, rngs):
                     dw = rng.randn(this_chunk, sn.n_svar, sn.n_nodes,
                                    sn.n_modes)
                     dw = dw * std[np.newaxis, :, np.newaxis, np.newaxis]
-                    # layout (step, svar, node, mode, lane) for the core
                     nz = np.ascontiguousarray(
                         np.repeat(dw[..., np.newaxis], width,
                                   axis=4)).astype(np.float32)
@@ -1440,51 +2151,74 @@ class CppHybridBackend:
                     [None if sa is None
                      else np.ascontiguousarray(sa[done:done + this_chunk])
                      for sa in stim_by_sn]
-                    if stim_obj is not None else None
+                    if stim_by_sn is not None else None
                 )
-                outs = sim.run(this_chunk, cs, noise_by_sn, chunk_stim)
+                outs = sim.run(
+                    this_chunk, cs, noise_by_sn, chunk_stim,
+                    need_tavg=bool(need_tavg), need_ctavg=bool(need_ctavg),
+                )
                 chunk_results.append(outs)
                 done += this_chunk
                 remaining -= this_chunk
-            # concatenate chunk outputs along the chunk axis
             n_out = len(chunk_results[0])
-            all_outs = [
-                np.concatenate([cr[i] for cr in chunk_results], axis=0)
-                for i in range(n_out)
-            ]
+            all_outs = []
+            for idx_o in range(n_out):
+                if chunk_results[0][idx_o] is None:
+                    all_outs.append(None)
+                else:
+                    all_outs.append(
+                        np.concatenate([cr[idx_o] for cr in chunk_results], axis=0)
+                    )
             outs = all_outs
 
+        # 5. Unpack per-subnet outputs and monitor streams
         results = []
         kernel_streams = {}
-        block = 2 + 2 * K
+        subnet_streams = {}
+        pos = 0
+        dt0_q = float(np.float32(analysis.dt))
         for i, sn in enumerate(analysis.subnets):
-            base = i * block
-            tavg = np.asarray(outs[base], dtype=np.float32)
-            ctavg = np.asarray(outs[base + 1], dtype=np.float32)
-            # Master-grid sample times (decision 2 plus the pinned
-            # float32 quantization, parity_audit.md section 6): the nb
-            # template emits the per-chunk midpoint as ((2*t_global +
-            # this_chunk - 1) / 2) * float32(dt0) with 1-based t_global =
-            # step_offset + c*cs + 1, i.e. the mean of the first and last
-            # master tick of the chunk, scaled by float64(float32(dt0)) -
-            # the float32 dt0 the nb reference multiplies in, quantized once.
-            # For chunk_size == 1 this is exactly t * dt0 on the master grid,
-            # which is what the multi-dt oracle and the nb backend emit.
-            # A partial final chunk uses its own bounds (like nb and the
-            # naive oracle); the fixed (cs+1)/2 offset would be wrong there.
-            n_chunks = tavg.shape[0]
+            raw_t = outs[pos]
+            raw_c = outs[pos + 1]
+            tavg = (
+                np.asarray(raw_t, dtype=np.float32)
+                if raw_t is not None else None
+            )
+            ctavg = (
+                np.asarray(raw_c, dtype=np.float32)
+                if raw_c is not None else None
+            )
+            if tavg is not None:
+                n_chunks = tavg.shape[0]
+            elif ctavg is not None:
+                n_chunks = ctavg.shape[0]
+            else:
+                n_chunks = (int(nstep) + cs - 1) // cs
             steps_lo = _step_offset + np.arange(n_chunks) * cs + 1
             steps_hi = _step_offset + np.minimum(
                 np.arange(n_chunks) * cs + cs, int(nstep))
-            dt0_q = float(np.float32(analysis.dt))
             times = (steps_lo + steps_hi) * 0.5 * dt0_q
             results.append((times, tavg, ctavg))
-            for e, (mi, _m) in enumerate(kernel_collect):
-                ts = np.asarray(outs[base + 2 + 2 * e], dtype=np.float64)
-                dd = np.asarray(outs[base + 3 + 2 * e], dtype=np.float32)
-                kernel_streams.setdefault(
-                    mi, [None] * len(analysis.subnets))[i] = (ts, dd)
-        return results, kernel_streams
+
+            pos += 2
+            for tag, key in sn_mon_map_idx[i]:
+                ts = np.asarray(outs[pos], dtype=np.float64)
+                dd = np.asarray(outs[pos + 1], dtype=np.float32)
+                pos += 2
+                if tag == "global_persn":
+                    kernel_streams.setdefault(key, [None] * n_sn)[i] = (ts, dd)
+                else:
+                    subnet_streams.setdefault(sn.name, []).append((key, (ts, dd)))
+
+        if kernel_global:
+            g_outs = sim.take_global_monitor_outputs()
+            for (mi, _m), (ts, dd) in zip(kernel_global, g_outs):
+                kernel_streams[mi] = [
+                    (np.asarray(ts, dtype=np.float64),
+                     np.asarray(dd, dtype=np.float32))
+                ]
+
+        return results, kernel_streams, subnet_streams
 
     def run_network(
         self,
@@ -1495,13 +2229,19 @@ class CppHybridBackend:
         initial_states: Optional[list] = None,
         debug_nojit: bool = False,
         monitors: Optional[list] = None,
+        rng_mode: str = "numpy",
+        subnet_monitors: Optional[dict] = None,
+        **kwargs,
     ):
         """Run a hybrid simulation with the C++ backend.
 
         Equivalent to ``self.compile(network_set).run(nstep, ...)``.
         """
         cn = self.compile(network_set, print_source=print_source)
-        return cn.run(nstep, chunk_size, initial_states, monitors)
+        return cn.run(
+            nstep, chunk_size, initial_states, monitors,
+            rng_mode=rng_mode, subnet_monitors=subnet_monitors, **kwargs,
+        )
 
     # ------------------------------------------------------------------
     # sweeps: multithreaded SIMD batches (lanes = sweep members)
@@ -1551,7 +2291,10 @@ class CppHybridBackend:
                                     (pr.n_cfun_parm, width),
                                 ).copy()
                                 cp_by_proj[pi] = cp
-                            cp[pidx, :group_size] = vals
+                            if pr.cfun_id == 8 and pidx == 0 and pr.cfun_use_classic:
+                                cp[pidx, :group_size] = vals * vals
+                            else:
+                                cp[pidx, :group_size] = vals
                 if not matched:
                     raise ValueError(f"Projection '{pname}' not found in sweep")
             else:
@@ -1573,6 +2316,12 @@ class CppHybridBackend:
         for si, pp in pp_by_sn.items():
             sim.set_subnet_params(si, pp)
 
+    _ONLINE_FEATURE_NAMES = frozenset({
+        "mean", "var", "std", "min", "max", "rms", "abs_energy",
+        "average_power", "auc", "auc_trapz", "zero_crossing",
+        "burstiness", "moments", "skewness", "kurtosis", "centroid",
+    })
+
     def sweep(
         self,
         network_set,
@@ -1587,96 +2336,242 @@ class CppHybridBackend:
         chunk_size: Optional[int] = None,
         initial_states: Optional[list] = None,
         node_indices: Optional[dict] = None,
-        width: int = 8,
+        width: Optional[int] = None,
         progress: bool = False,
+        features: Optional[list] = None,
+        noise_seeds: Optional[np.ndarray] = None,
+        shared_noise: bool = False,
     ) -> "SweepResult":
         """Run a parameter sweep as multithreaded SIMD batches.
 
-        Each SIMD lane (width, default 8) carries one sweep member; lane
-        groups run concurrently in Python threads (the C++ kernel releases
-        the GIL).
-
-        Parameters mirror :meth:`NbHybridBackend.sweep`.
+        Each SIMD lane (width in ``{1, 4, 8, 16}``) carries one sweep member;
+        lane groups run concurrently in Python threads (the C++ kernel releases
+        the GIL).  Supports deterministic and stochastic sweeps (via C++
+        Philox4x32-10), separable stimuli, ``monitor`` in
+        ``('tavg', 'raw', 'subsample', 'bold', 'none', 'features')``,
+        ``bold_period``, ``chunk_size``, and optional Tier-1 ``features``.
         """
         import time as _time_mod
-        from tvb.simulator.backend.nb_hybrid import _can_merge_subnets
+        from . import notebook as _nb_sugar
 
-        if monitor != "tavg":
-            raise NotImplementedError(
-                "CppHybridBackend.sweep currently supports monitor='tavg'"
+        if width is None or width == "auto":
+            n_preview = len(next(iter(params.values()))) if isinstance(params, dict) and params else 1
+            width = _nb_sugar.default_width(n_preview, network_set)
+        if isinstance(width, bool) or width not in (1, 4, 8, 16):
+            raise ValueError(
+                f"Unsupported SIMD width {width!r}; expected one of (1, 4, 8, 16)."
             )
+        width = int(width)
+
+        if monitor is None:
+            monitor = "none"
+        if monitor not in ("tavg", "raw", "subsample", "bold", "none", "features"):
+            raise ValueError(
+                f"Unsupported sweep monitor {monitor!r}; expected "
+                "'tavg', 'raw', 'subsample', 'bold', or 'none'."
+            )
+        if chunk_size is not None and (
+            isinstance(chunk_size, (bool, np.bool_))
+            or not isinstance(chunk_size, (int, np.integer))
+            or chunk_size <= 0
+        ):
+            raise ValueError("chunk_size must be a positive integer")
+        if (isinstance(monitor_period, (bool, np.bool_))
+                or not isinstance(monitor_period, (int, np.integer))
+                or monitor_period <= 0):
+            raise ValueError("monitor_period must be a positive integer")
         if bold_period is not None:
-            raise NotImplementedError(
-                "CppHybridBackend.sweep does not support bold_period yet"
-            )
-        if not isinstance(nstep, (int, np.integer)) or nstep <= 0:
+            try:
+                valid_bp = (
+                    not isinstance(bold_period, (bool, np.bool_))
+                    and np.isfinite(float(bold_period))
+                    and float(bold_period) > 0
+                )
+            except (TypeError, ValueError):
+                valid_bp = False
+            if not valid_bp:
+                raise ValueError("bold_period must be positive")
+        if (isinstance(nstep, (bool, np.bool_))
+                or not isinstance(nstep, (int, np.integer))
+                or nstep <= 0):
             raise ValueError("nstep must be a positive integer")
+
+        online_feat_names = []
+        tier2_feat_names = []
+        if features is not None:
+            from . import features as _feat_mod
+            for f in features:
+                if isinstance(f, str):
+                    if f in self._ONLINE_FEATURE_NAMES:
+                        online_feat_names.append(f)
+                    elif f in _feat_mod.FEATURES:
+                        tier2_feat_names.append(f)
+                    else:
+                        raise KeyError(
+                            f"unknown feature {f!r}; choices: "
+                            f"{sorted(_feat_mod.FEATURES)}"
+                        )
+                else:
+                    tier2_feat_names.append(f)
 
         targets, sweep_values = self._resolve_sweep(network_set, params)
         analysis = self._analyse(network_set)
-        if any(sn.is_stochastic for sn in analysis.subnets):
-            raise NotImplementedError(
-                "CppHybridBackend.sweep does not support stochastic integrators."
-            )
+
+        cs = int(chunk_size) if chunk_size is not None else 1
+        want_raw_stream = (
+            (monitor == "raw" and cs > 1)
+            or (monitor == "subsample")
+        )
+        want_bold = (monitor == "bold") or (bold_period is not None)
+        eff_bold_period = float(bold_period) if bold_period is not None else 2000.0
+        need_tavg = (
+            monitor in ("tavg", "raw", "subsample")
+            or bool(tier2_feat_names)
+        )
+        need_ctavg = (monitor in ("tavg", "raw", "subsample"))
+
         results, workers, elapsed = self._sweep_impl(
-            network_set, analysis, targets, sweep_values, nstep,
+            network_set, analysis, targets, sweep_values, int(nstep),
             initial_states, width, n_workers, _time_mod,
             label=f"cpp-simd(width={width})", progress=progress,
+            chunk_size=cs,
+            need_tavg=need_tavg,
+            need_ctavg=need_ctavg,
+            want_raw_kind=(
+                1 if (monitor == "raw" and cs > 1)
+                else (2 if monitor == "subsample" else 0)
+            ),
+            monitor_period=int(monitor_period),
+            want_bold=want_bold,
+            bold_period=eff_bold_period,
+            online_feat_names=online_feat_names,
+            noise_seeds=noise_seeds,
+            shared_noise=shared_noise,
         )
 
-        # assemble per-subnet tavg over all sweeps
-        tavg = {sn.name: [] for sn in analysis.subnets}
-        ctavg = {sn.name: [] for sn in analysis.subnets}
-        for lo, hi, outs in results:
+        # Assemble outputs across lane groups
+        tavg = {sn.name: [] for sn in analysis.subnets} if need_tavg else {}
+        ctavg = {sn.name: [] for sn in analysis.subnets} if need_ctavg else {}
+        raw_out = (
+            {sn.name: [] for sn in analysis.subnets}
+            if monitor in ("raw", "subsample") else None
+        )
+        bold_out = (
+            {sn.name: [] for sn in analysis.subnets} if want_bold else None
+        )
+        online_out = (
+            {sn.name: {fn: [] for fn in online_feat_names}
+             for sn in analysis.subnets}
+            if online_feat_names else None
+        )
+        bold_times = None
+
+        n_extra_per_sn = (1 if want_raw_stream else 0) + (1 if want_bold else 0)
+        for lo, hi, outs, feat_per_sn in results:
+            k_lanes = hi - lo
             for i, sn in enumerate(analysis.subnets):
-                arr = np.asarray(outs[2 * i], dtype=np.float32)
-                ct = np.asarray(outs[2 * i + 1], dtype=np.float32)
-                tavg[sn.name].append(
-                    arr.transpose(3, 0, 1, 2)[: hi - lo, :, :, :, None])
-                ctavg[sn.name].append(
-                    ct.transpose(3, 0, 1, 2)[: hi - lo, :, :, :, None])
+                base = i * (2 + 2 * n_extra_per_sn)
+                if need_tavg:
+                    arr = np.asarray(outs[base], dtype=np.float32)
+                    tavg[sn.name].append(
+                        arr.transpose(3, 0, 1, 2)[:k_lanes, :, :, :, None])
+                if need_ctavg:
+                    ct = np.asarray(outs[base + 1], dtype=np.float32)
+                    ctavg[sn.name].append(
+                        ct.transpose(3, 0, 1, 2)[:k_lanes, :, :, :, None])
+                pos = base + 2
+                if want_raw_stream:
+                    r_arr = np.asarray(outs[pos + 1], dtype=np.float32)
+                    raw_out[sn.name].append(
+                        r_arr.transpose(3, 0, 1, 2)[:k_lanes, :, :, :, None])
+                    pos += 2
+                if want_bold:
+                    b_t = np.asarray(outs[pos], dtype=np.float64)
+                    b_arr = np.asarray(outs[pos + 1], dtype=np.float32)
+                    bold_out[sn.name].append(
+                        b_arr.transpose(3, 0, 1, 2)[:k_lanes, :, :, :, None])
+                    if bold_times is None:
+                        bold_times = b_t
+                    pos += 2
+                if online_out is not None:
+                    fdict = feat_per_sn[i]
+                    for fn in online_feat_names:
+                        fa = np.asarray(fdict[fn], dtype=np.float64)
+                        if fn == "moments":
+                            # (n_comp, n_voi, n_node, W) -> (k_lanes, n_comp, n_voi, n_node)
+                            online_out[sn.name][fn].append(
+                                fa.transpose(3, 0, 1, 2)[:k_lanes])
+                        else:
+                            # (n_voi, n_node, W) -> (k_lanes, n_voi, n_node)
+                            online_out[sn.name][fn].append(
+                                fa.transpose(2, 0, 1)[:k_lanes])
+
         for name in tavg:
             tavg[name] = np.concatenate(tavg[name], axis=0)
+        for name in ctavg:
             ctavg[name] = np.concatenate(ctavg[name], axis=0)
-        same_shape = len({(v.shape[2], v.shape[4]) for v in tavg.values()}) == 1
-        same_dt = len({float(sn.dt) for sn in analysis.subnets}) == 1
-        if len(analysis.subnets) == 1:
-            merged = tavg[analysis.subnets[0].name]
-        elif same_shape and same_dt:
-            if node_indices:
-                n_global = max(
-                    max(indices) for indices in node_indices.values()) + 1
-                ref = next(iter(tavg.values()))
-                merged = np.zeros(
-                    (ref.shape[0], ref.shape[1], ref.shape[2],
-                     n_global, ref.shape[4]),
-                    dtype=ref.dtype,
-                )
-                for sn in analysis.subnets:
-                    if sn.name in node_indices:
-                        merged[:, :, :, node_indices[sn.name], :] = tavg[sn.name]
-            elif _can_merge_subnets(analysis.subnets):
-                n_global = max(
-                    int(sn.node_indices.max())
-                    for sn in analysis.subnets
-                ) + 1
-                ref = next(iter(tavg.values()))
-                merged = np.zeros(
-                    (ref.shape[0], ref.shape[1], ref.shape[2],
-                     n_global, ref.shape[4]),
-                    dtype=ref.dtype,
-                )
-                for sn in analysis.subnets:
-                    merged[:, :, :, sn.node_indices, :] = tavg[sn.name]
-            else:
-                merged = np.concatenate(
-                    [tavg[sn.name] for sn in analysis.subnets], axis=3
-                )
+        if monitor == "raw" and cs == 1 and raw_out is not None:
+            raw_out = {name: arr.copy() for name, arr in tavg.items()}
+        elif raw_out is not None:
+            for name in raw_out:
+                raw_out[name] = np.concatenate(raw_out[name], axis=0)
+        if bold_out is not None:
+            for name in bold_out:
+                bold_out[name] = np.concatenate(bold_out[name], axis=0)
+        if online_out is not None:
+            for name in online_out:
+                for fn in online_feat_names:
+                    online_out[name][fn] = np.concatenate(
+                        online_out[name][fn], axis=0)
+
+        merged = None
+        if need_tavg and tavg:
+            same_shape = len({(v.shape[2], v.shape[4]) for v in tavg.values()}) == 1
+            same_dt = len({float(sn.dt) for sn in analysis.subnets}) == 1
+            if len(analysis.subnets) == 1:
+                merged = tavg[analysis.subnets[0].name]
+            elif same_shape and same_dt:
+                if node_indices:
+                    n_global = max(
+                        max(indices) for indices in node_indices.values()) + 1
+                    ref = next(iter(tavg.values()))
+                    merged = np.zeros(
+                        (ref.shape[0], ref.shape[1], ref.shape[2],
+                         n_global, ref.shape[4]),
+                        dtype=ref.dtype,
+                    )
+                    for sn in analysis.subnets:
+                        if sn.name in node_indices:
+                            merged[:, :, :, node_indices[sn.name], :] = tavg[sn.name]
+                elif _can_merge_subnets(analysis.subnets):
+                    n_global = max(
+                        int(sn.node_indices.max())
+                        for sn in analysis.subnets
+                    ) + 1
+                    ref = next(iter(tavg.values()))
+                    merged = np.zeros(
+                        (ref.shape[0], ref.shape[1], ref.shape[2],
+                         n_global, ref.shape[4]),
+                        dtype=ref.dtype,
+                    )
+                    for sn in analysis.subnets:
+                        merged[:, :, :, sn.node_indices, :] = tavg[sn.name]
+                else:
+                    merged = np.concatenate(
+                        [tavg[sn.name] for sn in analysis.subnets], axis=3
+                    )
+
+        if need_tavg and tavg:
+            n_samples = tavg[analysis.subnets[0].name].shape[1]
+            steps_lo = np.arange(n_samples) * cs + 1
+            steps_hi = np.minimum(np.arange(n_samples) * cs + cs, int(nstep))
+            dt0_q = float(np.float32(analysis.dt))
+            times = (steps_lo + steps_hi) * 0.5 * dt0_q
+        elif want_bold and bold_times is not None:
+            times = bold_times
         else:
-            merged = None
-        n_samples = tavg[analysis.subnets[0].name].shape[1]
-        dt0_q = float(np.float32(analysis.dt))
-        times = np.arange(1, n_samples + 1, dtype=np.float64) * dt0_q
+            times = np.zeros(0, dtype=np.float64)
+
         return SweepResult(
             tavg=tavg,
             merged_tavg=merged,
@@ -1685,16 +2580,49 @@ class CppHybridBackend:
             sweep_values=sweep_values,
             backend=f"cpp-simd(width={width},workers={workers})",
             elapsed=elapsed,
+            raw=raw_out,
+            bold=bold_out,
             param_keys=(list(params.keys()) if isinstance(params, dict)
                         else None),
+            online_features=online_out,
         )
 
-    def _sweep_impl(self, network_set, analysis, targets, sweep_values, nstep,
-                    initial_states, width, n_workers, _time_mod, label,
-                    progress=False):
+    def _sweep_impl(
+        self, network_set, analysis, targets, sweep_values, nstep,
+        initial_states, width, n_workers, _time_mod, label,
+        progress=False, chunk_size=1, need_tavg=True, need_ctavg=True,
+        want_raw_kind=0, monitor_period=1, want_bold=False, bold_period=2000.0,
+        online_feat_names=(), noise_seeds=None, shared_noise=False,
+    ):
         n_sweeps = sweep_values.shape[0]
         n_groups = (n_sweeps + width - 1) // width
         t0 = _time_mod.perf_counter()
+
+        # Pre-lower separable stimuli and monitor specs once across groups
+        stim_specs_by_sn = []
+        legacy_by_sn = []
+        for sn in analysis.subnets:
+            if sn.stimuli:
+                sp_list, leg_list = self._lower_subnet_stimuli(
+                    sn, analysis.dt, int(nstep))
+                stim_specs_by_sn.append(sp_list)
+                legacy_by_sn.append(leg_list)
+            else:
+                stim_specs_by_sn.append([])
+                legacy_by_sn.append([])
+        legacy_stim_by_sn = self._build_legacy_stim_arrays(
+            analysis, legacy_by_sn, int(nstep), width, step_offset=0)
+
+        bold_specs_by_sn = []
+        if want_bold:
+            from tvb.simulator.monitors import Bold
+            for sn in analysis.subnets:
+                n_voi = len(sn.voi) // 3
+                bm = Bold(period=float(bold_period))
+                bold_specs_by_sn.append(
+                    self._monitor_attach_spec(
+                        1, bm, n_voi, sn.n_nodes, analysis.dt, cadence_K=1)
+                )
 
         def run_group(gi):
             lo = gi * width
@@ -1705,8 +2633,73 @@ class CppHybridBackend:
             self._build_sim(sim, analysis, network_set, width)
             self._apply_sweep_group(sim, analysis, targets, group_vals, width)
             self._init_states(sim, analysis, network_set, initial_states, width)
-            outs = sim.run(int(nstep), 0, None, None)
-            return lo, hi, outs
+
+            # Stimuli (separable C++ specs + optional legacy 5D fallback)
+            for si, sp_list in enumerate(stim_specs_by_sn):
+                if sp_list:
+                    sim.set_stim_specs(si, sp_list)
+
+            # Philox4x32-10 RNG for stochastic subnets
+            for si, sn in enumerate(analysis.subnets):
+                if sn.is_stochastic:
+                    gfun = np.sqrt(
+                        2.0 * sn.noise_nsig * sn.dt).astype(np.float32)
+                    if noise_seeds is not None:
+                        lk = [
+                            (int(noise_seeds[lo + w]) & 0xFFFFFFFFFFFFFFFF)
+                            if (lo + w) < hi else 0
+                            for w in range(width)
+                        ]
+                    elif shared_noise:
+                        lk = int(sn.noise_seed) & 0xFFFFFFFFFFFFFFFF
+                    else:
+                        base_seed = int(sn.noise_seed) & 0xFFFFFFFFFFFFFFFF
+                        lk = [
+                            ((base_seed + lo + w) & 0xFFFFFFFFFFFFFFFF)
+                            if (lo + w) < hi else base_seed
+                            for w in range(width)
+                        ]
+                    sim.set_subnet_rng(
+                        si, lk, gfun, ntau=float(sn.noise_ntau))
+
+            # Optional per-subnet monitor engines (raw/subsample/bold)
+            if want_raw_kind or want_bold:
+                for si, sn in enumerate(analysis.subnets):
+                    atts = []
+                    if want_raw_kind == 1:
+                        atts.append({
+                            "slot": 0, "kind": 1, "istep": 1,
+                            "cadence_K": 1, "dt": float(analysis.dt),
+                            "voi": [],
+                        })
+                    elif want_raw_kind == 2:
+                        atts.append({
+                            "slot": 0, "kind": 2,
+                            "istep": int(monitor_period),
+                            "cadence_K": 1, "dt": float(analysis.dt),
+                            "voi": [],
+                        })
+                    if want_bold:
+                        atts.append(bold_specs_by_sn[si])
+                    sim.set_monitors(si, atts)
+                sim.monitor_begin_run()
+
+            # Optional Tier-1 online streaming features
+            if online_feat_names:
+                for si in range(len(analysis.subnets)):
+                    sim.enable_online_features(si, float(analysis.dt))
+
+            outs = sim.run(
+                int(nstep), int(chunk_size), None, legacy_stim_by_sn,
+                need_tavg=bool(need_tavg), need_ctavg=bool(need_ctavg),
+            )
+            feat_per_sn = None
+            if online_feat_names:
+                feat_per_sn = [
+                    sim.take_online_features(si, list(online_feat_names), order=4)
+                    for si in range(len(analysis.subnets))
+                ]
+            return lo, hi, outs, feat_per_sn
 
         if sys.platform == "emscripten":
             workers = 1
@@ -1752,10 +2745,12 @@ class CppHybridBackend:
         chunk_size: Optional[int] = None,
         bold_period: Optional[float] = None,
         print_source: bool = False,
+        width: Optional[int] = None,
         **monitors,
     ):
         """Legacy nb_hybrid-style sweep entry point."""
         import time as _time_mod
+        from . import notebook as _nb_sugar
 
         sweep_values = np.asarray(sweep_values, dtype=np.float32)
         if sweep_values.ndim == 1:
@@ -1779,29 +2774,32 @@ class CppHybridBackend:
             else:
                 targets.append(("model", desc["subnet"], desc["param"]))
         analysis = self._analyse(network_set)
-        if any(sn.is_stochastic for sn in analysis.subnets):
-            raise NotImplementedError(
-                "CppHybridBackend.run_sweep does not support stochastic integrators."
-            )
+        if width is None:
+            width = _nb_sugar.default_width(sweep_values.shape[0], network_set)
+        width = int(width)
+        cs = int(chunk_size) if chunk_size else 1
         results, workers, elapsed = self._sweep_impl(
-            network_set, analysis, targets, sweep_values, nstep,
-            initial_states, 8, None, _time_mod, "cpp-simd"
+            network_set, analysis, targets, sweep_values, int(nstep),
+            initial_states, width, None, _time_mod, "cpp-simd",
+            chunk_size=cs, need_tavg=True, need_ctavg=True,
         )
         n_sweeps = sweep_values.shape[0]
-        width = 8
         out = []
+        dt0_q = float(np.float32(analysis.dt))
         for tid in range(n_sweeps):
             gi = tid // width
             lane = tid % width
-            lo, hi, outs = results[gi]
+            lo, hi, outs, _ = results[gi]
             per_sn = []
-            dt0_q = float(np.float32(analysis.dt))
             for i, sn in enumerate(analysis.subnets):
                 arr = np.asarray(outs[2 * i], dtype=np.float32)
                 ct = np.asarray(outs[2 * i + 1], dtype=np.float32)
                 data = arr[:, :, :, lane:lane + 1]
                 ctavg = ct[:, :, :, lane:lane + 1]
-                times = np.arange(1, data.shape[0] + 1, dtype=np.float64) * dt0_q
+                n_samples = data.shape[0]
+                steps_lo = np.arange(n_samples) * cs + 1
+                steps_hi = np.minimum(np.arange(n_samples) * cs + cs, int(nstep))
+                times = (steps_lo + steps_hi) * 0.5 * dt0_q
                 per_sn.append((times, data, ctavg))
             out.append(per_sn)
         return out

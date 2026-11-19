@@ -143,3 +143,146 @@ def test_stochastic_noise_parity():
         return []
     nb_out, cpp_out = _run_pair_factory(no_stims, stochastic=True)
     _assert_close(nb_out, cpp_out, "stochastic")
+
+
+@pytest.mark.parametrize("eq_name,params,dt_val", [
+    ("Linear", {"a": 0.2, "b": 0.5}, DT),
+    ("Sinusoid", {"amp": 1.2, "frequency": 4.0}, DT),
+    ("Cosine", {"amp": 1.2, "frequency": 4.0}, DT),
+    ("PulseTrain", {"T": 2.0, "tau": 0.5, "amp": 1.5, "onset": 1.0}, 0.125),
+    ("Alpha", {"onset": 0.5, "alpha": 1.5, "beta": 0.5}, DT),
+    ("GeneralizedSigmoid", {"low": 0.0, "high": 2.0, "midpoint": 2.0, "sigma": 0.5}, DT),
+    ("Gaussian", {"amp": 1.5, "sigma": 1.0, "midpoint": 2.5, "offset": 0.1}, DT),
+    ("DoubleGaussian", {
+        "amp_1": 1.0, "sigma_1": 0.5, "midpoint_1": 1.5,
+        "amp_2": 0.8, "sigma_2": 0.7, "midpoint_2": 3.5,
+    }, DT),
+    ("Sigmoid", {"amp": 1.5, "radius": 2.5, "sigma": 0.5, "offset": 0.0}, DT),
+])
+def test_separable_analytic_equations_parity(eq_name, params, dt_val):
+    """All 9 separable analytic C++ stimulus equations match NbHybridBackend."""
+    from tvb.datatypes import equations as eq
+    from tvb.datatypes.patterns import StimuliRegion
+    from tvb.simulator.hybrid.stimulus import Stim
+
+    def build_net():
+        def mk_sn(name, nn):
+            m = MontbrioPazoRoxin()
+            m.configure()
+            return Subnetwork(
+                name=name, model=m, scheme=HeunDeterministic(dt=dt_val), nnodes=nn,
+            ).configure()
+
+        A, B = mk_sn("A", 3), mk_sn("B", 4)
+        proj = _projection(A, B)
+        proj.dt = dt_val
+        eq_cls = getattr(eq, eq_name)
+        pat = StimuliRegion.from_weights(
+            weight=np.array([0.0, 1.0, 0.5, 0.0]),
+            temporal=eq_cls(parameters=params),
+        )
+        pat.configure_space()
+        pat.configure_time(np.arange(0.0, NSTEP * dt_val, dt_val))
+        B.stimuli = [
+            Stim(target=B, stimulus=pat, target_cvar=np.array([0]), projection_scale=1.5)
+        ]
+        ns = NetworkSet(subnets=[A, B], projections=[proj])
+        ns.configure()
+        return ns
+
+    nb_out = NbHybridBackend().compile(build_net(), eager=True).run(NSTEP)
+    cpp_out = CppHybridBackend().run_network(build_net(), NSTEP)
+    _assert_close(nb_out, cpp_out, f"analytic_{eq_name}")
+
+
+def test_custom_temporal_equation_discrete_1d_fallback_parity():
+    """Custom non-analytic temporal equation lowers to STIM_DISCRETE_1D and matches NbHybrid."""
+    from tvb.basic.neotraits.api import Attr, Final
+    from tvb.datatypes import equations as eq
+    from tvb.datatypes.patterns import StimuliRegion
+    from tvb.simulator.hybrid.stimulus import Stim
+
+    class CustomChirp(eq.TemporalApplicableEquation):
+        equation = Final(label="Chirp", default="amp * sin(omega * var * var)")
+        parameters = Attr(
+            field_type=dict,
+            label="Parameters",
+            default={"amp": 1.4, "omega": 0.5},
+        )
+
+    def build_net():
+        A = _subnetwork("A", 3)
+        B = _subnetwork("B", 4)
+        pat = StimuliRegion.from_weights(
+            weight=np.array([1.0, 0.25, 0.0, 0.5]),
+            temporal=CustomChirp(),
+        )
+        pat.configure_space()
+        pat.configure_time(np.arange(0.0, NSTEP * DT, DT))
+        B.stimuli = [
+            Stim(target=B, stimulus=pat, target_cvar=np.array([0]), projection_scale=1.0)
+        ]
+        return NetworkSet(subnets=[A, B], projections=[_projection(A, B)]).configure()
+
+    nb_out = NbHybridBackend().compile(build_net(), eager=True).run(NSTEP)
+    cpp_out = CppHybridBackend().run_network(build_net(), NSTEP)
+    _assert_close(nb_out, cpp_out, "discrete_1d_fallback")
+
+
+def test_multi_dt_stimulus_master_grid_parity():
+    """Stimulus on slow subnet (dt_B = 2 * dt_A) evaluates on master dt0 grid matching NbHybrid."""
+    from tvb.simulator.hybrid.stimulus_utils import sinusoid_stim
+
+    def build_net():
+        m_a = MontbrioPazoRoxin(); m_a.configure()
+        m_b = MontbrioPazoRoxin(); m_b.configure()
+        A = Subnetwork(name="A", model=m_a, scheme=HeunDeterministic(dt=0.1), nnodes=3).configure()
+        B = Subnetwork(name="B", model=m_b, scheme=HeunDeterministic(dt=0.2), nnodes=4).configure()
+        proj = _projection(A, B)
+        proj.dt = 0.1
+        B.stimuli = [
+            sinusoid_stim(
+                B, amplitude=1.3, frequency=3.0, target_node=2,
+                target_cvar=0, simulation_length=NSTEP * 0.1,
+            )
+        ]
+        return NetworkSet(subnets=[A, B], projections=[proj]).configure()
+
+    nb_out = NbHybridBackend().compile(build_net(), eager=True).run(NSTEP)
+    cpp_out = CppHybridBackend().run_network(build_net(), NSTEP)
+    _assert_close(nb_out, cpp_out, "multi_dt_stim")
+
+
+def test_stimuli_active_in_sweep_match_nb_hybrid():
+    """Separable stimuli (Alpha + PulseTrain) work inside sweep() and match NbHybrid."""
+    from tvb.datatypes import equations as eq
+    from tvb.datatypes.patterns import StimuliRegion
+    from tvb.simulator.hybrid.stimulus import Stim
+
+    nstep = 30
+    taus = np.array([0.8, 1.0, 1.2, 1.5], dtype=np.float32)
+
+    def build_net():
+        A = _subnetwork("A", 3)
+        B = _subnetwork("B", 4)
+        pat_a = StimuliRegion.from_weights(
+            weight=np.array([1.0, 0.0, 0.5]),
+            temporal=eq.Alpha(parameters={"onset": 0.5, "alpha": 1.5, "beta": 0.5}),
+        )
+        pat_a.configure_space()
+        pat_a.configure_time(np.arange(0.0, nstep * DT, DT))
+        A.stimuli = [Stim(target=A, stimulus=pat_a, target_cvar=np.array([0]))]
+
+        pat_b = StimuliRegion.from_weights(
+            weight=np.array([0.0, 1.0, 0.0, 0.5]),
+            temporal=eq.PulseTrain(parameters={"T": 2.0, "tau": 0.5, "amp": 1.5, "onset": 0.5}),
+        )
+        pat_b.configure_space()
+        pat_b.configure_time(np.arange(0.0, nstep * DT, DT))
+        B.stimuli = [Stim(target=B, stimulus=pat_b, target_cvar=np.array([0]))]
+        return NetworkSet(subnets=[A, B], projections=[_projection(A, B)]).configure()
+
+    nb_sw = NbHybridBackend().sweep(build_net(), {"A.tau": taus}, nstep=nstep, backend="cpu")
+    cp_sw = CppHybridBackend().sweep(build_net(), {"A.tau": taus}, nstep=nstep, width=4)
+    np.testing.assert_allclose(cp_sw.tavg["A"], nb_sw.tavg["A"], rtol=1e-3, atol=1e-4)
+    np.testing.assert_allclose(cp_sw.tavg["B"], nb_sw.tavg["B"], rtol=1e-3, atol=1e-4)

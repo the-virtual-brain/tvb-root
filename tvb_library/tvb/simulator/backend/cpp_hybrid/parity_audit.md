@@ -1,20 +1,25 @@
 # cpp_hybrid Feature-Parity Audit vs nb_hybrid
 
-Date: 2026-09-29. Reference surface: `tvb/simulator/backend/nb_hybrid.py`
-(`_get_supported_models_classes`, `_cfun_type`, monitor validation, stimulus
-plumbing). Target: `tvb/simulator/backend/cpp_hybrid/` (`_core.cpp`,
-`backend.py`, `dfungen.py`).
+Date: 2026-11-19 (updated from 2026-09-29). Reference surface:
+`tvb/simulator/backend/nb_hybrid.py` (`_get_supported_models_classes`,
+`_cfun_type`, monitor validation, stimulus plumbing). Target:
+`tvb/simulator/backend/cpp_hybrid/` (`_core.cpp`, `cph_*.hpp`, `backend.py`,
+`dfungen.py`, `features.py`, `notebook.py`).
 
-## 1. Models — 27 supported by nb_hybrid
+## 1. Models — 29+1 = 30/30 `ModelsEnum` supported (CLOSED)
 
-cpp_hybrid has 12 hand-written dfuns (ids 0–11) **plus** a generic route
-(`dfungen.py` → `enable_generic_dfuns`, ids ≥ 100) that JIT-translates any
-model class declaring `state_variable_dfuns` not covered by the built-in
-kernels.  Since handoff item 6 (option 2), the **build** emits only the
-supported model set (`dfungen --only-supported`, 25 expression-driven
-kernels, ids 100–124); every in-tree model outside that set
-(`DecoBalancedExcInh`) still runs through the runtime g++ fallback, so the
-runtime surface below is unchanged.
+cpp_hybrid has 13 hand-written dfuns (ids 0–12, incl. `MOD_CRBL = 12` for
+`CerebellarMF`) **plus** the built-in expression-driven generic table
+(`dfungen.py` → `enable_generic_dfuns`, ids 100–126) and runtime g++
+fallback (`ids >= 127`) for any custom `Model` subclass declaring
+`state_variable_dfuns`.
+
+With `DecoBalancedExcInh` added to both `nb_hybrid._get_supported_models_classes()`
+and `dfungen._SUPPORTED_MODEL_CLASSES`, the build emits **27** built-in
+expression-driven kernels (`dfungen --only-supported`, ids `100–126`), covering
+all **29** classes in `_get_supported_models_classes()` (plus
+`ZerlautAdaptationSecondOrder`, giving **30/30** `ModelsEnum` coverage in
+native and Emscripten WASM builds).
 
 Enumerated live (`collect_models()` vs `_get_supported_models_classes()`):
 
@@ -33,127 +38,101 @@ Enumerated live (`collect_models()` vs `_get_supported_models_classes()`):
 | ZerlautAdaptationFirstOrder | no | YES | implemented |
 | ZerlautAdaptationSecondOrder | no | YES | implemented |
 | ZetterbergJansen | YES | YES | implemented |
-| ReducedWongWangExcInh | YES | – | generic (needs parity test) |
-| KIonEx | YES | – | generic (needs parity test) |
-| EpileptorCodim3 | YES | – | generic (needs parity test) |
-| EpileptorCodim3SlowMod | YES | – | generic (needs parity test) |
-| EpileptorRestingState | YES | – | generic (needs parity test) |
-| Hopfield | YES | – | generic (needs parity test) |
-| LarterBreakspear | YES | – | generic (needs parity test) |
-| CoombesByrne2D | YES | – | generic (needs parity test) |
-| CoombesByrne | YES | – | generic (needs parity test) |
-| GastSchmidtKnosche_SD | YES | – | generic (needs parity test) |
-| GastSchmidtKnosche_SF | YES | – | generic (needs parity test) |
-| DumontGutkin | YES | – | generic (needs parity test) |
-| ReducedSetFitzHughNagumo | YES | – | generic (needs parity test) |
-| ReducedSetHindmarshRose | YES | – | generic (needs parity test) |
-| **CerebellarMF** | **no** | **–** | **MISSING** |
+| ReducedWongWangExcInh | YES | – | built-in generic (parity tested) |
+| DecoBalancedExcInh | YES | – | built-in generic (30/30 coverage) |
+| KIonEx | YES | – | built-in generic (parity tested) |
+| EpileptorCodim3 | YES | – | built-in generic (parity tested) |
+| EpileptorCodim3SlowMod | YES | – | built-in generic (parity tested) |
+| EpileptorRestingState | YES | – | built-in generic (parity tested) |
+| Hopfield | YES | – | built-in generic (parity tested) |
+| LarterBreakspear | YES | – | built-in generic (parity tested) |
+| CoombesByrne2D | YES | – | built-in generic (parity tested) |
+| CoombesByrne | YES | – | built-in generic (parity tested) |
+| GastSchmidtKnosche_SD | YES | – | built-in generic (parity tested) |
+| GastSchmidtKnosche_SF | YES | – | built-in generic (parity tested) |
+| DumontGutkin | YES | – | built-in generic (parity tested) |
+| ReducedSetFitzHughNagumo | YES | – | built-in generic (parity tested) |
+| ReducedSetHindmarshRose | YES | – | built-in generic (parity tested) |
+| CerebellarMF | no | YES (id 12) | implemented (parity tested) |
 
-Gap M1: `CerebellarMF` has neither `state_variable_dfuns` nor a hand-written
-dfun. Route: hand-written dfun in `_core.cpp` (preferred, matches nb_hybrid
-gufunc semantics) or add `state_variable_dfuns` to the class.
-
-## 2. Coupling functions — nb_hybrid supports 8 classes + variants
+## 2. Coupling functions — all 8 classes + variants (CLOSED)
 
 `_cfun_type()` (nb_hybrid) distinguishes: `none`, `linear`, `scaling`,
-`sigmoidal`, `sigmoidal_jr`, **`sigmoidal_jr_legacy`** (use_classic=0 or
+`sigmoidal`, `sigmoidal_jr`, `sigmoidal_jr_legacy` (use_classic=0 or
 single source cvar), `kuramoto`, `difference`, `tanh`, `pre_sigmoidal`,
-**`pre_sigmoidal_dynamic`** (dynamic=1 with 2 source cvars).
-
-cpp_hybrid `_CFUN_IDS` maps the 8 class names to C dispatch cases 0–7 in
-`_core.cpp` (`cfun_pre`/`cfun_post`).
+`pre_sigmoidal_dynamic` (dynamic=1 with 2 source cvars).
 
 | Coupling | nb_hybrid | cpp_hybrid status |
 |---|---|---|
-| Linear / Scaling / Sigmoidal / Difference / Kuramoto / HyperbolicTangent | yes | implemented (parity-tested: contract suite) |
-| SigmoidalJansenRit (classic, 2 src cvars) | yes | implemented |
-| **SigmoidalJansenRit legacy** (use_classic=0) | yes | **MISSING** — cpp_hybrid dispatches by class name only; the legacy form would silently use the classic C formula |
-| **PreSigmoidal dynamic** (dynamic=1) | yes | **MISSING** — `backend.py` raises `NotImplementedError` (`dynamic=False only`) |
+| Linear / Scaling / Sigmoidal / Difference / Kuramoto / HyperbolicTangent | yes | implemented (parity tested) |
+| SigmoidalJansenRit (classic, 2 src cvars, id 8) | yes | implemented (incl. `a*a` sweep) |
+| SigmoidalJansenRit legacy (use_classic=0, id 8) | yes | implemented (CLOSED) |
+| PreSigmoidal dynamic (dynamic=1, id 9 incl. globalT) | yes | implemented (CLOSED) |
 | PreSigmoidal static | yes | implemented |
 
-Gap C1: SJR legacy pre-transform variant. Route: extend `cfun_pre` case 6
-(+ an extra dispatch id or a parm flag) and map it in `backend.py`.
-Gap C2: PreSigmoidal dynamic. Route: new cfun case (H*(Q+tanh(G*(P*(v0−w·v1)−θ))))
-following the nb_hybrid formula; remove the backend rejection.
+## 3. Monitors (Batch B — CLOSED)
 
-## 3. Monitors
+All supported TVB monitors now execute natively inside C++ (`cph_monitors.hpp`,
+`kmon<W>` across `W in {1, 4, 8, 16}`), reading directly from reusable
+per-step `observe_voi_row<W>` / `gather_global_voi_row<W>` buffers so
+`chunk_size > 1` no longer forces `execution_chunk_size = 1` or raw
+`tavg`/`ctavg` copies (`need_tavg=False, need_ctavg=False`):
 
-cpp_hybrid reuses nb_hybrid's monitor plumbing directly
-(`_apply_monitors`, `_validate_monitors`, `_compute_chunk_size`,
-`_copy_monitor_states` imported from `backend/nb_hybrid.py`), so supported
-sets match **by construction**:
+- **Per-subnet & global monitors:** `Raw`, `RawVoi`, `SubSample`,
+  `TemporalAverage` (`KMON_TAVG`), `AfferentCoupling` /
+  `AfferentCouplingTemporalAverage` (`KMON_CTAVG`, reading `sub.c` directly
+  with `n_modes * W`), `Bold` (`KMON_BOLD`, HRF convolution + optional
+  `KMON_BOLD_BW` SIMD Balloon-Windkessel), `GlobalAverage`
+  (`KMON_GLOBAL_AVG`), `SpatialAverage` (`KMON_SPATIAL_AVG`, dense & CSR),
+  and `Projection` (`EEG` with `_ref_vec` subtraction, `MEG`, `iEEG` →
+  `KMON_PROJECTION`). Only `BoldRegionROI` falls back to Python.
+- **Per-monitor `voi` selection & multi-dt `cadence_K`:** Each `kmon<W>`
+  accepts explicit `voi` indices and `cadence_K`, enabling single-pass
+  per-subnet `Recorder` execution (`subnet_monitors`) in `hybrid/simulator.py`
+  without a second simulation run.
+- **Full `KMonState` snapshot/resume:** `get_monitor_states()` /
+  `set_monitor_states()` and `get_global_monitor_states()` /
+  `set_global_monitor_states()` persist `Bold`, `TemporalAverage`,
+  `SpatialAverage`, `Projection`, etc. across `snapshot()` / `resume()`
+  in C++ without falling back to Python.
 
-TemporalAverage, Raw, SubSample, GlobalAverage, AfferentCoupling (+Temporal
-Average subclass), SpatialAverage, Projection (EEG/MEG/iEEG), Bold.
+## 4. Stimuli, Philox PRNG, Features, & SIMD Widths (Batch C — CLOSED)
 
-### Kernel monitor engines (CLOSED 2026-09-30, handoff item 8)
+- **Separable C++ stimuli (`cph_stim.hpp`):** `Stim` (`SpatioTemporalPattern`)
+  with 9 analytic temporal equations (`Linear`, `Sinusoid`, `Cosine`,
+  `PulseTrain`, `Alpha`, `GeneralizedSigmoid`, `Gaussian`, `DoubleGaussian`,
+  `Sigmoid`) or 1D `STIM_DISCRETE_1D` fallback is lowered via
+  `sim.set_stim_specs()` for both single runs (incl. multi-dt master `dt0`
+  grid) and `sweep()`, retaining 5D dense `stim` fallback only for
+  non-separable stimuli.
+- **Philox4x32-10 PRNG & stochastic sweeps (`cph_rng.hpp`):** Preserves
+  bit-identical NumPy MT19937 parity under `rng_mode="numpy"` (default for
+  single runs), adds `rng_mode="philox"` (with colored OU noise `ntau >= 0`
+  and full `rng_state<W>` snapshot/resume), and enables stochastic `sweep()` /
+  `run_sweep()` across `W in {1, 4, 8, 16}` (`shared_noise`, `noise_seeds`,
+  `ntau >= 0`).
+- **SIMD feature extraction (`cph_features.hpp` + `features.py`):** Tier-1
+  streaming `OnlineFeatureAccum<W>` (`O(n_voi * n_node * W)` memory,
+  zero time-series storage) + Tier-2 C++ order-stats/entropy/radix-2+Bluestein
+  Welch PSD exposed via `_cpp_hybrid.compute_features` and `sweep(features=...)`.
+- **Portable SIMD widths (`W in {1, 4, 8, 16}`):** `notebook.default_width()`
+  defaults to `4` on `emscripten` (`-msimd128`) and `arm64`/`aarch64`, and
+  `8` on `x86_64`.
 
-Step-level monitor post-processing used to run as NumPy on the kernel's raw
-output (most visibly the Bold HRF convolution: per-step Python `sample()`
-calls plus a `numpy.dot` over the 5000-row HRF stock at every TR).  That is a
-performance gap, **not** a parity gap — both backends shared the same
-Python path, so parity held by construction.
+## 5. Priority order for implementation (ALL CLOSED)
 
-Now the C++ step loop runs per-subnet **monitor engines** (`kmon` in
-`_core.cpp`, armed via `Sim.set_monitors`):
-
-- **Bold** — interim-stock averaging (4 ms resolution), circular HRF stock
-  and the rolled `hrf · stock` convolution run inside the GIL-released
-  loop, in double-precision accumulation over the same rows the kernel
-  already computes for `tavg`, so the engine's inputs are bit-identical to
-  what the Python reference consumes.  State (stocks + step counter)
-  persists across `run()` calls like the Python monitor runtimes.
-- **Raw / RawVoi** — per-step observed-row collection.
-- **SubSample** — per-step row capture with the period mask applied in the
-  loop.
-
-TemporalAverage stays on the shared Python path (the kernel already
-pre-accumulates `tavg`/`ctavg`, so it is cheap); `features.py` post-hoc
-feature computation was left as-is (not a bottleneck).  AfferentCoupling
-(its stream is the coupling, not the observed state) and BoldRegionROI
-(extra Python-side region-ROI reduction) also stay on the Python path.
-
-**Parity is no longer by construction for moved monitors**: the shared
-Python `_apply_monitors` path remains the reference (nb_hybrid still drives
-it; cpp falls back to it when `CppHybridBackend.enable_kernel_monitors` is
-False), and every moved monitor has a real parity test in
-`test_cpp_hybrid_monitors.py` (identical NetworkSet both backends and
-engine-vs-reference, rtol 1e-3 / atol 1e-4), including a 210000-step Bold
-run that fully fills and wraps the HRF stock, multi-`run()` continuation,
-VOI-subset and non-FirstOrderVolterra HRF kernels.
-
-Measured on the 76-node / 20000-step MPR profile: Bold runs 112.8 → 71.3 ms
-(1.58×); Bold+Raw+SubSample 110.2 → 75.2 ms; unmonitored kernel runs are
-unchanged.
-
-## 4. Stimuli
-
-Stimulus application lives in `_core.cpp` (`stim.get_coupling(step)` values
-applied to coupling slots; `backend.py::_build_stim_arrays`), mirroring
-nb_hybrid's per-step `sc` injection. `hybrid/stimulus_utils` provides
-`constant_stim`, `pulse_stim`, `sinusoid_stim` — any `Stim` works through the
-same `get_coupling` interface in both backends.
-
-Gap S1 (CLOSED 2026-09-29): stimuli on multiple subnetworks are now
-supported — `sim.run` accepts per-subnet noise/stim sequences (None where
-absent); `backend.py` aligns arrays with subnetwork order. Gap N1 (also
-closed): multiple stochastic subnetworks now supported the same way.
-
-Related L1: nonzero `model_local_coupling` — **NOT a gap**: nb_hybrid raises
-`NotImplementedError` for it too (line ~1942); both backends reject it
-identically.
-
-## 5. Priority order for implementation
-
-1. M1 CerebellarMF (CLOSED: hand-written dfun MOD_CRBL=12, parity tested).
+1. M1 CerebellarMF (CLOSED: hand-written dfun `MOD_CRBL=12`, parity tested).
 2. C2 PreSigmoidal dynamic (CLOSED: id 9 incl. globalT); C1 SJR legacy
    (CLOSED: id 8).
 3. S1 multi-subnetwork stimuli + multi-stochastic (CLOSED: per-subnet
-   noise/stim sequences); L1 not a gap.
-4. Per-model parity tests for the generic-route models (CLOSED:
-   test_cpp_hybrid_models.py, 31/31).
-5. Per-monitor and per-stimulus parity tests (CLOSED:
-   test_cpp_hybrid_monitors.py 10/10, test_cpp_hybrid_stimuli.py 6/6).
+   noise/stim sequences + separable `cph_stim.hpp` + Philox `cph_rng.hpp`);
+   L1 not a gap.
+4. Per-model parity tests for all built-in models (CLOSED: 30/30 `ModelsEnum`
+   incl. `DecoBalancedExcInh`).
+5. Batch B all-in-C++ monitors, `KMonState` snapshot/resume, and single-pass
+   `Simulator(backend="cpp")` `subnet_monitors` (CLOSED).
+6. Batch C separable stimuli in `sweep()`, stochastic Philox sweeps,
+   SIMD features (`cph_features.hpp`), and `W in {1, 4, 8, 16}` (CLOSED).
 
 ## 6. Multi-dt support (LOCKED 2026-09-30 — binding spec for cards 9-B..9-J)
 

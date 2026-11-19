@@ -196,7 +196,10 @@ def _get_supported_models_classes() -> tuple:
         Kuramoto,
     )
     from tvb.simulator.models.wong_wang import ReducedWongWang
-    from tvb.simulator.models.wong_wang_exc_inh import ReducedWongWangExcInh
+    from tvb.simulator.models.wong_wang_exc_inh import (
+        ReducedWongWangExcInh,
+        DecoBalancedExcInh,
+    )
     from tvb.simulator.models.epileptor import Epileptor, Epileptor2D
     from tvb.simulator.models.epileptorcodim3 import (
         EpileptorCodim3,
@@ -221,6 +224,7 @@ def _get_supported_models_classes() -> tuple:
         Generic2dOscillator,
         ReducedWongWang,
         ReducedWongWangExcInh,
+        DecoBalancedExcInh,
         Epileptor,
         Epileptor2D,
         EpileptorCodim3,
@@ -2057,7 +2061,7 @@ class NbHybridBackend(MakoUtilMix):
                     f"NbHybridBackend does not support {type(sn.model).__name__}. "
                     f"Supported: MontbrioPazoRoxin, KIonEx, JansenRit, ZetterbergJansen, "
                     f"Generic2dOscillator, SupHopf, Kuramoto, Hopfield, LarterBreakspear, "
-                    f"ReducedWongWang, ReducedWongWangExcInh, "
+                    f"ReducedWongWang, ReducedWongWangExcInh, DecoBalancedExcInh, "
                     f"Epileptor, Epileptor2D, EpileptorCodim3, EpileptorCodim3SlowMod, EpileptorRestingState, "
                     f"WilsonCowan, ZerlautAdaptation*, "
                     f"CoombesByrne2D, CoombesByrne, GastSchmidtKnosche_SD/SF, DumontGutkin, "

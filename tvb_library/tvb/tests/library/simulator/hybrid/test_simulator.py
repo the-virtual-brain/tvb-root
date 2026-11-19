@@ -47,12 +47,20 @@ from unittest import mock
 import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
-from tvb.simulator.models import JansenRit, Linear, ReducedSetFitzHughNagumo
+from tvb.simulator.models import (
+    DecoBalancedExcInh,
+    JansenRit,
+    Linear,
+    ReducedSetFitzHughNagumo,
+)
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
 from tvb.simulator.integrators import HeunDeterministic
 from tvb.simulator.monitors import (
     AfferentCouplingTemporalAverage,
+    Bold,
+    GlobalAverage,
     Raw,
+    SpatialAverage,
     TemporalAverage,
 )
 from tvb.simulator.hybrid import (
@@ -627,3 +635,240 @@ class TestSimulator(BaseHybridTest):
             t_be, y_be = results[backend]
             np.testing.assert_array_equal(t_be, t_py)
             np.testing.assert_allclose(y_be, y_py, rtol=1e-4, atol=1e-5)
+
+    def test_cpp_single_pass_with_global_and_subnet_recorders(self, monkeypatch):
+        """Simulator(backend='cpp') collects global + Recorder monitors in one call."""
+        if not _has_cpp_hybrid():
+            pytest.skip("_cpp_hybrid extension is not available")
+
+        from tvb.simulator.backend.cpp_hybrid.backend import CppHybridBackend
+
+        def _build():
+            _, _, cortex, thalamus, _, nets = self.setup()  # heterogeneous 4 + 2 VOIs
+            cortex.add_monitor(AfferentCouplingTemporalAverage(period=1.0))
+            cortex.add_monitor(TemporalAverage(period=1.0))
+            return cortex, thalamus, nets
+
+        cortex_py, thalamus_py, nets_py = _build()
+        ics = _bounded_setup_ics(cortex_py, thalamus_py, seed=13)
+        sim_py = Simulator(
+            nets=nets_py,
+            simulation_length=5.0,
+            monitors=[TemporalAverage(period=1.0)],
+            backend="python",
+        )
+        sim_py.configure()
+        ((tg_py, yg_py),) = sim_py.run(initial_conditions=[x.copy() for x in ics])
+        tc_py, yc_py = cortex_py.monitors[0].to_arrays()
+        tt_py, yt_py = cortex_py.monitors[1].to_arrays()
+
+        call_count = 0
+        orig_run_network = CppHybridBackend.run_network
+
+        def _spy_run_network(be_self, *args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            return orig_run_network(be_self, *args, **kwargs)
+
+        monkeypatch.setattr(CppHybridBackend, "run_network", _spy_run_network)
+
+        cortex_cpp, thalamus_cpp, nets_cpp = _build()
+        sim_cpp = Simulator(
+            nets=nets_cpp,
+            simulation_length=5.0,
+            monitors=[TemporalAverage(period=1.0)],
+            backend="cpp",
+        )
+        sim_cpp.configure()
+        ((tg_cpp, yg_cpp),) = sim_cpp.run(initial_conditions=[x.copy() for x in ics])
+        tc_cpp, yc_cpp = cortex_cpp.monitors[0].to_arrays()
+        tt_cpp, yt_cpp = cortex_cpp.monitors[1].to_arrays()
+
+        assert call_count == 1, f"expected 1 run_network call, got {call_count}"
+        np.testing.assert_array_equal(tg_cpp, tg_py)
+        np.testing.assert_allclose(yg_cpp, yg_py, rtol=1e-3, atol=1e-4)
+        np.testing.assert_allclose(tc_cpp, tc_py, rtol=1e-5, atol=1e-6)
+        np.testing.assert_allclose(yc_cpp, yc_py, rtol=1e-3, atol=1e-4)
+        np.testing.assert_allclose(tt_cpp, tt_py, rtol=1e-5, atol=1e-6)
+        np.testing.assert_allclose(yt_cpp, yt_py, rtol=1e-3, atol=1e-4)
+
+    def test_cpp_single_pass_multirate_subnet_recorders(self, monkeypatch):
+        """Multi-dt Simulator(backend='cpp') with global + Recorder monitors runs once."""
+        if not _has_cpp_hybrid():
+            pytest.skip("_cpp_hybrid extension is not available")
+
+        from tvb.simulator.backend.cpp_hybrid.backend import CppHybridBackend
+
+        def _build():
+            fast = Subnetwork(
+                name="fast",
+                model=MontbrioPazoRoxin(),
+                scheme=HeunDeterministic(dt=0.05),
+                nnodes=2,
+            ).configure()
+            slow = Subnetwork(
+                name="slow",
+                model=MontbrioPazoRoxin(),
+                scheme=HeunDeterministic(dt=0.1),
+                nnodes=3,
+            ).configure()
+            proj = InterProjection(
+                source=fast,
+                target=slow,
+                source_cvar=np.r_[0],
+                target_cvar=np.r_[0],
+                weights=csr_matrix(np.full((3, 2), 0.1)),
+                lengths=csr_matrix(np.zeros((3, 2))),
+                cv=1.0,
+                dt=0.05,
+                scale=1.0,
+            )
+            fast.add_monitor(TemporalAverage(period=0.5))
+            slow.add_monitor(TemporalAverage(period=0.5))
+            slow.add_monitor(AfferentCouplingTemporalAverage(period=0.5))
+            nets = NetworkSet(subnets=[fast, slow], projections=[proj])
+            return fast, slow, nets
+
+        ics = [
+            np.array([[[0.2], [0.4]], [[-1.0], [-0.5]]], dtype=np.float64),
+            np.array([[[0.1], [0.3], [0.5]], [[-0.8], [-0.4], [-0.2]]], dtype=np.float64),
+        ]
+
+        fast_nb, slow_nb, nets_nb = _build()
+        sim_nb = Simulator(
+            nets=nets_nb,
+            simulation_length=2.0,
+            monitors=[TemporalAverage(period=0.5)],
+            backend="numba",
+        )
+        sim_nb.configure()
+        ((tg_nb, yg_nb),) = sim_nb.run(initial_conditions=[x.copy() for x in ics])
+        nb_recs = [
+            fast_nb.monitors[0].to_arrays(),
+            slow_nb.monitors[0].to_arrays(),
+            slow_nb.monitors[1].to_arrays(),
+        ]
+
+        call_count = 0
+        orig_run_network = CppHybridBackend.run_network
+
+        def _spy_run_network(be_self, *args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            return orig_run_network(be_self, *args, **kwargs)
+
+        monkeypatch.setattr(CppHybridBackend, "run_network", _spy_run_network)
+
+        fast_cpp, slow_cpp, nets_cpp = _build()
+        sim_cpp = Simulator(
+            nets=nets_cpp,
+            simulation_length=2.0,
+            monitors=[TemporalAverage(period=0.5)],
+            backend="cpp",
+        )
+        sim_cpp.configure()
+        ((tg_cpp, yg_cpp),) = sim_cpp.run(initial_conditions=[x.copy() for x in ics])
+        cpp_recs = [
+            fast_cpp.monitors[0].to_arrays(),
+            slow_cpp.monitors[0].to_arrays(),
+            slow_cpp.monitors[1].to_arrays(),
+        ]
+
+        assert call_count == 1, f"expected 1 run_network call, got {call_count}"
+        np.testing.assert_allclose(tg_cpp, tg_nb, rtol=1e-5, atol=1e-6)
+        np.testing.assert_allclose(yg_cpp, yg_nb, rtol=1e-3, atol=1e-4)
+        for (t_cpp, d_cpp), (t_nb, d_nb) in zip(cpp_recs, nb_recs):
+            np.testing.assert_allclose(t_cpp, t_nb, rtol=1e-5, atol=1e-6)
+            np.testing.assert_allclose(d_cpp, d_nb, rtol=1e-3, atol=1e-4)
+
+    def test_cpp_simulator_monitors_and_deco_balanced_parity(self):
+        """DecoBalancedExcInh + Bold/TemporalAverage/GlobalAverage/SpatialAverage parity."""
+        if not _has_cpp_hybrid():
+            pytest.skip("_cpp_hybrid extension is not available")
+
+        def _build():
+            a = Subnetwork(
+                name="a",
+                model=DecoBalancedExcInh(),
+                scheme=HeunDeterministic(dt=0.1),
+                nnodes=2,
+                node_indices=np.array([0, 1]),
+            ).configure()
+            b = Subnetwork(
+                name="b",
+                model=DecoBalancedExcInh(),
+                scheme=HeunDeterministic(dt=0.1),
+                nnodes=2,
+                node_indices=np.array([2, 3]),
+            ).configure()
+            proj = InterProjection(
+                source=a,
+                target=b,
+                source_cvar=np.r_[0],
+                target_cvar=np.r_[0],
+                weights=csr_matrix(np.array([[0.2, 0.1], [0.1, 0.2]])),
+                lengths=csr_matrix(np.zeros((2, 2))),
+                cv=1.0,
+                dt=0.1,
+                scale=1.0,
+            )
+            return NetworkSet(subnets=[a, b], projections=[proj])
+
+        ics = [
+            np.array([[[0.15], [0.20]], [[0.05], [0.08]]], dtype=np.float64),
+            np.array([[[0.12], [0.18]], [[0.04], [0.07]]], dtype=np.float64),
+        ]
+
+        # GlobalAverage and SpatialAverage in compiled backends (numba, cpp)
+        # follow nb_hybrid temporal-averaged semantics (midpoint timestamps),
+        # whereas TemporalAverage and Bold match pure-Python monitors directly.
+        def _make_py_monitors():
+            return [TemporalAverage(period=1.0), Bold(period=1.0)]
+
+        py_sim = Simulator(
+            nets=_build(),
+            simulation_length=6.0,
+            monitors=_make_py_monitors(),
+            backend="python",
+        )
+        py_sim.configure()
+        py_out = py_sim.run(initial_conditions=[x.copy() for x in ics])
+
+        def _make_all_monitors():
+            sa = SpatialAverage(period=1.0, spatial_mask=np.array([0, 0, 1, 1]))
+            sa.spatial_mean = np.array([[0.5, 0.5, 0.0, 0.0], [0.0, 0.0, 0.5, 0.5]])
+            return [
+                TemporalAverage(period=1.0),
+                GlobalAverage(period=1.0),
+                sa,
+                Bold(period=1.0),
+            ]
+
+        outputs = {}
+        for backend in ("numba", "cpp"):
+            sim = Simulator(
+                nets=_build(),
+                simulation_length=6.0,
+                monitors=_make_all_monitors(),
+                backend=backend,
+            )
+            sim.configure()
+            outputs[backend] = sim.run(initial_conditions=[x.copy() for x in ics])
+
+        # TemporalAverage (idx 0) and Bold (idx 3) match Python directly
+        for idx, py_pair in zip((0, 3), py_out):
+            t_py, y_py = py_pair
+            for backend in ("numba", "cpp"):
+                t_be, y_be = outputs[backend][idx]
+                assert np.all(np.isfinite(y_be))
+                np.testing.assert_allclose(t_be, t_py, rtol=1e-5, atol=1e-6)
+                np.testing.assert_allclose(y_be, y_py, rtol=1e-3, atol=1e-4)
+
+        # All 4 monitors (incl. GlobalAverage & SpatialAverage) match numba <-> cpp
+        nb_out = outputs["numba"]
+        cpp_out = outputs["cpp"]
+        assert len(cpp_out) == len(nb_out)
+        for (t_cpp, y_cpp), (t_nb, y_nb) in zip(cpp_out, nb_out):
+            assert np.all(np.isfinite(y_cpp))
+            np.testing.assert_allclose(t_cpp, t_nb, rtol=1e-5, atol=1e-6)
+            np.testing.assert_allclose(y_cpp, y_nb, rtol=1e-3, atol=1e-4)

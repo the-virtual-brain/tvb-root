@@ -183,7 +183,7 @@ def calc_centroid(c):
     N = c.shape[-1]
     idx = np.arange(N, dtype=np.float64)
     s = np.nansum(np.abs(c), axis=-1)
-    return np.nansum(idx[None, :] * c, axis=-1) / np.where(s == 0, 1, s)
+    return np.nansum(idx * c, axis=-1) / np.where(s == 0, 1, s)
 
 
 @_safe
@@ -244,18 +244,11 @@ def _spec_apply(fn, ts, fs=1.0, indices=None):
     d = _as_timeremoved(ts, indices)
     if d is None:
         return np.array(np.nan)
-    from scipy import signal
-    freqs, psd = signal.welch(d, fs=fs,
-                              nperseg=min(256, d.shape[-1]), detrend=False)
+    freqs, psd = _spec(d, fs)
     return fn(freqs, psd)
 
 
-def psd_raw(ts, fs=1.0, indices=None):
-    d = _as_timeremoved(ts, indices)
-    if d is None:
-        return np.array([np.nan])
-    from scipy import signal
-    freqs, psd = signal.welch(d, fs=fs, nperseg=min(256, d.shape[-1]), detrend=False)
+def _psd_raw_from_spec(freqs, psd):
     # prepend the frequency grid as axis-0 row 0, broadcast across psd's
     # other leading (mode, ...) axes so concatenation works for any rank
     # (welch returns (leading..., n_freq))
@@ -265,36 +258,52 @@ def psd_raw(ts, fs=1.0, indices=None):
     return np.concatenate([frow, psd], axis=0)
 
 
+def _spectrum_stats_from_spec(freqs, psd):
+    # weighted mean frequency, dominant freq, total power
+    total = np.nansum(psd, axis=-1)
+    fmean = np.nansum(freqs * psd, axis=-1) / np.where(total == 0, 1, total)
+    fpeak = freqs[np.argmax(psd, axis=-1)]
+    return np.stack([fmean, fpeak.astype(np.float64), total], axis=0)
+
+
+def _spectrum_auc_from_spec(freqs, psd, lo=None, hi=None):
+    if lo is not None and hi is not None:
+        m = (freqs >= lo) & (freqs <= hi)
+        return np.nansum(psd[..., m], axis=-1)
+    return np.nansum(psd, axis=-1)
+
+
+def _spectrum_moments_from_spec(freqs, psd, order=4):
+    total = np.nansum(psd, axis=-1, keepdims=True)
+    denom = np.where(total == 0, 1.0, total)
+    moments = [total[..., 0]]
+    for k in range(1, int(order) + 1):
+        moments.append(np.nansum((freqs ** k) * psd, axis=-1) / denom[..., 0])
+    return np.stack(moments, axis=0)
+
+
+def psd_raw(ts, fs=1.0, indices=None):
+    d = _as_timeremoved(ts, indices)
+    if d is None:
+        return np.array([np.nan])
+    freqs, psd = _spec(d, fs)
+    return _psd_raw_from_spec(freqs, psd)
+
+
 def spectrum_stats(ts, fs=1.0, indices=None):
-    def _fn(freqs, psd):
-        # feigehted mean frequency, dominant freq, bandwidth (FWHM)
-        total = np.nansum(psd, axis=-1)
-        fmean = np.nansum(freqs[None, :] * psd, axis=-1) / np.where(total == 0, 1, total)
-        fpeak = freqs[np.argmax(psd, axis=-1)]
-        return np.stack([fmean, fpeak.astype(np.float64), total], axis=0)
-    return _spec_apply(_fn, ts, fs, indices)
+    return _spec_apply(_spectrum_stats_from_spec, ts, fs, indices)
 
 
 def spectrum_auc(ts, fs=1.0, indices=None, lo=None, hi=None):
-    def _fn(freqs, psd):
-        f = freqs
-        if lo is not None and hi is not None:
-            m = (f >= lo) & (f <= hi)
-            return np.nansum(psd[..., m], axis=-1)
-        return np.nansum(psd, axis=-1)
-    return _spec_apply(_fn, ts, fs, indices)
+    return _spec_apply(
+        lambda freqs, psd: _spectrum_auc_from_spec(freqs, psd, lo=lo, hi=hi),
+        ts, fs, indices)
 
 
 def spectrum_moments(ts, fs=1.0, indices=None, order=4):
-    def _fn(freqs, psd):
-        total = np.nansum(psd, axis=-1, keepdims=True)
-        total = np.where(total == 0, 1.0, total)
-        fn = freqs[None, :]
-        moments = [total[..., 0]]
-        for k in range(1, int(order) + 1):
-            moments.append(np.nansum(fn ** k * psd, axis=-1) / total[..., 0])
-        return np.stack(moments, axis=0)
-    return _spec_apply(_fn, ts, fs, indices)
+    return _spec_apply(
+        lambda freqs, psd: _spectrum_moments_from_spec(freqs, psd, order=order),
+        ts, fs, indices)
 
 
 # ------------------------------------------------------------------ #
@@ -327,6 +336,18 @@ FEATURES = {
     "spectrum_moments": spectrum_moments,
 }
 
+_SPECTRAL_FEATURES = frozenset({
+    "psd_raw", "spectrum_stats", "spectrum_auc", "spectrum_moments",
+})
+
+
+def _get_cpp_compute_features():
+    try:
+        from . import _cpp_hybrid
+        return getattr(_cpp_hybrid, "compute_features", None)
+    except Exception:
+        return None
+
 
 def _accepted(fn, params):
     import inspect
@@ -346,6 +367,118 @@ def _accepted(fn, params):
         return params
 
 
+def _compute_feature_py(ts, feature, **params):
+    fn = FEATURES.get(feature, feature)
+    if not callable(fn):
+        raise KeyError(f"unknown feature {feature!r}; choices: {sorted(FEATURES)}")
+    return np.asarray(fn(ts, **_accepted(fn, params)), dtype=np.float64)
+
+
+def _compute_features_py(ts, features, **params):
+    """Pure NumPy/SciPy path with single-Welch caching across spectral features."""
+    feat_list = list(features)
+    n_spec = sum(1 for k in feat_list if isinstance(k, str) and k in _SPECTRAL_FEATURES)
+    if n_spec <= 1:
+        return [(k, _compute_feature_py(ts, k, **params)) for k in feat_list]
+
+    indices = params.get("indices", None)
+    fs = params.get("fs", 1.0)
+    d = _as_timeremoved(ts, indices)
+    spec_cache = None if d is None else _spec(d, fs)
+
+    out = []
+    for k in feat_list:
+        if isinstance(k, str) and k in _SPECTRAL_FEATURES:
+            if spec_cache is None:
+                val = np.array([np.nan]) if k == "psd_raw" else np.array(np.nan)
+            else:
+                freqs, psd = spec_cache
+                if k == "psd_raw":
+                    val = _psd_raw_from_spec(freqs, psd)
+                elif k == "spectrum_stats":
+                    val = _spectrum_stats_from_spec(freqs, psd)
+                elif k == "spectrum_auc":
+                    val = _spectrum_auc_from_spec(
+                        freqs, psd, lo=params.get("lo"), hi=params.get("hi"))
+                else:  # spectrum_moments
+                    val = _spectrum_moments_from_spec(
+                        freqs, psd, order=params.get("order", 4))
+            out.append((k, np.asarray(val, dtype=np.float64)))
+        else:
+            out.append((k, _compute_feature_py(ts, k, **params)))
+    return out
+
+
+def _try_compute_features_cpp(ts, feat_list, params):
+    """Optional C++ fast path delegating to ``_cpp_hybrid.compute_features``.
+
+    Expected binding contract (exposed in Wave 2 via ``cph_features.hpp``):
+      ``_cpp_hybrid.compute_features(flat_2d, names, fs=1.0, bins=20, order=4, lo=None, hi=None)``
+    where ``flat_2d`` is contiguous ``(n_series, n_time)`` float32/float64 and
+    returns a dict (or list of ``(name, value)`` pairs) with:
+      - scalar features: ``(n_series,)`` float64
+      - ``moments``, ``spectrum_stats``, ``spectrum_moments``: ``(n_comp, n_series)`` float64
+      - ``psd_raw``: ``(freqs_1d, psd_2d)`` tuple or ``(1 + n_series, n_freq)`` float64.
+    """
+    cpp_fn = _get_cpp_compute_features()
+    if cpp_fn is None or not feat_list:
+        return None
+    if any(not isinstance(k, str) or k not in FEATURES for k in feat_list):
+        return None
+    order = int(params.get("order", 4))
+    bins = int(params.get("bins", 20))
+    if bins <= 0 or order < 0 or ("moments" in feat_list and order > 4):
+        return None
+
+    indices = params.get("indices", None)
+    arr = np.asarray(ts)
+    if arr.ndim == 1:
+        arr = arr[:, None]
+    if indices is not None:
+        arr = np.take(arr, indices, axis=1)
+    if arr.shape[0] == 0:
+        return None
+
+    moved = np.moveaxis(arr, 0, -1)
+    leading = moved.shape[:-1]
+    n_time = moved.shape[-1]
+    n_series = int(np.prod(leading))
+    if n_series == 0:
+        return None
+
+    dtype = np.float32 if arr.dtype == np.float32 else np.float64
+    flat = np.ascontiguousarray(moved, dtype=dtype).reshape(n_series, n_time)
+    if not np.isfinite(flat).all():
+        return None
+
+    fs = float(params.get("fs", 1.0))
+    lo = params.get("lo", None)
+    hi = params.get("hi", None)
+    raw = cpp_fn(flat, feat_list, fs=fs, bins=bins, order=order, lo=lo, hi=hi)
+    raw_map = dict(raw) if not isinstance(raw, dict) else raw
+
+    out = []
+    for k in feat_list:
+        val = raw_map[k]
+        if k == "psd_raw":
+            if isinstance(val, tuple):
+                freqs, psd_2d = np.asarray(val[0], dtype=np.float64), np.asarray(val[1], dtype=np.float64)
+            else:
+                v_arr = np.asarray(val, dtype=np.float64)
+                freqs = v_arr[0]
+                psd_2d = v_arr[1:]
+            psd_r = psd_2d.reshape(leading + (freqs.shape[0],))
+            res = _psd_raw_from_spec(freqs, psd_r)
+        elif k in ("moments", "spectrum_stats", "spectrum_moments"):
+            v_arr = np.asarray(val, dtype=np.float64)
+            res = v_arr.reshape((v_arr.shape[0],) + leading)
+        else:
+            v_arr = np.asarray(val, dtype=np.float64)
+            res = v_arr.reshape(leading)
+        out.append((k, np.asarray(res, dtype=np.float64)))
+    return out
+
+
 def compute_feature(ts, feature, **params):
     """Compute one feature over ``ts``, returned as a raw array.
 
@@ -353,10 +486,10 @@ def compute_feature(ts, feature, **params):
     ``feature`` is a key in :data:`FEATURES` or a callable.  Keyword args
     (``fs``, ``bins``, ...) are forwarded only to features that accept them.
     """
-    fn = FEATURES.get(feature, feature)
-    if not callable(fn):
-        raise KeyError(f"unknown feature {feature!r}; choices: {sorted(FEATURES)}")
-    return np.asarray(fn(ts, **_accepted(fn, params)), dtype=np.float64)
+    use_cpp = params.pop("use_cpp", True)
+    if isinstance(feature, str) and feature in FEATURES:
+        return compute_features(ts, [feature], use_cpp=use_cpp, **params)[0][1]
+    return _compute_feature_py(ts, feature, **params)
 
 
 def compute_features(ts, features, **params):
@@ -365,10 +498,13 @@ def compute_features(ts, features, **params):
     Returns a list of ``(feature_name, array)`` where each array has the
     reduced per-(region, mode[, lane]) shape for the moved time axis.
     """
-    out = []
-    for k in features:
-        out.append((k, compute_feature(ts, k, **params)))
-    return out
+    use_cpp = params.pop("use_cpp", True)
+    feat_list = list(features)
+    if use_cpp:
+        cpp_out = _try_compute_features_cpp(ts, feat_list, params)
+        if cpp_out is not None:
+            return cpp_out
+    return _compute_features_py(ts, feat_list, **params)
 
 
 def feature_table(ts, features=None, **params):
@@ -392,10 +528,11 @@ def feature_table(ts, features=None, **params):
         features = [k for k in FEATURES
                     if k not in ("psd_raw", "moments", "spectrum_stats",
                                  "spectrum_moments")]
+    computed = compute_features(ts, features, **params)
     cols = []
     n_regions = None
-    for k in features:
-        v = np.asarray(compute_feature(ts, k, **params), dtype=np.float64)
+    for k, v in computed:
+        v = np.asarray(v, dtype=np.float64)
         if k == "psd_raw":
             # axis-0 row 0 is the shared frequency grid header; the rest are
             # per-region (per region-mode for higher-rank input) spectra,

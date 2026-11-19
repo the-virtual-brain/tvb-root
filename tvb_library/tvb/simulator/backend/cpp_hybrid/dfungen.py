@@ -364,21 +364,23 @@ def model_dfun_signature(model) -> str:
 _FIRST_MODEL_ID = 100
 
 #: the model set the hybrid backends actually support, mirroring
-#: ``nb_hybrid._get_supported_models_classes`` (28 classes).  The build-time
-#: emission path (``only_supported=True``, what CMakeLists invokes with
-#: ``--only-supported``) scopes discovery and emission to exactly this set:
+#: ``nb_hybrid._get_supported_models_classes`` (29 classes, covering all 30
+#: ``ModelsEnum`` models including ``ZerlautAdaptationSecondOrder``).  The
+#: build-time emission path (``only_supported=True``, what CMakeLists invokes
+#: with ``--only-supported``) scopes discovery and emission to exactly this set:
 #: the kernels the extension ships are the kernels the documented support list
 #: needs, and unsupported model code in the tree cannot break the build.
-#: In-tree dfun models *outside* this set (e.g. ``DecoBalancedExcInh``) are
-#: still runnable: the runtime fallback keeps full discovery and compiles
-#: them on first use.  Hand-written kernels (ZerlautAdaptationFirstOrder,
-#: CerebellarMF) are in the supported set but declare no
-#: ``state_variable_dfuns``, so they are never generic-dfun candidates.
+#: Out-of-set / user-defined dfun models are still runnable: the runtime
+#: fallback keeps full discovery and compiles them on first use.  Hand-written
+#: kernels (ZerlautAdaptationFirstOrder, CerebellarMF) are in the supported set
+#: but declare no ``state_variable_dfuns``, so they are never generic-dfun
+#: candidates.
 #: A test pins both sets to nb_hybrid's list (``test_supported_set_mirrors_*``).
 _SUPPORTED_MODEL_CLASSES = frozenset((
     "CerebellarMF",
     "CoombesByrne",
     "CoombesByrne2D",
+    "DecoBalancedExcInh",
     "DumontGutkin",
     "Epileptor",
     "Epileptor2D",
@@ -516,9 +518,8 @@ def _collect_models(only_supported: bool = False):
                 continue
             seen.add(cls)
             if only_supported and cn not in _SUPPORTED_MODEL_CLASSES:
-                # e.g. DecoBalancedExcInh: a dfun model in the tree that is
-                # not part of the supported set; the runtime fallback covers
-                # it, the build does not
+                # a dfun model outside the supported set; the runtime fallback
+                # covers it, the build does not
                 continue
             if inspect.isabstract(cls):
                 continue
@@ -751,7 +752,7 @@ def emit_sources(models: dict = None, strict: bool = False,
     as a single ``DfunGenerationError`` instead of being skipped.
 
     ``only_supported=True`` (the build-time mode; CMake passes
-    ``--only-supported``) scopes discovery to the supported model set — the 28
+    ``--only-supported``) scopes discovery to the supported model set — the 29
     classes of ``nb_hybrid._get_supported_models_classes`` — so the emitted
     table is exactly the kernels the extension ships, and unsupported model
     code in the tree cannot break or slow the build.  Ignored when ``models``
@@ -772,10 +773,11 @@ def emit_sources(models: dict = None, strict: bool = False,
     blocks = []
     meta = {}
     mid = start_id
+    tu_fns = set()
     for name, model in sorted(models.items()):
         try:
             code, n_parm, n_cvar, n_svar, parm_names = _emit_model(
-                mid, model, set())
+                mid, model, tu_fns)
         except Exception as exc:
             if strict:
                 failures.append((f"{type(model).__module__}.{name}", "emit",
@@ -1017,7 +1019,7 @@ def _main(argv=None) -> int:
                              "emitted, instead of skipping it")
     parser.add_argument("--only-supported", action="store_true",
                         help="discover and emit only the supported model set "
-                             "(the 28 classes of "
+                             "(the 29 classes of "
                              "nb_hybrid._get_supported_models_classes); "
                              "unsupported model modules are neither imported "
                              "nor emitted (the build-time mode)")

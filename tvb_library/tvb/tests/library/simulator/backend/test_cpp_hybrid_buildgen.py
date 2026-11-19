@@ -5,7 +5,7 @@ What the feature guarantees, and what each test below pins down:
 
 * ``CMakeLists.txt`` runs ``dfungen --emit --strict --only-supported`` and
   compiles the emitted TU into ``_cpp_hybrid`` (``CPH_HAVE_BUILTIN_GEN=1``), so
-  the 26 supported stock generic-route models are served by kernels that ship
+  the 27 supported stock generic-route models are served by kernels that ship
   inside the extension.  A stock generic model therefore needs **no compiler
   at runtime** (a).
 * The extension's ``generic_model_table()`` is the authority for those models:
@@ -29,7 +29,7 @@ The build-time path (``only_supported=True`` / ``--only-supported``, handoff
 item 6 option 2) additionally scopes that scan to the supported model set
 (``dfungen._SUPPORTED_MODEL_CLASSES``/``_SUPPORTED_MODEL_MODULES``, mirroring
 ``nb_hybrid._get_supported_models_classes``): unsupported modules are not
-imported, unsupported dfun classes (``DecoBalancedExcInh``) are not emitted,
+imported, out-of-set dfun classes are not emitted,
 and strict failure expectations apply to the supported set only.  The runtime
 fallback keeps the full scan, which is why the probe module stays
 discoverable.
@@ -65,7 +65,7 @@ GENERIC_FIRST = dfungen._FIRST_MODEL_ID
 PROBE_NAME = "AaaProbe"
 #: the models the runtime fallback library is built with in these tests: the
 #: probe plus two stock generic models, so the fallback's own id assignment is
-#: observable without compiling all 28 supported models (which costs ~8 s of g++)
+#: observable without compiling all 29 supported models (which costs ~8 s of g++)
 RUNTIME_MODEL_NAMES = (PROBE_NAME, "CoombesByrne", "DumontGutkin")
 
 _SKIP_WASM_RUNTIME_COMPILE = pytest.mark.skipif(
@@ -332,7 +332,7 @@ def test_builtin_table_matches_emitted_metadata(emitted_stock):
         1 for c in _get_supported_models_classes() if dfungen._declares_dfuns(c)
     )
     assert table, "extension carries no built-in generic model table"
-    assert len(table) == expected_n >= 26, (
+    assert len(table) == expected_n >= 27, (
         f"built-in coverage shrank: {len(table)} models "
         f"(the supported stock set has {expected_n})"
     )
@@ -499,7 +499,7 @@ def test_emit_sources_rejects_ids_below_the_generic_range():
     assert meta == {}
 
 
-@pytest.mark.parametrize("start_id", [GENERIC_FIRST, 126, 130])
+@pytest.mark.parametrize("start_id", [GENERIC_FIRST, 127, 130])
 def test_emit_sources_gap_pads_the_dispatch_table(start_id,
                                                   small_runtime_model_set):
     """Gap slots pad the dispatch table; the metadata table stays compact.
@@ -798,7 +798,7 @@ def test_builtin_table_signatures_match_model_dfun_signature(emitted_stock):
     ``model_dfun_signature`` is the single canonical function; the meta dict
     and the extension table were both produced by it at emission time, so
     recomputing it on a fresh instance of the same class must reproduce the
-    stored value for all supported stock generic models (26 models, ids 100..125) -
+    stored value for all supported stock generic models (27 models, ids 100..126) -
     otherwise the guard would reject stock models.
     """
     _, meta = emitted_stock
@@ -1002,7 +1002,7 @@ def test_runtime_library_has_no_builtin_kernels(probe_class, isolated_backend,
         1 for c in _get_supported_models_classes() if dfungen._declares_dfuns(c)
     )
     builtin = cphb._builtin_model_table()
-    assert len(builtin) == expected_n >= 26
+    assert len(builtin) == expected_n >= 27
     builtin_ids = sorted(int(m["mid"]) for m in builtin.values())
     assert builtin_ids == list(range(GENERIC_FIRST, GENERIC_FIRST +
                                      len(builtin_ids)))
@@ -1098,27 +1098,37 @@ def test_generate_lib_exclude_filters_discovered_models(isolated_backend,
 # (j) supported-set scoping (handoff item 6, option 2)
 # ---------------------------------------------------------------------------
 # The build emits only the models the hybrid backends actually support (the
-# 28 classes of nb_hybrid._get_supported_models_classes) -- CMake passes
+# 29 classes of nb_hybrid._get_supported_models_classes) -- CMake passes
 # ``--only-supported`` -- so the built-in table is exactly the documented
 # support list and unsupported model code in the tree cannot break or slow
 # the build.  The runtime fallback keeps full discovery, so a dfun model
 # outside the supported set still simulates (compiled on first use).
 
-def test_supported_only_scopes_emission_to_the_supported_set():
+def test_supported_only_scopes_emission_to_the_supported_set(tmp_path):
     """``only_supported=True`` emits exactly the supported dfun models.
 
-    Full discovery (the runtime path) still finds every in-tree dfun model,
-    including ones outside the supported set (``DecoBalancedExcInh``); scoped
-    discovery (the build path) emits only the supported expression-driven
-    classes.  The two numba-only supported models (CerebellarMF,
-    ZerlautAdaptationFirstOrder) declare no ``state_variable_dfuns`` and are
-    not generic candidates, so they are absent from both.
+    Full discovery (the runtime path) finds every discoverable dfun model,
+    including out-of-set / user models; scoped discovery (the build path)
+    emits only the supported expression-driven classes (now including
+    ``DecoBalancedExcInh``, i.e. 27 generic kernels).  The two numba-only
+    supported models (CerebellarMF, ZerlautAdaptationFirstOrder) declare no
+    ``state_variable_dfuns`` and are not generic candidates, so they are
+    absent from both.
     """
-    _full_src, full = dfungen.emit_sources()
-    _scoped_src, scoped = dfungen.emit_sources(only_supported=True)
+    out_of_set_src = _PROBE_SOURCE.replace("class AaaProbe(Model):", "class OutOfSetProbe(Model):")
+    (tmp_path / "out_of_set_probe.py").write_text(out_of_set_src, encoding="utf-8")
+    _models_pkg.__path__.append(str(tmp_path))
+    try:
+        _full_src, full = dfungen.emit_sources()
+        _scoped_src, scoped = dfungen.emit_sources(only_supported=True)
+    finally:
+        _models_pkg.__path__.remove(str(tmp_path))
+        sys.modules.pop("tvb.simulator.models.out_of_set_probe", None)
 
     assert "DecoBalancedExcInh" in full, full.keys()
-    assert "DecoBalancedExcInh" not in scoped
+    assert "DecoBalancedExcInh" in scoped, scoped.keys()
+    assert "OutOfSetProbe" in full, full.keys()
+    assert "OutOfSetProbe" not in scoped
     # everything scoped emission keeps is part of the supported set
     assert set(scoped) <= dfungen._SUPPORTED_MODEL_CLASSES
     # everything full discovery finds beyond the scoped set is unsupported
@@ -1176,28 +1186,42 @@ def test_supported_only_strict_mode_stays_loud_but_scoped(monkeypatch):
 
 @_SKIP_WASM_RUNTIME_COMPILE
 def test_unsupported_stock_model_still_runs_via_runtime_fallback(
-        isolated_backend):
-    """A dfun model outside the supported set still simulates.
+        isolated_backend, tmp_path):
+    """A dfun model outside the built-in table still simulates via runtime fallback.
 
-    Option-2 scoping removes non-supported models from the built-in table;
-    support itself is unchanged because the runtime fallback keeps full
-    discovery.  DecoBalancedExcInh -- an in-tree dfun model that is not one
-    of the supported 28 -- must run through the runtime-compiled library.
+    With all 29 supported classes (including ``DecoBalancedExcInh``) built into
+    the extension, an out-of-table custom ``Model`` subclass with
+    ``state_variable_dfuns`` discovered on ``tvb.simulator.models.__path__``
+    still compiles and runs through the runtime g++/ctypes fallback library.
     """
-    table = cphb._builtin_model_table()
-    assert "DecoBalancedExcInh" not in table
-    assert "DecoBalancedExcInh" not in cphb._MODEL_IDS
+    custom_src = _PROBE_SOURCE.replace(
+        "class AaaProbe(Model):", "class OutOfTableFallbackModel(Model):"
+    ).replace(
+        '"y": "b * x - y * y * y"',
+        '"y": "b * x - y * y * y + 0.5"',
+    )
+    (tmp_path / "out_of_table_fallback.py").write_text(custom_src, encoding="utf-8")
+    _models_pkg.__path__.append(str(tmp_path))
+    try:
+        mod = importlib.import_module("tvb.simulator.models.out_of_table_fallback")
+        table = cphb._builtin_model_table()
+        assert "OutOfTableFallbackModel" not in table
+        assert "OutOfTableFallbackModel" not in cphb._MODEL_IDS
 
-    model = _stock_model("DecoBalancedExcInh")
-    n_voi = len(model.variables_of_interest)
-    out = CppHybridBackend().run_network(_network([model]), NSTEP)
-    data = np.asarray(out[0][1])
-    assert data.shape == (NSTEP, n_voi, NNODES, 1)
-    assert np.all(np.isfinite(data))
-    assert np.any(data != 0.0), "model did not simulate"
-    assert "DecoBalancedExcInh" in cphb._GEN_IDS
-    assert (isolated_backend / "models_gen.so").exists(), \
-        "runtime library was not compiled"
+        model = mod.OutOfTableFallbackModel()
+        model.configure()
+        n_voi = len(model.variables_of_interest)
+        out = CppHybridBackend().run_network(_network([model]), NSTEP)
+        data = np.asarray(out[0][1])
+        assert data.shape == (NSTEP, n_voi, NNODES, 1)
+        assert np.all(np.isfinite(data))
+        assert np.any(data != 0.0), "model did not simulate"
+        assert "OutOfTableFallbackModel" in cphb._GEN_IDS
+        assert (isolated_backend / "models_gen.so").exists(), \
+            "runtime library was not compiled"
+    finally:
+        _models_pkg.__path__.remove(str(tmp_path))
+        sys.modules.pop("tvb.simulator.models.out_of_table_fallback", None)
 
 
 # ---------------------------------------------------------------------------

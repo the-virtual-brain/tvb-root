@@ -11,16 +11,23 @@
 
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
+#include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>  // std::vector<> caster
 // gil release via scoped release below
 
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
+
+#include "cph_features.hpp"
+#include "cph_monitors.hpp"
+#include "cph_rng.hpp"
+#include "cph_stim.hpp"
 
 namespace nb = nanobind;
 
@@ -108,12 +115,15 @@ template <int W> CPH_NOINLINE static void cfun_post(int id,
                                               float *cx, const float *p) {
   switch (id) {
   case 0:  // Linear: a*gx + b
+#pragma omp simd
     for (int i = 0; i < W; i++) cx[i] = p[0 * W + i] * cx[i] + p[1 * W + i];
     break;
   case 1:  // Scaling: a*gx
+#pragma omp simd
     for (int i = 0; i < W; i++) cx[i] = p[0 * W + i] * cx[i];
     break;
   case 2:  // Sigmoidal: cmin + (cmax-cmin)/(1+exp(-a*(gx-midpoint)/sigma))
+#pragma omp simd
     for (int i = 0; i < W; i++)
       cx[i] = (float)((double)p[3 * W + i] +
               ((double)p[4 * W + i] - (double)p[3 * W + i]) /
@@ -122,9 +132,11 @@ template <int W> CPH_NOINLINE static void cfun_post(int id,
                              (double)p[1 * W + i])));
     break;
   case 3: case 6:  // Difference / SJR: a*gx
+#pragma omp simd
     for (int i = 0; i < W; i++) cx[i] = p[0 * W + i] * cx[i];
     break;
   case 4:  // Kuramoto: a * inv_N * gx
+#pragma omp simd
     for (int i = 0; i < W; i++) cx[i] = p[0 * W + i] * p[1 * W + i] * cx[i];
     break;
   case 5: case 7: case -1: default:  // identity post
@@ -139,9 +151,11 @@ CPH_NOINLINE static void cfun_pre(int id, float *v,
                                                const float *xi) {
   switch (id) {
   case 3:  // Difference: v0 - xi
+#pragma omp simd
     for (int i = 0; i < W; i++) v[0 * W + i] = v[0 * W + i] - xi[i];
     break;
   case 4:  // Kuramoto: sin(v0 - xi)
+#pragma omp simd
     for (int i = 0; i < W; i++)
       v[0 * W + i] = (float)sin((double)v[0 * W + i] - (double)xi[i]);
     break;
@@ -957,118 +971,7 @@ CPH_NOINLINE static void clamp_dispatch(int model_id, float *x, int node, int n_
 }
 
 // ---- subnetwork ------------------------------------------------------------
-
-struct voispec { int kind, a, b; };  // kind 0 = state a; 1 = diff a-b
-
-// ---- kernel-side monitor engines -------------------------------------------
-// Step-level monitor collection running inside the GIL-released step loop.
-// The engines mirror the shared Python reference implementation in
-// nb_hybrid.py::_apply_monitors (which drives tvb.simulator.monitors
-// sample() methods); the Python path stays in place as the parity reference
-// for the numba backend and as the fallback when the engines are disabled.
-// Each engine consumes the same per-step observed row the kernel already
-// accumulates into tacc (voi-spec sums, modes summed), so input values are
-// bit-identical to what the Python reference sees.
-enum { KMON_RAW = 1, KMON_SUBSAMPLE = 2, KMON_BOLD = 3 };
-
-template <int W> struct kmon {
-  int slot = -1;          // monitor list index (state identity)
-  int kind = 0;           // KMON_*
-  int istep = 1;          // steps per sample (subsample / bold period)
-  int interim_istep = 1;  // bold: steps per interim-stock write
-  int stock_steps = 0;    // bold: outer stock length S
-  int n_out_v = 0;        // output rows per sample (full row or voi subset)
-  double k1v0 = 1.0;      // bold: (dot - 1) * k1v0 for FirstOrderVolterra
-  bool first_order = false;
-  double dt = 0.1;        // master step dt (float64, matches the reference)
-  std::vector<int> voi;         // bold: indices into the per-step row
-  std::vector<double> hrf;      // bold: (S,) G[::-1]
-  // persistent state (mirrors the Python Bold monitor's _interim_stock,
-  // _stock and step counter; survives across run() calls)
-  std::vector<float> interim;   // (interim_istep, n_out_v, n_node, W)
-  std::vector<float> stock;     // (stock_steps, n_out_v, n_node, W)
-  uint64_t m_step = 0;          // 1-based global monitor step counter
-  uint64_t run_start = 0;       // m_step at the start of the current run()
-  // per-run() call outputs (cleared at each simw::run entry)
-  std::vector<double> t_out;
-  std::vector<float> d_out;
-
-  void begin_run() { run_start = m_step; }
-  void begin_call() { t_out.clear(); d_out.clear(); }
-
-  // rowbase: the per-step observed row (n_voi, n_node, W) for this subnet.
-  // step_one is invoked once per master step (same cadence the Python
-  // path drives the reference monitor with).
-  void step_one(const float *rowbase, int n_voi, int n_node) {
-    m_step++;
-    const uint64_t within = m_step - run_start;  // 1-based within this run
-    if (kind == KMON_RAW) {
-      // reference stamp: the per-chunk time the Python path emits for
-      // chunk_size == 1 is (within) * float32-quantized dt (backend.py's
-      // master-grid times), so the engine quantizes dt to float once
-      t_out.push_back((double)within * (double)(float)dt);
-      const size_t n = (size_t)n_voi * n_node * W;
-      for (size_t k = 0; k < n; k++) d_out.push_back(rowbase[k]);
-      return;
-    }
-    if (kind == KMON_SUBSAMPLE) {
-      if (within % (uint64_t)istep == 0) {
-        // same float32-quantized master-grid stamp as the reference path
-        t_out.push_back((double)within * (double)(float)dt);
-        const size_t n = (size_t)n_voi * n_node * W;
-        for (size_t k = 0; k < n; k++) d_out.push_back(rowbase[k]);
-      }
-      return;
-    }
-    if (kind == KMON_BOLD) {
-      const int L = (int)voi.size();
-      const int ii = interim_istep;
-      const int S = stock_steps;
-      const size_t plane = (size_t)L * n_node * W;
-      // interim stock write: Python index ((step % ii) - 1) wraps to ii-1
-      {
-        const int slot = (int)((m_step % (uint64_t)ii) + (uint64_t)ii - 1u) % ii;
-        for (int v = 0; v < L; v++) {
-          const int rv = voi[v];
-          if (rv < 0 || rv >= n_voi)
-            throw std::runtime_error(
-                "bold monitor voi index out of range for subnet row");
-          const float *src = rowbase + (size_t)rv * n_node * W;
-          float *dst = interim.data() + ((size_t)slot * L + v) * n_node * W;
-          std::memcpy(dst, src, (size_t)n_node * W * sizeof(float));
-        }
-      }
-      // interim mean -> outer stock at Python index ((step//ii % S) - 1)
-      if (m_step % (uint64_t)ii == 0) {
-        const int srow =
-            (int)((m_step / (uint64_t)ii) % (uint64_t)S) - 1;
-        const size_t sroww = (srow < 0) ? (size_t)(srow + S) : (size_t)srow;
-        for (size_t k = 0; k < plane; k++) {
-          double acc = 0.0;
-          for (int q = 0; q < ii; q++)
-            acc += (double)interim[(size_t)q * plane + k];
-          stock[sroww * plane + k] = (float)(acc / (double)ii);
-        }
-      }
-      // monitor period: hrf dot over the outer stock, rolled by r
-      if (m_step % (uint64_t)istep == 0) {
-        const int r = (int)((m_step / (uint64_t)ii) % (uint64_t)S) - 1;
-        t_out.push_back((double)m_step * dt);
-        for (size_t k = 0; k < plane; k++) {
-          double acc = 0.0;
-          for (int q = 0; q < S; q++) {
-            int hk = (q - r) % S;
-            if (hk < 0) hk += S;
-            acc += hrf[(size_t)hk] * (double)stock[(size_t)q * plane + k];
-          }
-          const double out = first_order ? (acc - 1.0) * k1v0 : acc;
-          d_out.push_back((float)out);
-        }
-      }
-      return;
-    }
-  }
-};
+// voispec, KMonKind, KMonState, and kmon<W> live in cph_monitors.hpp.
 
 template <int W> struct subnet {
   int n_node = 0, n_svar = 2, n_parm = 0, n_cvar = 1, n_modes = 1;
@@ -1150,6 +1053,7 @@ template <int W> struct subnet {
       float *dst = buf.data() +
           ((svar * (size_t)n_node * n_modes + rem) * H +
            ((uint32_t)t & (H - 1))) * W;
+#pragma omp simd
       for (int i = 0; i < W; i++) dst[i] = srcv[i];
     }
   }
@@ -1159,12 +1063,15 @@ template <int W> struct subnet {
       for (int m = 0; m < n_modes; m++)
         dfun_dispatch<W>(model_id, dx.data(), x.data(), j, m, n_node, n_modes,
                          c.data(), p.data(), n_parm, n_cvar);
+    const size_t n = x.size();
     if (noise) {
       // noise layout (n_svar, n_node, n_modes, W) for this step
-      for (size_t k = 0; k < x.size(); k++)
+#pragma omp simd
+      for (size_t k = 0; k < n; k++)
         x[k] += dt * dx[k] + noise[k];
     } else {
-      for (size_t k = 0; k < x.size(); k++) x[k] += dt * dx[k];
+#pragma omp simd
+      for (size_t k = 0; k < n; k++) x[k] += dt * dx[k];
     }
     apply_constraints(x.data());
   }
@@ -1174,10 +1081,13 @@ template <int W> struct subnet {
       for (int m = 0; m < n_modes; m++)
         dfun_dispatch<W>(model_id, dx.data(), x.data(), j, m, n_node, n_modes,
                          c.data(), p.data(), n_parm, n_cvar);
+    const size_t n = x.size();
     if (noise) {
-      for (size_t k = 0; k < x.size(); k++) xi[k] = x[k] + dt * dx[k] + noise[k];
+#pragma omp simd
+      for (size_t k = 0; k < n; k++) xi[k] = x[k] + dt * dx[k] + noise[k];
     } else {
-      for (size_t k = 0; k < x.size(); k++) xi[k] = x[k] + dt * dx[k];
+#pragma omp simd
+      for (size_t k = 0; k < n; k++) xi[k] = x[k] + dt * dx[k];
     }
     apply_constraints(xi.data());
     // coupling stays fixed across stages (matches nb_hybrid)
@@ -1186,10 +1096,12 @@ template <int W> struct subnet {
         dfun_dispatch<W>(model_id, dxi.data(), xi.data(), j, m, n_node, n_modes,
                          c.data(), p.data(), n_parm, n_cvar);
     if (noise) {
-      for (size_t k = 0; k < x.size(); k++)
+#pragma omp simd
+      for (size_t k = 0; k < n; k++)
         x[k] += dt * 0.5f * (dx[k] + dxi[k]) + noise[k];
     } else {
-      for (size_t k = 0; k < x.size(); k++) x[k] += dt * 0.5f * (dx[k] + dxi[k]);
+#pragma omp simd
+      for (size_t k = 0; k < n; k++) x[k] += dt * 0.5f * (dx[k] + dxi[k]);
     }
     apply_constraints(x.data());
   }
@@ -1324,10 +1236,12 @@ template <int W> struct proj {
           const uint32_t slot = ((uint32_t)t - 1u - del[nz]) & Hm1;
           const float wgt = w[nz];
           const float *b = sbuf + ((size_t)idx[nz] * src.H + slot) * W;
+#pragma omp simd
           for (int i = 0; i < W; i++) cx[i] += wgt * b[i];
         }
         cfun_post<W>(cfun_id, cx, cfp.data());
         float *dst = out + (size_t)j * W;
+#pragma omp simd
         for (int i = 0; i < W; i++) dst[i] += ts_scale * cx[i];
       }
       return;
@@ -1429,6 +1343,309 @@ template <int W> struct proj {
   mutable std::vector<float> v_buf;     // (max(src_cvars, 2) * W) edge cvar scratch
 };
 
+// ---- Python / nanobind marshaling helpers ----------------------------------
+
+template <typename T>
+static T dict_get_or(const nb::dict &d, const char *key, T defval) {
+  if (!d.contains(key)) return defval;
+  nb::object val = d[key];
+  if (val.is_none()) return defval;
+  return nb::cast<T>(val);
+}
+
+static std::vector<int> to_int_vec(nb::handle h) {
+  std::vector<int> out;
+  if (h.is_none()) return out;
+  try {
+    auto arr = nb::cast<nb::ndarray<nb::numpy, const int32_t, nb::c_contig>>(h);
+    out.assign(arr.data(), arr.data() + arr.size());
+    return out;
+  } catch (const std::exception &) {
+  }
+  try {
+    auto arr = nb::cast<nb::ndarray<nb::numpy, const int64_t, nb::c_contig>>(h);
+    out.resize(arr.size());
+    const int64_t *p = arr.data();
+    for (size_t i = 0; i < arr.size(); i++) out[i] = static_cast<int>(p[i]);
+    return out;
+  } catch (const std::exception &) {
+  }
+  auto seq = nb::cast<nb::sequence>(h);
+  for (auto item : seq) out.push_back(nb::cast<int>(item));
+  return out;
+}
+
+static std::vector<uint64_t> to_u64_vec(nb::handle h) {
+  std::vector<uint64_t> out;
+  if (h.is_none()) return out;
+  try {
+    auto arr = nb::cast<nb::ndarray<nb::numpy, const uint64_t, nb::c_contig>>(h);
+    out.assign(arr.data(), arr.data() + arr.size());
+    return out;
+  } catch (const std::exception &) {
+  }
+  try {
+    auto arr = nb::cast<nb::ndarray<nb::numpy, const int64_t, nb::c_contig>>(h);
+    out.resize(arr.size());
+    const int64_t *p = arr.data();
+    for (size_t i = 0; i < arr.size(); i++)
+      out[i] = static_cast<uint64_t>(p[i]);
+    return out;
+  } catch (const std::exception &) {
+  }
+  try {
+    auto arr = nb::cast<nb::ndarray<nb::numpy, const uint32_t, nb::c_contig>>(h);
+    out.resize(arr.size());
+    const uint32_t *p = arr.data();
+    for (size_t i = 0; i < arr.size(); i++)
+      out[i] = static_cast<uint64_t>(p[i]);
+    return out;
+  } catch (const std::exception &) {
+  }
+  auto seq = nb::cast<nb::sequence>(h);
+  for (auto item : seq) out.push_back(nb::cast<uint64_t>(item));
+  return out;
+}
+
+static std::vector<float> to_float_vec(nb::handle h) {
+  std::vector<float> out;
+  if (h.is_none()) return out;
+  try {
+    auto arr = nb::cast<nb::ndarray<nb::numpy, const float, nb::c_contig>>(h);
+    out.assign(arr.data(), arr.data() + arr.size());
+    return out;
+  } catch (const std::exception &) {
+  }
+  try {
+    auto arr = nb::cast<nb::ndarray<nb::numpy, const double, nb::c_contig>>(h);
+    out.resize(arr.size());
+    const double *p = arr.data();
+    for (size_t i = 0; i < arr.size(); i++) out[i] = static_cast<float>(p[i]);
+    return out;
+  } catch (const std::exception &) {
+  }
+  auto seq = nb::cast<nb::sequence>(h);
+  for (auto item : seq) out.push_back(nb::cast<float>(item));
+  return out;
+}
+
+static std::vector<double> to_double_vec(nb::handle h) {
+  std::vector<double> out;
+  if (h.is_none()) return out;
+  try {
+    auto arr = nb::cast<nb::ndarray<nb::numpy, const double, nb::c_contig>>(h);
+    out.assign(arr.data(), arr.data() + arr.size());
+    return out;
+  } catch (const std::exception &) {
+  }
+  try {
+    auto arr = nb::cast<nb::ndarray<nb::numpy, const float, nb::c_contig>>(h);
+    out.resize(arr.size());
+    const float *p = arr.data();
+    for (size_t i = 0; i < arr.size(); i++) out[i] = static_cast<double>(p[i]);
+    return out;
+  } catch (const std::exception &) {
+  }
+  auto seq = nb::cast<nb::sequence>(h);
+  for (auto item : seq) out.push_back(nb::cast<double>(item));
+  return out;
+}
+
+static void extract_2d_shape(nb::handle h, int &rows, int &cols) {
+  try {
+    auto arr = nb::cast<nb::ndarray<nb::numpy, const float, nb::c_contig>>(h);
+    if (arr.ndim() != 2) throw std::runtime_error("expected 2D float32 array");
+    rows = static_cast<int>(arr.shape(0));
+    cols = static_cast<int>(arr.shape(1));
+    return;
+  } catch (const std::exception &) {
+  }
+  auto arr = nb::cast<nb::ndarray<nb::numpy, const double, nb::c_contig>>(h);
+  if (arr.ndim() != 2) throw std::runtime_error("expected 2D float64 array");
+  rows = static_cast<int>(arr.shape(0));
+  cols = static_cast<int>(arr.shape(1));
+}
+
+static nb::dict kmon_state_to_dict(const KMonState &st) {
+  nb::dict d;
+  d["slot"] = st.slot;
+  d["kind"] = st.kind;
+  d["width"] = st.width;
+  d["n_out_v"] = st.n_out_v;
+  d["n_out_space"] = st.n_out_space;
+  d["n_out_modes"] = st.n_out_modes;
+  d["m_step"] = st.m_step;
+  d["run_start"] = st.run_start;
+
+  auto acc = make_owned_array<double>({st.accum.size()});
+  if (!st.accum.empty())
+    std::memcpy(acc.data(), st.accum.data(), st.accum.size() * sizeof(double));
+  d["accum"] = acc;
+  d["accum_count"] = st.accum_count;
+
+  auto itm = make_owned_array<float>({st.interim.size()});
+  if (!st.interim.empty())
+    std::memcpy(itm.data(), st.interim.data(),
+                st.interim.size() * sizeof(float));
+  d["interim"] = itm;
+  d["interim_count"] = st.interim_count;
+
+  auto stk = make_owned_array<float>({st.stock.size()});
+  if (!st.stock.empty())
+    std::memcpy(stk.data(), st.stock.data(), st.stock.size() * sizeof(float));
+  d["stock"] = stk;
+  d["stock_pos"] = st.stock_pos;
+
+  auto bws = make_owned_array<float>({st.bw_state.size()});
+  if (!st.bw_state.empty())
+    std::memcpy(bws.data(), st.bw_state.data(),
+                st.bw_state.size() * sizeof(float));
+  d["bw_state"] = bws;
+  return d;
+}
+
+static KMonState dict_to_kmon_state(const nb::dict &d) {
+  KMonState st;
+  st.slot = dict_get_or<int>(d, "slot", -1);
+  st.kind = dict_get_or<int>(d, "kind", 0);
+  st.width = dict_get_or<int>(d, "width", 1);
+  st.n_out_v = dict_get_or<int>(d, "n_out_v", 0);
+  st.n_out_space = dict_get_or<int>(d, "n_out_space", 0);
+  st.n_out_modes = dict_get_or<int>(d, "n_out_modes", 1);
+  st.m_step = dict_get_or<uint64_t>(d, "m_step", 0);
+  st.run_start = dict_get_or<uint64_t>(d, "run_start", 0);
+  if (d.contains("accum")) st.accum = to_double_vec(d["accum"]);
+  st.accum_count = dict_get_or<uint32_t>(d, "accum_count", 0);
+  if (d.contains("interim")) st.interim = to_float_vec(d["interim"]);
+  st.interim_count = dict_get_or<uint32_t>(d, "interim_count", 0);
+  if (d.contains("stock")) st.stock = to_float_vec(d["stock"]);
+  st.stock_pos = dict_get_or<uint32_t>(d, "stock_pos", 0);
+  if (d.contains("bw_state")) st.bw_state = to_float_vec(d["bw_state"]);
+  return st;
+}
+
+template <int W>
+static void parse_kmon_spec(nb::handle item, int n_src_v, int n_space,
+                            int n_cvar, int n_modes, double default_dt,
+                            const std::vector<kmon<W>> &prev,
+                            kmon<W> &out) {
+  int slot = -1;
+  int kind = 0;
+  if (nb::isinstance<nb::dict>(item)) {
+    nb::dict d = nb::cast<nb::dict>(item);
+    slot = nb::cast<int>(d["slot"]);
+    kind = nb::cast<int>(d["kind"]);
+    auto it = std::find_if(prev.begin(), prev.end(), [&](const kmon<W> &e) {
+      return e.slot == slot && e.kind == kind;
+    });
+    if (it != prev.end()) {
+      out = *it;
+      return;
+    }
+    const int istep = dict_get_or<int>(d, "istep", 1);
+    const uint32_t cadence_K = dict_get_or<uint32_t>(d, "cadence_K", 1u);
+    const bool midpoint_time = dict_get_or<bool>(d, "midpoint_time", false);
+    double m_dt = default_dt;
+    if (d.contains("dt") && !d["dt"].is_none())
+      m_dt = nb::cast<double>(d["dt"]);
+    else if (d.contains("dt0") && !d["dt0"].is_none())
+      m_dt = nb::cast<double>(d["dt0"]);
+    std::vector<int> voi;
+    if (d.contains("voi") && !d["voi"].is_none())
+      voi = to_int_vec(d["voi"]);
+
+    if (kind == KMON_BOLD) {
+      const int ii = dict_get_or<int>(d, "interim_istep", 1);
+      const int S = dict_get_or<int>(d, "stock_steps", 1);
+      const double k1v0 = dict_get_or<double>(d, "k1v0", 1.0);
+      const bool fo = dict_get_or<bool>(d, "first_order", false);
+      std::vector<double> hrf;
+      if (d.contains("hrf") && !d["hrf"].is_none())
+        hrf = to_double_vec(d["hrf"]);
+      out.configure_bold(slot, istep, ii, S, k1v0, fo, m_dt, n_src_v, n_space,
+                         voi, hrf, cadence_K);
+    } else if (kind == KMON_BOLD_BW) {
+      const float bw_dt = dict_get_or<float>(d, "bw_dt", 0.0f);
+      std::vector<float> bwp;
+      if (d.contains("bw_params") && !d["bw_params"].is_none())
+        bwp = to_float_vec(d["bw_params"]);
+      const float *bwp_ptr = (bwp.size() >= 10) ? bwp.data() : nullptr;
+      out.configure_bold_bw(slot, istep, m_dt, n_src_v, n_space, voi, bw_dt,
+                            bwp_ptr, cadence_K);
+    } else if (kind == KMON_SPATIAL_AVG) {
+      if (d.contains("spatial_mean") && !d["spatial_mean"].is_none()) {
+        int n_areas = 0, n_sn = 0;
+        extract_2d_shape(d["spatial_mean"], n_areas, n_sn);
+        std::vector<float> sm = to_float_vec(d["spatial_mean"]);
+        out.set_spatial_mean(sm.data(), n_areas, n_sn);
+      } else if (d.contains("spatial_area_idx") &&
+                 !d["spatial_area_idx"].is_none()) {
+        std::vector<int> aidx = to_int_vec(d["spatial_area_idx"]);
+        std::vector<float> ascale = to_float_vec(d["spatial_scale"]);
+        const int n_areas = dict_get_or<int>(d, "n_areas", 0);
+        out.set_spatial_compact(aidx.data(), ascale.data(), (int)aidx.size(),
+                                n_areas);
+      }
+      out.configure_basic(slot, kind, istep, m_dt, n_src_v, n_space, 1, voi,
+                          cadence_K, midpoint_time);
+    } else if (kind == KMON_PROJECTION) {
+      if (d.contains("gain") && !d["gain"].is_none()) {
+        int n_sensors = 0, n_pn = 0;
+        extract_2d_shape(d["gain"], n_sensors, n_pn);
+        std::vector<float> g = to_float_vec(d["gain"]);
+        std::vector<float> rv;
+        if (d.contains("ref_vec") && !d["ref_vec"].is_none())
+          rv = to_float_vec(d["ref_vec"]);
+        out.set_projection(g.data(), n_sensors, n_pn,
+                           rv.empty() ? nullptr : rv.data(), (int)rv.size());
+      }
+      out.configure_basic(slot, kind, istep, m_dt, n_src_v, n_space, 1, voi,
+                          cadence_K, midpoint_time);
+    } else if (kind == KMON_CTAVG) {
+      out.configure_basic(slot, kind, istep, m_dt, n_cvar, n_space, n_modes,
+                          voi, cadence_K, midpoint_time);
+    } else {
+      out.configure_basic(slot, kind, istep, m_dt, n_src_v, n_space, 1, voi,
+                          cadence_K, midpoint_time);
+    }
+    return;
+  }
+
+  // Legacy 10-tuple: (slot, kind, istep, interim_istep, stock_steps, k1v0,
+  //                   first_order, voi, hrf, dt)
+  nb::tuple a = nb::cast<nb::tuple>(item);
+  slot = nb::cast<int>(a[0]);
+  kind = nb::cast<int>(a[1]);
+  auto it = std::find_if(prev.begin(), prev.end(), [&](const kmon<W> &e) {
+    return e.slot == slot && e.kind == kind;
+  });
+  if (it != prev.end()) {
+    out = *it;
+    return;
+  }
+  const int istep = nb::cast<int>(a[2]);
+  const int ii = nb::cast<int>(a[3]);
+  const int S = nb::cast<int>(a[4]);
+  const double k1v0 = nb::cast<double>(a[5]);
+  const bool fo = nb::cast<bool>(a[6]);
+  std::vector<int> voi = to_int_vec(a[7]);
+  std::vector<double> hrf = to_double_vec(a[8]);
+  const double m_dt = nb::cast<double>(a[9]);
+  if (kind == KMON_BOLD) {
+    out.configure_bold(slot, istep, ii, S, k1v0, fo, m_dt, n_src_v, n_space,
+                       voi, hrf, 1u);
+  } else if (kind == KMON_BOLD_BW) {
+    out.configure_bold_bw(slot, istep, m_dt, n_src_v, n_space, voi, 0.0f,
+                          nullptr, 1u);
+  } else if (kind == KMON_CTAVG) {
+    out.configure_basic(slot, kind, istep, m_dt, n_cvar, n_space, n_modes, voi,
+                        1u, false);
+  } else {
+    out.configure_basic(slot, kind, istep, m_dt, n_src_v, n_space, 1, voi, 1u,
+                        false);
+  }
+}
+
 // ---- simulator (one per width instantiation) -------------------------------
 
 template <int W> struct simw {
@@ -1438,100 +1655,377 @@ template <int W> struct simw {
   int integ_id = 1;  // 0 = euler, 1 = heun
   float dt = 0.001f;
   int tavg_period = 1;
-  std::vector<std::vector<voispec>> voi_specs;  // per subnet
-  std::vector<std::vector<kmon<W>>> mons;       // per-subnet monitor engines
+  std::vector<std::vector<voispec>> voi_specs;       // per subnet
+  std::vector<std::vector<float>> obs_row;           // per-subnet (n_voi, n_node, W)
+  std::vector<std::vector<kmon<W>>> mons;            // per-subnet monitor engines
+  std::vector<GlobalGatherSubnet> global_gather;     // per-subnet global gather spec
+  std::vector<kmon<W>> global_mons;                  // global / merged monitor engines
+  std::vector<float> global_obs_row;                 // (total_vois, total_nodes, W)
+  int global_total_vois = 0;
+  int global_total_nodes = 0;
+  std::vector<stim_spec<W>> stim_specs;              // C++ stimulus specs
+  std::vector<rng_engine<W>> sub_rng;                // per-subnet Philox RNG engines
+  std::vector<std::vector<float>> rng_scratch;       // per-subnet step noise buffer
+  std::vector<uint8_t> online_enabled;               // per-subnet online feature flag
+  std::vector<OnlineFeatureAccum<W>> online_accums;  // per-subnet Tier-1 accumulators
   uint64_t t_abs = 0;
 
-  // Replace subnet si's armed monitor engines with `atts`.  Engines whose
-  // (slot, kind) match an existing engine are kept with their state intact
-  // (matching the Python reference, which keys monitor runtimes by
-  // (kind, monitor index, subnet)); everything else is recreated; engines no
-  // longer armed are dropped.  atts entries are tuples:
-  //   (slot, kind, istep, interim_istep, stock_steps, k1v0, first_order,
-  //    voi (int32 ndarray), hrf (float64 ndarray or None), dt)
   void set_monitors(int si, nb::list atts) {
-    if ((size_t)si >= sn.size())
+    if (si < 0 || (size_t)si >= sn.size())
       throw std::runtime_error("bad subnet index in set_monitors");
     if (mons.size() < sn.size()) mons.resize(sn.size());
     auto &cur = mons[si];
     const int n_voi = (int)voi_specs[si].size();
     const int n_node = sn[si].n_node;
-    const double dt64 = (double)dt;
+    const int n_cvar = sn[si].n_cvar;
+    const int n_modes = sn[si].n_modes;
+    const double def_dt = (double)dt;
     std::vector<kmon<W>> next;
     next.reserve(atts.size());
     for (auto item : atts) {
-      nb::tuple a = nb::cast<nb::tuple>(item);
-      const int slot = nb::cast<int>(a[0]);
-      const int kind = nb::cast<int>(a[1]);
-      auto it = std::find_if(cur.begin(), cur.end(), [&](const kmon<W> &e) {
-        return e.slot == slot && e.kind == kind;
-      });
-      if (it != cur.end()) {  // same (slot, kind): keep state (Python semantics)
-        next.push_back(std::move(*it));
-        continue;
-      }
       kmon<W> m;
-      m.slot = slot;
-      m.kind = kind;
-      m.istep = nb::cast<int>(a[2]);
-      if (m.istep < 1) m.istep = 1;
-      m.interim_istep = nb::cast<int>(a[3]);
-      if (m.interim_istep < 1) m.interim_istep = 1;
-      m.stock_steps = nb::cast<int>(a[4]);
-      if (m.stock_steps < 1) m.stock_steps = 1;
-      m.k1v0 = nb::cast<double>(a[5]);
-      m.first_order = nb::cast<bool>(a[6]);
-      if (kind == KMON_BOLD) {
-        auto V = nb::cast<nb::ndarray<nb::numpy, int>>(a[7]);
-        auto Vv = V.view<nb::ndim<1>>();
-        m.voi.resize(Vv.shape(0));
-        for (size_t k = 0; k < Vv.shape(0); k++) m.voi[k] = Vv(k);
-        if (!a[8].is_none()) {
-          auto H = nb::cast<nb::ndarray<nb::numpy, double>>(a[8]);
-          auto Hv = H.view<nb::ndim<1>>();
-          m.hrf.assign(Hv.shape(0), 0.0);
-          for (size_t k = 0; k < Hv.shape(0); k++) m.hrf[k] = Hv(k);
-        }
-        m.n_out_v = (int)m.voi.size();
-        const size_t plane = (size_t)m.n_out_v * n_node * W;
-        m.interim.assign((size_t)m.interim_istep * plane, 0.f);
-        m.stock.assign((size_t)m.stock_steps * plane, 0.f);
-      } else {
-        m.n_out_v = n_voi;  // raw / subsample emit the full observed row
-      }
-      m.dt = nb::cast<double>(a[9]);
-      (void)dt64;
+      parse_kmon_spec<W>(item, n_voi, n_node, n_cvar, n_modes, def_dt, cur, m);
       next.push_back(std::move(m));
     }
     cur = std::move(next);
   }
 
+  void set_global_monitors(nb::list gather_specs, nb::list mon_specs) {
+    if (gather_specs.size() != sn.size())
+      throw std::runtime_error(
+          "set_global_monitors: gather_specs length != subnet count");
+    global_gather.clear();
+    global_gather.reserve(gather_specs.size());
+    int tot_v = 0;
+    int tot_n = 0;
+    for (auto item : gather_specs) {
+      GlobalGatherSubnet gs;
+      if (nb::isinstance<nb::dict>(item)) {
+        nb::dict d = nb::cast<nb::dict>(item);
+        gs.n_voi = nb::cast<int>(d["n_voi"]);
+        gs.n_node = nb::cast<int>(d["n_node"]);
+        gs.voi_offset = dict_get_or<int>(d, "voi_offset", 0);
+        gs.node_offset = dict_get_or<int>(d, "node_offset", 0);
+        if (d.contains("node_indices") && !d["node_indices"].is_none())
+          gs.node_indices = to_int_vec(d["node_indices"]);
+      } else {
+        nb::tuple t = nb::cast<nb::tuple>(item);
+        gs.n_voi = nb::cast<int>(t[0]);
+        gs.n_node = nb::cast<int>(t[1]);
+        gs.voi_offset = nb::cast<int>(t[2]);
+        gs.node_offset = nb::cast<int>(t[3]);
+        if (t.size() > 4 && !t[4].is_none())
+          gs.node_indices = to_int_vec(t[4]);
+      }
+      if (gs.voi_offset + gs.n_voi > tot_v) tot_v = gs.voi_offset + gs.n_voi;
+      if (gs.node_indices.empty()) {
+        if (gs.node_offset + gs.n_node > tot_n)
+          tot_n = gs.node_offset + gs.n_node;
+      } else {
+        for (int gn : gs.node_indices)
+          if (gn + 1 > tot_n) tot_n = gn + 1;
+      }
+      global_gather.push_back(std::move(gs));
+    }
+    global_total_vois = tot_v;
+    global_total_nodes = tot_n;
+    global_obs_row.assign(
+        (size_t)std::max(0, tot_v) * (size_t)std::max(0, tot_n) * (size_t)W,
+        0.0f);
+
+    std::vector<kmon<W>> next;
+    next.reserve(mon_specs.size());
+    const double def_dt = (double)dt;
+    for (auto item : mon_specs) {
+      kmon<W> m;
+      parse_kmon_spec<W>(item, tot_v, tot_n, tot_v, 1, def_dt, global_mons, m);
+      next.push_back(std::move(m));
+    }
+    global_mons = std::move(next);
+  }
+
+  nb::list take_global_monitor_outputs() {
+    nb::list out;
+    for (auto &gm : global_mons) {
+      const size_t n = gm.t_out.size();
+      nb::ndarray<nb::numpy, double> mt = make_owned_array<double>({n});
+      if (n > 0)
+        std::copy(gm.t_out.begin(), gm.t_out.end(),
+                  static_cast<double *>(mt.data()));
+      nb::ndarray<nb::numpy, float> md = make_owned_array<float>(
+          {n, (size_t)gm.n_out_v, (size_t)gm.n_out_space,
+           (size_t)gm.n_out_modes * (size_t)W});
+      if (!gm.d_out.empty())
+        std::copy(gm.d_out.begin(), gm.d_out.end(),
+                  static_cast<float *>(md.data()));
+      gm.t_out.clear();
+      gm.d_out.clear();
+      out.append(nb::make_tuple(mt, md));
+    }
+    return out;
+  }
+
+  nb::list get_monitor_states() const {
+    nb::list per_sn;
+    for (size_t si = 0; si < sn.size(); si++) {
+      nb::list ms;
+      if (si < mons.size()) {
+        for (const auto &m : mons[si])
+          ms.append(kmon_state_to_dict(m.export_state()));
+      }
+      per_sn.append(ms);
+    }
+    return per_sn;
+  }
+
+  void set_monitor_states(nb::list states) {
+    const size_t n = std::min(states.size(), mons.size());
+    for (size_t si = 0; si < n; si++) {
+      nb::list ms = nb::cast<nb::list>(states[si]);
+      for (size_t mi = 0; mi < ms.size(); mi++) {
+        KMonState st = dict_to_kmon_state(nb::cast<nb::dict>(ms[mi]));
+        auto it = std::find_if(mons[si].begin(), mons[si].end(),
+                               [&](const kmon<W> &m) {
+                                 return m.slot == st.slot && m.kind == st.kind;
+                               });
+        if (it != mons[si].end()) {
+          it->import_state(st);
+        } else if (mi < mons[si].size()) {
+          mons[si][mi].import_state(st);
+        }
+      }
+    }
+  }
+
+  nb::list get_global_monitor_states() const {
+    nb::list out;
+    for (const auto &gm : global_mons)
+      out.append(kmon_state_to_dict(gm.export_state()));
+    return out;
+  }
+
+  void set_global_monitor_states(nb::list states) {
+    for (size_t mi = 0; mi < states.size(); mi++) {
+      KMonState st = dict_to_kmon_state(nb::cast<nb::dict>(states[mi]));
+      auto it = std::find_if(global_mons.begin(), global_mons.end(),
+                             [&](const kmon<W> &m) {
+                               return m.slot == st.slot && m.kind == st.kind;
+                             });
+      if (it != global_mons.end()) {
+        it->import_state(st);
+      } else if (mi < global_mons.size()) {
+        global_mons[mi].import_state(st);
+      }
+    }
+  }
+
+  void set_stim_specs(int si, nb::list specs) {
+    if (si < 0 || (size_t)si >= sn.size())
+      throw std::runtime_error("bad subnet index in set_stim_specs");
+    stim_specs.erase(
+        std::remove_if(stim_specs.begin(), stim_specs.end(),
+                       [si](const stim_spec<W> &s) {
+                         return s.subnet_idx == si;
+                       }),
+        stim_specs.end());
+    for (auto item : specs) {
+      nb::dict d = nb::cast<nb::dict>(item);
+      stim_spec<W> sp;
+      sp.subnet_idx = si;
+      sp.n_node = dict_get_or<int>(d, "n_node", sn[si].n_node);
+      if (d.contains("target_cvars") && !d["target_cvars"].is_none())
+        sp.target_cvars = to_int_vec(d["target_cvars"]);
+      if (d.contains("spatial") && !d["spatial"].is_none()) {
+        sp.spatial = to_float_vec(d["spatial"]);
+        if (d.contains("lane_varying") && !d["lane_varying"].is_none()) {
+          sp.lane_varying = nb::cast<bool>(d["lane_varying"]);
+        } else {
+          sp.lane_varying =
+              (W > 1 && sp.spatial.size() == (size_t)sp.n_node * (size_t)W);
+        }
+      }
+      sp.eq_kind = dict_get_or<int>(d, "eq_kind", STIM_DISCRETE_1D);
+      sp.onset_t0 = dict_get_or<double>(d, "onset_t0", 0.0);
+      sp.dt0 = dict_get_or<float>(d, "dt0", dt);
+      if (d.contains("eq_params") && !d["eq_params"].is_none()) {
+        std::vector<double> ep = to_double_vec(d["eq_params"]);
+        for (size_t k = 0; k < ep.size() && k < sp.eq_params.size(); k++)
+          sp.eq_params[k] = ep[k];
+      }
+      if (d.contains("temporal_1d") && !d["temporal_1d"].is_none())
+        sp.temporal_1d = to_float_vec(d["temporal_1d"]);
+      sp.step_offset = dict_get_or<int64_t>(d, "step_offset", 0);
+      sp.scale = dict_get_or<float>(d, "scale", 1.0f);
+      if (d.contains("lane_scale") && !d["lane_scale"].is_none())
+        sp.lane_scale = to_float_vec(d["lane_scale"]);
+      stim_specs.push_back(std::move(sp));
+    }
+  }
+
+  void clear_stim_specs() { stim_specs.clear(); }
+
+  void set_subnet_rng(int si, nb::object lane_keys_obj, nb::object gfun_obj,
+                      double ntau = 0.0, bool is_multiplicative = false,
+                      nb::object mul_a_obj = nb::none(),
+                      nb::object mul_b_obj = nb::none()) {
+    if (si < 0 || (size_t)si >= sn.size())
+      throw std::runtime_error("bad subnet index in set_subnet_rng");
+    if (sub_rng.size() < sn.size()) sub_rng.resize(sn.size());
+    if (rng_scratch.size() < sn.size()) rng_scratch.resize(sn.size());
+    auto &eng = sub_rng[si];
+    eng.subnet_id = (uint32_t)si;
+    eng.dt = sn[si].dt;
+    eng.ntau = (float)ntau;
+    eng.step_counter = 0;
+    eng.ou_state.clear();
+    if (lane_keys_obj.is_none()) {
+      eng.enabled = false;
+      return;
+    }
+    if (nb::isinstance<nb::int_>(lane_keys_obj)) {
+      eng.set_uniform_seed(nb::cast<uint64_t>(lane_keys_obj));
+    } else {
+      std::vector<uint64_t> seeds = to_u64_vec(lane_keys_obj);
+      if (seeds.empty()) {
+        eng.enabled = false;
+        return;
+      }
+      eng.set_lane_seeds(seeds.data(), seeds.size());
+    }
+    eng.gfun = to_float_vec(gfun_obj);
+    eng.is_multiplicative = is_multiplicative;
+    eng.mul_a = mul_a_obj.is_none() ? 1.0f : nb::cast<float>(mul_a_obj);
+    eng.mul_b = mul_b_obj.is_none() ? 0.0f : nb::cast<float>(mul_b_obj);
+    eng.enabled = true;
+  }
+
+  nb::list get_rng_states() const {
+    nb::list out;
+    for (size_t si = 0; si < sn.size(); si++) {
+      nb::dict d;
+      if (si < sub_rng.size()) {
+        const auto &eng = sub_rng[si];
+        auto st = eng.export_state();
+        d["enabled"] = eng.enabled;
+        auto lk = make_owned_array<uint64_t>({(size_t)W});
+        for (int w = 0; w < W; w++) lk.data()[w] = st.lane_keys[(size_t)w];
+        d["lane_keys"] = lk;
+        d["step_counter"] = st.step_counter;
+        auto ou = make_owned_array<float>({st.ou_state.size()});
+        if (!st.ou_state.empty())
+          std::memcpy(ou.data(), st.ou_state.data(),
+                      st.ou_state.size() * sizeof(float));
+        d["ou_state"] = ou;
+      } else {
+        d["enabled"] = false;
+      }
+      out.append(d);
+    }
+    return out;
+  }
+
+  void set_rng_states(nb::list states) {
+    if (sub_rng.size() < sn.size()) sub_rng.resize(sn.size());
+    const size_t n = std::min(states.size(), sub_rng.size());
+    for (size_t si = 0; si < n; si++) {
+      nb::dict d = nb::cast<nb::dict>(states[si]);
+      sub_rng[si].enabled = dict_get_or<bool>(d, "enabled", false);
+      if (d.contains("lane_keys") && !d["lane_keys"].is_none()) {
+        rng_state<W> st;
+        std::vector<uint64_t> lk = to_u64_vec(d["lane_keys"]);
+        for (int w = 0; w < W && (size_t)w < lk.size(); w++)
+          st.lane_keys[(size_t)w] = lk[(size_t)w];
+        st.step_counter = dict_get_or<uint64_t>(d, "step_counter", 0);
+        if (d.contains("ou_state") && !d["ou_state"].is_none())
+          st.ou_state = to_float_vec(d["ou_state"]);
+        sub_rng[si].import_state(st);
+      }
+    }
+  }
+
+  void enable_online_features(int si, double dt_sample = 1.0) {
+    if (si < 0 || (size_t)si >= sn.size())
+      throw std::runtime_error("bad subnet index in enable_online_features");
+    if (online_enabled.size() < sn.size()) online_enabled.resize(sn.size(), 0);
+    if (online_accums.size() < sn.size()) online_accums.resize(sn.size());
+    online_accums[si].reset((int)voi_specs[si].size(), sn[si].n_node,
+                            dt_sample);
+    online_enabled[si] = 1;
+  }
+
+  void disable_online_features() {
+    std::fill(online_enabled.begin(), online_enabled.end(), 0);
+  }
+
+  nb::dict take_online_features(int si, const std::vector<std::string> &names,
+                                int order = 4) const {
+    if (si < 0 || (size_t)si >= online_accums.size())
+      throw std::runtime_error("bad subnet index in take_online_features");
+    const auto &acc = online_accums[si];
+    nb::dict out;
+    for (const auto &name : names) {
+      const int n_comp = OnlineFeatureAccum<W>::feature_components(name, order);
+      std::vector<size_t> shape;
+      if (name == "moments") {
+        shape = {(size_t)n_comp, (size_t)acc.n_voi, (size_t)acc.n_node,
+                 (size_t)W};
+      } else {
+        shape = {(size_t)acc.n_voi, (size_t)acc.n_node, (size_t)W};
+      }
+      auto arr = make_owned_array<double>(shape);
+      acc.finalize_into(name, arr.data(), order);
+      out[nb::str(name.c_str())] = arr;
+    }
+    return out;
+  }
+
   void monitor_begin_run() {
     for (auto &mons_s : mons)
       for (auto &m : mons_s) m.begin_run();
+    for (auto &gm : global_mons) gm.begin_run();
   }
 
   void monitor_begin_call() {
     for (auto &mons_s : mons)
       for (auto &m : mons_s) m.begin_call();
+    for (auto &gm : global_mons) gm.begin_call();
   }
 
   // Run nstep steps. Output per chunk of `chunk_size` steps:
-  // tavg (n_chunks, n_voi, n_node, W) and ctavg (n_chunks, n_cvar, n_node, W),
-  // each the mean of the per-step values within the chunk (nb_hybrid semantics).
-  // noise: optional (n_svar, n_node, W, nstep) float32; stim: optional
-  // (n_cvar, n_node, W, nstep) float32 added to c before integration.
+  // tavg (n_chunks, n_voi, n_node, W) or None when !need_tavg,
+  // ctavg (n_chunks, n_cvar, n_node, n_modes * W) or None when !need_ctavg,
+  // followed by per-subnet monitor engine streams (times, data).
   nb::list run(int nstep, int chunk_size, nb::object noise_obj,
-               nb::object stim_obj) {
+               nb::object stim_obj, bool need_tavg = true,
+               bool need_ctavg = true) {
     const int cs = chunk_size > 0 ? chunk_size : tavg_period;
     const int n_chunks = (nstep + cs - 1) / cs;
     const size_t n_sn = sn.size();
     monitor_begin_call();
+    for (size_t s = 0; s < mons.size(); s++) {
+      for (auto &mon : mons[s]) mon.reserve_for_steps(nstep);
+    }
+    for (auto &gm : global_mons) gm.reserve_for_steps(nstep);
 
-    // per-step noise/stim pointers (lane-major innermost)
-    // Each of noise_obj / stim_obj is either a single array (single-subnet
-    // layout, applied to every subnet) or a sequence with one entry per
-    // subnetwork (None = no input for that subnet).
+    // Ensure per-subnet scratch buffers are sized
+    if (obs_row.size() < n_sn) obs_row.resize(n_sn);
+    if (rng_scratch.size() < n_sn) rng_scratch.resize(n_sn);
+    for (size_t s = 0; s < n_sn; s++) {
+      const size_t need_obs =
+          (size_t)voi_specs[s].size() * (size_t)sn[s].n_node * (size_t)W;
+      if (obs_row[s].size() < need_obs) obs_row[s].resize(need_obs);
+    }
+    std::vector<const float *> global_src_rows(n_sn, nullptr);
+    if (!global_mons.empty()) {
+      if (global_gather.size() != n_sn)
+        throw std::runtime_error(
+            "simw::run: global_gather size != subnet count");
+      const size_t gsz =
+          (size_t)std::max(0, global_total_vois) *
+          (size_t)std::max(0, global_total_nodes) * (size_t)W;
+      if (global_obs_row.size() < gsz) global_obs_row.resize(gsz);
+    }
+
     std::vector<nb::ndarray<nb::numpy, float>> keep_alive;
     auto resolve_per_sn = [&](nb::object obj) -> std::vector<const float *> {
       std::vector<const float *> ps(n_sn, nullptr);
@@ -1564,14 +2058,14 @@ template <int W> struct simw {
     std::vector<std::vector<int>> counts(n_sn);
     for (size_t s = 0; s < n_sn; s++) {
       const int n_voi = (int)voi_specs[s].size();
-      tacc[s].assign((size_t)n_chunks * n_voi * sn[s].n_node * W, 0.f);
-      // ctavg layout matches the returned array and sub.c: (n_chunks,
-      // n_cvar, n_node, n_modes, W).  The n_modes factor was missing here
-      // while the accumulation below (and the output copy) indexed with
-      // it, so any subnet with n_modes > 1 wrote and read past the end of
-      // the accumulator (heap corruption, garbage ctavg).
-      cacc[s].assign((size_t)n_chunks * sn[s].n_cvar * sn[s].n_node *
-                         sn[s].n_modes * W, 0.f);
+      if (need_tavg) {
+        tacc[s].assign((size_t)n_chunks * n_voi * sn[s].n_node * W, 0.f);
+      }
+      if (need_ctavg) {
+        cacc[s].assign((size_t)n_chunks * sn[s].n_cvar * sn[s].n_node *
+                           sn[s].n_modes * W,
+                       0.f);
+      }
       counts[s].assign(n_chunks, 0);
     }
 
@@ -1579,109 +2073,112 @@ template <int W> struct simw {
     {
       nb::gil_scoped_release nogil;
       try {
-      for (int step = 0; step < nstep; step++) {
-        const size_t chunk = (size_t)(step / cs);
-        // zero the per-step coupling scratch (nb_hybrid semantics)
-        for (auto &sub : sn) std::fill(sub.c.begin(), sub.c.end(), 0.f);
-        for (auto &p : pr) p.apply(sn[p.src_sn], sn[p.tgt_sn], (int)t_abs);
-        for (size_t s = 0; s < n_sn; s++) {
-          auto &sub = sn[s];
-          const float *stim = stim_ps[s];
-          counts[s][chunk]++;
-          if (stim) {
-            // stim layout (n_cvar, n_node, W, nstep)
-            const size_t base = ((size_t)step) * (size_t)sub.n_cvar *
-                                sub.n_node * sub.n_modes * W;
-            for (int cv = 0; cv < sub.n_cvar; cv++)
-              for (int j = 0; j < sub.n_node; j++)
-                for (int m = 0; m < sub.n_modes; m++) {
-                const float *sv = stim + base +
-                    (((size_t)cv * sub.n_node + j) * sub.n_modes + m) * W;
-                float *dst = sub.c.data() +
-                    (((size_t)cv * sub.n_node + j) * sub.n_modes + m) * W;
-                for (int i = 0; i < W; i++) dst[i] += sv[i];
-                }
-          }
-          // accumulate ctavg (c for this step, including stimulus)
-          {
-            const size_t n_cv = (size_t)sub.n_cvar * sub.n_node * sub.n_modes * W;
-            const float *cv = sub.c.data();
-            float *dst = cacc[s].data() + chunk * n_cv;
-            for (size_t k = 0; k < n_cv; k++) dst[k] += cv[k];
-          }
-          // multi-dt: the subnet integrates (and pushes) only on its own
-          // ticks; t_abs is the 0-based iteration counter, so master tick
-          // (t_abs + 1) is due when (t_abs + 1) % K == 0.
-          if (((t_abs + 1) % sub.K) == 0) {
-            const float *nz = nullptr;
-            if (const float *nptr = noise_ps[s])
-              nz = nptr + ((size_t)step) * (size_t)sub.n_svar * sub.n_node * sub.n_modes * W;
-            const int sub_integ = (sub.integ_id >= 0) ? sub.integ_id : integ_id;
-            if (sub_integ == 1)
-              sub.step_heun(sub.dt, nz);
-            else
-              sub.step_euler(sub.dt, nz);
-            // slot = (subnet's own step count) - 1 in C++ convention:
-            // after master tick (t_abs+1) the subnet has executed
-            // (t_abs+1)/K steps, and slot s holds state after step s+1.
-            sub.push_state((int)((((t_abs + 1) / sub.K) - 1) & (sub.H - 1)));
-          }
-          // accumulate tavg (voi specs: 0 = state var, 1 = var difference);
-          // values summed over modes (matches hybrid observe)
-            {
-              const int n_voi = (int)voi_specs[s].size();
-              for (int v = 0; v < n_voi; v++) {
-                const voispec &vs = voi_specs[s][v];
-                float *dst = tacc[s].data() + chunk * n_voi * sub.n_node * W +
-                             (size_t)v * sub.n_node * W;
-                // layout is (n_svar, n_node, n_modes, W): node-major.  Sum
-                // values over modes to match hybrid observe.
-                const size_t ba = (size_t)vs.a * sub.n_node * sub.n_modes * W;
-                const size_t bb = (size_t)vs.b * sub.n_node * sub.n_modes * W;
-                for (size_t k = 0; k < (size_t)sub.n_node; k++) {
-                  const size_t off = k * (size_t)sub.n_modes * W;
-                  for (int m = 0; m < sub.n_modes; m++) {
-                    const size_t mo = off + (size_t)m * W;
-                    const float *sva = sub.x.data() + ba + mo;
-                    const float *svb = sub.x.data() + bb + mo;
-                    for (size_t w = 0; w < (size_t)W; w++) {
-                      const size_t dk = k * (size_t)W + w;
-                      if (vs.kind == 0) dst[dk] += sva[w];
-                      else dst[dk] += sva[w] - svb[w];
-                    }
-                  }
+        for (int step = 0; step < nstep; step++) {
+          const size_t chunk = (size_t)(step / cs);
+          for (auto &sub : sn) std::fill(sub.c.begin(), sub.c.end(), 0.f);
+          for (auto &p : pr) p.apply(sn[p.src_sn], sn[p.tgt_sn], (int)t_abs);
+
+          for (size_t s = 0; s < n_sn; s++) {
+            auto &sub = sn[s];
+            counts[s][chunk]++;
+
+            if (const float *stim = stim_ps[s]) {
+              apply_legacy_dense_stim<W>(sub.c.data(), stim, step, sub.n_cvar,
+                                         sub.n_node, sub.n_modes);
+            }
+            if (!stim_specs.empty()) {
+              apply_subnet_stims<W>(stim_specs, (int)s, sub.c.data(),
+                                    sub.n_modes, (int64_t)t_abs + 1,
+                                    (double)(t_abs + 1u) * (double)dt);
+            }
+
+            if (need_ctavg) {
+              const size_t n_cv =
+                  (size_t)sub.n_cvar * sub.n_node * sub.n_modes * W;
+              const float *cv = sub.c.data();
+              float *dst = cacc[s].data() + chunk * n_cv;
+#pragma omp simd
+              for (size_t k = 0; k < n_cv; k++) dst[k] += cv[k];
+            }
+
+            if (((t_abs + 1) % sub.K) == 0) {
+              const float *nz = nullptr;
+              if (const float *nptr = noise_ps[s]) {
+                nz = nptr + ((size_t)step) * (size_t)sub.n_svar * sub.n_node *
+                                sub.n_modes * W;
+              } else if (s < sub_rng.size() && sub_rng[s].enabled) {
+                const size_t need_nz =
+                    (size_t)sub.n_svar * sub.n_node * sub.n_modes * W;
+                if (rng_scratch[s].size() < need_nz)
+                  rng_scratch[s].resize(need_nz);
+                sub_rng[s].fill_next_step_noise(rng_scratch[s].data(),
+                                                sub.n_svar, sub.n_node,
+                                                sub.n_modes, sub.x.data());
+                nz = rng_scratch[s].data();
+              }
+              const int sub_integ = (sub.integ_id >= 0) ? sub.integ_id : integ_id;
+              if (sub_integ == 1)
+                sub.step_heun(sub.dt, nz);
+              else
+                sub.step_euler(sub.dt, nz);
+              sub.push_state((int)((((t_abs + 1) / sub.K) - 1) & (sub.H - 1)));
+            }
+
+            const int n_voi = (int)voi_specs[s].size();
+            const bool has_sn_mons = (s < mons.size() && !mons[s].empty());
+            const bool has_online =
+                (s < online_enabled.size() && online_enabled[s] != 0);
+            const bool need_obs =
+                need_tavg || has_sn_mons || !global_mons.empty() || has_online;
+            if (need_obs && n_voi > 0) {
+              observe_voi_row<W>(sub.x.data(), sub.n_node, sub.n_modes,
+                                 voi_specs[s], obs_row[s].data());
+            }
+            if (need_tavg && n_voi > 0) {
+              const size_t ntv = (size_t)n_voi * sub.n_node * W;
+              float *dst = tacc[s].data() + chunk * ntv;
+              const float *src_obs = obs_row[s].data();
+#pragma omp simd
+              for (size_t k = 0; k < ntv; k++) dst[k] += src_obs[k];
+            }
+            if (has_sn_mons) {
+              for (auto &mon : mons[s]) {
+                if (mon.kind == KMON_CTAVG) {
+                  mon.step_one(sub.c.data(), sub.n_cvar, sub.n_node,
+                               sub.n_modes, t_abs);
+                } else {
+                  mon.step_one(obs_row[s].data(), n_voi, sub.n_node, 1, t_abs);
                 }
               }
             }
-          // kernel-side monitor engines consume this step's observed row
-          // (only valid at chunk_size == 1: the per-chunk sums are then the
-          // per-step rows, bit-identical to what the Python reference sees)
-          if (!mons.empty() && !mons[s].empty()) {
-            if (cs != 1)
-              throw std::runtime_error(
-                  "kernel monitor engines require chunk_size == 1");
-            const int n_voi = (int)voi_specs[s].size();
-            const size_t ntv = (size_t)n_voi * sn[s].n_node * W;
-            const float *rowbase = tacc[s].data() + (size_t)step * ntv;
-            for (auto &mon : mons[s])
-              mon.step_one(rowbase, n_voi, sn[s].n_node);
+            if (has_online) {
+              online_accums[s].update(obs_row[s].data());
+            }
           }
+
+          if (!global_mons.empty()) {
+            for (size_t s = 0; s < n_sn; s++)
+              global_src_rows[s] = obs_row[s].data();
+            gather_global_voi_row<W>(global_src_rows, global_gather,
+                                     global_total_vois, global_total_nodes,
+                                     global_obs_row.data());
+            for (auto &gm : global_mons) {
+              gm.step_one(global_obs_row.data(), global_total_vois,
+                          global_total_nodes, 1, t_abs);
+            }
+          }
+          t_abs++;
         }
-        t_abs++;
-      }
       } catch (...) {
         pend = std::current_exception();
       }
     }
     if (pend) std::rethrow_exception(pend);
 
-    // final partial chunk: emit mean over the steps actually run
     const int rem = nstep % cs;
     if (nstep > 0 && rem != 0) {
       const size_t chunk = (size_t)(nstep / cs);
       for (size_t s = 0; s < n_sn; s++) {
-        // counts[s][chunk] was already incremented per step in the loop
-        // (it equals rem); recorded once more to be explicit.
         counts[s][chunk] = rem;
       }
     }
@@ -1689,39 +2186,55 @@ template <int W> struct simw {
     nb::list outs;
     for (size_t s = 0; s < n_sn; s++) {
       const int n_voi = (int)voi_specs[s].size();
-      nb::ndarray<nb::numpy, float> tarr = make_owned_array<float>(
-          {(size_t)n_chunks, (size_t)n_voi, (size_t)sn[s].n_node, (size_t)W});
-      nb::ndarray<nb::numpy, float> carr = make_owned_array<float>(
-          {(size_t)n_chunks, (size_t)sn[s].n_cvar, (size_t)sn[s].n_node,
-           (size_t)sn[s].n_modes * W});
-      float *td = tarr.data();
-      float *cd = carr.data();
-      const size_t ntv = (size_t)n_voi * sn[s].n_node * W;
-      const size_t ncv = (size_t)sn[s].n_cvar * sn[s].n_node * sn[s].n_modes * W;
-      for (size_t chunk = 0; chunk < (size_t)n_chunks; chunk++) {
-        const float tinv = 1.f / (float)(counts[s][chunk] ? counts[s][chunk] : 1);
-        // ctavg normalization: the accumulated step count, not the fixed
-        // chunk size (nb_hybrid divides by tavg_count; parity_audit.md
-        // section 6 decision 6).  Identical on full chunks, correct on the
-        // partial final chunk.
-        const float cinv = tinv;
-        for (size_t k = 0; k < ntv; k++) td[chunk * ntv + k] = tacc[s][chunk * ntv + k] * tinv;
-        for (size_t k = 0; k < ncv; k++) cd[chunk * ncv + k] = cacc[s][chunk * ncv + k] * cinv;
+      if (need_tavg) {
+        nb::ndarray<nb::numpy, float> tarr = make_owned_array<float>(
+            {(size_t)n_chunks, (size_t)n_voi, (size_t)sn[s].n_node, (size_t)W});
+        float *td = tarr.data();
+        const size_t ntv = (size_t)n_voi * sn[s].n_node * W;
+        for (size_t chunk = 0; chunk < (size_t)n_chunks; chunk++) {
+          const float tinv =
+              1.f / (float)(counts[s][chunk] ? counts[s][chunk] : 1);
+#pragma omp simd
+          for (size_t k = 0; k < ntv; k++)
+            td[chunk * ntv + k] = tacc[s][chunk * ntv + k] * tinv;
+        }
+        outs.append(tarr);
+      } else {
+        outs.append(nb::none());
       }
-      outs.append(tarr);
-      outs.append(carr);
-      // per-subnet monitor engine streams, in arm order:
-      // (times float64, data float32 (n, n_out_v, n_node, W)) each
+
+      if (need_ctavg) {
+        nb::ndarray<nb::numpy, float> carr = make_owned_array<float>(
+            {(size_t)n_chunks, (size_t)sn[s].n_cvar, (size_t)sn[s].n_node,
+             (size_t)sn[s].n_modes * W});
+        float *cd = carr.data();
+        const size_t ncv =
+            (size_t)sn[s].n_cvar * sn[s].n_node * sn[s].n_modes * W;
+        for (size_t chunk = 0; chunk < (size_t)n_chunks; chunk++) {
+          const float cinv =
+              1.f / (float)(counts[s][chunk] ? counts[s][chunk] : 1);
+#pragma omp simd
+          for (size_t k = 0; k < ncv; k++)
+            cd[chunk * ncv + k] = cacc[s][chunk * ncv + k] * cinv;
+        }
+        outs.append(carr);
+      } else {
+        outs.append(nb::none());
+      }
+
       if (mons.size() == n_sn) {
         for (auto &mon : mons[s]) {
           const size_t n = mon.t_out.size();
           nb::ndarray<nb::numpy, double> mt = make_owned_array<double>({n});
-          std::copy(mon.t_out.begin(), mon.t_out.end(),
-                    static_cast<double *>(mt.data()));
+          if (n > 0)
+            std::copy(mon.t_out.begin(), mon.t_out.end(),
+                      static_cast<double *>(mt.data()));
           nb::ndarray<nb::numpy, float> md = make_owned_array<float>(
-              {n, (size_t)mon.n_out_v, (size_t)sn[s].n_node, (size_t)W});
-          std::copy(mon.d_out.begin(), mon.d_out.end(),
-                    static_cast<float *>(md.data()));
+              {n, (size_t)mon.n_out_v, (size_t)mon.n_out_space,
+               (size_t)mon.n_out_modes * (size_t)W});
+          if (!mon.d_out.empty())
+            std::copy(mon.d_out.begin(), mon.d_out.end(),
+                      static_cast<float *>(md.data()));
           outs.append(mt);
           outs.append(md);
         }
@@ -1731,51 +2244,75 @@ template <int W> struct simw {
   }
 };
 
-// ---- width-erasing wrapper --------------------------------------------------
+// ---- width-erasing wrapper (W in {1, 4, 8, 16}) -----------------------------
 
 struct sim {
   int width = 8;
   std::unique_ptr<simw<1>> s1;
+  std::unique_ptr<simw<4>> s4;
   std::unique_ptr<simw<8>> s8;
+  std::unique_ptr<simw<16>> s16;
 
-  explicit sim(int width_ = 8) : width(width_) {}
+  explicit sim(int width_ = 8) : width(width_) {
+    if (width_ != 1 && width_ != 4 && width_ != 8 && width_ != 16) {
+      throw std::invalid_argument(
+          "Sim width must be one of {1, 4, 8, 16}, got " +
+          std::to_string(width_));
+    }
+  }
+
+  void ensure_sim() {
+    switch (width) {
+      case 1:  if (!s1)  s1  = std::make_unique<simw<1>>();  break;
+      case 4:  if (!s4)  s4  = std::make_unique<simw<4>>();  break;
+      case 8:  if (!s8)  s8  = std::make_unique<simw<8>>();  break;
+      case 16: if (!s16) s16 = std::make_unique<simw<16>>(); break;
+      default: throw std::invalid_argument("unsupported Sim width");
+    }
+  }
 
   template <typename F> void dispatch(F &&f) {
-    if (width == 8) {
-      if (!s8) throw std::runtime_error("sim not configured");
-      f(*s8);
-    } else {
-      if (!s1) throw std::runtime_error("sim not configured");
-      f(*s1);
+    switch (width) {
+      case 1:  if (!s1)  throw std::runtime_error("sim not configured"); f(*s1);  break;
+      case 4:  if (!s4)  throw std::runtime_error("sim not configured"); f(*s4);  break;
+      case 8:  if (!s8)  throw std::runtime_error("sim not configured"); f(*s8);  break;
+      case 16: if (!s16) throw std::runtime_error("sim not configured"); f(*s16); break;
+      default: throw std::invalid_argument("unsupported Sim width");
+    }
+  }
+
+  template <typename F> void dispatch(F &&f) const {
+    switch (width) {
+      case 1:  if (!s1)  throw std::runtime_error("sim not configured"); f(*s1);  break;
+      case 4:  if (!s4)  throw std::runtime_error("sim not configured"); f(*s4);  break;
+      case 8:  if (!s8)  throw std::runtime_error("sim not configured"); f(*s8);  break;
+      case 16: if (!s16) throw std::runtime_error("sim not configured"); f(*s16); break;
+      default: throw std::invalid_argument("unsupported Sim width");
     }
   }
 
   void add_subnet(int n_node, int n_svar, int n_parm, int n_cvar,
                   int model_id, int horizon, int n_modes, uint32_t k = 1,
                   float dt = 0.001f, int integ_id = -1) {
-    // round the history length up to a power of two >= horizon+2 so that
-    // slot masking with (H-1) is valid
     uint32_t H = 1;
     while (H < (uint32_t)(horizon + 2)) H <<= 1;
-    if (width == 8) {
-      if (!s8) s8 = std::make_unique<simw<8>>();
-      subnet<8> s;
+    ensure_sim();
+    dispatch([&](auto &sw) {
+      constexpr int W = std::remove_reference_t<decltype(sw)>::W_CONST;
+      subnet<W> s;
       s.alloc(n_node, n_svar, n_parm, n_cvar, model_id, H, n_modes);
       s.K = k;
       s.dt = dt;
       s.integ_id = integ_id;
-      s8->sn.push_back(std::move(s));
-      s8->voi_specs.push_back({});
-    } else {
-      if (!s1) s1 = std::make_unique<simw<1>>();
-      subnet<1> s;
-      s.alloc(n_node, n_svar, n_parm, n_cvar, model_id, H, n_modes);
-      s.K = k;
-      s.dt = dt;
-      s.integ_id = integ_id;
-      s1->sn.push_back(std::move(s));
-      s1->voi_specs.push_back({});
-    }
+      sw.sn.push_back(std::move(s));
+      sw.voi_specs.push_back({});
+      sw.obs_row.push_back({});
+      sw.mons.push_back({});
+      sw.sub_rng.push_back(rng_engine<W>{});
+      sw.rng_scratch.push_back({});
+      sw.online_enabled.push_back(0);
+      sw.online_accums.push_back(OnlineFeatureAccum<W>{});
+    });
   }
 
   void add_projection(int src_sn, int tgt_sn, nb::ndarray<nb::numpy, float> w,
@@ -1786,21 +2323,16 @@ struct sim {
                       int tgt_cvar, int n_cfun_parm, float scale,
                       float ts, int tgt_state_cvar,
                       nb::object mode_map_obj) {
-    if (width == 8) {
-      proj<8> p;
+    ensure_sim();
+    dispatch([&](auto &sw) {
+      constexpr int W = std::remove_reference_t<decltype(sw)>::W_CONST;
+      proj<W> p;
       p.src_sn = src_sn;
       p.tgt_sn = tgt_sn;
       _fill_proj(p, w, idx, ptr, del, cfun_id, src_cvars, tgt_cvar,
                  n_cfun_parm, scale, ts, tgt_state_cvar, mode_map_obj);
-      s8->pr.push_back(std::move(p));
-    } else {
-      proj<1> p;
-      p.src_sn = src_sn;
-      p.tgt_sn = tgt_sn;
-      _fill_proj(p, w, idx, ptr, del, cfun_id, src_cvars, tgt_cvar,
-                 n_cfun_parm, scale, ts, tgt_state_cvar, mode_map_obj);
-      s1->pr.push_back(std::move(p));
-    }
+      sw.pr.push_back(std::move(p));
+    });
   }
 
   template <int W>
@@ -1816,9 +2348,6 @@ struct sim {
     p.tgt_state_cvar = tgt_state_cvar;
     p.has_pre = (cfun_id >= 3 && cfun_id <= 9);
     if (mode_map_obj.is_none()) {
-      // identity handled by caller-provided sizes; fill lazily in apply is
-      // not possible for const apply — fill with 1x1 identity here and
-      // resize when the sim is run (see simw::run)
       p.mode_map.assign(1, 1.0f);
     } else {
       nb::ndarray<nb::numpy, float> mm =
@@ -1869,13 +2398,11 @@ struct sim {
     dispatch([&](auto &s) {
       auto &sn = s.sn[si];
       const int W = std::remove_reference_t<decltype(s)>::W_CONST;
-      // state layout (n_svar, n_node, n_modes, W)
       auto V = v.view<nb::ndim<4>>();
       if ((int)V.shape(0) != sn.n_svar || (int)V.shape(1) != sn.n_node ||
           (int)V.shape(2) != sn.n_modes || (int)V.shape(3) != W)
         throw std::runtime_error("bad state shape");
       std::memcpy(sn.x.data(), v.data(), sn.x.size() * sizeof(float));
-      // prefill history with the initial state
       const size_t rows = (size_t)sn.n_svar * sn.n_node * sn.n_modes;
       for (size_t row = 0; row < rows; row++) {
         const size_t svar = row / ((size_t)sn.n_node * sn.n_modes);
@@ -1884,6 +2411,7 @@ struct sim {
           float *dst = sn.buf.data() +
               ((svar * (size_t)sn.n_node * sn.n_modes + rem) * sn.H + hh) * W;
           const float *srcv = sn.x.data() + row * W;
+#pragma omp simd
           for (int i = 0; i < W; i++) dst[i] = srcv[i];
         }
       }
@@ -1892,8 +2420,10 @@ struct sim {
   }
 
   uint64_t t_abs() const {
-    if (s8) return s8->t_abs;
     if (s1) return s1->t_abs;
+    if (s4) return s4->t_abs;
+    if (s8) return s8->t_abs;
+    if (s16) return s16->t_abs;
     return 0;
   }
 
@@ -1908,8 +2438,7 @@ struct sim {
       const int W = std::remove_reference_t<decltype(s)>::W_CONST;
       out = make_owned_array<float>({(size_t)sn.n_svar, (size_t)sn.n_node,
                                      (size_t)sn.n_modes, (size_t)W});
-      float *dst = out.data();
-      std::memcpy(dst, sn.x.data(), sn.x.size() * sizeof(float));
+      std::memcpy(out.data(), sn.x.data(), sn.x.size() * sizeof(float));
     });
     return out;
   }
@@ -1992,7 +2521,8 @@ struct sim {
       for (size_t c = 0; c < nc; c++)
         for (int j = 0; j < sn.n_node; j++)
           for (int m = 0; m < sn.n_modes; m++)
-            sn.clamp_val[(c * (size_t)sn.n_node + (size_t)j) * (size_t)sn.n_modes +
+            sn.clamp_val[(c * (size_t)sn.n_node + (size_t)j) *
+                             (size_t)sn.n_modes +
                          (size_t)m] = V(c, j, m);
     });
   }
@@ -2009,7 +2539,6 @@ struct sim {
   }
 
   void set_voi(int si, std::vector<int> v) {
-    // simple state-variable indices
     dispatch([&](auto &s) {
       s.voi_specs[si].clear();
       for (int idx : v) s.voi_specs[si].push_back({0, idx, 0});
@@ -2017,7 +2546,6 @@ struct sim {
   }
 
   void set_voi_specs(int si, std::vector<int> flat) {
-    // flat triplets (kind, a, b)
     dispatch([&](auto &s) {
       s.voi_specs[si].clear();
       for (size_t k = 0; k + 2 < flat.size(); k += 3)
@@ -2026,6 +2554,7 @@ struct sim {
   }
 
   void set_opts(int integ_id, float dt, int tavg_period) {
+    ensure_sim();
     dispatch([&](auto &s) {
       s.integ_id = integ_id;
       s.dt = dt;
@@ -2037,14 +2566,222 @@ struct sim {
     dispatch([&](auto &s) { s.set_monitors(si, atts); });
   }
 
+  void set_global_monitors(nb::list gather_specs, nb::list mon_specs) {
+    dispatch([&](auto &s) { s.set_global_monitors(gather_specs, mon_specs); });
+  }
+
+  nb::list take_global_monitor_outputs() {
+    nb::list out;
+    dispatch([&](auto &s) { out = s.take_global_monitor_outputs(); });
+    return out;
+  }
+
+  nb::list get_monitor_states() const {
+    nb::list out;
+    dispatch([&](const auto &s) { out = s.get_monitor_states(); });
+    return out;
+  }
+
+  void set_monitor_states(nb::list states) {
+    dispatch([&](auto &s) { s.set_monitor_states(states); });
+  }
+
+  nb::list get_global_monitor_states() const {
+    nb::list out;
+    dispatch([&](const auto &s) { out = s.get_global_monitor_states(); });
+    return out;
+  }
+
+  void set_global_monitor_states(nb::list states) {
+    dispatch([&](auto &s) { s.set_global_monitor_states(states); });
+  }
+
+  void set_stim_specs(int si, nb::list specs) {
+    dispatch([&](auto &s) { s.set_stim_specs(si, specs); });
+  }
+
+  void clear_stim_specs() {
+    dispatch([&](auto &s) { s.clear_stim_specs(); });
+  }
+
+  void set_subnet_rng(int si, nb::object lane_keys, nb::object gfun,
+                      double ntau = 0.0, bool is_multiplicative = false,
+                      nb::object mul_a = nb::none(),
+                      nb::object mul_b = nb::none()) {
+    dispatch([&](auto &s) {
+      s.set_subnet_rng(si, lane_keys, gfun, ntau, is_multiplicative, mul_a,
+                       mul_b);
+    });
+  }
+
+  nb::list get_rng_states() const {
+    nb::list out;
+    dispatch([&](const auto &s) { out = s.get_rng_states(); });
+    return out;
+  }
+
+  void set_rng_states(nb::list states) {
+    dispatch([&](auto &s) { s.set_rng_states(states); });
+  }
+
+  void enable_online_features(int si, double dt_sample = 1.0) {
+    dispatch([&](auto &s) { s.enable_online_features(si, dt_sample); });
+  }
+
+  void disable_online_features() {
+    dispatch([&](auto &s) { s.disable_online_features(); });
+  }
+
+  nb::dict take_online_features(int si, const std::vector<std::string> &names,
+                                int order = 4) const {
+    nb::dict out;
+    dispatch([&](const auto &s) {
+      out = s.take_online_features(si, names, order);
+    });
+    return out;
+  }
+
   void monitor_begin_run() {
     dispatch([&](auto &s) { s.monitor_begin_run(); });
   }
 
-  nb::list run(int nstep, int chunk_size, nb::object noise, nb::object stim) {
+  nb::list run(int nstep, int chunk_size, nb::object noise, nb::object stim,
+               bool need_tavg = true, bool need_ctavg = true) {
     nb::list outs;
-    dispatch([&](auto &s) { outs = s.run(nstep, chunk_size, noise, stim); });
+    dispatch([&](auto &s) {
+      outs = s.run(nstep, chunk_size, noise, stim, need_tavg, need_ctavg);
+    });
     return outs;
+  }
+};
+
+// ---- Feature extraction bindings (cph_features.hpp) ------------------------
+
+template <typename T>
+static nb::dict compute_features_impl(
+    nb::ndarray<nb::numpy, const T, nb::ndim<2>, nb::c_contig> ts,
+    const std::vector<std::string> &names, double fs, int bins, int order,
+    nb::object lo, nb::object hi) {
+  const int n_series = static_cast<int>(ts.shape(0));
+  const int n_time = static_cast<int>(ts.shape(1));
+  FeatureParams p;
+  p.fs = fs;
+  p.bins = bins;
+  p.order = order;
+  if (!lo.is_none() && !hi.is_none()) {
+    p.has_band = true;
+    p.lo = nb::cast<double>(lo);
+    p.hi = nb::cast<double>(hi);
+  }
+  const T *ptr = ts.data();
+  std::vector<BatchFeatureOutput> res;
+  {
+    nb::gil_scoped_release nogil;
+    res = compute_batch_features<T>(ptr, n_series, n_time, names, p);
+  }
+
+  nb::dict out;
+  for (const auto &bo : res) {
+    if (bo.name == "psd_raw") {
+      auto freqs_arr = make_owned_array<double>({(size_t)bo.n_freq});
+      if (!bo.freqs.empty())
+        std::memcpy(freqs_arr.data(), bo.freqs.data(),
+                    bo.freqs.size() * sizeof(double));
+      auto psd_arr =
+          make_owned_array<double>({(size_t)n_series, (size_t)bo.n_freq});
+      if (!bo.data.empty())
+        std::memcpy(psd_arr.data(), bo.data.data(),
+                    bo.data.size() * sizeof(double));
+      out[nb::str(bo.name.c_str())] = nb::make_tuple(freqs_arr, psd_arr);
+    } else if (bo.name == "moments" || bo.name == "spectrum_stats" ||
+               bo.name == "spectrum_moments") {
+      auto arr = make_owned_array<double>(
+          {(size_t)bo.n_components, (size_t)n_series});
+      if (!bo.data.empty())
+        std::memcpy(arr.data(), bo.data.data(),
+                    bo.data.size() * sizeof(double));
+      out[nb::str(bo.name.c_str())] = arr;
+    } else {
+      auto arr = make_owned_array<double>({(size_t)n_series});
+      if (!bo.data.empty())
+        std::memcpy(arr.data(), bo.data.data(),
+                    bo.data.size() * sizeof(double));
+      out[nb::str(bo.name.c_str())] = arr;
+    }
+  }
+  return out;
+}
+
+struct py_online_feature_accum {
+  int width = 8;
+  std::unique_ptr<OnlineFeatureAccum<1>> a1;
+  std::unique_ptr<OnlineFeatureAccum<4>> a4;
+  std::unique_ptr<OnlineFeatureAccum<8>> a8;
+  std::unique_ptr<OnlineFeatureAccum<16>> a16;
+
+  explicit py_online_feature_accum(int width_ = 8) : width(width_) {
+    switch (width_) {
+      case 1:  a1  = std::make_unique<OnlineFeatureAccum<1>>();  break;
+      case 4:  a4  = std::make_unique<OnlineFeatureAccum<4>>();  break;
+      case 8:  a8  = std::make_unique<OnlineFeatureAccum<8>>();  break;
+      case 16: a16 = std::make_unique<OnlineFeatureAccum<16>>(); break;
+      default:
+        throw std::invalid_argument(
+            "OnlineFeatureAccum width must be one of {1, 4, 8, 16}");
+    }
+  }
+
+  template <typename F> void dispatch(F &&f) {
+    switch (width) {
+      case 1:  f(*a1);  break;
+      case 4:  f(*a4);  break;
+      case 8:  f(*a8);  break;
+      case 16: f(*a16); break;
+    }
+  }
+
+  template <typename F> void dispatch(F &&f) const {
+    switch (width) {
+      case 1:  f(*a1);  break;
+      case 4:  f(*a4);  break;
+      case 8:  f(*a8);  break;
+      case 16: f(*a16); break;
+    }
+  }
+
+  void reset(int n_voi, int n_node, double dt_sample = 1.0) {
+    dispatch([&](auto &a) { a.reset(n_voi, n_node, dt_sample); });
+  }
+
+  template <typename T>
+  void update_typed(nb::ndarray<nb::numpy, const T, nb::c_contig> obs_row) {
+    dispatch([&](auto &a) {
+      const size_t expected = a.num_series();
+      if (obs_row.size() != expected)
+        throw std::invalid_argument("OnlineFeatureAccum::update: size mismatch");
+      a.update(obs_row.data());
+    });
+  }
+
+  nb::dict finalize(const std::vector<std::string> &names,
+                    int order = 4) const {
+    nb::dict out;
+    dispatch([&](const auto &a) {
+      constexpr int W = std::remove_reference_t<decltype(a)>::WIDTH;
+      for (const auto &name : names) {
+        const int n_comp = OnlineFeatureAccum<W>::feature_components(name, order);
+        std::vector<size_t> shape;
+        if (name == "moments") {
+          shape = {(size_t)n_comp, (size_t)a.n_voi, (size_t)a.n_node, (size_t)W};
+        } else {
+          shape = {(size_t)a.n_voi, (size_t)a.n_node, (size_t)W};
+        }
+        auto arr = make_owned_array<double>(shape);
+        a.finalize_into(name, arr.data(), order);
+        out[nb::str(name.c_str())] = arr;
+      }
+    });
+    return out;
   }
 };
 
@@ -2118,7 +2855,26 @@ NB_MODULE(_cpp_hybrid, m) {
   m.def("dbg_mpr_dfun", &cph::dbg_mpr_dfun);
   m.def("dbg_mpr_heun", &cph::dbg_mpr_heun);
   m.def("generic_model_table", &cph::generic_model_table);
-  m.doc() = "C++ hybrid simulator core (runtime SIMD kernels, no codegen)";
+  m.def("compute_features", &cph::compute_features_impl<float>,
+        nb::arg("ts"), nb::arg("names"), nb::arg("fs") = 1.0,
+        nb::arg("bins") = 20, nb::arg("order") = 4,
+        nb::arg("lo") = nb::none(), nb::arg("hi") = nb::none());
+  m.def("compute_features", &cph::compute_features_impl<double>,
+        nb::arg("ts"), nb::arg("names"), nb::arg("fs") = 1.0,
+        nb::arg("bins") = 20, nb::arg("order") = 4,
+        nb::arg("lo") = nb::none(), nb::arg("hi") = nb::none());
+
+  nb::class_<cph::py_online_feature_accum>(m, "OnlineFeatureAccum")
+      .def(nb::init<int>(), nb::arg("width") = 8)
+      .def("reset", &cph::py_online_feature_accum::reset,
+           nb::arg("n_voi"), nb::arg("n_node"), nb::arg("dt_sample") = 1.0)
+      .def("update", &cph::py_online_feature_accum::update_typed<float>,
+           nb::arg("obs_row"))
+      .def("update", &cph::py_online_feature_accum::update_typed<double>,
+           nb::arg("obs_row"))
+      .def("finalize", &cph::py_online_feature_accum::finalize,
+           nb::arg("names"), nb::arg("order") = 4);
+
   nb::class_<cph::sim>(m, "Sim")
       .def(nb::init<int>(), nb::arg("width") = 8)
       .def("add_subnet", &cph::sim::add_subnet, nb::arg("n_node"),
@@ -2140,11 +2896,35 @@ NB_MODULE(_cpp_hybrid, m) {
       .def("set_cfun_params", &cph::sim::set_cfun_params)
       .def("set_voi", &cph::sim::set_voi)
       .def("set_voi_specs", &cph::sim::set_voi_specs)
-
       .def("set_opts", &cph::sim::set_opts)
       .def("set_monitors", &cph::sim::set_monitors, nb::arg("si"),
            nb::arg("atts"))
+      .def("set_global_monitors", &cph::sim::set_global_monitors,
+           nb::arg("gather_specs"), nb::arg("mon_specs"))
+      .def("take_global_monitor_outputs",
+           &cph::sim::take_global_monitor_outputs)
+      .def("get_monitor_states", &cph::sim::get_monitor_states)
+      .def("set_monitor_states", &cph::sim::set_monitor_states,
+           nb::arg("states"))
+      .def("get_global_monitor_states",
+           &cph::sim::get_global_monitor_states)
+      .def("set_global_monitor_states",
+           &cph::sim::set_global_monitor_states, nb::arg("states"))
       .def("monitor_begin_run", &cph::sim::monitor_begin_run)
+      .def("set_stim_specs", &cph::sim::set_stim_specs, nb::arg("si"),
+           nb::arg("specs"))
+      .def("clear_stim_specs", &cph::sim::clear_stim_specs)
+      .def("set_subnet_rng", &cph::sim::set_subnet_rng, nb::arg("si"),
+           nb::arg("lane_keys"), nb::arg("gfun"), nb::arg("ntau") = 0.0,
+           nb::arg("is_multiplicative") = false,
+           nb::arg("mul_a") = nb::none(), nb::arg("mul_b") = nb::none())
+      .def("get_rng_states", &cph::sim::get_rng_states)
+      .def("set_rng_states", &cph::sim::set_rng_states, nb::arg("states"))
+      .def("enable_online_features", &cph::sim::enable_online_features,
+           nb::arg("si"), nb::arg("dt_sample") = 1.0)
+      .def("disable_online_features", &cph::sim::disable_online_features)
+      .def("take_online_features", &cph::sim::take_online_features,
+           nb::arg("si"), nb::arg("names"), nb::arg("order") = 4)
       .def("get_subnet_state", &cph::sim::get_subnet_state)
       .def("get_subnet_buf", &cph::sim::get_subnet_buf, nb::arg("si"))
       .def("set_subnet_buf", &cph::sim::set_subnet_buf, nb::arg("si"),
@@ -2152,5 +2932,6 @@ NB_MODULE(_cpp_hybrid, m) {
       .def("t_abs", &cph::sim::t_abs)
       .def("set_t_abs", &cph::sim::set_t_abs, nb::arg("t"))
       .def("run", &cph::sim::run, nb::arg("nstep"), nb::arg("chunk_size") = 0,
-           nb::arg("noise") = nb::none(), nb::arg("stim") = nb::none());
+           nb::arg("noise") = nb::none(), nb::arg("stim") = nb::none(),
+           nb::arg("need_tavg") = true, nb::arg("need_ctavg") = true);
 }

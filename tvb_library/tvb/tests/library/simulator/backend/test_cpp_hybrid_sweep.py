@@ -346,8 +346,9 @@ def test_sweep_merge_guard_and_node_indices():
 
 
 @pytest.mark.parametrize("stoch_cls", [HeunStochastic, EulerStochastic])
-def test_sweep_rejects_stochastic_integrators(stoch_cls):
-    """Both sweep() and run_sweep() reject stochastic integrators with NotImplementedError."""
+@pytest.mark.parametrize("width", [1, 4, 8, 16])
+def test_sweep_stochastic_philox_widths_and_shared_noise(stoch_cls, width):
+    """Stochastic sweeps succeed via Philox across W in {1,4,8,16} with distinct or shared seeds."""
     m_det = MontbrioPazoRoxin()
     m_det.configure()
     m_st = MontbrioPazoRoxin()
@@ -357,21 +358,227 @@ def test_sweep_rejects_stochastic_integrators(stoch_cls):
     ).configure()
     sn_st = Subnetwork(
         name="st", model=m_st,
-        scheme=stoch_cls(dt=DT, noise=Additive(nsig=np.array([1e-3]))),
+        scheme=stoch_cls(dt=DT, noise=Additive(nsig=np.array([1e-2]), noise_seed=123)),
         nnodes=2,
     ).configure()
-    ns = NetworkSet(subnets=[sn_det, sn_st], projections=[])
-    ns.configure()
+    ns = NetworkSet(subnets=[sn_det, sn_st], projections=[]).configure()
 
     backend = CppHybridBackend()
-    values = np.array([0.8, 1.2], dtype=np.float32)
-    with pytest.raises(NotImplementedError, match="stochastic"):
-        backend.sweep(ns, {"st.tau": values}, nstep=10)
-    with pytest.raises(NotImplementedError, match="stochastic"):
-        backend.run_sweep(
-            ns, values, nstep=10,
-            sweep_descriptor=[{"type": "model", "subnet": "st", "param": "tau"}],
+    # Identical swept values across 4 lanes isolate RNG lane-seed behavior.
+    same_vals = np.full(4, 1.0, dtype=np.float32)
+
+    res_distinct = backend.sweep(ns, {"st.tau": same_vals}, nstep=20, width=width)
+    assert np.isfinite(res_distinct.tavg["st"]).all()
+    assert not np.allclose(res_distinct.tavg["st"][0], res_distinct.tavg["st"][1])
+
+    res_shared = backend.sweep(
+        ns, {"st.tau": same_vals}, nstep=20, width=width, shared_noise=True,
+    )
+    assert np.isfinite(res_shared.tavg["st"]).all()
+    for lane in range(1, len(same_vals)):
+        np.testing.assert_allclose(
+            res_shared.tavg["st"][lane], res_shared.tavg["st"][0],
+            rtol=1e-6, atol=1e-6,
         )
+
+    # Explicit noise_seeds matching lanes 0 and 2 produces identical trajectories.
+    res_seeded = backend.sweep(
+        ns, {"st.tau": same_vals}, nstep=20, width=width,
+        noise_seeds=np.array([99, 100, 99, 101], dtype=np.uint64),
+    )
+    np.testing.assert_allclose(
+        res_seeded.tavg["st"][2], res_seeded.tavg["st"][0], rtol=1e-6, atol=1e-6,
+    )
+    assert not np.allclose(res_seeded.tavg["st"][1], res_seeded.tavg["st"][0])
+
+
+@pytest.mark.parametrize("stoch_cls", [HeunStochastic, EulerStochastic])
+def test_sweep_colored_ou_noise_and_run_sweep(stoch_cls):
+    """Colored OU noise (ntau > 0) works in both sweep() and run_sweep()."""
+    m = MontbrioPazoRoxin()
+    m.configure()
+    sn = Subnetwork(
+        name="st", model=m,
+        scheme=stoch_cls(
+            dt=DT,
+            noise=Additive(nsig=np.array([1e-2]), ntau=0.5, noise_seed=77),
+        ),
+        nnodes=3,
+    ).configure()
+    ns = NetworkSet(subnets=[sn], projections=[]).configure()
+
+    backend = CppHybridBackend()
+    values = np.array([0.8, 1.0, 1.2, 1.4], dtype=np.float32)
+    sw = backend.sweep(ns, {"st.tau": values}, nstep=25, width=4)
+    assert np.isfinite(sw.tavg["st"]).all()
+    assert sw.tavg["st"].shape == (4, 25, 2, 3, 1)
+
+    rs = backend.run_sweep(
+        ns, values, nstep=25, width=4,
+        sweep_descriptor=[{"type": "model", "subnet": "st", "param": "tau"}],
+    )
+    assert len(rs) == 4
+    for k in range(4):
+        np.testing.assert_allclose(rs[k][0][1], sw.tavg["st"][k], rtol=1e-6, atol=1e-6)
+
+
+@pytest.mark.parametrize("width", [4, 16])
+def test_sweep_width_4_and_16_deterministic_parity(width):
+    """Deterministic sweeps at width=4 and width=16 match single run_network."""
+    nstep = 25
+    values = np.array([0.0, 0.5, 1.0, 1.5, 2.0], np.float32)
+    backend = CppHybridBackend()
+    result = backend.sweep(_ns(), {"coupling_scale": values}, nstep=nstep, width=width)
+    assert result.backend.startswith(f"cpp-simd(width={width}")
+    for k, v in enumerate(values):
+        single_B = backend.run_network(_ns(coupling_scale=float(v)), nstep)[1][1]
+        np.testing.assert_allclose(result.tavg["B"][k], single_B, rtol=1e-4, atol=1e-5)
+
+
+def test_sweep_with_stimuli_matches_single_runs():
+    """Stimulated networks run inside sweep() and match per-point run_network."""
+    from tvb.simulator.hybrid.stimulus_utils import sinusoid_stim
+
+    nstep = 30
+    taus = np.array([0.8, 1.0, 1.2, 1.4], dtype=np.float32)
+
+    def build_stim_net(tau=1.0):
+        A = _mpr_subnetwork("A", 3)
+        A.model.tau = np.array([tau])
+        A.model.configure()
+        B = _mpr_subnetwork("B", 4)
+        proj = _projection(A, B, 3, 4, scale=1.0)
+        A.stimuli = [
+            sinusoid_stim(
+                A, amplitude=1.2, frequency=5.0, target_node=1,
+                target_cvar=0, simulation_length=DT * nstep,
+            )
+        ]
+        ns = NetworkSet(subnets=[A, B], projections=[proj])
+        ns.configure()
+        return ns
+
+    backend = CppHybridBackend()
+    sw = backend.sweep(build_stim_net(), {"A.tau": taus}, nstep=nstep, width=4)
+    for k, tv in enumerate(taus):
+        single = backend.run_network(build_stim_net(float(tv)), nstep)
+        np.testing.assert_allclose(sw.tavg["A"][k], single[0][1], rtol=1e-4, atol=1e-5)
+        np.testing.assert_allclose(sw.tavg["B"][k], single[1][1], rtol=1e-4, atol=1e-5)
+
+
+def test_sweep_monitor_modes_and_online_features():
+    """sweep() supports raw, subsample, bold, bold_period, chunk_size, and online features."""
+    from tvb.simulator.monitors import Bold, SubSample
+
+    nstep = 60
+    taus = np.array([0.8, 1.0, 1.2, 1.5], dtype=np.float32)
+    backend = CppHybridBackend()
+
+    # 1. monitor="raw" with chunk_size > 1 emits full per-step raw stream + chunked tavg
+    sw_raw = backend.sweep(
+        _ns(), {"A.tau": taus}, nstep=nstep, monitor="raw", chunk_size=5, width=4,
+    )
+    assert sw_raw.tavg["A"].shape == (4, 12, 2, 3, 1)
+    assert sw_raw.raw["A"].shape == (4, nstep, 2, 3, 1)
+
+    # 2. monitor="subsample" with monitor_period=6
+    sw_sub = backend.sweep(
+        _ns(), {"A.tau": taus}, nstep=nstep, monitor="subsample",
+        monitor_period=6, chunk_size=6, width=4,
+    )
+    assert sw_sub.raw["A"].shape == (4, nstep // 6, 2, 3, 1)
+    single_sub = backend.run_network(
+        _ns(), nstep, chunk_size=1, monitors=[SubSample(period=6 * DT)],
+    )
+    np.testing.assert_allclose(sw_sub.raw["A"][1], single_sub[0][0][1], rtol=1e-4, atol=1e-5)
+
+    # 3. monitor="bold" with bold_period=20*DT (istep = 20 -> 3 samples at nstep=60)
+    bp = 20.0 * DT
+    sw_bold = backend.sweep(
+        _ns(), {"A.tau": taus}, nstep=nstep, monitor="bold", bold_period=bp, width=4,
+    )
+    assert sw_bold.tavg == {}
+    assert sw_bold.bold["A"].shape == (4, 3, 2, 3, 1)
+    assert sw_bold.times.shape == (3,)
+    single_bold = backend.run_network(
+        _ns(), nstep, monitors=[Bold(period=bp)],
+    )
+    np.testing.assert_allclose(sw_bold.bold["A"][1], single_bold[0][0][1], rtol=1e-4, atol=1e-5)
+
+    # 4. monitor="features" with Tier-1 online features matches tavg SweepResult.features()
+    tier1 = [
+        "mean", "var", "std", "min", "max", "rms", "abs_energy", "average_power",
+        "auc", "zero_crossing", "burstiness", "moments", "skewness", "kurtosis", "centroid",
+    ]
+    sw_tavg = backend.sweep(_ns(), {"A.tau": taus}, nstep=nstep, width=4)
+    sw_feat = backend.sweep(
+        _ns(), {"A.tau": taus}, nstep=nstep, monitor="features", features=tier1, width=4,
+    )
+    assert sw_feat.tavg == {}
+    assert sw_feat.online_features is not None
+    ref_feats = sw_tavg.features(tier1, svar=0, subnet="A")
+    onl_feats = sw_feat.features(tier1, svar=0, subnet="A")
+    for fn in tier1:
+        np.testing.assert_allclose(
+            onl_feats[fn], ref_feats[fn], rtol=1e-6, atol=1e-7, err_msg=fn,
+        )
+
+
+@pytest.mark.parametrize("ntau", [0.0, 0.5])
+def test_philox_rng_snapshot_resume_parity(ntau):
+    """CompiledCppSim with rng_mode='philox' reproduces continuous run across snapshot/resume."""
+    m = MontbrioPazoRoxin()
+    m.configure()
+    sn = Subnetwork(
+        name="S", model=m,
+        scheme=HeunStochastic(
+            dt=DT,
+            noise=Additive(nsig=np.array([1e-2]), ntau=ntau, noise_seed=314),
+        ),
+        nnodes=3,
+    ).configure()
+    ns = NetworkSet(subnets=[sn], projections=[]).configure()
+
+    backend = CppHybridBackend()
+    cont = backend.compile(ns).run(40, rng_mode="philox")
+
+    sim = backend.compile(ns)
+    p1, snap = sim.run(17, return_snapshot=True, rng_mode="philox")
+    p2 = sim.resume(snap, 23, rng_mode="philox")
+    merged_d = np.concatenate([p1[0][1], p2[0][1]], axis=0)
+    merged_t = np.concatenate([p1[0][0], p2[0][0]], axis=0)
+
+    np.testing.assert_array_equal(merged_t, cont[0][0])
+    np.testing.assert_allclose(merged_d, cont[0][1], rtol=1e-6, atol=1e-6)
+
+
+def test_sigmoidal_jansen_rit_a_sweep_cfun_id_8():
+    """Sweeping SigmoidalJansenRit.a preserves a*a scaling (cfun_id == 8) vs single runs."""
+    import scipy.sparse as sp
+    from tvb.simulator.hybrid.coupling import SigmoidalJansenRit
+
+    nstep = 20
+    a_vals = np.array([0.3, 0.56, 0.9, 1.2], dtype=np.float32)
+
+    def build_sjr(a_val=0.56):
+        A = _mpr_subnetwork("A", 3)
+        B = _mpr_subnetwork("B", 3)
+        W = np.eye(3, dtype=np.float32) * 0.5
+        proj = InterProjection(
+            source=A, target=B,
+            source_cvar=np.array([0, 1], dtype=np.int_),
+            target_cvar=np.array([0], dtype=np.int_),
+            weights=sp.csr_matrix(W), lengths=sp.csr_matrix(W * 2.0),
+            cfun=SigmoidalJansenRit(a=np.array([a_val]), use_classic=True),
+            scale=1.0, cv=1.0, dt=DT,
+        )
+        return NetworkSet(subnets=[A, B], projections=[proj]).configure()
+
+    backend = CppHybridBackend()
+    sw = backend.sweep(build_sjr(), {"A_to_B.a": a_vals}, nstep=nstep, width=4)
+    for k, av in enumerate(a_vals):
+        single = backend.run_network(build_sjr(float(av)), nstep)
+        np.testing.assert_allclose(sw.tavg["B"][k], single[1][1], rtol=1e-4, atol=1e-5)
 
 
 def test_spatial_per_node_params_mpr_run_and_sweep():

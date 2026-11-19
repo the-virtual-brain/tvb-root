@@ -165,6 +165,26 @@ set_target_properties(_cpp_hybrid PROPERTIES
   LIBRARY_OUTPUT_DIRECTORY tvb/simulator/backend/cpp_hybrid
 )
 
+# Register internal C++ headers so editing any cph_*.hpp triggers rebuilds.
+set(_tvb_cph_headers)
+foreach(_cph_hdr
+  tvb/simulator/backend/cpp_hybrid/cph_monitors.hpp
+  tvb/simulator/backend/cpp_hybrid/cph_stim.hpp
+  tvb/simulator/backend/cpp_hybrid/cph_rng.hpp
+  tvb/simulator/backend/cpp_hybrid/cph_features.hpp
+)
+  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${_cph_hdr}")
+    list(APPEND _tvb_cph_headers "${CMAKE_CURRENT_SOURCE_DIR}/${_cph_hdr}")
+  endif()
+endforeach()
+if(_tvb_cph_headers)
+  target_sources(_cpp_hybrid PRIVATE ${_tvb_cph_headers})
+  set_source_files_properties(
+    tvb/simulator/backend/cpp_hybrid/_core.cpp
+    PROPERTIES OBJECT_DEPENDS "${_tvb_cph_headers}"
+  )
+endif()
+
 # ---------------------------------------------------------------------------
 # Build-time generation of the expression-driven dfun kernels.
 #
@@ -178,17 +198,17 @@ set_target_properties(_cpp_hybrid PROPERTIES
 # which the runtime path does not provide (-ffp-contract=off in particular).
 #
 # Discovery is scoped with --only-supported to the model set the hybrid
-# backends actually support (the 28 classes of
-# nb_hybrid._get_supported_models_classes; handoff item 6, option 2): the
-# emitted table is exactly the kernels the extension ships, unsupported model
+# backends actually support (the 29 classes of
+# nb_hybrid._get_supported_models_classes, covering all 30 ModelsEnum models):
+# the emitted table is exactly the kernels the extension ships, unsupported model
 # modules in the tree are neither imported nor emitted (so they cannot fail
-# the build), and the kernel count is 26 — the expression-driven subset, since
+# the build), and the kernel count is 27 — the expression-driven subset, since
 # the two numba-only supported models (ZerlautAdaptationFirstOrder,
-# CerebellarMF) are hand-written kernels in ids 0..12.  A dfun model outside
-# the supported set (DecoBalancedExcInh) is not a built-in kernel; the runtime
-# fallback keeps full discovery and compiles it on first use.  Without
-# --only-supported the emitted table would carry every in-tree dfun model
-# instead (the pre-item-6 behaviour, used by the runtime fallback path).
+# CerebellarMF) are hand-written kernels in ids 0..12.  User-defined or
+# out-of-set dfun models are not built-in kernels; the runtime fallback keeps
+# full discovery and compiles them on first use.  Without --only-supported the
+# emitted table would carry every in-tree/discovered dfun model instead (the
+# pre-item-6 behaviour, used by the runtime fallback path).
 #
 # The generated TU is unreferenced by _core.cpp for now, so nanobind's hidden
 # visibility plus -flto dead-strip it at link time; that is expected until the

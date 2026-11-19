@@ -37,8 +37,8 @@
 # emits them by importing the modules of those models and instantiating each
 # class — so real imports are unavoidable and must exist before the package's
 # own dependencies are installed.  Discovery is scoped with --only-supported
-# to the 28 models the hybrid backends support (nb_hybrid.
-# _get_supported_models_classes): 26 of them are expression-driven and their
+# to the 29 models the hybrid backends support (nb_hybrid.
+# _get_supported_models_classes): 27 of them are expression-driven and their
 # modules are exactly the numba-dfun modules; modules outside that set are
 # neither imported nor emitted.  Minimal verified set (each one makes
 # dfungen --strict fail with a ModuleNotFoundError naming it when omitted):

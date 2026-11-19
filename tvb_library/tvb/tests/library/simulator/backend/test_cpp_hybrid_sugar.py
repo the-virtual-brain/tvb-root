@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """Tests for the notebook-friendly sugar + feature layer on top of the
-C++ hybrid backend (width-8 SIMD lane sweeps + VBI-subset features)."""
+C++ hybrid backend (SIMD lane sweeps for widths 1, 4, 8, 16 + VBI-subset features)."""
 
+import sys
 import numpy as np
 import pytest
 from scipy import sparse
@@ -34,18 +35,29 @@ def build_coupled_net(n=6):
 
 
 class TestNotebookSweep:
-    def test_width_constraint(self):
+    def test_width_constraint(self, monkeypatch):
+        assert nb._VALID_WIDTHS == (1, 4, 8, 16)
         for n in (1, 5, 20, 500, 20000):
             w = nb.default_width(n, None)
-            assert w in (1, 8)  # the C++ core only instantiates these
+            assert w in nb._VALID_WIDTHS
 
-    def test_bad_width_rejected(self):
+        monkeypatch.setattr(sys, "platform", "emscripten")
+        assert nb.default_width(16, None) == 4
+        assert nb._default_workers() == 1
+
+        monkeypatch.setattr(sys, "platform", "linux")
+        for arch, expected in (("arm64", 4), ("aarch64", 4), ("x86_64", 8)):
+            monkeypatch.setattr(nb.platform, "machine", lambda a=arch: a)
+            assert nb.default_width(16, None) == expected
+
+    @pytest.mark.parametrize("bad_width", [3, 7, True])
+    def test_bad_width_rejected(self, bad_width):
         # a valid sweep must be supplied: the missing-parameter check fires
         # before the width validation, and an empty sweep would raise the
         # wrong error (masking a width regression)
         with pytest.raises(ValueError, match="width"):
             nb.sweep(build_coupled_net(), 10, **{"A.eta": [0.1, 0.2]},
-                     width=4)
+                     width=bad_width)
 
     def test_helpful_error_lists_params(self):
         with pytest.raises(ValueError) as e:

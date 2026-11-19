@@ -155,18 +155,18 @@ cannot be emitted a **build failure** listing every offender, instead of a
 silent shrink of the generated model set.
 
 `--only-supported` scopes discovery *and* the strict expectation to the
-model set the hybrid backends actually support (the 28 classes of
-`nb_hybrid._get_supported_models_classes`, mirrored by
-`dfungen._SUPPORTED_MODEL_CLASSES`/`_SUPPORTED_MODEL_MODULES`): the emitted
-table is exactly the kernels the extension ships (26 expression-driven ones;
-the two numba-only supported models have hand-written kernels 0..12).
+model set the hybrid backends actually support (the 29 classes of
+`nb_hybrid._get_supported_models_classes`, covering all 30 `ModelsEnum` models,
+mirrored by `dfungen._SUPPORTED_MODEL_CLASSES`/`_SUPPORTED_MODEL_MODULES`): the
+emitted table is exactly the kernels the extension ships (27 expression-driven
+ones; the two numba-only supported models have hand-written kernels 0..12).
 Modules outside that set are neither imported nor emitted, so unsupported
 model code in the tree cannot break or slow the build — while a supported
-model that cannot be generated still fails the build loudly.  A dfun model
-outside the supported set (e.g. `DecoBalancedExcInh`) is still runnable: the
-runtime fallback keeps full discovery and compiles it on first use.  (Handoff
-item 6, option 2; the runtime path intentionally defaults to full discovery
-so user-defined models keep working.)
+model that cannot be generated still fails the build loudly.  Out-of-set /
+user-defined dfun models are still runnable: the runtime fallback keeps full
+discovery and compiles them on first use.  (Handoff item 6, option 2; the
+runtime path intentionally defaults to full discovery so user-defined models
+keep working.)
 
 ### Why compile it into the extension
 
@@ -224,10 +224,9 @@ the documented escape hatch above.  The handoff's larger machine-specific
 deltas (pip ~47 s vs ~10 s; wheel ~20 s vs ~10 s) were recorded on the
 origin machine — same shape, different scale.
 
-The 27th discovery (`DecoBalancedExcInh`, a dfun model in the tree but
-outside the supported set) is no longer a built-in kernel: option 2 of the
-handoff went in, so the built-in table is exactly the supported set (26
-generic kernels; ids 100..125) and the build no longer imports/emits
+The built-in table is the full supported set (29 classes covering all 30
+`ModelsEnum` models, including `DecoBalancedExcInh`; 27 expression-driven
+generic kernels, ids 100..126), so the build no longer imports/emits
 unsupported model code.  Incremental per-model emission (option 3, keyed by
 the Item-1 dfun fingerprint) was not taken: with `-flto` the link phase
 re-processes every TU anyway, so per-model caching would only skip the ~1.4 s
@@ -240,8 +239,8 @@ triggers already keep unchanged builds at zero regeneration cost.
 | Range | Owner | Lookup |
 |---|---|---|
 | **0..12** | hand-written kernels in `_core.cpp` (MPR, Generic2dOscillator, Kuramoto, SupHopf, Linear, ReducedWongWang, WilsonCowan, JansenRit, Epileptor, Epileptor2D, Zerlaut 1st/2nd order, CerebellarMF) | `_MODEL_IDS`, checked first, so these take precedence over a generated kernel for the same model |
-| **100..125** | the 26 built-in generic kernels compiled in at build time (the supported model set) | `generic_model_table()`, ids assigned in sorted class-name order |
-| **126+** | runtime-compiled fallback library (`models_gen.so`) for models the build did not cover (user-defined models, and in-tree dfun models outside the supported set such as `DecoBalancedExcInh`) | emitted at `max(built-in id) + 1`, dispatch table gap-padded with `nullptr` over `100..125` |
+| **100..126** | the 27 built-in generic kernels compiled in at build time (the supported model set, incl. `DecoBalancedExcInh`) | `generic_model_table()`, ids assigned in sorted class-name order |
+| **127+** | runtime-compiled fallback library (`models_gen.so`) for models the build did not cover (user-defined / out-of-set dfun models) | emitted at `max(built-in id) + 1`, dispatch table gap-padded with `nullptr` over `100..126` |
 
 The gap padding matters: ids are positional over sorted class names, so a user
 model sorting before every stock name (`AaaProbe`) would otherwise take id 100
@@ -265,7 +264,7 @@ nothing calls a null slot.
 * What is **not** caught: a shadowing class with the *same* state variables,
   coupling terms and parameters but **different equations**. Same buffer
   shapes, same packing — so it runs the stock equations silently. Avoid it by
-  not reusing stock model names; a distinct class name lands in the 126+ range
+  not reusing stock model names; a distinct class name lands in the 127+ range
   and gets its own generated kernel.
 
 ## Feature parity with nb_hybrid (all parity-tested, float32 tolerance)
@@ -275,7 +274,7 @@ matches `NbHybridBackend`:
 
 | Feature | Coverage | Parity test |
 |---|---|---|
-| **Models** (28 supported classes) | 13 hand-written dfuns (ids 0–12, incl. CerebellarMF) + generic expression-generated route (ids ≥ 100): 26 supported generic kernels compiled in at build time; the in-tree dfun model outside the supported set (`DecoBalancedExcInh`) is runtime-compiled on first use | `test_cpp_hybrid_models.py` (28 classes + CerebellarMF flag variants + Zerlaut 2nd-order check) |
+| **Models** (29 supported classes / all 30 `ModelsEnum`) | 13 hand-written dfuns (ids 0–12, incl. CerebellarMF) + generic expression-generated route (ids ≥ 100): 27 supported generic kernels compiled in at build time (incl. `DecoBalancedExcInh`, including WASM); user-defined / out-of-set dfun models are runtime-compiled on first use | `test_cpp_hybrid_models.py` (29 classes + CerebellarMF flag variants + Zerlaut 2nd-order check) |
 | **Coupling functions** | Linear, Scaling, Sigmoidal, Difference, Kuramoto, HyperbolicTangent, SigmoidalJansenRit (classic **and** legacy), PreSigmoidal (static **and** dynamic, incl. `globalT`) | `test_cpp_hybrid_coupling.py` (11 items) |
 | **Monitors** | Raw, RawVoi, TemporalAverage, SubSample, GlobalAverage, AfferentCoupling (+TemporalAverage), SpatialAverage, Projection, Bold. Bold's HRF convolution and Raw/SubSample collection run as **kernel monitor engines** inside the C++ step loop; the shared Python path remains the parity reference/fallback (`enable_kernel_monitors`) | `test_cpp_hybrid_monitors.py` (18 items) |
 | **Stimuli** | constant / pulse / sinusoid patterns (single-node and all-node spatial), **multiple subnetworks with stimuli simultaneously** | `test_cpp_hybrid_stimuli.py` (6 items) |

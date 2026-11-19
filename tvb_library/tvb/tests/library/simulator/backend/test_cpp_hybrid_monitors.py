@@ -297,3 +297,159 @@ def test_kernel_engine_streams_are_used():
     per_subnet = ks[0]
     n_samples = sum(len(t) for t, _d in per_subnet)
     assert n_samples >= 1, "engine must emit Bold samples"
+
+
+def test_chunk_size_gt1_all_kernel_monitors():
+    """chunk_size > 1 stays > 1 (no cs=1 fallback, need_tavg=False) for C++ kmon monitors."""
+    from tvb.simulator.monitors import (
+        AfferentCouplingTemporalAverage,
+        Bold,
+        TemporalAverage,
+    )
+
+    mons = [
+        TemporalAverage(period=0.5),
+        AfferentCouplingTemporalAverage(period=0.5),
+        Bold(period=2.0),
+    ]
+    nb_out = NbHybridBackend().compile(_network(), eager=True).run(
+        NSTEP, chunk_size=5, monitors=mons,
+    )
+
+    be = CppHybridBackend()
+    seen = {}
+    orig_rc = be._run_compiled
+
+    def spy_rc(*args, **kwargs):
+        seen["cs"] = kwargs.get("chunk_size")
+        seen["need_tavg"] = kwargs.get("need_tavg")
+        seen["need_ctavg"] = kwargs.get("need_ctavg")
+        return orig_rc(*args, **kwargs)
+
+    be._run_compiled = spy_rc
+    cpp_out = be.run_network(_network(), NSTEP, chunk_size=5, monitors=mons)
+
+    assert seen["cs"] == 5
+    assert seen["need_tavg"] is False
+    assert seen["need_ctavg"] is False
+    _assert_streams(nb_out, cpp_out, "chunk_size=5 all kmon")
+
+
+def test_voi_subset_selection_all_monitors():
+    """variables_of_interest=[1] selects only requested VOIs/cvars across kmon engines."""
+    from tvb.simulator.monitors import (
+        AfferentCoupling,
+        AfferentCouplingTemporalAverage,
+        RawVoi,
+        SubSample,
+        TemporalAverage,
+    )
+
+    voi = np.array([1], dtype=int)
+    mons_cs1 = [
+        RawVoi(variables_of_interest=voi),
+        SubSample(period=0.5, variables_of_interest=voi),
+        TemporalAverage(period=0.5, variables_of_interest=voi),
+        AfferentCoupling(variables_of_interest=voi),
+    ]
+    pairs = [
+        ("cs1", _run_pair(mons_cs1, chunk_size=1)),
+        ("ctavg", _run_pair([AfferentCouplingTemporalAverage(period=0.5, variables_of_interest=voi)])),
+    ]
+    for label, (nb_out, cpp_out) in pairs:
+        assert len(nb_out) == len(cpp_out), label
+        for mi, (per_nb, per_cpp) in enumerate(zip(nb_out, cpp_out)):
+            assert len(per_nb) == len(per_cpp), (label, mi)
+            for si, ((_tn, d_nb), (_tc, d_cp)) in enumerate(zip(per_nb, per_cpp)):
+                assert d_cp.shape[1] == 1, f"{label} monitor#{mi} did not filter VOIs"
+                d_ref = d_nb[:, voi] if d_nb.shape[1] > 1 else d_nb
+                np.testing.assert_allclose(
+                    d_cp, d_ref, rtol=1e-3, atol=1e-4,
+                    err_msg=f"VOI subset {label} monitor#{mi} subnet#{si}",
+                )
+
+
+def test_global_spatial_and_projection_monitors_cpp():
+    """C++ GlobalAverage, SpatialAverage (custom weights), and Projection (EEG ref/MEG/iEEG)."""
+    from tvb.simulator.monitors import (
+        EEG,
+        GlobalAverage,
+        MEG,
+        SpatialAverage,
+        iEEG,
+    )
+
+    ns = _network()
+    n_node = sum(sn.nnodes for sn in ns.subnets)
+    rng = np.random.RandomState(19)
+
+    sa = SpatialAverage(period=0.5)
+    sa.spatial_mean = np.array([
+        [1 / 3, 1 / 3, 1 / 3, 0, 0, 0, 0],
+        [0, 0, 0, 0.25, 0.25, 0.25, 0.25],
+    ], dtype=np.float64)
+
+    eeg = EEG(period=0.5)
+    eeg._gain = rng.randn(4, n_node).astype(np.float64)
+    eeg._ref_vec = np.full(4, 0.25, dtype=np.float64)
+    eeg._ref_vec_mask = np.ones(4, dtype=bool)
+
+    meg = MEG(period=0.5)
+    meg._gain = rng.randn(3, n_node).astype(np.float64)
+
+    ieeg = iEEG(period=0.5)
+    ieeg._gain = rng.randn(2, n_node).astype(np.float64)
+
+    mons = [GlobalAverage(period=0.5), sa, eeg, meg, ieeg]
+    nb_out = NbHybridBackend().compile(_network(), eager=True).run(NSTEP, monitors=mons)
+
+    be = CppHybridBackend()
+    seen = {}
+    orig_rc = be._run_compiled
+
+    def spy_rc(*args, **kwargs):
+        seen["need_tavg"] = kwargs.get("need_tavg")
+        return orig_rc(*args, **kwargs)
+
+    be._run_compiled = spy_rc
+    cpp_out = be.run_network(_network(), NSTEP, monitors=mons)
+
+    assert seen["need_tavg"] is False
+    # NbHybridBackend ignores EEG._ref_vec while CppHybridBackend properly subtracts it.
+    nb_adj = [list(per_mon) for per_mon in nb_out]
+    for si, (t_nb, d_nb) in enumerate(nb_adj[2]):
+        ref_mean = np.tensordot(
+            d_nb[:, :, eeg._ref_vec_mask, :], eeg._ref_vec, axes=([2], [0]),
+        )[:, :, None, :]
+        nb_adj[2][si] = (t_nb, d_nb - ref_mean)
+    _assert_streams(nb_adj, cpp_out, "Global/Spatial/Projection")
+
+
+def test_bold_and_tavg_mid_period_snapshot_resume_in_cpp():
+    """Mid-period snapshot/resume for Bold & TemporalAverage stays in C++ kmon_states."""
+    from tvb.simulator.monitors import Bold, SpatialAverage, TemporalAverage
+
+    sa = SpatialAverage(period=1.0)
+    sa.configure()
+    mons = [
+        TemporalAverage(period=1.0),  # istep=10, split at 25 -> mid-period!
+        Bold(period=2.0),             # istep=20, split at 25 -> mid-period!
+        sa,
+    ]
+    cont = CppHybridBackend().compile(_network()).run(NSTEP, chunk_size=5, monitors=mons)
+
+    sim = CppHybridBackend().compile(_network())
+    p1, snap = sim.run(25, chunk_size=5, monitors=mons, return_snapshot=True)
+    assert snap.get("kmon_states") is not None
+    assert snap.get("kmon_global_states") is not None
+    assert not snap.get("monitor_states"), "C++ kmon should not populate Python _bold_states"
+
+    p2 = sim.resume(snap, NSTEP - 25, chunk_size=5, monitors=mons)
+    assert len(p1) == len(cont) == len(p2)
+    for mi in range(len(cont)):
+        for si in range(len(cont[mi])):
+            t_c, d_c = cont[mi][si]
+            t_m = np.concatenate([p1[mi][si][0], p2[mi][si][0]], axis=0)
+            d_m = np.concatenate([p1[mi][si][1], p2[mi][si][1]], axis=0)
+            np.testing.assert_allclose(t_m, t_c, rtol=0, atol=0, err_msg=f"mon#{mi} sn#{si} t")
+            np.testing.assert_allclose(d_m, d_c, rtol=1e-5, atol=1e-6, err_msg=f"mon#{mi} sn#{si} d")

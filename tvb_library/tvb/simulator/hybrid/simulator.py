@@ -297,11 +297,27 @@ class Simulator(t.HasTraits):
     def _run_compiled_backend(self, be, initial_conditions=None, random_state=None):
         """Run simulation using a compiled hybrid backend."""
         x = self._resolve_ics(initial_conditions, random_state)
-        self.nets.init_projection_buffers(x)
-        ics = [np.asarray(xi, dtype=np.float64) for xi in x]
+        ics = list(x)
         nstep = int(math.ceil(self.simulation_length / self._dt0))
 
         has_recorders = any(sn.monitors for sn in self.nets.subnets)
+        if self.backend == "cpp" and has_recorders:
+            subnet_monitors = {
+                sn.name: [rec.monitor for rec in sn.monitors]
+                for sn in self.nets.subnets
+                if sn.monitors
+            }
+            raw, subnet_results = be.run_network(
+                self.nets,
+                nstep=nstep,
+                monitors=self.monitors if self.monitors else None,
+                initial_states=ics,
+                subnet_monitors=subnet_monitors,
+            )
+            result = self._reassemble_monitor_outputs(raw) if self.monitors else []
+            self._populate_subnet_recorders(subnet_results)
+            return result
+
         saved_rng_states = None
         if self.monitors and has_recorders:
             from tvb.simulator.integrators import IntegratorStochastic
@@ -341,6 +357,33 @@ class Simulator(t.HasTraits):
             be.run_network(self.nets, nstep=nstep, initial_states=ics)
 
         return result
+
+    def _populate_subnet_recorders(self, subnet_results):
+        """Populate per-subnetwork Recorder buffers from single-pass C++ outputs."""
+        for sn in self.nets.subnets:
+            if not sn.monitors:
+                continue
+            mon_outputs = subnet_results.get(sn.name, ())
+            for rec, (t_arr, d_arr) in zip(sn.monitors, mon_outputs):
+                t_arr = np.asarray(t_arr, dtype=np.float32)
+                d_arr = np.asarray(d_arr, dtype=np.float32)
+                n_emitted = int(t_arr.shape[0])
+                if n_emitted == 0:
+                    rec.times = None
+                    rec.samples = None
+                    rec._current_idx = 0
+                    continue
+                if rec.num_samples is None or n_emitted > rec.num_samples:
+                    rec.num_samples = n_emitted
+                if (
+                    rec.samples is None
+                    or rec.samples.shape[0] < rec.num_samples
+                    or rec.samples.shape[1:] != d_arr.shape[1:]
+                ):
+                    rec._allocate_arrays(d_arr.shape[1:])
+                rec.times[:n_emitted] = t_arr
+                rec.samples[:n_emitted] = d_arr
+                rec._current_idx = n_emitted
 
     def _reassemble_monitor_outputs(self, raw):
         """Reassemble compiled backend monitor outputs into ``(times, data)`` pairs."""
