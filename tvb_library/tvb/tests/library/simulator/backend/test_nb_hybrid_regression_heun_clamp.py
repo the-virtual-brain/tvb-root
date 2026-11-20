@@ -74,14 +74,18 @@ def _python_step(network, initial_state):
     return np.asarray(network.step(1, state)[0])
 
 
-def _late_constraint_reference(network, initial_state):
-    """Heun with no predictor constraint, but the normal final constraint."""
+def _heun_reference(network, initial_state, clamp_predictor):
+    """Textbook Heun step; the final state is always constrained, the predictor
+    only when clamp_predictor is set (the old, incorrect behaviour)."""
     subnet = network.subnets[0]
     coupling = subnet.zero_cvars()
     noise = _noise_increment(subnet.scheme, initial_state)
     k1 = subnet.model.dfun(initial_state, coupling, 0.0)
     predictor = initial_state + DT * k1 + noise
-    k2 = subnet.model.dfun(predictor, coupling, 0.0)
+    k2_state = predictor.copy()
+    if clamp_predictor:
+        subnet.scheme.bound_and_clamp(k2_state)
+    k2 = subnet.model.dfun(k2_state, coupling, 0.0)
     result = initial_state + DT * (k1 + k2) / 2.0 + noise
     subnet.scheme.bound_and_clamp(result)
     return predictor, result
@@ -98,33 +102,34 @@ def _numba_step(network, initial_state):
     return snapshot["states"][0]
 
 
-def _assert_second_dfun_is_sensitive(correct, late, constrained_index):
-    unconstrained = np.delete(correct - late, constrained_index, axis=0)
+def _assert_case_is_sensitive(correct, predictor_clamped, constrained_index):
+    unconstrained = np.delete(correct - predictor_clamped, constrained_index, axis=0)
     assert np.max(np.abs(unconstrained)) > 1e-3, (
         "the case does not distinguish predictor clamping from final-only clamping"
     )
 
 
 @CASES
-def test_heun_clamps_boundary_crossing_predictor_before_second_dfun(
-    combined, stochastic
-):
+def test_heun_does_not_clamp_boundary_crossing_predictor(combined, stochastic):
     py_network, initial_state, constrained_index = _make_network(combined, stochastic)
-    late_network, _, _ = _make_network(combined, stochastic)
+    ref_network, _, _ = _make_network(combined, stochastic)
+    old_network, _, _ = _make_network(combined, stochastic)
     nb_network, _, _ = _make_network(combined, stochastic)
 
     python_state = _python_step(py_network, initial_state)
-    predictor, late_state = _late_constraint_reference(late_network, initial_state)
+    predictor, expected = _heun_reference(ref_network, initial_state, False)
+    _, old_state = _heun_reference(old_network, initial_state, True)
     numba_state = _numba_step(nb_network, initial_state)
 
     assert np.min(predictor[constrained_index]) < -0.1
-    _assert_second_dfun_is_sensitive(python_state, late_state, constrained_index)
+    _assert_case_is_sensitive(expected, old_state, constrained_index)
+    np.testing.assert_allclose(python_state, expected, rtol=2e-5, atol=2e-5)
     np.testing.assert_allclose(
         numba_state,
         python_state,
         rtol=2e-5,
         atol=2e-5,
-        err_msg="Numba evaluated Heun's second dfun before clamping its predictor",
+        err_msg="Numba and Python disagree on Heun with an unclamped predictor",
     )
 
 
@@ -136,15 +141,18 @@ def test_heun_integrator_clamped_state_variables_match_python(
     py_network, initial_state, constrained_index = _make_network(
         combined, stochastic, clamp_value
     )
-    late_network, _, _ = _make_network(combined, stochastic, clamp_value)
+    ref_network, _, _ = _make_network(combined, stochastic, clamp_value)
+    old_network, _, _ = _make_network(combined, stochastic, clamp_value)
     nb_network, _, _ = _make_network(combined, stochastic, clamp_value)
 
     python_state = _python_step(py_network, initial_state)
-    predictor, late_state = _late_constraint_reference(late_network, initial_state)
+    predictor, expected = _heun_reference(ref_network, initial_state, False)
+    _, old_state = _heun_reference(old_network, initial_state, True)
     numba_state = _numba_step(nb_network, initial_state)
 
     assert np.max(np.abs(predictor[constrained_index] - clamp_value)) > 0.1
-    _assert_second_dfun_is_sensitive(python_state, late_state, constrained_index)
+    _assert_case_is_sensitive(expected, old_state, constrained_index)
+    np.testing.assert_allclose(python_state, expected, rtol=2e-5, atol=2e-5)
     np.testing.assert_array_equal(
         numba_state[constrained_index],
         np.full_like(numba_state[constrained_index], clamp_value),
