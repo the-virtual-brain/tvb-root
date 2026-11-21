@@ -25,10 +25,12 @@ GAIN = np.array([[1.0, -0.5, 2.0], [-2.0, 0.25, 0.5], [0.5, 0.0, -1.0]])
 ROUTES = ("classic", "python", "numba", "cpp-native", "cpp-host")
 
 
-def _model(constant=False):
+def _model(constant=False, harmonic=None):
     params = dict.fromkeys(("alpha", "beta", "b", "c", "e", "f", "g"), 0.0)
     params.update(d=1.0, tau=1.0, gamma=1.0,
                   I=0.0 if constant else 1.0, a=0.0 if constant else -0.5)
+    if harmonic is not None:
+        params.update(I=0.0, a=0.0, alpha=-harmonic, b=harmonic)
     return models.Generic2dOscillator(variables_of_interest=("V", "W"),
                                       **{k: np.array([v]) for k, v in params.items()})
 
@@ -37,20 +39,20 @@ def _trajectory(steps, constant=False):
     return INITIAL + np.asarray(steps)[:, None, None, None] * DT * (0 if constant else SLOPE)
 
 
-def _classic(mons, constant):
+def _classic(mons, constant, harmonic):
     conn = Connectivity(weights=np.zeros((3, 3)), tract_lengths=np.zeros((3, 3)),
                         centres=np.eye(3), orientations=np.eye(3),
                         cortical=np.ones(3, dtype=bool),
                         region_labels=np.array(["a", "b", "c"]))
-    return ClassicSimulator(connectivity=conn, model=_model(constant),
+    return ClassicSimulator(connectivity=conn, model=_model(constant, harmonic),
                             integrator=integrators.HeunDeterministic(dt=DT),
                             initial_conditions=INITIAL[None, ...].copy(),
                             monitors=mons).configure()
 
 
-def _network(constant=False, merged=True):
+def _network(constant=False, merged=True, harmonic=None):
     return NetworkSet(subnets=[Subnetwork(
-        name="ramp", model=_model(constant), scheme=integrators.HeunDeterministic(dt=DT),
+        name="window_input", model=_model(constant, harmonic), scheme=integrators.HeunDeterministic(dt=DT),
         nnodes=3, node_indices=np.arange(3) if merged else None)])
 
 
@@ -80,11 +82,11 @@ def _set_cpp_monitor_route(route, monkeypatch):
     return lowered
 
 
-def _run(route, mons, nstep, monkeypatch, *, constant=False, merged=True):
+def _run(route, mons, nstep, monkeypatch, *, constant=False, merged=True, harmonic=None):
     if route == "classic" or any(isinstance(m, monitors.EEG) for m in mons):
         # Hybrid has no connectome/sensor config_for_sim hook; give EEG a
         # properly configured regional lead field from the classic initializer.
-        classic = _classic(mons, constant)
+        classic = _classic(mons, constant, harmonic)
     for mon in mons:
         if isinstance(mon, monitors.SpatialAverage):
             # Classic's labels configure uniform group weights; supply the same
@@ -96,7 +98,7 @@ def _run(route, mons, nstep, monkeypatch, *, constant=False, merged=True):
 
     lowered = _set_cpp_monitor_route(route, monkeypatch)
     backend = "cpp" if route.startswith("cpp-") else route
-    sim = HybridSimulator(nets=_network(constant, merged), backend=backend,
+    sim = HybridSimulator(nets=_network(constant, merged, harmonic), backend=backend,
                           monitors=mons, simulation_length=nstep * DT)
     sim.configure()
     for mon in mons:
@@ -204,3 +206,216 @@ def test_public_eeg_observation_noise_is_at_emit_before_reference_when_supported
         np.testing.assert_array_equal(times, np.array([2.5, 6.5]) * DT)
     assert data.shape == expected.shape
     np.testing.assert_allclose(data, expected, atol=1e-6, rtol=0)
+
+
+@pytest.mark.parametrize("route", ROUTES)
+@pytest.mark.parametrize("kind", ("GlobalAverage", "SpatialAverage", "EEG"))
+@pytest.mark.parametrize("merged", (True, False), ids=("merged", "unmerged"))
+def test_public_raw_companion_and_trailing_step(route, kind, merged, monkeypatch):
+    # Raw forces the compiled execution chunk to 1. Some legacy host paths
+    # consume that chunk grid directly instead of the requested monitor grid.
+    mons = [monitors.Raw(), _monitor(kind, 4 * DT)]
+    if route != "classic" and not merged:
+        with pytest.warns(UserWarning, match="do not have node_indices"):
+            raw, (times, data) = _run(route, mons, 9, monkeypatch, merged=merged)
+    else:
+        raw, (times, data) = _run(route, mons, 9, monkeypatch, merged=merged)
+    np.testing.assert_array_equal(raw[0], np.arange(1, 10) * DT)
+    np.testing.assert_allclose(raw[1], _trajectory(np.arange(1, 10)), atol=1e-6, rtol=0)
+
+    if route in ("classic", "python") and kind != "EEG":
+        value_steps = time_steps = [4, 8]
+    elif route in ("classic", "python"):
+        value_steps, time_steps = [2.5, 6.5], [2, 6]
+    elif route == "cpp-native":
+        value_steps = time_steps = [2.5, 6.5]
+    elif kind == "GlobalAverage" or merged:
+        value_steps = time_steps = np.arange(1, 10)
+    else:
+        value_steps, time_steps = [2.5, 6.5], [2, 6]
+    np.testing.assert_array_equal(times, np.asarray(time_steps) * DT)
+    expected = _reduce(kind, _trajectory(value_steps), reference=route not in ("numba", "cpp-host"))
+    assert data.shape == expected.shape
+    np.testing.assert_allclose(data, expected, atol=1e-6, rtol=0)
+
+
+@pytest.mark.parametrize("route", ROUTES)
+def test_public_noncommensurate_projection_period_rounds_or_truncates(route, monkeypatch):
+    [(times, data)] = _run(route, [_eeg(3.5 * DT)], 12, monkeypatch)
+    if route in ("classic", "python"):
+        time_steps = np.array([1.5, 4.5, 7.5, 10.5])
+        value_steps = time_steps + 0.5
+    else:
+        value_steps = time_steps = np.array([2.5, 6.5, 10.5])
+    np.testing.assert_array_equal(times, time_steps * DT)
+    expected = _reduce("EEG", _trajectory(value_steps), reference=route not in ("numba", "cpp-host"))
+    assert data.shape == expected.shape
+    np.testing.assert_allclose(data, expected, atol=1e-6, rtol=0)
+
+
+def _cpp_backend(use_kernel):
+    cpp = pytest.importorskip("tvb.simulator.backend.cpp_hybrid")
+    backend = cpp.CppHybridBackend()
+    backend.enable_kernel_monitors = use_kernel
+    return backend
+
+
+@pytest.mark.parametrize("use_kernel", (True, False), ids=("native", "host"))
+@pytest.mark.parametrize("chunk, centres", ((None, (2.5, 6.5)), (1, tuple(range(1, 10))),
+                                            (2, (1.5, 3.5, 5.5, 7.5)), (8, (4.5,))))
+def test_cpp_backend_global_average_explicit_chunk_can_override_monitor_period(use_kernel, chunk, centres):
+    network = _network()
+    network.configure()
+    [[(times, data)]] = _cpp_backend(use_kernel).run_network(
+        network, nstep=9, chunk_size=chunk, monitors=[monitors.GlobalAverage(period=4 * DT)],
+        initial_states=[INITIAL.copy()])
+    if not use_kernel and chunk != 1:
+        centres += (9,)
+    np.testing.assert_array_equal(times, np.asarray(centres) * DT)
+    expected = _reduce("GlobalAverage", _trajectory(centres))
+    assert data.shape == expected.shape
+    np.testing.assert_allclose(data, expected, atol=1e-6, rtol=0)
+
+
+@pytest.mark.parametrize("use_kernel", (True, False), ids=("native", "host"))
+@pytest.mark.parametrize("kind", ("TemporalAverage", "GlobalAverage"))
+def test_cpp_backend_resume_with_an_open_period(use_kernel, kind):
+    backend = _cpp_backend(use_kernel)
+    network = _network()
+    network.configure()
+    compiled = backend.compile(network)
+    mon = _monitor(kind, 4 * DT)
+    [[(full_t, full_x)]] = compiled.run(9, monitors=[mon], initial_states=[INITIAL.copy()])
+    [[(first_t, first_x)]], snapshot = backend.compile(network).run(
+        3, monitors=[mon], initial_states=[INITIAL.copy()], return_snapshot=True)
+    assert snapshot["step"] == 3
+    # Use a fresh kernel so in-memory accumulators cannot mask missing state.
+    [[(last_t, last_x)]] = backend.compile(network).resume(snapshot, 6, monitors=[mon])
+    split_t = np.concatenate((first_t, last_t))
+    split_x = np.concatenate((first_x, last_x))
+    if not use_kernel and kind == "GlobalAverage":
+        # No host period accumulator: the first call emits an incomplete chunk,
+        # and the second call starts a new window on the next absolute step.
+        np.testing.assert_array_equal(full_t, np.array([2.5, 6.5, 9]) * DT)
+        np.testing.assert_array_equal(split_t, np.array([2, 5.5, 8.5]) * DT)
+        np.testing.assert_allclose(full_x, _reduce(kind, _trajectory([2.5, 6.5, 9])), atol=1e-6, rtol=0)
+        np.testing.assert_allclose(split_x, _reduce(kind, _trajectory([2, 5.5, 8.5])), atol=1e-6, rtol=0)
+    else:
+        assert first_t.size == 0
+        time_steps = [2, 6] if kind == "TemporalAverage" else [2.5, 6.5]
+        np.testing.assert_array_equal(full_t, np.asarray(time_steps) * DT)
+        np.testing.assert_array_equal(split_t, full_t)
+        np.testing.assert_allclose(full_x, _reduce(kind, _trajectory([2.5, 6.5])), atol=1e-6, rtol=0)
+        np.testing.assert_array_equal(split_x, full_x)
+
+
+@pytest.mark.parametrize("route", ROUTES)
+def test_public_global_average_selected_voi(route, monkeypatch):
+    mon = monitors.GlobalAverage(period=4 * DT, variables_of_interest=np.array([1]))
+    [(times, data)] = _run(route, [mon], 8, monkeypatch)
+    sample_steps = [4, 8] if route in ("classic", "python") else [2.5, 6.5]
+    np.testing.assert_array_equal(times, np.asarray(sample_steps) * DT)
+    expected = _reduce("GlobalAverage", _trajectory(sample_steps))
+    if route in ("classic", "cpp-native"):
+        expected = expected[:, [1]]
+    assert data.shape == expected.shape
+    np.testing.assert_allclose(data, expected, atol=1e-6, rtol=0)
+
+
+@pytest.mark.parametrize("route", ROUTES)
+@pytest.mark.parametrize("theta, alias", ((np.pi / 12, np.pi / 3), (5 * np.pi / 12, -np.pi / 3)),
+                         ids=("below-output-nyquist", "above-output-nyquist"))
+def test_public_temporal_average_boxcar_gain_phase_and_alias(route, theta, alias, monkeypatch):
+    # Use both quadratures of a linear oscillator, V + iW. Heun integrates it
+    # with multiplier z; choose h so arg(z) is the requested discrete frequency.
+    # Reference the boxcar to the endpoint and divide out Heun's amplitude drift
+    # to isolate the observation operator from the integrator.
+    tangent = np.tan(theta)
+    h = (np.sqrt(1 + 2 * tangent**2) - 1) / tangent
+    z = 1 + 1j * h - 0.5 * h**2
+    window = 4
+    [(times, data)] = _run(route, [monitors.TemporalAverage(period=window * DT)],
+                           12, monkeypatch, harmonic=h / DT)
+    np.testing.assert_array_equal(times, DT * np.array([2, 6, 10]))
+    assert data.shape == (3, 2, 3, 1)
+    complex_out = data[:, 0, :, 0] + 1j * data[:, 1, :, 0]
+    start = INITIAL[0, :, 0] + 1j * INITIAL[1, :, 0]
+    end_state = z**np.array([4, 8, 12])[:, None] * start
+    response = (1 - z**(-window)) / (window * (1 - 1 / z))
+    measured = complex_out / end_state
+    np.testing.assert_allclose(np.abs(measured), abs(response), atol=2e-6, rtol=0)
+    np.testing.assert_allclose(np.angle(measured), np.angle(response), atol=2e-6, rtol=0)
+    np.testing.assert_allclose(np.angle(complex_out[1:] / complex_out[:-1]), alias, atol=2e-6, rtol=0)
+
+
+@pytest.mark.parametrize("route", ("cpp-native", "cpp-host"))
+def test_public_cpp_global_and_recorder_clocks_differ_for_slow_subnet(route, monkeypatch):
+    lowered = _set_cpp_monitor_route(route, monkeypatch)
+    subnets = []
+    for index, cadence in enumerate((1, 2)):
+        subnet = Subnetwork(name=f"subnet_{index}", model=_model(),
+                            scheme=integrators.HeunDeterministic(dt=cadence * DT),
+                            nnodes=3, node_indices=np.arange(3) + 3 * index)
+        subnet.add_monitor(monitors.GlobalAverage(period=4 * DT))
+        subnets.append(subnet)
+    sim = HybridSimulator(nets=NetworkSet(subnets=subnets), backend="cpp", simulation_length=9 * DT,
+                          monitors=[monitors.TemporalAverage(period=4 * DT)])
+    sim.configure()
+    [(times, data)] = sim.run(initial_conditions=[INITIAL.copy(), INITIAL.copy()])
+    assert lowered == (["TemporalAverage", "GlobalAverage"] * 2 if route == "cpp-native" else [])
+    np.testing.assert_array_equal(times, DT * np.array([2, 6]))
+    # The global monitor sees held slow states on master ticks 1, 2, 3, 4:
+    # integrated elapsed steps 0, 2, 2, 4. A local recorder sees only 2, 4.
+    expected = np.concatenate((_trajectory([2.5, 6.5]), _trajectory([2, 6])), axis=2)
+    assert data.shape == expected.shape
+    np.testing.assert_allclose(data, expected, atol=1e-6, rtol=0)
+    for index, subnet in enumerate(subnets):
+        local_times, local_data = subnet.monitors[0].to_arrays()
+        steps = ([2.5, 6.5] if index == 0 else [3, 7]) if route == "cpp-native" else [4, 8]
+        np.testing.assert_array_equal(local_times, np.asarray(steps) * DT)
+        expected = _reduce("GlobalAverage", _trajectory(steps))
+        assert local_data.shape == expected.shape
+        np.testing.assert_allclose(local_data, expected, atol=1e-6, rtol=0)
+
+
+@pytest.mark.parametrize("use_kernel", (True, False), ids=("native", "host"))
+def test_cpp_compiled_fresh_run_reuses_temporal_average_accumulator(use_kernel):
+    network = _network()
+    network.configure()
+    compiled = _cpp_backend(use_kernel).compile(network)
+    mon = monitors.TemporalAverage(period=4 * DT)
+    compiled.run(9, monitors=[mon], initial_states=[INITIAL.copy()])
+    [[(times, data)]] = compiled.run(3, monitors=[mon], initial_states=[INITIAL.copy()])
+    # The integration restarts but the monitor does not: it completes the
+    # old window using old step 9 plus new steps 1..3 and emits on the old clock.
+    np.testing.assert_array_equal(times, np.array([10 * DT]))
+    np.testing.assert_allclose(data, _trajectory([3.75]), atol=1e-6, rtol=0)
+
+
+def test_cpp_native_resume_accepts_changed_spatial_weights_with_same_shape():
+    network = _network()
+    network.configure()
+    backend = _cpp_backend(True)
+    previous = monitors.SpatialAverage(period=4 * DT)
+    previous.spatial_mean = SPATIAL.copy()
+    [[(first_t, _)]], snapshot = backend.compile(network).run(
+        3, monitors=[previous], initial_states=[INITIAL.copy()], return_snapshot=True)
+    assert first_t.size == 0
+    changed = monitors.SpatialAverage(period=4 * DT)
+    changed.spatial_mean = SPATIAL[:, ::-1].copy()
+    [[(times, data)]] = backend.compile(network).resume(snapshot, 1, monitors=[changed])
+    np.testing.assert_array_equal(times, np.array([2.5 * DT]))
+    # This is a mixed-operator result, not a valid window under either matrix.
+    expected = (3 * _reduce("SpatialAverage", _trajectory([2])) +
+                np.einsum("an,tvnm->tvam", changed.spatial_mean, _trajectory([4]))) / 4
+    np.testing.assert_allclose(data, expected, atol=1e-6, rtol=0)
+
+
+@pytest.mark.parametrize("kind", ("Raw", "RawVoi", "SubSample"))
+def test_cpp_backend_rejects_explicit_coarse_chunk_for_point_samples(kind):
+    network = _network()
+    network.configure()
+    with pytest.raises(ValueError, match="requires chunk_size=1"):
+        _cpp_backend(True).run_network(network, nstep=8, chunk_size=2,
+                                       monitors=[_monitor(kind, 4 * DT)],
+                                       initial_states=[INITIAL.copy()])
