@@ -48,6 +48,7 @@ jobs:
                             tvb/tests/library/simulator/backend/test_cpp_hybrid_models.py \
                             tvb/tests/library/simulator/backend/test_cpp_hybrid_stimuli.py \
                             tvb/tests/library/simulator/backend/test_cpp_hybrid_features.py \
+                            tvb/tests/library/simulator/backend/test_cpp_hybrid_notebook_grid.py \
                             tvb/tests/library/simulator/hybrid/ \
                             -q -p no:cacheprovider
 

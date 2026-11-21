@@ -44,6 +44,13 @@ def test_grid_matches_explicit_zipped_sweep():
     np.testing.assert_allclose(grid.merged_tavg, zipped.merged_tavg, rtol=1e-6, atol=1e-7)
     np.testing.assert_allclose(grid.online_features["A"]["mean"], zipped.online_features["A"]["mean"],
                                rtol=1e-6, atol=1e-7)
+
+
+def test_grid_dataframe_keeps_parameter_order():
+    pytest.importorskip("pandas")
+    ns = build_coupled_net()
+    grid = nb.sweep(ns, 4, workers=1, width=4, grid=True,
+                    coupling_scale=[0.5, 1.0], **{"A.eta": [0.1, 0.2]})
     df = grid.to_dataframe()
     np.testing.assert_array_equal(df[grid.param_keys].to_numpy(), grid.sweep_values)
 
