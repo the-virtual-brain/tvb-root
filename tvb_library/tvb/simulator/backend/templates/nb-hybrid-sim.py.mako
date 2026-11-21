@@ -140,9 +140,10 @@ def compute_coupling_${p.name}(
     % if pre_ct == 'pre_sigmoidal_dynamic':
     # Python pre() averages the delayed threshold values presented by every
     # projection edge, once per mode, before transforming any source signal.
+    # An empty CSR has no threshold samples and contributes zero coupling.
     % if mono_src:
     global_threshold = nb.float32(0.0)
-    if cfun_params[5] != nb.float32(0.0):
+    if cfun_params[5] != nb.float32(0.0) and w_data.shape[0] > 0:
         cv1 = source_cvar[1]
         for ptr in range(w_data.shape[0]):
             src_node = w_indices[ptr]
@@ -151,7 +152,7 @@ ${_slot_setup(source_horizons_map[p.source_subnet], K_src, 12, intra)}
         global_threshold /= nb.float32(w_data.shape[0])
     % else:
     global_threshold = np.zeros(${nsrc_m}, dtype=np.float32)
-    if cfun_params[5] != nb.float32(0.0):
+    if cfun_params[5] != nb.float32(0.0) and w_data.shape[0] > 0:
         cv1 = source_cvar[1]
         for ptr in range(w_data.shape[0]):
             src_node = w_indices[ptr]
