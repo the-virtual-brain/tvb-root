@@ -168,13 +168,10 @@ def probe_class(tmp_path_factory):
 def isolated_backend(monkeypatch):
     """Per-test backend state: fresh runtime-library state and cache dir.
 
-    The runtime dfun library and the built-in table are process-global
-    (``backend._GEN_*`` / ``_BUILTIN_TABLE``), and the C++ core holds a raw
-    function pointer to whichever library was last injected.  Every test that
-    touches them runs here and the previous state — including that pointer —
-    is put back afterwards.
+    The runtime library cache and the built-in table are process-global.
+    Backend-created subnets own their dispatch entries; loading a library no
+    longer changes the C++ low-level default pointer.
     """
-    import ctypes
     import tempfile
     from pathlib import Path
 
@@ -184,7 +181,7 @@ def isolated_backend(monkeypatch):
              os.environ.get("TVB_NHYBRID_CACHE_DIR"))
     monkeypatch.setenv("TVB_NHYBRID_CACHE_DIR", str(cache_dir))
     CppHybridBackend._CACHE_DIR = None
-    cphb._GEN_LIB, cphb._GEN_IDS, cphb._GEN_META = None, {}, {}
+    cphb._GEN_LIB, cphb._GEN_IDS, cphb._GEN_META = {}, {}, {}
     try:
         yield cache_dir
     finally:
@@ -192,11 +189,6 @@ def isolated_backend(monkeypatch):
                                                          saved[2])
         cphb._BUILTIN_TABLE = saved[3]
         CppHybridBackend._CACHE_DIR = saved[4]
-        if saved[0] is not None:
-            # the core still dispatches ids the built-in table does not cover
-            # through this pointer; put back whatever was there before
-            cph_pkg.enable_generic_dfuns(
-                ctypes.cast(saved[0].cph_generic_dfun, ctypes.c_void_p).value)
 
 
 @pytest.fixture
@@ -307,8 +299,8 @@ def test_stock_generic_model_needs_no_compiler(model_name, isolated_backend,
     assert np.any(data != 0.0), "model did not simulate"
 
     assert calls == [], f"runtime generation was requested: {calls}"
-    assert cphb._GEN_LIB is None, "runtime dfun library was loaded"
-    generated = sorted(p.name for p in isolated_backend.glob("models_gen.*"))
+    assert not cphb._GEN_LIB, "runtime dfun library was loaded"
+    generated = sorted(p.name for p in isolated_backend.rglob("models_gen.*"))
     assert generated == [], f"runtime dfun artifacts in cache dir: {generated}"
 
 
@@ -456,7 +448,7 @@ def test_user_model_ids_are_disjoint_from_builtin_range(probe_class,
 
     # stock trajectory with no runtime library in the process at all
     before = _run_cpp(_stock_model("CoombesByrne"))
-    assert cphb._GEN_LIB is None
+    assert not cphb._GEN_LIB
 
     # running the user model is what triggers the runtime library; it is the
     # only model the library carries (stock names are excluded)
@@ -583,8 +575,8 @@ def test_runtime_range_starts_at_100_without_builtin_kernels(isolated_backend,
 
     # the library really was emitted + compiled into this run's cache dir,
     # with no gap padding because the range starts at the base id
-    src = (isolated_backend / "models_gen.cpp").read_text()
-    so = isolated_backend / "models_gen.so"
+    src = next(isolated_backend.rglob("models_gen.cpp")).read_text()
+    so = next(isolated_backend.rglob("models_gen.so"))
     assert so.exists()
     n_models = int(re.search(r"#define N_GEN_MODELS (\d+)", src).group(1))
     n_slots = int(re.search(r"#define N_GEN_DFUNS (\d+)", src).group(1))
@@ -676,7 +668,7 @@ def test_runtime_fallback_model_matches_numba(probe_class, isolated_backend,
         NbHybridBackend().compile(_network([model]), eager=True).run(NSTEP)[0][1])
 
     assert cpp_data.shape == nb_data.shape
-    assert cphb._GEN_LIB is not None, "the runtime library was not compiled"
+    assert cphb._GEN_LIB, "the runtime library was not compiled"
     assert PROBE_NAME in cphb._GEN_IDS
     np.testing.assert_allclose(cpp_data, nb_data, rtol=1e-3, atol=1e-4,
                                err_msg="runtime-compiled dfun diverged from "
@@ -1013,8 +1005,8 @@ def test_runtime_library_has_no_builtin_kernels(probe_class, isolated_backend,
     runtime_ids = dict(cphb._GEN_IDS)
     assert set(runtime_ids) == {PROBE_NAME}, runtime_ids
 
-    src = (isolated_backend / "models_gen.cpp").read_text()
-    so = isolated_backend / "models_gen.so"
+    src = next(isolated_backend.rglob("models_gen.cpp")).read_text()
+    so = next(isolated_backend.rglob("models_gen.so"))
     assert so.exists(), "runtime library was not compiled"
 
     # no dead stock kernels: no dfun_gen_<built-in mid> function at all
@@ -1075,7 +1067,7 @@ def test_generate_lib_exclude_filters_discovered_models(isolated_backend,
     assert ids[PROBE_NAME] == start_id
     assert meta[PROBE_NAME]["mid"] == start_id
 
-    src = (isolated_backend / "models_gen.cpp").read_text()
+    src = next(isolated_backend.rglob("models_gen.cpp")).read_text()
     for name in RUNTIME_MODEL_NAMES[1:]:
         assert name not in ids
         assert f'"{name}"' not in src, f"excluded model {name} still emitted"
@@ -1218,7 +1210,7 @@ def test_unsupported_stock_model_still_runs_via_runtime_fallback(
         assert np.all(np.isfinite(data))
         assert np.any(data != 0.0), "model did not simulate"
         assert "OutOfTableFallbackModel" in cphb._GEN_IDS
-        assert (isolated_backend / "models_gen.so").exists(), \
+        assert list(isolated_backend.rglob("models_gen.so")), \
             "runtime library was not compiled"
     finally:
         _models_pkg.__path__.remove(str(tmp_path))
@@ -1330,3 +1322,134 @@ def test_dfungen_cli_output_error(tmp_path, monkeypatch, capsys, failed_output):
     assert "dfungen:" in captured.err
     assert "emitted" not in captured.out
     assert failed_path.is_dir()
+
+
+# ---------------------------------------------------------------------------
+# Multi-entry runtime libraries: identity, ownership and publication
+# ---------------------------------------------------------------------------
+
+@_SKIP_WASM_RUNTIME_COMPILE
+@pytest.mark.parametrize("width", [1, 4, 8, 16])
+def test_runtime_library_cache_a_b_a_interleaved(isolated_backend, monkeypatch,
+                                                probe_class, width):
+    """Overlapping ids and names must not change already-compiled simulations."""
+    from tvb.basic.neotraits.api import Final, List
+    from tvb.simulator.integrators import EulerDeterministic
+
+    a_class = type(PROBE_NAME, (probe_class,), {
+        "state_variable_dfuns": Final(default={"x": "a / tau", "y": "0.0"}),
+    })
+    b_class = type(PROBE_NAME, (probe_class,), {
+        "state_variable_dfuns": Final(default={"x": "-b / tau", "y": "0.0"}),
+        "parameter_names": List(of=str, default=["b", "a", "tau"]),
+    })
+    models = [a_class(), b_class()]
+    for model in models:
+        model.configure()
+    selected = [models[0]]
+    monkeypatch.setattr(dfungen, "collect_models", lambda: {PROBE_NAME: selected[0]})
+    compilations = []
+    real_run = dfungen.subprocess.run
+
+    def count_compile(cmd, **kwargs):
+        if "-shared" in cmd:
+            compilations.append(cmd)
+        return real_run(cmd, **kwargs)
+
+    monkeypatch.setattr(dfungen.subprocess, "run", count_compile)
+    # Backend resolution must not mutate the low-level extension default.
+    cph_pkg.enable_generic_dfuns(0)
+    try:
+        backend = CppHybridBackend()
+
+        def compile_model(index):
+            selected[0] = models[index]
+            network = _network([models[index]])
+            # Exercise both integration dispatch sites across SIMD widths.
+            if width in (4, 16):
+                network.subnets[0].scheme = EulerDeterministic(dt=DT)
+            return backend.compile(network, width=width)
+
+        a = compile_model(0)
+        a_sn = a._analysis.subnets[0]
+        a_entry = a_sn.runtime_library
+        cph_pkg.enable_generic_dfuns(a_entry.function_pointer)
+        low_level = _cpp_hybrid.Sim(width)
+        low_level.add_subnet(NNODES, 2, a_sn.n_parm, 1,
+                             a_sn.model_id, 1, 1, dt=DT)
+        low_level.set_opts(0, DT, 1)
+        low_level.set_subnet_params(0, np.broadcast_to(
+            a_sn.params[:, :, None], (NNODES, a_sn.n_parm, width)).copy())
+        b = compile_model(1)
+        b_entry = b._analysis.subnets[0].runtime_library
+        again = compile_model(0)
+        assert again._analysis.subnets[0].runtime_library is a_entry
+        assert a_entry is not b_entry
+        assert a_entry.ids == b_entry.ids  # intentionally overlapping dispatch ids
+        assert a_entry.metadata[PROBE_NAME]["parm_names"] != b_entry.metadata[PROBE_NAME]["parm_names"]
+        assert len(compilations) == 2
+        assert len(cphb._GEN_LIB) == 2
+        assert len(list(isolated_backend.rglob("models_gen.so"))) == 2
+
+        # Loading B and then A again did not change the low-level default.
+        low_level.run(1)
+        np.testing.assert_allclose(np.asarray(low_level.get_subnet_state(0))[0],
+                                   2.0 * DT, rtol=1e-6)
+        # Old low-level callers still may change their process-wide default
+        # after add_subnet; bound backend subnets must ignore that change.
+        b_sn = b._analysis.subnets[0]
+        low_level.set_subnet_params(0, np.broadcast_to(
+            b_sn.params[:, :, None], (NNODES, b_sn.n_parm, width)).copy())
+        cph_pkg.enable_generic_dfuns(b_entry.function_pointer)
+        low_level.run(1)
+        np.testing.assert_allclose(np.asarray(low_level.get_subnet_state(0))[0],
+                                   -DT, rtol=1e-6)
+
+        if width == 1:
+            backend.clear_cache()  # deleting artifacts must not unload live pointers
+
+        # Existing A and B remain live while later analyses and runs alternate.
+        for compiled, slope in ((a, 2.0), (b, -3.0), (again, 2.0),
+                                (b, -3.0), (a, 2.0)):
+            output = np.asarray(compiled.run(NSTEP)[0][1])
+            expected = np.arange(1, NSTEP + 1) * DT * slope
+            np.testing.assert_allclose(output[:, 0, :, :],
+                                       np.broadcast_to(expected[:, None, None],
+                                                       output[:, 0, :, :].shape),
+                                       rtol=2e-6, atol=1e-7)
+            np.testing.assert_array_equal(output[:, 1], 0.0)
+    finally:
+        cph_pkg.enable_generic_dfuns(0)
+
+
+@_SKIP_WASM_RUNTIME_COMPILE
+def test_generate_lib_content_identity_and_failed_publication(isolated_backend,
+                                                              monkeypatch,
+                                                              probe_class):
+    """Failed compiles never publish a .so; source/id changes get unique paths."""
+    import subprocess
+    model = probe_class()
+    model.configure()
+    monkeypatch.setattr(dfungen, "collect_models", lambda: {PROBE_NAME: model})
+    real_run = dfungen.subprocess.run
+
+    def fail_compile(cmd, **kwargs):
+        if "-shared" in cmd:
+            # Even a compiler that wrote output before failing cannot publish it.
+            Path(cmd[cmd.index("-o") + 1]).write_bytes(b"incomplete library")
+            raise subprocess.CalledProcessError(1, cmd)
+        return real_run(cmd, **kwargs)
+
+    monkeypatch.setattr(dfungen.subprocess, "run", fail_compile)
+    with pytest.raises(subprocess.CalledProcessError):
+        dfungen.generate_lib(isolated_backend, start_id=200)
+    assert not list(isolated_backend.rglob("*.so"))
+    monkeypatch.setattr(dfungen.subprocess, "run", real_run)
+    first = dfungen.generate_lib(isolated_backend, start_id=200)
+    second = dfungen.generate_lib(isolated_backend, start_id=201)
+    again = dfungen.generate_lib(isolated_backend, start_id=200)
+    assert first == again
+    assert first[0] != second[0]
+    assert first[1][PROBE_NAME] == 200
+    assert second[1][PROBE_NAME] == 201
+    assert not list(isolated_backend.rglob("*.partial.so"))

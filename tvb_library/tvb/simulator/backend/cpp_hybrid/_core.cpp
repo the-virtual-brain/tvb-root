@@ -102,7 +102,6 @@ namespace cph {
 typedef int (*cph_generic_fn_t)(int, float *, const float *, int, int, int,
                                 int, const float *, const float *, int, int);
 static cph_generic_fn_t cph_generic_fn = nullptr;
-static bool cph_have_generic = false;
 
 // ---- coupling functions ----------------------------------------------------
 // cfun params are (n_parm, W) float32: p[k*W + i] = parameter k of lane i.
@@ -918,7 +917,7 @@ template <int W>
 CPH_NOINLINE static void dfun_dispatch(int model_id, float *dx, const float *x,
                                  int node, int mode, int n_node, int n_modes,
                                  const float *c, const float *p, int n_parm,
-                                 int n_cvar) {
+                                 int n_cvar, cph_generic_fn_t generic_fn) {
   if (model_id >= 100) {
     // generic (expression-generated) dfuns: x/c laid out node-major
     // (n_svar, n_node, n_modes, W); works for single- and multi-mode.
@@ -930,8 +929,11 @@ CPH_NOINLINE static void dfun_dispatch(int model_id, float *dx, const float *x,
                            c, p, n_parm, W))
       return;
 #endif
-    if (cph::cph_have_generic && cph::cph_generic_fn &&
-        cph::cph_generic_fn(model_id, dx, x, node, mode, n_node, n_modes,
+    // Unbound low-level callers retain the enable_generic_dfuns default;
+    // backend-created runtime subnets always supply their owning pointer.
+    if (!generic_fn) generic_fn = cph_generic_fn;
+    if (generic_fn &&
+        generic_fn(model_id, dx, x, node, mode, n_node, n_modes,
                             c, p, n_parm, W))
       return;
     // Neither table covered the id, so dx was never written: letting the run
@@ -976,6 +978,7 @@ CPH_NOINLINE static void clamp_dispatch(int model_id, float *x, int node, int n_
 template <int W> struct subnet {
   int n_node = 0, n_svar = 2, n_parm = 0, n_cvar = 1, n_modes = 1;
   int model_id = MOD_MPR;
+  cph_generic_fn_t generic_fn = nullptr;  // owning runtime library, if bound
   int integ_id = -1;  // -1 = inherit simw::integ_id; 0 = euler, 1 = heun
   uint32_t K = 1;     // steps per master tick: dt == K * dt0 (multi-dt)
   float dt = 0.001f;  // this subnet's own integration step (float32 of dt_j)
@@ -1062,7 +1065,7 @@ template <int W> struct subnet {
     for (int j = 0; j < n_node; j++)
       for (int m = 0; m < n_modes; m++)
         dfun_dispatch<W>(model_id, dx.data(), x.data(), j, m, n_node, n_modes,
-                         c.data(), p.data(), n_parm, n_cvar);
+                         c.data(), p.data(), n_parm, n_cvar, generic_fn);
     const size_t n = x.size();
     if (noise) {
       // noise layout (n_svar, n_node, n_modes, W) for this step
@@ -1080,7 +1083,7 @@ template <int W> struct subnet {
     for (int j = 0; j < n_node; j++)
       for (int m = 0; m < n_modes; m++)
         dfun_dispatch<W>(model_id, dx.data(), x.data(), j, m, n_node, n_modes,
-                         c.data(), p.data(), n_parm, n_cvar);
+                         c.data(), p.data(), n_parm, n_cvar, generic_fn);
     const size_t n = x.size();
     if (noise) {
 #pragma omp simd
@@ -1094,7 +1097,7 @@ template <int W> struct subnet {
     for (int j = 0; j < n_node; j++)
       for (int m = 0; m < n_modes; m++)
         dfun_dispatch<W>(model_id, dxi.data(), xi.data(), j, m, n_node, n_modes,
-                         c.data(), p.data(), n_parm, n_cvar);
+                         c.data(), p.data(), n_parm, n_cvar, generic_fn);
     if (noise) {
 #pragma omp simd
       for (size_t k = 0; k < n; k++)
@@ -2293,7 +2296,7 @@ struct sim {
 
   void add_subnet(int n_node, int n_svar, int n_parm, int n_cvar,
                   int model_id, int horizon, int n_modes, uint32_t k = 1,
-                  float dt = 0.001f, int integ_id = -1) {
+                  float dt = 0.001f, int integ_id = -1, uint64_t generic_dfun = 0) {
     uint32_t H = 1;
     while (H < (uint32_t)(horizon + 2)) H <<= 1;
     ensure_sim();
@@ -2301,6 +2304,7 @@ struct sim {
       constexpr int W = std::remove_reference_t<decltype(sw)>::W_CONST;
       subnet<W> s;
       s.alloc(n_node, n_svar, n_parm, n_cvar, model_id, H, n_modes);
+      s.generic_fn = reinterpret_cast<cph_generic_fn_t>(generic_dfun);
       s.K = k;
       s.dt = dt;
       s.integ_id = integ_id;
@@ -2850,7 +2854,6 @@ NB_MODULE(_cpp_hybrid, m) {
   m.def("enable_generic_dfuns", [](nb::int_ fn) {
     cph::cph_generic_fn = reinterpret_cast<cph::cph_generic_fn_t>(
         static_cast<uint64_t>(fn));
-    cph::cph_have_generic = true;
   }, nb::arg("fn"));
   m.def("dbg_mpr_dfun", &cph::dbg_mpr_dfun);
   m.def("dbg_mpr_heun", &cph::dbg_mpr_heun);
@@ -2880,7 +2883,8 @@ NB_MODULE(_cpp_hybrid, m) {
       .def("add_subnet", &cph::sim::add_subnet, nb::arg("n_node"),
            nb::arg("n_svar"), nb::arg("n_parm"), nb::arg("n_cvar"),
            nb::arg("model_id"), nb::arg("horizon"), nb::arg("n_modes"),
-           nb::arg("k") = 1, nb::arg("dt") = 0.001f, nb::arg("integ_id") = -1)
+           nb::arg("k") = 1, nb::arg("dt") = 0.001f, nb::arg("integ_id") = -1,
+           nb::arg("generic_dfun") = 0)
       .def("add_projection", &cph::sim::add_projection, nb::arg("src_sn"),
            nb::arg("tgt_sn"), nb::arg("w"), nb::arg("idx"), nb::arg("ptr"),
            nb::arg("del"), nb::arg("cfun_id"), nb::arg("src_cvars"),

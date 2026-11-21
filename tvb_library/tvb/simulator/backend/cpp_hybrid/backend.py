@@ -20,7 +20,17 @@ from ._cpp_hybrid import Sim
 
 # generic (expression-generated) model ids start at 100 (see _core.cpp)
 _GENERIC_BASE = 100
-_GEN_LIB = None      # ctypes handle
+
+
+@dataclasses.dataclass(frozen=True)
+class _GeneratedLibrary:
+    handle: object
+    ids: dict
+    metadata: dict
+    function_pointer: int
+
+
+_GEN_LIB = {}        # library path -> _GeneratedLibrary; handles never evicted
 _GEN_IDS = {}        # model class name -> generic id
 _GEN_META = {}       # model class name -> emit_sources metadata (runtime lib)
 _BUILTIN_TABLE = None  # built-in (build-time) generic model table, or None
@@ -243,6 +253,7 @@ class SubnetworkInfo:
     sv_hi: Optional[np.ndarray] = None
     clamp_indices: Optional[np.ndarray] = None
     clamp_values: Optional[np.ndarray] = None
+    runtime_library: Optional[_GeneratedLibrary] = None  # owns the subnet dfun pointer
 
 
 @dataclasses.dataclass
@@ -811,6 +822,7 @@ class CppHybridBackend:
         # collection) are on by default; disable to force the shared Python
         # reference path (used by the parity tests).
         self.enable_kernel_monitors = True
+        self._runtime_libraries = {}
 
     # ---- cache / misc API parity with NbHybridBackend ----
 
@@ -1021,6 +1033,7 @@ class CppHybridBackend:
                 n_cvar=(int(sn.model.cvar.size) if n_cvar_m is None
                         else n_cvar_m),
                 model_id=model_id,
+                runtime_library=self._runtime_libraries.get(model_name),
                 model_name=model_name,
                 model=sn.model,
                 params=params,
@@ -1188,10 +1201,12 @@ class CppHybridBackend:
         through instead of calling a null slot.  With no built-in table at
         all the original 100-based range is used unchanged (and nothing is
         excluded).
+
+        Cache entries are content-addressed in a process-private directory.
+        Each subnet retains its own entry; resolving another library never
+        changes existing simulations or the extension's low-level default.
         """
-        global _GEN_LIB, _GEN_IDS, _GEN_META
-        if _GEN_LIB is not None:
-            return
+        global _GEN_IDS, _GEN_META
         import ctypes
         from . import dfungen
         builtin = _builtin_model_table()
@@ -1200,19 +1215,24 @@ class CppHybridBackend:
                     else max(_GENERIC_BASE, max(builtin_ids)) + 1)
         lib_path, ids, meta = dfungen.generate_lib(
             cls.get_cache_dir(), start_id=start_id, exclude=list(builtin))
-        _GEN_LIB = ctypes.CDLL(str(lib_path))
-        _GEN_IDS = dict(ids)
-        _GEN_META = dict(meta)
-        fn = ctypes.cast(_GEN_LIB.cph_generic_dfun, ctypes.c_void_p).value
-        import tvb.simulator.backend.cpp_hybrid as _pkg
-        _pkg.enable_generic_dfuns(fn)
+        key = str(lib_path)
+        if key not in _GEN_LIB:
+            lib = ctypes.CDLL(key)
+            fn = ctypes.cast(lib.cph_generic_dfun, ctypes.c_void_p).value
+            # Never evict a loaded handle: native subnets retain raw pointers.
+            _GEN_LIB[key] = _GeneratedLibrary(lib, dict(ids), dict(meta), fn)
+        entry = _GEN_LIB[key]
+        # Informational aliases for the most recently resolved library only.
+        # Dispatch and parameter packing use the owning entry, not these aliases.
+        _GEN_IDS, _GEN_META = entry.ids, entry.metadata
+        return entry
 
     @staticmethod
     def _model_supported(name: str) -> bool:
         """Whether *name* has a kernel: hand-written, built-in generated, or in
-        the runtime library compiled during this process."""
+        a runtime library compiled during this process."""
         return (name in _MODEL_IDS or name in _builtin_model_table()
-                or name in _GEN_IDS)
+                or any(name in entry.ids for entry in _GEN_LIB.values()))
 
     @staticmethod
     def _packing_parm_names(model, meta) -> list:
@@ -1312,15 +1332,17 @@ class CppHybridBackend:
             self._check_dfun_signature(model, meta)
             return (int(meta["mid"]), len(parm), int(meta["n_cvar"]),
                     int(meta["n_svar"]), parm)
-        self._ensure_generic_dfuns()
-        if name not in _GEN_IDS:
+        entry = self._ensure_generic_dfuns()
+        ids, metadata = entry.ids, entry.metadata
+        if name not in ids:
             raise NotImplementedError(
                 f"CppHybridBackend does not support {name}"
             )
-        meta = _GEN_META[name]
+        meta = metadata[name]
         parm = self._packing_parm_names(model, meta)
         self._check_dfun_signature(model, meta)
-        return (_GEN_IDS[name], len(parm), int(meta["n_cvar"]),
+        self._runtime_libraries[name] = entry
+        return (ids[name], len(parm), int(meta["n_cvar"]),
                 int(meta["n_svar"]), parm)
 
     @staticmethod
@@ -1476,6 +1498,8 @@ class CppHybridBackend:
                 sn.n_nodes, sn.n_svar, sn.n_parm, sn.n_cvar,
                 sn.model_id, sn.horizon, sn.n_modes,
                 k=sn.k, dt=float(sn.dt), integ_id=sn.integ_id,
+                generic_dfun=(sn.runtime_library.function_pointer
+                              if sn.runtime_library is not None else 0),
             )
             sim.set_voi_specs(i, sn.voi)
             if sn.sv_lo is not None:

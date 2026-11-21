@@ -28,6 +28,8 @@ import shutil
 import subprocess
 import sys
 import textwrap
+import tempfile
+import threading
 from pathlib import Path
 
 import numpy as np
@@ -918,6 +920,10 @@ def _compiler_supports_flag(cxx_cmd: list, flag: str, cache_dir: Path) -> bool:
         probe_obj.unlink(missing_ok=True)
 
 
+_RUNTIME_BUILD_DIRS = {}
+_RUNTIME_BUILD_LOCK = threading.RLock()
+
+
 def generate_lib(cache_dir: Path, extra_models: dict = None,
                  start_id: int = _FIRST_MODEL_ID, exclude=None):
     """Generate + compile the generic dfun shared library (the runtime g++ /
@@ -940,6 +946,11 @@ def generate_lib(cache_dir: Path, extra_models: dict = None,
     padding, so ``N_GEN_MODELS`` (kernels) and ``N_GEN_DFUNS`` (slots, gap
     included) each count exactly what the name says even where the emitted id
     range sits above "/ next to" interior gaps.
+
+    Identical emitted source and compiler command reuse a content-addressed
+    library within this process. Artifacts live in a process-private directory
+    below ``cache_dir``: binaries are not reused across processes/ABIs/CPUs.
+    Only a successful compile atomically publishes the final library path.
 
     Returns (lib_path, model_ids, meta) where model_ids maps model class name
     to the integer id used in the dispatch table (ids >= 100) and meta is the
@@ -973,27 +984,39 @@ def generate_lib(cache_dir: Path, extra_models: dict = None,
             models.pop(name, None)
 
     src, meta = emit_sources(models, start_id=start_id)
-    src_path = cache_dir / "models_gen.cpp"
-    src_path.write_text(src)
-    so_path = cache_dir / "models_gen.so"
-    inc = np.get_include()
-    cmd = [
-        *cxx_cmd,
-        "-O3",
-        "-std=c++17",
-        "-fPIC",
-        "-shared",
-        "-ffp-contract=off",
-        "-Wno-unknown-pragmas",
-    ]
-    if _compiler_supports_flag(cxx_cmd, "-march=native", cache_dir):
-        cmd.append("-march=native")
-    if _compiler_supports_flag(cxx_cmd, "-fopenmp-simd", cache_dir):
-        cmd.append("-fopenmp-simd")
-    cmd.extend([f"-I{inc}", str(src_path), "-o", str(so_path)])
-    subprocess.run(cmd, check=True, capture_output=True)
-    model_ids = {name: m["mid"] for name, m in meta.items()}
-    return so_path, model_ids, meta
+    # Process-private roots avoid reusing binaries built with a different ABI,
+    # compiler or CPU in a previous process. Within this process the complete
+    # emitted source (including id layout and packing) identifies the library.
+    key = hashlib.sha256((repr(cxx_cmd) + "\n" + src).encode()).hexdigest()
+    with _RUNTIME_BUILD_LOCK:
+        root_key = (os.getpid(), str(cache_dir.resolve()))
+        root = _RUNTIME_BUILD_DIRS.get(root_key)
+        if root is None or not root.is_dir():
+            root = Path(tempfile.mkdtemp(prefix="runtime_", dir=cache_dir))
+            _RUNTIME_BUILD_DIRS[root_key] = root
+        build_dir = root / key
+        build_dir.mkdir(exist_ok=True)
+        src_path = build_dir / "models_gen.cpp"
+        so_path = build_dir / "models_gen.so"
+        if not so_path.exists():
+            src_path.write_text(src)
+            partial = build_dir / "models_gen.partial.so"
+            cmd = [
+                *cxx_cmd, "-O3", "-std=c++17", "-fPIC", "-shared",
+                "-ffp-contract=off", "-Wno-unknown-pragmas",
+            ]
+            if _compiler_supports_flag(cxx_cmd, "-march=native", build_dir):
+                cmd.append("-march=native")
+            if _compiler_supports_flag(cxx_cmd, "-fopenmp-simd", build_dir):
+                cmd.append("-fopenmp-simd")
+            cmd.extend([f"-I{np.get_include()}", str(src_path), "-o", str(partial)])
+            try:
+                subprocess.run(cmd, check=True, capture_output=True)
+                partial.replace(so_path)
+            finally:
+                partial.unlink(missing_ok=True)
+        model_ids = {name: m["mid"] for name, m in meta.items()}
+        return so_path, model_ids, meta
 
 
 # ---------------------------------------------------------------------------
