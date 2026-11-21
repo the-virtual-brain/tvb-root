@@ -947,3 +947,47 @@ def test_cpp_topology_cache_key_includes_dt_vector():
     # identical topologies (identical dt vectors) keep the same key
     ns_again = _coupled_net(0.01, 0.02, delay_steps=1, scale=0.01)
     assert cpp._topology_key(cpp._analyse(ns_again)) == keys[1]
+
+
+@pytest.mark.parametrize("backend_cls", [NbHybridBackend, CppHybridBackend])
+@pytest.mark.parametrize("projection_kind", ["inter", "intra"])
+@pytest.mark.parametrize("source_dt,target_dt,projection_dt,valid", [
+    pytest.param(0.02, 0.01, 0.02, True, id="slow-source-clock"),
+    pytest.param(0.01, 0.02, 0.01, True, id="fast-source-clock"),
+    pytest.param(0.02, 0.01, 0.01, False, id="wrong-master-clock"),
+    pytest.param(0.01, 0.02, 0.02, False, id="wrong-target-clock"),
+    pytest.param(0.02, 0.01, None, True, id="unspecified"),
+    pytest.param(0.01, 0.02, 0.01 * (1 + 1e-10), True, id="clock-tolerance"),
+])
+def test_projection_dt_matches_source_clock(
+        backend_cls, projection_kind, source_dt, target_dt, projection_dt, valid):
+    """Delay units follow the source, not the target or the master clock."""
+    src = _mpr_subnetwork("source", source_dt)
+    tgt = _mpr_subnetwork("target", target_dt)
+    kwargs = dict(source_cvar=np.array([0]), target_cvar=np.array([0]),
+                  weights=sp.csr_matrix(np.eye(3)),
+                  lengths=sp.csr_matrix(np.eye(3) * source_dt),
+                  cv=1.0, dt=source_dt if projection_dt is None else projection_dt)
+    if projection_kind == "inter":
+        projection = InterProjection(source=src, target=tgt, **kwargs)
+        inter_projections = [projection]
+    else:
+        projection = IntraProjection(**kwargs)
+        src.projections = [projection]
+        src.configure()
+        inter_projections = []
+    net = NetworkSet(subnets=[src, tgt], projections=inter_projections)
+    net.configure()
+    if projection_dt is None:
+        # Exercise the backend's unspecified-dt policy without asking the
+        # projection constructor to quantize nonzero lengths without a dt.
+        projection.dt = None
+    original_delays = projection.idelays.copy()
+    backend = backend_cls()
+    if valid:
+        assert backend.compile(net, eager=False) is not None
+        np.testing.assert_array_equal(projection.idelays, original_delays)
+        assert projection.dt == projection_dt
+    else:
+        with pytest.raises(ValueError, match="Projection dt=.*source subnetwork 'source'"):
+            backend.compile(net, eager=False)

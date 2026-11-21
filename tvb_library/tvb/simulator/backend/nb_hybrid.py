@@ -701,6 +701,8 @@ def _validate_multi_dt(network_set: NetworkSet) -> float:
     (dt0 = min over subnets); ``k_j = round(dt_j / dt0) >= 1`` is the number
     of master ticks per subnet step.  Raises ValueError otherwise.  The
     single-dt case (all equal) trivially satisfies the rule with all k = 1.
+    An explicit projection dt must match its source clock (the owning
+    subnetwork for intra-projections), since integer delays use source steps.
     """
     import numpy as _np
 
@@ -713,6 +715,18 @@ def _validate_multi_dt(network_set: NetworkSet) -> float:
                 "All subnetworks must use dts that are integer multiples of "
                 f"the smallest dt {dt0}. Got dt={dt_j} in '{sn.name}' "
                 f"({dt_j / dt0:.6g} master ticks, not an integer >= 1)."
+            )
+    projections_with_source = [(p, p.source) for p in network_set.projections]
+    projections_with_source.extend(
+        (p, sn) for sn in network_set.subnets for p in sn.projections)
+    for projection, source in projections_with_source:
+        if projection.dt is not None and not _np.isclose(
+                float(projection.dt), float(source.scheme.dt),
+                rtol=1e-9, atol=1e-12):
+            raise ValueError(
+                f"Projection dt={projection.dt} must match source subnetwork "
+                f"'{source.name}' dt={source.scheme.dt}; integer delays are "
+                "measured in source steps."
             )
     return dt0
 
