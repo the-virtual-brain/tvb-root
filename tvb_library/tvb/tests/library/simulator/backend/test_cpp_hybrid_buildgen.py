@@ -36,6 +36,7 @@ discoverable.
 """
 
 import importlib
+import json
 import os
 import re
 import sys
@@ -1272,3 +1273,60 @@ def test_generate_lib_raises_in_emscripten(monkeypatch, tmp_path):
     monkeypatch.setattr(sys, "platform", "emscripten")
     with pytest.raises(NotImplementedError, match="Emscripten"):
         dfungen.generate_lib(tmp_path)
+
+
+@pytest.mark.parametrize("absolute", [False, True], ids=["relative", "out_of_tree"])
+def test_dfungen_cli_trusted_output_paths(tmp_path, monkeypatch, absolute):
+    """CMake emits outside its source cwd; ordinary CLI paths are relative."""
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    monkeypatch.chdir(source_dir)
+    output_dir = (tmp_path / "build" if absolute else Path("build")) / "generated"
+    emit_path = output_dir / "models_gen.cpp"
+    meta_path = output_dir / "models_gen.json"
+    expected_src, expected_meta = "// generated test source\n", {"Model": {"mid": 100}}
+    calls = []
+
+    def emit_sources(**kwargs):
+        calls.append(kwargs)
+        return expected_src, expected_meta
+
+    monkeypatch.setattr(dfungen, "emit_sources", emit_sources)
+    args = ["--emit", str(emit_path), "--meta", str(meta_path),
+            "--entry-name", "cph_builtin_dfun", "--strict", "--only-supported"]
+    assert dfungen._main(args) == 0
+    assert emit_path.read_text() == expected_src
+    assert json.loads(meta_path.read_text()) == expected_meta
+    # Rebuilds intentionally replace both artifacts, not append to them.
+    emit_path.write_text("old source")
+    meta_path.write_text("old metadata")
+    assert dfungen._main(args) == 0
+    assert emit_path.read_text() == expected_src
+    assert json.loads(meta_path.read_text()) == expected_meta
+    assert calls == [dict(strict=True, entry_name="cph_builtin_dfun",
+                          only_supported=True)] * 2
+    if absolute:
+        assert not (source_dir / "build").exists()
+
+
+def test_dfungen_cli_optional_metadata(tmp_path, monkeypatch):
+    monkeypatch.setattr(dfungen, "emit_sources", lambda **kwargs: ("// source\n", {}))
+    emit_path = tmp_path / "models_gen.cpp"
+    assert dfungen._main(["--emit", str(emit_path)]) == 0
+    assert emit_path.read_text() == "// source\n"
+    assert sorted(p.name for p in tmp_path.iterdir()) == [emit_path.name]
+
+
+@pytest.mark.parametrize("failed_output", ["emit", "meta"])
+def test_dfungen_cli_output_error(tmp_path, monkeypatch, capsys, failed_output):
+    """A benign directory/file collision reports failure for either output."""
+    monkeypatch.setattr(dfungen, "emit_sources", lambda **kwargs: ("// source\n", {}))
+    emit_path = tmp_path / "models_gen.cpp"
+    meta_path = tmp_path / "models_gen.json"
+    failed_path = emit_path if failed_output == "emit" else meta_path
+    failed_path.mkdir()
+    assert dfungen._main(["--emit", str(emit_path), "--meta", str(meta_path)]) == 1
+    captured = capsys.readouterr()
+    assert "dfungen:" in captured.err
+    assert "emitted" not in captured.out
+    assert failed_path.is_dir()

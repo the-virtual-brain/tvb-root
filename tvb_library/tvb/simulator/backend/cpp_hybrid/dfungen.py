@@ -1001,11 +1001,22 @@ def generate_lib(cache_dir: Path, extra_models: dict = None,
 # ---------------------------------------------------------------------------
 
 def _main(argv=None) -> int:
+    """Emit to trusted caller-selected paths, like a compiler's output option.
+
+    Absolute paths and outputs outside the working/source directory are
+    intentional: CMake invokes this in the source directory with outputs in
+    its separate binary directory. Existing output files are overwritten.
+    This local build CLI is not a sandbox for untrusted arguments; wrappers
+    accepting such input must enforce their own output-directory policy.
+    """
     import argparse
     parser = argparse.ArgumentParser(
         prog="python -m tvb.simulator.backend.cpp_hybrid.dfungen",
         description="Emit the expression-driven C++ dfun source used by the "
-                    "cpp_hybrid backend (no compilation).")
+                    "cpp_hybrid backend (no compilation).",
+        epilog="Output paths are trusted local build inputs, may be absolute "
+               "or relative to the working directory, and overwrite existing "
+               "files. Do not forward untrusted paths to this CLI.")
     parser.add_argument("--emit", required=True, metavar="PATH",
                         help="write the generated C++ source to PATH")
     parser.add_argument("--meta", metavar="PATH",
