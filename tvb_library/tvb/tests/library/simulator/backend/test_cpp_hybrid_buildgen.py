@@ -1453,3 +1453,103 @@ def test_generate_lib_content_identity_and_failed_publication(isolated_backend,
     assert first[1][PROBE_NAME] == 200
     assert second[1][PROBE_NAME] == 201
     assert not list(isolated_backend.rglob("*.partial.so"))
+
+@_SKIP_WASM_RUNTIME_COMPILE
+def test_runtime_library_clear_cache_regenerates_live_bindings(
+        isolated_backend, monkeypatch, probe_class):
+    """Removing artifacts and rebuilding must not invalidate an existing sim."""
+    model = probe_class()
+    model.configure()
+    monkeypatch.setattr(dfungen, "collect_models", lambda: {PROBE_NAME: model})
+    backend = CppHybridBackend()
+    before = backend.compile(_network([model]))
+    entry = before._analysis.subnets[0].runtime_library
+    artifacts = list(isolated_backend.rglob("models_gen.so"))
+    assert len(artifacts) == 1
+    backend.clear_cache()
+    assert not artifacts[0].exists()
+    after = backend.compile(_network([model]))
+    regenerated = list(isolated_backend.rglob("models_gen.so"))
+    assert len(regenerated) == 1 and regenerated[0] != artifacts[0]
+    new_entry = after._analysis.subnets[0].runtime_library
+    assert new_entry is not entry and new_entry.ids == entry.ids
+    np.testing.assert_array_equal(before.run(NSTEP)[0][1], after.run(NSTEP)[0][1])
+
+
+@_SKIP_WASM_RUNTIME_COMPILE
+@pytest.mark.skipif(not sys.platform.startswith("linux"), reason="requires Linux thread CPU accounting")
+def test_runtime_library_overlapping_ids_execute_in_native_threads(
+        isolated_backend, monkeypatch, probe_class):
+    """Independent bound simulations advance concurrently inside native run."""
+    import threading
+    import time
+    from concurrent.futures import ThreadPoolExecutor
+    from tvb.basic.neotraits.api import Final, List
+
+    a_class = type(PROBE_NAME, (probe_class,), {
+        "state_variable_dfuns": Final(default={"x": "a / tau", "y": "0.0"}),
+    })
+    b_class = type(PROBE_NAME, (probe_class,), {
+        "state_variable_dfuns": Final(default={"x": "-b / tau", "y": "0.0"}),
+        "parameter_names": List(of=str, default=["b", "a", "tau"]),
+    })
+    models = [a_class(), b_class()]
+    for model in models:
+        model.configure()
+    selected = [models[0]]
+    monkeypatch.setattr(dfungen, "collect_models", lambda: {PROBE_NAME: selected[0]})
+    backend = CppHybridBackend()
+
+    def compile_model(index):
+        selected[0] = models[index]
+        return backend.compile(_network([models[index]]))
+
+    a, b = compile_model(0), compile_model(1)
+    ea, eb = (s._analysis.subnets[0].runtime_library for s in (a, b))
+    assert ea is not eb and ea.ids == eb.ids
+    # Sequential references check each full native simulation, not just entry IDs.
+    steps = 2000000
+    refs = [compile_model(i) for i in range(2)]
+    for sim in refs:
+        sim._sim.run(steps, need_tavg=False, need_ctavg=False)
+    expected = [np.array(sim._sim.get_subnet_state(0), copy=True) for sim in refs]
+    assert not np.array_equal(expected[0], expected[1])
+
+    barrier = threading.Barrier(3)
+    tids = [None, None]
+    finished = [threading.Event(), threading.Event()]
+
+    def run(index, sim):
+        tids[index] = threading.get_native_id()
+        barrier.wait(timeout=30)
+        try:
+            sim._sim.run(steps, need_tavg=False, need_ctavg=False)
+        finally:
+            finished[index].set()
+        return np.array(sim._sim.get_subnet_state(0), copy=True)
+
+    def ticks(tid):
+        # Fields 14 and 15 are user and system CPU ticks for this thread.
+        stat = Path(f"/proc/self/task/{tid}/stat").read_text().rsplit(")", 1)[1].split()
+        return int(stat[11]) + int(stat[12])
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futures = [pool.submit(run, i, sim) for i, sim in enumerate((a, b))]
+        barrier.wait(timeout=30)
+        observed = False
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline and not any(e.is_set() for e in finished):
+            try:
+                first = [ticks(tid) for tid in tids]
+                time.sleep(0.05)
+                second = [ticks(tid) for tid in tids]
+            except FileNotFoundError:
+                break
+            if not any(e.is_set() for e in finished) and all(
+                    end > start for start, end in zip(first, second)):
+                observed = True
+                break
+        results = [future.result(timeout=60) for future in futures]
+    assert observed, "did not observe both native threads consuming CPU concurrently"
+    for actual, reference in zip(results, expected):
+        np.testing.assert_array_equal(actual, reference)
