@@ -1,5 +1,17 @@
 ======================================================================================================================================
  The Virtual Brain (TVB)
+ Version: unreleased (next)
+======================================================================================================================================
+
+    * Fix ZerlautAdaptationSecondOrder covariance derivative (dC_ei): the four
+      population-derivative terms in derivative[3] were swapped; now matches
+      Carlu et al. 2020 Eq. (17) / Zerlaut master_equation.py A3 (upstream PR
+      the-virtual-brain/tvb-root#800). Note: results computed with the
+      second-order model are not bit-reproducible across this fix.
+
+
+======================================================================================================================================
+ The Virtual Brain (TVB)
  Version: 2.9.0 - build 18160
  Release Date: 15 Apr 2024
  Description: Maintenance release.

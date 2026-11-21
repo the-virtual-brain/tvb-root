@@ -1,10 +1,9 @@
 # %% [markdown]
-# # TVB Hybrid Simulation – Notebook 3 of 3
-# ## External Stimulation, Per-Subnetwork Monitors, Connectome-Ordered Output, and Advanced Features
+# # TVB Hybrid Simulation — External Stimulation, Per-Subnetwork Monitors, and Advanced Features
 #
-# This is the third and final notebook in the TVB Hybrid Simulation API series.
-# Notebooks 1 and 2 covered subnetwork construction, projections, coupling functions,
-# and axonal delays.  Here we complete the picture with four advanced topics:
+# Building on `simulate_hybrid_getting_started.ipynb` (subnetworks,
+# `InterProjection`, `NetworkSet`, and `Simulator`), this notebook covers four
+# advanced topics:
 #
 # 1. **External stimulation** — injecting spatiotemporal patterns (constant bias,
 #    pulse trains) into specific nodes and coupling variables of a subnetwork.
@@ -25,8 +24,6 @@
 # %% Imports
 import warnings
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from tvb.datatypes.connectivity import Connectivity
@@ -52,7 +49,7 @@ from tvb.simulator.hybrid import (
 # 1. Build the 5-node `Generic2dOscillator` subnet and a mini 5-region
 #    connectivity (required by `StimuliRegion` for spatial weighting).
 # 2. Create the `StimuliRegion` pattern and attach it via
-#    `NetworkSet.add_stimulus()`.
+#    `Subnetwork.add_stimulus()`.
 # 3. Compare node 0 (stimulated) against node 4 (unstimulated) — and against
 #    the same node in a no-stimulus control run.
 
@@ -90,8 +87,7 @@ subnet_stim = Subnetwork(
     nnodes=n_nodes,
 )
 nets_stim = NetworkSet(subnets=[subnet_stim], projections=[])
-nets_stim.add_stimulus(
-    target_name="net",
+subnet_stim.add_stimulus(
     stimulus=stim_pattern_const,
     stimulus_cvar=np.r_[0],    # V = state variable 0
     projection_scale=1.0,
@@ -196,8 +192,7 @@ subnet_pt = Subnetwork(
     nnodes=n_nodes,
 )
 nets_pt = NetworkSet(subnets=[subnet_pt], projections=[])
-nets_pt.add_stimulus(
-    target_name="net",
+subnet_pt.add_stimulus(
     stimulus=stim_pattern_pulse,
     stimulus_cvar=np.r_[0],
     projection_scale=2.0,
@@ -264,8 +259,7 @@ subnet_sel = Subnetwork(
     nnodes=n_nodes,
 )
 nets_sel = NetworkSet(subnets=[subnet_sel], projections=[])
-nets_sel.add_stimulus(
-    target_name="net",
+subnet_sel.add_stimulus(
     stimulus=stim_pattern_sel,
     stimulus_cvar=np.r_[0],
     projection_scale=1.0,
@@ -341,8 +335,7 @@ for scale in scales:
         nnodes=n_nodes,
     )
     nets_sw = NetworkSet(subnets=[sn], projections=[])
-    nets_sw.add_stimulus(
-        target_name="net",
+    sn.add_stimulus(
         stimulus=stim_pattern_sw,
         stimulus_cvar=np.r_[0],
         projection_scale=scale,
@@ -423,8 +416,12 @@ subnet_jr.monitors[-1].configure(sim_rec.simulation_length)
 subnet_g2d.add_monitor(tavg_g2d)
 subnet_g2d.monitors[-1].configure(sim_rec.simulation_length)
 
+# Use zero initial conditions so JansenRit does not draw y1, y5 in [-500, 500]
+# and overflow exp() on step 1.
+ic_rec = [np.zeros((6, n_jr, 1)), np.zeros((2, n_g2d, 1))]
+
 # Run – no global monitors → empty list
-results_rec = sim_rec.run(random_state=42)
+results_rec = sim_rec.run(initial_conditions=ic_rec)
 assert results_rec == [], f"Expected empty list, got {results_rec}"
 print("Global results (no monitors):", results_rec)
 
@@ -483,6 +480,11 @@ with warnings.catch_warnings():
 n_total = conn76.number_of_regions
 print(f"Total connectome regions: {n_total}")
 
+# WARNING: This is a random synthetic partition for demonstration only.
+# Real analyses should use anatomical labels from conn76.region_labels
+# to identify which regions are genuinely cortex vs thalamus.
+# Randomly assigning regions to "cortex" or "thalamus" is not
+# anatomically meaningful and will produce misleading results.
 np.random.seed(42)
 ix = np.random.randint(0, 2, size=n_total)
 ctx_idx = np.where(ix == 0)[0]
@@ -749,10 +751,10 @@ plt.show()
 #
 # | Topic | Key API |
 # |---|---|
-# | External stimulus (constant) | `equations.Linear`, `StimuliRegion`, `NetworkSet.add_stimulus()` |
+# | External stimulus (constant) | `equations.Linear`, `StimuliRegion`, `Subnetwork.add_stimulus()` |
 # | External stimulus (pulse train) | `equations.PulseTrain`, `temporal.evaluate(t)` |
 # | Spatial selectivity | `StimuliRegion(weight=...)` — zero weights silence nodes |
-# | Stimulus amplitude | `projection_scale` argument to `add_stimulus()` |
+# | Stimulus amplitude | `projection_scale` argument to `Subnetwork.add_stimulus()` |
 # | Per-subnet monitor | `subnet.add_monitor()` after `sim.configure()`, `Recorder.to_arrays()` |
 # | Merged / connectome-ordered output | `node_indices` on every subnet, same `len(variables_of_interest)` |
 # | Structural wiring | `NetworkSet.add_projection_from_connectivity()` |
@@ -775,5 +777,9 @@ plt.show()
 #
 # - [TVB Documentation](https://docs.thevirtualbrain.org)
 # - [TVB Scientific Publications](https://www.thevirtualbrain.org/tvb/zwei/neuroscience-publications)
-# - Notebooks 1 & 2 in this series: `simulate_hybrid_getting_started.ipynb`,
-#   `simulate_hybrid_coupling_and_delays.ipynb`
+# - Companion notebooks in this series:
+#   `simulate_hybrid_getting_started.ipynb`,
+#   `simulate_hybrid_stochastic_and_bold.ipynb`,
+#   `simulate_hybrid_parameter_sweeps.ipynb`,
+#   `cpp_hybrid_sweep.ipynb`,
+#   `simulate_hybrid_multi_dt.ipynb`

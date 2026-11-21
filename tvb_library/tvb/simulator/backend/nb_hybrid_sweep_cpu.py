@@ -297,7 +297,18 @@ def run_sweep_prange(kernel_fn, analysis, network_set, sweep_descriptor,
             n_cvar = len(sn.model.cvar)
             stim_arr = np.zeros(
                 (n_cvar, sn.n_nodes, sn.n_modes, nstep), dtype=np.float32)
-            for stim in analysis.stimuli_by_subnet.get(sn.name, []):
+            # Multi-dt decision 7 (parity_audit.md §6): stimulus patterns are
+            # evaluated on the master dt0 grid, one value per master step —
+            # the sim template indexes the stim array by the global master
+            # step.  Evaluating on the target subnet's own dt (the default
+            # Stim.configure axis) would make a slow subnet's stimulus play
+            # k_j times too fast under master-step indexing.
+            stim_dt0 = (analysis.dt0 if analysis.dt0
+                        else float(network_set.subnets[0].scheme.dt))
+            from tvb.simulator.backend.nb_hybrid import _stim_master_grid
+            for stim in (_stim_master_grid(s, stim_dt0, nstep)
+                         for s in
+                         analysis.stimuli_by_subnet.get(sn.name, [])):
                 target_slots = np.asarray(stim.target_cvar)
                 if target_slots.ndim != 1 or target_slots.size == 0:
                     raise ValueError(
@@ -351,8 +362,11 @@ def run_sweep_prange(kernel_fn, analysis, network_set, sweep_descriptor,
             sp_arrays[sn.name] = np.zeros((0, sn.n_nodes), dtype=np.float32)
 
     # ---- Assemble argument list matching sweep_kernel signature ----
-    dt = network_set.subnets[0].scheme.dt
-    bold_dt = np.float32(dt)
+    # Bold sampling lives on the master dt0 grid (multi-dt decision 7),
+    # matching _finalize_sweep's master-grid time axis.
+    dt0 = (analysis.dt0 if analysis.dt0
+           else float(network_set.subnets[0].scheme.dt))
+    bold_dt = np.float32(dt0)
 
     args = [
         np.int32(n_sweeps),
@@ -452,8 +466,9 @@ def run_sweep_prange(kernel_fn, analysis, network_set, sweep_descriptor,
     else:
         merged_tavg = None
 
-    dt = float(network_set.subnets[0].scheme.dt)
-    times = np.arange(1, nstep + 1, dtype=np.float64) * dt
+    # Master-grid time axis (consistency with _finalize_sweep, which
+    # recomputes result.times on the master dt0 grid anyway)
+    times = np.arange(1, nstep + 1, dtype=np.float64) * dt0
 
     return SweepResult(
         tavg=result_tavg,

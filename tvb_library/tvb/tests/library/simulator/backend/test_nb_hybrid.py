@@ -468,11 +468,20 @@ class TestNbHybridCompatibilityCheck(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             NbHybridBackend().run_network(nets, nstep=5)
 
-    def test_rejects_mismatched_dt(self):
-        sn1 = _mpr_subnetwork("a", 3, HeunDeterministic)
+    def test_rejects_non_integer_dt_multiple(self):
+        """Multi-dt contract: per-subnet dts must be integer multiples of dt0.
+
+        dt_j = k_j * dt0 with integer k_j >= 1 is legal (k_j == 1 is the
+        single-dt case); dt_j that is not an integer multiple of the
+        smallest dt must raise ValueError so a mismatched clock cannot
+        silently produce wrong trajectories.  (The former blanket rejection
+        of any dt mismatch was relaxed when multi-dt support landed: dt * 2
+        with dt0 = DT is now a valid k = 2 subnetwork.)
+        """
+        sn1 = _mpr_subnetwork("a", 3, HeunDeterministic)  # dt = DT = dt0
         sn2 = _mpr_subnetwork("b", 3, EulerDeterministic)
-        # Give sn2 a different dt
-        sn2.scheme = EulerDeterministic(dt=DT * 2)
+        # 1.5 * DT is not an integer multiple of DT -> reject
+        sn2.scheme = EulerDeterministic(dt=DT * 1.5)
         sn1.configure()
         sn2.configure()
         nets = NetworkSet(subnets=[sn1, sn2], projections=[])
@@ -4593,3 +4602,58 @@ class TestStimulusMonitorEndToEnd(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@pytest.mark.parametrize("multimode", [False, True], ids=["mono", "multi"])
+@pytest.mark.parametrize("projection_kind", ["inter", "intra"])
+def test_pre_sigmoidal_global_threshold_empty_csr(multimode, projection_kind):
+    """An edge-free dynamic global threshold must produce zero coupling."""
+    from tvb.simulator.hybrid.coupling import PreSigmoidal
+    from tvb.simulator.models.stefanescu_jirsa import ReducedSetFitzHughNagumo
+
+    model_cls = ReducedSetFitzHughNagumo if multimode else MontbrioPazoRoxin
+
+    def build(with_projection):
+        subnets = [Subnetwork(name=name, model=model_cls(),
+                              scheme=HeunDeterministic(dt=DT), nnodes=3)
+                   for name in ("src", "tgt")]
+        for sn in subnets:
+            sn.configure()
+        projections = []
+        if with_projection:
+            kwargs = dict(source_cvar=np.array([0, 1]), target_cvar=np.array([0]),
+                          weights=sp.csr_matrix((3, 3), dtype=np.float64),
+                          lengths=sp.csr_matrix((3, 3), dtype=np.float64),
+                          cfun=PreSigmoidal(dynamic=True, globalT=True),
+                          cv=1.0, dt=DT)
+            if projection_kind == "inter":
+                projections = [InterProjection(source=subnets[0], target=subnets[1],
+                                               **kwargs)]
+            else:
+                subnets[1].projections = [IntraProjection(**kwargs)]
+                subnets[1].configure()
+        net = NetworkSet(subnets=subnets, projections=projections)
+        net.configure()
+        return net
+
+    net = build(True)
+    backend = NbHybridBackend()
+    analysis = backend._analyse(net)
+    projections = analysis.inter_projections + analysis.intra_projections
+    assert len(projections) == 1
+    assert projections[0].weights_data.size == 0  # Structural zeros are stripped.
+    rng = np.random.RandomState(18)
+    initial = [rng.uniform(0.01, 0.1, (sn.model.nvar, sn.nnodes,
+                                     sn.model.number_of_modes))
+               for sn in net.subnets]
+    actual = backend.run_network(net, nstep=4, chunk_size=1,
+                                 initial_states=[x.copy() for x in initial])
+    reference = NbHybridBackend().run_network(
+        build(False), nstep=4, chunk_size=1,
+        initial_states=[x.copy() for x in initial])
+    for (times, states, coupling), (ref_times, ref_states, _) in zip(actual, reference):
+        assert np.isfinite(states).all()
+        assert np.isfinite(coupling).all()
+        np.testing.assert_array_equal(times, ref_times)
+        np.testing.assert_allclose(states, ref_states, rtol=1e-6, atol=1e-7)
+        np.testing.assert_array_equal(coupling, np.zeros_like(coupling))

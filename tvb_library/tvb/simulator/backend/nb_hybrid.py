@@ -53,6 +53,24 @@ import numpy as np
 import autopep8
 from typing import List, Optional
 
+from .hybrid_common import (
+    _CFUN_PARAM_ATTRS,
+    _CFUN_ATTR_TO_IDX,
+    _NAMED_PARAM_ALIASES,
+    _compute_chunk_size,
+    _aggregate_chunks_to_period,
+    _aggregate_raw_outputs,
+    _copy_monitor_states,
+    _apply_monitors,
+    _validate_multi_dt,
+    _stim_master_grid,
+    _can_merge_subnets,
+    _merge_subnet_outputs,
+    _merge_and_global_average,
+    _merge_and_spatial_average,
+    _cfun_type,
+    _resolve_named_params,
+)
 from .templates import MakoUtilMix
 from tvb.simulator.hybrid.network import NetworkSet
 from tvb.simulator.hybrid.inter_projection import InterProjection
@@ -127,39 +145,6 @@ class SweepResult:
 
 
 # ---------------------------------------------------------------------------
-# CFun parameter index mapping — named attributes to param_idx
-# ---------------------------------------------------------------------------
-
-_CFUN_PARAM_ATTRS: dict = {
-    "Linear":            [("a", 0), ("b", 1)],
-    "Scaling":           [("a", 0)],
-    "Sigmoidal":         [("a", 0), ("sigma", 1), ("midpoint", 2),
-                          ("cmin", 3), ("cmax", 4)],
-    "SigmoidalJansenRit":[("a", 0), ("e0", 1), ("r", 2), ("v0", 3),
-                          ("cmin", 4), ("cmax", 5), ("midpoint", 6)],
-    "Kuramoto":          [("a", 0), ("inv_N", 1)],
-    "Difference":        [("a", 0)],
-    "HyperbolicTangent": [("a", 0), ("midpoint", 1), ("sigma", 2),
-                          ("b", 3)],
-    "PreSigmoidal":      [("H", 0), ("Q", 1), ("G", 2), ("P", 3), ("theta", 4)],
-}
-
-_CFUN_ATTR_TO_IDX: dict = {}
-for _cls, _attrs in _CFUN_PARAM_ATTRS.items():
-    for _attr, _idx in _attrs:
-        _CFUN_ATTR_TO_IDX[(_cls, _attr)] = _idx
-
-_NAMED_PARAM_ALIASES: dict = {
-    "coupling_scale": {"attr": "a", "idx": 0},
-    "scale":         {"attr": "a", "idx": 0},
-    "coupling_a":    {"attr": "a", "idx": 0},
-    "coupling_b":    {"attr": "b", "idx": 1},
-    "sigma":         {"attr": "sigma", "idx": 1},
-    "midpoint":      {"attr": "midpoint", "idx": 2},
-}
-
-
-# ---------------------------------------------------------------------------
 # Lazy-supported-models cache
 # ---------------------------------------------------------------------------
 # Importing all 27 model modules costs ~2.5 s on first call (each module
@@ -196,7 +181,10 @@ def _get_supported_models_classes() -> tuple:
         Kuramoto,
     )
     from tvb.simulator.models.wong_wang import ReducedWongWang
-    from tvb.simulator.models.wong_wang_exc_inh import ReducedWongWangExcInh
+    from tvb.simulator.models.wong_wang_exc_inh import (
+        ReducedWongWangExcInh,
+        DecoBalancedExcInh,
+    )
     from tvb.simulator.models.epileptor import Epileptor, Epileptor2D
     from tvb.simulator.models.epileptorcodim3 import (
         EpileptorCodim3,
@@ -221,6 +209,7 @@ def _get_supported_models_classes() -> tuple:
         Generic2dOscillator,
         ReducedWongWang,
         ReducedWongWangExcInh,
+        DecoBalancedExcInh,
         Epileptor,
         Epileptor2D,
         EpileptorCodim3,
@@ -261,537 +250,6 @@ def _get_reduced_set_base():
     from tvb.simulator.models.stefanescu_jirsa import ReducedSetBase
     _REDUCED_SET_BASE_CACHE = ReducedSetBase
     return _REDUCED_SET_BASE_CACHE
-
-
-# ---------------------------------------------------------------------------
-# Helpers used by both Python (NbHybridBackend) and Mako templates
-# ---------------------------------------------------------------------------
-
-
-def _compute_chunk_size(monitors, dt):
-    """Compute the optimal chunk_size from monitor periods.
-
-    For each monitor with a period, the number of integration steps per sample
-    is ``istep = round(period / dt)``.  The chunk_size must divide evenly into
-    every monitor's istep so that temporal averages align with sampling periods.
-
-    Returns the GCD of all monitor isteps.  Returns 1 when no monitors have
-    a meaningful period (e.g. only Raw).
-
-    Parameters
-    ----------
-    monitors : list
-        TVB monitor instances.
-    dt : float
-        Integration time step.
-
-    Returns
-    -------
-    int
-        The computed chunk_size.
-    """
-    import math
-    from tvb.simulator.monitors import Raw, AfferentCoupling, RawVoi
-
-    isteps = []
-    for m in monitors:
-        # Raw and base AfferentCoupling output every step — no period constraint.
-        # AfferentCouplingTemporalAverage (subclass) HAS a period, so check it first.
-        from tvb.simulator.monitors import AfferentCouplingTemporalAverage
-        if isinstance(m, AfferentCouplingTemporalAverage):
-            if hasattr(m, 'period') and m.period is not None:
-                istep = max(1, int(round(float(m.period) / dt)))
-                isteps.append(istep)
-            continue
-        if isinstance(m, (Raw, AfferentCoupling, RawVoi)):
-            continue
-        if hasattr(m, 'period') and m.period is not None:
-            istep = max(1, int(round(float(m.period) / dt)))
-            isteps.append(istep)
-    if not isteps:
-        return 1
-    result = isteps[0]
-    for s in isteps[1:]:
-        result = math.gcd(result, s)
-    return max(1, result)
-
-
-def _aggregate_chunks_to_period(times, data, period, dt, chunk_size):
-    """Aggregate per-chunk data into period-sized windows.
-
-    When chunk_size < monitor period (in steps), the JIT produces more chunks
-    than monitor samples. This function groups consecutive chunks into windows
-    of `istep / chunk_size` chunks each, averages each window, and returns
-    the downsampled result with midpoint times.
-
-    Parameters
-    ----------
-    times : ndarray (n_chunks,)
-        Per-chunk midpoint times.
-    data : ndarray (n_chunks, ...)
-        Per-chunk averaged data.
-    period : float
-        Monitor sampling period in ms.
-    dt : float
-        Integration time step in ms.
-    chunk_size : int
-        Number of integration steps per chunk.
-
-    Returns
-    -------
-    new_times : ndarray (n_samples,)
-    new_data : ndarray (n_samples, ...)
-    """
-    istep = max(1, int(round(period / dt)))
-    chunks_per_period = max(1, istep // chunk_size)
-    n_chunks = len(times)
-    n_periods = n_chunks // chunks_per_period
-    if n_periods == 0:
-        # Not enough chunks for one full period — return per-chunk data as-is
-        return times, data
-    # Reshape and average over chunks_per_period
-    truncated = n_periods * chunks_per_period
-    reshaped = data[:truncated].reshape(n_periods, chunks_per_period, *data.shape[1:])
-    avg_data = reshaped.mean(axis=1)
-    # Compute period midpoint times: first period starts at step 0
-    new_times = np.array([
-        (i * chunks_per_period * chunk_size + istep / 2.0) * dt
-        for i in range(n_periods)
-    ], dtype=np.float64)
-    return new_times, avg_data
-
-
-def _aggregate_raw_outputs(raw_outputs, chunk_size):
-    """Restore the requested chunk view after a per-step BOLD run."""
-    if chunk_size == 1:
-        return raw_outputs
-    aggregated = []
-    for times, data, ctavg in raw_outputs:
-        slices = [slice(start, min(start + chunk_size, len(times)))
-                  for start in range(0, len(times), chunk_size)]
-        aggregated.append((
-            np.asarray([(times[part.start] + times[part.stop - 1]) * 0.5
-                        for part in slices]),
-            np.stack([data[part].mean(axis=0) for part in slices]),
-            np.stack([ctavg[part].mean(axis=0) for part in slices]),
-        ))
-    return aggregated
-
-
-def _copy_monitor_states(states):
-    """Copy configured monitor runtimes without losing transient TVB fields."""
-    if states is None:
-        return None
-    copied = {}
-    for key, runtime in states.items():
-        monitor = copy.copy(runtime["monitor"])
-        for name, value in vars(runtime["monitor"]).items():
-            setattr(monitor, name, value.copy() if isinstance(value, np.ndarray) else value)
-        copied[key] = {**runtime, "monitor": monitor}
-    return copied
-
-
-def _apply_monitors(
-    raw_outputs: list,
-    monitors: list,
-    dt: float,
-    chunk_size: int = 1,
-    monitor_data: Optional[dict] = None,
-    subnet_infos: Optional[list] = None,
-    bold_states: Optional[dict] = None,
-    bold_raw_outputs: Optional[list] = None,
-    temporal_raw_outputs: Optional[list] = None,
-) -> list:
-    """Transform per-subnet (times, data, ctavg) tuples into monitor-dispatched output.
-
-    Parameters
-    ----------
-    raw_outputs : list of (times, data, ctavg)
-        One tuple per subnetwork, as returned by the compiled kernel.
-    monitors : list of Monitor instances
-        Each monitor determines which view / transform of the raw data to return.
-    dt : float
-        Integration time step (ms).
-
-    Returns
-    -------
-    list[list[tuple[ndarray, ndarray]]]
-        Outer list indexed by monitor, inner list by subnetwork.
-        Each element is (times, data).
-    """
-    from tvb.simulator.monitors import (
-        TemporalAverage,
-        Raw,
-        SubSample,
-        GlobalAverage,
-        AfferentCoupling,
-        SpatialAverage,
-        Projection,
-        Bold,
-    )
-
-    # Cache merge check — invariant for the entire call
-    should_merge = bool(subnet_infos) and _can_merge_subnets(subnet_infos)
-
-    for m in monitors:
-        if isinstance(m, Raw):
-            pass
-        elif isinstance(
-            m,
-            (TemporalAverage, SubSample, GlobalAverage, AfferentCoupling,
-             SpatialAverage),
-        ):
-            pass
-        elif isinstance(m, Projection):
-            if not hasattr(m, '_gain') or m._gain is None:
-                raise ValueError(
-                    f"Projection monitor {type(m).__name__} has no gain matrix "
-                    "configured. Set the gain matrix before running (e.g. via "
-                    "config_for_sim or by setting m._gain directly)."
-                )
-        elif isinstance(m, Bold):
-            # Bold: ensure dt and istep are set (used by stock allocation)
-            if not hasattr(m, 'istep') or m.istep is None:
-                m.dt = dt
-                m._config_dt(dt)
-        else:
-            raise NotImplementedError(
-                f"Monitor {type(m).__name__} is not yet supported by the Numba backend. "
-                "Supported: TemporalAverage, Raw, SubSample, GlobalAverage, "
-                "AfferentCoupling, SpatialAverage, Projection (EEG/MEG/iEEG), Bold."
-            )
-
-    # Extract pre-computed JIT monitor data if available
-    spatial_per_sn = monitor_data.get('spatial', []) if monitor_data else []
-    proj_per_sn = monitor_data.get('proj', []) if monitor_data else []
-
-    results: list = []
-    for monitor_index, m in enumerate(monitors):
-        per_subnet: list = []
-        for si, (times, data, ctavg) in enumerate(raw_outputs):
-            if isinstance(m, AfferentCoupling):
-                per_subnet.append((times, ctavg))
-            elif isinstance(m, Projection):
-                if should_merge:
-                    # In merged mode, each subnet has fewer nodes than the
-                    # full gain matrix. Defer projection to the merge step,
-                    # which operates on connectome-ordered data.
-                    per_subnet.append((times, data))
-                else:
-                    # Non-merged: project this subnet's data
-                    if si < len(proj_per_sn) and proj_per_sn[si].ndim == 4 and proj_per_sn[si].shape[1] > 0:
-                        proj_data = proj_per_sn[si]
-                    else:
-                        gain = m.gain.astype(data.dtype)
-                        data_2d = data.sum(axis=-1)
-                        projected = np.einsum('ij,tkj->tki', gain, data_2d)
-                        proj_data = projected[..., np.newaxis]
-                    # Aggregate chunks to match monitor period
-                    if chunk_size > 0 and hasattr(m, 'period'):
-                        istep = max(1, int(round(float(m.period) / dt)))
-                        if chunk_size < istep:
-                            t, d = _aggregate_chunks_to_period(times, proj_data, float(m.period), dt, chunk_size)
-                            per_subnet.append((t, d))
-                            continue
-                    per_subnet.append((times, proj_data))
-            elif isinstance(m, GlobalAverage):
-                # In merged mode, defer averaging until after merge
-                if should_merge:
-                    per_subnet.append((times, data))
-                else:
-                    per_subnet.append((times, data.mean(axis=-2, keepdims=True)))
-            elif isinstance(m, Bold):
-                # Keep the mutable HRF stocks outside the topology-specific
-                # compiled kernel and drive TVB's monitor with every state.
-                if bold_raw_outputs is not None:
-                    _, data, _ = bold_raw_outputs[si]
-                state_key = ("bold", monitor_index, si)
-                runtime = bold_states.get(state_key) if bold_states is not None else None
-                if runtime is None:
-                    bold = copy.deepcopy(m)
-                    bold._config_dt(dt)
-                    if bold.variables_of_interest is None or bold.variables_of_interest.size == 0:
-                        bold.voi = np.arange(data.shape[1], dtype=int)
-                    else:
-                        bold.voi = np.asarray(bold.variables_of_interest, dtype=int)
-                    bold.compute_hrf()
-                    bold._config_stock(
-                        num_vars=len(bold.voi),
-                        num_nodes=data.shape[2],
-                        num_modes=data.shape[3],
-                    )
-                    runtime = {"monitor": bold, "step": 0}
-                    if bold_states is not None:
-                        bold_states[state_key] = runtime
-                else:
-                    bold = runtime["monitor"]
-
-                samples = [
-                    sample
-                    for step, state in enumerate(data, start=runtime["step"] + 1)
-                    if (sample := bold.sample(step, state)) is not None
-                ]
-                runtime["step"] += len(data)
-                if samples:
-                    per_subnet.append((
-                        np.asarray([sample[0] for sample in samples]),
-                        np.stack([sample[1] for sample in samples]),
-                    ))
-                else:
-                    per_subnet.append((
-                        np.array([], dtype=np.float64),
-                        np.empty(
-                            (0, len(bold.voi), data.shape[2], data.shape[3]),
-                            dtype=np.float64,
-                        ),
-                    ))
-            elif isinstance(m, SpatialAverage):
-                # In merged mode, spatial_mean covers all connectome nodes,
-                # so per-subnet JIT spatial is wrong. Use merged data instead.
-                if should_merge and hasattr(m, 'spatial_mean'):
-                    # Defer: store raw data, compute spatial after merge
-                    per_subnet.append((times, data))
-                else:
-                    # Use JIT-precomputed if available
-                    if si < len(spatial_per_sn) and spatial_per_sn[si].ndim == 4 and spatial_per_sn[si].shape[2] > 0:
-                        sa_data = spatial_per_sn[si]
-                    elif hasattr(m, 'spatial_mean'):
-                        sa_data = np.einsum('ij,tkjm->tkim', m.spatial_mean, data)
-                    else:
-                        sa_data = data
-                    # Aggregate chunks to match monitor period
-                    if chunk_size > 0 and hasattr(m, 'period'):
-                        istep = max(1, int(round(float(m.period) / dt)))
-                        if chunk_size < istep:
-                            t, d = _aggregate_chunks_to_period(times, sa_data, float(m.period), dt, chunk_size)
-                            per_subnet.append((t, d))
-                            continue
-                    per_subnet.append((times, sa_data))
-            elif isinstance(m, SubSample):
-                period = float(m.period)
-                istep = max(1, int(round(period / dt)))
-                # Step-based selection (1-indexed) to match Python monitor semantics
-                # chunk i corresponds to step (offset + i + 1)
-                n_chunks = len(times)
-                step_numbers = np.arange(1, n_chunks + 1)
-                mask = step_numbers % istep == 0
-                if np.any(mask):
-                    per_subnet.append((times[mask], data[mask]))
-                else:
-                    per_subnet.append((
-                        np.array([], dtype=times.dtype),
-                        np.empty((0,) + data.shape[1:], dtype=data.dtype),
-                    ))
-            elif isinstance(m, TemporalAverage):
-                if temporal_raw_outputs is None:
-                    per_subnet.append((times, data))
-                    continue
-                _, sample_data, _ = temporal_raw_outputs[si]
-                state_key = ("temporal_average", monitor_index, si)
-                runtime = bold_states.get(state_key) if bold_states is not None else None
-                if runtime is None:
-                    temporal_average = copy.deepcopy(m)
-                    temporal_average._config_dt(dt)
-                    if (temporal_average.variables_of_interest is None or
-                            temporal_average.variables_of_interest.size == 0):
-                        temporal_average.voi = np.arange(sample_data.shape[1], dtype=int)
-                    else:
-                        temporal_average.voi = np.asarray(
-                            temporal_average.variables_of_interest, dtype=int
-                        )
-                    temporal_average._config_stock(
-                        len(temporal_average.voi), sample_data.shape[2],
-                        sample_data.shape[3]
-                    )
-                    runtime = {"monitor": temporal_average, "step": 0}
-                    if bold_states is not None:
-                        bold_states[state_key] = runtime
-                else:
-                    temporal_average = runtime["monitor"]
-                samples = [
-                    sample
-                    for step, state in enumerate(
-                        sample_data, start=runtime["step"] + 1
-                    )
-                    if (sample := temporal_average.sample(step, state)) is not None
-                ]
-                runtime["step"] += len(sample_data)
-                if samples:
-                    per_subnet.append((
-                        np.asarray([sample[0] for sample in samples]),
-                        np.stack([sample[1] for sample in samples]),
-                    ))
-                else:
-                    per_subnet.append((
-                        np.array([], dtype=np.float64),
-                        np.empty((0,) + sample_data.shape[1:], dtype=np.float64),
-                    ))
-            elif isinstance(m, Raw):
-                per_subnet.append((times, data))
-            else:
-                raise NotImplementedError(
-                    f"Monitor {type(m).__name__} is not yet supported by the Numba backend. "
-                    "Supported: TemporalAverage, Raw, SubSample, GlobalAverage, "
-                    "AfferentCoupling, SpatialAverage, Projection (EEG/MEG/iEEG)."
-                )
-        results.append(per_subnet)
-
-    # Merge subnets when node_indices are available (connectome-ordered output)
-    if should_merge:
-        merged_results = []
-        for mi, m in enumerate(monitors):
-            if isinstance(m, (TemporalAverage, Raw, SubSample, Bold)):
-                # Per-subnet monitors: no merging needed
-                merged_results.append(results[mi])
-                continue
-            if isinstance(m, GlobalAverage):
-                # Merge raw data first, then average over all nodes
-                merged = _merge_and_global_average(results[mi], subnet_infos)
-                merged_results.append(merged)
-                continue
-            if isinstance(m, SpatialAverage) and hasattr(m, 'spatial_mean'):
-                # Merge raw data, then apply spatial_mean on the merged output
-                merged = _merge_and_spatial_average(results[mi], subnet_infos, m.spatial_mean)
-                merged_results.append(merged)
-                continue
-            if isinstance(m, Projection):
-                # Merge raw data into connectome order, then apply gain matrix.
-                # Each subnet stored raw data (not projected) in the per-subnet loop,
-                # because the full gain spans all connectome nodes.
-                merged = _merge_subnet_outputs(results[mi], subnet_infos)
-                times_m, data_m = merged[0]
-                gain = np.asarray(m.gain, dtype=data_m.dtype)
-                data_2d = data_m.sum(axis=-1)  # (T, n_voi, total_nodes)
-                projected = np.einsum('ij,tkj->tki', gain, data_2d)
-                merged_results.append([(times_m, projected[..., np.newaxis])])
-                continue
-            # Fallback: merge by placing data at node_indices
-            merged = _merge_subnet_outputs(results[mi], subnet_infos)
-            merged_results.append(merged)
-        results = merged_results
-
-    return results
-
-
-def _can_merge_subnets(subnet_infos: list) -> bool:
-    """Check if all subnets have node_indices and same voi count."""
-    if not subnet_infos:
-        return False
-    # All must have node_indices
-    if not all(si.node_indices is not None for si in subnet_infos):
-        return False
-    # All must have same voi count
-    voi_counts = [len(si.model.variables_of_interest) for si in subnet_infos]
-    return len(set(voi_counts)) == 1
-
-
-def _merge_subnet_outputs(
-    per_subnet: list,
-    subnet_infos: list,
-) -> list:
-    """Merge per-subnet (times, data) outputs into connectome-ordered output.
-
-    Each subnet's data has shape (T, n_voi, n_subnet_nodes, 1). The merged
-    output has shape (T, n_voi, total_nodes, 1) with each subnet placed at
-    its node_indices positions.
-
-    Returns a single-element list [(merged_times, merged_data)] to match
-    the per-monitor list-of-subnet format.
-    """
-    total_nodes = max(int(ix.max()) for ix in [si.node_indices for si in subnet_infos]) + 1
-    # Use the first subnet's times (all should be aligned after aggregation)
-    merged_times = per_subnet[0][0]
-    n_chunks = len(merged_times)
-    n_voi = per_subnet[0][1].shape[1]
-
-    merged_data = np.zeros((n_chunks, n_voi, total_nodes, 1), dtype=np.float32)
-    for si, (t, d) in zip(subnet_infos, per_subnet):
-        # d shape: (T, n_voi, n_subnet_nodes, 1)
-        merged_data[:, :, si.node_indices, :] = d
-
-    return [(merged_times, merged_data)]
-
-
-def _merge_and_global_average(
-    per_subnet: list,
-    subnet_infos: list,
-) -> list:
-    """Merge per-subnet data then compute global average across all nodes.
-
-    Returns a single-element list [(times, averaged_data)] where
-    averaged_data has shape (T, n_voi, 1, 1).
-    """
-    merged = _merge_subnet_outputs(per_subnet, subnet_infos)
-    times, data = merged[0]
-    # Average over nodes axis (axis 2)
-    averaged = data.mean(axis=2, keepdims=True)
-    return [(times, averaged)]
-
-
-def _merge_and_spatial_average(
-    per_subnet: list,
-    subnet_infos: list,
-    spatial_mean: np.ndarray,
-) -> list:
-    """Merge per-subnet data then apply spatial_mean on merged connectome data.
-
-    Returns a single-element list [(times, spatial_data)].
-    """
-    merged = _merge_subnet_outputs(per_subnet, subnet_infos)
-    times, data = merged[0]
-    # data: (T, n_voi, total_nodes, 1)
-    # spatial_mean: (n_areas, total_nodes)
-    sm = np.asarray(spatial_mean, dtype=data.dtype)
-    # einsum: (n_areas, total_nodes) @ (T, n_voi, total_nodes, 1) -> (T, n_voi, n_areas, 1)
-    spatial = np.einsum('ij,tkjm->tkim', sm, data)
-    return [(times, spatial)]
-
-
-def _cfun_type(p: "ProjectionInfo") -> str:
-    """Return the supported coupling type, rejecting unimplemented behavior."""
-    from tvb.simulator.hybrid.coupling import (
-        Linear,
-        Scaling,
-        Sigmoidal,
-        SigmoidalJansenRit,
-        Kuramoto as KuramotoCfun,
-        Difference,
-        HyperbolicTangent,
-        PreSigmoidal,
-    )
-
-    cfun = p.cfun
-    if cfun is None:
-        return "none"
-    cfun_class = type(cfun)
-    if cfun_class is Linear:
-        return "linear"
-    if cfun_class is Scaling:
-        return "scaling"
-    if cfun_class is Sigmoidal:
-        return "sigmoidal"
-    if cfun_class is SigmoidalJansenRit:
-        if (getattr(cfun, 'use_classic', 1)
-                and p.source_cvar.shape[0] == 2):
-            return "sigmoidal_jr"
-        return "sigmoidal_jr_legacy"
-    if cfun_class is KuramotoCfun:
-        return "kuramoto"
-    if cfun_class is Difference:
-        return "difference"
-    if cfun_class is HyperbolicTangent:
-        return "tanh"
-    if cfun_class is PreSigmoidal:
-        if (getattr(cfun, 'dynamic', 0)
-                and p.source_cvar.shape[0] == 2):
-            return "pre_sigmoidal_dynamic"
-        return "pre_sigmoidal"
-    raise NotImplementedError(
-        f"NbHybridBackend does not support coupling {cfun_class.__name__}. "
-        "Use one of the explicitly supported hybrid coupling classes: Linear, "
-        "Scaling, Sigmoidal, SigmoidalJansenRit, Kuramoto, Difference, "
-        "HyperbolicTangent, PreSigmoidal, or None."
-    )
 
 
 def _cfun_params(p: "ProjectionInfo") -> "np.ndarray":
@@ -935,6 +393,8 @@ class SubnetworkInfo:
     node_indices: Optional[np.ndarray] = None  # connectome positions, shape (n_nodes,)
     clamp_indices: Optional[np.ndarray] = None  # configured state-variable indices
     clamp_values: Optional[np.ndarray] = None  # shape (n_clamps, n_nodes, n_modes)
+    dt: float = 0.0  # integration timestep (ms); multi-dt supported
+    k: int = 1  # steps per master tick: dt == k * dt0
 
 
 @dataclasses.dataclass
@@ -986,6 +446,11 @@ class NetworkAnalysis:
     stimuli_by_subnet: dict = dataclasses.field(default_factory=dict)
     # source_horizons: dict mapping source subnet name -> max horizon across outgoing projections
     source_horizons: dict = dataclasses.field(default_factory=dict)
+    # dt0: master-clock base timestep (ms). All subnet dts are integer
+    # multiples of dt0 (dt_j = k_j * dt0); the master clock ticks at dt0 and
+    # each subnet integrates only on its own ticks. 0.0 means single-dt
+    # (backward compatible: consumers fall back to the first subnet's dt).
+    dt0: float = 0.0
 
     @property
     def all_projections(self) -> List[ProjectionInfo]:
@@ -1170,7 +635,9 @@ class CompiledNetworkFn:
             positions, and monitor runtime state for :meth:`resume`.
         """
         # Resolve chunk_size: auto-compute from monitor periods when not specified
-        dt = self._network_set.subnets[0].scheme.dt
+        # (multi-dt: monitor periods and the chunk grid live on the master
+        # dt0 clock, so istep = round(period / dt0)).
+        dt = _validate_multi_dt(self._network_set)
         if chunk_size is None:
             if monitors is not None:
                 chunk_size = _compute_chunk_size(monitors, dt)
@@ -1664,6 +1131,10 @@ class NbHybridBackend(MakoUtilMix):
         # TODO §8.4: use lazy chunk-by-chunk path when estimated stim_arr_mb
         #   exceeds _STIM_LAZY_THRESHOLD_MB (or TVB_HYBRID_LAZY_STIM_MB env var).
         #   See _compute_stimulus_lazy() for the planned implementation.
+        # Multi-dt decision 7: the pattern is evaluated on the master dt0
+        # grid (index = global master step), not the subnet's own dt grid.
+        stim_dt0 = (analysis.dt0 if analysis.dt0
+                    else float(network_set.subnets[0].scheme.dt))
         for sn_info in analysis.subnetworks:
             if sn_info.has_stimulus:
                 n_cvar = len(sn_info.model.cvar)
@@ -1671,7 +1142,9 @@ class NbHybridBackend(MakoUtilMix):
                     (n_cvar, sn_info.n_nodes, sn_info.n_modes, nstep),
                     dtype=np.float32,
                 )
-                for stim in analysis.stimuli_by_subnet[sn_info.name]:
+                for stim in (_stim_master_grid(s, stim_dt0, step_offset + nstep)
+                             for s in
+                             analysis.stimuli_by_subnet[sn_info.name]):
                     target_slots = np.asarray(stim.target_cvar)
                     if target_slots.ndim != 1 or target_slots.size == 0:
                         raise ValueError(
@@ -1772,9 +1245,9 @@ class NbHybridBackend(MakoUtilMix):
         _bold_v0 = np.float32(0.0)
         _bold_dt = np.float32(0.0)
         if _bold_mon is not None:
-            dt = network_set.subnets[0].scheme.dt
+            dt = _validate_multi_dt(network_set)
             _bold_dt = np.float32(dt)
-            # Extract Bold period in steps
+            # Extract Bold period in steps (master dt0 grid)
             bold_period = float(_bold_mon.period)  # ms
             _bold_istep = max(1, int(round(bold_period / dt)))
             # Compute Balloon model parameters
@@ -1934,7 +1407,7 @@ class NbHybridBackend(MakoUtilMix):
             HeunStochastic,
             EulerStochastic,
         )
-        dt0 = network_set.subnets[0].scheme.dt
+        dt0 = _validate_multi_dt(network_set)
         for projection in network_set.projections:
             _cfun_type(projection)
         for sn in network_set.subnets:
@@ -1952,7 +1425,7 @@ class NbHybridBackend(MakoUtilMix):
                     f"NbHybridBackend does not support {type(sn.model).__name__}. "
                     f"Supported: MontbrioPazoRoxin, KIonEx, JansenRit, ZetterbergJansen, "
                     f"Generic2dOscillator, SupHopf, Kuramoto, Hopfield, LarterBreakspear, "
-                    f"ReducedWongWang, ReducedWongWangExcInh, "
+                    f"ReducedWongWang, ReducedWongWangExcInh, DecoBalancedExcInh, "
                     f"Epileptor, Epileptor2D, EpileptorCodim3, EpileptorCodim3SlowMod, EpileptorRestingState, "
                     f"WilsonCowan, ZerlautAdaptation*, "
                     f"CoombesByrne2D, CoombesByrne, GastSchmidtKnosche_SD/SF, DumontGutkin, "
@@ -1963,11 +1436,6 @@ class NbHybridBackend(MakoUtilMix):
                 raise NotImplementedError(
                     f"NbHybridBackend only supports Heun/EulerDeterministic or Stochastic; "
                     f"subnetwork '{sn.name}' uses {type(sn.scheme).__name__}"
-                )
-            if sn.scheme.dt != dt0:
-                raise ValueError(
-                    "All subnetworks must share the same dt. "
-                    f"Expected {dt0}, got {sn.scheme.dt} in '{sn.name}'"
                 )
             # Model-specific validation (look up classes from lazy cache)
             _model_cls_by_name = {m.__name__: m for m in _supported_models}
@@ -2022,6 +1490,8 @@ class NbHybridBackend(MakoUtilMix):
 
     def _analyse(self, network_set: NetworkSet) -> "NetworkAnalysis":
         from tvb.simulator.noise import Additive
+
+        dt0 = _validate_multi_dt(network_set)
 
         # Build stimulus lookup: subnet name -> list of Stim objects
         stims_by_subnet: dict = {sn.name: [] for sn in network_set.subnets}
@@ -2079,6 +1549,8 @@ class NbHybridBackend(MakoUtilMix):
                     node_indices=getattr(sn, 'node_indices', None),
                     clamp_indices=clamp_indices,
                     clamp_values=clamp_values,
+                    dt=float(sn.scheme.dt),
+                    k=max(1, int(round(float(sn.scheme.dt) / dt0))),
                 )
             )
 
@@ -2119,9 +1591,18 @@ class NbHybridBackend(MakoUtilMix):
         # Compute per-source-subnet max horizon for shared history buffers
         _all_projs = inter_projs + intra_projs
         source_horizons: dict = {}
-        for _p in _all_projs:
-            src = _p.source_subnet
-            source_horizons[src] = max(source_horizons.get(src, 1), _p.horizon)
+        for _p in inter_projs:
+            source_horizons[_p.source_subnet] = max(
+                source_horizons.get(_p.source_subnet, 1), _p.horizon)
+        for _p in intra_projs:
+            # intra reads reach one step deeper right after a push (the
+            # exact read i0 = t//k - 1 - delay at a tick where the source
+            # has m pushed steps gives i0 = m - 1 - delay, and the slot
+            # would alias step m when H == delay + 1): keep one extra
+            # IC-prefilled slot so the negative range never aliases
+            # (decisions 3/4)
+            source_horizons[_p.source_subnet] = max(
+                source_horizons.get(_p.source_subnet, 1), _p.horizon + 1)
         # Ensure every subnetwork has an entry (default 1 for subnets with no outgoing projections)
         for sn in subnets:
             if sn.name not in source_horizons:
@@ -2133,6 +1614,7 @@ class NbHybridBackend(MakoUtilMix):
             intra_projections=intra_projs,
             stimuli_by_subnet=stims_by_subnet,
             source_horizons=source_horizons,
+            dt0=dt0,
         )
 
     def _build_projection_info(self, p, is_inter: bool) -> "ProjectionInfo":
@@ -2381,94 +1863,7 @@ class NbHybridBackend(MakoUtilMix):
     # Unified sweep API
     # ===================================================================
 
-    @staticmethod
-    def _resolve_named_params(network_set, params):
-        """Resolve a named-parameter dict to ``(sweep_descriptor, sweep_values)``."""
-        # Collect all projections with names
-        # Each entry: (lookup_name, proj, actual_name_for_descriptor)
-        all_projs = []
-        for proj in network_set.projections:
-            actual_name = f"{proj.source.name}_to_{proj.target.name}"
-            all_projs.append((actual_name, proj, actual_name))
-        for sn in network_set.subnets:
-            for p in sn.projections:
-                raw_name = getattr(p, "name", None) or "intra"
-                qualified = f"{sn.name}.{raw_name}" if raw_name == "intra" else raw_name
-                all_projs.append((qualified, p, raw_name))
-
-        dims = []
-        for pname, values in params.items():
-            dims.append(np.asarray(values, dtype=np.float32))
-
-        n_sweeps = len(dims[0])
-        for i, d in enumerate(dims):
-            if len(d) != n_sweeps:
-                raise ValueError(f"All param arrays must be same length; param {i} has {len(d)} vs {n_sweeps}")
-
-        sweep_values = (np.column_stack(dims).astype(np.float32)
-                        if len(dims) > 1 else dims[0].reshape(-1, 1))
-        sweep_descriptor = []
-
-        for dim_idx, (key, _values) in enumerate(params.items()):
-            resolved = False
-
-            # Try alias first ('coupling_scale', 'scale', etc.)
-            if key in _NAMED_PARAM_ALIASES:
-                alias = _NAMED_PARAM_ALIASES[key]
-                for lookup, proj, actual in all_projs:
-                    cfun = proj.cfun
-                    if cfun is None:
-                        continue
-                    cfun_cls = type(cfun).__name__
-                    attr = alias["attr"]
-                    if (cfun_cls, attr) in _CFUN_ATTR_TO_IDX:
-                        sweep_descriptor.append({
-                            "type": "cfun", "projection": actual,
-                            "param_idx": _CFUN_ATTR_TO_IDX[(cfun_cls, attr)],
-                        })
-                        resolved = True
-                        break
-                if resolved:
-                    continue
-
-            # Proj.attr: try "{proj}.{attr}" before model params so that
-            # "ctx.intra.b" resolves to the intra-projection's cfun 'b' 
-            # rather than treating "intra.b" as a model parameter.
-            if "." in key:
-                proj_name, attr = key.rsplit(".", 1)
-                for lookup, proj, actual in all_projs:
-                    if lookup == proj_name or lookup.endswith("." + proj_name):
-                        cfun = proj.cfun
-                        if cfun is not None:
-                            cfun_cls = type(cfun).__name__
-                            if (cfun_cls, attr) in _CFUN_ATTR_TO_IDX:
-                                sweep_descriptor.append({
-                                    "type": "cfun", "projection": actual,
-                                    "param_idx": _CFUN_ATTR_TO_IDX[(cfun_cls, attr)],
-                                })
-                                resolved = True
-                                break
-                if resolved:
-                    continue
-
-            # Model param: "subnet.param" — only if param doesn't match
-            # a known cfun attribute for any projection of that subnet.
-            if "." in key:
-                parts = key.split(".", 1)
-                if len(parts) == 2 and any(sn.name == parts[0] for sn in network_set.subnets):
-                    sname, param = parts
-                    sweep_descriptor.append({"type": "model", "subnet": sname, "param": param})
-                    continue
-
-            raise ValueError(
-                f"Cannot resolve sweep parameter '{key}'. Use 'coupling_scale', "
-                f"'{{proj}}.{{attr}}', or '{{subnet}}.{{param}}'. "
-                f"Projections: {[lookup for lookup, _, _ in all_projs]}. "
-                f"Subnets: {[sn.name for sn in network_set.subnets]}."
-            )
-
-        return sweep_descriptor, sweep_values
-
+    _resolve_named_params = staticmethod(_resolve_named_params)
     def sweep(
         self,
         network_set,
@@ -2544,6 +1939,17 @@ class NbHybridBackend(MakoUtilMix):
     def _sweep_cuda(self, network_set, sweep_descriptor, sweep_values,
                      nstep, monitor, monitor_period, bold_period,
                      chunk_size, initial_states, node_indices):
+        # the CUDA sweep kernel integrates every subnet on every tick and
+        # writes history at t % H — it has no multi-dt support yet.  Refuse
+        # unequal dts so sweep(backend='auto') falls back to the CPU sweep
+        # (which implements the pinned multi-dt semantics); an explicit
+        # backend='cuda' re-raises.
+        dts = {float(sn.scheme.dt) for sn in network_set.subnets}
+        if len(dts) > 1:
+            raise NotImplementedError(
+                "the CUDA sweep kernel does not support multi-dt networks "
+                "yet; use backend='cpu' (the CPU sweep implements the "
+                "multi-dt master-clock semantics)")
         import time as _time_mod
         from tvb.simulator.backend.nb_hybrid_cuda_sweep_backend import NbHybridCUDASweepBackend
 
@@ -2648,17 +2054,11 @@ class NbHybridBackend(MakoUtilMix):
 
         per_step_tavg = result.tavg
         per_step_ctavg = result.ctavg
-        scheme = getattr(network_set.subnets[0], 'scheme', None)
-        if scheme is not None:
-            dt = float(scheme.dt)
-        else:
-            returned_times = np.asarray(result.times)
-            if returned_times.size > 1:
-                dt = float(returned_times[1] - returned_times[0])
-            elif returned_times.size == 1:
-                dt = float(returned_times[0])
-            else:
-                dt = 1.0
+        # multi-dt: sweep time axes (and Bold sampling) live on the master
+        # dt0 grid, exactly like the per-run outputs — NOT the first
+        # subnet's dt, which with dts ordered [0.02, 0.01] would stretch
+        # every master tick to 2 dt0
+        dt = _validate_multi_dt(network_set)
         per_step_times = np.arange(
             1, next(iter(per_step_tavg.values())).shape[1] + 1,
             dtype=np.float64,

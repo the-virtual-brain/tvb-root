@@ -1,6 +1,5 @@
 # %% [markdown]
-# # TVB Hybrid Simulation – Notebook 4 of 4
-# ## Stochastic Integration and the BOLD Monitor
+# # TVB Hybrid Simulation — Stochastic Integration and the BOLD Monitor
 #
 # This notebook demonstrates two features that previously required special
 # handling in hybrid simulations:
@@ -31,9 +30,6 @@ warnings.filterwarnings("ignore")
 
 import numpy as np
 import scipy.sparse as sp
-import matplotlib
-
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from tvb.simulator.models import JansenRit, Generic2dOscillator
@@ -69,11 +65,14 @@ simulation_length = 20000.0
 noise_amplitude = 0.0001
 
 sigma = np.array([(noise_amplitude**2) / 2])
-hiss = noise.Additive(nsig=sigma)
-scheme = HeunStochastic(dt=dt, noise=hiss)
+# Construct two distinct integrator instances so each subnetwork configures
+# its own state boundaries and draws from an independent noise RNG stream.
+scheme_ctx = HeunStochastic(dt=dt, noise=noise.Additive(nsig=sigma))
+scheme_thal = HeunStochastic(dt=dt, noise=noise.Additive(nsig=sigma))
 
 print(f"dt = {dt} ms | noise σ = {sigma[0]:.2e} | length = {simulation_length} ms")
-print(f"Integrator: {scheme.__class__.__name__}")
+print(f"Cortex integrator  : {scheme_ctx.__class__.__name__}")
+print(f"Thalamus integrator: {scheme_thal.__class__.__name__}")
 
 # %% [markdown]
 # ## 2. Building the Subnetworks
@@ -82,24 +81,25 @@ print(f"Integrator: {scheme.__class__.__name__}")
 # **Generic2dOscillator** (thalamus) is a 2D phase-plane model that is
 # numerically robust under stochastic perturbation.
 #
-# We request 2 variables of interest from each model so the combined
-# monitor output has 4 VOI rows.
+# We select 2 variables of interest from cortex (`y0`, `y1`) and keep
+# `Generic2dOscillator`'s 1 default variable of interest (`V`), so the
+# combined monitor output has 3 VOI rows (`2 + 1 = 3`: `y0`, `y1`, `V`).
 
 # %% Build subnetworks
 jr_vois = JansenRit.variables_of_interest.default[:2]
-g2d_vois = Generic2dOscillator.variables_of_interest.default[:2]
+g2d_vois = Generic2dOscillator.variables_of_interest.default  # ("V",) — 1 VOI
 
 cortex = Subnetwork(
     name="cortex",
     model=JansenRit(variables_of_interest=jr_vois),
-    scheme=scheme,
+    scheme=scheme_ctx,
     nnodes=nnodes,
 ).configure()
 
 thalamus = Subnetwork(
     name="thalamus",
     model=Generic2dOscillator(variables_of_interest=g2d_vois),
-    scheme=scheme,
+    scheme=scheme_thal,
     nnodes=nnodes,
 ).configure()
 
@@ -217,9 +217,10 @@ print("\nNo NaN or Inf values detected — simulation is numerically stable.")
 # %% [markdown]
 # ## 6. Neural Time Series
 #
-# The `TemporalAverage` output has shape `(n_time, total_vois, total_nodes, 1)`.
+# The `TemporalAverage` output has shape `(n_time, total_vois, total_nodes, 1)`
+# with `total_vois = 3` (`y0`, `y1`, `V`).
 # The first 2 VOI rows and first 38 nodes belong to cortex (JansenRit);
-# the remaining 2 VOI rows and 38 nodes belong to thalamus
+# the remaining 1 VOI row and 38 nodes belong to thalamus
 # (Generic2dOscillator).
 
 # %% Slice per-subnetwork arrays
@@ -347,8 +348,9 @@ print("Node variability plotted.")
 #   attached simultaneously to the same hybrid simulation, returning
 #   independent `(times, data)` tuples.
 #
-# **Previous notebooks in the series**
+# **Companion notebooks in this series**
 #
-# - *Notebook 1* — Getting started with subnetworks and projections.
-# - *Notebook 2* — Coupling functions, axonal delays, multi-cvar topologies.
-# - *Notebook 3* — Stimulation, per-subnetwork monitors, connectome-ordered output.
+# - `simulate_hybrid_getting_started.ipynb` — Getting started with subnetworks and projections.
+# - `simulate_hybrid_stimuli_and_advanced.ipynb` — Stimulation, per-subnetwork monitors, connectome-ordered output.
+# - `simulate_hybrid_parameter_sweeps.ipynb` / `cpp_hybrid_sweep.ipynb` — Multi-core and SIMD parameter sweeps.
+# - `simulate_hybrid_multi_dt.ipynb` — Per-subnetwork integration time steps (multi-dt).

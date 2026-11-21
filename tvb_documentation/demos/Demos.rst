@@ -141,6 +141,12 @@ examples.
 .. _Interacting with TVBClient API importers: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/interacting_with_rest_api_launch_operations.ipynb
 .. _Launch BIDS derivatives importer: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/launching_bids_adapter.ipynb
 .. _Integrating with SIIBRA: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/siibra_tvb_api.ipynb
+.. _Simulate Hybrid Getting Started: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/simulate_hybrid_getting_started.ipynb
+.. _Simulate Hybrid Stimuli and Advanced: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/simulate_hybrid_stimuli_and_advanced.ipynb
+.. _Simulate Hybrid Stochastic and BOLD: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/simulate_hybrid_stochastic_and_bold.ipynb
+.. _Simulate Hybrid Parameter Sweeps: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/simulate_hybrid_parameter_sweeps.ipynb
+.. _C++ Hybrid SIMD Parameter Sweeps: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/cpp_hybrid_sweep.ipynb
+.. _Simulate Hybrid Multi-dt: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/simulate_hybrid_multi_dt.ipynb
 
 
 .. figure:: figures/analyze_region_corrcoef.png
@@ -394,6 +400,57 @@ Mouse
       :target: `Simulate for Mouse`_
 
       `Simulate for Mouse`_
+
+
+Hybrid Simulation
+-----------------
+
+.. figure:: figures/simulate_region_jansen_rit.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Simulate Hybrid Getting Started`_
+
+      `Simulate Hybrid Getting Started`_
+
+
+.. figure:: figures/stimuli.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Simulate Hybrid Stimuli and Advanced`_
+
+      `Simulate Hybrid Stimuli and Advanced`_
+
+
+.. figure:: figures/exploring_the_bold_monitor.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Simulate Hybrid Stochastic and BOLD`_
+
+      `Simulate Hybrid Stochastic and BOLD`_
+
+
+.. figure:: figures/integrators.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Simulate Hybrid Parameter Sweeps`_
+
+      `Simulate Hybrid Parameter Sweeps`_
+
+
+.. figure:: figures/integrators.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `C++ Hybrid SIMD Parameter Sweeps`_
+
+      `C++ Hybrid SIMD Parameter Sweeps`_
+
+
+.. figure:: figures/integrators.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Simulate Hybrid Multi-dt`_
+
+      `Simulate Hybrid Multi-dt`_
 
 
 
