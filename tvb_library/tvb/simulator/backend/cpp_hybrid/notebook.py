@@ -71,7 +71,7 @@ def available_sweep_params(ns: "NetworkSet"):
     Returns a dict grouping ``coupling`` (aliases + projection attrs) and
     ``model`` (``subnet.param`` dotted names).
     """
-    from tvb.simulator.backend.nb_hybrid import _NAMED_PARAM_ALIASES
+    from tvb.simulator.backend.hybrid_common import _NAMED_PARAM_ALIASES
     acc = {"coupling": sorted(_NAMED_PARAM_ALIASES or []),
            "projection": [], "model": []}
     for sn in ns.subnets:

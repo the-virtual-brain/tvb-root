@@ -156,7 +156,7 @@ class Simulator(t.HasTraits):
                         f"got {sn.scheme.dt} for subnetwork '{sn.name}'"
                     )
         else:
-            from tvb.simulator.backend.nb_hybrid import _validate_multi_dt
+            from tvb.simulator.backend.hybrid_common import _validate_multi_dt
 
             self._dt0 = _validate_multi_dt(self.nets)
         for monitor in self.monitors:

@@ -34,7 +34,7 @@ _GEN_LIB = {}        # library path -> _GeneratedLibrary; handles never evicted
 _GEN_IDS = {}        # model class name -> generic id
 _GEN_META = {}       # model class name -> emit_sources metadata (runtime lib)
 _BUILTIN_TABLE = None  # built-in (build-time) generic model table, or None
-from tvb.simulator.backend.nb_hybrid import (
+from tvb.simulator.backend.hybrid_common import (
     _CFUN_PARAM_ATTRS,
     _cfun_type,
     _apply_monitors,
@@ -42,7 +42,7 @@ from tvb.simulator.backend.nb_hybrid import (
     _can_merge_subnets,
     _compute_chunk_size,
     _copy_monitor_states,
-    NbHybridBackend,
+    _resolve_named_params,
 )
 from tvb.simulator.hybrid.network import NetworkSet
 from tvb.simulator.integrators import (
@@ -851,8 +851,10 @@ class CppHybridBackend:
         cls._CACHE_DIR = None
         cls._RUN_FN_CACHE.clear()
         try:
-            from tvb.simulator.backend import nb_hybrid as nbh
-            nbh._COMPILED_FN_CACHE.clear()
+            # Mirror legacy cache bookkeeping only when Numba is already loaded.
+            nbh = sys.modules.get("tvb.simulator.backend.nb_hybrid")
+            if nbh is not None:
+                nbh._COMPILED_FN_CACHE.clear()
         except Exception:
             pass
 
@@ -863,7 +865,7 @@ class CppHybridBackend:
         return n_bytes / (1024 * 1024)
 
     def _resolve_named_params(self, network_set, params):
-        return NbHybridBackend._resolve_named_params(network_set, params)
+        return _resolve_named_params(network_set, params)
 
     # ------------------------------------------------------------------
     # compatibility / analysis
@@ -874,7 +876,7 @@ class CppHybridBackend:
             HeunDeterministic, EulerDeterministic,
             HeunStochastic, EulerStochastic,
         )
-        from tvb.simulator.backend.nb_hybrid import _validate_multi_dt
+        from tvb.simulator.backend.hybrid_common import _validate_multi_dt
         dt0 = _validate_multi_dt(network_set)
         for sn in network_set.subnets:
             model_name = type(sn.model).__name__
@@ -954,7 +956,7 @@ class CppHybridBackend:
     def _analyse(self, network_set: NetworkSet) -> NetworkAnalysis:
         """Map a NetworkSet onto the C++ core's subnets/projections."""
         self._check_compatibility(network_set)
-        from tvb.simulator.backend.nb_hybrid import _validate_multi_dt
+        from tvb.simulator.backend.hybrid_common import _validate_multi_dt
         subnet_index = {sn.name: i for i, sn in enumerate(network_set.subnets)}
         dt0 = _validate_multi_dt(network_set)
 
@@ -1452,8 +1454,10 @@ class CppHybridBackend:
             token = object()
             self._RUN_FN_CACHE[key] = token
             try:
-                from tvb.simulator.backend import nb_hybrid as nbh
-                nbh._COMPILED_FN_CACHE[key] = token
+                # Do not load a second compiler backend for cache bookkeeping.
+                nbh = sys.modules.get("tvb.simulator.backend.nb_hybrid")
+                if nbh is not None:
+                    nbh._COMPILED_FN_CACHE[key] = token
             except Exception:
                 pass
             try:
@@ -1565,7 +1569,7 @@ class CppHybridBackend:
         Multi-dt decision 7: the pattern is evaluated on the master dt0 grid
         (index = master step), via nb_hybrid._stim_master_grid.
         """
-        from tvb.simulator.backend.nb_hybrid import _stim_master_grid
+        from tvb.simulator.backend.hybrid_common import _stim_master_grid
         stims = []
         for sn in analysis.subnets:
             if not sn.stimuli:
@@ -1975,7 +1979,7 @@ class CppHybridBackend:
     def _build_legacy_stim_arrays(self, analysis, legacy_by_sn, nstep, width,
                                   step_offset=0):
         """Legacy 5D dense stimulus fallback for non-separable stimuli."""
-        from tvb.simulator.backend.nb_hybrid import _stim_master_grid
+        from tvb.simulator.backend.hybrid_common import _stim_master_grid
         if not any(legacy_by_sn):
             return None
         stim_by_sn = []
@@ -2278,7 +2282,7 @@ class CppHybridBackend:
         Returns (targets, sweep_values) where targets is a list of
         ('cfun', projection_name, param_idx) or ('model', subnet_name, parm).
         """
-        descriptor, sweep_values = NbHybridBackend._resolve_named_params(
+        descriptor, sweep_values = _resolve_named_params(
             network_set, params
         )
         targets = []
