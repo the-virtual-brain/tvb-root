@@ -77,8 +77,9 @@ def _compute_chunk_size(monitors, dt):
     is ``istep = round(period / dt)``.  The chunk_size must divide evenly into
     every monitor's istep so that temporal averages align with sampling periods.
 
-    Returns the GCD of all monitor isteps.  Returns 1 when no monitors have
-    a meaningful period (e.g. only Raw).
+    Returns the GCD of all monitor isteps unless a Raw/RawVoi or SubSample
+    monitor requires a single-step chunk. AfferentCoupling has no such
+    restriction. Returns 1 when no monitors have a meaningful period.
 
     Parameters
     ----------
@@ -93,11 +94,15 @@ def _compute_chunk_size(monitors, dt):
         The computed chunk_size.
     """
     import math
-    from tvb.simulator.monitors import Raw, AfferentCoupling, RawVoi
+    from tvb.simulator.monitors import AfferentCoupling, Raw, SubSample
 
     isteps = []
     for m in monitors:
-        # Raw and base AfferentCoupling output every step — no period constraint.
+        if isinstance(m, SubSample) or (
+            isinstance(m, Raw) and not isinstance(m, AfferentCoupling)
+        ):
+            return 1
+        # Base AfferentCoupling has no period constraint.
         # AfferentCouplingTemporalAverage (subclass) HAS a period, so check it first.
         from tvb.simulator.monitors import AfferentCouplingTemporalAverage
         if isinstance(m, AfferentCouplingTemporalAverage):
@@ -105,7 +110,7 @@ def _compute_chunk_size(monitors, dt):
                 istep = max(1, int(round(float(m.period) / dt)))
                 isteps.append(istep)
             continue
-        if isinstance(m, (Raw, AfferentCoupling, RawVoi)):
+        if isinstance(m, AfferentCoupling):
             continue
         if hasattr(m, 'period') and m.period is not None:
             istep = max(1, int(round(float(m.period) / dt)))
@@ -750,7 +755,7 @@ def _resolve_named_params(network_set, params):
                 continue
 
         # Proj.attr: try "{proj}.{attr}" before model params so that
-        # "ctx.intra.b" resolves to the intra-projection's cfun 'b' 
+        # "ctx.intra.b" resolves to the intra-projection's cfun 'b'
         # rather than treating "intra.b" as a model parameter.
         if "." in key:
             proj_name, attr = key.rsplit(".", 1)
@@ -786,4 +791,3 @@ def _resolve_named_params(network_set, params):
         )
 
     return sweep_descriptor, sweep_values
-

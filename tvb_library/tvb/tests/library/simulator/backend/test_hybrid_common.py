@@ -35,8 +35,10 @@ def test_numba_keeps_static_named_parameter_alias():
 def test_monitor_chunk_size_and_partial_raw_aggregation():
     assert common._compute_chunk_size([Raw(), AfferentCoupling()], 0.1) == 1
     assert common._compute_chunk_size([
-        TemporalAverage(period=0.6), SubSample(period=0.4), Raw(),
+        TemporalAverage(period=0.6), TemporalAverage(period=0.4), AfferentCoupling(),
     ], 0.1) == 2
+    for monitor in (Raw(), SubSample(period=0.4)):
+        assert common._compute_chunk_size([TemporalAverage(period=0.6), monitor], 0.1) == 1
     times = np.arange(1, 6) * 0.1
     data = np.arange(5, dtype=np.float32).reshape(5, 1, 1, 1)
     raw = [(times, data, data + 10)]
