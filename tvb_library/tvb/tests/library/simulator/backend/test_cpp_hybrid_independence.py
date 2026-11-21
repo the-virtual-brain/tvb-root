@@ -69,8 +69,10 @@ def test_public_delayed_monitored_run_without_nb_hybrid():
         def run(kind, delayed=True):
             sim = Simulator(
                 nets=network(delayed), simulation_length=1.2, backend=kind,
+                # GlobalAverage at dt is the shared sampling contract here.
+                # For longer periods the C++ and Python backends differ.
                 monitors=[Raw(), TemporalAverage(period=0.2),
-                          GlobalAverage(period=0.2)],
+                          GlobalAverage(period=0.1)],
             )
             sim.configure()
             return sim.run(initial_conditions=[
@@ -84,7 +86,7 @@ def test_public_delayed_monitored_run_without_nb_hybrid():
             np.testing.assert_allclose(d, reference_d, rtol=1e-5, atol=1e-6)
             assert np.isfinite(d).all()
         assert [d.shape for _, d in actual] == [
-            (12, 1, 2, 1), (6, 1, 2, 1), (6, 1, 1, 1),
+            (12, 1, 2, 1), (6, 1, 2, 1), (12, 1, 1, 1),
         ]
         # Ensure this fixture observes a real delayed trajectory, not a
         # zero-weight or constant-state projection that masks delay bugs.

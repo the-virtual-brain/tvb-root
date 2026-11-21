@@ -7,8 +7,7 @@ zero. We retain both natural clocks and compare elapsed time. The delayed
 fixture has H - 1 divisible by the TemporalAverage window so averaging bins
 align without resetting simulator state or trimming transient samples.
 TemporalAverage(period=dt) exposes each integrated state with a midpoint
-timestamp; these tests do not cover Raw (the public CPP Simulator currently
-rejects Raw with its default chunk size).
+timestamp. Raw cadence is covered separately in test_cpp_monitor_cadence.py.
 
 Weights use [target, source] ordering in both APIs, without transposition or
 row/whole-network normalization. Classic Kuramoto is a SparseCoupling and
