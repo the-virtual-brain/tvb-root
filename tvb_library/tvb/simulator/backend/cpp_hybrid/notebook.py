@@ -100,6 +100,7 @@ def sweep(
     chunk_size: int = None,
     initial_states: list = None,
     features=None,
+    grid: bool = False,
     **sweeps,
 ) -> SweepResult:
     """Run a multithreaded SIMD parameter sweep on *network_set*.
@@ -131,18 +132,31 @@ def sweep(
         :meth:`CppHybridBackend.sweep`.
     features : sequence of str, optional
         Optional online streaming feature names to compute during the sweep.
+    grid : bool
+        If True, sweep the Cartesian product rather than pairing values.
+        Parameters follow keyword insertion order, with the last varying
+        fastest (equivalent to ``meshgrid(..., indexing="ij")`` flattened in
+        C order). Each row of ``result.sweep_values`` aligns with the same
+        sweep axis in monitor outputs and feature tables.
     **sweeps : dict[str, array-like]
         Each key names a parameter to sweep and its value the 1-D values.
         Valid key forms (see :func:`available_sweep_params`):
         ``'coupling_scale'`` alias, ``'{proj_name}.{attr}'`` projection cfun
         attribute, or ``'{subnet}.{param}'`` model parameter.  All arrays must
-        have the same length and are paired elementwise (lockstep zip); pass
-        flattened ``np.meshgrid`` arrays when a full Cartesian grid is desired.
+        have the same length and are paired elementwise (lockstep zip) by
+        default. With ``grid=True`` lengths may differ; each must be nonempty
+        and one-dimensional.
     """
     params = {name: np.asarray(vals, dtype=np.float32) for name, vals in sweeps.items()}
     if not params:
         raise ValueError("sweep() needs at least one swept parameter, e.g. "
                          "sweep(ns, nstep, coupling_scale=[...])")
+    if grid:
+        for name, values in params.items():
+            if values.ndim != 1 or values.size == 0:
+                raise ValueError(f"grid parameter {name!r} must be a nonempty 1-D array")
+        params = dict(zip(params, (a.ravel() for a in np.meshgrid(
+            *params.values(), indexing="ij"))))
     n = len(next(iter(params.values())))
     if width is None or width == "auto":
         width = default_width(n, network_set)
