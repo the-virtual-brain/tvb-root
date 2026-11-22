@@ -19,6 +19,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -1528,20 +1529,21 @@ static KMonState dict_to_kmon_state(const nb::dict &d) {
   return st;
 }
 
-static KMonState dict_to_window_state(const nb::dict &d) {
+static KMonState dict_to_staged_state(const nb::dict &d, bool bw) {
+  const std::string label = bw ? "global BW stream: " : "global complete window: ";
   for (const char *key : {"slot", "kind", "width", "n_out_v", "n_out_space",
                           "n_out_modes", "accum", "accum_count", "m_step", "run_start"}) {
     if (!d.contains(key))
-      throw std::runtime_error("global complete window: incomplete snapshot state");
+      throw std::runtime_error(label + "incomplete snapshot state");
   }
   // Staged snapshots may carry the empty legacy fields emitted by export.
   for (const char *key : {"interim", "stock", "bw_state"}) {
     if (d.contains(key) && nb::len(nb::handle(d[key].ptr())) != 0)
-      throw std::runtime_error("global complete window: unexpected legacy snapshot state");
+      throw std::runtime_error(label + "unexpected legacy snapshot state");
   }
   for (const char *key : {"interim_count", "stock_pos"}) {
     if (d.contains(key) && nb::cast<uint32_t>(d[key]) != 0)
-      throw std::runtime_error("global complete window: unexpected legacy snapshot state");
+      throw std::runtime_error(label + "unexpected legacy snapshot state");
   }
   KMonState st;
   st.slot = nb::cast<int>(d["slot"]);
@@ -1550,11 +1552,58 @@ static KMonState dict_to_window_state(const nb::dict &d) {
   st.n_out_v = nb::cast<int>(d["n_out_v"]);
   st.n_out_space = nb::cast<int>(d["n_out_space"]);
   st.n_out_modes = nb::cast<int>(d["n_out_modes"]);
-  st.accum = to_double_vec(d["accum"]);
+  if (bw) {
+    if (nb::len(nb::handle(d["accum"].ptr())) != 0)
+      throw std::runtime_error(label + "unexpected legacy snapshot accumulator");
+  } else {
+    st.accum = to_double_vec(d["accum"]);
+  }
   st.accum_count = nb::cast<uint32_t>(d["accum_count"]);
   st.m_step = nb::cast<uint64_t>(d["m_step"]);
   st.run_start = nb::cast<uint64_t>(d["run_start"]);
   return st;
+}
+
+using BwParameters = balloon_windkessel::Parameters;
+static constexpr std::pair<const char *, double BwParameters::*> bw_parameter_fields[] = {
+    {"signal_decay_s", &BwParameters::signal_decay_s},
+    {"flow_feedback_s2", &BwParameters::flow_feedback_s2},
+    {"transit_time_s", &BwParameters::transit_time_s},
+    {"grubb_exponent", &BwParameters::grubb_exponent},
+    {"resting_extraction", &BwParameters::resting_extraction},
+    {"intravascular_ratio", &BwParameters::intravascular_ratio},
+    {"frequency_offset_hz", &BwParameters::frequency_offset_hz},
+    {"relaxation_rate_per_s", &BwParameters::relaxation_rate_per_s},
+    {"echo_time_s", &BwParameters::echo_time_s},
+    {"resting_blood_volume", &BwParameters::resting_blood_volume},
+};
+
+static void export_bw_stream_state(nb::dict &state, const KMonState &st) {
+  auto regions = make_owned_array<double>({st.bw_stream_regions.size(), 6});
+  double *row = regions.data();
+  for (const auto &r : st.bw_stream_regions) {
+    const double values[] = {r.drive_sum, r.bold_sum, r.ode.signal,
+                             r.ode.inflow, r.ode.volume, r.ode.deoxy};
+    row = std::copy(std::begin(values), std::end(values), row);
+  }
+  state["bw_stream_regions"] = regions;
+  state["bw_drive_count"] = st.bw_drive_count;
+}
+
+static void parse_bw_stream_state(KMonState &st, const nb::dict &d, size_t n_node) {
+  if (!d.contains("bw_stream_regions") || !d.contains("bw_drive_count"))
+    throw std::runtime_error("global BW stream: incomplete snapshot state");
+  auto regions = nb::cast<nb::ndarray<nb::numpy, const double, nb::ndim<2>, nb::c_contig>>(
+      d["bw_stream_regions"], false);
+  if (regions.shape(0) != n_node || regions.shape(1) != 6)
+    throw std::runtime_error("global BW stream: invalid snapshot region shape");
+  st.bw_drive_count = nb::cast<uint32_t>(d["bw_drive_count"]);
+  st.bw_stream_regions.resize(n_node);
+  const double *row = regions.data();
+  for (auto &r : st.bw_stream_regions) {
+    r = {row[0], row[1], {row[2], row[3], row[4], row[5]}};
+    row += 6;
+  }
 }
 
 template <int W>
@@ -1569,12 +1618,41 @@ static void parse_kmon_spec(nb::handle item, int n_src_v, int n_space,
     slot = nb::cast<int>(d["slot"]);
     kind = nb::cast<int>(d["kind"]);
     const bool complete_window = dict_get_or<bool>(d, "complete_window", false);
+    if (kind == KMON_BOLD_BW_STREAM) {
+      if (!global || W != 1 || complete_window ||
+          dict_get_or<uint32_t>(d, "cadence_K", 1u) != 1)
+        throw std::runtime_error("global BW stream requires a global width 1 attachment");
+      for (const char *key : {"istep", "dt", "voi", "bw_drive_baseline", "bw_drive_scale",
+                              "bw_stream_params"})
+        if (!d.contains(key))
+          throw std::runtime_error("global BW stream: incomplete attachment specification");
+      const double clock = nb::cast<double>(d["dt"]);
+      if (!std::isfinite(clock) || clock <= 0 || clock > std::numeric_limits<float>::max() ||
+          (float)clock != default_dt)
+        throw std::runtime_error("global BW stream: incompatible neural clock");
+      const auto voi = to_int_vec(d["voi"]);
+      if (voi.size() != 1 || voi[0] < 0 || voi[0] >= n_src_v)
+        throw std::runtime_error("global BW stream: exactly one valid observed VOI is required");
+      const auto parameters = nb::cast<nb::dict>(d["bw_stream_params"]);
+      BwParameters p;
+      if (parameters.size() != std::size(bw_parameter_fields))
+        throw std::runtime_error("global BW stream: expected one explicit scalar parameter set");
+      for (const auto &[name, member] : bw_parameter_fields) {
+        if (!parameters.contains(name))
+          throw std::runtime_error("global BW stream: incomplete parameter set");
+        p.*member = nb::cast<double>(parameters[name]);
+      }
+      out.configure_bw_stream(slot, nb::cast<int>(d["istep"]), default_dt, n_space, voi[0],
+                              nb::cast<double>(d["bw_drive_baseline"]),
+                              nb::cast<double>(d["bw_drive_scale"]), p);
+      return;
+    }
     if (complete_window &&
         (!global || W != 1 || (kind != KMON_TAVG && kind != KMON_GLOBAL_AVG &&
                                kind != KMON_SPATIAL_AVG)))
       throw std::runtime_error("complete_window requires a supported global monitor at width 1");
     auto it = std::find_if(prev.begin(), prev.end(), [&](const kmon<W> &e) {
-      return !e.complete_window && e.slot == slot && e.kind == kind;
+      return !e.staged_global() && e.slot == slot && e.kind == kind;
     });
     if (!complete_window && it != prev.end()) {
       out = *it;
@@ -1676,8 +1754,10 @@ static void parse_kmon_spec(nb::handle item, int n_src_v, int n_space,
   nb::tuple a = nb::cast<nb::tuple>(item);
   slot = nb::cast<int>(a[0]);
   kind = nb::cast<int>(a[1]);
+  if (kind == KMON_BOLD_BW_STREAM)
+    throw std::runtime_error("global BW stream requires an explicit native dictionary");
   auto it = std::find_if(prev.begin(), prev.end(), [&](const kmon<W> &e) {
-    return !e.complete_window && e.slot == slot && e.kind == kind;
+    return !e.staged_global() && e.slot == slot && e.kind == kind;
   });
   if (it != prev.end()) {
     out = *it;
@@ -1755,13 +1835,19 @@ template <int W> struct simw {
       throw std::runtime_error(
           "set_global_monitors: gather_specs length != subnet count");
     bool has_window = false;
+    bool has_bw_stream = false;
     for (auto item : mon_specs) {
-      if (nb::isinstance<nb::dict>(item) &&
-          dict_get_or<bool>(nb::cast<nb::dict>(item), "complete_window", false)) {
-        has_window = true;
-        break;
-      }
+      if (!nb::isinstance<nb::dict>(item)) continue;
+      const auto d = nb::cast<nb::dict>(item);
+      has_window |= dict_get_or<bool>(d, "complete_window", false);
+      has_bw_stream |= dict_get_or<int>(d, "kind", 0) == KMON_BOLD_BW_STREAM;
     }
+    if (has_bw_stream) {
+      if (W != 1 || sn.size() != 1 || sn[0].K != 1 || sn[0].dt != dt || sn[0].n_modes != 1)
+        throw std::runtime_error("global BW stream requires width 1, one regional subnet, clock and mode");
+      validate_bw_observations();
+    }
+    const bool staged = has_window || has_bw_stream;
     std::vector<GlobalGatherSubnet> gather;
     gather.reserve(gather_specs.size());
     int tot_v = 0;
@@ -1785,7 +1871,7 @@ template <int W> struct simw {
         if (t.size() > 4 && !t[4].is_none())
           gs.node_indices = to_int_vec(t[4]);
       }
-      if (!has_window) {
+      if (!staged) {
         if (gs.voi_offset + gs.n_voi > tot_v) tot_v = gs.voi_offset + gs.n_voi;
         if (gs.node_indices.empty()) {
           if (gs.node_offset + gs.n_node > tot_n)
@@ -1797,7 +1883,7 @@ template <int W> struct simw {
       }
       gather.push_back(std::move(gs));
     }
-    if (has_window) {
+    if (staged) {
       const auto [n_voi, n_node] = validate_window_gather(gather);
       tot_v = n_voi;
       tot_n = n_node;
@@ -1810,16 +1896,18 @@ template <int W> struct simw {
       kmon<W> m;
       parse_kmon_spec<W>(item, tot_v, tot_n, tot_v, 1, def_dt, global_mons, m,
                          true);
-      if (m.complete_window) m.begin_run(t_abs);
+      if (m.bw_stream()) m.bw_source_voi = voi_specs[0][(size_t)m.voi[0]];
+      if (m.staged_global()) m.begin_run(t_abs);
       next.push_back(std::move(m));
     }
-    if (has_window) {
+    if (staged) {
       for (const auto &m : next) {
-        if (!m.complete_window) continue;
+        if (!m.staged_global()) continue;
         if (m.slot < 0 || std::count_if(next.begin(), next.end(), [&](const auto &other) {
               return other.slot == m.slot;
             }) != 1)
-          throw std::runtime_error("global complete window: monitor slot must be unique");
+          throw std::runtime_error(m.bw_stream() ? "global BW stream: monitor slot must be unique"
+                                                 : "global complete window: monitor slot must be unique");
       }
     }
     global_obs_row.assign(
@@ -1869,6 +1957,25 @@ template <int W> struct simw {
     return {(int)n_voi, (int)n_node};
   }
 
+  void validate_bw_observations() const {
+    for (const auto &v : voi_specs[0]) {
+      if (v.kind < 0 || v.kind > 1 || v.a < 0 || v.a >= sn[0].n_svar ||
+          v.b < 0 || v.b >= sn[0].n_svar)
+        throw std::runtime_error("global BW stream: invalid observed VOI source");
+    }
+  }
+
+  void validate_bw_live_config(const kmon<W> &m) const {
+    if (sn.size() != 1 || sn[0].K != 1 || sn[0].n_modes != 1 ||
+        sn[0].dt != dt || dt != (float)m.dt || sn[0].n_node != m.n_out_space ||
+        voi_specs[0].size() != (size_t)global_total_vois)
+      throw std::runtime_error("global BW stream: changed simulator geometry or clock; reattach monitor");
+    const auto &v = voi_specs[0][(size_t)m.voi[0]];
+    if (v.kind != m.bw_source_voi.kind || v.a != m.bw_source_voi.a || v.b != m.bw_source_voi.b)
+      throw std::runtime_error("global BW stream: changed selected observation; reattach monitor");
+    validate_bw_observations();
+  }
+
   nb::list window_source_config() const {
     nb::list sources;
     for (size_t i = 0; i < global_gather.size(); ++i) {
@@ -1889,6 +1996,15 @@ template <int W> struct simw {
                           m.sm_col_idx, m.sm_val);
   }
 
+  nb::tuple bw_stream_config(const kmon<W> &m) const {
+    nb::list params;
+    for (const auto &field : bw_parameter_fields)
+      params.append(m.bw_stream_params.*field.second);
+    return nb::make_tuple(m.istep, m.dt, m.bw_drive_steps, m.bw_drive_ms, m.bw_substeps,
+                          m.voi, window_source_config(), m.bw_drive_baseline, m.bw_drive_scale,
+                          params);
+  }
+
   nb::list take_global_monitor_outputs() {
     nb::list out;
     for (auto &gm : global_mons) {
@@ -1903,8 +2019,7 @@ template <int W> struct simw {
       if (!gm.d_out.empty())
         std::copy(gm.d_out.begin(), gm.d_out.end(),
                   static_cast<float *>(md.data()));
-      gm.t_out.clear();
-      gm.d_out.clear();
+      gm.begin_call();
       out.append(nb::make_tuple(mt, md));
     }
     return out;
@@ -1945,9 +2060,15 @@ template <int W> struct simw {
   nb::list get_global_monitor_states() const {
     nb::list out;
     for (const auto &gm : global_mons) {
-      nb::dict state = kmon_state_to_dict(gm.export_state());
-      if (gm.complete_window)
+      const auto st = gm.export_state();
+      nb::dict state = kmon_state_to_dict(st);
+      if (gm.complete_window) {
         state["window_config"] = window_config(gm, window_source_config());
+      } else if (gm.bw_stream()) {
+        validate_bw_live_config(gm);
+        state["bw_stream_config"] = bw_stream_config(gm);
+        export_bw_stream_state(state, st);
+      }
       out.append(state);
     }
     return out;
@@ -1955,50 +2076,75 @@ template <int W> struct simw {
 
   void set_global_monitor_states(nb::list states) {
     std::vector<bool> restored(global_mons.size(), false);
-    std::vector<std::pair<size_t, KMonState>> window_states;
+    std::vector<std::pair<size_t, KMonState>> staged_states;
+    bool has_bw_stream = false;
     for (auto item : states) {
       nb::dict d = nb::cast<nb::dict>(item);
-      if (!d.contains("window_config")) continue;
-      KMonState st = dict_to_window_state(d);
+      const bool bw = d.contains("bw_stream_config");
+      if (!bw && !d.contains("window_config")) continue;
+      const char *label = bw ? "global BW stream: " : "global complete window: ";
+      if (bw && d.contains("window_config"))
+        throw std::runtime_error("global BW stream: ambiguous snapshot identity");
+      KMonState st = dict_to_staged_state(d, bw);
       auto it = std::find_if(global_mons.begin(), global_mons.end(),
                              [&](const auto &m) {
-                               return m.complete_window && m.slot == st.slot &&
-                                      m.kind == st.kind;
+                               return (bw ? m.bw_stream() : m.complete_window) &&
+                                      m.slot == st.slot && m.kind == st.kind;
                              });
       if (it == global_mons.end())
-        throw std::runtime_error("global complete window: unmatched snapshot monitor");
+        throw std::runtime_error(std::string(label) + "unmatched snapshot monitor");
       const size_t i = (size_t)(it - global_mons.begin());
-      const nb::tuple config = window_config(*it, window_source_config());
-      const int equal = PyObject_RichCompareBool(d["window_config"].ptr(), config.ptr(), Py_EQ);
+      if (bw) validate_bw_live_config(*it);
+      const nb::tuple config = bw ? bw_stream_config(*it)
+                                  : window_config(*it, window_source_config());
+      const int equal = PyObject_RichCompareBool(
+          d[bw ? "bw_stream_config" : "window_config"].ptr(), config.ptr(), Py_EQ);
       if (equal < 0) throw nb::python_error();
       if (restored[i] || !equal)
-        throw std::runtime_error("global complete window: incompatible snapshot configuration");
-      it->validate_window_state(st, t_abs);
+        throw std::runtime_error(std::string(label) + "incompatible snapshot configuration");
+      if (bw) {
+        parse_bw_stream_state(st, d, (size_t)it->n_out_space);
+        it->validate_bw_stream_state(st, t_abs);
+        has_bw_stream = true;
+      } else {
+        it->validate_window_state(st, t_abs);
+      }
       restored[i] = true;
-      window_states.emplace_back(i, std::move(st));
+      staged_states.emplace_back(i, std::move(st));
     }
     for (size_t i = 0; i < global_mons.size(); ++i) {
-      if (global_mons[i].complete_window && !restored[i])
-        throw std::runtime_error("global complete window: missing compatible snapshot monitor");
+      if (!global_mons[i].staged_global() || restored[i]) continue;
+      throw std::runtime_error(global_mons[i].bw_stream()
+          ? "global BW stream: missing compatible snapshot monitor"
+          : "global complete window: missing compatible snapshot monitor");
     }
 
+    // On the BW path, an incompatible legacy sibling must not partially
+    // restore the global monitor set. Keep the legacy-only path unchanged.
+    std::vector<std::unique_ptr<kmon<W>>> legacy_candidates(has_bw_stream ? global_mons.size() : 0);
     for (size_t mi = 0; mi < states.size(); mi++) {
       nb::dict d = nb::cast<nb::dict>(states[mi]);
-      if (d.contains("window_config")) continue;
+      if (d.contains("window_config") || d.contains("bw_stream_config")) continue;
       KMonState st = dict_to_kmon_state(d);
       auto it = std::find_if(global_mons.begin(), global_mons.end(),
-                             [&](const kmon<W> &m) {
-                               return !m.complete_window && m.slot == st.slot &&
-                                      m.kind == st.kind;
+                             [&](const auto &m) {
+                               return !m.staged_global() && m.slot == st.slot && m.kind == st.kind;
                              });
-      if (it != global_mons.end()) {
+      if (it == global_mons.end() && mi < global_mons.size() && !global_mons[mi].staged_global())
+        it = global_mons.begin() + mi;
+      if (it == global_mons.end()) continue;
+      if (has_bw_stream) {
+        auto &candidate = legacy_candidates[(size_t)(it - global_mons.begin())];
+        if (!candidate) candidate = std::make_unique<kmon<W>>(*it);
+        candidate->import_state(st);
+      } else {
         it->import_state(st);
-      } else if (mi < global_mons.size() && !global_mons[mi].complete_window) {
-        global_mons[mi].import_state(st);
       }
     }
-    for (auto &[i, st] : window_states)
-      global_mons[i].commit_window_state(st);
+    for (size_t i = 0; i < legacy_candidates.size(); ++i)
+      if (legacy_candidates[i]) global_mons[i] = std::move(*legacy_candidates[i]);
+    for (auto &[i, st] : staged_states)
+      global_mons[i].commit_staged_state(st);
   }
 
   void set_stim_specs(int si, nb::list specs) {
@@ -2181,11 +2327,15 @@ template <int W> struct simw {
                nb::object stim_obj, bool need_tavg = true,
                bool need_ctavg = true) {
     for (const auto &gm : global_mons) {
-      if (!gm.complete_window) continue;
+      if (!gm.staged_global()) continue;
+      if (gm.bw_stream()) validate_bw_live_config(gm);
       if (gm.m_step != t_abs)
-        throw std::runtime_error("global complete window: reset or restore at the simulator clock before run");
+        throw std::runtime_error(gm.bw_stream()
+            ? "global BW stream: reset or restore at the simulator clock before run"
+            : "global complete window: reset or restore at the simulator clock before run");
       if (nstep > 0 && (uint64_t)nstep > std::numeric_limits<uint64_t>::max() - t_abs)
-        throw std::runtime_error("global complete window: run exceeds remaining tick range");
+        throw std::runtime_error(gm.bw_stream() ? "global BW stream: run exceeds remaining tick range"
+                                              : "global complete window: run exceeds remaining tick range");
     }
     const int cs = chunk_size > 0 ? chunk_size : tavg_period;
     const int rem = nstep % cs;

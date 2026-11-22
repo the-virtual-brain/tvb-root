@@ -80,8 +80,11 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <limits>
 #include <stdexcept>
 #include <vector>
+
+#include "cph_balloon_windkessel.hpp"
 
 namespace cph {
 
@@ -252,7 +255,14 @@ enum KMonKind {
   KMON_GLOBAL_AVG = 6,
   KMON_SPATIAL_AVG = 7,
   KMON_PROJECTION = 8,
-  KMON_BOLD_BW = 9
+  KMON_BOLD_BW = 9,
+  KMON_BOLD_BW_STREAM = 10  // staged global-only stream, not the endpoint monitor
+};
+
+struct BwStreamRegion {
+  double drive_sum = 0.0;
+  double bold_sum = 0.0;
+  balloon_windkessel::State ode;
 };
 
 struct KMonState {
@@ -271,6 +281,8 @@ struct KMonState {
   std::vector<float> stock;
   uint32_t stock_pos = 0;
   std::vector<float> bw_state;
+  std::vector<BwStreamRegion> bw_stream_regions;
+  uint32_t bw_drive_count = 0;
 };
 
 // ---- Kernel-side monitor engine --------------------------------------------
@@ -320,6 +332,21 @@ struct kmon {
   };
   std::vector<float> bw_state;  // (n_out_v, 4, n_node, W): [s, f, v, q]
 
+  static constexpr int bw_drive_ms = 10;
+  static constexpr int bw_substeps = 2;
+  int bw_drive_steps = 0;
+  uint32_t bw_output_endpoints = 0;
+  double bw_drive_baseline = 0.0;
+  double bw_drive_scale = 0.0;
+  voispec bw_source_voi;
+  balloon_windkessel::Parameters bw_stream_params;
+  std::vector<BwStreamRegion> bw_stream_regions;
+  std::vector<BwStreamRegion> bw_stream_next;  // bounded staging for an all-region drive close
+  uint32_t bw_drive_count = 0;
+
+  bool bw_stream() const { return kind == KMON_BOLD_BW_STREAM; }
+  bool staged_global() const { return complete_window || bw_stream(); }
+
   // KMON_SPATIAL_AVG weights (compact per-node OR sparse CSR from dense matrix)
   int n_areas = 0;
   int n_spatial_nodes = 0;
@@ -350,8 +377,10 @@ struct kmon {
   std::vector<float> d_out;
 
   void begin_run(uint64_t tick) {
-    if (complete_window) {
+    if (staged_global()) {
       m_step = tick;
+      std::fill(bw_stream_regions.begin(), bw_stream_regions.end(), BwStreamRegion{});
+      bw_drive_count = 0;
       std::fill(accum.begin(), accum.end(), 0.0);
       accum_count = 0;
       begin_call();
@@ -360,8 +389,54 @@ struct kmon {
   }
 
   void begin_call() {
-    t_out.clear();
-    d_out.clear();
+    if (bw_stream()) {
+      // Do not retain a previous call's BOLD output capacity as working memory.
+      std::vector<double>().swap(t_out);
+      std::vector<float>().swap(d_out);
+    } else {
+      t_out.clear();
+      d_out.clear();
+    }
+  }
+
+  void configure_bw_stream(int slot_, int period, double neural_dt, int n_node,
+                           int observed_voi, double baseline, double scale,
+                           const balloon_windkessel::Parameters &params) {
+    // The simulator stores its clock in binary32. Require the correctly rounded
+    // representation of a 10 ms divisor with an unambiguous integer tick count.
+    if (!std::isfinite(neural_dt) || neural_dt <= 0)
+      throw std::runtime_error("global BW stream: invalid neural clock");
+    const double ticks = std::round(bw_drive_ms / neural_dt);
+    if (ticks < 1 ||
+        ticks > std::numeric_limits<int>::max() ||
+        (float)(bw_drive_ms / ticks) != (float)neural_dt ||
+        (float)(bw_drive_ms / (ticks + 1)) == (float)neural_dt ||
+        (ticks > 1 && (float)(bw_drive_ms / (ticks - 1)) == (float)neural_dt))
+      throw std::runtime_error("global BW stream: neural clock must divide 10 ms");
+    const int drive_steps = (int)ticks;
+    if (period <= 0 || period % drive_steps != 0)
+      throw std::runtime_error("global BW stream: output period must be whole 10 ms windows");
+    const uint64_t endpoints = (uint64_t)(period / drive_steps) * bw_substeps;
+    if (endpoints > std::numeric_limits<uint32_t>::max())
+      throw std::runtime_error("global BW stream: output endpoint count out of range");
+    if (n_node < 1 || (size_t)n_node > bw_stream_regions.max_size() ||
+        !std::isfinite(baseline) || !std::isfinite(scale) ||
+        !balloon_windkessel::detail::valid_parameters(params))
+      throw std::runtime_error("global BW stream: invalid region extent, calibration or parameters");
+    slot = slot_;
+    kind = KMON_BOLD_BW_STREAM;
+    istep = period;
+    dt = (double)bw_drive_ms / drive_steps;
+    n_out_v = 1;
+    n_out_space = n_node;
+    voi = {observed_voi};
+    bw_drive_steps = drive_steps;
+    bw_output_endpoints = (uint32_t)endpoints;
+    bw_drive_baseline = baseline;
+    bw_drive_scale = scale;
+    bw_stream_params = params;
+    bw_stream_regions.resize((size_t)n_node);
+    bw_stream_next.resize((size_t)n_node);
   }
 
   void init_default_bw_params() {
@@ -560,6 +635,15 @@ struct kmon {
   // reallocation churn during long runs.
   void reserve_for_steps(int nstep) {
     if (nstep <= 0) return;
+    if (bw_stream()) {
+      const uint64_t phase = (m_step - run_start) % (uint64_t)istep;
+      const size_t rows = (size_t)((phase + (uint64_t)nstep) / (uint64_t)istep);
+      if (rows > t_out.max_size() || rows > d_out.max_size() / (size_t)n_out_space)
+        throw std::runtime_error("global BW stream: output extent out of range");
+      t_out.reserve(rows);
+      d_out.reserve(rows * (size_t)n_out_space);
+      return;
+    }
     const size_t ck = (cadence_K > 1u) ? (size_t)cadence_K : 1u;
     const size_t eff_steps = ((size_t)nstep + ck - 1u) / ck;
     size_t max_samples = 0;
@@ -587,6 +671,10 @@ struct kmon {
   //   `n_src_v = n_voi`, `n_modes = 1`.
   void step_one(const float *src, int n_src_v, int n_node, int n_modes = 1,
                 uint64_t t_abs = 0) {
+    if (bw_stream()) {
+      step_bw_stream(src + (size_t)voi[0] * (size_t)n_node);
+      return;
+    }
     if (cadence_K > 1u && ((t_abs + 1u) % (uint64_t)cadence_K) != 0u) {
       return;
     }
@@ -982,6 +1070,8 @@ struct kmon {
     st.stock = stock;
     st.stock_pos = stock_pos;
     st.bw_state = bw_state;
+    st.bw_stream_regions = bw_stream_regions;
+    st.bw_drive_count = bw_drive_count;
     return st;
   }
 
@@ -996,12 +1086,36 @@ struct kmon {
       throw std::runtime_error("global complete window: invalid snapshot state or clock");
   }
 
+  void validate_bw_stream_state(const KMonState &st, uint64_t tick) const {
+    if (st.slot != slot || st.kind != kind || st.width != W ||
+        st.n_out_v != n_out_v || st.n_out_space != n_out_space ||
+        st.n_out_modes != n_out_modes || !st.accum.empty() ||
+        st.bw_stream_regions.size() != bw_stream_regions.size() ||
+        st.m_step != tick || st.run_start > st.m_step)
+      throw std::runtime_error("global BW stream: invalid snapshot shape or clock");
+    const uint64_t elapsed = st.m_step - st.run_start;
+    if (st.bw_drive_count != elapsed % (uint64_t)bw_drive_steps ||
+        st.accum_count != (elapsed % (uint64_t)istep) / bw_drive_steps * bw_substeps)
+      throw std::runtime_error("global BW stream: invalid snapshot phase");
+    for (const auto &r : st.bw_stream_regions) {
+      if (!std::isfinite(r.drive_sum) || !std::isfinite(r.bold_sum) ||
+          std::abs(r.drive_sum) > (double)st.bw_drive_count * std::numeric_limits<float>::max() ||
+          (st.accum_count == 0 && r.bold_sum != 0.0) ||
+          !balloon_windkessel::detail::valid_state(r.ode) ||
+          (elapsed < (uint64_t)bw_drive_steps &&
+           (r.ode.signal != 0 || r.ode.inflow != 1 || r.ode.volume != 1 || r.ode.deoxy != 1)))
+        throw std::runtime_error("global BW stream: invalid snapshot regional state");
+    }
+  }
+
   // The whole staged set has been validated; commit without allocating.
-  void commit_window_state(KMonState &st) noexcept {
+  void commit_staged_state(KMonState &st) noexcept {
     m_step = st.m_step;
     run_start = st.run_start;
     accum.swap(st.accum);
     accum_count = st.accum_count;
+    bw_stream_regions.swap(st.bw_stream_regions);
+    bw_drive_count = st.bw_drive_count;
     begin_call();
   }
 
@@ -1034,6 +1148,50 @@ struct kmon {
   }
 
  private:
+  void step_bw_stream(const float *observed) {
+    const size_t n = bw_stream_regions.size();
+    for (size_t r = 0; r < n; ++r)
+      if (!std::isfinite(observed[r]))
+        throw std::runtime_error("global BW stream: nonfinite observed drive");
+    const uint32_t drive_count = bw_drive_count + 1;
+    if (drive_count < (uint32_t)bw_drive_steps) {
+      for (size_t r = 0; r < n; ++r) bw_stream_regions[r].drive_sum += observed[r];
+      bw_drive_count = drive_count;
+      ++m_step;
+      return;
+    }
+    const uint32_t endpoints = accum_count + bw_substeps;
+    const bool ready = endpoints == bw_output_endpoints;
+    for (size_t r = 0; r < n; ++r) {
+      auto &next = bw_stream_next[r];
+      next = bw_stream_regions[r];
+      const double mean = (next.drive_sum + observed[r]) / drive_count;
+      const double drive = (mean - bw_drive_baseline) * bw_drive_scale;
+      if (balloon_windkessel::advance_10ms(next.ode, bw_stream_params, drive,
+                                          bw_substeps, next.bold_sum) !=
+          balloon_windkessel::AdvanceResult::ok)
+        throw std::runtime_error("global BW stream: invalid calibrated drive or RK4 domain failure");
+      next.drive_sum = 0;
+      if (ready && std::abs(next.bold_sum / endpoints) > std::numeric_limits<float>::max())
+        throw std::runtime_error("global BW stream: BOLD output exceeds float range");
+    }
+    // The entire drive close succeeded, including representable output.
+    // All rows for this call were reserved before integration.
+    ++m_step;
+    if (ready) {
+      const uint64_t closed = (m_step - run_start) / (uint64_t)bw_drive_steps;
+      t_out.push_back((double)run_start * dt +
+                      ((double)closed - 0.5 * (istep / bw_drive_steps)) * bw_drive_ms);
+      for (auto &r : bw_stream_next) {
+        d_out.push_back((float)(r.bold_sum / endpoints));
+        r.bold_sum = 0;
+      }
+    }
+    bw_stream_regions.swap(bw_stream_next);
+    bw_drive_count = 0;
+    accum_count = ready ? 0 : endpoints;
+  }
+
   void resize_accum_if_needed() {
     const bool needs_accum =
         (kind == KMON_TAVG || kind == KMON_GLOBAL_AVG ||
