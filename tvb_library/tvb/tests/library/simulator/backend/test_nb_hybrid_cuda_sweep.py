@@ -11,6 +11,7 @@ import numpy as np
 import scipy.sparse as sp
 
 from tvb.simulator.backend.nb_hybrid_cuda_sweep_backend import (
+    CompiledCUDASweepKernel,
     NbHybridCUDASweepBackend,
     _CUDA_COMPILED_CACHE,
 )
@@ -19,6 +20,7 @@ from tvb.simulator.models.oscillator import Generic2dOscillator
 from tvb.simulator.models.jansen_rit import JansenRit
 from tvb.simulator.models.stefanescu_jirsa import ReducedSetFitzHughNagumo
 from tvb.simulator.integrators import HeunDeterministic
+from tvb.simulator.monitors import BalloonWindkessel, Raw
 from tvb.simulator.hybrid.network import NetworkSet
 from tvb.simulator.hybrid.subnetwork import Subnetwork
 from tvb.simulator.hybrid.inter_projection import InterProjection
@@ -50,6 +52,32 @@ def cuda_available():
 def clear_cuda_cache():
     """Clear the in-process CUDA compiled kernel cache before every test."""
     _CUDA_COMPILED_CACHE.clear()
+
+
+# ---------------------------------------------------------------------------
+# Device-free entry guards
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("option", ["monitors", "bold_period"])
+def test_cuda_sweep_rejects_bw_before_compilation_or_normalization(monkeypatch, option):
+    bw = BalloonWindkessel(period=20.0, variables_of_interest=np.array([0]),
+                           drive_baseline=0.0, drive_scale=1.0)
+    kwargs = {option: [Raw(), bw] if option == "monitors" else bw}
+    backend = NbHybridCUDASweepBackend()
+    monkeypatch.setattr(backend, "compile_sweep", lambda *a, **k: pytest.fail("compiled before rejection"))
+    with pytest.raises(NotImplementedError, match="BalloonWindkessel is not supported in sweeps"):
+        backend.run_sweep(None, None, **kwargs)
+    compiled = CompiledCUDASweepKernel(None, None, None, "")
+    with pytest.raises(NotImplementedError, match="BalloonWindkessel is not supported in sweeps"):
+        compiled.run(nstep=0, sweep_values=None, **kwargs)
+
+
+def test_cuda_compiled_sweep_keeps_numeric_bold_period_validation():
+    compiled = CompiledCUDASweepKernel(None, None, None, "")
+    for bold_period, message in [(20.0, "sweep_values must be 1D or 2D"),
+                                 (0.0, "bold_period must be finite and positive or None")]:
+        with pytest.raises(ValueError, match=message):
+            compiled.run(nstep=1, sweep_values=None, bold_period=bold_period, monitors=[Raw()])
 
 
 # ---------------------------------------------------------------------------

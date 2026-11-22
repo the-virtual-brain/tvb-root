@@ -1,5 +1,6 @@
 """Public opt-in BW lowering and consumption of the native regional stream."""
 
+from collections import UserList
 from dataclasses import asdict
 
 import numpy as np
@@ -120,6 +121,64 @@ def test_bw_causal_close_and_resume_with_both_open_windows(cpp):
     [[(whole_t, whole_x)]] = be.compile(net).run(243, monitors=[bw], initial_states=[INITIAL])
     np.testing.assert_array_equal(np.concatenate((closed_t, tail_t)), whole_t)
     np.testing.assert_array_equal(np.concatenate((closed_x, tail_x)), whole_x)
+
+
+def _projection():
+    projection = monitors.EEG(period=20.0, variables_of_interest=np.array([0]))
+    projection.gain = np.array([[1., 2., 0.], [0., 1., -1.]])
+    return projection
+
+
+def test_bw_projection_resume_rearms_effective_gain_and_keeps_open_windows(cpp):
+    be, net = cpp.CppHybridBackend(), _network()
+    compiled, bw, projection = be.compile(net), _monitor(), _projection()
+    before, snapshot = compiled.run(7, monitors=[bw, projection],
+                                    initial_states=[INITIAL], return_snapshot=True)
+    assert snapshot["kmon_global_states"][1]["accum_count"] == 7
+    whole = be.compile(net).run(16, monitors=[bw, _projection()], initial_states=[INITIAL])
+
+    # A separate fresh trajectory on the same compiled object must not retain
+    # the old slot's projection; a subsequent restore must reattach the old one.
+    projection.gain *= 2
+    _, [(changed_t, changed_x)] = compiled.run(16, monitors=[bw, projection],
+                                               initial_states=[INITIAL])
+    np.testing.assert_array_equal(changed_t, whole[1][0][0])
+    np.testing.assert_array_equal(changed_x, 2 * whole[1][0][1])
+    after = compiled.resume(snapshot, 9, monitors=[bw, _projection()])
+    for [(part_t, part_x)], [(tail_t, tail_x)], [(full_t, full_x)] in zip(before, after, whole):
+        assert len(full_t) == 2
+        np.testing.assert_array_equal(np.concatenate((part_t, tail_t)), full_t)
+        np.testing.assert_array_equal(np.concatenate((part_x, tail_x)), full_x)
+
+
+@pytest.mark.parametrize("change", ["gain", "period", "voi", "reference", "missing_identity"])
+def test_bw_projection_resume_rejects_incompatible_attachment(cpp, change):
+    be, net = cpp.CppHybridBackend(), _network()
+    bw, projection = _monitor(), _projection()
+    _, snapshot = be.compile(net).run(7, monitors=[bw, projection],
+                                      initial_states=[INITIAL], return_snapshot=True)
+    if change == "gain":
+        projection.gain[0, 0] += 1
+    elif change == "period":
+        projection.period += DT
+    elif change == "voi":
+        projection.variables_of_interest = np.array([1])
+    elif change == "reference":
+        projection._ref_vec = np.array([0.5, 0.5])
+    else:
+        del snapshot["bw_projection_identities"]
+    with pytest.raises(ValueError, match="matching Projection snapshot identities"):
+        be.compile(net).resume(snapshot, 9, monitors=[bw, projection])
+
+
+def test_legacy_projection_resume_still_accepts_snapshot_without_bw_identity(cpp):
+    be, net, projection = cpp.CppHybridBackend(), _network(), _projection()
+    _, snapshot = be.compile(net).run(7, monitors=[projection],
+                                      initial_states=[INITIAL], return_snapshot=True)
+    assert "bw_projection_identities" not in snapshot
+    projection.gain[0, 0] += 1
+    [[(times, _)]] = be.compile(net).resume(snapshot, 9, monitors=[projection])
+    assert len(times) == 2
 
 
 def test_bw_drains_each_native_call_and_keeps_existing_point_window_and_hrf(cpp, monkeypatch):
@@ -294,6 +353,38 @@ def test_bw_rejects_classic_and_recorder_attach():
         _network().subnets[0].add_monitor(bw)
     with pytest.raises(NotImplementedError, match="local or Recorder"):
         Recorder(monitor=bw)
+
+
+def test_classic_bw_preflights_before_configuring_ordered_companion(monkeypatch):
+    from tvb.simulator.simulator import Simulator as ClassicSimulator
+
+    companion = monitors.TemporalAverage(period=4 * DT)
+    sim = ClassicSimulator(monitors=[companion, _monitor()])
+    expected = "global monitor on the explicit C\\+\\+ hybrid backend"
+    monkeypatch.setattr(companion, "configure", lambda: pytest.fail("companion configured"))
+    with pytest.raises(NotImplementedError, match=expected):
+        sim.preconfigure()
+    monkeypatch.setattr(companion, "config_for_sim", lambda _: pytest.fail("companion configured for sim"))
+    with pytest.raises(NotImplementedError, match=expected):
+        sim._configure_monitors()
+
+
+@pytest.mark.parametrize("monitor_list", [list, UserList])
+def test_classic_bw_preflights_before_recording_ordered_companion(monitor_list):
+    from tvb.datatypes.connectivity import Connectivity
+    from tvb.simulator.simulator import Simulator as ClassicSimulator
+
+    conn = Connectivity(weights=np.zeros((2, 2)), tract_lengths=np.zeros((2, 2)),
+                        centres=np.zeros((2, 3)), region_labels=np.array(["r0", "r1"]))
+    companion = monitors.TemporalAverage(period=4 * DT)
+    sim = ClassicSimulator(connectivity=conn, integrator=integrators.EulerDeterministic(dt=DT),
+                           monitors=[companion]).configure()
+    stock, calls = companion._stock.copy(), sim.calls
+    sim.monitors = monitor_list([companion, _monitor()])
+    with pytest.raises(NotImplementedError, match="global monitor on the explicit C\\+\\+ hybrid backend"):
+        next(sim(n_steps=1))
+    assert sim.calls == calls
+    np.testing.assert_array_equal(companion._stock, stock)
 
 
 def test_bw_rejects_direct_numba_and_legacy_numba_sweep():

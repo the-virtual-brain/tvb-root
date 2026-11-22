@@ -11,6 +11,7 @@ Mirrors the :class:`~tvb.simulator.backend.nb_hybrid.NbHybridBackend` API.
 from __future__ import annotations
 
 import dataclasses
+import hashlib
 import sys
 from typing import List, Optional
 
@@ -399,6 +400,7 @@ class CompiledCppSim:
         self._kmon_armed_keys = set()
         self._pending_kmon_states = None
         self._pending_kmon_global_states = None
+        self._pending_bw_projection_identities = None
         self._pending_cpp_rng_states = None
 
     def warmup(self) -> float:
@@ -634,7 +636,7 @@ class CompiledCppSim:
             (mi, type(monitors[mi]).__name__) for mi in kernel_mon_indices
         }
 
-        outputs, kernel_streams, subnet_streams = self._backend._run_compiled(
+        outputs, kernel_streams, subnet_streams, bw_projection_identities = self._backend._run_compiled(
             self._sim, self._analysis, self._network_set,
             nstep=nstep, chunk_size=execution_chunk_size,
             initial_states=initial_states, monitors=monitors,
@@ -653,6 +655,7 @@ class CompiledCppSim:
             rng_mode=rng_mode,
             _pending_kmon_states=self._pending_kmon_states,
             _pending_kmon_global_states=self._pending_kmon_global_states,
+            _pending_bw_projection_identities=self._pending_bw_projection_identities,
             _pending_cpp_rng_states=self._pending_cpp_rng_states,
         )
 
@@ -796,6 +799,8 @@ class CompiledCppSim:
             "kmon_global_states": self._sim.get_global_monitor_states(),
             "cpp_rng_states": self._sim.get_rng_states(),
         }
+        if bw_projection_identities:
+            snap["bw_projection_identities"] = bw_projection_identities
         if subnet_monitors is not None:
             return outputs, snap, subnet_results
         return outputs, snap
@@ -869,6 +874,7 @@ class CompiledCppSim:
         self._pending_kmon_global_states = (
             snapshot.get("kmon_global_states") if monitors else None
         )
+        self._pending_bw_projection_identities = snapshot.get("bw_projection_identities")
         self._pending_cpp_rng_states = snapshot.get("cpp_rng_states")
         try:
             return self.run(
@@ -885,6 +891,7 @@ class CompiledCppSim:
         finally:
             self._pending_kmon_states = None
             self._pending_kmon_global_states = None
+            self._pending_bw_projection_identities = None
             self._pending_cpp_rng_states = None
 
 
@@ -2127,6 +2134,18 @@ class CppHybridBackend:
             stim_by_sn.append(np.ascontiguousarray(arr))
         return stim_by_sn
 
+    @staticmethod
+    def _projection_attachment_identity(spec, n_voi):
+        def array_identity(values):
+            if values is None or not values.size:
+                return None
+            array = np.asarray(values, dtype="<f4", order="C")
+            return array.shape, hashlib.sha256(array).hexdigest()
+
+        return (spec["istep"], spec["cadence_K"], spec["dt"],
+                tuple(spec["voi"] or range(n_voi)), array_identity(spec["gain"]),
+                array_identity(spec["ref_vec"]))
+
     def _run_compiled(
         self, sim, analysis, network_set, nstep=100, chunk_size=None,
         initial_states=None, monitors=None, width=1, _init_only=False,
@@ -2136,9 +2155,9 @@ class CppHybridBackend:
         explicit_chunk_size=None, need_tavg=True, need_ctavg=True,
         _return_snapshot=False, rng_mode="numpy",
         _pending_kmon_states=None, _pending_kmon_global_states=None,
-        _pending_cpp_rng_states=None,
+        _pending_bw_projection_identities=None, _pending_cpp_rng_states=None,
     ):
-        """Run the C++ core and return ``(results, kernel_streams, subnet_streams)``."""
+        """Run the C++ core and return results, monitor streams, and mixed projection identities."""
         self._validate_monitors(monitors, chunk_size)
         self._validate_horizons(analysis)
         cs = int(chunk_size) if chunk_size else 1
@@ -2192,6 +2211,7 @@ class CppHybridBackend:
             persn_counts[si] = len(atts)
 
         # 2. Arm multi-subnet / single-subnet global monitors
+        bw_projection_identities = {}
         if kernel_global:
             gather_specs = []
             total_nodes = (
@@ -2223,6 +2243,19 @@ class CppHybridBackend:
                 )
                 for mi, m in kernel_global
             ]
+            if balloon_windkessel_specs:
+                projections = [spec for spec in g_atts if spec["kind"] == 8]
+                if projections and (_skip_init or _return_snapshot):
+                    bw_projection_identities = {
+                        spec["slot"]: self._projection_attachment_identity(spec, n_voi_g)
+                        for spec in projections
+                    }
+                    if _skip_init and bw_projection_identities != _pending_bw_projection_identities:
+                        raise ValueError("BalloonWindkessel resume requires matching Projection snapshot identities")
+                if projections:
+                    # The native legacy path reuses attachments by slot/kind.
+                    # A mixed checkpoint must describe the actual active gain, not a stale one.
+                    sim.set_global_monitors(gather_specs, [])
             sim.set_global_monitors(gather_specs, g_atts)
         else:
             sim.set_global_monitors(
@@ -2379,7 +2412,7 @@ class CppHybridBackend:
                 ts, dd = np.concatenate(times), np.concatenate(data)
             kernel_streams[mi] = [(ts, dd)]
 
-        return results, kernel_streams, subnet_streams
+        return results, kernel_streams, subnet_streams, bw_projection_identities
 
     def run_network(
         self,
