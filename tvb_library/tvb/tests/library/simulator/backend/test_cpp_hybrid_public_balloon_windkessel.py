@@ -6,6 +6,7 @@ from dataclasses import asdict
 import numpy as np
 import pytest
 
+from tvb.datatypes.sensors import SensorsEEG
 from tvb.simulator import integrators, models, monitors, noise
 from tvb.simulator.hybrid import NetworkSet, Simulator, Subnetwork
 from tvb.simulator.hybrid.recorder import Recorder
@@ -123,19 +124,27 @@ def test_bw_causal_close_and_resume_with_both_open_windows(cpp):
     np.testing.assert_array_equal(np.concatenate((closed_x, tail_x)), whole_x)
 
 
-def _projection():
-    projection = monitors.EEG(period=20.0, variables_of_interest=np.array([0]))
+def _projection(modality=monitors.EEG):
+    projection = modality(period=20.0, variables_of_interest=np.array([0]), obsnoise=None)
     projection.gain = np.array([[1., 2., 0.], [0., 1., -1.]])
+    if modality is monitors.EEG:
+        projection.sensors = SensorsEEG(labels=np.array(["a", "b"]))
     return projection
 
 
 def test_bw_projection_resume_rearms_effective_gain_and_keeps_open_windows(cpp):
-    be, net = cpp.CppHybridBackend(), _network()
+    be, net = cpp.CppHybridBackend(), _network(indices=(0, 1, 2))
     compiled, bw, projection = be.compile(net), _monitor(), _projection()
-    before, snapshot = compiled.run(7, monitors=[bw, projection],
+    before, snapshot = compiled.run(7, chunk_size=3, monitors=[bw, projection],
                                     initial_states=[INITIAL], return_snapshot=True)
     assert snapshot["kmon_global_states"][1]["accum_count"] == 7
+    assert "window_config" in snapshot["kmon_global_states"][1]
+    assert "bw_projection_identities" not in snapshot
     whole = be.compile(net).run(16, monitors=[bw, _projection()], initial_states=[INITIAL])
+    means = INITIAL[1, :, 0] + np.array([4.5, 12.5])[:, None] * DT * SLOPE[1, :, 0]
+    [(proj_t, proj_x)] = whole[1]
+    np.testing.assert_array_equal(proj_t, [10.0, 30.0])
+    np.testing.assert_allclose(proj_x[:, 0, :, 0], means @ projection.gain.T, atol=1e-7, rtol=0)
 
     # A separate fresh trajectory on the same compiled object must not retain
     # the old slot's projection; a subsequent restore must reattach the old one.
@@ -144,7 +153,7 @@ def test_bw_projection_resume_rearms_effective_gain_and_keeps_open_windows(cpp):
                                                initial_states=[INITIAL])
     np.testing.assert_array_equal(changed_t, whole[1][0][0])
     np.testing.assert_array_equal(changed_x, 2 * whole[1][0][1])
-    after = compiled.resume(snapshot, 9, monitors=[bw, _projection()])
+    after = compiled.resume(snapshot, 9, chunk_size=5, monitors=[bw, _projection()])
     for [(part_t, part_x)], [(tail_t, tail_x)], [(full_t, full_x)] in zip(before, after, whole):
         assert len(full_t) == 2
         np.testing.assert_array_equal(np.concatenate((part_t, tail_t)), full_t)
@@ -153,7 +162,7 @@ def test_bw_projection_resume_rearms_effective_gain_and_keeps_open_windows(cpp):
 
 @pytest.mark.parametrize("change", ["gain", "period", "voi", "reference", "missing_identity"])
 def test_bw_projection_resume_rejects_incompatible_attachment(cpp, change):
-    be, net = cpp.CppHybridBackend(), _network()
+    be, net = cpp.CppHybridBackend(), _network(indices=None)
     bw, projection = _monitor(), _projection()
     _, snapshot = be.compile(net).run(7, monitors=[bw, projection],
                                       initial_states=[INITIAL], return_snapshot=True)
@@ -164,15 +173,29 @@ def test_bw_projection_resume_rejects_incompatible_attachment(cpp, change):
     elif change == "voi":
         projection.variables_of_interest = np.array([1])
     elif change == "reference":
-        projection._ref_vec = np.array([0.5, 0.5])
+        projection.reference = "average"
     else:
-        del snapshot["bw_projection_identities"]
-    with pytest.raises(ValueError, match="matching Projection snapshot identities"):
+        snapshot["kmon_global_states"].pop()
+    with pytest.raises(RuntimeError, match="global complete window: .* snapshot"):
         be.compile(net).resume(snapshot, 9, monitors=[bw, projection])
 
 
+def test_bw_projection_sidecar_only_fingerprints_unstaged_companion(cpp):
+    be, net = cpp.CppHybridBackend(), _network(indices=None)
+    legacy = _projection(monitors.Projection)
+    mons = [_monitor(), _projection(), legacy]
+    _, snapshot = be.compile(net).run(7, monitors=mons, initial_states=[INITIAL], return_snapshot=True)
+    assert set(snapshot["bw_projection_identities"]) == {2}
+    assert "window_config" not in snapshot["kmon_global_states"][2]
+    be.compile(net).resume(snapshot, 9, monitors=mons)
+    legacy.gain[0, 0] += 1
+    with pytest.raises(ValueError, match="matching Projection snapshot identities"):
+        be.compile(net).resume(snapshot, 9, monitors=mons)
+
+
 def test_legacy_projection_resume_still_accepts_snapshot_without_bw_identity(cpp):
-    be, net, projection = cpp.CppHybridBackend(), _network(), _projection()
+    # Bare Projection still uses the legacy route; EEG/MEG/iEEG do not.
+    be, net, projection = cpp.CppHybridBackend(), _network(), _projection(monitors.Projection)
     _, snapshot = be.compile(net).run(7, monitors=[projection],
                                       initial_states=[INITIAL], return_snapshot=True)
     assert "bw_projection_identities" not in snapshot

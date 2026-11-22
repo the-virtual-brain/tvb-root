@@ -46,13 +46,15 @@ from tvb.simulator.backend.hybrid_common import (
     _resolve_named_params,
 )
 from tvb.simulator.hybrid.network import NetworkSet
-from tvb.simulator.monitors import BalloonWindkessel, _reject_balloon_windkessel_sweep
+from tvb.simulator.monitors import BalloonWindkessel, EEG, MEG, iEEG, _reject_balloon_windkessel_sweep
 from tvb.simulator.integrators import (
     HeunDeterministic,
     EulerDeterministic,
     HeunStochastic,
     EulerStochastic,
 )
+
+_REGIONAL_PROJECTION_MONITORS = (EEG, MEG, iEEG)
 
 # Scalars shared by all regions; lower region-specific parameters here once supported.
 _BALLOON_WINDKESSEL_NOMINAL = dict(
@@ -454,6 +456,9 @@ class CompiledCppSim:
             if any(isinstance(getattr(m, "monitor", m), BalloonWindkessel)
                    for ms in local_lists for m in ms):
                 raise NotImplementedError("BalloonWindkessel cannot be a local or Recorder monitor")
+            if any(isinstance(getattr(m, "monitor", m), _REGIONAL_PROJECTION_MONITORS)
+                   for ms in local_lists for m in ms):
+                raise NotImplementedError("C++ EEG/MEG/iEEG cannot be local or Recorder monitors")
             if isinstance(subnet_monitors, dict):
                 sn_mons_map = {
                     sn.name: [getattr(m, "monitor", m)
@@ -498,7 +503,23 @@ class CompiledCppSim:
                     kernel_global_specs.append((mi, m))
                     kernel_mon_indices.add(mi)
                     continue
-                # Multi-subnet globals remain on the unstaged route until their
+                if isinstance(m, _REGIONAL_PROJECTION_MONITORS):
+                    if not self._backend.enable_kernel_monitors:
+                        raise NotImplementedError("C++ EEG/MEG/iEEG require native monitor collection")
+                    if n_sn != 1:
+                        raise NotImplementedError("C++ EEG/MEG/iEEG require one regional subnetwork")
+                    sn = self._analysis.subnets[0]
+                    if (self._width != 1 or kwargs.get("width", 1) != 1
+                            or sn.k != 1 or sn.n_modes != 1 or sn.dt != dt):
+                        raise NotImplementedError("C++ EEG/MEG/iEEG require width 1 and one source clock and mode")
+                    indices = self._network_set.subnets[0].node_indices
+                    if indices is not None and not np.array_equal(indices, np.arange(sn.n_nodes)):
+                        raise ValueError("C++ EEG/MEG/iEEG require absent or identity node_indices")
+                    complete_window_isteps[mi] = self._backend._complete_window_istep(m, dt)
+                    kernel_global_specs.append((mi, m))
+                    kernel_mon_indices.add(mi)
+                    continue
+                # Multi-subnet averages remain on the unstaged route until their
                 # source topology and clock policy are covered.
                 if (n_sn == 1
                         and isinstance(m, (TemporalAverage, GlobalAverage, SpatialAverage))
@@ -1770,6 +1791,60 @@ class CppHybridBackend:
             f"commensurate with source dt {dt!r} (a positive integer number of ticks)"
         )
 
+    @staticmethod
+    def _regional_projection_spec(m, n_src_v, n_space):
+        if m.obsnoise is not None:
+            raise NotImplementedError("C++ EEG/MEG/iEEG require obsnoise=None")
+
+        voi = m.variables_of_interest
+        if voi is not None and (voi.ndim != 1 or voi.dtype.kind not in "iu"
+                                or np.any(voi < 0) or np.any(voi >= n_src_v)):
+            raise ValueError("C++ EEG/MEG/iEEG require valid observed VOI indices")
+
+        # Do not fall back to Projection.gain's raw file data: the source axis
+        # must already correspond to local regions, not vertices/orientations.
+        gain = np.asarray(m._gain)
+        if (gain.dtype.kind not in "fiu" or gain.ndim != 2
+                or not gain.shape[0] or gain.shape[1] != n_space):
+            raise ValueError("C++ EEG/MEG/iEEG require a finite preconfigured sensor-by-local-region gain")
+        with np.errstate(over="ignore"):
+            gain = np.array(gain, dtype=np.float32, order="C", copy=True)
+        if not np.isfinite(gain).all():
+            raise ValueError("C++ EEG/MEG/iEEG require a finite preconfigured sensor-by-local-region gain")
+
+        n_sensors = gain.shape[0]
+        sensors = getattr(m, "sensors", None)
+        labels = usable = None
+        if sensors is not None:
+            labels = getattr(sensors, "labels", None)
+            usable = sensors.usable
+            if labels is None or labels.shape != (n_sensors,):
+                raise ValueError("C++ projection sensor labels must align with gain rows")
+            if usable is not None:
+                if usable.shape != (n_sensors,):
+                    raise ValueError("C++ projection usable sensor mask must align with gain rows")
+                gain[~usable] = 0.0
+
+        ref_vec = None
+        if isinstance(m, EEG) and m.reference:
+            if labels is None:
+                raise ValueError("C++ EEG reference requires ordered sensor labels")
+            if m.reference.lower() == "average":
+                # Unusable channels contribute zero but still count in the
+                # classic average denominator and remain on the output axis.
+                ref_vec = np.full(n_sensors, 1.0 / n_sensors, dtype=np.float32)
+            else:
+                matches = np.flatnonzero(labels == m.reference)
+                if matches.size != 1:
+                    raise ValueError(f"C++ EEG reference {m.reference!r} must name one sensor")
+                ref_vec = np.zeros(n_sensors, dtype=np.float32)
+                ref_vec[matches[0]] = 1.0
+            if usable is not None:
+                ref_vec[~usable] = 0.0
+
+        return dict(kind=8, cadence_K=1, voi=[] if voi is None else voi.tolist(),
+                    gain=gain, ref_vec=ref_vec)
+
     def _monitor_attach_spec(
         self,
         slot,
@@ -1808,8 +1883,11 @@ class CppHybridBackend:
                 "istep": complete_window_istep,
                 "complete_window": True,
                 "dt": eff_dt,
-                "voi": self._monitor_voi_list(m),
             }
+            if isinstance(m, _REGIONAL_PROJECTION_MONITORS):
+                spec.update(self._regional_projection_spec(m, n_src_v, n_space))
+                return spec
+            spec["voi"] = self._monitor_voi_list(m)
             if isinstance(m, SpatialAverage):
                 weights = getattr(m, "spatial_mean", None)
                 if weights is not None:
@@ -2244,7 +2322,8 @@ class CppHybridBackend:
                 for mi, m in kernel_global
             ]
             if balloon_windkessel_specs:
-                projections = [spec for spec in g_atts if spec["kind"] == 8]
+                projections = [spec for spec in g_atts
+                               if spec["kind"] == 8 and not spec.get("complete_window")]
                 if projections and (_skip_init or _return_snapshot):
                     bw_projection_identities = {
                         spec["slot"]: self._projection_attachment_identity(spec, n_voi_g)
@@ -2955,6 +3034,13 @@ class CppHybridBackend:
         from . import notebook as _nb_sugar
 
         _reject_balloon_windkessel_sweep(bold_period, *monitors.values())
+        projection_names = {monitor.__name__.lower() for monitor in _REGIONAL_PROJECTION_MONITORS}
+        if (projection_names.intersection(name.lower() for name in monitors)
+                or any(isinstance(m, _REGIONAL_PROJECTION_MONITORS)
+                       or (isinstance(m, str) and m.lower() in projection_names)
+                       for option in monitors.values()
+                       for m in (option if isinstance(option, (list, tuple)) else (option,)))):
+            raise NotImplementedError("C++ EEG/MEG/iEEG are not supported in sweeps")
         sweep_values = np.asarray(sweep_values, dtype=np.float32)
         if sweep_values.ndim == 1:
             sweep_values = sweep_values.reshape(-1, 1)

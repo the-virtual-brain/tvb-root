@@ -6,7 +6,9 @@ backend or a Raw output, is the oracle for every value assertion.
 
 Superseded single-subnet C++ bug characterizations are kept as historical
 cases (baseline 2958e4f7, Linux Slurm 5213862). Current regional C++ policy
-acceptance is in test_cpp_hybrid_public_windows.py.
+acceptance is in test_cpp_hybrid_public_windows.py and
+test_cpp_hybrid_public_projection.py (replacing the former C++ EEG sample-tick
+midpoint, rounded period, host fallback and dropped-noise expectations).
 """
 
 import numpy as np
@@ -89,11 +91,14 @@ def _set_cpp_monitor_route(route, monkeypatch):
 
 
 def _run(route, mons, nstep, monkeypatch, *, constant=False, merged=True, harmonic=None):
-    if route == "classic" or any(isinstance(m, monitors.EEG) for m in mons):
+    if route == "classic" or (not route.startswith("cpp-")
+                              and any(isinstance(m, monitors.EEG) for m in mons)):
         # Hybrid has no connectome/sensor config_for_sim hook; give EEG a
         # properly configured regional lead field from the classic initializer.
         classic = _classic(mons, constant, harmonic)
     for mon in mons:
+        if isinstance(mon, monitors.EEG) and route.startswith("cpp-"):
+            mon.gain = GAIN.copy()  # already regional; no classic lifecycle or reference cache
         if isinstance(mon, monitors.SpatialAverage):
             # Classic's labels configure uniform group weights; supply the same
             # deliberately asymmetric weighted operator to all routes.
@@ -108,7 +113,7 @@ def _run(route, mons, nstep, monkeypatch, *, constant=False, merged=True, harmon
                           monitors=mons, simulation_length=nstep * DT)
     sim.configure()
     for mon in mons:
-        if isinstance(mon, monitors.EEG):
+        if isinstance(mon, monitors.EEG) and not route.startswith("cpp-"):
             # Hybrid's constructor overwrites the configured index array with
             # slice(None); EEG.sample uses .size. Restore the configured array
             # so the actual record/sample path is reachable.
@@ -156,13 +161,17 @@ def test_public_monitor_value_and_time(route, kind, window, monkeypatch):
     if route == "cpp-host" and kind in REGIONAL_WINDOWS:
         pytest.skip(HISTORICAL_CPP_REGIONAL)
     monitor = _monitor(kind, window * DT)
+    if route == "cpp-host" and kind == "EEG":
+        with pytest.raises(NotImplementedError, match="native monitor collection"):
+            _run(route, [monitor], 2 * window, monkeypatch)
+        return
     [(times, data)] = _run(route, [monitor], 2 * window, monkeypatch)
     ends = np.arange(window, 2 * window + 1, window)
     if kind in ("Raw", "RawVoi"):
         ends = np.arange(1, 2 * window + 1)
     sample_steps = ends.astype(float)
     represented_steps = sample_steps.copy()
-    if kind == "TemporalAverage" or (kind == "EEG" and route in ("classic", "python")):
+    if kind == "TemporalAverage" or (kind == "EEG" and route != "numba"):
         sample_steps -= (window - 1) / 2
         represented_steps -= window / 2
     elif kind in ("GlobalAverage", "SpatialAverage", "EEG") and route not in ("classic", "python"):
@@ -178,14 +187,18 @@ def test_public_monitor_value_and_time(route, kind, window, monkeypatch):
 
 @pytest.mark.parametrize("route", ROUTES)
 def test_public_spatial_and_eeg_preserve_constant_values(route, monkeypatch):
-    kinds = ("EEG",) if route == "cpp-host" else ("SpatialAverage", "EEG")
+    if route == "cpp-host":
+        with pytest.raises(NotImplementedError, match="native monitor collection"):
+            _run(route, [_eeg(4 * DT)], 8, monkeypatch, constant=True)
+        return
+    kinds = ("SpatialAverage", "EEG")
     mons = [_monitor(kind, 4 * DT) for kind in kinds]
     outputs = _run(route, mons, 8, monkeypatch, constant=True)
     assert len(outputs) == len(kinds)
     for kind, (times, data) in zip(kinds, outputs):
         if route in ("classic", "python"):
             expected_times = np.array([4, 8] if kind == "SpatialAverage" else [2, 6])
-        elif route == "cpp-native" and kind == "SpatialAverage":
+        elif route == "cpp-native":
             expected_times = np.array([2, 6])
         else:
             expected_times = np.array([2.5, 6.5])
@@ -207,6 +220,12 @@ class _FixedObservationNoise(noise.Additive):
 @pytest.mark.parametrize("route", ROUTES)
 def test_public_eeg_observation_noise_is_at_emit_before_reference_when_supported(route, monkeypatch):
     obsnoise = _FixedObservationNoise()
+    if route.startswith("cpp-"):
+        reason = "obsnoise=None" if route == "cpp-native" else "native monitor collection"
+        with pytest.raises(NotImplementedError, match=reason):
+            _run(route, [_eeg(4 * DT, obsnoise=obsnoise)], 8, monkeypatch)
+        assert obsnoise.calls == 0
+        return
     [(times, data)] = _run(route, [_eeg(4 * DT, obsnoise=obsnoise)], 8, monkeypatch)
     reference = route not in ("numba", "cpp-host")
     expected = _reduce("EEG", _trajectory([2.5, 6.5]), reference=reference)
@@ -230,6 +249,10 @@ def test_public_raw_companion_and_trailing_step(route, kind, merged, monkeypatch
     # Raw forces the compiled execution chunk to 1. Some legacy host paths
     # consume that chunk grid directly instead of the requested monitor grid.
     mons = [monitors.Raw(), _monitor(kind, 4 * DT)]
+    if route == "cpp-host" and kind == "EEG":
+        with pytest.raises(NotImplementedError, match="native monitor collection"):
+            _run(route, mons, 9, monkeypatch, merged=merged)
+        return
     if route != "classic" and not merged:
         with pytest.warns(UserWarning, match="do not have node_indices"):
             raw, (times, data) = _run(route, mons, 9, monkeypatch, merged=merged)
@@ -244,7 +267,7 @@ def test_public_raw_companion_and_trailing_step(route, kind, merged, monkeypatch
         value_steps, time_steps = [2.5, 6.5], [2, 6]
     elif route == "cpp-native":
         value_steps = [2.5, 6.5]
-        time_steps = [2, 6] if kind in REGIONAL_WINDOWS else value_steps
+        time_steps = [2, 6]
     elif kind == "GlobalAverage" or merged:
         value_steps = time_steps = np.arange(1, 10)
     else:
@@ -256,7 +279,15 @@ def test_public_raw_companion_and_trailing_step(route, kind, merged, monkeypatch
 
 
 @pytest.mark.parametrize("route", ROUTES)
-def test_public_noncommensurate_projection_period_rounds_or_truncates(route, monkeypatch):
+def test_public_noncommensurate_projection_period(route, monkeypatch):
+    if route == "cpp-native":
+        with pytest.raises(ValueError, match="commensurate"):
+            _run(route, [_eeg(3.5 * DT)], 12, monkeypatch)
+        return
+    if route == "cpp-host":
+        with pytest.raises(NotImplementedError, match="native monitor collection"):
+            _run(route, [_eeg(3.5 * DT)], 12, monkeypatch)
+        return
     [(times, data)] = _run(route, [_eeg(3.5 * DT)], 12, monkeypatch)
     if route in ("classic", "python"):
         time_steps = np.array([1.5, 4.5, 7.5, 10.5])

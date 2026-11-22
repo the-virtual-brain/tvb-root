@@ -49,7 +49,7 @@ import numpy as np
 from typing import List
 
 import tvb.basic.neotraits.api as t
-from tvb.simulator.monitors import BalloonWindkessel, Monitor
+from tvb.simulator.monitors import EEG, MEG, iEEG, BalloonWindkessel, Monitor
 from .network import NetworkSet
 
 
@@ -147,7 +147,7 @@ class Simulator(t.HasTraits):
         Called automatically during ``__init__``; the validated base step size
         is stored as ``self._dt0`` for use by ``configure`` and ``run``.
         """
-        self._validate_balloon_windkessel_placement()
+        self._validate_monitor_placement()
         if self.backend == "python":
             self._dt0 = self.nets.subnets[0].scheme.dt
             for sn in self.nets.subnets[1:]:
@@ -166,16 +166,20 @@ class Simulator(t.HasTraits):
             if not isinstance(monitor, BalloonWindkessel):
                 monitor.voi = slice(None)  # all vars
 
-    def _validate_balloon_windkessel_placement(self):
+    def _validate_monitor_placement(self):
         if any(isinstance(rec.monitor, BalloonWindkessel)
                for sn in self.nets.subnets for rec in sn.monitors):
             raise NotImplementedError("BalloonWindkessel cannot be a local or Recorder monitor")
         if self.backend != "cpp" and any(isinstance(m, BalloonWindkessel) for m in self.monitors):
             raise NotImplementedError("BalloonWindkessel requires the explicit C++ hybrid backend (backend='cpp')")
 
+        if self.backend == "cpp" and any(isinstance(rec.monitor, (EEG, MEG, iEEG))
+                                         for sn in self.nets.subnets for rec in sn.monitors):
+            raise NotImplementedError("C++ EEG/MEG/iEEG cannot be local or Recorder monitors")
+
     def configure(self):
         """Configure the simulator and its monitors."""
-        self._validate_balloon_windkessel_placement()
+        self._validate_monitor_placement()
         if self.monitors:
             missing = [sn.name for sn in self.nets.subnets if sn.node_indices is None]
             if missing:
@@ -237,7 +241,7 @@ class Simulator(t.HasTraits):
         >>> [(t, d)] = sim.run(random_state=42)          # reproducible ICs
         >>> [(t, d)] = sim.run(initial_conditions=[ic])  # explicit ICs
         """
-        self._validate_balloon_windkessel_placement()
+        self._validate_monitor_placement()
         # Configure if not already done
         if not hasattr(self, "_dt0"):
             self.configure()

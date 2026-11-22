@@ -369,38 +369,16 @@ def test_voi_subset_selection_all_monitors():
                 )
 
 
-def test_global_spatial_and_projection_monitors_cpp():
-    """C++ GlobalAverage, SpatialAverage (custom weights), and Projection (EEG ref/MEG/iEEG)."""
-    from tvb.simulator.monitors import (
-        EEG,
-        GlobalAverage,
-        MEG,
-        SpatialAverage,
-        iEEG,
-    )
-
-    ns = _network()
-    n_node = sum(sn.nnodes for sn in ns.subnets)
-    rng = np.random.RandomState(19)
+def test_multisubnet_global_and_spatial_average_monitors_cpp():
+    """Multi-subnet regional averages still use the legacy route."""
+    from tvb.simulator.monitors import GlobalAverage, SpatialAverage
 
     sa = SpatialAverage(period=0.5)
     sa.spatial_mean = np.array([
         [1 / 3, 1 / 3, 1 / 3, 0, 0, 0, 0],
         [0, 0, 0, 0.25, 0.25, 0.25, 0.25],
     ], dtype=np.float64)
-
-    eeg = EEG(period=0.5)
-    eeg._gain = rng.randn(4, n_node).astype(np.float64)
-    eeg._ref_vec = np.full(4, 0.25, dtype=np.float64)
-    eeg._ref_vec_mask = np.ones(4, dtype=bool)
-
-    meg = MEG(period=0.5)
-    meg._gain = rng.randn(3, n_node).astype(np.float64)
-
-    ieeg = iEEG(period=0.5)
-    ieeg._gain = rng.randn(2, n_node).astype(np.float64)
-
-    mons = [GlobalAverage(period=0.5), sa, eeg, meg, ieeg]
+    mons = [GlobalAverage(period=0.5), sa]
     nb_out = NbHybridBackend().compile(_network(), eager=True).run(NSTEP, monitors=mons)
 
     be = CppHybridBackend()
@@ -415,14 +393,7 @@ def test_global_spatial_and_projection_monitors_cpp():
     cpp_out = be.run_network(_network(), NSTEP, monitors=mons)
 
     assert seen["need_tavg"] is False
-    # NbHybridBackend ignores EEG._ref_vec while CppHybridBackend properly subtracts it.
-    nb_adj = [list(per_mon) for per_mon in nb_out]
-    for si, (t_nb, d_nb) in enumerate(nb_adj[2]):
-        ref_mean = np.tensordot(
-            d_nb[:, :, eeg._ref_vec_mask, :], eeg._ref_vec, axes=([2], [0]),
-        )[:, :, None, :]
-        nb_adj[2][si] = (t_nb, d_nb - ref_mean)
-    _assert_streams(nb_adj, cpp_out, "Global/Spatial/Projection")
+    _assert_streams(nb_out, cpp_out, "multi-subnet Global/Spatial")
 
 
 def test_bold_and_tavg_mid_period_snapshot_resume_in_cpp():

@@ -186,6 +186,8 @@ class BalloonWindkessel(Monitor):
     every region's hemodynamic state.
 
     Resume with the full compiled-run snapshot and compatible monitor setup.
+    Keep legacy global companion monitors configured as before and in the same
+    slots; their checkpoints do not fingerprint every configuration setting.
     A failed run is not a whole-simulator rollback: neural state, delays, RNG,
     or other monitors may have advanced. Restore a known-good full snapshot
     or start a fresh run; do not retry from the failed live state.
