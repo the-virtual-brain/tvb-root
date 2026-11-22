@@ -1531,17 +1531,22 @@ template <int W>
 static void parse_kmon_spec(nb::handle item, int n_src_v, int n_space,
                             int n_cvar, int n_modes, double default_dt,
                             const std::vector<kmon<W>> &prev,
-                            kmon<W> &out) {
+                            kmon<W> &out, bool global = false) {
   int slot = -1;
   int kind = 0;
   if (nb::isinstance<nb::dict>(item)) {
     nb::dict d = nb::cast<nb::dict>(item);
     slot = nb::cast<int>(d["slot"]);
     kind = nb::cast<int>(d["kind"]);
+    const bool complete_window = dict_get_or<bool>(d, "complete_window", false);
+    if (complete_window &&
+        (!global || W != 1 || (kind != KMON_TAVG && kind != KMON_GLOBAL_AVG &&
+                               kind != KMON_SPATIAL_AVG)))
+      throw std::runtime_error("complete_window requires a supported global monitor at width 1");
     auto it = std::find_if(prev.begin(), prev.end(), [&](const kmon<W> &e) {
-      return e.slot == slot && e.kind == kind;
+      return !e.complete_window && e.slot == slot && e.kind == kind;
     });
-    if (it != prev.end()) {
+    if (!complete_window && it != prev.end()) {
       out = *it;
       return;
     }
@@ -1556,6 +1561,14 @@ static void parse_kmon_spec(nb::handle item, int n_src_v, int n_space,
     std::vector<int> voi;
     if (d.contains("voi") && !d["voi"].is_none())
       voi = to_int_vec(d["voi"]);
+
+    if (complete_window &&
+        (istep < 1 || cadence_K != 1 || !std::isfinite(m_dt) || m_dt <= 0.0 ||
+         (float)m_dt != (float)default_dt || n_src_v < 1 || n_space < 1 ||
+         std::any_of(voi.begin(), voi.end(),
+                     [n_src_v](int v) { return v < 0 || v >= n_src_v; })))
+      throw std::runtime_error("global complete window: invalid period, clock, or VOI");
+    out.complete_window = complete_window;
 
     if (kind == KMON_BOLD) {
       const int ii = dict_get_or<int>(d, "interim_istep", 1);
@@ -1580,14 +1593,28 @@ static void parse_kmon_spec(nb::handle item, int n_src_v, int n_space,
         int n_areas = 0, n_sn = 0;
         extract_2d_shape(d["spatial_mean"], n_areas, n_sn);
         std::vector<float> sm = to_float_vec(d["spatial_mean"]);
+        if (complete_window &&
+            (n_areas < 1 || n_sn != n_space ||
+             std::any_of(sm.begin(), sm.end(), [](float x) { return !std::isfinite(x); })))
+          throw std::runtime_error("global complete window: invalid spatial_mean");
         out.set_spatial_mean(sm.data(), n_areas, n_sn);
       } else if (d.contains("spatial_area_idx") &&
                  !d["spatial_area_idx"].is_none()) {
         std::vector<int> aidx = to_int_vec(d["spatial_area_idx"]);
         std::vector<float> ascale = to_float_vec(d["spatial_scale"]);
         const int n_areas = dict_get_or<int>(d, "n_areas", 0);
+        if (complete_window &&
+            (n_areas < 1 || aidx.size() != (size_t)n_space ||
+             ascale.size() != aidx.size() ||
+             std::any_of(aidx.begin(), aidx.end(),
+                         [n_areas](int a) { return a < 0 || a >= n_areas; }) ||
+             std::any_of(ascale.begin(), ascale.end(),
+                         [](float x) { return !std::isfinite(x); })))
+          throw std::runtime_error("global complete window: invalid compact spatial weights");
         out.set_spatial_compact(aidx.data(), ascale.data(), (int)aidx.size(),
                                 n_areas);
+      } else if (complete_window) {
+        throw std::runtime_error("global complete window: preconfigured spatial weights required");
       }
       out.configure_basic(slot, kind, istep, m_dt, n_src_v, n_space, 1, voi,
                           cadence_K, midpoint_time);
@@ -1620,7 +1647,7 @@ static void parse_kmon_spec(nb::handle item, int n_src_v, int n_space,
   slot = nb::cast<int>(a[0]);
   kind = nb::cast<int>(a[1]);
   auto it = std::find_if(prev.begin(), prev.end(), [&](const kmon<W> &e) {
-    return e.slot == slot && e.kind == kind;
+    return !e.complete_window && e.slot == slot && e.kind == kind;
   });
   if (it != prev.end()) {
     out = *it;
@@ -1697,8 +1724,8 @@ template <int W> struct simw {
     if (gather_specs.size() != sn.size())
       throw std::runtime_error(
           "set_global_monitors: gather_specs length != subnet count");
-    global_gather.clear();
-    global_gather.reserve(gather_specs.size());
+    std::vector<GlobalGatherSubnet> gather;
+    gather.reserve(gather_specs.size());
     int tot_v = 0;
     int tot_n = 0;
     for (auto item : gather_specs) {
@@ -1728,23 +1755,88 @@ template <int W> struct simw {
         for (int gn : gs.node_indices)
           if (gn + 1 > tot_n) tot_n = gn + 1;
       }
-      global_gather.push_back(std::move(gs));
+      gather.push_back(std::move(gs));
     }
-    global_total_vois = tot_v;
-    global_total_nodes = tot_n;
-    global_obs_row.assign(
-        (size_t)std::max(0, tot_v) * (size_t)std::max(0, tot_n) * (size_t)W,
-        0.0f);
 
     std::vector<kmon<W>> next;
     next.reserve(mon_specs.size());
     const double def_dt = (double)dt;
+    bool has_window = false;
     for (auto item : mon_specs) {
       kmon<W> m;
-      parse_kmon_spec<W>(item, tot_v, tot_n, tot_v, 1, def_dt, global_mons, m);
+      parse_kmon_spec<W>(item, tot_v, tot_n, tot_v, 1, def_dt, global_mons, m,
+                         true);
+      if (m.complete_window) {
+        m.begin_run(t_abs);
+        has_window = true;
+      }
       next.push_back(std::move(m));
     }
+    if (has_window) {
+      validate_window_gather(gather, tot_v, tot_n);
+      for (const auto &m : next) {
+        if (!m.complete_window) continue;
+        if (m.slot < 0 || std::count_if(next.begin(), next.end(), [&](const auto &other) {
+              return other.slot == m.slot;
+            }) != 1)
+          throw std::runtime_error("global complete window: monitor slot must be unique");
+      }
+    }
+    global_obs_row.assign(
+        (size_t)std::max(0, tot_v) * (size_t)std::max(0, tot_n) * (size_t)W,
+        0.0f);
+    global_total_vois = tot_v;
+    global_total_nodes = tot_n;
+    global_gather = std::move(gather);
     global_mons = std::move(next);
+  }
+
+  void validate_window_gather(const std::vector<GlobalGatherSubnet> &gather,
+                              int n_voi, int n_node) const {
+    size_t total_source_nodes = 0;
+    for (size_t i = 0; i < gather.size(); ++i) {
+      const auto &g = gather[i];
+      const auto &sub = sn[i];
+      if (sub.K != 1 || sub.dt != dt || sub.n_modes != 1)
+        throw std::runtime_error("global complete window requires one regional clock and mode");
+      if (g.n_node != sub.n_node || g.n_node <= 0 || g.n_voi != n_voi ||
+          g.n_voi != (int)voi_specs[i].size() || g.voi_offset != 0 ||
+          (!g.node_indices.empty() && g.node_indices.size() != (size_t)g.n_node))
+        throw std::runtime_error("global complete window: incompatible gather shape");
+      total_source_nodes += (size_t)g.n_node;
+    }
+    if (total_source_nodes != (size_t)n_node)
+      throw std::runtime_error("global complete window requires a complete, disjoint node gather");
+    std::vector<bool> seen(total_source_nodes, false);
+    for (const auto &g : gather) {
+      for (int j = 0; j < g.n_node; ++j) {
+        const int64_t node = g.node_indices.empty() ? (int64_t)g.node_offset + j
+                                                    : g.node_indices[j];
+        if (node < 0 || node >= n_node || seen[(size_t)node])
+          throw std::runtime_error("global complete window requires a complete, disjoint node gather");
+        seen[(size_t)node] = true;
+      }
+    }
+  }
+
+  nb::list window_source_config() const {
+    nb::list sources;
+    for (size_t i = 0; i < global_gather.size(); ++i) {
+      const auto &g = global_gather[i];
+      nb::list source_voi;
+      for (const auto &v : voi_specs[i])
+        source_voi.append(nb::make_tuple(v.kind, v.a, v.b));
+      sources.append(nb::make_tuple(g.n_voi, g.n_node, g.voi_offset, g.node_offset,
+                                    g.node_indices, source_voi));
+    }
+    return sources;
+  }
+
+  nb::tuple window_config(const kmon<W> &m, const nb::list &sources) const {
+    // Exact effective configuration, including weights and input row identity.
+    return nb::make_tuple(m.istep, m.dt, m.voi, sources, m.spatial_compact,
+                          m.spatial_area_idx, m.spatial_scale, m.sm_row_ptr,
+                          m.sm_col_idx, m.sm_val);
   }
 
   nb::list take_global_monitor_outputs() {
@@ -1802,23 +1894,67 @@ template <int W> struct simw {
 
   nb::list get_global_monitor_states() const {
     nb::list out;
-    for (const auto &gm : global_mons)
-      out.append(kmon_state_to_dict(gm.export_state()));
+    for (const auto &gm : global_mons) {
+      nb::dict state = kmon_state_to_dict(gm.export_state());
+      if (gm.complete_window)
+        state["window_config"] = window_config(gm, window_source_config());
+      out.append(state);
+    }
     return out;
   }
 
   void set_global_monitor_states(nb::list states) {
+    std::vector<bool> restored(global_mons.size(), false);
+    std::vector<std::pair<size_t, KMonState>> window_states;
+    for (auto item : states) {
+      nb::dict d = nb::cast<nb::dict>(item);
+      if (!d.contains("window_config")) continue;
+      for (const char *key : {"slot", "kind", "width", "n_out_v", "n_out_space",
+                              "n_out_modes", "accum", "accum_count", "m_step", "run_start"}) {
+        if (!d.contains(key))
+          throw std::runtime_error("global complete window: incomplete snapshot state");
+      }
+      KMonState st = dict_to_kmon_state(d);
+      auto it = std::find_if(global_mons.begin(), global_mons.end(),
+                             [&](const auto &m) {
+                               return m.complete_window && m.slot == st.slot &&
+                                      m.kind == st.kind;
+                             });
+      if (it == global_mons.end())
+        throw std::runtime_error("global complete window: unmatched snapshot monitor");
+      const size_t i = (size_t)(it - global_mons.begin());
+      const nb::tuple config = window_config(*it, window_source_config());
+      const int equal = PyObject_RichCompareBool(d["window_config"].ptr(), config.ptr(), Py_EQ);
+      if (equal < 0) throw nb::python_error();
+      if (restored[i] || !equal)
+        throw std::runtime_error("global complete window: incompatible snapshot configuration");
+      it->validate_window_state(st, t_abs);
+      restored[i] = true;
+      window_states.emplace_back(i, std::move(st));
+    }
+    for (size_t i = 0; i < global_mons.size(); ++i) {
+      if (global_mons[i].complete_window && !restored[i])
+        throw std::runtime_error("global complete window: missing compatible snapshot monitor");
+    }
+
     for (size_t mi = 0; mi < states.size(); mi++) {
-      KMonState st = dict_to_kmon_state(nb::cast<nb::dict>(states[mi]));
+      nb::dict d = nb::cast<nb::dict>(states[mi]);
+      if (d.contains("window_config")) continue;
+      KMonState st = dict_to_kmon_state(d);
       auto it = std::find_if(global_mons.begin(), global_mons.end(),
                              [&](const kmon<W> &m) {
-                               return m.slot == st.slot && m.kind == st.kind;
+                               return !m.complete_window && m.slot == st.slot &&
+                                      m.kind == st.kind;
                              });
       if (it != global_mons.end()) {
         it->import_state(st);
-      } else if (mi < global_mons.size()) {
+      } else if (mi < global_mons.size() && !global_mons[mi].complete_window) {
         global_mons[mi].import_state(st);
       }
+    }
+    for (const auto &[i, st] : window_states) {
+      global_mons[i].import_state(st);
+      global_mons[i].begin_call();
     }
   }
 
@@ -1984,8 +2120,8 @@ template <int W> struct simw {
 
   void monitor_begin_run() {
     for (auto &mons_s : mons)
-      for (auto &m : mons_s) m.begin_run();
-    for (auto &gm : global_mons) gm.begin_run();
+      for (auto &m : mons_s) m.begin_run(t_abs);
+    for (auto &gm : global_mons) gm.begin_run(t_abs);
   }
 
   void monitor_begin_call() {
@@ -2004,6 +2140,10 @@ template <int W> struct simw {
     const int cs = chunk_size > 0 ? chunk_size : tavg_period;
     const int n_chunks = (nstep + cs - 1) / cs;
     const size_t n_sn = sn.size();
+    for (const auto &gm : global_mons) {
+      if (gm.complete_window && gm.m_step != t_abs)
+        throw std::runtime_error("global complete window: reset or restore at the simulator clock before run");
+    }
     monitor_begin_call();
     for (size_t s = 0; s < mons.size(); s++) {
       for (auto &mon : mons[s]) mon.reserve_for_steps(nstep);

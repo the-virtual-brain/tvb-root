@@ -59,7 +59,7 @@
 //        set_spatial_compact(area_idx, scale, n_nodes, n_areas)
 //        set_projection(gain, n_sensors, n_nodes, ref_vec=nullptr, ref_len=0)
 //    - Run lifecycle:
-//        begin_run()                   // sets run_start = m_step
+//        begin_run(tick)               // reanchors complete windows; legacy sets run_start
 //        begin_call()                  // clears t_out / d_out
 //        reserve_for_steps(nstep)      // pre-reserves t_out / d_out capacity
 //        step_one(src, n_src_v, n_node, n_modes=1, t_abs=0)
@@ -290,6 +290,7 @@ struct kmon {
   int n_out_modes = 1;          // 1 for observed monitors; n_modes for KMON_CTAVG
   double k1v0 = 1.0;            // bold: (dot - 1) * k1v0 for FirstOrderVolterra
   bool first_order = false;
+  bool complete_window = false; // staged native global window policy
   bool midpoint_time = false;   // force (m_step - 0.5*istep)*dt (e.g. CTAVG tavg / Recorder)
   double dt = 0.1;              // effective monitor step dt (dt0 for global, sn.dt for Recorder)
 
@@ -348,7 +349,15 @@ struct kmon {
   std::vector<double> t_out;
   std::vector<float> d_out;
 
-  void begin_run() { run_start = m_step; }
+  void begin_run(uint64_t tick) {
+    if (complete_window) {
+      m_step = tick;
+      std::fill(accum.begin(), accum.end(), 0.0);
+      accum_count = 0;
+      begin_call();
+    }
+    run_start = m_step;
+  }
 
   void begin_call() {
     t_out.clear();
@@ -626,11 +635,7 @@ struct kmon {
 #pragma omp simd
           for (size_t k = 0; k < nw; k++) da[k] += (double)sv[k];
         }
-        accum_count++;
-        if (m_step % (uint64_t)istep == 0u) {
-          t_out.push_back(((double)m_step - 0.5 * (double)istep) * dt);
-          flush_accum_to_d_out((size_t)L * nw);
-        }
+        finish_average_step((size_t)L * nw);
         return;
       }
       case KMON_CTAVG: {
@@ -676,11 +681,7 @@ struct kmon {
 #pragma omp simd
           for (int w = 0; w < W; w++) da[w] += lane_sum[w] * inv_n;
         }
-        accum_count++;
-        if (m_step % (uint64_t)istep == 0u) {
-          t_out.push_back(period_emit_time());
-          flush_accum_to_d_out((size_t)L * (size_t)W);
-        }
+        finish_average_step((size_t)L * (size_t)W);
         return;
       }
       case KMON_SPATIAL_AVG: {
@@ -725,11 +726,7 @@ struct kmon {
             }
           }
         }
-        accum_count++;
-        if (m_step % (uint64_t)istep == 0u) {
-          t_out.push_back(period_emit_time());
-          flush_accum_to_d_out(total_elems);
-        }
+        finish_average_step(total_elems);
         return;
       }
       case KMON_PROJECTION: {
@@ -988,6 +985,17 @@ struct kmon {
     return st;
   }
 
+  void validate_window_state(const KMonState &st, uint64_t tick) const {
+    if (st.slot != slot || st.kind != kind || st.width != W ||
+        st.n_out_v != n_out_v || st.n_out_space != n_out_space ||
+        st.n_out_modes != n_out_modes || st.accum.size() != accum.size() ||
+        st.m_step != tick || st.run_start > st.m_step ||
+        st.accum_count != (st.m_step - st.run_start) % (uint64_t)istep ||
+        (st.accum_count == 0 && std::any_of(st.accum.begin(), st.accum.end(),
+                                          [](double x) { return x != 0.0; })))
+      throw std::runtime_error("global complete window: invalid snapshot state or clock");
+  }
+
   void import_state(const KMonState &st) {
     if (st.width != W)
       throw std::runtime_error("kmon::import_state: width mismatch");
@@ -1034,6 +1042,18 @@ struct kmon {
 
   void ensure_accum(size_t n) {
     if (accum.size() != n) accum.assign(n, 0.0);
+  }
+
+  void finish_average_step(size_t total_elems) {
+    ++accum_count;
+    const bool ready = complete_window ? accum_count == (uint32_t)istep
+                                      : m_step % (uint64_t)istep == 0u;
+    if (!ready) return;
+    if (complete_window || kind == KMON_TAVG)
+      t_out.push_back(((double)m_step - 0.5 * (double)istep) * dt);
+    else
+      t_out.push_back(period_emit_time());
+    flush_accum_to_d_out(total_elems);
   }
 
   double period_emit_time() const {
