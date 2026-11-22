@@ -345,6 +345,7 @@ struct kmon {
   uint32_t bw_drive_count = 0;
 
   bool bw_stream() const { return kind == KMON_BOLD_BW_STREAM; }
+  bool projection_window() const { return kind == KMON_PROJECTION && complete_window; }
   bool staged_global() const { return complete_window || bw_stream(); }
 
   // KMON_SPATIAL_AVG weights (compact per-node OR sparse CSR from dense matrix)
@@ -644,6 +645,15 @@ struct kmon {
       d_out.reserve(rows * (size_t)n_out_space);
       return;
     }
+    if (projection_window()) {
+      const size_t rows = (size_t)(((uint64_t)accum_count + (uint64_t)nstep) / (uint64_t)istep);
+      const size_t stride = accum.size();
+      if (rows > t_out.max_size() || rows > d_out.max_size() / stride)
+        throw std::runtime_error("global complete window projection: output extent out of range");
+      t_out.reserve(rows);
+      d_out.reserve(rows * stride);
+      return;
+    }
     const size_t ck = (cadence_K > 1u) ? (size_t)cadence_K : 1u;
     const size_t eff_steps = ((size_t)nstep + ck - 1u) / ck;
     size_t max_samples = 0;
@@ -848,9 +858,7 @@ struct kmon {
             for (int w = 0; w < W; w++) da[w] += sum_w[w];
           }
         }
-        accum_count++;
-        if (m_step % (uint64_t)istep == 0u) {
-          t_out.push_back(period_emit_time());
+        if (close_average_step()) {
           const double inv_cnt =
               1.0 / (double)(accum_count ? accum_count : 1u);
           const size_t old_sz = d_out.size();
@@ -1081,6 +1089,8 @@ struct kmon {
         st.n_out_modes != n_out_modes || st.accum.size() != accum.size() ||
         st.m_step != tick || st.run_start > st.m_step ||
         st.accum_count != (st.m_step - st.run_start) % (uint64_t)istep ||
+        (projection_window() && std::any_of(st.accum.begin(), st.accum.end(),
+                                             [](double x) { return !std::isfinite(x); })) ||
         (st.accum_count == 0 && std::any_of(st.accum.begin(), st.accum.end(),
                                           [](double x) { return x != 0.0; })))
       throw std::runtime_error("global complete window: invalid snapshot state or clock");
@@ -1225,16 +1235,20 @@ struct kmon {
     if (accum.size() != n) accum.assign(n, 0.0);
   }
 
-  void finish_average_step(size_t total_elems) {
+  bool close_average_step() {
     ++accum_count;
     const bool ready = complete_window ? accum_count == (uint32_t)istep
                                       : m_step % (uint64_t)istep == 0u;
-    if (!ready) return;
+    if (!ready) return false;
     if (complete_window || kind == KMON_TAVG)
       t_out.push_back(((double)m_step - 0.5 * (double)istep) * dt);
     else
       t_out.push_back(period_emit_time());
-    flush_accum_to_d_out(total_elems);
+    return true;
+  }
+
+  void finish_average_step(size_t total_elems) {
+    if (close_average_step()) flush_accum_to_d_out(total_elems);
   }
 
   double period_emit_time() const {

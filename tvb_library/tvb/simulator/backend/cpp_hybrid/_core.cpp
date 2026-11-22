@@ -1380,11 +1380,11 @@ static std::vector<int> to_int_vec(nb::handle h) {
   return out;
 }
 
-// Do not use to_int_vec for BW: its ndarray conversions may narrow before
-// the caller can check the original index.
-static std::vector<int> to_bw_indices(nb::handle h, size_t upper_bound, const char *what) {
-  const auto invalid = [what]() {
-    return std::runtime_error(std::string("global BW stream: invalid ") + what);
+// Legacy ndarray conversions may narrow before the caller can check the index.
+static std::vector<int> to_checked_indices(nb::handle h, size_t upper_bound,
+                                           const char *label, const char *what) {
+  const auto invalid = [label, what]() {
+    return std::runtime_error(std::string(label) + ": invalid " + what);
   };
   const auto numpy = nb::module_::import_("numpy");
   if (nb::isinstance(h, numpy.attr("ndarray"))) {
@@ -1395,8 +1395,10 @@ static std::vector<int> to_bw_indices(nb::handle h, size_t upper_bound, const ch
     throw invalid();
   }
   const auto numpy_bool = numpy.attr("bool_");
+  const auto seq = nb::borrow<nb::sequence>(h);
+  if (nb::len(seq) > (size_t)std::numeric_limits<int>::max()) throw invalid();
   std::vector<int> out;
-  for (auto item : nb::borrow<nb::sequence>(h)) {
+  for (auto item : seq) {
     if (PyBool_Check(item.ptr()) || nb::isinstance(item, numpy_bool) || !PyIndex_Check(item.ptr()))
       throw invalid();
     auto index = nb::steal<nb::object>(PyNumber_Index(item.ptr()));
@@ -1637,6 +1639,56 @@ static void parse_bw_stream_state(KMonState &st, const nb::dict &d, size_t n_nod
   }
 }
 
+static constexpr const char *projection_label = "global complete window projection";
+
+static auto projection_array(nb::handle h, size_t ndim, const char *name) {
+  const auto numpy = nb::module_::import_("numpy");
+  const auto invalid = [name]() {
+    return std::runtime_error(std::string(projection_label) + ": invalid " + name);
+  };
+  if (!nb::isinstance(h, numpy.attr("ndarray"))) throw invalid();
+  const auto kind = nb::cast<std::string>(h.attr("dtype").attr("kind"));
+  auto a = nb::cast<nb::ndarray<nb::numpy>>(h, false);
+  if ((kind != "f" && kind != "i" && kind != "u") || a.ndim() != ndim)
+    throw invalid();
+  return a;
+}
+
+template <int W>
+static void configure_window_projection(kmon<W> &m, const nb::dict &d, int n_nodes,
+                                        size_t n_voi) {
+  if (!d.contains("gain") || d["gain"].is_none())
+    throw std::runtime_error("global complete window projection: preconfigured gain required");
+  if (d.contains("obsnoise") && !d["obsnoise"].is_none())
+    throw std::runtime_error("global complete window projection: observation noise is unsupported");
+  const auto shape = projection_array(d["gain"], 2, "gain");
+  const size_t n_sensors = shape.shape(0);
+  if (n_sensors == 0 || n_sensors > (size_t)std::numeric_limits<int>::max() ||
+      shape.shape(1) != (size_t)n_nodes || n_sensors > m.gain.max_size() / (size_t)n_nodes ||
+      n_sensors > std::min(m.accum.max_size(), m.d_out.max_size()) / n_voi)
+    throw std::runtime_error("global complete window projection: invalid gain or output extent");
+  using FloatArray = nb::ndarray<nb::numpy, const float, nb::c_contig>;
+  FloatArray ref;
+  if (d.contains("ref_vec") && !d["ref_vec"].is_none()) {
+    const auto ref_shape = projection_array(d["ref_vec"], 1, "ref_vec");
+    if (ref_shape.shape(0) != n_sensors)
+      throw std::runtime_error("global complete window projection: ref_vec length != sensor count");
+    ref = nb::cast<FloatArray>(d["ref_vec"]);
+    // Reference weights are prepared by the caller, including any masked
+    // contribution. Do not rescale the effective operator here.
+    if (std::any_of(ref.data(), ref.data() + n_sensors,
+                    [](float x) { return !std::isfinite(x); }))
+      throw std::runtime_error("global complete window projection: nonfinite ref_vec");
+  }
+  const auto gain = nb::cast<FloatArray>(d["gain"]);
+  if (std::any_of(gain.data(), gain.data() + n_sensors * (size_t)n_nodes,
+                  [](float x) { return !std::isfinite(x); }))
+    throw std::runtime_error("global complete window projection: nonfinite gain");
+  m.set_projection(gain.data(), (int)n_sensors, n_nodes, ref.is_valid() ? ref.data() : nullptr,
+                   ref.is_valid() ? (int)n_sensors : 0);
+  if (!m.has_ref_vec) m.ref_vec.clear();  // Canonical identity for no reference.
+}
+
 template <int W>
 static void parse_kmon_spec(nb::handle item, int n_src_v, int n_space,
                             int n_cvar, int n_modes, double default_dt,
@@ -1661,7 +1713,8 @@ static void parse_kmon_spec(nb::handle item, int n_src_v, int n_space,
       if (!std::isfinite(clock) || clock <= 0 || clock > std::numeric_limits<float>::max() ||
           (float)clock != default_dt)
         throw std::runtime_error("global BW stream: incompatible neural clock");
-      const auto voi = to_bw_indices(d["voi"], (size_t)n_src_v, "observed VOI");
+      const auto voi = to_checked_indices(d["voi"], (size_t)n_src_v, "global BW stream",
+                                          "observed VOI");
       if (voi.size() != 1)
         throw std::runtime_error("global BW stream: exactly one valid observed VOI is required");
       const auto parameters = nb::cast<nb::dict>(d["bw_stream_params"]);
@@ -1680,7 +1733,7 @@ static void parse_kmon_spec(nb::handle item, int n_src_v, int n_space,
     }
     if (complete_window &&
         (!global || W != 1 || (kind != KMON_TAVG && kind != KMON_GLOBAL_AVG &&
-                               kind != KMON_SPATIAL_AVG)))
+                               kind != KMON_SPATIAL_AVG && kind != KMON_PROJECTION)))
       throw std::runtime_error("complete_window requires a supported global monitor at width 1");
     auto it = std::find_if(prev.begin(), prev.end(), [&](const kmon<W> &e) {
       return !e.staged_global() && e.slot == slot && e.kind == kind;
@@ -1697,9 +1750,12 @@ static void parse_kmon_spec(nb::handle item, int n_src_v, int n_space,
       m_dt = nb::cast<double>(d["dt"]);
     else if (d.contains("dt0") && !d["dt0"].is_none())
       m_dt = nb::cast<double>(d["dt0"]);
+    const bool window_projection = complete_window && kind == KMON_PROJECTION;
     std::vector<int> voi;
     if (d.contains("voi") && !d["voi"].is_none())
-      voi = to_int_vec(d["voi"]);
+      voi = window_projection
+          ? to_checked_indices(d["voi"], (size_t)n_src_v, projection_label, "observed VOI")
+          : to_int_vec(d["voi"]);
 
     if (complete_window &&
         (istep < 1 || cadence_K != 1 || !std::isfinite(m_dt) || m_dt <= 0.0 ||
@@ -1758,7 +1814,9 @@ static void parse_kmon_spec(nb::handle item, int n_src_v, int n_space,
       out.configure_basic(slot, kind, istep, m_dt, n_src_v, n_space, 1, voi,
                           cadence_K, midpoint_time);
     } else if (kind == KMON_PROJECTION) {
-      if (d.contains("gain") && !d["gain"].is_none()) {
+      if (window_projection) {
+        configure_window_projection(out, d, n_space, voi.empty() ? (size_t)n_src_v : voi.size());
+      } else if (d.contains("gain") && !d["gain"].is_none()) {
         int n_sensors = 0, n_pn = 0;
         extract_2d_shape(d["gain"], n_sensors, n_pn);
         std::vector<float> g = to_float_vec(d["gain"]);
@@ -1866,17 +1924,26 @@ template <int W> struct simw {
       throw std::runtime_error(
           "set_global_monitors: gather_specs length != subnet count");
     bool has_window = false;
+    bool has_projection_window = false;
     bool has_bw_stream = false;
     for (auto item : mon_specs) {
       if (!nb::isinstance<nb::dict>(item)) continue;
       const auto d = nb::cast<nb::dict>(item);
-      has_window |= dict_get_or<bool>(d, "complete_window", false);
-      has_bw_stream |= dict_get_or<int>(d, "kind", 0) == KMON_BOLD_BW_STREAM;
+      const bool complete = dict_get_or<bool>(d, "complete_window", false);
+      const int kind = dict_get_or<int>(d, "kind", 0);
+      has_window |= complete;
+      has_projection_window |= complete && kind == KMON_PROJECTION;
+      has_bw_stream |= kind == KMON_BOLD_BW_STREAM;
     }
     if (has_bw_stream) {
       if (W != 1 || sn.size() != 1 || sn[0].K != 1 || sn[0].dt != dt || sn[0].n_modes != 1)
         throw std::runtime_error("global BW stream requires width 1, one regional subnet, clock and mode");
-      validate_bw_observations();
+      validate_single_source_observations("global BW stream");
+    }
+    if (has_projection_window) {
+      if (W != 1 || sn.size() != 1 || sn[0].K != 1 || sn[0].dt != dt || sn[0].n_modes != 1)
+        throw std::runtime_error("global complete window projection requires width 1, one regional subnet, clock and mode");
+      validate_single_source_observations(projection_label);
     }
     const bool staged = has_window || has_bw_stream;
     std::vector<GlobalGatherSubnet> gather;
@@ -1884,8 +1951,11 @@ template <int W> struct simw {
     int tot_v = 0;
     int tot_n = 0;
     const auto parse_node_indices = [&](nb::handle h) {
-      return has_bw_stream ? to_bw_indices(h, (size_t)sn[0].n_node, "node gather index")
-                           : to_int_vec(h);
+      return has_bw_stream || has_projection_window
+          ? to_checked_indices(h, (size_t)sn[0].n_node,
+                               has_bw_stream ? "global BW stream" : projection_label,
+                               "node gather index")
+          : to_int_vec(h);
     };
     for (auto item : gather_specs) {
       GlobalGatherSubnet gs;
@@ -1922,6 +1992,12 @@ template <int W> struct simw {
       const auto [n_voi, n_node] = validate_window_gather(gather);
       tot_v = n_voi;
       tot_n = n_node;
+    }
+    if (has_projection_window) {
+      const auto &g = gather.front();
+      for (int j = 0; j < g.n_node; ++j)
+        if (g.node_indices.empty() ? g.node_offset != 0 : g.node_indices[j] != j)
+          throw std::runtime_error("global complete window projection requires local node order");
     }
 
     std::vector<kmon<W>> next;
@@ -1992,11 +2068,27 @@ template <int W> struct simw {
     return {(int)n_voi, (int)n_node};
   }
 
-  void validate_bw_observations() const {
+  bool projection_window_armed() const {
+    return std::any_of(global_mons.begin(), global_mons.end(),
+                       [](const auto &m) { return m.projection_window(); });
+  }
+
+  void set_observed_rows(int si, std::vector<voispec> rows) {
+    auto &current = voi_specs[si];
+    if (projection_window_armed() &&
+        !std::equal(current.begin(), current.end(), rows.begin(), rows.end(),
+                    [](const auto &a, const auto &b) {
+                      return a.kind == b.kind && a.a == b.a && a.b == b.b;
+                    }))
+      throw std::runtime_error("global complete window projection: detach before changing observed rows");
+    current = std::move(rows);
+  }
+
+  void validate_single_source_observations(const char *label) const {
     for (const auto &v : voi_specs[0]) {
       if (v.kind < 0 || v.kind > 1 || v.a < 0 || v.a >= sn[0].n_svar ||
           v.b < 0 || v.b >= sn[0].n_svar)
-        throw std::runtime_error("global BW stream: invalid observed VOI source");
+        throw std::runtime_error(std::string(label) + ": invalid observed VOI source");
     }
   }
 
@@ -2008,7 +2100,7 @@ template <int W> struct simw {
     const auto &v = voi_specs[0][(size_t)m.voi[0]];
     if (v.kind != m.bw_source_voi.kind || v.a != m.bw_source_voi.a || v.b != m.bw_source_voi.b)
       throw std::runtime_error("global BW stream: changed selected observation; reattach monitor");
-    validate_bw_observations();
+    validate_single_source_observations("global BW stream");
   }
 
   nb::list window_source_config() const {
@@ -2025,6 +2117,10 @@ template <int W> struct simw {
   }
 
   nb::tuple window_config(const kmon<W> &m, const nb::list &sources) const {
+    // The projection's live source definitions and clock cannot change while armed.
+    if (m.projection_window())
+      return nb::make_tuple(m.istep, m.dt, m.voi, sources, m.n_sensors, m.n_proj_nodes,
+                            m.gain, m.ref_vec);
     // Exact effective configuration, including weights and input row identity.
     return nb::make_tuple(m.istep, m.dt, m.voi, sources, m.spatial_compact,
                           m.spatial_area_idx, m.spatial_scale, m.sm_row_ptr,
@@ -2113,10 +2209,20 @@ template <int W> struct simw {
     std::vector<bool> restored(global_mons.size(), false);
     std::vector<std::pair<size_t, KMonState>> staged_states;
     bool has_bw_stream = false;
+    const bool has_projection_window = projection_window_armed();
     for (auto item : states) {
       nb::dict d = nb::cast<nb::dict>(item);
       const bool bw = d.contains("bw_stream_config");
-      if (!bw && !d.contains("window_config")) continue;
+      if (!bw && !d.contains("window_config")) {
+        if (has_projection_window && dict_get_or<int>(d, "kind", 0) == KMON_PROJECTION) {
+          const int slot = dict_get_or<int>(d, "slot", -1);
+          if (std::any_of(global_mons.begin(), global_mons.end(), [&](const auto &m) {
+                return m.projection_window() && m.slot == slot;
+              }))
+            throw std::runtime_error("global complete window projection: historical snapshot monitor");
+        }
+        continue;
+      }
       const char *label = bw ? "global BW stream: " : "global complete window: ";
       if (bw && d.contains("window_config"))
         throw std::runtime_error("global BW stream: ambiguous snapshot identity");
@@ -2680,6 +2786,8 @@ struct sim {
     while (H < (uint32_t)(horizon + 2)) H <<= 1;
     ensure_sim();
     dispatch([&](auto &sw) {
+      if (sw.projection_window_armed())
+        throw std::runtime_error("global complete window projection: detach before adding a subnet");
       constexpr int W = std::remove_reference_t<decltype(sw)>::W_CONST;
       subnet<W> s;
       s.alloc(n_node, n_svar, n_parm, n_cvar, model_id, H, n_modes);
@@ -2923,22 +3031,26 @@ struct sim {
 
   void set_voi(int si, std::vector<int> v) {
     dispatch([&](auto &s) {
-      s.voi_specs[si].clear();
-      for (int idx : v) s.voi_specs[si].push_back({0, idx, 0});
+      std::vector<voispec> rows;
+      for (int idx : v) rows.push_back({0, idx, 0});
+      s.set_observed_rows(si, std::move(rows));
     });
   }
 
   void set_voi_specs(int si, std::vector<int> flat) {
     dispatch([&](auto &s) {
-      s.voi_specs[si].clear();
+      std::vector<voispec> rows;
       for (size_t k = 0; k + 2 < flat.size(); k += 3)
-        s.voi_specs[si].push_back({flat[k], flat[k + 1], flat[k + 2]});
+        rows.push_back({flat[k], flat[k + 1], flat[k + 2]});
+      s.set_observed_rows(si, std::move(rows));
     });
   }
 
   void set_opts(int integ_id, float dt, int tavg_period) {
     ensure_sim();
     dispatch([&](auto &s) {
+      if (s.projection_window_armed() && s.dt != dt)
+        throw std::runtime_error("global complete window projection: detach before changing the clock");
       s.integ_id = integ_id;
       s.dt = dt;
       s.tavg_period = tavg_period;

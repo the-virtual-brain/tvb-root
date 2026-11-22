@@ -399,3 +399,51 @@ def test_native_bw_stream_coexists_with_complete_window_hrf_and_endpoint_bw():
     np.testing.assert_array_equal(average[1], expected)
     np.testing.assert_array_equal(hrf[1], expected)
     np.testing.assert_array_equal(endpoint[1], np.zeros_like(expected))
+
+
+def test_native_bw_stream_and_projection_window_restore_an_exact_mixed_set():
+    obs = _neural_fixture(5, 1)
+    delta = _increments(obs)
+    gain = np.array([[1, 0.5, -1], [-1, 0, 2]], dtype=np.float32)
+    projection = dict(slot=1, kind=8, complete_window=True, istep=3, dt=DT,
+                      voi=[1], gain=gain)
+    gather = dict(n_voi=2, n_node=3)
+    ordinary = dict(slot=2, kind=2, istep=4, dt=DT, voi=[0])
+
+    def armed():
+        return _armed(gather=gather, extra=(projection, ordinary))
+
+    full = armed()
+    _run(full, delta, 11, drain=False)
+    whole = full.take_global_monitor_outputs()
+    p_times, p_values = whole[1]
+    np.testing.assert_array_equal(p_times, (np.arange(7) * 3 + 1.5) * DT)
+    expected = obs.astype(np.float64).reshape(7, 3, 3).mean(axis=1) @ gain.T
+    np.testing.assert_array_equal(p_values[:, 0, :, 0], expected.astype(np.float32))
+
+    split = armed()
+    _run(split, delta[:5], 4, drain=False)
+    first = split.take_global_monitor_outputs()
+    bw, proj, other = split.get_global_monitor_states()
+    assert bw["bw_drive_count"] == 1 and proj["accum_count"] == 2
+    assert "bw_stream_config" in bw and "window_config" in proj
+    resumed = armed()
+    _run(resumed, delta[:5], 2, drain=False)
+    pending = resumed.get_global_monitor_states()
+    historical = {key: value for key, value in proj.items() if key != "window_config"}
+    for candidate in ([bw, other], [bw, historical, other], [bw, proj],
+                      [bw, proj, other, historical], [bw, proj, other, other]):
+        with pytest.raises(RuntimeError, match="global (BW stream|complete window)"):
+            resumed.set_global_monitor_states(candidate)
+        np.testing.assert_equal(resumed.get_global_monitor_states(), pending)
+    for actual, expected in zip(resumed.take_global_monitor_outputs(), first):
+        _assert_stream(actual, expected)
+
+    resumed = armed()
+    resumed.set_subnet_state(0, split.get_subnet_state(0))
+    resumed.set_subnet_buf(0, split.get_subnet_buf(0))
+    resumed.set_t_abs(split.t_abs())
+    resumed.set_global_monitor_states([other, proj, bw])  # identity, not record order
+    _run(resumed, delta[5:], 8, drain=False)
+    for head, tail, expected in zip(first, resumed.take_global_monitor_outputs(), whole):
+        _assert_stream(tuple(np.concatenate((a, b)) for a, b in zip(head, tail)), expected)

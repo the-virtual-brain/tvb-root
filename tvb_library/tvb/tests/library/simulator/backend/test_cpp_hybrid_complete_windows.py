@@ -222,3 +222,182 @@ def test_native_complete_window_rejects_out_of_scope_attachments():
         _sim(k=2).set_global_monitors(GATHER, _specs())
     with pytest.raises(RuntimeError, match="supported global monitor"):
         _sim().set_monitors(0, _specs()[:1])
+
+
+GAIN = np.array([[1, -2, 0.5], [0.25, 3, -1], [0, 0, 0], [-1, 0, 2]], dtype=np.float32)
+REFERENCE = np.array([0.25, 0.25, 0, 0.25], dtype=np.float32)
+
+
+def _projection_spec(**changes):
+    return dict(dict(slot=0, kind=8, complete_window=True, dt=DT, istep=4,
+                     voi=np.array([1, 0], dtype=np.int64), gain=GAIN, ref_vec=REFERENCE),
+                **changes)
+
+
+def _projection_oracle(nstep, period=4, *, origin=0, gain=GAIN, ref=REFERENCE):
+    closed = nstep // period
+    steps = origin + np.arange(1, closed * period + 1)
+    regional_rows = INITIAL + steps[:, None] * DELTA
+    means = regional_rows.reshape(closed, period, 3).mean(axis=1)
+    sensors = means @ gain.T
+    if ref is not None:
+        sensors -= (sensors @ ref)[:, None]
+    # The selected observed row order is difference, then direct observation.
+    values = np.stack((np.zeros_like(sensors), sensors), axis=1)[..., None]
+    times = (origin + period * (np.arange(closed) + 0.5)) * DT
+    return [(times, values.astype(np.float32))]
+
+
+@pytest.mark.parametrize("ref", [None, np.array([0, 1, 0, 0.0]), REFERENCE],
+                         ids=["no-reference", "named", "masked-average"])
+@pytest.mark.parametrize("period, chunk", [(1, 8), (3, 5), (4, 1), (4, 3), (4, 8)])
+def test_native_projection_window_samples_post_step_voi_order_and_sensor_reference(ref, period, chunk):
+    sim = _armed([_projection_spec(istep=period, ref_vec=ref)])
+    _assert_streams(_run(sim, 9, chunk), _projection_oracle(9, period, ref=ref))
+    assert sim.get_global_monitor_states()[0]["accum_count"] == 9 % period
+
+
+def test_native_projection_window_drains_resume_and_fresh_operator_reset():
+    source = _armed([_projection_spec()])
+    first = _run(source, 5, 3)
+    _assert_streams(first, _projection_oracle(5))
+    _assert_streams(_run(source, 1), _projection_oracle(0))  # drain with no output
+    before, = source.get_global_monitor_states()
+    assert before["m_step"] == 6 and before["run_start"] == 0 and before["accum_count"] == 2
+    assert "window_config" in before
+    resumed = _armed([_projection_spec()])
+    resumed.set_subnet_state(0, source.get_subnet_state(0))
+    resumed.set_subnet_buf(0, source.get_subnet_buf(0))
+    resumed.set_t_abs(6)
+    resumed.set_global_monitor_states([before])
+    second = _run(resumed, 5, 8)
+    _assert_streams(second, _run(source, 5, 2))
+    _assert_streams([tuple(np.concatenate((a, b)) for a, b in zip(first[0], second[0]))],
+                    _projection_oracle(11))
+    # Fresh attachment discards the three samples open at tick 11 and anchors
+    # the replacement operator at 11 rather than the previous phase or tick 0.
+    changed_gain = GAIN.copy()
+    changed_gain[1, 0] = 5
+    resumed.set_global_monitors(GATHER, [_projection_spec(gain=changed_gain)])
+    _assert_streams(_run(resumed, 4, 3), _projection_oracle(4, origin=11, gain=changed_gain))
+    _run(resumed, 2)
+    resumed.monitor_begin_run()
+    _assert_streams(_run(resumed, 4), _projection_oracle(4, origin=17, gain=changed_gain))
+
+
+@pytest.mark.parametrize("change", ["gain", "ref_vec", "voi", "source_rows", "gather", "period",
+                                    "missing", "historical", "duplicate", "count", "nan"])
+def test_native_projection_window_rejected_restore_preserves_partial_state_and_output(change):
+    spec = _projection_spec()
+    gather = GATHER
+    if change == "gain":
+        spec["gain"] = GAIN * 2
+    elif change == "ref_vec":
+        spec["ref_vec"] = np.array([0, 1, 0, 0], dtype=np.float32)
+    elif change == "voi":
+        spec["voi"] = [0, 1]
+    elif change == "period":
+        spec["istep"] = 5
+    elif change == "gather":
+        gather = [dict(GATHER[0], node_indices=[0, 1, 2])]
+    source = _armed([_projection_spec()])
+    _run(source, 6, 3)
+    candidate = source.get_global_monitor_states()
+    if change == "missing":
+        candidate.clear()
+    elif change == "historical":
+        # A genuine old native projection record has no complete-window identity.
+        old = _armed([_projection_spec(complete_window=False)])
+        _run(old, 6)
+        candidate = old.get_global_monitor_states()
+        assert "window_config" not in candidate[0]
+    elif change == "duplicate":
+        candidate.append(candidate[0])
+    elif change == "count":
+        candidate[0]["accum_count"] = 1
+    elif change == "nan":
+        candidate[0]["accum"][0] = np.nan
+    target = _sim()
+    if change == "source_rows":
+        target.set_voi_specs(0, [1, 0, 0, 0, 0, 0])
+    target.set_global_monitors(gather, [spec])
+    control = _sim()
+    if change == "source_rows":
+        control.set_voi_specs(0, [1, 0, 0, 0, 0, 0])
+    control.set_global_monitors(gather, [spec])
+    _run_pending(target, 6)
+    expected = _run(control, 6)
+    before = target.get_global_monitor_states()
+    with pytest.raises(RuntimeError, match="global complete window"):
+        target.set_global_monitor_states(candidate)
+    np.testing.assert_equal(target.get_global_monitor_states(), before)
+    _assert_streams(target.take_global_monitor_outputs(), expected)
+
+
+@pytest.mark.parametrize("change, error", [
+    ({"gain": None}, "preconfigured gain"),
+    ({"gain": np.ones(3)}, "invalid gain"),
+    ({"gain": np.empty((0, 3))}, "invalid gain"),
+    ({"gain": np.ones((4, 2))}, "invalid gain"),
+    ({"gain": np.full((4, 3), np.nan)}, "nonfinite gain"),
+    ({"gain": np.full((4, 3), np.inf)}, "nonfinite gain"),
+    ({"ref_vec": np.ones((1, 4))}, "invalid ref_vec"),
+    ({"ref_vec": np.ones(3)}, "ref_vec length"),
+    ({"ref_vec": np.full(4, np.nan)}, "nonfinite ref_vec"),
+    ({"voi": np.array([2**32], dtype=np.int64)}, "invalid observed VOI"),
+    ({"voi": np.array([2**64 - 1], dtype=np.uint64)}, "invalid observed VOI"),
+    ({"voi": [0.0]}, "invalid observed VOI"),
+    ({"istep": 0}, "invalid period"),
+    ({"dt": 2 * DT}, "invalid period"),
+    ({"obsnoise": object()}, "observation noise is unsupported"),
+])
+def test_native_projection_window_validates_attachment_without_replacing_pending_state(change, error):
+    sim = _armed([_projection_spec()])
+    _run_pending(sim, 5)
+    before = sim.get_global_monitor_states()
+    with pytest.raises(RuntimeError, match=error):
+        sim.set_global_monitors(GATHER, [_projection_spec(**change)])
+    np.testing.assert_equal(sim.get_global_monitor_states(), before)
+    _assert_streams(sim.take_global_monitor_outputs(), _projection_oracle(5))
+
+
+def test_native_projection_window_rejects_nonlocal_geometry_and_invalid_source():
+    spec = [_projection_spec()]
+    with pytest.raises(RuntimeError, match="width 1"):
+        _sim(width=4).set_global_monitors(GATHER, spec)
+    with pytest.raises(RuntimeError, match="clock and mode"):
+        _sim(k=2).set_global_monitors(GATHER, spec)
+    with pytest.raises(RuntimeError, match="supported global monitor"):
+        _sim().set_monitors(0, spec)
+    sim = _sim()
+    with pytest.raises(RuntimeError, match="local node order"):
+        sim.set_global_monitors([dict(GATHER[0], node_indices=[1, 0, 2])], spec)
+    with pytest.raises(RuntimeError, match="invalid node gather index"):
+        sim.set_global_monitors([dict(GATHER[0], node_indices=np.array([2**32, 1, 2]))], spec)
+    sim.set_voi_specs(0, [0, 1, 0, 1, 0, 0])
+    with pytest.raises(RuntimeError, match="invalid observed VOI source"):
+        sim.set_global_monitors(GATHER, spec)
+    sim.add_subnet(3, 1, 1, 1, 4, 0, 1, dt=DT)
+    with pytest.raises(RuntimeError, match="one regional subnet"):
+        sim.set_global_monitors(GATHER * 2, spec)
+
+
+def test_native_projection_window_guards_live_source_and_clock_until_detached():
+    sim = _armed([_projection_spec()])
+    _run_pending(sim, 5)
+    before = sim.get_global_monitor_states()
+    with pytest.raises(RuntimeError, match="detach before changing observed rows"):
+        sim.set_voi(0, [0, 0])
+    with pytest.raises(RuntimeError, match="detach before changing observed rows"):
+        sim.set_voi_specs(0, [1, 0, 0, 0, 0, 0])
+    with pytest.raises(RuntimeError, match="detach before changing the clock"):
+        sim.set_opts(0, 2 * DT, 1)
+    with pytest.raises(RuntimeError, match="detach before adding a subnet"):
+        sim.add_subnet(3, 1, 1, 1, 4, 0, 1, dt=DT)
+    sim.set_voi_specs(0, [0, 0, 0, 1, 0, 0])  # same source identity is allowed
+    sim.set_opts(0, DT, 3)  # same clock is allowed
+    np.testing.assert_equal(sim.get_global_monitor_states(), before)
+    _assert_streams(sim.take_global_monitor_outputs(), _projection_oracle(5))
+    _assert_streams(_run(sim, 3), _projection_oracle(4, origin=4))
+    sim.set_global_monitors(GATHER, [])
+    sim.set_voi(0, [0, 0])
