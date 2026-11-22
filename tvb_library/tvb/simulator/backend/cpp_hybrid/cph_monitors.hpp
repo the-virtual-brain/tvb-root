@@ -82,6 +82,7 @@
 #include <cstring>
 #include <limits>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include "cph_balloon_windkessel.hpp"
@@ -1118,13 +1119,13 @@ struct kmon {
     }
   }
 
-  void validate_legacy_sibling_state(const KMonState &st) const {
+  void validate_legacy_sibling_state(const KMonState &st, const char *label) const {
     if (st.width != W || st.n_out_v != n_out_v || st.n_out_space != n_out_space ||
         st.n_out_modes != n_out_modes)
-      throw std::runtime_error("global BW stream: incompatible sibling snapshot geometry");
+      throw std::runtime_error(std::string(label) + "incompatible sibling snapshot geometry");
     if (st.accum.size() != accum.size() || st.interim.size() != interim.size() ||
         st.stock.size() != stock.size() || st.bw_state.size() != bw_state.size())
-      throw std::runtime_error("global BW stream: incompatible sibling snapshot buffers");
+      throw std::runtime_error(std::string(label) + "incompatible sibling snapshot buffers");
   }
 
   // Commit without allocating. Pending rows are not checkpoint data.

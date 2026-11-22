@@ -447,3 +447,40 @@ def test_native_bw_stream_and_projection_window_restore_an_exact_mixed_set():
     _run(resumed, delta[5:], 8, drain=False)
     for head, tail, expected in zip(first, resumed.take_global_monitor_outputs(), whole):
         _assert_stream(tuple(np.concatenate((a, b)) for a, b in zip(head, tail)), expected)
+
+
+def test_native_projection_before_bw_stream_recovers_from_full_checkpoint_after_run_failure():
+    projection = dict(slot=1, kind=8, complete_window=True, istep=4, dt=DT,
+                      voi=[1], gain=np.ones((1, 3), dtype=np.float32))
+
+    def armed():
+        sim = _sim()
+        sim.set_global_monitors([dict(n_voi=2, n_node=3)],
+                                [projection, _spec(bw_drive_scale=1e308)])
+        sim.monitor_begin_run()
+        return sim
+
+    sim = armed()
+    quiet = np.zeros((4, 3), dtype=np.float32)
+    _run(sim, quiet[:3], drain=False)
+    state = sim.get_subnet_state(0)
+    history = sim.get_subnet_buf(0)
+    tick = sim.t_abs()
+    monitors = sim.get_global_monitor_states()
+    bad = np.array([[100, 0, 0]], dtype=np.float32)
+    with pytest.raises(RuntimeError, match="calibrated drive or RK4 domain failure"):
+        _run(sim, bad, drain=False)
+
+    # Projection runs first. Nothing from the failed run is safe to reuse;
+    # restore the full checkpoint before attempting another run.
+    sim.set_subnet_state(0, state)
+    sim.set_subnet_buf(0, history)
+    sim.set_t_abs(tick)
+    sim.set_global_monitor_states(monitors)
+    assert all(t.size == d.size == 0 for t, d in sim.take_global_monitor_outputs())
+    _run(sim, quiet[3:], drain=False)
+    control = armed()
+    _run(control, quiet, drain=False)
+    for actual, expected in zip(sim.take_global_monitor_outputs(), control.take_global_monitor_outputs()):
+        assert expected[0].size == 1
+        _assert_stream(actual, expected)

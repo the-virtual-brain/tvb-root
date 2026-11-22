@@ -13,11 +13,11 @@ WEIGHTS = np.array([[0.25, 0.75, 0], [0, 0, 1]], dtype=np.float32)
 GATHER = [dict(n_voi=2, n_node=3)]
 
 
-def _sim(width=1, k=1):
+def _sim(width=1, k=1, dt=DT):
     sim = _cpp_hybrid.Sim(width)
-    sim.set_opts(0, DT, 1)
+    sim.set_opts(0, dt, 1)
     # Native Linear (model id 4), zero drift; explicit per-step increments.
-    sim.add_subnet(3, 1, 1, 1, 4, 0, 1, k=k, dt=k * DT)
+    sim.add_subnet(3, 1, 1, 1, 4, 0, 1, k=k, dt=k * dt)
     sim.set_subnet_params(0, np.zeros((3, 1, width), dtype=np.float32))
     sim.set_voi_specs(0, [0, 0, 0, 1, 0, 0])  # x, x-x
     sim.set_subnet_state(0, np.broadcast_to(INITIAL.reshape(1, 3, 1, 1),
@@ -334,6 +334,56 @@ def test_native_projection_window_rejected_restore_preserves_partial_state_and_o
     _assert_streams(target.take_global_monitor_outputs(), expected)
 
 
+def _projection_with_subsamples():
+    return [_projection_spec(), dict(slot=1, kind=2, istep=2, dt=DT, voi=[0]),
+            dict(slot=2, kind=2, istep=3, dt=DT, voi=[0])]
+
+
+@pytest.mark.parametrize("field, value, error", [
+    ("n_out_space", 1, "geometry"), ("stock", [1.0], "buffers"), ("slot", 9, "unmatched"),
+])
+def test_native_projection_window_rejected_sibling_preserves_state_and_pending_rows(field, value, error):
+    specs = _projection_with_subsamples()
+    target, control = _armed(specs), _armed(specs)
+    _run_pending(target, 6)
+    expected = _run(control, 6)
+    before = target.get_global_monitor_states()
+    candidate = target.get_global_monitor_states()
+    candidate[0]["accum"] += 1.0  # valid change to staged Projection
+    candidate[1]["run_start"] += 1  # valid change to first SubSample
+    candidate[2][field] = value
+    with pytest.raises(RuntimeError, match=f"global complete window projection: .*{error}"):
+        target.set_global_monitor_states(candidate)
+    np.testing.assert_equal(target.get_global_monitor_states(), before)
+    assert all(times.size for times, _ in expected)
+    _assert_streams(target.take_global_monitor_outputs(), expected)
+
+
+def test_native_projection_window_restores_reordered_subsamples_and_continues():
+    specs = _projection_with_subsamples()
+    source, target = _armed(specs), _armed(specs)
+    first = _run(source, 6)
+    states = source.get_global_monitor_states()
+    target.set_subnet_state(0, (INITIAL + 16).reshape(1, 3, 1, 1))
+    _run_pending(target, 6)
+    target.set_subnet_state(0, source.get_subnet_state(0))
+    target.set_subnet_buf(0, source.get_subnet_buf(0))
+    target.set_t_abs(source.t_abs())
+    target.set_global_monitor_states(states[::-1])
+    np.testing.assert_equal(target.get_global_monitor_states(), states)
+    assert all(times.size == values.size == 0 for times, values in target.take_global_monitor_outputs())
+    tail = _run(target, 5, chunk=3)
+    _assert_streams([tuple(np.concatenate((a, b)) for a, b in zip(head, rest))
+                     for head, rest in zip(first, tail)], _run(_armed(specs), 11))
+
+
+@pytest.mark.parametrize("stored_dt, spec_dt", [(0.0, 1e-100), (-DT, DT), (np.inf, DT)],
+                         ids=["zero", "negative", "nonfinite"])
+def test_native_projection_window_rejects_invalid_stored_neural_clock(stored_dt, spec_dt):
+    with pytest.raises(RuntimeError, match="invalid stored neural clock"):
+        _sim(dt=stored_dt).set_global_monitors(GATHER, [_projection_spec(dt=spec_dt)])
+
+
 @pytest.mark.parametrize("change, error", [
     ({"gain": None}, "preconfigured gain"),
     ({"gain": np.ones(3)}, "invalid gain"),
@@ -349,6 +399,7 @@ def test_native_projection_window_rejected_restore_preserves_partial_state_and_o
     ({"voi": [0.0]}, "invalid observed VOI"),
     ({"istep": 0}, "invalid period"),
     ({"dt": 2 * DT}, "invalid period"),
+    ({"dt": 1e100}, "invalid period"),
     ({"obsnoise": object()}, "observation noise is unsupported"),
 ])
 def test_native_projection_window_validates_attachment_without_replacing_pending_state(change, error):

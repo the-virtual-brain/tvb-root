@@ -1759,6 +1759,7 @@ static void parse_kmon_spec(nb::handle item, int n_src_v, int n_space,
 
     if (complete_window &&
         (istep < 1 || cadence_K != 1 || !std::isfinite(m_dt) || m_dt <= 0.0 ||
+         (window_projection && m_dt > std::numeric_limits<float>::max()) ||
          (float)m_dt != (float)default_dt || n_src_v < 1 || n_space < 1 ||
          std::any_of(voi.begin(), voi.end(),
                      [n_src_v](int v) { return v < 0 || v >= n_src_v; })))
@@ -1943,6 +1944,8 @@ template <int W> struct simw {
     if (has_projection_window) {
       if (W != 1 || sn.size() != 1 || sn[0].K != 1 || sn[0].dt != dt || sn[0].n_modes != 1)
         throw std::runtime_error("global complete window projection requires width 1, one regional subnet, clock and mode");
+      if (!std::isfinite(dt) || dt <= 0.0f)
+        throw std::runtime_error("global complete window projection: invalid stored neural clock");
       validate_single_source_observations(projection_label);
     }
     const bool staged = has_window || has_bw_stream;
@@ -2260,28 +2263,31 @@ template <int W> struct simw {
           : "global complete window: missing compatible snapshot monitor");
     }
 
-    // A mixed BW checkpoint must cover the entire attached set exactly once.
-    // Keep identity matching, validation, and output clearing out of legacy-only restore.
+    // With BW or staged Projection, the checkpoint must cover the entire attached set exactly once.
+    // Keep strict matching, validation, and output clearing out of the historical restore path.
+    const bool strict_siblings = has_bw_stream || has_projection_window;
+    const char *sibling_label = has_bw_stream ? "global BW stream: "
+                                             : "global complete window projection: ";
     for (size_t mi = 0; mi < states.size(); mi++) {
       nb::dict d = nb::cast<nb::dict>(states[mi]);
       if (d.contains("window_config") || d.contains("bw_stream_config")) continue;
-      if (has_bw_stream) {
+      if (strict_siblings) {
         for (const char *key : {"slot", "kind", "width", "n_out_v", "n_out_space", "n_out_modes"})
           if (!d.contains(key) || d[key].is_none())
-            throw std::runtime_error("global BW stream: incomplete sibling snapshot identity or geometry");
+            throw std::runtime_error(std::string(sibling_label) + "incomplete sibling snapshot identity or geometry");
       }
       KMonState st = dict_to_kmon_state(d);
       const auto matches = [&](const auto &m) {
         return !m.staged_global() && m.slot == st.slot && m.kind == st.kind;
       };
       auto it = std::find_if(global_mons.begin(), global_mons.end(), matches);
-      if (has_bw_stream) {
+      if (strict_siblings) {
         if (it == global_mons.end() || std::find_if(std::next(it), global_mons.end(), matches) != global_mons.end())
-          throw std::runtime_error("global BW stream: unmatched or ambiguous sibling snapshot monitor");
+          throw std::runtime_error(std::string(sibling_label) + "unmatched or ambiguous sibling snapshot monitor");
         const size_t i = (size_t)(it - global_mons.begin());
         if (restored[i])
-          throw std::runtime_error("global BW stream: duplicate sibling snapshot monitor");
-        it->validate_legacy_sibling_state(st);
+          throw std::runtime_error(std::string(sibling_label) + "duplicate sibling snapshot monitor");
+        it->validate_legacy_sibling_state(st, sibling_label);
         restored[i] = true;
         staged_states.emplace_back(i, std::move(st));
       } else {
@@ -2290,8 +2296,8 @@ template <int W> struct simw {
         if (it != global_mons.end()) it->import_state(st);
       }
     }
-    if (has_bw_stream && std::find(restored.begin(), restored.end(), false) != restored.end())
-      throw std::runtime_error("global BW stream: missing sibling snapshot monitor");
+    if (strict_siblings && std::find(restored.begin(), restored.end(), false) != restored.end())
+      throw std::runtime_error(std::string(sibling_label) + "missing sibling snapshot monitor");
     for (auto &[i, st] : staged_states)
       global_mons[i].commit_validated_state(st);
   }
