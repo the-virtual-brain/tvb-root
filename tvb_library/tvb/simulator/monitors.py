@@ -160,6 +160,83 @@ class Monitor(HasTraits):
                           title=' ' + self.__class__.__name__)
 
 
+class BalloonWindkessel(Monitor):
+    """Fractional BOLD change (ΔS/S), not HRF convolution.
+
+    Use as a global monitor on the explicit C++ hybrid backend, with one
+    regional subnetwork, one neural clock and mode, and SIMD width one.
+    ``variables_of_interest`` must contain one index into the model's configured
+    observed VOI ordering, not its raw state variables or coupling channels.
+    Output data have axes (time, 1, region, 1), in subnetwork-local region order
+    even when ``node_indices`` is a permutation. Times are window midpoints in ms.
+
+    Each complete 10 ms window averages post-step observations independently
+    per region. The held drive is ``(mean - drive_baseline) * drive_scale`` in
+    s⁻². After the window closes, two 5 ms RK4 steps advance the hemodynamics
+    over that same interval, starting from rest on a fresh run. Output averages
+    the right-endpoint fractional BOLD values over a complete ``period``; no
+    initial or trailing partial sample is emitted.
+
+    The one shared nominal hemodynamic set is: signal decay 0.65 s, flow
+    feedback denominator 0.41 s², transit time 0.98 s, Grubb exponent 0.32,
+    resting extraction 0.4, intravascular ratio 0.5, frequency offset 40.3 Hz,
+    relaxation rate 25 s⁻¹, echo time 0.04 s and resting blood volume fraction
+    0.04. These are nominal parameters, not fitted values. Per-region parameter
+    lowering is not yet supported; the scalar set is applied independently to
+    every region's hemodynamic state.
+
+    Resume with the full compiled-run snapshot and compatible monitor setup.
+    A failed run is not a whole-simulator rollback: neural state, delays, RNG,
+    or other monitors may have advanced. Restore a known-good full snapshot
+    or start a fresh run; do not retry from the failed live state.
+    """
+
+    period = Float(default=None, label="Sampling period (ms)",
+                   doc="A positive integer multiple of 10 ms.")
+    variables_of_interest = NArray(dtype=int, label="One observed VOI index")
+    drive_baseline = Float(default=None, label="Neural drive baseline (observation units)")
+    drive_scale = Float(default=None, label="Signed neural drive gain (s⁻² per observation unit)")
+
+    def _config_dt(self, dt):
+        self.istep = self._output_ticks(dt)
+        self.dt = dt
+
+    def _output_ticks(self, dt):
+        max_ticks = numpy.iinfo(numpy.int32).max
+        dt = float(dt)
+        if not (0 < dt <= numpy.finfo(numpy.float32).max):
+            raise ValueError("BalloonWindkessel source dt must divide 10 ms")
+        effective_dt = float(numpy.float32(dt))
+        ticks = round(10.0 / effective_dt) if effective_dt else 0
+        # Match the native binary32 clock check: correct rounding is required,
+        # and neither adjacent integer divisor may round to the same clock.
+        if (not 1 <= ticks <= max_ticks
+                or numpy.float32(10.0 / ticks) != effective_dt
+                or numpy.float32(10.0 / (ticks + 1)) == effective_dt
+                or (ticks > 1 and numpy.float32(10.0 / (ticks - 1)) == effective_dt)):
+            raise ValueError("BalloonWindkessel source dt must divide 10 ms on the native clock")
+        windows = float(self.period) / 10.0
+        if numpy.isfinite(windows):
+            nearest = round(windows)
+            if (1 <= nearest <= max_ticks // ticks
+                    and abs(windows - nearest) <= 8 * numpy.spacing(float(nearest))):
+                return nearest * ticks
+        raise ValueError("BalloonWindkessel period must be a positive multiple of 10 ms within the native tick range")
+
+    def config_for_sim(self, simulator):
+        raise NotImplementedError("BalloonWindkessel requires a global monitor on the explicit C++ hybrid backend")
+
+    def sample(self, step, state):
+        raise NotImplementedError("BalloonWindkessel requires a global monitor on the explicit C++ hybrid backend")
+
+
+def _reject_balloon_windkessel_sweep(*options):
+    for option in options:
+        values = option if isinstance(option, (list, tuple)) else (option,)
+        if any(isinstance(m, BalloonWindkessel) for m in values):
+            raise NotImplementedError("BalloonWindkessel is not supported in sweeps")
+
+
 class Raw(Monitor):
     """
     A monitor that records the output raw data from a tvb simulation:

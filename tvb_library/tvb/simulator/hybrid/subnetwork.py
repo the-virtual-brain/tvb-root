@@ -169,6 +169,7 @@ class Subnetwork(t.HasTraits):
             configured for a different subnetwork.
         """
         # NOTE default for list is a tuple
+        recorder = Recorder(monitor=monitor)
         if isinstance(self.monitors, tuple):
             self.monitors = []
         monitor._config_dt(self.scheme.dt)
@@ -185,7 +186,7 @@ class Subnetwork(t.HasTraits):
                 self.nnodes,
                 self.model.number_of_modes,
             )
-        self.monitors.append(Recorder(monitor=monitor))
+        self.monitors.append(recorder)
 
     @property
     def var_shape(self) -> tuple[int]:

@@ -53,6 +53,8 @@ import numpy as np
 import autopep8
 from typing import List, Optional
 
+from tvb.simulator.monitors import BalloonWindkessel, _reject_balloon_windkessel_sweep
+
 from .hybrid_common import (
     _CFUN_PARAM_ATTRS,
     _CFUN_ATTR_TO_IDX,
@@ -83,8 +85,6 @@ from tvb.simulator.integrators import (
 )
 
 
-
-
 __all__ = [
     "NbHybridBackend",
     "CompiledNetworkFn",
@@ -93,6 +93,11 @@ __all__ = [
     "ProjectionInfo",
     "SweepResult",
 ]
+
+
+def _reject_balloon_windkessel(monitors):
+    if monitors is not None and any(isinstance(m, BalloonWindkessel) for m in monitors):
+        raise NotImplementedError("BalloonWindkessel requires the explicit C++ hybrid backend, not Numba")
 
 
 # ---------------------------------------------------------------------------
@@ -634,6 +639,7 @@ class CompiledNetworkFn:
             contains integration states, history buffers, absolute step, RNG
             positions, and monitor runtime state for :meth:`resume`.
         """
+        _reject_balloon_windkessel(monitors)
         # Resolve chunk_size: auto-compute from monitor periods when not specified
         # (multi-dt: monitor periods and the chunk grid live on the master
         # dt0 clock, so istep = round(period / dt0)).
@@ -920,6 +926,7 @@ class NbHybridBackend(MakoUtilMix):
             ``list[list[tuple[times, data]]]`` — outer list indexed by monitor,
             inner list by subnetwork.
         """
+        _reject_balloon_windkessel(monitors)
         return self.compile(network_set, print_source, debug_nojit=debug_nojit).run(
             nstep, chunk_size, initial_states, monitors=monitors
         )
@@ -1897,6 +1904,7 @@ class NbHybridBackend(MakoUtilMix):
         """
         import time as _time_mod
 
+        _reject_balloon_windkessel_sweep(monitor, bold_period)
         self._validate_sweep_monitor_options(
             monitor, monitor_period, bold_period, chunk_size
         )
@@ -2213,6 +2221,7 @@ class NbHybridBackend(MakoUtilMix):
             [{type: 'cfun', projection: 'proj_AB', param_idx: 0},
              {type: 'model', subnet: 'A', param: 'tau_E'}]
         """
+        _reject_balloon_windkessel_sweep(bold_period, *monitors.values())
         self._check_compatibility(network_set)
         sweep_values = np.asarray(sweep_values, dtype=np.float32)
         if sweep_values.ndim == 1:

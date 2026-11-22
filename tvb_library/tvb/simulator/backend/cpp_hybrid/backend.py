@@ -45,11 +45,20 @@ from tvb.simulator.backend.hybrid_common import (
     _resolve_named_params,
 )
 from tvb.simulator.hybrid.network import NetworkSet
+from tvb.simulator.monitors import BalloonWindkessel, _reject_balloon_windkessel_sweep
 from tvb.simulator.integrators import (
     HeunDeterministic,
     EulerDeterministic,
     HeunStochastic,
     EulerStochastic,
+)
+
+# Scalars shared by all regions; lower region-specific parameters here once supported.
+_BALLOON_WINDKESSEL_NOMINAL = dict(
+    signal_decay_s=0.65, flow_feedback_s2=0.41, transit_time_s=0.98,
+    grubb_exponent=0.32, resting_extraction=0.4, intravascular_ratio=0.5,
+    frequency_offset_hz=40.3, relaxation_rate_per_s=25.0, echo_time_s=0.04,
+    resting_blood_volume=0.04,
 )
 
 __all__ = [
@@ -439,6 +448,10 @@ class CompiledCppSim:
         # Normalize optional per-subnet monitors (e.g. hybrid Recorder monitors)
         sn_mons_map = None
         if subnet_monitors is not None:
+            local_lists = subnet_monitors.values() if isinstance(subnet_monitors, dict) else subnet_monitors
+            if any(isinstance(getattr(m, "monitor", m), BalloonWindkessel)
+                   for ms in local_lists for m in ms):
+                raise NotImplementedError("BalloonWindkessel cannot be a local or Recorder monitor")
             if isinstance(subnet_monitors, dict):
                 sn_mons_map = {
                     sn.name: [getattr(m, "monitor", m)
@@ -469,6 +482,7 @@ class CompiledCppSim:
         should_merge = (n_sn > 1) and _can_merge_subnets(self._analysis.subnets)
         kernel_global_specs = []   # (mi, m) attached via set_global_monitors
         complete_window_isteps: dict[int, int] = {}
+        balloon_windkessel_specs = {}
         kernel_persn_specs = []    # (mi, m) attached via set_monitors(si, ...)
         py_global_indices = set()
         kernel_mon_indices = set()
@@ -477,6 +491,11 @@ class CompiledCppSim:
 
         if monitors is not None:
             for mi, m in enumerate(monitors):
+                if isinstance(m, BalloonWindkessel):
+                    balloon_windkessel_specs[mi] = self._balloon_windkessel_spec(mi, m, dt)
+                    kernel_global_specs.append((mi, m))
+                    kernel_mon_indices.add(mi)
+                    continue
                 # Multi-subnet globals remain on the unstaged route until their
                 # source topology and clock policy are covered.
                 if (n_sn == 1
@@ -565,9 +584,14 @@ class CompiledCppSim:
                         has_py_tavg = True
 
         if chunk_size is None:
-            chunk_size = (
-                _compute_chunk_size(monitors, dt) if monitors is not None else 1
-            )
+            if balloon_windkessel_specs:
+                # A native BW window does not depend on chunk boundaries.
+                # Leave companion monitor chunk inference unchanged.
+                companions = [m for m in monitors if not isinstance(m, BalloonWindkessel)]
+                chunk_size = (_compute_chunk_size(companions, dt) if companions else
+                              min(nstep or 1, *(s["istep"] for s in balloon_windkessel_specs.values())))
+            else:
+                chunk_size = _compute_chunk_size(monitors, dt) if monitors is not None else 1
         if monitors is not None:
             self._backend._validate_monitors(monitors, chunk_size)
 
@@ -618,6 +642,7 @@ class CompiledCppSim:
             kernel_persn=kernel_persn_specs,
             kernel_global=kernel_global_specs,
             complete_window_isteps=complete_window_isteps,
+            balloon_windkessel_specs=balloon_windkessel_specs,
             sn_kernel_monitors=sn_kernel_specs if sn_mons_map is not None else None,
             explicit_chunk_size=explicit_chunk_size,
             need_tavg=need_tavg,
@@ -775,6 +800,30 @@ class CompiledCppSim:
             return outputs, snap, subnet_results
         return outputs, snap
 
+    def _balloon_windkessel_spec(self, slot, monitor, dt):
+        if not self._backend.enable_kernel_monitors:
+            raise NotImplementedError("BalloonWindkessel requires native monitor collection")
+        if len(self._analysis.subnets) != 1:
+            raise NotImplementedError("BalloonWindkessel requires one regional subnetwork")
+        sn = self._analysis.subnets[0]
+        if self._width != 1 or sn.k != 1 or sn.n_modes != 1 or sn.dt != dt:
+            raise NotImplementedError("BalloonWindkessel requires width 1 and one source clock and mode")
+        indices = self._network_set.subnets[0].node_indices
+        if sn.n_nodes < 1 or (indices is not None and (
+                indices.shape != (sn.n_nodes,)
+                or not np.array_equal(np.sort(indices), np.arange(sn.n_nodes)))):
+            raise ValueError("BalloonWindkessel requires a full regional node permutation when node_indices are supplied")
+        voi = getattr(monitor, "variables_of_interest", None)
+        if voi is None or voi.shape != (1,) or not 0 <= int(voi[0]) < len(sn.voi) // 3:
+            raise ValueError("BalloonWindkessel requires exactly one valid observed VOI index")
+        baseline = getattr(monitor, "drive_baseline", None)
+        scale = getattr(monitor, "drive_scale", None)
+        if baseline is None or scale is None or not np.isfinite(baseline) or not np.isfinite(scale):
+            raise ValueError("BalloonWindkessel requires explicit finite drive_baseline and drive_scale")
+        return dict(slot=slot, kind=10, dt=dt, istep=monitor._output_ticks(dt),
+                    voi=[int(voi[0])], bw_drive_baseline=baseline, bw_drive_scale=scale,
+                    bw_stream_params=dict(_BALLOON_WINDKESSEL_NOMINAL))
+
     def resume(
         self,
         snapshot: dict,
@@ -786,6 +835,9 @@ class CompiledCppSim:
         subnet_monitors: Optional[dict] = None,
     ):
         """Resume from a snapshot returned by :meth:`run`."""
+        if not monitors and any(
+                "bw_stream_config" in state for state in snapshot.get("kmon_global_states") or ()):
+            raise ValueError("BalloonWindkessel resume requires the compatible global monitors")
         states = snapshot["states"]
         self._backend._init_states(
             self._sim, self._analysis, self._network_set, states, self._width)
@@ -2080,7 +2132,7 @@ class CppHybridBackend:
         initial_states=None, monitors=None, width=1, _init_only=False,
         kernel_collect=None, _skip_init=False, _step_offset=0,
         kernel_persn=None, kernel_global=None, sn_kernel_monitors=None,
-        complete_window_isteps=None,
+        complete_window_isteps=None, balloon_windkessel_specs=None,
         explicit_chunk_size=None, need_tavg=True, need_ctavg=True,
         _return_snapshot=False, rng_mode="numpy",
         _pending_kmon_states=None, _pending_kmon_global_states=None,
@@ -2104,6 +2156,8 @@ class CppHybridBackend:
             # set_subnet_state resets the simulator tick. Arm/reset staged
             # monitors only after the fresh clock and state are initialized.
             self._init_states(sim, analysis, network_set, initial_states, width)
+        elif balloon_windkessel_specs and _pending_kmon_global_states is None:
+            raise ValueError("BalloonWindkessel resume requires global monitor snapshot state")
         elif complete_window_isteps and _pending_kmon_global_states is None:
             raise ValueError("C++ regional complete windows require global monitor snapshot state")
 
@@ -2158,7 +2212,7 @@ class CppHybridBackend:
                 })
             n_voi_g = len(analysis.subnets[0].voi) // 3
             g_atts = [
-                self._monitor_attach_spec(
+                (balloon_windkessel_specs or {}).get(mi) or self._monitor_attach_spec(
                     mi, m, n_voi_g, total_nodes, analysis.dt,
                     cadence_K=1,
                     explicit_chunk_size=explicit_chunk_size,
@@ -2344,6 +2398,13 @@ class CppHybridBackend:
 
         Equivalent to ``self.compile(network_set).run(nstep, ...)``.
         """
+        if monitors is not None and any(isinstance(m, BalloonWindkessel) for m in monitors):
+            # Reject unsupported topology before compiling a model that might
+            # itself be unsupported. Compiled runs also check native geometry.
+            if len(network_set.subnets) != 1:
+                raise NotImplementedError("BalloonWindkessel requires one regional subnetwork")
+            if network_set.subnets[0].model.number_of_modes != 1:
+                raise NotImplementedError("BalloonWindkessel requires width 1 and one source clock and mode")
         cn = self.compile(network_set, print_source=print_source)
         return cn.run(
             nstep, chunk_size, initial_states, monitors,
@@ -2461,6 +2522,7 @@ class CppHybridBackend:
         import time as _time_mod
         from . import notebook as _nb_sugar
 
+        _reject_balloon_windkessel_sweep(monitor, bold_period)
         if width is None or width == "auto":
             n_preview = len(next(iter(params.values()))) if isinstance(params, dict) and params else 1
             width = _nb_sugar.default_width(n_preview, network_set)
@@ -2859,6 +2921,7 @@ class CppHybridBackend:
         import time as _time_mod
         from . import notebook as _nb_sugar
 
+        _reject_balloon_windkessel_sweep(bold_period, *monitors.values())
         sweep_values = np.asarray(sweep_values, dtype=np.float32)
         if sweep_values.ndim == 1:
             sweep_values = sweep_values.reshape(-1, 1)

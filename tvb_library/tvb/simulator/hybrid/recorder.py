@@ -37,7 +37,7 @@ import math
 import numpy as np
 
 import tvb.basic.neotraits.api as t
-from tvb.simulator.monitors import Monitor
+from tvb.simulator.monitors import BalloonWindkessel, Monitor
 
 
 class Recorder(t.HasTraits):
@@ -74,6 +74,8 @@ class Recorder(t.HasTraits):
     monitor: Monitor = t.Attr(Monitor)
 
     def __init__(self, **kwargs):
+        if isinstance(kwargs.get("monitor"), BalloonWindkessel):
+            raise NotImplementedError("BalloonWindkessel cannot be a local or Recorder monitor")
         self.times = None
         self.samples = None
         self._current_idx = 0
