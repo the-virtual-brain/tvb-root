@@ -194,31 +194,63 @@ def test_native_bw_stream_rejects_incompatible_snapshot_configuration(change):
 
 @pytest.mark.parametrize("field,value", [("bw_drive_count", 1), ("accum_count", 4),
                                          ("regional_shape", None), ("nonfinite", np.inf),
-                                         ("invalid_flow", -1.0), ("legacy_width", 4)])
-def test_native_bw_stream_rejected_restore_preserves_global_monitors_and_pending_output(field, value):
-    sim = _armed(period_ms=30, extra=[_spec(slot=1, istep=12), dict(kind=1, slot=2), dict(kind=2, slot=3)])
+                                         ("invalid_flow", -1.0)])
+def test_native_bw_stream_rejected_restore_preserves_staged_monitors_and_pending_output(field, value):
+    sim = _armed(period_ms=30, extra=[_spec(slot=1, istep=12)])
     obs = _neural_fixture(5)[:19]
     _run(sim, _increments(obs), drain=False)
     before = sim.get_global_monitor_states()
     candidate = sim.get_global_monitor_states()
     candidate[0]["bw_stream_regions"][0, 0] += 1  # legal change to first staged state
-    candidate[2]["run_start"] += 1  # legal change to first legacy sibling
     if field == "regional_shape":
         candidate[1]["bw_stream_regions"] = np.zeros((2, 6))
     elif field == "nonfinite":
         candidate[1]["bw_stream_regions"][0, 1] = value
     elif field == "invalid_flow":
         candidate[1]["bw_stream_regions"][0, 3] = value
-    elif field == "legacy_width":
-        candidate[3]["width"] = value
     else:
         candidate[1][field] = value
-    with pytest.raises(RuntimeError, match="global BW stream:|width mismatch"):
+    with pytest.raises(RuntimeError, match="global BW stream:"):
         sim.set_global_monitor_states(candidate)
     np.testing.assert_equal(sim.get_global_monitor_states(), before)
-    first, second, *_ = sim.take_global_monitor_outputs()
+    first, second = sim.take_global_monitor_outputs()
     _assert_oracle(first, _oracle(obs), 30)
     _assert_stream(first, second)
+
+
+@pytest.mark.parametrize("field,value,error", [
+    ("width", 4, "geometry"), ("n_out_space", 2, "geometry"),
+    ("n_out_v", 1, "geometry"), ("n_out_modes", 2, "geometry"),
+    ("accum", np.empty(0), "buffers"), ("stock", np.zeros(1), "buffers"),
+    ("slot", 9, "unmatched"), ("kind", 1, "unmatched"),
+    ("missing", None, "missing"), ("duplicate", None, "duplicate"),
+    ("missing_identity", None, "identity"),
+])
+def test_native_bw_stream_rejected_sibling_preserves_global_monitors_and_pending_output(field, value, error):
+    companions = [dict(kind=1, slot=1), dict(kind=4, slot=2, istep=4)]
+    sim = _armed(extra=companions)
+    reference = _armed(extra=companions)
+    delta = _increments(_neural_fixture(5)[:19])
+    for target in (sim, reference):
+        _run(target, delta, drain=False)
+    before = sim.get_global_monitor_states()
+    candidate = sim.get_global_monitor_states()
+    candidate[0]["bw_stream_regions"][0, 0] += 1  # legal change to staged state
+    candidate[1]["run_start"] += 1  # legal change to first sibling
+    if field == "missing":
+        candidate.pop()
+    elif field == "duplicate":
+        candidate.append(candidate[-1])
+    elif field == "missing_identity":
+        candidate[-1].pop("slot")
+    else:
+        candidate[-1][field] = value
+    with pytest.raises(RuntimeError, match=f"global BW stream: .*{error}"):
+        sim.set_global_monitor_states(candidate)
+    np.testing.assert_equal(sim.get_global_monitor_states(), before)
+    for actual, expected in zip(sim.take_global_monitor_outputs(), reference.take_global_monitor_outputs()):
+        assert expected[0].size and expected[1].size
+        _assert_stream(actual, expected)
 
 
 @pytest.mark.parametrize("changes,error", [
@@ -268,6 +300,32 @@ def test_native_bw_stream_explicit_attachment_and_checked_live_vois():
     assert sim.t_abs() == 0
 
 
+@pytest.mark.parametrize("voi", [np.array([2**32 + 1], dtype=np.int64),
+                                  np.array([2**64 - 1], dtype=np.uint64),
+                                  np.array([1.0]), np.array([True]), [1.0], [np.bool_(True)]])
+def test_native_bw_stream_checks_voi_indices_before_narrowing(voi):
+    with pytest.raises(RuntimeError, match="observed VOI"):
+        _armed(spec=_spec(voi=voi))
+
+
+@pytest.mark.parametrize("as_tuple", [False, True], ids=["dict", "tuple"])
+@pytest.mark.parametrize("nodes", [np.array([2, 0, 2**32 + 1], dtype=np.int64),
+                                    np.array([2, 0, 2**64 - 1], dtype=np.uint64),
+                                    np.array([2.0, 0.0, 1.0]), [2, 0, True]])
+def test_native_bw_stream_checks_node_gather_indices_before_narrowing(as_tuple, nodes):
+    gather = (2, 3, 0, 0, nodes) if as_tuple else dict(GATHER, node_indices=nodes)
+    with pytest.raises(RuntimeError, match="node gather index"):
+        _armed(gather=gather)
+
+
+@pytest.mark.parametrize("dtype", [np.int32, np.int64, np.uint64, np.dtype(">i4")])
+def test_native_bw_stream_accepts_integer_ndarray_voi_and_strided_gather(dtype):
+    nodes = np.array([2, 99, 0, 99, 1], dtype=dtype)[::2]
+    sim = _armed(gather=dict(GATHER, node_indices=nodes), spec=_spec(voi=np.array([1], dtype=dtype)))
+    obs = _neural_fixture(3)
+    _assert_oracle(_run(sim, _increments(obs)), _oracle(obs), 10)
+
+
 def test_native_bw_stream_numerical_failure_does_not_commit_closing_step():
     sim = _armed(spec=_spec(bw_drive_scale=1e308))
     # Gather order [node 1, node 2, node 0] -> two valid regions before failing.
@@ -315,9 +373,22 @@ def test_native_bw_stream_coexists_with_complete_window_hrf_and_endpoint_bw():
     _run(sim, delta[:7], drain=False)
     first = sim.take_global_monitor_outputs()
     states = sim.get_global_monitor_states()
-    sim.set_global_monitor_states(states)
-    _run(sim, delta[7:8], drain=False)
-    second = sim.take_global_monitor_outputs()
+    resumed = _armed(extra=companions)
+    _run(resumed, np.zeros_like(delta[:7]), drain=False)
+    resumed.set_subnet_state(0, sim.get_subnet_state(0))
+    resumed.set_subnet_buf(0, sim.get_subnet_buf(0))
+    resumed.set_t_abs(sim.t_abs())
+    # Reversed record order, nontrivial sibling state, and pending output in
+    # every target monitor. Successful restore adopts only checkpoint state.
+    resumed.set_global_monitor_states(states[::-1])
+    np.testing.assert_equal(resumed.get_global_monitor_states(), states)
+    for times, values in resumed.take_global_monitor_outputs():
+        assert times.size == values.size == 0
+    for target in (sim, resumed):
+        _run(target, delta[7:8], drain=False)
+    second = resumed.take_global_monitor_outputs()
+    for actual, expected in zip(second, sim.take_global_monitor_outputs()):
+        _assert_stream(actual, expected)
     bw, average, hrf, endpoint = [tuple(np.concatenate(parts) for parts in zip(a, b))
                                   for a, b in zip(first, second)]
     _assert_oracle(bw, _oracle(obs), 10)

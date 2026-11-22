@@ -1380,6 +1380,37 @@ static std::vector<int> to_int_vec(nb::handle h) {
   return out;
 }
 
+// Do not use to_int_vec for BW: its ndarray conversions may narrow before
+// the caller can check the original index.
+static std::vector<int> to_bw_indices(nb::handle h, size_t upper_bound, const char *what) {
+  const auto invalid = [what]() {
+    return std::runtime_error(std::string("global BW stream: invalid ") + what);
+  };
+  const auto numpy = nb::module_::import_("numpy");
+  if (nb::isinstance(h, numpy.attr("ndarray"))) {
+    const auto kind = nb::cast<std::string>(h.attr("dtype").attr("kind"));
+    if ((kind != "i" && kind != "u") || nb::cast<int>(h.attr("ndim")) != 1)
+      throw invalid();
+  } else if (!nb::isinstance<nb::sequence>(h)) {
+    throw invalid();
+  }
+  const auto numpy_bool = numpy.attr("bool_");
+  std::vector<int> out;
+  for (auto item : nb::borrow<nb::sequence>(h)) {
+    if (PyBool_Check(item.ptr()) || nb::isinstance(item, numpy_bool) || !PyIndex_Check(item.ptr()))
+      throw invalid();
+    auto index = nb::steal<nb::object>(PyNumber_Index(item.ptr()));
+    if (!index.is_valid()) throw nb::python_error();
+    int overflow = 0;
+    const long value = PyLong_AsLongAndOverflow(index.ptr(), &overflow);
+    if (overflow || value < 0 || value > std::numeric_limits<int>::max() ||
+        (size_t)value >= upper_bound)
+      throw invalid();
+    out.push_back(static_cast<int>(value));
+  }
+  return out;
+}
+
 static std::vector<uint64_t> to_u64_vec(nb::handle h) {
   std::vector<uint64_t> out;
   if (h.is_none()) return out;
@@ -1630,8 +1661,8 @@ static void parse_kmon_spec(nb::handle item, int n_src_v, int n_space,
       if (!std::isfinite(clock) || clock <= 0 || clock > std::numeric_limits<float>::max() ||
           (float)clock != default_dt)
         throw std::runtime_error("global BW stream: incompatible neural clock");
-      const auto voi = to_int_vec(d["voi"]);
-      if (voi.size() != 1 || voi[0] < 0 || voi[0] >= n_src_v)
+      const auto voi = to_bw_indices(d["voi"], (size_t)n_src_v, "observed VOI");
+      if (voi.size() != 1)
         throw std::runtime_error("global BW stream: exactly one valid observed VOI is required");
       const auto parameters = nb::cast<nb::dict>(d["bw_stream_params"]);
       BwParameters p;
@@ -1852,6 +1883,10 @@ template <int W> struct simw {
     gather.reserve(gather_specs.size());
     int tot_v = 0;
     int tot_n = 0;
+    const auto parse_node_indices = [&](nb::handle h) {
+      return has_bw_stream ? to_bw_indices(h, (size_t)sn[0].n_node, "node gather index")
+                           : to_int_vec(h);
+    };
     for (auto item : gather_specs) {
       GlobalGatherSubnet gs;
       if (nb::isinstance<nb::dict>(item)) {
@@ -1861,7 +1896,7 @@ template <int W> struct simw {
         gs.voi_offset = dict_get_or<int>(d, "voi_offset", 0);
         gs.node_offset = dict_get_or<int>(d, "node_offset", 0);
         if (d.contains("node_indices") && !d["node_indices"].is_none())
-          gs.node_indices = to_int_vec(d["node_indices"]);
+          gs.node_indices = parse_node_indices(d["node_indices"]);
       } else {
         nb::tuple t = nb::cast<nb::tuple>(item);
         gs.n_voi = nb::cast<int>(t[0]);
@@ -1869,7 +1904,7 @@ template <int W> struct simw {
         gs.voi_offset = nb::cast<int>(t[2]);
         gs.node_offset = nb::cast<int>(t[3]);
         if (t.size() > 4 && !t[4].is_none())
-          gs.node_indices = to_int_vec(t[4]);
+          gs.node_indices = parse_node_indices(t[4]);
       }
       if (!staged) {
         if (gs.voi_offset + gs.n_voi > tot_v) tot_v = gs.voi_offset + gs.n_voi;
@@ -2119,32 +2154,40 @@ template <int W> struct simw {
           : "global complete window: missing compatible snapshot monitor");
     }
 
-    // On the BW path, an incompatible legacy sibling must not partially
-    // restore the global monitor set. Keep the legacy-only path unchanged.
-    std::vector<std::unique_ptr<kmon<W>>> legacy_candidates(has_bw_stream ? global_mons.size() : 0);
+    // A mixed BW checkpoint must cover the entire attached set exactly once.
+    // Keep identity matching, validation, and output clearing out of legacy-only restore.
     for (size_t mi = 0; mi < states.size(); mi++) {
       nb::dict d = nb::cast<nb::dict>(states[mi]);
       if (d.contains("window_config") || d.contains("bw_stream_config")) continue;
-      KMonState st = dict_to_kmon_state(d);
-      auto it = std::find_if(global_mons.begin(), global_mons.end(),
-                             [&](const auto &m) {
-                               return !m.staged_global() && m.slot == st.slot && m.kind == st.kind;
-                             });
-      if (it == global_mons.end() && mi < global_mons.size() && !global_mons[mi].staged_global())
-        it = global_mons.begin() + mi;
-      if (it == global_mons.end()) continue;
       if (has_bw_stream) {
-        auto &candidate = legacy_candidates[(size_t)(it - global_mons.begin())];
-        if (!candidate) candidate = std::make_unique<kmon<W>>(*it);
-        candidate->import_state(st);
+        for (const char *key : {"slot", "kind", "width", "n_out_v", "n_out_space", "n_out_modes"})
+          if (!d.contains(key) || d[key].is_none())
+            throw std::runtime_error("global BW stream: incomplete sibling snapshot identity or geometry");
+      }
+      KMonState st = dict_to_kmon_state(d);
+      const auto matches = [&](const auto &m) {
+        return !m.staged_global() && m.slot == st.slot && m.kind == st.kind;
+      };
+      auto it = std::find_if(global_mons.begin(), global_mons.end(), matches);
+      if (has_bw_stream) {
+        if (it == global_mons.end() || std::find_if(std::next(it), global_mons.end(), matches) != global_mons.end())
+          throw std::runtime_error("global BW stream: unmatched or ambiguous sibling snapshot monitor");
+        const size_t i = (size_t)(it - global_mons.begin());
+        if (restored[i])
+          throw std::runtime_error("global BW stream: duplicate sibling snapshot monitor");
+        it->validate_legacy_sibling_state(st);
+        restored[i] = true;
+        staged_states.emplace_back(i, std::move(st));
       } else {
-        it->import_state(st);
+        if (it == global_mons.end() && mi < global_mons.size() && !global_mons[mi].staged_global())
+          it = global_mons.begin() + mi;
+        if (it != global_mons.end()) it->import_state(st);
       }
     }
-    for (size_t i = 0; i < legacy_candidates.size(); ++i)
-      if (legacy_candidates[i]) global_mons[i] = std::move(*legacy_candidates[i]);
+    if (has_bw_stream && std::find(restored.begin(), restored.end(), false) != restored.end())
+      throw std::runtime_error("global BW stream: missing sibling snapshot monitor");
     for (auto &[i, st] : staged_states)
-      global_mons[i].commit_staged_state(st);
+      global_mons[i].commit_validated_state(st);
   }
 
   void set_stim_specs(int si, nb::list specs) {

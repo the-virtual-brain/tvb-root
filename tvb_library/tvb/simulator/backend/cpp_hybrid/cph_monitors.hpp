@@ -1108,12 +1108,26 @@ struct kmon {
     }
   }
 
-  // The whole staged set has been validated; commit without allocating.
-  void commit_staged_state(KMonState &st) noexcept {
+  void validate_legacy_sibling_state(const KMonState &st) const {
+    if (st.width != W || st.n_out_v != n_out_v || st.n_out_space != n_out_space ||
+        st.n_out_modes != n_out_modes)
+      throw std::runtime_error("global BW stream: incompatible sibling snapshot geometry");
+    if (st.accum.size() != accum.size() || st.interim.size() != interim.size() ||
+        st.stock.size() != stock.size() || st.bw_state.size() != bw_state.size())
+      throw std::runtime_error("global BW stream: incompatible sibling snapshot buffers");
+  }
+
+  // Commit without allocating. Pending rows are not checkpoint data.
+  void commit_validated_state(KMonState &st) noexcept {
     m_step = st.m_step;
     run_start = st.run_start;
     accum.swap(st.accum);
     accum_count = st.accum_count;
+    interim.swap(st.interim);
+    interim_count = st.interim_count;
+    stock.swap(st.stock);
+    stock_pos = st.stock_pos;
+    bw_state.swap(st.bw_state);
     bw_stream_regions.swap(st.bw_stream_regions);
     bw_drive_count = st.bw_drive_count;
     begin_call();
