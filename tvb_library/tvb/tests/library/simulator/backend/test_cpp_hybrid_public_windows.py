@@ -135,6 +135,17 @@ def test_run_network_rejects_invalid_window_period(backend, kind, period):
         backend.CppHybridBackend().run_network(_network(), 8, monitors=[_monitor(kind, period)])
 
 
+@pytest.mark.parametrize("kind, n_space", zip(KINDS, (3, 1, 2)))
+def test_run_network_accepts_max_window_with_short_default_chunk_run(backend, kind, n_space):
+    period = int(np.iinfo(np.int32).max) * DT
+    [[(times, data)]] = backend.CppHybridBackend().run_network(
+        _network(), 2, chunk_size=None, initial_states=[INITIAL],
+        monitors=[_monitor(kind, period)],
+    )
+    assert times.shape == (0,)
+    assert data.shape == (0, 2, n_space, 1)
+
+
 def test_run_network_accepts_decimal_roundoff(backend):
     [[(times, data)]] = backend.CppHybridBackend().run_network(
         _network(dt=0.1), 8, chunk_size=5, initial_states=[INITIAL],
@@ -188,6 +199,21 @@ def test_compiled_resume_restores_open_window_at_snapshot_clock(backend):
         np.testing.assert_array_equal(first_t, [2 * DT])
         np.testing.assert_array_equal(last_t, [6 * DT])
         _assert_values(np.concatenate([first_x, last_x]), _oracle(kind, _trajectory(11), 4))
+
+
+@pytest.mark.parametrize("monitor_kwargs", [{}, {"monitors": []}], ids=["omitted", "empty"])
+def test_compiled_resume_continues_neural_state_without_global_monitors(backend, monitor_kwargs):
+    be = backend.CppHybridBackend()
+    net = _network()
+    _, snapshot = be.compile(net).run(
+        5, monitors=[_monitor("TemporalAverage")], initial_states=[INITIAL],
+        return_snapshot=True,
+    )
+    assert snapshot["step"] == 5 and "window_config" in snapshot["kmon_global_states"][0]
+    _, continued = be.compile(net).resume(snapshot, 3, return_snapshot=True, **monitor_kwargs)
+    assert continued["step"] == 8
+    _assert_values(continued["states"][0], _trajectory(8)[-1])
+    assert not continued["kmon_global_states"]
 
 
 @pytest.mark.parametrize("missing", ["key", "record", "config"])

@@ -178,11 +178,11 @@ def test_public_monitor_value_and_time(route, kind, window, monkeypatch):
 
 @pytest.mark.parametrize("route", ROUTES)
 def test_public_spatial_and_eeg_preserve_constant_values(route, monkeypatch):
-    if route == "cpp-host":
-        pytest.skip(HISTORICAL_CPP_REGIONAL)
-    mons = [_monitor(kind, 4 * DT) for kind in ("SpatialAverage", "EEG")]
+    kinds = ("EEG",) if route == "cpp-host" else ("SpatialAverage", "EEG")
+    mons = [_monitor(kind, 4 * DT) for kind in kinds]
     outputs = _run(route, mons, 8, monkeypatch, constant=True)
-    for kind, (times, data) in zip(("SpatialAverage", "EEG"), outputs):
+    assert len(outputs) == len(kinds)
+    for kind, (times, data) in zip(kinds, outputs):
         if route in ("classic", "python"):
             expected_times = np.array([4, 8] if kind == "SpatialAverage" else [2, 6])
         elif route == "cpp-native" and kind == "SpatialAverage":

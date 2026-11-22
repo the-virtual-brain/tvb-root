@@ -813,7 +813,10 @@ class CompiledCppSim:
             self._bold_states = _copy_monitor_states(
                 snapshot.get("monitor_states"))
         self._pending_kmon_states = snapshot.get("kmon_states")
-        self._pending_kmon_global_states = snapshot.get("kmon_global_states")
+        # Do not restore saved global streams unless global monitors were requested.
+        self._pending_kmon_global_states = (
+            snapshot.get("kmon_global_states") if monitors else None
+        )
         self._pending_cpp_rng_states = snapshot.get("cpp_rng_states")
         try:
             return self.run(

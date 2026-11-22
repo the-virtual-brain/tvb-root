@@ -2188,7 +2188,8 @@ template <int W> struct simw {
         throw std::runtime_error("global complete window: run exceeds remaining tick range");
     }
     const int cs = chunk_size > 0 ? chunk_size : tavg_period;
-    const int n_chunks = (nstep + cs - 1) / cs;
+    const int rem = nstep % cs;
+    const int n_chunks = nstep / cs + (rem > 0);
     const size_t n_sn = sn.size();
     monitor_begin_call();
     for (size_t s = 0; s < mons.size(); s++) {
@@ -2364,7 +2365,6 @@ template <int W> struct simw {
     }
     if (pend) std::rethrow_exception(pend);
 
-    const int rem = nstep % cs;
     if (nstep > 0 && rem != 0) {
       const size_t chunk = (size_t)(nstep / cs);
       for (size_t s = 0; s < n_sn; s++) {
