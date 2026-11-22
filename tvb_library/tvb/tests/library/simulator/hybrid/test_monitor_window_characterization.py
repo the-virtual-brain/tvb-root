@@ -3,6 +3,10 @@
 Two independent state variables have constant, different derivatives and
 three distinct node offsets. The analytical post-step state, not any other
 backend or a Raw output, is the oracle for every value assertion.
+
+Superseded single-subnet C++ bug characterizations are kept as historical
+cases (baseline 2958e4f7, Linux Slurm 5213862). Current regional C++ policy
+acceptance is in test_cpp_hybrid_public_windows.py.
 """
 
 import numpy as np
@@ -23,6 +27,8 @@ SLOPE = np.array([1.0, -0.5])[:, None, None]
 SPATIAL = np.array([[0.75, 0.0, 0.25], [0.0, 1.0, 0.0]])
 GAIN = np.array([[1.0, -0.5, 2.0], [-2.0, 0.25, 0.5], [0.5, 0.0, -1.0]])
 ROUTES = ("classic", "python", "numba", "cpp-native", "cpp-host")
+REGIONAL_WINDOWS = ("TemporalAverage", "GlobalAverage", "SpatialAverage")
+HISTORICAL_CPP_REGIONAL = "superseded regional C++ behavior; baseline 2958e4f7 (Slurm 5213862)"
 
 
 def _model(constant=False, harmonic=None):
@@ -147,6 +153,8 @@ def _reduce(kind, state, reference=True):
                                  "GlobalAverage", "SpatialAverage", "EEG"))
 @pytest.mark.parametrize("window", (1, 3, 4))
 def test_public_monitor_value_and_time(route, kind, window, monkeypatch):
+    if route == "cpp-host" and kind in REGIONAL_WINDOWS:
+        pytest.skip(HISTORICAL_CPP_REGIONAL)
     monitor = _monitor(kind, window * DT)
     [(times, data)] = _run(route, [monitor], 2 * window, monkeypatch)
     ends = np.arange(window, 2 * window + 1, window)
@@ -159,7 +167,8 @@ def test_public_monitor_value_and_time(route, kind, window, monkeypatch):
         represented_steps -= window / 2
     elif kind in ("GlobalAverage", "SpatialAverage", "EEG") and route not in ("classic", "python"):
         sample_steps -= (window - 1) / 2
-        represented_steps -= (window - 1) / 2
+        represented_steps -= (window / 2 if route == "cpp-native" and kind in REGIONAL_WINDOWS
+                              else (window - 1) / 2)
 
     np.testing.assert_array_equal(times, represented_steps * DT)
     expected = _reduce(kind, _trajectory(sample_steps), reference=route not in ("numba", "cpp-host"))
@@ -169,11 +178,15 @@ def test_public_monitor_value_and_time(route, kind, window, monkeypatch):
 
 @pytest.mark.parametrize("route", ROUTES)
 def test_public_spatial_and_eeg_preserve_constant_values(route, monkeypatch):
+    if route == "cpp-host":
+        pytest.skip(HISTORICAL_CPP_REGIONAL)
     mons = [_monitor(kind, 4 * DT) for kind in ("SpatialAverage", "EEG")]
     outputs = _run(route, mons, 8, monkeypatch, constant=True)
     for kind, (times, data) in zip(("SpatialAverage", "EEG"), outputs):
         if route in ("classic", "python"):
             expected_times = np.array([4, 8] if kind == "SpatialAverage" else [2, 6])
+        elif route == "cpp-native" and kind == "SpatialAverage":
+            expected_times = np.array([2, 6])
         else:
             expected_times = np.array([2.5, 6.5])
         np.testing.assert_array_equal(times, expected_times * DT)
@@ -212,6 +225,8 @@ def test_public_eeg_observation_noise_is_at_emit_before_reference_when_supported
 @pytest.mark.parametrize("kind", ("GlobalAverage", "SpatialAverage", "EEG"))
 @pytest.mark.parametrize("merged", (True, False), ids=("merged", "unmerged"))
 def test_public_raw_companion_and_trailing_step(route, kind, merged, monkeypatch):
+    if route == "cpp-host" and kind in REGIONAL_WINDOWS:
+        pytest.skip(HISTORICAL_CPP_REGIONAL)
     # Raw forces the compiled execution chunk to 1. Some legacy host paths
     # consume that chunk grid directly instead of the requested monitor grid.
     mons = [monitors.Raw(), _monitor(kind, 4 * DT)]
@@ -228,7 +243,8 @@ def test_public_raw_companion_and_trailing_step(route, kind, merged, monkeypatch
     elif route in ("classic", "python"):
         value_steps, time_steps = [2.5, 6.5], [2, 6]
     elif route == "cpp-native":
-        value_steps = time_steps = [2.5, 6.5]
+        value_steps = [2.5, 6.5]
+        time_steps = [2, 6] if kind in REGIONAL_WINDOWS else value_steps
     elif kind == "GlobalAverage" or merged:
         value_steps = time_steps = np.arange(1, 10)
     else:
@@ -263,6 +279,7 @@ def _cpp_backend(use_kernel):
 @pytest.mark.parametrize("use_kernel", (True, False), ids=("native", "host"))
 @pytest.mark.parametrize("chunk, centres", ((None, (2.5, 6.5)), (1, tuple(range(1, 10))),
                                             (2, (1.5, 3.5, 5.5, 7.5)), (8, (4.5,))))
+@pytest.mark.skip(reason=HISTORICAL_CPP_REGIONAL)
 def test_cpp_backend_global_average_explicit_chunk_can_override_monitor_period(use_kernel, chunk, centres):
     network = _network()
     network.configure()
@@ -280,6 +297,8 @@ def test_cpp_backend_global_average_explicit_chunk_can_override_monitor_period(u
 @pytest.mark.parametrize("use_kernel", (True, False), ids=("native", "host"))
 @pytest.mark.parametrize("kind", ("TemporalAverage", "GlobalAverage"))
 def test_cpp_backend_resume_with_an_open_period(use_kernel, kind):
+    if not use_kernel:
+        pytest.skip(HISTORICAL_CPP_REGIONAL)
     backend = _cpp_backend(use_kernel)
     network = _network()
     network.configure()
@@ -302,7 +321,7 @@ def test_cpp_backend_resume_with_an_open_period(use_kernel, kind):
         np.testing.assert_allclose(split_x, _reduce(kind, _trajectory([2, 5.5, 8.5])), atol=1e-6, rtol=0)
     else:
         assert first_t.size == 0
-        time_steps = [2, 6] if kind == "TemporalAverage" else [2.5, 6.5]
+        time_steps = [2, 6]
         np.testing.assert_array_equal(full_t, np.asarray(time_steps) * DT)
         np.testing.assert_array_equal(split_t, full_t)
         np.testing.assert_allclose(full_x, _reduce(kind, _trajectory([2.5, 6.5])), atol=1e-6, rtol=0)
@@ -311,10 +330,13 @@ def test_cpp_backend_resume_with_an_open_period(use_kernel, kind):
 
 @pytest.mark.parametrize("route", ROUTES)
 def test_public_global_average_selected_voi(route, monkeypatch):
+    if route == "cpp-host":
+        pytest.skip(HISTORICAL_CPP_REGIONAL)
     mon = monitors.GlobalAverage(period=4 * DT, variables_of_interest=np.array([1]))
     [(times, data)] = _run(route, [mon], 8, monkeypatch)
     sample_steps = [4, 8] if route in ("classic", "python") else [2.5, 6.5]
-    np.testing.assert_array_equal(times, np.asarray(sample_steps) * DT)
+    time_steps = [2, 6] if route == "cpp-native" else sample_steps
+    np.testing.assert_array_equal(times, np.asarray(time_steps) * DT)
     expected = _reduce("GlobalAverage", _trajectory(sample_steps))
     if route in ("classic", "cpp-native"):
         expected = expected[:, [1]]
@@ -326,6 +348,8 @@ def test_public_global_average_selected_voi(route, monkeypatch):
 @pytest.mark.parametrize("theta, alias", ((np.pi / 12, np.pi / 3), (5 * np.pi / 12, -np.pi / 3)),
                          ids=("below-output-nyquist", "above-output-nyquist"))
 def test_public_temporal_average_boxcar_gain_phase_and_alias(route, theta, alias, monkeypatch):
+    if route == "cpp-host":
+        pytest.skip(HISTORICAL_CPP_REGIONAL)
     # Use both quadratures of a linear oscillator, V + iW. Heun integrates it
     # with multiplier z; choose h so arg(z) is the requested discrete frequency.
     # Reference the boxcar to the endpoint and divide out Heun's amplitude drift
@@ -379,6 +403,7 @@ def test_public_cpp_global_and_recorder_clocks_differ_for_slow_subnet(route, mon
 
 
 @pytest.mark.parametrize("use_kernel", (True, False), ids=("native", "host"))
+@pytest.mark.skip(reason=HISTORICAL_CPP_REGIONAL)
 def test_cpp_compiled_fresh_run_reuses_temporal_average_accumulator(use_kernel):
     network = _network()
     network.configure()
@@ -392,6 +417,7 @@ def test_cpp_compiled_fresh_run_reuses_temporal_average_accumulator(use_kernel):
     np.testing.assert_allclose(data, _trajectory([3.75]), atol=1e-6, rtol=0)
 
 
+@pytest.mark.skip(reason=HISTORICAL_CPP_REGIONAL)
 def test_cpp_native_resume_accepts_changed_spatial_weights_with_same_shape():
     network = _network()
     network.configure()

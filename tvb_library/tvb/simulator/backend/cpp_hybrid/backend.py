@@ -433,12 +433,6 @@ class CompiledCppSim:
 
         dt = float(min(sn.scheme.dt for sn in self._network_set.subnets))
         explicit_chunk_size = chunk_size
-        if chunk_size is None:
-            chunk_size = (
-                _compute_chunk_size(monitors, dt) if monitors is not None else 1
-            )
-        if monitors is not None:
-            self._backend._validate_monitors(monitors, chunk_size)
         if kwargs.get("_monitor_states") is not None:
             self._bold_states = _copy_monitor_states(kwargs["_monitor_states"])
 
@@ -474,6 +468,7 @@ class CompiledCppSim:
         n_sn = len(self._analysis.subnets)
         should_merge = (n_sn > 1) and _can_merge_subnets(self._analysis.subnets)
         kernel_global_specs = []   # (mi, m) attached via set_global_monitors
+        complete_window_isteps: dict[int, int] = {}
         kernel_persn_specs = []    # (mi, m) attached via set_monitors(si, ...)
         py_global_indices = set()
         kernel_mon_indices = set()
@@ -482,6 +477,24 @@ class CompiledCppSim:
 
         if monitors is not None:
             for mi, m in enumerate(monitors):
+                # Multi-subnet globals remain on the unstaged route until their
+                # source topology and clock policy are covered.
+                if (n_sn == 1
+                        and isinstance(m, (TemporalAverage, GlobalAverage, SpatialAverage))
+                        and not isinstance(m, AfferentCouplingTemporalAverage)):
+                    sn = self._analysis.subnets[0]
+                    if not self._backend.enable_kernel_monitors:
+                        raise NotImplementedError(
+                            "C++ regional complete windows require native monitor collection"
+                        )
+                    if self._width != 1 or sn.k != 1 or sn.n_modes != 1 or sn.dt != dt:
+                        raise NotImplementedError(
+                            "C++ regional complete windows require width 1 and one source clock and mode"
+                        )
+                    complete_window_isteps[mi] = self._backend._complete_window_istep(m, dt)
+                    kernel_global_specs.append((mi, m))
+                    kernel_mon_indices.add(mi)
+                    continue
                 if isinstance(m, Projection):
                     if (getattr(m, "_gain", None) is None
                             and getattr(m, "projection", None) is None):
@@ -551,6 +564,13 @@ class CompiledCppSim:
                     if isinstance(m, TemporalAverage):
                         has_py_tavg = True
 
+        if chunk_size is None:
+            chunk_size = (
+                _compute_chunk_size(monitors, dt) if monitors is not None else 1
+            )
+        if monitors is not None:
+            self._backend._validate_monitors(monitors, chunk_size)
+
         # Partition per-subnet monitors (Recorder monitors)
         sn_kernel_specs = {sn.name: [] for sn in self._analysis.subnets}
         sn_py_fallbacks = {sn.name: [] for sn in self._analysis.subnets}
@@ -597,6 +617,7 @@ class CompiledCppSim:
             width=self._width,
             kernel_persn=kernel_persn_specs,
             kernel_global=kernel_global_specs,
+            complete_window_isteps=complete_window_isteps,
             sn_kernel_monitors=sn_kernel_specs if sn_mons_map is not None else None,
             explicit_chunk_size=explicit_chunk_size,
             need_tavg=need_tavg,
@@ -609,9 +630,6 @@ class CompiledCppSim:
             _pending_kmon_global_states=self._pending_kmon_global_states,
             _pending_cpp_rng_states=self._pending_cpp_rng_states,
         )
-        self._pending_kmon_states = None
-        self._pending_kmon_global_states = None
-        self._pending_cpp_rng_states = None
 
         # Assemble per-subnet Recorder results if requested
         subnet_results = None
@@ -797,17 +815,22 @@ class CompiledCppSim:
         self._pending_kmon_states = snapshot.get("kmon_states")
         self._pending_kmon_global_states = snapshot.get("kmon_global_states")
         self._pending_cpp_rng_states = snapshot.get("cpp_rng_states")
-        return self.run(
-            nstep,
-            chunk_size,
-            initial_states=None,
-            monitors=monitors,
-            return_snapshot=return_snapshot,
-            _step_offset=step_offset,
-            _resuming=True,
-            rng_mode=rng_mode,
-            subnet_monitors=subnet_monitors,
-        )
+        try:
+            return self.run(
+                nstep,
+                chunk_size,
+                initial_states=None,
+                monitors=monitors,
+                return_snapshot=return_snapshot,
+                _step_offset=step_offset,
+                _resuming=True,
+                rng_mode=rng_mode,
+                subnet_monitors=subnet_monitors,
+            )
+        finally:
+            self._pending_kmon_states = None
+            self._pending_kmon_global_states = None
+            self._pending_cpp_rng_states = None
 
 
 class CppHybridBackend:
@@ -1670,6 +1693,21 @@ class CppHybridBackend:
         arr = np.asarray(voi, dtype=np.int32).ravel()
         return arr.tolist() if arr.size > 0 else []
 
+    @staticmethod
+    def _complete_window_istep(m, dt):
+        ticks = float(m.period) / dt
+        if np.isfinite(ticks):
+            nearest = round(ticks)
+            # Allow a few binary64 rounding steps from period construction and
+            # division, not a relative fraction of a source tick.
+            if (1 <= nearest <= np.iinfo(np.int32).max
+                    and abs(ticks - nearest) <= 8 * np.spacing(float(nearest))):
+                return nearest
+        raise ValueError(
+            f"C++ regional {type(m).__name__} period {m.period!r} must be "
+            f"commensurate with source dt {dt!r} (a positive integer number of ticks)"
+        )
+
     def _monitor_attach_spec(
         self,
         slot,
@@ -1682,6 +1720,7 @@ class CppHybridBackend:
         nstep=0,
         is_resuming=False,
         return_snapshot=False,
+        complete_window_istep=None,
     ):
         """Build a C++ ``kmon<W>`` spec dict for monitor *m*."""
         import copy
@@ -1701,6 +1740,31 @@ class CppHybridBackend:
 
         eff_dt = float(dt)
         ck = int(max(1, cadence_K))
+        if complete_window_istep is not None:
+            spec = {
+                "slot": int(slot),
+                "istep": complete_window_istep,
+                "complete_window": True,
+                "dt": eff_dt,
+                "voi": self._monitor_voi_list(m),
+            }
+            if isinstance(m, SpatialAverage):
+                weights = getattr(m, "spatial_mean", None)
+                if weights is not None:
+                    with np.errstate(over="ignore"):
+                        weights = np.asarray(weights, dtype=np.float32, order="C")
+                if (weights is None or weights.ndim != 2 or not weights.shape[0]
+                        or weights.shape[1] != n_space or not np.isfinite(weights).all()):
+                    raise ValueError(
+                        "C++ regional SpatialAverage complete windows require finite "
+                        "preconfigured spatial_mean weights with one column per source node"
+                    )
+                spec.update(kind=7, spatial_mean=weights)
+            elif isinstance(m, GlobalAverage):
+                spec["kind"] = 6
+            else:  # TemporalAverage (not AfferentCouplingTemporalAverage)
+                spec["kind"] = 4
+            return spec
         if isinstance(m, AfferentCouplingTemporalAverage):
             istep = max(1, int(round(float(m.period) / eff_dt)))
             return {
@@ -2013,6 +2077,7 @@ class CppHybridBackend:
         initial_states=None, monitors=None, width=1, _init_only=False,
         kernel_collect=None, _skip_init=False, _step_offset=0,
         kernel_persn=None, kernel_global=None, sn_kernel_monitors=None,
+        complete_window_isteps=None,
         explicit_chunk_size=None, need_tavg=True, need_ctavg=True,
         _return_snapshot=False, rng_mode="numpy",
         _pending_kmon_states=None, _pending_kmon_global_states=None,
@@ -2031,6 +2096,13 @@ class CppHybridBackend:
 
         n_sn = len(analysis.subnets)
         should_merge = (n_sn > 1) and _can_merge_subnets(analysis.subnets)
+
+        if not _skip_init:
+            # set_subnet_state resets the simulator tick. Arm/reset staged
+            # monitors only after the fresh clock and state are initialized.
+            self._init_states(sim, analysis, network_set, initial_states, width)
+        elif complete_window_isteps and _pending_kmon_global_states is None:
+            raise ValueError("C++ regional complete windows require global monitor snapshot state")
 
         # 1. Arm per-subnet monitors (global persn monitors + Recorder monitors)
         persn_counts = [0] * n_sn
@@ -2090,6 +2162,7 @@ class CppHybridBackend:
                     nstep=int(nstep),
                     is_resuming=_skip_init,
                     return_snapshot=_return_snapshot,
+                    complete_window_istep=(complete_window_isteps or {}).get(mi),
                 )
                 for mi, m in kernel_global
             ]
@@ -2135,9 +2208,6 @@ class CppHybridBackend:
             for sn in stoch:
                 rngs.append(sn_objs[sn.name].scheme.noise.random_stream)
 
-        if not _skip_init:
-            self._init_states(sim, analysis, network_set, initial_states, width)
-
         # 4. Lower separable stimuli to C++ `cph::stim_spec<W>` (with legacy fallback)
         sim.clear_stim_specs()
         legacy_by_sn = []
@@ -2154,11 +2224,14 @@ class CppHybridBackend:
             analysis, legacy_by_sn, int(nstep), width,
             step_offset=_step_offset)
 
+        global_calls = []
         if not stoch or use_philox:
             outs = sim.run(
                 int(nstep), cs, None, stim_by_sn,
                 need_tavg=bool(need_tavg), need_ctavg=bool(need_ctavg),
             )
+            if kernel_global:
+                global_calls.append(sim.take_global_monitor_outputs())
         else:
             # Chunk-wise loop to draw NumPy MT19937 noise per chunk
             remaining = int(nstep)
@@ -2185,6 +2258,9 @@ class CppHybridBackend:
                     this_chunk, cs, noise_by_sn, chunk_stim,
                     need_tavg=bool(need_tavg), need_ctavg=bool(need_ctavg),
                 )
+                if kernel_global:
+                    # The next native run clears these per-call output buffers.
+                    global_calls.append(sim.take_global_monitor_outputs())
                 chunk_results.append(outs)
                 done += this_chunk
                 remaining -= this_chunk
@@ -2238,13 +2314,13 @@ class CppHybridBackend:
                 else:
                     subnet_streams.setdefault(sn.name, []).append((key, (ts, dd)))
 
-        if kernel_global:
-            g_outs = sim.take_global_monitor_outputs()
-            for (mi, _m), (ts, dd) in zip(kernel_global, g_outs):
-                kernel_streams[mi] = [
-                    (np.asarray(ts, dtype=np.float64),
-                     np.asarray(dd, dtype=np.float32))
-                ]
+        for (mi, _m), calls in zip(kernel_global, zip(*global_calls)):
+            if len(calls) == 1:
+                ts, dd = calls[0]
+            else:
+                times, data = zip(*calls)
+                ts, dd = np.concatenate(times), np.concatenate(data)
+            kernel_streams[mi] = [(ts, dd)]
 
         return results, kernel_streams, subnet_streams
 
