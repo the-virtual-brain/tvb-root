@@ -996,6 +996,15 @@ struct kmon {
       throw std::runtime_error("global complete window: invalid snapshot state or clock");
   }
 
+  // The whole staged set has been validated; commit without allocating.
+  void commit_window_state(KMonState &st) noexcept {
+    m_step = st.m_step;
+    run_start = st.run_start;
+    accum.swap(st.accum);
+    accum_count = st.accum_count;
+    begin_call();
+  }
+
   void import_state(const KMonState &st) {
     if (st.width != W)
       throw std::runtime_error("kmon::import_state: width mismatch");

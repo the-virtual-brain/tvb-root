@@ -19,6 +19,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -1527,6 +1528,35 @@ static KMonState dict_to_kmon_state(const nb::dict &d) {
   return st;
 }
 
+static KMonState dict_to_window_state(const nb::dict &d) {
+  for (const char *key : {"slot", "kind", "width", "n_out_v", "n_out_space",
+                          "n_out_modes", "accum", "accum_count", "m_step", "run_start"}) {
+    if (!d.contains(key))
+      throw std::runtime_error("global complete window: incomplete snapshot state");
+  }
+  // Staged snapshots may carry the empty legacy fields emitted by export.
+  for (const char *key : {"interim", "stock", "bw_state"}) {
+    if (d.contains(key) && nb::len(nb::handle(d[key].ptr())) != 0)
+      throw std::runtime_error("global complete window: unexpected legacy snapshot state");
+  }
+  for (const char *key : {"interim_count", "stock_pos"}) {
+    if (d.contains(key) && nb::cast<uint32_t>(d[key]) != 0)
+      throw std::runtime_error("global complete window: unexpected legacy snapshot state");
+  }
+  KMonState st;
+  st.slot = nb::cast<int>(d["slot"]);
+  st.kind = nb::cast<int>(d["kind"]);
+  st.width = nb::cast<int>(d["width"]);
+  st.n_out_v = nb::cast<int>(d["n_out_v"]);
+  st.n_out_space = nb::cast<int>(d["n_out_space"]);
+  st.n_out_modes = nb::cast<int>(d["n_out_modes"]);
+  st.accum = to_double_vec(d["accum"]);
+  st.accum_count = nb::cast<uint32_t>(d["accum_count"]);
+  st.m_step = nb::cast<uint64_t>(d["m_step"]);
+  st.run_start = nb::cast<uint64_t>(d["run_start"]);
+  return st;
+}
+
 template <int W>
 static void parse_kmon_spec(nb::handle item, int n_src_v, int n_space,
                             int n_cvar, int n_modes, double default_dt,
@@ -1724,6 +1754,14 @@ template <int W> struct simw {
     if (gather_specs.size() != sn.size())
       throw std::runtime_error(
           "set_global_monitors: gather_specs length != subnet count");
+    bool has_window = false;
+    for (auto item : mon_specs) {
+      if (nb::isinstance<nb::dict>(item) &&
+          dict_get_or<bool>(nb::cast<nb::dict>(item), "complete_window", false)) {
+        has_window = true;
+        break;
+      }
+    }
     std::vector<GlobalGatherSubnet> gather;
     gather.reserve(gather_specs.size());
     int tot_v = 0;
@@ -1747,33 +1785,35 @@ template <int W> struct simw {
         if (t.size() > 4 && !t[4].is_none())
           gs.node_indices = to_int_vec(t[4]);
       }
-      if (gs.voi_offset + gs.n_voi > tot_v) tot_v = gs.voi_offset + gs.n_voi;
-      if (gs.node_indices.empty()) {
-        if (gs.node_offset + gs.n_node > tot_n)
-          tot_n = gs.node_offset + gs.n_node;
-      } else {
-        for (int gn : gs.node_indices)
-          if (gn + 1 > tot_n) tot_n = gn + 1;
+      if (!has_window) {
+        if (gs.voi_offset + gs.n_voi > tot_v) tot_v = gs.voi_offset + gs.n_voi;
+        if (gs.node_indices.empty()) {
+          if (gs.node_offset + gs.n_node > tot_n)
+            tot_n = gs.node_offset + gs.n_node;
+        } else {
+          for (int gn : gs.node_indices)
+            if (gn + 1 > tot_n) tot_n = gn + 1;
+        }
       }
       gather.push_back(std::move(gs));
+    }
+    if (has_window) {
+      const auto [n_voi, n_node] = validate_window_gather(gather);
+      tot_v = n_voi;
+      tot_n = n_node;
     }
 
     std::vector<kmon<W>> next;
     next.reserve(mon_specs.size());
     const double def_dt = (double)dt;
-    bool has_window = false;
     for (auto item : mon_specs) {
       kmon<W> m;
       parse_kmon_spec<W>(item, tot_v, tot_n, tot_v, 1, def_dt, global_mons, m,
                          true);
-      if (m.complete_window) {
-        m.begin_run(t_abs);
-        has_window = true;
-      }
+      if (m.complete_window) m.begin_run(t_abs);
       next.push_back(std::move(m));
     }
     if (has_window) {
-      validate_window_gather(gather, tot_v, tot_n);
       for (const auto &m : next) {
         if (!m.complete_window) continue;
         if (m.slot < 0 || std::count_if(next.begin(), next.end(), [&](const auto &other) {
@@ -1791,23 +1831,32 @@ template <int W> struct simw {
     global_mons = std::move(next);
   }
 
-  void validate_window_gather(const std::vector<GlobalGatherSubnet> &gather,
-                              int n_voi, int n_node) const {
-    size_t total_source_nodes = 0;
+  std::pair<int, int> validate_window_gather(
+      const std::vector<GlobalGatherSubnet> &gather) const {
+    const size_t n_voi = voi_specs.empty() ? 0 : voi_specs.front().size();
+    constexpr int max_extent = std::numeric_limits<int>::max();
+    if (gather.empty() || n_voi == 0 || n_voi > (size_t)max_extent)
+      throw std::runtime_error("global complete window: incompatible gather shape");
+    // Derive the allocation extents from the sources, never from offsets.
+    int64_t n_node = 0;
     for (size_t i = 0; i < gather.size(); ++i) {
       const auto &g = gather[i];
       const auto &sub = sn[i];
       if (sub.K != 1 || sub.dt != dt || sub.n_modes != 1)
         throw std::runtime_error("global complete window requires one regional clock and mode");
-      if (g.n_node != sub.n_node || g.n_node <= 0 || g.n_voi != n_voi ||
-          g.n_voi != (int)voi_specs[i].size() || g.voi_offset != 0 ||
-          (!g.node_indices.empty() && g.node_indices.size() != (size_t)g.n_node))
+      if (g.n_node != sub.n_node || sub.n_node <= 0 || g.n_voi != (int)n_voi ||
+          voi_specs[i].size() != n_voi || g.voi_offset != 0 ||
+          (!g.node_indices.empty() && g.node_indices.size() != (size_t)sub.n_node))
         throw std::runtime_error("global complete window: incompatible gather shape");
-      total_source_nodes += (size_t)g.n_node;
+      n_node += sub.n_node;
+      if (n_node > max_extent)
+        throw std::runtime_error("global complete window: gather extent out of range");
     }
-    if (total_source_nodes != (size_t)n_node)
-      throw std::runtime_error("global complete window requires a complete, disjoint node gather");
-    std::vector<bool> seen(total_source_nodes, false);
+    const size_t max_elems = std::min(global_obs_row.max_size(),
+                                     std::vector<double>().max_size());
+    if (n_voi > max_elems / (size_t)W / (size_t)n_node)
+      throw std::runtime_error("global complete window: gather extent out of range");
+    std::vector<bool> seen((size_t)n_node, false);
     for (const auto &g : gather) {
       for (int j = 0; j < g.n_node; ++j) {
         const int64_t node = g.node_indices.empty() ? (int64_t)g.node_offset + j
@@ -1817,6 +1866,7 @@ template <int W> struct simw {
         seen[(size_t)node] = true;
       }
     }
+    return {(int)n_voi, (int)n_node};
   }
 
   nb::list window_source_config() const {
@@ -1909,12 +1959,7 @@ template <int W> struct simw {
     for (auto item : states) {
       nb::dict d = nb::cast<nb::dict>(item);
       if (!d.contains("window_config")) continue;
-      for (const char *key : {"slot", "kind", "width", "n_out_v", "n_out_space",
-                              "n_out_modes", "accum", "accum_count", "m_step", "run_start"}) {
-        if (!d.contains(key))
-          throw std::runtime_error("global complete window: incomplete snapshot state");
-      }
-      KMonState st = dict_to_kmon_state(d);
+      KMonState st = dict_to_window_state(d);
       auto it = std::find_if(global_mons.begin(), global_mons.end(),
                              [&](const auto &m) {
                                return m.complete_window && m.slot == st.slot &&
@@ -1952,10 +1997,8 @@ template <int W> struct simw {
         global_mons[mi].import_state(st);
       }
     }
-    for (const auto &[i, st] : window_states) {
-      global_mons[i].import_state(st);
-      global_mons[i].begin_call();
-    }
+    for (auto &[i, st] : window_states)
+      global_mons[i].commit_window_state(st);
   }
 
   void set_stim_specs(int si, nb::list specs) {
@@ -2137,13 +2180,16 @@ template <int W> struct simw {
   nb::list run(int nstep, int chunk_size, nb::object noise_obj,
                nb::object stim_obj, bool need_tavg = true,
                bool need_ctavg = true) {
+    for (const auto &gm : global_mons) {
+      if (!gm.complete_window) continue;
+      if (gm.m_step != t_abs)
+        throw std::runtime_error("global complete window: reset or restore at the simulator clock before run");
+      if (nstep > 0 && (uint64_t)nstep > std::numeric_limits<uint64_t>::max() - t_abs)
+        throw std::runtime_error("global complete window: run exceeds remaining tick range");
+    }
     const int cs = chunk_size > 0 ? chunk_size : tavg_period;
     const int n_chunks = (nstep + cs - 1) / cs;
     const size_t n_sn = sn.size();
-    for (const auto &gm : global_mons) {
-      if (gm.complete_window && gm.m_step != t_abs)
-        throw std::runtime_error("global complete window: reset or restore at the simulator clock before run");
-    }
     monitor_begin_call();
     for (size_t s = 0; s < mons.size(); s++) {
       for (auto &mon : mons[s]) mon.reserve_for_steps(nstep);

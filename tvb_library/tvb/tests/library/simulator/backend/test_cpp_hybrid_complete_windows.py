@@ -42,10 +42,14 @@ def _armed(specs=None):
     return sim
 
 
-def _run(sim, nstep, chunk=1):
+def _run_pending(sim, nstep, chunk=1):
     noise = np.broadcast_to(DELTA.reshape(1, 1, 3, 1, 1),
                             (nstep, 1, 3, 1, 1)).copy()
     sim.run(nstep, chunk, noise, need_tavg=False, need_ctavg=False)
+
+
+def _run(sim, nstep, chunk=1):
+    _run_pending(sim, nstep, chunk)
     return sim.take_global_monitor_outputs()
 
 
@@ -152,6 +156,63 @@ def test_native_complete_window_restore_rejects_incompatible_state(change):
         target.set_global_monitors(GATHER, _specs())
     with pytest.raises(RuntimeError, match="global complete window:"):
         target.set_global_monitor_states(states)
+
+
+@pytest.mark.parametrize("field, value", [
+    ("interim", [1.0]), ("stock", [1.0]), ("bw_state", [1.0]),
+    ("interim_count", 1), ("stock_pos", 1), ("accum_count", 2),
+])
+def test_native_complete_window_rejected_restore_preserves_staged_set(field, value):
+    sim = _armed()
+    _run_pending(sim, 5)  # pending full window and one open sample per monitor
+    before = sim.get_global_monitor_states()
+    candidate = sim.get_global_monitor_states()
+    candidate[0]["accum"] += 1.0  # valid, observably different earlier record
+    candidate[1][field] = value
+    with pytest.raises(RuntimeError, match="global complete window:"):
+        sim.set_global_monitor_states(candidate)
+    np.testing.assert_equal(sim.get_global_monitor_states(), before)
+    _assert_streams(sim.take_global_monitor_outputs(), _window_reference(5, 4))
+
+
+@pytest.mark.parametrize("change, error", [
+    ({"node_offset": 4}, "complete, disjoint node gather"),
+    ({"node_indices": [0, 0, 2]}, "complete, disjoint node gather"),
+    ({"voi_offset": 1}, "incompatible gather shape"),
+    ({"n_node": 2}, "incompatible gather shape"),
+])
+def test_native_complete_window_validates_gather_before_monitor_configuration(change, error):
+    sim = _armed()
+    _run_pending(sim, 5)
+    before = sim.get_global_monitor_states()
+    # Invalid period verifies that a bad gather is rejected before monitor
+    # configuration. All candidate dimensions are deliberately small.
+    with pytest.raises(RuntimeError, match=error):
+        sim.set_global_monitors([dict(GATHER[0], **change)], _specs(period=0))
+    np.testing.assert_equal(sim.get_global_monitor_states(), before)
+    _assert_streams(sim.take_global_monitor_outputs(), _window_reference(5, 4))
+    _assert_streams(_run(sim, 3), _window_reference(4, 4, INITIAL + 4 * DELTA, origin=4))
+
+
+def test_native_complete_window_rejects_tick_wrap_before_integration_or_output_clear():
+    sim = _armed(_specs(period=2))
+    tick_max = (1 << 64) - 1
+    sim.set_t_abs(tick_max - 3)
+    sim.monitor_begin_run()
+    _run_pending(sim, 2)
+    before = sim.get_global_monitor_states()
+    model_before = sim.get_subnet_state(0).copy()
+    assert sim.t_abs() == tick_max - 1
+    with pytest.raises(RuntimeError, match="run exceeds remaining tick range"):
+        _run_pending(sim, 2)
+    assert sim.t_abs() == tick_max - 1
+    np.testing.assert_array_equal(sim.get_subnet_state(0), model_before)
+    np.testing.assert_equal(sim.get_global_monitor_states(), before)
+    midpoint = np.array([((tick_max - 1) - 1) * DT])
+    _assert_streams(sim.take_global_monitor_outputs(),
+                    [(midpoint, x) for _, x in _window_reference(2, 2)])
+    _run_pending(sim, 1)  # exactly the remaining range is allowed
+    assert sim.t_abs() == tick_max
 
 
 def test_native_complete_window_rejects_out_of_scope_attachments():
