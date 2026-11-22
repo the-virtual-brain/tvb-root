@@ -10,6 +10,7 @@ from .balloon_windkessel_reference import (
     NOMINAL_PARAMETERS,
     REST_STATE,
     bold_fraction,
+    solve_averaged_drive,
     solve_held_drive,
 )
 
@@ -200,3 +201,168 @@ def test_invalid_drive_or_nonpositive_integration_state_not_silently_clipped():
         solve_held_drive([0], neural_dt_ms=20, hemo_dt_ms=10, initial_state=[0, 1, 0, 1])
     with pytest.raises(ValueError, match="positive f, v, q"):
         solve_held_drive([-100.0] * 30, neural_dt_ms=20, hemo_dt_ms=10)
+
+
+def test_averaged_drive_replays_same_closed_window_with_no_extra_delay():
+    # The pulse is the last post-step observation at t=20 ms. It belongs to
+    # (10, 20] and its mean drives the ODE on [10, 20], not [20, 30].
+    observations = np.zeros((12, 1))
+    observations[7, 0] = 1.6
+    traj = solve_averaged_drive(observations, neural_dt_ms=2.5, hemo_dt_ms=2,
+                                baseline=0, gain_per_s2_per_observation=1)
+    assert_array_equal(traj.held_drive_per_s2[:, 0], [0, 0.4, 0])
+    assert_array_equal(traj.times_ms, np.arange(16) * 2)
+    assert_array_equal(traj.states[:6, 0], np.tile(REST_STATE, (6, 1)))
+    t = (traj.times_ms[6:11] - 10) / 1000
+    gamma = 0.5 / 0.65
+    omega = np.sqrt(1 / 0.41 - gamma**2)
+    assert_allclose(traj.states[6:11, 0, 0], 0.4 * np.exp(-gamma * t) * np.sin(omega * t) / omega,
+                    rtol=0, atol=2e-13)
+    assert 0 < traj.states[11, 0, 0] < traj.states[10, 0, 0]
+
+    midpoints, releases, means = traj.windowed_bold(period_ms=10)
+    assert_array_equal(midpoints, [5, 15, 25])
+    assert_array_equal(releases, [10, 20, 30])
+    pulse_readouts = bold_fraction(traj.states[6:11, 0])
+    assert means[0, 0] == 0
+    assert means[1, 0] < -1e-10
+    assert_allclose(means[1, 0], pulse_readouts.mean(), rtol=0, atol=2e-15)
+    assert abs(means[1, 0] - pulse_readouts[-1]) > 1e-10
+
+
+def test_averaged_drive_drops_open_neural_and_output_windows_independently():
+    # 102.5 ms of observations -> 100 ms of ODE, then only 2 x 40 ms of output.
+    observations = np.r_[np.arange(40) / 50, 1e5][:, None]
+    kwargs = dict(neural_dt_ms=2.5, hemo_dt_ms=5, baseline=0,
+                  gain_per_s2_per_observation=1)
+    traj = solve_averaged_drive(observations, **kwargs)
+    no_tail = solve_averaged_drive(observations[:-1], **kwargs)
+    assert_array_equal(traj.held_drive_per_s2, no_tail.held_drive_per_s2)
+    assert_array_equal(traj.states, no_tail.states)
+    assert traj.times_ms[-1] == 100
+    assert traj.states.shape == (21, 1, 4)
+    midpoints, releases, means = traj.windowed_bold(period_ms=40)
+    assert_array_equal(midpoints, [20, 60])
+    assert_array_equal(releases, [40, 80])
+    readouts = bold_fraction(traj.states[:, 0])
+    assert_allclose(means[:, 0], [readouts[1:9].mean(), readouts[9:17].mean()],
+                    rtol=0, atol=2e-15)
+    assert traj.windowed_bold(period_ms=110)[2].shape == (0, 1)
+
+    # Empty and nonempty inputs with no complete neural window both stay at rest.
+    for steps in (0, 3):
+        short = solve_averaged_drive(observations[:steps], **kwargs)
+        assert short.held_drive_per_s2.shape == (0, 1)
+        assert_array_equal(short.times_ms, [0])
+        assert_array_equal(short.states[:, 0], [REST_STATE])
+        times, releases, means = short.windowed_bold(period_ms=10)
+        assert times.shape == releases.shape == (0,)
+        assert means.shape == (0, 1)
+
+
+def test_averaged_drive_regional_broadcast_and_independent_parameters():
+    offsets = [10, -5, 3]
+    # Two windows, four samples each, distinct per-region means. Region 1
+    # cancels on both windows despite changing observations.
+    deviations = np.array([[0, -2, 4], [2, 2, 0], [4, -4, 0], [2, 4, 0],
+                           [-2, 4, 0], [0, 0, -2], [0, -4, -2], [-2, 0, 0]])
+    gains = [0.5, -0.25, -0.5]
+    parameters = (NOMINAL_PARAMETERS, NOMINAL_PARAMETERS,
+                  replace(NOMINAL_PARAMETERS, flow_feedback_s2=0.22, transit_time_s=1.2,
+                          resting_blood_volume=0.025))
+    kwargs = dict(neural_dt_ms=2.5, hemo_dt_ms=2)
+    traj = solve_averaged_drive(deviations + offsets, **kwargs, baseline=offsets,
+                                gain_per_s2_per_observation=gains, parameters=parameters)
+    expected_drive = [[1, 0, -0.5], [-0.5, 0, 0.5]]
+    assert_array_equal(traj.held_drive_per_s2, expected_drive)
+    assert traj.states.shape == (11, 3, 4)
+    assert traj.states.dtype == np.float64
+    assert_array_equal(traj.states[:, 1], np.tile(REST_STATE, (11, 1)))
+    means = traj.windowed_bold(period_ms=10)[2]
+    assert means.shape == (2, 3)
+    for region, (held, p) in enumerate(zip(np.array(expected_drive).T, parameters)):
+        expected = solve_held_drive(held, neural_dt_ms=10, hemo_dt_ms=2, parameters=p)
+        assert_allclose(traj.states[:, region], expected.states, rtol=0, atol=2e-13)
+        assert_allclose(means[:, region], expected.windowed_bold(10)[2], rtol=0, atol=2e-15)
+    nominal = solve_averaged_drive(deviations + offsets, **kwargs, baseline=offsets,
+                                   gain_per_s2_per_observation=gains)
+    assert np.max(np.abs(means[:, 2] - nominal.windowed_bold(10)[2][:, 2])) > 1e-10
+    scalar_calibration = solve_averaged_drive(deviations + 10, **kwargs, baseline=10,
+                                              gain_per_s2_per_observation=0.5)
+    assert_array_equal(scalar_calibration.held_drive_per_s2, [[1, 0, 0.5], [-0.5, 0, -0.5]])
+    assert scalar_calibration.parameters == (NOMINAL_PARAMETERS,) * 3
+
+
+def test_averaged_drive_approximation_is_not_reference_solver_mesh_error():
+    # Feed the same samples on (left,right] to the fine-hold comparator. In its
+    # notation each sample is held on the corresponding elapsed neural interval.
+    drive = np.tile([0.0, 0.0, 0.0, 0.0, 1.2], 40)
+    averaged = solve_averaged_drive(drive[:, None], neural_dt_ms=2, hemo_dt_ms=1,
+                                    baseline=0, gain_per_s2_per_observation=1)
+    fine = solve_held_drive(drive, neural_dt_ms=2, hemo_dt_ms=1)
+    assert_array_equal(averaged.times_ms, fine.times_ms)
+    avg_t, avg_release, avg_bold = averaged.windowed_bold(period_ms=100)
+    fine_t, fine_release, fine_bold = fine.windowed_bold(period_ms=100)
+    assert_array_equal(avg_t, fine_t)
+    assert_array_equal(avg_release, fine_release)
+    assert np.max(np.abs(averaged.states[10::10, 0] - fine.states[10::10])) > 1e-5
+    assert np.max(np.abs(avg_bold[:, 0] - fine_bold)) > 1e-9
+
+    # Keep drive holds fixed and compare refined solutions only at the *same*
+    # physical ODE endpoints, including for BOLD. A changed quadrature grid
+    # would measure a third effect, not the ODE solver's mesh sensitivity.
+    for coarse, held, dt, coarse_bold in (
+        (averaged.states[:, 0], averaged.held_drive_per_s2[:, 0], 10, avg_bold[:, 0]),
+        (fine.states, drive, 2, fine_bold),
+    ):
+        refined = solve_held_drive(held, neural_dt_ms=dt, hemo_dt_ms=0.5)
+        assert_array_equal(refined.times_ms[::2], fine.times_ms)
+        assert_allclose(coarse, refined.states[::2], rtol=0, atol=2e-12)
+        refined_bold = bold_fraction(refined.states[2::2]).reshape(-1, 100).mean(axis=1)
+        assert_allclose(coarse_bold, refined_bold, rtol=0, atol=2e-12)
+
+
+@pytest.mark.parametrize("neural_dt_ms,hemo_dt_ms", [(3, 2), (2, 4), (20, 2), (2, 20),
+                                                    (0, 2), (2, np.nan), (2, 5e-310)])
+def test_averaged_drive_rejects_incompatible_clock(neural_dt_ms, hemo_dt_ms):
+    with pytest.raises(ValueError, match="clock"):
+        solve_averaged_drive([[1]], neural_dt_ms=neural_dt_ms, hemo_dt_ms=hemo_dt_ms,
+                             baseline=0, gain_per_s2_per_observation=1)
+
+
+@pytest.mark.parametrize("period_ms", [5, 15, 0, np.inf])
+def test_averaged_drive_output_period_must_be_multiple_of_drive_window(period_ms):
+    traj = solve_averaged_drive(np.ones((8, 1)), neural_dt_ms=2.5, hemo_dt_ms=5,
+                                baseline=0, gain_per_s2_per_observation=1)
+    with pytest.raises(ValueError, match="clock"):
+        traj.windowed_bold(period_ms)
+
+
+@pytest.mark.parametrize("observations", [[1, 2], np.ones((2, 0)), np.ones((2, 2, 1)), [[np.nan]]])
+def test_averaged_drive_rejects_invalid_observations(observations):
+    with pytest.raises(ValueError, match="finite observations"):
+        solve_averaged_drive(observations, neural_dt_ms=2, hemo_dt_ms=2,
+                             baseline=0, gain_per_s2_per_observation=1)
+
+
+@pytest.mark.parametrize("name,value,match", [
+    ("baseline", [0], "baseline"), ("baseline", [[0, 0]], "baseline"),
+    ("baseline", np.inf, "baseline"),
+    ("gain_per_s2_per_observation", [1, 2, 3], "gain"),
+    ("gain_per_s2_per_observation", [np.nan, 1], "gain"),
+    ("gain_per_s2_per_observation", 1e308, "finite centered and scaled drive"),
+    ("parameters", [NOMINAL_PARAMETERS], "one set per region"),
+    ("parameters", [NOMINAL_PARAMETERS, 0], "one set per region"),
+    ("parameters", None, "one set per region"),
+])
+def test_averaged_drive_rejects_invalid_regional_calibration_and_parameters(name, value, match):
+    kwargs = dict(baseline=0, gain_per_s2_per_observation=1)
+    kwargs[name] = value
+    with pytest.raises(ValueError, match=match):
+        solve_averaged_drive(np.full((5, 2), 2.0), neural_dt_ms=2, hemo_dt_ms=2, **kwargs)
+
+
+def test_averaged_drive_does_not_clip_out_of_domain_state():
+    with pytest.raises(ValueError, match="positive f, v, q"):
+        solve_averaged_drive(np.full((150, 1), -100.0), neural_dt_ms=2, hemo_dt_ms=2,
+                             baseline=0, gain_per_s2_per_observation=1)
