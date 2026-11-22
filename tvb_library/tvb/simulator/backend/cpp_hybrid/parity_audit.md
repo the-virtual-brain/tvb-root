@@ -70,9 +70,19 @@ single source cvar), `kuramoto`, `difference`, `tanh`, `pre_sigmoidal`,
 | PreSigmoidal dynamic (dynamic=1, id 9 incl. globalT) | yes | implemented (CLOSED) |
 | PreSigmoidal static | yes | implemented |
 
-## 3. Monitors (Batch B — CLOSED)
+## 3. Monitors (Batch B — historical)
 
-All supported TVB monitors now execute natively inside C++ (`cph_monitors.hpp`,
+The following describes the Batch B implementation, not the current public
+EEG/MEG/iEEG route. Those modalities now use native-only global complete
+windows on a single regional subnet (width 1, one source clock and mode,
+absent or identity `node_indices`); local/Recorder and sweep placement are
+unsupported. Assign a finite prepared sensor-by-local-region matrix via
+`monitor.gain` and set `obsnoise=None`. Periods must span a positive integer
+number of source ticks; timestamps are interval midpoints. EEG reference is
+computed from current ordered sensor metadata, not cached `_ref_vec`.
+See [README.md](README.md) for the scoped public feature summary.
+
+At Batch B, supported TVB monitors executed natively inside C++ (`cph_monitors.hpp`,
 `kmon<W>` across `W in {1, 4, 8, 16}`), reading directly from reusable
 per-step `observe_voi_row<W>` / `gather_global_voi_row<W>` buffers so
 `chunk_size > 1` no longer forces `execution_chunk_size = 1` or raw

@@ -581,6 +581,9 @@ class Projection(Monitor):
         if self._gain_configuration_done:
             return
 
+        # Classic configuration can change the source axis and does not always
+        # map file data. It is not an explicit assignment of local-region gain.
+        self._gain_is_explicit = False
         super(Projection, self).config_for_sim(simulator)
         self._sim = simulator
         if hasattr(self, 'sensors'):
@@ -631,7 +634,7 @@ class Projection(Monitor):
         # compute analytic if not provided
         if not hasattr(self, 'projection'):
             self.log.debug('Precomputed projection not unavailable, using analytic approximation.')
-            self.gain = self.analytic(**sources)
+            self._gain = self.analytic(**sources)
 
         # reduce to region lead field if region sim
         # this fails when rmap doesn't have non_cortical, need to ensure "full" first
@@ -647,7 +650,7 @@ class Projection(Monitor):
             gain = numpy.zeros((self.gain.shape[0], conn.number_of_regions))
             numpy_add_at(gain.T, cortical_rmap, self.gain.T)
             self.log.debug('Region mapping gain shape %s to %s', self.gain.shape, gain.shape)
-            self.gain = gain
+            self._gain = gain
 
         # append analytic sub-cortical to lead field
         if have_subcortical:
@@ -660,7 +663,7 @@ class Projection(Monitor):
                 full_gain = numpy.zeros((self.gain.shape[0], self.gain.shape[1] + sub_gain.shape[1]))
                 full_gain[:, self.rmap if using_cortical_surface else cortical_indices] = self.gain
                 full_gain[:, non_cortical_indices] = self.analytic(*src)
-                self.gain = full_gain
+                self._gain = full_gain
                 self.log.debug('Added subcortical analytic gain, for final shape %s', self.gain.shape)
 
         if self.sensors.usable is not None and not self.sensors.usable.all():
@@ -699,6 +702,7 @@ class Projection(Monitor):
             return time, sample.T[..., numpy.newaxis]  # for compatibility
 
     _gain = None
+    _gain_is_explicit = False
 
     @property
     def gain(self):
@@ -709,6 +713,7 @@ class Projection(Monitor):
     @gain.setter
     def gain(self, new_gain):
         self._gain = new_gain
+        self._gain_is_explicit = new_gain is not None
 
     _rmap = None
 

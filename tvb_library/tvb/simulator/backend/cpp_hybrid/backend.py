@@ -1801,9 +1801,9 @@ class CppHybridBackend:
                                 or np.any(voi < 0) or np.any(voi >= n_src_v)):
             raise ValueError("C++ EEG/MEG/iEEG require valid observed VOI indices")
 
-        # Do not fall back to Projection.gain's raw file data: the source axis
-        # must already correspond to local regions, not vertices/orientations.
-        gain = np.asarray(m._gain)
+        # A lazy file cache can look regional by shape alone. Require the
+        # caller to supply gain in local-region order through the setter.
+        gain = np.asarray(m._gain if m._gain_is_explicit else None)
         if (gain.dtype.kind not in "fiu" or gain.ndim != 2
                 or not gain.shape[0] or gain.shape[1] != n_space):
             raise ValueError("C++ EEG/MEG/iEEG require a finite preconfigured sensor-by-local-region gain")

@@ -1,13 +1,18 @@
 """Regional C++ EEG/MEG/iEEG use the native complete-window stream."""
 
+from copy import copy
+
 import numpy as np
 import pytest
 
+from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.projections import ProjectionSurfaceEEG
+from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.sensors import SensorsEEG, SensorsInternal, SensorsMEG
 from tvb.simulator import integrators, models, monitors, noise
 from tvb.simulator.hybrid import NetworkSet, Simulator, Subnetwork
 from tvb.simulator.hybrid.recorder import Recorder
+from tvb.simulator.simulator import Simulator as ClassicSimulator
 
 
 DT = 0.125
@@ -150,8 +155,10 @@ def test_projection_with_raw_and_implicit_local_node_order(cpp, monkeypatch):
     assert events[0][1][0]["slot"] == 1
 
 
-def test_projection_accepts_reference_free_regional_gain_without_sensor_metadata(cpp):
-    mon = monitors.EEG(period=DT, obsnoise=None)
+def test_projection_accepts_explicit_regional_gain_after_file_read_without_sensor_metadata(cpp):
+    file_gain = ProjectionSurfaceEEG(projection_data=2 * GAIN)
+    mon = monitors.EEG(period=DT, obsnoise=None, projection=file_gain)
+    assert mon.gain is file_gain.projection_data
     mon.gain = GAIN.copy()
     [[stream]] = cpp.CppHybridBackend().run_network(
         _network(), 1, monitors=[mon], initial_states=[INITIAL],
@@ -216,6 +223,38 @@ def test_projection_resume_rejects_incompatible_requested_set(cpp, monkeypatch, 
     with pytest.raises(RuntimeError, match="snapshot"):
         be.compile(net).resume(snapshot, 4, monitors=mons)
     assert all(kind != "run" for kind, _ in events)
+
+
+@pytest.mark.parametrize("preparation", ["unread", "read", "copied", "classic-unmapped", "classic-mapped"])
+def test_projection_rejects_same_shape_file_gain_before_native_step(cpp, monkeypatch, preparation):
+    file_gain = ProjectionSurfaceEEG(projection_data=GAIN.copy())
+    sensors = SensorsEEG(labels=np.array(["z", "b", "a", "c"]), locations=np.zeros((4, 3)))
+    mon = monitors.EEG(period=4 * DT, obsnoise=None, projection=file_gain, sensors=sensors)
+    if preparation != "unread":
+        assert mon.gain is file_gain.projection_data
+        np.testing.assert_array_equal(mon.gain, GAIN)
+    if preparation == "copied":
+        mon = copy(mon)
+        assert mon.gain is file_gain.projection_data
+    if preparation.startswith("classic-"):
+        # The classic simulator either retains the same-shape file data or
+        # reduces it using its own connectivity's region mapping.
+        mapping = [2, 0, 1] if preparation == "classic-mapped" else [0, 1, 2, 0]
+        mon.region_mapping = RegionMapping(array_data=np.array(mapping))
+        conn = Connectivity(weights=np.zeros((3, 3)), tract_lengths=np.zeros((3, 3)),
+                            centres=np.eye(3), orientations=np.eye(3),
+                            cortical=np.ones(3, dtype=bool), region_labels=np.array(["a", "b", "c"]))
+        subnet = _subnet()
+        ClassicSimulator(connectivity=conn, model=subnet.model, integrator=subnet.scheme,
+                         initial_conditions=INITIAL[None, ...].copy(), monitors=[mon]).configure()
+        expected = GAIN[:, [1, 2, 0]] if preparation == "classic-mapped" else GAIN
+        np.testing.assert_array_equal(mon.gain, expected)
+
+    events = _trace(cpp, monkeypatch)
+    sim = Simulator(nets=_network(), backend="cpp", monitors=[mon], simulation_length=5 * DT)
+    with pytest.raises(ValueError, match="preconfigured sensor-by-local-region gain"):
+        sim.run(initial_conditions=[INITIAL])
+    assert events == []
 
 
 @pytest.mark.parametrize("changes,message", [

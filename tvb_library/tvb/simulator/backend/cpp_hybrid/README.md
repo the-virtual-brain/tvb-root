@@ -269,14 +269,15 @@ nothing calls a null slot.
 
 ## Feature parity with nb_hybrid (all parity-tested, float32 tolerance)
 
-Full audit: `parity_audit.md`. Summary of the supported feature set, which now
-matches `NbHybridBackend`:
+Full audit: `parity_audit.md`. Summary of the parity-tested feature set and
+scoped native monitor routes:
 
 | Feature | Coverage | Parity test |
 |---|---|---|
 | **Models** (29 supported classes / all 30 `ModelsEnum`) | 13 hand-written dfuns (ids 0–12, incl. CerebellarMF) + generic expression-generated route (ids ≥ 100): 27 supported generic kernels compiled in at build time (incl. `DecoBalancedExcInh`, including WASM); user-defined / out-of-set dfun models are runtime-compiled on first use | `test_cpp_hybrid_models.py` (29 classes + CerebellarMF flag variants + Zerlaut 2nd-order check) |
 | **Coupling functions** | Linear, Scaling, Sigmoidal, Difference, Kuramoto, HyperbolicTangent, SigmoidalJansenRit (classic **and** legacy), PreSigmoidal (static **and** dynamic, incl. `globalT`) | `test_cpp_hybrid_coupling.py` (11 items) |
-| **Monitors** | Raw, RawVoi, TemporalAverage, SubSample, GlobalAverage, AfferentCoupling (+TemporalAverage), SpatialAverage, Projection, Bold. Bold's HRF convolution and Raw/SubSample collection run as **kernel monitor engines** inside the C++ step loop; the shared Python path remains the parity reference/fallback (`enable_kernel_monitors`) | `test_cpp_hybrid_monitors.py` (18 items) |
+| **Monitors** | Raw, RawVoi, TemporalAverage, SubSample, GlobalAverage, AfferentCoupling (+TemporalAverage), SpatialAverage, bare `Projection`, Bold. Bold's HRF convolution and Raw/SubSample collection run as **kernel monitor engines** inside the C++ step loop; the shared Python path remains the parity reference/fallback (`enable_kernel_monitors`) | `test_cpp_hybrid_monitors.py` (18 items) |
+| **EEG / MEG / iEEG** | Native-only global monitors on one regional subnet (width 1, one source clock and mode, absent or identity `node_indices`); no local/Recorder or sweep support. Assign a finite, prepared sensor-by-local-region matrix with `monitor.gain = ...` and set `obsnoise=None`. Reading a file gain or configuring a classic monitor is not a substitute for this assignment. Complete post-step windows (period an integer number of source ticks) are stamped at interval midpoints. EEG reference uses current ordered sensor metadata. | `test_cpp_hybrid_public_projection.py` |
 | **Stimuli** | constant / pulse / sinusoid patterns (single-node and all-node spatial), **multiple subnetworks with stimuli simultaneously** | `test_cpp_hybrid_stimuli.py` (6 items) |
 | **Stochastic noise** | Additive noise, HeunStochastic/EulerStochastic, per-subnet RNG streams, **multiple stochastic subnetworks** | `test_cpp_hybrid_stimuli.py::test_stochastic_noise_parity`, `test_multi_subnet_stimuli_and_noise` |
 
