@@ -808,16 +808,23 @@ def _mergeable_net(equal_dt):
 
 
 def test_merge_guard_requires_equal_dt():
+    from tvb.simulator.backend.hybrid_common import _can_merge_subnets
+
     nstep = 8
     mon = GlobalAverage(period=0.02)
     ns_diff = _mergeable_net(equal_dt=False)
-    nb_diff, cpp_diff = _run_pair(ns_diff, nstep, monitors=[mon])
-    # different dts: NOT merged -> per-subnet outputs
-    assert len(nb_diff[0]) == len(cpp_diff[0]) == 2
-
     ns_eq = _mergeable_net(equal_dt=True)
+    backend = CppHybridBackend()
+    assert not _can_merge_subnets(backend._analyse(ns_diff).subnets)
+    assert _can_merge_subnets(backend._analyse(ns_eq).subnets)
+
+    nb_diff, cpp_diff = _run_pair(ns_diff, nstep, monitors=[mon])
+    # The eligible GlobalAverage stages one gathered C++ window stream;
+    # Numba still returns two per-subnet averages.
+    assert len(cpp_diff[0]) == 1
+    assert len(nb_diff[0]) == 2
+
     nb_eq, cpp_eq = _run_pair(ns_eq, nstep, monitors=[mon])
-    # equal dts: merged onto the connectome node axis
     assert len(nb_eq[0]) == len(cpp_eq[0]) == 1
 
 
