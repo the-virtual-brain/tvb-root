@@ -173,7 +173,7 @@ struct GlobalGatherSubnet {
   int voi_offset = 0;             // used when node_indices is empty (or heterogeneous)
   int node_offset = 0;            // used when node_indices is empty
   std::vector<int> node_indices;  // non-empty => merged connectome node mapping
-  std::string source_name;       // checked co-clock gather identity
+  std::string source_name;       // checked multi-source gather identity
   double source_dt = 0.0;
   std::vector<std::string> observed_terms;
 };
@@ -307,7 +307,7 @@ struct kmon {
   double k1v0 = 1.0;            // bold: (dot - 1) * k1v0 for FirstOrderVolterra
   bool first_order = false;
   bool complete_window = false; // staged native global window policy
-  bool coclock_window = false;  // checked multi-source complete window (origin zero)
+  bool gathered_window = false;  // checked multi-source complete window (origin zero)
   bool local_window = false;     // staged native Recorder window (origin zero)
   double local_master_dt = 0.0;
   std::string local_source_name;
@@ -672,11 +672,11 @@ struct kmon {
       d_out.reserve(rows * (size_t)n_out_space);
       return;
     }
-    if (projection_window() || coclock_window) {
+    if (projection_window() || gathered_window) {
       const size_t rows = (size_t)(((uint64_t)accum_count + (uint64_t)nstep) / (uint64_t)istep);
       const size_t stride = accum.size();
       if (rows > t_out.max_size() || rows > d_out.max_size() / stride)
-        throw std::runtime_error(coclock_window ? "global co-clock complete window: output extent out of range"
+        throw std::runtime_error(gathered_window ? "global gathered complete window: output extent out of range"
                                                : "global complete window projection: output extent out of range");
       t_out.reserve(rows);
       d_out.reserve(rows * stride);
@@ -1115,13 +1115,13 @@ struct kmon {
     if (st.slot != slot || st.kind != kind || st.width != W ||
         st.n_out_v != n_out_v || st.n_out_space != n_out_space ||
         st.n_out_modes != n_out_modes || st.accum.size() != accum.size() ||
-        st.m_step != tick || st.run_start > st.m_step || (coclock_window && st.run_start != 0) ||
+        st.m_step != tick || st.run_start > st.m_step || (gathered_window && st.run_start != 0) ||
         st.accum_count != (st.m_step - st.run_start) % (uint64_t)istep ||
-        ((projection_window() || coclock_window) && std::any_of(st.accum.begin(), st.accum.end(),
+        ((projection_window() || gathered_window) && std::any_of(st.accum.begin(), st.accum.end(),
                                              [](double x) { return !std::isfinite(x); })) ||
         (st.accum_count == 0 && std::any_of(st.accum.begin(), st.accum.end(),
                                           [](double x) { return x != 0.0; })))
-      throw std::runtime_error(coclock_window ? "global co-clock complete window: invalid snapshot state or clock"
+      throw std::runtime_error(gathered_window ? "global gathered complete window: invalid snapshot state or clock"
                                              : "global complete window: invalid snapshot state or clock");
   }
 

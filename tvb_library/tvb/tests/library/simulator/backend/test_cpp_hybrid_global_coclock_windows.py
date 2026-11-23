@@ -1,4 +1,4 @@
-"""Native complete windows on one clock across indexed regional sources."""
+"""Native master-clock complete windows across indexed regional sources."""
 
 import numpy as np
 import pytest
@@ -25,7 +25,7 @@ def cpp():
 
 
 def _network(*, stochastic=False, maps=NODE_INDICES, cadence=(1, 1),
-             observed=(("W", "V"), ("W", "V")), names=("small", "large")):
+             observed=(("W", "V"), ("W", "V")), names=("small", "large"), dt0=DT):
     sources = []
     for i, (indices, k, terms, name) in enumerate(zip(maps, cadence, observed, names)):
         # With all nonlinear/linear coefficients zero, V'=I and W'=a.
@@ -33,7 +33,7 @@ def _network(*, stochastic=False, maps=NODE_INDICES, cadence=(1, 1),
         params.update(d=[1.0], tau=[1.0], gamma=[1.0], I=SLOPE[i][0, :, 0], a=SLOPE[i][1, :, 0])
         model = models.Generic2dOscillator(variables_of_interest=terms,
                                           **{key: np.array(value) for key, value in params.items()})
-        dt = k * DT
+        dt = k * dt0
         scheme = (integrators.EulerStochastic(dt=dt, noise=noise.Additive(nsig=np.zeros(2)))
                   if stochastic else integrators.EulerDeterministic(dt=dt))
         sources.append(Subnetwork(name=name, nnodes=INITIAL[i].shape[1], model=model, scheme=scheme,
@@ -64,20 +64,21 @@ def _oracle(stop, *, start=0, m=4, weights=WEIGHTS):
             (times, np.einsum("an,tvnm->tvam", weights, means))]
 
 
-def _assert_streams(actual, expected):
+def _assert_streams(actual, expected, *, atol=2e-6):
     assert len(actual) == len(expected)
     for (times, data), (ref_times, ref_data) in zip(actual, expected):
         np.testing.assert_array_equal(times, ref_times)
         assert data.shape == ref_data.shape
-        np.testing.assert_allclose(data, ref_data, rtol=0, atol=2e-6)
+        np.testing.assert_allclose(data, ref_data, rtol=0, atol=atol)
 
 
 def _unpack_global(streams):
     return [stream for (stream,) in streams]
 
 
+@pytest.mark.parametrize("cadence", [(1, 1), (1, 3)], ids=["co-clock", "mixed-rate"])
 @pytest.mark.parametrize("stochastic", [False, True], ids=["one-native-call", "numpy-chunks"])
-def test_coclock_global_windows_gather_unequal_sources_across_chunks(cpp, monkeypatch, stochastic):
+def test_gathered_global_windows_chunking_and_no_tail(cpp, monkeypatch, stochastic, cadence):
     real_sim, calls = cpp.Sim, []
 
     class TracedSim:
@@ -93,10 +94,13 @@ def test_coclock_global_windows_gather_unequal_sources_across_chunks(cpp, monkey
             return self.sim.run(nstep, *args, **kwargs)
 
     monkeypatch.setattr(cpp, "Sim", TracedSim)
-    actual = cpp.CppHybridBackend().run_network(_network(stochastic=stochastic), 11, chunk_size=7,
-                                                monitors=_windows(), initial_states=INITIAL)
+    compiled = cpp.CppHybridBackend().compile(_network(stochastic=stochastic, cadence=cadence))
+    actual, checkpoint = compiled.run(11, chunk_size=7, monitors=_windows(), initial_states=INITIAL,
+                                      return_snapshot=True)
     assert calls == ([7, 4] if stochastic else [11])
-    _assert_streams(_unpack_global(actual), _oracle(11))
+    expected = _oracle(11) if cadence == (1, 1) else _mixed_rate_oracle(11)
+    _assert_streams(_unpack_global(actual), expected)
+    assert [state["accum_count"] for state in checkpoint["kmon_global_states"]] == [3] * 3
 
 
 def test_coclock_global_windows_release_at_boundaries_not_midpoints(cpp):
@@ -219,7 +223,7 @@ def test_coclock_global_projection_rejects_changed_requested_resume(cpp, change)
         net = _network(maps=((0, 3), NODE_INDICES[1]))
 
     target = be.compile(net)
-    error, message = ((RuntimeError, "global co-clock complete window: incompatible snapshot configuration")
+    error, message = ((RuntimeError, "global gathered complete window: incompatible snapshot configuration")
                       if change == "mapping" else
                       (ValueError, "co-clock global complete windows resume requires matching Projection"))
     with pytest.raises(error, match=message):
@@ -258,14 +262,15 @@ def test_coclock_global_windows_reject_changed_requested_resume(cpp, change):
     elif change == "point-only":
         requested = [monitors.Raw()]
     compiled = be.compile(target)
-    with pytest.raises(RuntimeError, match="global co-clock complete window"):
+    with pytest.raises(RuntimeError, match="global gathered complete window"):
         compiled.resume(snapshot, 4, monitors=requested)
     assert compiled._sim.t_abs() == 7  # no integration on a rejected request
 
 
-@pytest.mark.parametrize("change", ["missing", "duplicate", "legacy", "origin", "phase", "nonfinite"])
-def test_coclock_global_windows_native_restore_is_transactional(cpp, change):
-    compiled = cpp.CppHybridBackend().compile(_network())
+@pytest.mark.parametrize("cadence", [(1, 1), (1, 3)], ids=["co-clock", "mixed-rate"])
+@pytest.mark.parametrize("change", ["missing", "duplicate", "legacy", "origin", "phase", "nonfinite", "cadence"])
+def test_gathered_global_windows_native_restore_is_transactional(cpp, cadence, change):
+    compiled = cpp.CppHybridBackend().compile(_network(cadence=cadence))
     compiled.run(6, monitors=_windows(), initial_states=INITIAL)
     sim = compiled._sim
     sim.run(3, 1, None, None, need_tavg=False, need_ctavg=False)  # pending tick-8 release and one open row
@@ -284,11 +289,16 @@ def test_coclock_global_windows_native_restore_is_transactional(cpp, change):
         candidate[-1]["accum_count"] = 2
     elif change == "nonfinite":
         candidate[-1]["accum"][0] = np.nan
-    with pytest.raises(RuntimeError, match="global co-clock complete window"):
+    elif change == "cadence":
+        declared_sources = candidate[-1]["coclock_window_config"][6]
+        source = declared_sources[1]
+        declared_sources[1] = (*source[:3], source[3] + 1, *source[4:])
+    with pytest.raises(RuntimeError, match="global gathered complete window"):
         sim.set_global_monitor_states(candidate)
     for orig, current in zip(before, sim.get_global_monitor_states()):
         np.testing.assert_array_equal(current["accum"], orig["accum"])
-    _assert_streams(sim.take_global_monitor_outputs(), _oracle(9, start=6))
+    expected = _oracle(9, start=6) if cadence == (1, 1) else _mixed_rate_oracle(9, start=6)
+    _assert_streams(sim.take_global_monitor_outputs(), expected)
 
 
 @pytest.mark.parametrize("maps", [((0, 0), (4, 1, 2)), ((3, 0), (4, 1, 7)),
@@ -302,7 +312,7 @@ def test_coclock_global_windows_reject_invalid_node_indices(cpp, maps):
 
 def test_coclock_global_windows_check_native_source_and_narrowing(cpp):
     compiled = cpp.CppHybridBackend().compile(_network())
-    gather = compiled._coclock_window_gather(DT)
+    gather = compiled._gathered_window_sources(DT)
     sim = compiled._sim
     window = dict(slot=0, kind=4, istep=4, dt=DT, complete_window=True)
     with pytest.raises(RuntimeError, match="observed VOI"):
@@ -317,26 +327,24 @@ def test_coclock_global_windows_check_native_source_and_narrowing(cpp):
         sim.set_voi(1, [0, 1])
 
 
-@pytest.mark.parametrize("profile", ["mixed-rate", "missing-indices", "heterogeneous-order",
-                                     "host", "unprepared-spatial"])
-def test_coclock_global_windows_leave_other_routes_unstaged(cpp, profile):
+@pytest.mark.parametrize("cadence", [(1, 1), (1, 3)], ids=["co-clock", "mixed-rate"])
+@pytest.mark.parametrize("profile", ["missing-indices", "heterogeneous-order", "host", "unprepared-spatial"])
+def test_gathered_global_windows_leave_other_routes_unstaged(cpp, cadence, profile):
     be = cpp.CppHybridBackend()
     requested = [monitors.TemporalAverage(period=4 * DT)]
-    if profile == "mixed-rate":
-        net = _network(cadence=(1, 2))
-    elif profile == "missing-indices":
-        net = _network(maps=(None, None))
+    if profile == "missing-indices":
+        net = _network(cadence=cadence, maps=(None, None))
     elif profile == "heterogeneous-order":
-        net = _network(observed=(("W", "V"), ("V", "W")))
+        net = _network(cadence=cadence, observed=(("W", "V"), ("V", "W")))
     else:
-        net = _network()
+        net = _network(cadence=cadence)
         if profile == "host":
             be.enable_kernel_monitors = False
         else:
             requested = [monitors.SpatialAverage(period=4 * DT)]
     outputs, snapshot = be.compile(net).run(8, monitors=requested, initial_states=INITIAL, return_snapshot=True)
     assert not any("coclock_window_config" in state for state in snapshot["kmon_global_states"])
-    assert len(outputs[0]) == (1 if profile == "unprepared-spatial" else 2)
+    assert len(outputs[0]) == (1 if profile == "unprepared-spatial" and cadence == (1, 1) else 2)
 
 
 def test_coclock_global_windows_reject_noncommensurate_period_and_invalid_operator(cpp):
@@ -348,3 +356,144 @@ def test_coclock_global_windows_reject_noncommensurate_period_and_invalid_operat
     with pytest.raises(ValueError, match="finite preconfigured spatial_mean"):
         compiled.run(4, monitors=windows, initial_states=INITIAL)
     assert compiled._sim.t_abs() == 0
+
+
+MIXED_CADENCE = (1, 3)
+
+
+def _held_source(i, ticks, *, cadence=MIXED_CADENCE, dt0=DT):
+    count = np.asarray(ticks) // cadence[i]
+    return INITIAL[i] + count[..., None, None, None] * (cadence[i] * dt0) * SLOPE[i]
+
+
+def _mixed_rate_oracle(stop, *, start=0, m=4, cadence=MIXED_CADENCE, dt0=DT, weights=WEIGHTS):
+    closes = np.arange(start // m + 1, stop // m + 1) * m
+    # Sample every master tick, irrespective of which subnet stepped on that tick.
+    ticks = closes[:, None] + np.arange(1 - m, 1)
+    held_rows = [_held_source(i, ticks, cadence=cadence, dt0=dt0) for i in range(2)]
+    rows = np.concatenate(held_rows, axis=3)[:, :, :, CANONICAL, :].mean(axis=1)
+    times = (closes - m / 2) * dt0
+    return [(times, rows), (times, rows.sum(axis=2, keepdims=True) / len(CANONICAL)),
+            (times, np.einsum("an,tvnm->tvam", weights, rows))]
+
+
+@pytest.mark.parametrize("split", [1, 7], ids=["before-first-slow-update", "off-cadence"])
+def test_mixed_rate_global_windows_checked_resume_and_rearm(cpp, split):
+    be = cpp.CppHybridBackend()
+    # The slow source comes first; the master clock (0.1) is not float32-exact.
+    cadence, dt0 = (3, 1), 0.1
+    compiled = be.compile(_network(cadence=cadence, dt0=dt0))
+    windows = _windows(period=4 * dt0)
+    first, snapshot = compiled.run(split, monitors=windows, initial_states=INITIAL, return_snapshot=True)
+    _assert_streams(_unpack_global(first), _mixed_rate_oracle(split, cadence=cadence, dt0=dt0))
+    states = snapshot["kmon_global_states"]
+    assert [state["accum_count"] for state in states] == [split % 4] * 3
+    assert all([source[3] for source in state["coclock_window_config"][6]] == [3, 1] for state in states)
+
+    if split == 1:
+        # No window was released, but the initial slow rows were already accumulated.
+        rows = np.concatenate([INITIAL[0], _held_source(1, 1, cadence=cadence, dt0=dt0)], axis=1)
+        np.testing.assert_allclose(states[0]["accum"], rows[:, CANONICAL, :].ravel(), rtol=0, atol=2e-6)
+
+    changed = _windows(period=dt0)
+    changed[-1].spatial_mean = WEIGHTS[:, ::-1].copy()
+    fresh = compiled.run(5, monitors=changed, initial_states=INITIAL)
+    _assert_streams(_unpack_global(fresh), _mixed_rate_oracle(
+        5, m=1, cadence=cadence, dt0=dt0, weights=changed[-1].spatial_mean), atol=6e-6)
+    slow_columns = NODE_INDICES[0]
+    slow = fresh[0][0][1][:, :, slow_columns, :]
+    np.testing.assert_allclose(slow[:2], np.broadcast_to(INITIAL[0], slow[:2].shape))
+    np.testing.assert_array_equal(slow[2:], np.broadcast_to(slow[2], slow[2:].shape))
+    assert not np.array_equal(slow[1], slow[2])
+
+    for target in (compiled, be.compile(_network(cadence=cadence, dt0=dt0))):
+        last = target.resume(snapshot, 11 - split, monitors=windows)
+        _assert_streams(_unpack_global(last), _mixed_rate_oracle(11, start=split, cadence=cadence, dt0=dt0), atol=6e-6)
+
+
+def test_mixed_rate_global_windows_release_and_local_recorder_points(cpp):
+    compiled = cpp.CppHybridBackend().compile(_network(cadence=MIXED_CADENCE))
+    first = compiled.run(1, monitors=_windows(), initial_states=INITIAL)
+    _assert_streams(_unpack_global(first), _mixed_rate_oracle(1))  # shaped empties
+    release = []
+    for tick in range(2, 12):
+        compiled._sim.run(1, 1, None, None, need_tavg=False, need_ctavg=False)
+        outputs = compiled._sim.take_global_monitor_outputs()
+        _assert_streams(outputs, _mixed_rate_oracle(tick, start=tick - 1))
+        if outputs[0][0].size:
+            release.append(tick)
+    assert release == [4, 8]
+
+    requested = _windows() + [monitors.Raw(), monitors.SubSample(period=4 * DT)]
+    net = _network(cadence=MIXED_CADENCE)
+    net.subnets[1].add_monitor(monitors.TemporalAverage(period=6 * DT))
+    public = Simulator(nets=net, backend="cpp", simulation_length=11 * DT, monitors=requested)
+    public.configure()
+    rows = np.concatenate([_held_source(i, np.arange(1, 12)) for i in range(2)], axis=2)
+    rows = rows[:, [1, 0]][:, :, CANONICAL, :]
+    ticks = np.arange(1, 12)
+    points = [(ticks * DT, rows), (ticks[3::4] * DT, rows[3::4])]
+    _assert_streams(public.run(initial_conditions=INITIAL), _mixed_rate_oracle(11) + points)
+    # The slow Recorder uses only its eligible ticks 3 and 6 (not held master-grid rows).
+    expected_local = _held_source(1, np.array([3, 6])).mean(axis=0, keepdims=True)[:, [1, 0]]
+    _assert_streams([net.subnets[1].monitors[0].to_arrays()], [(np.array([3 * DT]), expected_local)])
+    point_only = compiled.run(11, monitors=requested[-2:], initial_states=INITIAL)
+    together = compiled.run(11, monitors=requested, initial_states=INITIAL)
+    assert [len(streams) for streams in together] == [1, 1, 1, 2, 2]
+    for actual, expected in zip(together[-2:], point_only):
+        _assert_streams(actual, expected)
+
+
+@pytest.mark.parametrize("change", ["cadence", "clock", "mapping", "observations", "period", "voi", "weights"])
+def test_mixed_rate_global_windows_reject_changed_resume_before_stepping(cpp, change):
+    be = cpp.CppHybridBackend()
+    source, windows = _network(cadence=MIXED_CADENCE), _windows()
+    _, snapshot = be.compile(source).run(7, monitors=windows, initial_states=INITIAL, return_snapshot=True)
+    if change == "cadence":
+        source = _network(cadence=(1, 2))
+    elif change == "clock":
+        source = _network(cadence=MIXED_CADENCE, dt0=np.nextafter(DT, 1.0))
+        for window in windows:
+            window.period = 4 * np.nextafter(DT, 1.0)
+    elif change == "mapping":
+        source = _network(cadence=MIXED_CADENCE, maps=((0, 3), NODE_INDICES[1]))
+    elif change == "observations":
+        source = _network(cadence=MIXED_CADENCE, observed=(("V", "W"), ("V", "W")))
+    elif change == "period":
+        windows[0].period = 5 * DT
+    elif change == "voi":
+        windows[1].variables_of_interest = np.array([0, 1])
+    elif change == "weights":
+        windows[-1].spatial_mean[0, 0] += 0.5
+    target = be.compile(source)
+    with pytest.raises(RuntimeError, match="global gathered complete window: incompatible snapshot configuration"):
+        target.resume(snapshot, 4, monitors=windows)
+    assert target._sim.t_abs() == 7
+
+
+def test_mixed_rate_global_windows_native_gather_checks_and_scope(cpp):
+    compiled = cpp.CppHybridBackend().compile(_network(cadence=MIXED_CADENCE))
+    gather = compiled._gathered_window_sources(DT)
+    sim = compiled._sim
+    window = dict(slot=0, kind=4, istep=4, dt=DT, complete_window=True)
+    # The perturbed source clock rounds to the native float32 but does not match K*dt.
+    with pytest.raises(RuntimeError, match="declared source clock or cadence"):
+        sim.set_global_monitors([gather[0], dict(gather[1], source_dt=3 * DT + 1e-8)], [window])
+    with pytest.raises(RuntimeError, match="invalid period, kind or clock"):
+        sim.set_global_monitors(gather, [dict(window, cadence_K=3)])
+    with pytest.raises(RuntimeError, match="invalid period, kind or clock"):
+        sim.set_global_monitors(gather, [dict(window, dt=3 * DT)])
+    with pytest.raises(RuntimeError, match="homogeneous observed VOIs"):
+        sim.set_global_monitors([gather[0], dict(gather[1], observed_terms=["V", "W"])], [window])
+    with pytest.raises(RuntimeError, match="complete, disjoint node gather"):
+        sim.set_global_monitors([gather[0], dict(gather[1], node_indices=[0, 1, 2])], [window])
+    with pytest.raises(RuntimeError, match="mixed-rate gather requires complete-window monitors"):
+        sim.set_global_monitors(gather, [window, dict(slot=1, kind=8)])  # no generic global Projection
+    sim.set_global_monitors(gather, [window])
+    with pytest.raises(RuntimeError, match="detach before changing observed rows"):
+        sim.set_voi(1, [0, 1])
+    with pytest.raises(RuntimeError, match="detach before changing the clock"):
+        sim.set_opts(0, 2 * DT, 1)
+    with pytest.raises(ValueError, match="commensurate with master dt"):
+        compiled.run(4, monitors=_windows(period=3.5 * DT), initial_states=INITIAL)
+    assert sim.t_abs() == 0

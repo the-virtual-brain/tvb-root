@@ -305,29 +305,35 @@ The public façade replaces Recorder buffers on each run. It does not append or
 resume runs, and a Recorder with no completed window has zero recorded rows
 and no allocated arrays.
 
-### Native co-clock global complete windows
+### Native gathered global complete windows
 
 Simulator-level `TemporalAverage`, `GlobalAverage` and prepared `SpatialAverage`
-use a native gather across multiple subnetworks at width 1, one source mode,
-and one common declared master/source clock (`K=1` for every source). The
-sources must have compatible observed VOI definitions in the same order and
-provide explicit `node_indices` forming a complete, disjoint permutation of
-`0..total_nodes-1`. `TemporalAverage` retains that canonical node axis;
+use a native gather across multiple subnetworks at width 1 and one source
+mode. Sources may share a clock or run at valid integer multiples `K` of the
+declared master timestep. They must have compatible observed VOI definitions in
+the same order and provide explicit `node_indices` forming a complete,
+disjoint permutation of `0..total_nodes-1`. `TemporalAverage` retains that
+canonical node axis;
 `GlobalAverage` averages over all nodes, not over subnet averages;
 `SpatialAverage` takes a prepared finite `spatial_mean` matrix with columns in
 canonical node order. Output VOIs follow the order requested by the monitor.
 
-A period of `m` integer master ticks consumes the post-update rows. Its output
-is released at closing tick `j` and stamped `(j - m/2)*dt`. Native chunks do
-not change window phase, and incomplete tails are not emitted. Fresh runs
+A period of `m` integer master ticks consumes one row on **every** master tick,
+after the sources eligible on that tick have updated. A slower source
+contributes its initial state until its first update, then repeats its most
+recent state on ineligible ticks. Output is released at closing tick `j` and
+stamped `(j - m/2)*dt`, with `dt` the declared master timestep. Native chunks
+do not change window phase, and incomplete tails are not emitted. Fresh runs
 start at tick zero. Resume with the same requested global set requires a
-checkpoint matching the gather, source observations, period, VOI order, and
-spatial operator; a neural-only resume can omit global monitors as before.
-These windows do not consume local Recorder streams, and companion point
-samplers keep their endpoint behavior and existing chunk restrictions.
+checkpoint matching the gather, source clocks and cadences, observations,
+period, VOI order, and spatial operator. Compatible co-clock checkpoints keep
+the same schema; a neural-only resume can omit global monitors as before.
+These windows do not consume local Recorder streams, which count only eligible
+source ticks. Companion point samplers keep their endpoint behavior and
+existing chunk restrictions.
 
-When a generic global `Projection` shares this gather, compiled/public runs
-attach its current operator instead of reusing the previous slot's attachment.
+When a generic global `Projection` shares a **co-clock** gather, compiled/public
+runs attach its current operator instead of reusing the previous slot's attachment.
 `CompiledCppSim.resume` also requires the mixed checkpoint's Projection
 sidecar to match the effective gain, reference vector, tick period and ordered
 VOIs. The staged co-clock checkpoint checks the shared gather identity before
@@ -336,10 +342,11 @@ cannot resume with these monitors requested. Bare native checkpoint calls do
 not check the legacy Projection operator's identity, and standalone generic
 Projection eligibility and resume are unchanged.
 
-Mixed-rate, missing-index, heterogeneous-observation, wider and multimode
-layouts, host collection and unprepared `SpatialAverage` remain on their
-preexisting routes, not this complete-window policy. Neither the generic
-merge rules nor the BW or projection placement rules are changed.
+Missing-index, heterogeneous-observation, wider and multimode layouts, host
+collection and unprepared `SpatialAverage` remain on their preexisting routes,
+not this complete-window policy. Only the three checked window types share the
+mixed-rate gather; neither the generic merge rules nor the BW or projection
+placement rules are changed.
 
 ## Tests
 
