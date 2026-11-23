@@ -284,6 +284,27 @@ scoped native monitor routes:
 Not supported by either backend (rejected identically): nonzero
 `model_local_coupling`.
 
+### Native local Recorder windows
+
+Width-1 C++ runs with one source mode per subnet support local
+`TemporalAverage`, `GlobalAverage` (mean over that subnet's nodes), and
+`SpatialAverage` with a finite, prepared `spatial_mean` matrix in the subnet's
+local node order. The period must be a positive integer number of that subnet's
+integration steps, independent of the master timestep and caller chunk size.
+These Recorder windows do not fall back to the host collector. For cadence
+`K`, a window of `m` post-update samples closing at local tick `j` is released
+at master tick `j*K` with timestamp `(j - m/2)*subnet.dt`.
+Continue open windows across native calls, but do not emit incomplete tails.
+Raw and subsampled point times are unchanged; this profile does not include
+`AfferentCouplingTemporalAverage` or simulator-level multi-subnet windows.
+
+Start each fresh run at origin zero. For `CompiledCppSim.resume`, supply a
+checkpoint with the same local window Recorder slots and effective source and
+monitor definitions; historical local-window checkpoints are not compatible.
+The public façade replaces Recorder buffers on each run. It does not append or
+resume runs, and a Recorder with no completed window has zero recorded rows
+and no allocated arrays.
+
 ## Tests
 
 From `tvb_library` root:

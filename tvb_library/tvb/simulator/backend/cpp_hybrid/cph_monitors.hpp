@@ -304,6 +304,10 @@ struct kmon {
   double k1v0 = 1.0;            // bold: (dot - 1) * k1v0 for FirstOrderVolterra
   bool first_order = false;
   bool complete_window = false; // staged native global window policy
+  bool local_window = false;     // staged native Recorder window (origin zero)
+  double local_master_dt = 0.0;
+  std::string local_source_name;
+  std::vector<int64_t> local_node_indices;
   bool midpoint_time = false;   // force (m_step - 0.5*istep)*dt (e.g. CTAVG tavg / Recorder)
   double dt = 0.1;              // effective monitor step dt (dt0 for global, sn.dt for Recorder)
 
@@ -383,6 +387,14 @@ struct kmon {
       m_step = tick;
       std::fill(bw_stream_regions.begin(), bw_stream_regions.end(), BwStreamRegion{});
       bw_drive_count = 0;
+      std::fill(accum.begin(), accum.end(), 0.0);
+      accum_count = 0;
+      begin_call();
+    }
+    if (local_window) {
+      if (tick != 0)
+        throw std::runtime_error("Recorder complete window: fresh origin must be zero");
+      m_step = 0;
       std::fill(accum.begin(), accum.end(), 0.0);
       accum_count = 0;
       begin_call();
@@ -631,6 +643,16 @@ struct kmon {
       std::fill(base + 0u * nw, base + 1u * nw, 0.0f);  // s = 0
       std::fill(base + 1u * nw, base + 4u * nw, 1.0f);  // f = 1, v = 1, q = 1
     }
+  }
+
+  void reserve_local_window(uint64_t tick, uint64_t end_tick) {
+    const uint64_t eligible = end_tick / cadence_K - tick / cadence_K;
+    const uint64_t rows = ((uint64_t)accum_count + eligible) / (uint64_t)istep;
+    const size_t stride = accum.size();
+    if (rows > t_out.max_size() || rows > d_out.max_size() / stride)
+      throw std::runtime_error("Recorder complete window: output extent out of range");
+    t_out.reserve((size_t)rows);
+    d_out.reserve((size_t)rows * stride);
   }
 
   // Pre-reserve t_out and d_out capacity for `nstep` master steps to avoid
@@ -1097,6 +1119,18 @@ struct kmon {
       throw std::runtime_error("global complete window: invalid snapshot state or clock");
   }
 
+  void validate_local_window_state(const KMonState &st, uint64_t tick) const {
+    if (st.slot != slot || st.kind != kind || st.width != W ||
+        st.n_out_v != n_out_v || st.n_out_space != n_out_space ||
+        st.n_out_modes != n_out_modes || st.accum.size() != accum.size() ||
+        st.m_step != tick / cadence_K || st.run_start != 0 ||
+        st.accum_count != st.m_step % (uint64_t)istep ||
+        std::any_of(st.accum.begin(), st.accum.end(), [count = st.accum_count](double x) {
+          return !std::isfinite(x) || (count == 0 && x != 0.0);
+        }))
+      throw std::runtime_error("Recorder complete window: invalid snapshot state or clock");
+  }
+
   void validate_bw_stream_state(const KMonState &st, uint64_t tick) const {
     if (st.slot != slot || st.kind != kind || st.width != W ||
         st.n_out_v != n_out_v || st.n_out_space != n_out_space ||
@@ -1238,10 +1272,10 @@ struct kmon {
 
   bool close_average_step() {
     ++accum_count;
-    const bool ready = complete_window ? accum_count == (uint32_t)istep
-                                      : m_step % (uint64_t)istep == 0u;
+    const bool ready = (complete_window || local_window) ? accum_count == (uint32_t)istep
+                                                         : m_step % (uint64_t)istep == 0u;
     if (!ready) return false;
-    if (complete_window || kind == KMON_TAVG)
+    if (complete_window || local_window || kind == KMON_TAVG)
       t_out.push_back(((double)m_step - 0.5 * (double)istep) * dt);
     else
       t_out.push_back(period_emit_time());

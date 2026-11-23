@@ -55,6 +55,7 @@ from tvb.simulator.integrators import (
 )
 
 _REGIONAL_PROJECTION_MONITORS = (EEG, MEG, iEEG)
+_RECORDER_SLOT_BASE = 10000
 
 # Scalars shared by all regions; lower region-specific parameters here once supported.
 _BALLOON_WINDKESSEL_NOMINAL = dict(
@@ -621,13 +622,18 @@ class CompiledCppSim:
         # Partition per-subnet monitors (Recorder monitors)
         sn_kernel_specs = {sn.name: [] for sn in self._analysis.subnets}
         sn_py_fallbacks = {sn.name: [] for sn in self._analysis.subnets}
+        local_window_specs = {}
         need_py_sn_tavg = False
         need_py_sn_ctavg = False
         if sn_mons_map is not None:
             for sn in self._analysis.subnets:
                 for ri, rm in enumerate(sn_mons_map.get(sn.name, ())):
-                    if (self._backend.enable_kernel_monitors
-                            and self._backend._kernel_collectable(rm)):
+                    if (isinstance(rm, (TemporalAverage, GlobalAverage, SpatialAverage))
+                            and not isinstance(rm, AfferentCouplingTemporalAverage)):
+                        local_window_specs[sn.name, ri] = self._recorder_window_spec(sn, ri, rm)
+                        sn_kernel_specs[sn.name].append((ri, rm))
+                    elif (self._backend.enable_kernel_monitors
+                          and self._backend._kernel_collectable(rm)):
                         sn_kernel_specs[sn.name].append((ri, rm))
                     else:
                         sn_py_fallbacks[sn.name].append((ri, rm))
@@ -665,6 +671,7 @@ class CompiledCppSim:
             kernel_persn=kernel_persn_specs,
             kernel_global=kernel_global_specs,
             complete_window_isteps=complete_window_isteps,
+            local_window_specs=local_window_specs,
             balloon_windkessel_specs=balloon_windkessel_specs,
             sn_kernel_monitors=sn_kernel_specs if sn_mons_map is not None else None,
             explicit_chunk_size=explicit_chunk_size,
@@ -826,6 +833,25 @@ class CompiledCppSim:
             return outputs, snap, subnet_results
         return outputs, snap
 
+    def _recorder_window_spec(self, sn, index, monitor):
+        if not self._backend.enable_kernel_monitors or self._width != 1 or sn.n_modes != 1:
+            raise NotImplementedError(
+                "C++ Recorder complete windows require native collection, width 1 and one source mode"
+            )
+        n_voi = len(sn.voi) // 3
+        voi = monitor.variables_of_interest
+        if voi is not None and (voi.ndim != 1 or voi.dtype.kind not in "iu"
+                                or np.any(voi < 0) or np.any(voi >= n_voi)):
+            raise ValueError("C++ Recorder complete windows require valid observed VOI indices")
+        period = self._backend._complete_window_istep(monitor, float(sn.dt), scope="Recorder")
+        spec = self._backend._monitor_attach_spec(
+            _RECORDER_SLOT_BASE + index, monitor, n_voi, sn.n_nodes, float(sn.dt),
+            cadence_K=sn.k, complete_window_istep=period, local_window=True,
+        )
+        spec.update(master_dt=self._analysis.dt, source_name=sn.name,
+                    node_indices=[] if sn.node_indices is None else sn.node_indices.tolist())
+        return spec
+
     def _balloon_windkessel_spec(self, slot, monitor, dt):
         if not self._backend.enable_kernel_monitors:
             raise NotImplementedError("BalloonWindkessel requires native monitor collection")
@@ -864,6 +890,15 @@ class CompiledCppSim:
         if not monitors and any(
                 "bw_stream_config" in state for state in snapshot.get("kmon_global_states") or ()):
             raise ValueError("BalloonWindkessel resume requires the compatible global monitors")
+        saved_local_monitors = snapshot.get("kmon_states")
+        step = snapshot.get("step", 0)
+        if isinstance(saved_local_monitors, list) and any(
+                isinstance(state, dict) and "local_window_config" in state
+                for per_subnet in saved_local_monitors if isinstance(per_subnet, list)
+                for state in per_subnet):
+            if ("step" not in snapshot or isinstance(step, bool)
+                    or not isinstance(step, (int, np.integer)) or not 0 <= step <= np.iinfo(np.uint64).max):
+                raise ValueError("C++ Recorder complete windows require an integer snapshot master tick in range")
         states = snapshot["states"]
         self._backend._init_states(
             self._sim, self._analysis, self._network_set, states, self._width)
@@ -872,7 +907,7 @@ class CompiledCppSim:
             if sn.name in buffers:
                 self._sim.set_subnet_buf(
                     i, np.ascontiguousarray(buffers[sn.name], dtype=np.float32))
-        step_offset = int(snapshot.get("step", 0))
+        step_offset = int(step)
         self._sim.set_t_abs(step_offset)
         rng_states = snapshot.get("rng_states")
         if rng_states is not None:
@@ -890,7 +925,7 @@ class CompiledCppSim:
         if snapshot.get("monitor_states") is not None:
             self._bold_states = _copy_monitor_states(
                 snapshot.get("monitor_states"))
-        self._pending_kmon_states = snapshot.get("kmon_states")
+        self._pending_kmon_states = saved_local_monitors
         # Do not restore saved global streams unless global monitors were requested.
         self._pending_kmon_global_states = (
             snapshot.get("kmon_global_states") if monitors else None
@@ -1777,7 +1812,7 @@ class CppHybridBackend:
         return arr.tolist() if arr.size > 0 else []
 
     @staticmethod
-    def _complete_window_istep(m, dt):
+    def _complete_window_istep(m, dt, scope="regional"):
         ticks = float(m.period) / dt
         if np.isfinite(ticks):
             nearest = round(ticks)
@@ -1787,7 +1822,7 @@ class CppHybridBackend:
                     and abs(ticks - nearest) <= 8 * np.spacing(float(nearest))):
                 return nearest
         raise ValueError(
-            f"C++ regional {type(m).__name__} period {m.period!r} must be "
+            f"C++ {scope} {type(m).__name__} period {m.period!r} must be "
             f"commensurate with source dt {dt!r} (a positive integer number of ticks)"
         )
 
@@ -1858,6 +1893,7 @@ class CppHybridBackend:
         is_resuming=False,
         return_snapshot=False,
         complete_window_istep=None,
+        local_window=False,
     ):
         """Build a C++ ``kmon<W>`` spec dict for monitor *m*."""
         import copy
@@ -1881,22 +1917,28 @@ class CppHybridBackend:
             spec = {
                 "slot": int(slot),
                 "istep": complete_window_istep,
-                "complete_window": True,
                 "dt": eff_dt,
             }
+            if local_window:
+                spec.update(local_window=True, cadence_K=cadence_K)
+            else:
+                spec["complete_window"] = True
             if isinstance(m, _REGIONAL_PROJECTION_MONITORS):
                 spec.update(self._regional_projection_spec(m, n_src_v, n_space))
                 return spec
             spec["voi"] = self._monitor_voi_list(m)
             if isinstance(m, SpatialAverage):
                 weights = getattr(m, "spatial_mean", None)
+                if local_window and weights is not None and np.asarray(weights).dtype.kind not in "fiu":
+                    raise ValueError("C++ Recorder SpatialAverage requires real spatial_mean weights")
                 if weights is not None:
                     with np.errstate(over="ignore"):
                         weights = np.asarray(weights, dtype=np.float32, order="C")
                 if (weights is None or weights.ndim != 2 or not weights.shape[0]
                         or weights.shape[1] != n_space or not np.isfinite(weights).all()):
+                    scope = "Recorder" if local_window else "regional"
                     raise ValueError(
-                        "C++ regional SpatialAverage complete windows require finite "
+                        f"C++ {scope} SpatialAverage complete windows require finite "
                         "preconfigured spatial_mean weights with one column per source node"
                     )
                 spec.update(kind=7, spatial_mean=weights)
@@ -2230,6 +2272,7 @@ class CppHybridBackend:
         kernel_collect=None, _skip_init=False, _step_offset=0,
         kernel_persn=None, kernel_global=None, sn_kernel_monitors=None,
         complete_window_isteps=None, balloon_windkessel_specs=None,
+        local_window_specs=None,
         explicit_chunk_size=None, need_tavg=True, need_ctavg=True,
         _return_snapshot=False, rng_mode="numpy",
         _pending_kmon_states=None, _pending_kmon_global_states=None,
@@ -2276,8 +2319,9 @@ class CppHybridBackend:
                 sn_mon_map_idx[si].append(("global_persn", mi))
             if sn_kernel_monitors is not None:
                 for ri, rm in sn_kernel_monitors.get(sn.name, ()):
-                    atts.append(self._monitor_attach_spec(
-                        10000 + ri, rm, n_voi, sn.n_nodes, float(sn.dt),
+                    window = (local_window_specs or {}).get((sn.name, ri))
+                    atts.append(window or self._monitor_attach_spec(
+                        _RECORDER_SLOT_BASE + ri, rm, n_voi, sn.n_nodes, float(sn.dt),
                         cadence_K=sn.k,
                         explicit_chunk_size=None,
                         nstep=int(nstep),
@@ -2345,6 +2389,8 @@ class CppHybridBackend:
             )
 
         # Restore kmon states on resume if provided
+        if _skip_init and local_window_specs and _pending_kmon_states is None:
+            raise ValueError("C++ Recorder complete windows require local monitor snapshot state")
         if _pending_kmon_states is not None:
             sim.set_monitor_states(_pending_kmon_states)
         if _pending_kmon_global_states is not None:

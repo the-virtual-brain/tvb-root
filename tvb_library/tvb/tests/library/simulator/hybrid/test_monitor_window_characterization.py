@@ -416,19 +416,25 @@ def test_public_cpp_global_and_recorder_clocks_differ_for_slow_subnet(route, mon
     sim = HybridSimulator(nets=NetworkSet(subnets=subnets), backend="cpp", simulation_length=9 * DT,
                           monitors=[monitors.TemporalAverage(period=4 * DT)])
     sim.configure()
+    if route == "cpp-host":
+        with pytest.raises(NotImplementedError, match="Recorder complete windows require native collection"):
+            sim.run(initial_conditions=[INITIAL.copy(), INITIAL.copy()])
+        assert lowered == []
+        return
+
     [(times, data)] = sim.run(initial_conditions=[INITIAL.copy(), INITIAL.copy()])
-    assert lowered == (["TemporalAverage", "GlobalAverage"] * 2 if route == "cpp-native" else [])
+    assert sorted(lowered) == ["GlobalAverage", "GlobalAverage", "TemporalAverage", "TemporalAverage"]
     np.testing.assert_array_equal(times, DT * np.array([2, 6]))
     # The global monitor sees held slow states on master ticks 1, 2, 3, 4:
-    # integrated elapsed steps 0, 2, 2, 4. A local recorder sees only 2, 4.
+    # integrated elapsed steps 0, 2, 2, 4. A local Recorder sees only 2, 4.
     expected = np.concatenate((_trajectory([2.5, 6.5]), _trajectory([2, 6])), axis=2)
     assert data.shape == expected.shape
     np.testing.assert_allclose(data, expected, atol=1e-6, rtol=0)
     for index, subnet in enumerate(subnets):
         local_times, local_data = subnet.monitors[0].to_arrays()
-        steps = ([2.5, 6.5] if index == 0 else [3, 7]) if route == "cpp-native" else [4, 8]
-        np.testing.assert_array_equal(local_times, np.asarray(steps) * DT)
-        expected = _reduce("GlobalAverage", _trajectory(steps))
+        np.testing.assert_array_equal(local_times, np.array([2, 6]) * DT)
+        local_mean_steps = [2.5, 6.5] if index == 0 else [3, 7]
+        expected = _reduce("GlobalAverage", _trajectory(local_mean_steps))
         assert local_data.shape == expected.shape
         np.testing.assert_allclose(local_data, expected, atol=1e-6, rtol=0)
 

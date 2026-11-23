@@ -1562,8 +1562,8 @@ static KMonState dict_to_kmon_state(const nb::dict &d) {
   return st;
 }
 
-static KMonState dict_to_staged_state(const nb::dict &d, bool bw) {
-  const std::string label = bw ? "global BW stream: " : "global complete window: ";
+static KMonState dict_to_staged_state(const nb::dict &d, bool bw,
+                                      const std::string &label) {
   for (const char *key : {"slot", "kind", "width", "n_out_v", "n_out_space",
                           "n_out_modes", "accum", "accum_count", "m_step", "run_start"}) {
     if (!d.contains(key))
@@ -1689,6 +1689,31 @@ static void configure_window_projection(kmon<W> &m, const nb::dict &d, int n_nod
   if (!m.has_ref_vec) m.ref_vec.clear();  // Canonical identity for no reference.
 }
 
+static constexpr const char *local_window_label = "Recorder complete window: ";
+static constexpr int recorder_slot_base = 10000;  // Python _RECORDER_SLOT_BASE
+
+static bool local_window_kind(int kind) {
+  return kind == KMON_TAVG || kind == KMON_GLOBAL_AVG || kind == KMON_SPATIAL_AVG;
+}
+
+static bool valid_recorder_clock(double clock, float native) {
+  return std::isfinite(clock) && clock > 0.0 && clock <= std::numeric_limits<float>::max() &&
+         native > 0.0f && (float)clock == native;
+}
+
+static KMonState dict_to_local_window_state(const nb::dict &d, size_t extent) {
+  for (const char *key : {"slot", "kind", "width", "n_out_v", "n_out_space", "n_out_modes",
+                          "m_step", "run_start", "accum_count"}) {
+    if (!d.contains(key) || !PyLong_CheckExact(d[key].ptr()))
+      throw std::runtime_error("Recorder complete window: invalid snapshot integer field");
+  }
+  using Accumulator = nb::ndarray<nb::numpy, const double, nb::ndim<1>, nb::c_contig>;
+  Accumulator acc;
+  if (!d.contains("accum") || !nb::try_cast(d["accum"], acc, false) || acc.size() != extent)
+    throw std::runtime_error("Recorder complete window: invalid snapshot accumulator extent or dtype");
+  return dict_to_staged_state(d, false, local_window_label);
+}
+
 template <int W>
 static void parse_kmon_spec(nb::handle item, int n_src_v, int n_space,
                             int n_cvar, int n_modes, double default_dt,
@@ -1700,6 +1725,8 @@ static void parse_kmon_spec(nb::handle item, int n_src_v, int n_space,
     nb::dict d = nb::cast<nb::dict>(item);
     slot = nb::cast<int>(d["slot"]);
     kind = nb::cast<int>(d["kind"]);
+    if (dict_get_or<bool>(d, "local_window", false))
+      throw std::runtime_error("Recorder complete window requires a local attachment");
     const bool complete_window = dict_get_or<bool>(d, "complete_window", false);
     if (kind == KMON_BOLD_BW_STREAM) {
       if (!global || W != 1 || complete_window ||
@@ -1736,7 +1763,7 @@ static void parse_kmon_spec(nb::handle item, int n_src_v, int n_space,
                                kind != KMON_SPATIAL_AVG && kind != KMON_PROJECTION)))
       throw std::runtime_error("complete_window requires a supported global monitor at width 1");
     auto it = std::find_if(prev.begin(), prev.end(), [&](const kmon<W> &e) {
-      return !e.staged_global() && e.slot == slot && e.kind == kind;
+      return !e.staged_global() && !e.local_window && e.slot == slot && e.kind == kind;
     });
     if (!complete_window && it != prev.end()) {
       out = *it;
@@ -1847,7 +1874,7 @@ static void parse_kmon_spec(nb::handle item, int n_src_v, int n_space,
   if (kind == KMON_BOLD_BW_STREAM)
     throw std::runtime_error("global BW stream requires an explicit native dictionary");
   auto it = std::find_if(prev.begin(), prev.end(), [&](const kmon<W> &e) {
-    return !e.staged_global() && e.slot == slot && e.kind == kind;
+    return !e.staged_global() && !e.local_window && e.slot == slot && e.kind == kind;
   });
   if (it != prev.end()) {
     out = *it;
@@ -1900,6 +1927,66 @@ template <int W> struct simw {
   std::vector<OnlineFeatureAccum<W>> online_accums;  // per-subnet Tier-1 accumulators
   uint64_t t_abs = 0;
 
+  void validate_local_window_source(size_t si, const kmon<W> &m) const {
+    const auto &sub = sn[si];
+    if (sub.K != m.cadence_K || !valid_recorder_clock(m.dt, sub.dt) ||
+        !valid_recorder_clock(m.local_master_dt, dt))
+      throw std::runtime_error("Recorder complete window: incompatible source or master clock");
+  }
+
+  void configure_local_window(size_t si, const nb::dict &d, kmon<W> &m) const {
+    const auto &sub = sn[si];
+    const auto &source = voi_specs[si];
+    const int slot = nb::cast<int>(d["slot"]);
+    const int kind = nb::cast<int>(d["kind"]);
+    const int period = nb::cast<int>(d["istep"]);
+    const uint32_t cadence = nb::cast<uint32_t>(d["cadence_K"]);
+    const double clock = nb::cast<double>(d["dt"]);
+    const double master_clock = nb::cast<double>(d["master_dt"]);
+    const double scheduled_dt = cadence * master_clock;
+    const size_t max_int = (size_t)std::numeric_limits<int>::max();
+    if (W != 1 || sub.n_modes != 1 || sub.n_node < 1 ||
+        source.empty() || source.size() > max_int ||
+        source.size() > obs_row[si].max_size() / (size_t)sub.n_node ||
+        slot < recorder_slot_base || !local_window_kind(kind) || period < 1 || cadence == 0 ||
+        dict_get_or<bool>(d, "complete_window", false))
+      throw std::runtime_error("Recorder complete window: invalid attachment geometry, kind or period");
+    // Match the existing NetworkSet cadence tolerance, and check both stored native clocks.
+    if (cadence != sub.K || !valid_recorder_clock(clock, sub.dt) ||
+        !valid_recorder_clock(master_clock, dt) ||
+        std::abs(clock - scheduled_dt) > 1e-12 + 1e-9 * scheduled_dt)
+      throw std::runtime_error("Recorder complete window: incompatible source or master clock");
+    for (const auto &v : source) {
+      if (v.kind < 0 || v.kind > 1 || v.a < 0 || v.a >= sub.n_svar ||
+          v.b < 0 || v.b >= sub.n_svar)
+        throw std::runtime_error("Recorder complete window: invalid observed VOI source");
+    }
+    const auto voi = to_checked_indices(d["voi"], source.size(), "Recorder complete window", "observed VOI");
+    const size_t n_voi = voi.empty() ? source.size() : voi.size();
+    const size_t max_space = std::min(m.accum.max_size(), m.d_out.max_size()) / n_voi;
+    m.local_window = true;
+    m.local_master_dt = master_clock;
+    m.local_source_name = nb::cast<std::string>(d["source_name"]);
+    m.local_node_indices = nb::cast<std::vector<int64_t>>(d["node_indices"]);
+    if (!m.local_node_indices.empty() && m.local_node_indices.size() != (size_t)sub.n_node)
+      throw std::runtime_error("Recorder complete window: incompatible node order extent");
+    if (kind == KMON_SPATIAL_AVG) {
+      using SpatialMean = nb::ndarray<nb::numpy, const float, nb::ndim<2>, nb::c_contig>;
+      SpatialMean weights;
+      if (!d.contains("spatial_mean") || !nb::try_cast(d["spatial_mean"], weights, false) ||
+          weights.shape(0) == 0 || weights.shape(1) != (size_t)sub.n_node ||
+          weights.shape(0) > max_space || weights.shape(0) > max_int / weights.shape(1))
+        throw std::runtime_error("Recorder complete window: invalid spatial_mean extent or dtype");
+      if (std::any_of(weights.data(), weights.data() + weights.size(),
+                      [](float w) { return !std::isfinite(w); }))
+        throw std::runtime_error("Recorder complete window: nonfinite spatial_mean");
+      m.set_spatial_mean(weights.data(), (int)weights.shape(0), sub.n_node);
+    } else if ((kind == KMON_GLOBAL_AVG ? 1u : (size_t)sub.n_node) > max_space) {
+      throw std::runtime_error("Recorder complete window: output extent out of range");
+    }
+    m.configure_basic(slot, kind, period, clock, (int)source.size(), sub.n_node, 1, voi, cadence);
+  }
+
   void set_monitors(int si, nb::list atts) {
     if (si < 0 || (size_t)si >= sn.size())
       throw std::runtime_error("bad subnet index in set_monitors");
@@ -1914,7 +2001,16 @@ template <int W> struct simw {
     next.reserve(atts.size());
     for (auto item : atts) {
       kmon<W> m;
-      parse_kmon_spec<W>(item, n_voi, n_node, n_cvar, n_modes, def_dt, cur, m);
+      if (nb::isinstance<nb::dict>(item) &&
+          dict_get_or<bool>(nb::cast<nb::dict>(item), "local_window", false)) {
+        configure_local_window((size_t)si, nb::cast<nb::dict>(item), m);
+      } else {
+        parse_kmon_spec<W>(item, n_voi, n_node, n_cvar, n_modes, def_dt, cur, m);
+      }
+      if (std::any_of(next.begin(), next.end(), [&](const auto &other) {
+            return (m.local_window || other.local_window) && other.slot == m.slot;
+          }))
+        throw std::runtime_error("Recorder complete window: duplicate attachment slot");
       next.push_back(std::move(m));
     }
     cur = std::move(next);
@@ -2078,12 +2174,15 @@ template <int W> struct simw {
 
   void set_observed_rows(int si, std::vector<voispec> rows) {
     auto &current = voi_specs[si];
-    if (projection_window_armed() &&
-        !std::equal(current.begin(), current.end(), rows.begin(), rows.end(),
+    if (!std::equal(current.begin(), current.end(), rows.begin(), rows.end(),
                     [](const auto &a, const auto &b) {
                       return a.kind == b.kind && a.a == b.a && a.b == b.b;
-                    }))
-      throw std::runtime_error("global complete window projection: detach before changing observed rows");
+                    })) {
+      if (projection_window_armed())
+        throw std::runtime_error("global complete window projection: detach before changing observed rows");
+      if (std::any_of(mons[si].begin(), mons[si].end(), [](const auto &m) { return m.local_window; }))
+        throw std::runtime_error("Recorder complete window: detach before changing observed rows");
+    }
     current = std::move(rows);
   }
 
@@ -2159,13 +2258,33 @@ template <int W> struct simw {
     return out;
   }
 
+  nb::tuple local_window_config(size_t si, const kmon<W> &m) const {
+    nb::list observations;
+    for (const auto &v : voi_specs[si])
+      observations.append(nb::make_tuple(v.kind, v.a, v.b));
+    const auto &sub = sn[si];
+    return nb::make_tuple(1, si, m.slot, m.kind, m.local_source_name, m.dt, m.local_master_dt,
+                          m.cadence_K, m.istep, m.voi, observations,
+                          sub.n_svar, sub.n_node, sub.n_modes, m.local_node_indices,
+                          m.sm_row_ptr, m.sm_col_idx, m.sm_val);
+  }
+
   nb::list get_monitor_states() const {
     nb::list per_sn;
     for (size_t si = 0; si < sn.size(); si++) {
       nb::list ms;
       if (si < mons.size()) {
-        for (const auto &m : mons[si])
-          ms.append(kmon_state_to_dict(m.export_state()));
+        for (const auto &m : mons[si]) {
+          if (m.local_window) validate_local_window_source(si, m);
+          KMonState st = m.export_state();
+          nb::dict d = kmon_state_to_dict(st);
+          if (m.local_window) {
+            m.validate_local_window_state(st, t_abs);
+            d["local_window_config"] = local_window_config(si, m);
+            d["local_window_phase"] = t_abs % m.cadence_K;
+          }
+          ms.append(d);
+        }
       }
       per_sn.append(ms);
     }
@@ -2173,22 +2292,72 @@ template <int W> struct simw {
   }
 
   void set_monitor_states(nb::list states) {
+    std::vector<std::pair<kmon<W> *, KMonState>> staged;
+    for (size_t si = 0; si < states.size(); ++si) {
+      nb::list ms = nb::cast<nb::list>(states[si]);
+      for (auto item : ms) {
+        nb::dict d = nb::cast<nb::dict>(item);
+        const int slot = dict_get_or<int>(d, "slot", -1);
+        const int kind = dict_get_or<int>(d, "kind", 0);
+        if (!d.contains("local_window_config")) {
+          // The reserved Recorder slots distinguish historical local windows from global
+          // monitors routed through the legacy per-subnet collector.
+          if (d.contains("local_window_phase") || (slot >= recorder_slot_base && local_window_kind(kind)))
+            throw std::runtime_error("Recorder complete window: historical snapshot monitor");
+          continue;
+        }
+        if (si >= mons.size())
+          throw std::runtime_error("Recorder complete window: unmatched snapshot subnet");
+        auto it = std::find_if(mons[si].begin(), mons[si].end(), [&](const auto &m) {
+          return m.local_window && m.slot == slot && m.kind == kind;
+        });
+        if (it == mons[si].end())
+          throw std::runtime_error("Recorder complete window: unmatched snapshot monitor");
+        if (std::any_of(staged.begin(), staged.end(), [&](const auto &entry) { return entry.first == &*it; }))
+          throw std::runtime_error("Recorder complete window: duplicate snapshot monitor");
+        validate_local_window_source(si, *it);
+        const int equal = PyObject_RichCompareBool(d["local_window_config"].ptr(),
+                                                    local_window_config(si, *it).ptr(), Py_EQ);
+        if (equal < 0) throw nb::python_error();
+        if (!equal)
+          throw std::runtime_error("Recorder complete window: incompatible snapshot configuration");
+        if (!d.contains("local_window_phase") || !PyLong_CheckExact(d["local_window_phase"].ptr()) ||
+            nb::cast<uint32_t>(d["local_window_phase"]) != t_abs % it->cadence_K)
+          throw std::runtime_error("Recorder complete window: invalid snapshot master cadence phase");
+        KMonState st = dict_to_local_window_state(d, it->accum.size());
+        it->validate_local_window_state(st, t_abs);
+        staged.emplace_back(&*it, std::move(st));
+      }
+    }
+    for (const auto &monitors : mons) {
+      for (const auto &m : monitors) {
+        if (m.local_window && std::none_of(staged.begin(), staged.end(), [&](const auto &entry) {
+              return entry.first == &m;
+            }))
+          throw std::runtime_error("Recorder complete window: missing compatible snapshot monitor");
+      }
+    }
+
+    // Preserve legacy matching and position fallback, but never across the staged boundary.
     const size_t n = std::min(states.size(), mons.size());
     for (size_t si = 0; si < n; si++) {
       nb::list ms = nb::cast<nb::list>(states[si]);
       for (size_t mi = 0; mi < ms.size(); mi++) {
-        KMonState st = dict_to_kmon_state(nb::cast<nb::dict>(ms[mi]));
+        nb::dict d = nb::cast<nb::dict>(ms[mi]);
+        if (d.contains("local_window_config")) continue;
+        KMonState st = dict_to_kmon_state(d);
         auto it = std::find_if(mons[si].begin(), mons[si].end(),
                                [&](const kmon<W> &m) {
-                                 return m.slot == st.slot && m.kind == st.kind;
+                                 return !m.local_window && m.slot == st.slot && m.kind == st.kind;
                                });
         if (it != mons[si].end()) {
           it->import_state(st);
-        } else if (mi < mons[si].size()) {
+        } else if (mi < mons[si].size() && !mons[si][mi].local_window) {
           mons[si][mi].import_state(st);
         }
       }
     }
+    for (auto &[monitor, state] : staged) monitor->commit_validated_state(state);
   }
 
   nb::list get_global_monitor_states() const {
@@ -2229,7 +2398,7 @@ template <int W> struct simw {
       const char *label = bw ? "global BW stream: " : "global complete window: ";
       if (bw && d.contains("window_config"))
         throw std::runtime_error("global BW stream: ambiguous snapshot identity");
-      KMonState st = dict_to_staged_state(d, bw);
+      KMonState st = dict_to_staged_state(d, bw, label);
       auto it = std::find_if(global_mons.begin(), global_mons.end(),
                              [&](const auto &m) {
                                return (bw ? m.bw_stream() : m.complete_window) &&
@@ -2492,13 +2661,27 @@ template <int W> struct simw {
         throw std::runtime_error(gm.bw_stream() ? "global BW stream: run exceeds remaining tick range"
                                               : "global complete window: run exceeds remaining tick range");
     }
+    for (size_t si = 0; si < mons.size(); ++si) {
+      for (const auto &m : mons[si]) {
+        if (!m.local_window) continue;
+        validate_local_window_source(si, m);
+        if (m.run_start != 0 || m.m_step != t_abs / m.cadence_K ||
+            m.accum_count != m.m_step % (uint64_t)m.istep)
+          throw std::runtime_error("Recorder complete window: reset or restore at the simulator clock before run");
+        if (nstep < 0 || (uint64_t)nstep > std::numeric_limits<uint64_t>::max() - t_abs)
+          throw std::runtime_error("Recorder complete window: run exceeds tick range");
+      }
+    }
     const int cs = chunk_size > 0 ? chunk_size : tavg_period;
     const int rem = nstep % cs;
     const int n_chunks = nstep / cs + (rem > 0);
     const size_t n_sn = sn.size();
     monitor_begin_call();
     for (size_t s = 0; s < mons.size(); s++) {
-      for (auto &mon : mons[s]) mon.reserve_for_steps(nstep);
+      for (auto &mon : mons[s]) {
+        if (mon.local_window) mon.reserve_local_window(t_abs, t_abs + (uint64_t)nstep);
+        else mon.reserve_for_steps(nstep);
+      }
     }
     for (auto &gm : global_mons) gm.reserve_for_steps(nstep);
 
