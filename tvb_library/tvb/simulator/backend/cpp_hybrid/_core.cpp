@@ -1701,6 +1701,33 @@ static bool valid_recorder_clock(double clock, float native) {
          native > 0.0f && (float)clock == native;
 }
 
+// Walk the exported schema and compare only exact built-in scalar leaves.
+static bool equal_local_window_config(PyObject *actual, PyObject *expected) {
+  if (PyTuple_CheckExact(expected)) {
+    if (!PyTuple_CheckExact(actual) || PyTuple_Size(actual) != PyTuple_Size(expected))
+      return false;
+    for (Py_ssize_t i = 0, n = PyTuple_Size(expected); i < n; ++i)
+      if (!equal_local_window_config(PyTuple_GetItem(actual, i), PyTuple_GetItem(expected, i)))
+        return false;
+    return true;
+  }
+  if (PyList_CheckExact(expected)) {
+    if (!PyList_CheckExact(actual) || PyList_Size(actual) != PyList_Size(expected))
+      return false;
+    for (Py_ssize_t i = 0, n = PyList_Size(expected); i < n; ++i)
+      if (!equal_local_window_config(PyList_GetItem(actual, i), PyList_GetItem(expected, i)))
+        return false;
+    return true;
+  }
+  if (!((PyLong_CheckExact(expected) && PyLong_CheckExact(actual)) ||
+        (PyFloat_CheckExact(expected) && PyFloat_CheckExact(actual)) ||
+        (PyUnicode_CheckExact(expected) && PyUnicode_CheckExact(actual))))
+    return false;
+  const int equal = PyObject_RichCompareBool(actual, expected, Py_EQ);
+  if (equal < 0) throw nb::python_error();
+  return equal != 0;
+}
+
 static KMonState dict_to_local_window_state(const nb::dict &d, size_t extent) {
   for (const char *key : {"slot", "kind", "width", "n_out_v", "n_out_space", "n_out_modes",
                           "m_step", "run_start", "accum_count"}) {
@@ -2292,53 +2319,68 @@ template <int W> struct simw {
   }
 
   void set_monitor_states(nb::list states) {
+    const bool strict = std::any_of(mons.begin(), mons.end(), [](const auto &monitors) {
+      return std::any_of(monitors.begin(), monitors.end(), [](const auto &m) { return m.local_window; });
+    });
     std::vector<std::pair<kmon<W> *, KMonState>> staged;
     for (size_t si = 0; si < states.size(); ++si) {
       nb::list ms = nb::cast<nb::list>(states[si]);
       for (auto item : ms) {
         nb::dict d = nb::cast<nb::dict>(item);
+        const bool window = d.contains("local_window_config");
+        if (strict) {
+          for (const char *key : {"slot", "kind", "width", "n_out_v", "n_out_space", "n_out_modes"})
+            if (!d.contains(key) || !PyLong_CheckExact(d[key].ptr()))
+              throw std::runtime_error("Recorder complete window: invalid snapshot identity or geometry");
+        }
         const int slot = dict_get_or<int>(d, "slot", -1);
         const int kind = dict_get_or<int>(d, "kind", 0);
-        if (!d.contains("local_window_config")) {
+        if (!window) {
           // The reserved Recorder slots distinguish historical local windows from global
           // monitors routed through the legacy per-subnet collector.
           if (d.contains("local_window_phase") || (slot >= recorder_slot_base && local_window_kind(kind)))
             throw std::runtime_error("Recorder complete window: historical snapshot monitor");
-          continue;
+          if (!strict) continue;
         }
         if (si >= mons.size())
           throw std::runtime_error("Recorder complete window: unmatched snapshot subnet");
-        auto it = std::find_if(mons[si].begin(), mons[si].end(), [&](const auto &m) {
-          return m.local_window && m.slot == slot && m.kind == kind;
-        });
-        if (it == mons[si].end())
-          throw std::runtime_error("Recorder complete window: unmatched snapshot monitor");
+        const auto matches = [&](const auto &m) { return m.slot == slot && m.kind == kind; };
+        auto it = std::find_if(mons[si].begin(), mons[si].end(), matches);
+        if (it == mons[si].end() || it->local_window != window ||
+            std::find_if(std::next(it), mons[si].end(), matches) != mons[si].end())
+          throw std::runtime_error("Recorder complete window: unmatched or ambiguous snapshot monitor");
         if (std::any_of(staged.begin(), staged.end(), [&](const auto &entry) { return entry.first == &*it; }))
           throw std::runtime_error("Recorder complete window: duplicate snapshot monitor");
-        validate_local_window_source(si, *it);
-        const int equal = PyObject_RichCompareBool(d["local_window_config"].ptr(),
-                                                    local_window_config(si, *it).ptr(), Py_EQ);
-        if (equal < 0) throw nb::python_error();
-        if (!equal)
-          throw std::runtime_error("Recorder complete window: incompatible snapshot configuration");
-        if (!d.contains("local_window_phase") || !PyLong_CheckExact(d["local_window_phase"].ptr()) ||
-            nb::cast<uint32_t>(d["local_window_phase"]) != t_abs % it->cadence_K)
-          throw std::runtime_error("Recorder complete window: invalid snapshot master cadence phase");
-        KMonState st = dict_to_local_window_state(d, it->accum.size());
-        it->validate_local_window_state(st, t_abs);
-        staged.emplace_back(&*it, std::move(st));
+        if (window) {
+          validate_local_window_source(si, *it);
+          if (!equal_local_window_config(d["local_window_config"].ptr(), local_window_config(si, *it).ptr()))
+            throw std::runtime_error("Recorder complete window: incompatible snapshot configuration");
+          if (!d.contains("local_window_phase") || !PyLong_CheckExact(d["local_window_phase"].ptr()) ||
+              nb::cast<uint32_t>(d["local_window_phase"]) != t_abs % it->cadence_K)
+            throw std::runtime_error("Recorder complete window: invalid snapshot master cadence phase");
+          KMonState st = dict_to_local_window_state(d, it->accum.size());
+          it->validate_local_window_state(st, t_abs);
+          staged.emplace_back(&*it, std::move(st));
+        } else {
+          KMonState st = dict_to_kmon_state(d);
+          it->validate_legacy_sibling_state(st, local_window_label);
+          staged.emplace_back(&*it, std::move(st));
+        }
       }
     }
-    for (const auto &monitors : mons) {
-      for (const auto &m : monitors) {
-        if (m.local_window && std::none_of(staged.begin(), staged.end(), [&](const auto &entry) {
-              return entry.first == &m;
-            }))
-          throw std::runtime_error("Recorder complete window: missing compatible snapshot monitor");
+    if (strict) {
+      // Every attached local monitor must match once before any state or output is changed.
+      for (const auto &monitors : mons) {
+        for (const auto &m : monitors) {
+          if (std::none_of(staged.begin(), staged.end(), [&](const auto &entry) { return entry.first == &m; }))
+            throw std::runtime_error("Recorder complete window: missing compatible snapshot monitor");
+        }
       }
+      for (auto &[monitor, state] : staged) monitor->commit_validated_state(state);
+      return;
     }
 
-    // Preserve legacy matching and position fallback, but never across the staged boundary.
+    // Keep historical matching and position fallback for legacy-only restores.
     const size_t n = std::min(states.size(), mons.size());
     for (size_t si = 0; si < n; si++) {
       nb::list ms = nb::cast<nb::list>(states[si]);
@@ -2357,7 +2399,6 @@ template <int W> struct simw {
         }
       }
     }
-    for (auto &[monitor, state] : staged) monitor->commit_validated_state(state);
   }
 
   nb::list get_global_monitor_states() const {

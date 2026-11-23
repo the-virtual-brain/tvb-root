@@ -256,6 +256,92 @@ def test_recorder_window_native_restore_validates_all_before_commit(cpp):
     assert sim._sim.t_abs() == 8
 
 
+@pytest.mark.parametrize("change,error", [
+    ("width", "incompatible sibling snapshot geometry"),
+    ("space", "incompatible sibling snapshot geometry"),
+    ("buffer", "incompatible sibling snapshot buffers"),
+    ("slot", "unmatched or ambiguous snapshot monitor"),
+    ("duplicate", "duplicate snapshot monitor"),
+    ("missing", "missing compatible snapshot monitor"),
+])
+def test_recorder_window_native_restore_rejects_bad_legacy_sibling_without_committing(cpp, change, error):
+    sim = cpp.CppHybridBackend().compile(_network())
+    sim.run(7, initial_states=INITIAL, subnet_monitors=_specs(points=True))
+    state = sim._sim.get_monitor_states()
+    corrupted = deepcopy(state)
+    corrupted[0][0]["accum"][0] += 50  # valid open-window change
+    point = corrupted[0].pop(3)
+    point["m_step"] += 2  # valid legacy counter change, before the bad sibling
+    corrupted[0].insert(0, point)
+    slow = corrupted[1]
+    if change == "width":
+        slow[-1]["width"] += 1
+    elif change == "space":
+        slow[-1]["n_out_space"] += 1
+    elif change == "buffer":
+        slow[-1]["accum"] = np.zeros(1)  # point monitors have no accumulator
+    elif change == "slot":
+        slow[-1]["slot"] += 100  # the same-kind positional fallback must not run
+    elif change == "duplicate":
+        slow.append(deepcopy(slow[-1]))
+    elif change == "missing":
+        slow.pop()
+    with pytest.raises(RuntimeError, match=error):
+        sim._sim.set_monitor_states(corrupted)
+    np.testing.assert_equal(sim._sim.get_monitor_states(), state)
+    assert sim._sim.t_abs() == 7
+
+
+def test_recorder_window_native_restore_commits_reordered_mixed_set(cpp):
+    sim = cpp.CppHybridBackend().compile(_network())
+    sim.run(7, initial_states=INITIAL, subnet_monitors=_specs(points=True))
+    expected = sim._sim.get_monitor_states()
+    expected[0][0]["accum"][0] += 50
+    expected[0][3]["m_step"] += 2
+    sim._sim.set_monitor_states([list(reversed(local)) for local in expected])
+    np.testing.assert_equal(sim._sim.get_monitor_states(), expected)
+
+
+@pytest.mark.parametrize("change", ["bool-version", "float-version", "nested-tuple", "nested-int",
+                                    "nested-float", "container-equality", "scalar-equality"])
+def test_recorder_window_native_restore_requires_builtin_config_schema(cpp, change):
+    sim = cpp.CppHybridBackend().compile(_network())
+    sim.run(7, initial_states=INITIAL, subnet_monitors=_specs())
+    state = sim._sim.get_monitor_states()
+    corrupted = deepcopy(state)
+    saved = corrupted[1][-1]
+    config = list(saved["local_window_config"])
+    comparisons = []
+
+    class EqualScalar(int):
+        def __eq__(self, other):
+            comparisons.append(other)
+            return True
+
+    class EqualContainer(tuple):
+        def __eq__(self, other):
+            comparisons.append(other)
+            return True
+
+    if change == "bool-version":
+        config[0] = True
+    elif change == "float-version":
+        config[0] = 1.0
+    elif change == "nested-tuple":
+        config[10][0] = list(config[10][0])  # an observation is a tuple
+    elif change == "nested-int":
+        config[9][0] = bool(config[9][0])  # the VOI index is an int
+    elif change == "nested-float":
+        config[-1][0] = np.float64(config[-1][0])  # weights are built-in floats
+    elif change == "scalar-equality":
+        config[9][0] = EqualScalar(config[9][0])
+    saved["local_window_config"] = EqualContainer(config) if change == "container-equality" else tuple(config)
+    with pytest.raises(RuntimeError, match="incompatible snapshot configuration"):
+        sim._sim.set_monitor_states(corrupted)
+    assert not comparisons
+    np.testing.assert_equal(sim._sim.get_monitor_states(), state)
+
+
 def test_recorder_window_rejects_live_observation_and_clock_changes(cpp):
     sim = cpp.CppHybridBackend().compile(_network())
     sim.run(7, initial_states=INITIAL, subnet_monitors=_specs())
