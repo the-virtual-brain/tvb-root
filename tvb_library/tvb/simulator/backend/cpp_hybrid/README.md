@@ -326,6 +326,16 @@ spatial operator; a neural-only resume can omit global monitors as before.
 These windows do not consume local Recorder streams, and companion point
 samplers keep their endpoint behavior and existing chunk restrictions.
 
+When a generic global `Projection` shares this gather, compiled/public runs
+attach its current operator instead of reusing the previous slot's attachment.
+`CompiledCppSim.resume` also requires the mixed checkpoint's Projection
+sidecar to match the effective gain, reference vector, tick period and ordered
+VOIs. The staged co-clock checkpoint checks the shared gather identity before
+committing global monitor state. Older mixed checkpoints without the sidecar
+cannot resume with these monitors requested. Bare native checkpoint calls do
+not check the legacy Projection operator's identity, and standalone generic
+Projection eligibility and resume are unchanged.
+
 Mixed-rate, missing-index, heterogeneous-observation, wider and multimode
 layouts, host collection and unprepared `SpatialAverage` remain on their
 preexisting routes, not this complete-window policy. Neither the generic

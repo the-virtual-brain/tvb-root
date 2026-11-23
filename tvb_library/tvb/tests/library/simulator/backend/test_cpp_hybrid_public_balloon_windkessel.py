@@ -2,6 +2,7 @@
 
 from collections import UserList
 from dataclasses import asdict
+from hashlib import sha256
 
 import numpy as np
 import pytest
@@ -185,9 +186,21 @@ def test_bw_projection_sidecar_only_fingerprints_unstaged_companion(cpp):
     legacy = _projection(monitors.Projection)
     mons = [_monitor(), _projection(), legacy]
     _, snapshot = be.compile(net).run(7, monitors=mons, initial_states=[INITIAL], return_snapshot=True)
-    assert set(snapshot["bw_projection_identities"]) == {2}
+    gain = np.array([[1., 2., 0.], [0., 1., -1.]], dtype="<f4")
+    assert snapshot["bw_projection_identities"] == {
+        2: (8, 1, DT, (0,), ((2, 3), sha256(gain).hexdigest()), None),
+    }
+    assert "coclock_projection_identities" not in snapshot
     assert "window_config" not in snapshot["kmon_global_states"][2]
-    be.compile(net).resume(snapshot, 9, monitors=mons)
+    assert snapshot["kmon_global_states"][2]["accum_count"] == 7
+
+    [(bw_t, bw_x)], _, [(proj_t, proj_x)] = be.compile(net).resume(snapshot, 9, monitors=mons)
+    expected_t, _, expected_bw = _oracle(16)
+    np.testing.assert_array_equal(bw_t, expected_t)
+    np.testing.assert_allclose(bw_x[:, 0, :, 0], expected_bw, atol=1e-10, rtol=1e-7)
+    means = INITIAL[1, :, 0] + np.array([4.5, 12.5])[:, None] * DT * SLOPE[1, :, 0]
+    np.testing.assert_array_equal(proj_t, [11.25, 31.25])
+    np.testing.assert_allclose(proj_x[:, 0, :, 0], means @ gain.T, atol=1e-7, rtol=0)
     legacy.gain[0, 0] += 1
     with pytest.raises(ValueError, match="matching Projection snapshot identities"):
         be.compile(net).resume(snapshot, 9, monitors=mons)

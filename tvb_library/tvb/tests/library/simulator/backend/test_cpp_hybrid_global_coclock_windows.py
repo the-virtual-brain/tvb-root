@@ -152,6 +152,83 @@ def test_coclock_global_windows_checked_resume_and_fresh_reset(cpp):
     _assert_streams(_unpack_global(fresh), _oracle(5, m=1, weights=changed[-1].spatial_mean))
 
 
+PROJECTION_GAIN = np.array([[0.25, 0, -0.5, 0.125, 0.25], [0, -0.5, 0, 0.5, 0.25]])
+PROJECTION_REF = np.array([0.25, 0.75])
+
+
+def _mixed_windows():
+    projection = monitors.Projection(period=4 * DT, variables_of_interest=np.array([1, 0]),
+                                     obsnoise=None)
+    projection.gain = PROJECTION_GAIN.copy()
+    projection._ref_vec = PROJECTION_REF.copy()
+    return [_windows()[0], projection]
+
+
+def _mixed_oracle(stop, *, start=0, gain=PROJECTION_GAIN):
+    closes = np.arange(start // 4 + 1, stop // 4 + 1) * 4
+    means = _regional(closes[:, None] - np.arange(4)).mean(axis=1)
+    projected = np.einsum("an,tvnm->tvam", gain, means)
+    projected -= np.einsum("a,tvam->tvm", PROJECTION_REF, projected)[:, :, None, :]
+    # Generic Projection retains the legacy mean-of-post-step timestamp.
+    return [((closes - 2) * DT, means), ((closes - 1.5) * DT, projected)]
+
+
+def test_coclock_global_projection_rearms_changed_gain_and_resumes_open_window(cpp):
+    be = cpp.CppHybridBackend()
+    compiled, requested = be.compile(_network()), _mixed_windows()
+    first, snapshot = compiled.run(7, monitors=requested, initial_states=INITIAL, return_snapshot=True)
+    _assert_streams(_unpack_global(first), _mixed_oracle(7))
+    window, projection = snapshot["kmon_global_states"]
+    assert window["accum_count"] == projection["accum_count"] == 3
+    assert set(snapshot["coclock_projection_identities"]) == {1}
+    assert "bw_projection_identities" not in snapshot
+
+    requested[1].gain *= -2
+    fresh = compiled.run(11, monitors=requested, initial_states=INITIAL)
+    _assert_streams(_unpack_global(fresh), _mixed_oracle(11, gain=-2 * PROJECTION_GAIN))
+    for target in (be.compile(_network()), compiled):
+        continued = target.resume(snapshot, 4, monitors=_mixed_windows())
+        _assert_streams(_unpack_global(continued), _mixed_oracle(11, start=7))
+
+    _, neural = compiled.resume(snapshot, 4, return_snapshot=True)
+    assert neural["step"] == 11 and neural["kmon_global_states"] == []
+    assert "coclock_projection_identities" not in neural
+    for i, state in enumerate(neural["states"]):
+        np.testing.assert_allclose(state, _post_update(i, 11), rtol=0, atol=1e-6)
+
+
+@pytest.mark.parametrize("change", ["gain", "reference", "period", "voi-order", "missing-sidecar", "mapping"])
+def test_coclock_global_projection_rejects_changed_requested_resume(cpp, change):
+    be = cpp.CppHybridBackend()
+    _, snapshot = be.compile(_network()).run(7, monitors=_mixed_windows(),
+                                             initial_states=INITIAL, return_snapshot=True)
+    requested = _mixed_windows()
+    projection = requested[1]
+    net = _network()
+    if change == "gain":
+        projection.gain[0, 0] += 0.5
+    elif change == "reference":
+        projection._ref_vec[:] = [0.75, 0.25]
+    elif change == "period":
+        projection.period = 3 * DT
+    elif change == "voi-order":
+        projection.variables_of_interest = np.array([0, 1])
+    elif change == "missing-sidecar":
+        snapshot.pop("coclock_projection_identities")
+    elif change == "mapping":
+        net = _network(maps=((0, 3), NODE_INDICES[1]))
+
+    target = be.compile(net)
+    error, message = ((RuntimeError, "global co-clock complete window: incompatible snapshot configuration")
+                      if change == "mapping" else
+                      (ValueError, "co-clock global complete windows resume requires matching Projection"))
+    with pytest.raises(error, match=message):
+        target.resume(snapshot, 4, monitors=requested)
+    assert target._sim.t_abs() == 7  # initialization, but no integration
+    if change != "mapping":
+        assert target._sim.get_global_monitor_states() == []  # no attachment/import on a fresh target
+
+
 @pytest.mark.parametrize("change", ["mapping", "source-name", "source-order", "observed-order",
                                     "missing-mapping", "operator", "voi", "period", "missing-request", "point-only"])
 def test_coclock_global_windows_reject_changed_requested_resume(cpp, change):
