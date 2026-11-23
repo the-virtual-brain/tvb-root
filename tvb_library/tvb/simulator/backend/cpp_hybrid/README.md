@@ -295,8 +295,8 @@ These Recorder windows do not fall back to the host collector. For cadence
 `K`, a window of `m` post-update samples closing at local tick `j` is released
 at master tick `j*K` with timestamp `(j - m/2)*subnet.dt`.
 Continue open windows across native calls, but do not emit incomplete tails.
-Raw and subsampled point times are unchanged; this profile does not include
-`AfferentCouplingTemporalAverage` or simulator-level multi-subnet windows.
+Raw and subsampled point times are unchanged; this local profile does not include
+`AfferentCouplingTemporalAverage`.
 
 Start each fresh run at origin zero. For `CompiledCppSim.resume`, supply a
 checkpoint with the same local window Recorder slots and effective source and
@@ -304,6 +304,32 @@ monitor definitions; historical local-window checkpoints are not compatible.
 The public façade replaces Recorder buffers on each run. It does not append or
 resume runs, and a Recorder with no completed window has zero recorded rows
 and no allocated arrays.
+
+### Native co-clock global complete windows
+
+Simulator-level `TemporalAverage`, `GlobalAverage` and prepared `SpatialAverage`
+use a native gather across multiple subnetworks at width 1, one source mode,
+and one common declared master/source clock (`K=1` for every source). The
+sources must have compatible observed VOI definitions in the same order and
+provide explicit `node_indices` forming a complete, disjoint permutation of
+`0..total_nodes-1`. `TemporalAverage` retains that canonical node axis;
+`GlobalAverage` averages over all nodes, not over subnet averages;
+`SpatialAverage` takes a prepared finite `spatial_mean` matrix with columns in
+canonical node order. Output VOIs follow the order requested by the monitor.
+
+A period of `m` integer master ticks consumes the post-update rows. Its output
+is released at closing tick `j` and stamped `(j - m/2)*dt`. Native chunks do
+not change window phase, and incomplete tails are not emitted. Fresh runs
+start at tick zero. Resume with the same requested global set requires a
+checkpoint matching the gather, source observations, period, VOI order, and
+spatial operator; a neural-only resume can omit global monitors as before.
+These windows do not consume local Recorder streams, and companion point
+samplers keep their endpoint behavior and existing chunk restrictions.
+
+Mixed-rate, missing-index, heterogeneous-observation, wider and multimode
+layouts, host collection and unprepared `SpatialAverage` remain on their
+preexisting routes, not this complete-window policy. Neither the generic
+merge rules nor the BW or projection placement rules are changed.
 
 ## Tests
 
@@ -314,6 +340,7 @@ python -m pytest tvb/tests/library/simulator/backend/test_cpp_hybrid_core.py \
                  tvb/tests/library/simulator/backend/test_cpp_hybrid_models.py \
                  tvb/tests/library/simulator/backend/test_cpp_hybrid_coupling.py \
                  tvb/tests/library/simulator/backend/test_cpp_hybrid_monitors.py \
+                 tvb/tests/library/simulator/backend/test_cpp_hybrid_global_coclock_windows.py \
                  tvb/tests/library/simulator/backend/test_cpp_hybrid_stimuli.py \
                  tvb/tests/library/simulator/backend/test_cpp_hybrid_parity.py \
                  tvb/tests/library/simulator/backend/test_cpp_hybrid_sweep.py \

@@ -490,6 +490,7 @@ class CompiledCppSim:
         should_merge = (n_sn > 1) and _can_merge_subnets(self._analysis.subnets)
         kernel_global_specs = []   # (mi, m) attached via set_global_monitors
         complete_window_isteps: dict[int, int] = {}
+        coclock_gather = None
         balloon_windkessel_specs = {}
         kernel_persn_specs = []    # (mi, m) attached via set_monitors(si, ...)
         py_global_indices = set()
@@ -520,8 +521,22 @@ class CompiledCppSim:
                     kernel_global_specs.append((mi, m))
                     kernel_mon_indices.add(mi)
                     continue
-                # Multi-subnet averages remain on the unstaged route until their
-                # source topology and clock policy are covered.
+                if (n_sn > 1 and self._backend.enable_kernel_monitors
+                        and self._width == kwargs.get("width", 1) == 1
+                        and isinstance(m, (TemporalAverage, GlobalAverage, SpatialAverage))
+                        and not isinstance(m, AfferentCouplingTemporalAverage)
+                        and (not isinstance(m, SpatialAverage)
+                             or getattr(m, "spatial_mean", None) is not None)
+                        and not (isinstance(m, TemporalAverage) and self._bold_states and any(
+                            k[0] == "temporal_average" and k[1] == mi for k in self._bold_states))):
+                    if coclock_gather is None:
+                        coclock_gather = self._coclock_window_gather(dt)
+                    if coclock_gather:
+                        complete_window_isteps[mi] = self._backend._complete_window_istep(
+                            m, dt, scope="co-clock global")
+                        kernel_global_specs.append((mi, m))
+                        kernel_mon_indices.add(mi)
+                        continue
                 if (n_sn == 1
                         and isinstance(m, (TemporalAverage, GlobalAverage, SpatialAverage))
                         and not isinstance(m, AfferentCouplingTemporalAverage)):
@@ -671,6 +686,7 @@ class CompiledCppSim:
             kernel_persn=kernel_persn_specs,
             kernel_global=kernel_global_specs,
             complete_window_isteps=complete_window_isteps,
+            coclock_gather=coclock_gather,
             local_window_specs=local_window_specs,
             balloon_windkessel_specs=balloon_windkessel_specs,
             sn_kernel_monitors=sn_kernel_specs if sn_mons_map is not None else None,
@@ -789,13 +805,19 @@ class CompiledCppSim:
                     )) else m)
                     for mi, m in enumerate(monitors)
                 ]
+                host_shortcuts = kernel_streams
+                if coclock_gather:
+                    # Already-gathered streams cannot be indexed per source by Raw.
+                    global_slots = {slot for slot, _ in kernel_global_specs}
+                    host_shortcuts = {mi: stream for mi, stream in kernel_streams.items()
+                                      if mi not in global_slots}
                 outputs = _apply_monitors(
                     outputs, proxy_mons, dt, chunk_size=chunk_size,
                     monitor_data=None, subnet_infos=self._analysis.subnetworks,
                     bold_states=self._bold_states,
                     bold_raw_outputs=bold_raw_outputs,
                     temporal_raw_outputs=temporal_raw_outputs,
-                    kernel_streams=kernel_streams or None,
+                    kernel_streams=host_shortcuts or None,
                 )
                 for mi, stream in kernel_streams.items():
                     outputs[mi] = stream
@@ -832,6 +854,46 @@ class CompiledCppSim:
         if subnet_monitors is not None:
             return outputs, snap, subnet_results
         return outputs, snap
+
+    def _coclock_window_gather(self, dt):
+        sources = self._analysis.subnets
+        declared = self._network_set.subnets
+        indices = [sn.node_indices for sn in declared]
+        if (dt != self._analysis.dt or any(ix is None for ix in indices)
+                or any(float(sn.scheme.dt) != dt for sn in declared)
+                or any(sn.k != 1 or sn.dt != dt or sn.n_modes != 1 for sn in sources)):
+            return []
+
+        # Native observation triples must agree, and so must the names of the
+        # state components they refer to (equal offsets alone do not suffice).
+        def observation_terms(sn):
+            names = tuple(map(str, sn.model.state_variables))
+            return [names[a] if kind == 0 else f"{names[a]}-{names[b]}"
+                    for kind, a, b in zip(sn.voi[::3], sn.voi[1::3], sn.voi[2::3])]
+
+        first = sources[0]
+        observed_terms = observation_terms(first)
+        if not observed_terms or any(sn.voi != first.voi or observation_terms(sn) != observed_terms
+                                     for sn in sources[1:]):
+            return []
+
+        total_nodes = sum(sn.n_nodes for sn in sources)
+        if total_nodes > np.iinfo(np.int32).max:
+            raise ValueError("C++ co-clock global complete windows: node gather extent out of range")
+        gather = []
+        seen = set()
+        for sn, ix in zip(sources, indices):
+            ix = np.asarray(ix)
+            if (sn.n_nodes < 1 or ix.shape != (sn.n_nodes,) or ix.dtype.kind not in "iu"
+                    or np.any(ix < 0) or np.any(ix >= total_nodes)):
+                raise ValueError("C++ co-clock global complete windows: invalid node_indices")
+            nodes = ix.tolist()
+            seen.update(nodes)
+            gather.append(dict(n_voi=len(observed_terms), n_node=sn.n_nodes, node_indices=nodes,
+                               source_name=sn.name, source_dt=sn.dt, observed_terms=observed_terms))
+        if len(seen) != total_nodes:
+            raise ValueError("C++ co-clock global complete windows require complete, disjoint node_indices")
+        return gather
 
     def _recorder_window_spec(self, sn, index, monitor):
         if not self._backend.enable_kernel_monitors or self._width != 1 or sn.n_modes != 1:
@@ -892,6 +954,11 @@ class CompiledCppSim:
             raise ValueError("BalloonWindkessel resume requires the compatible global monitors")
         saved_local_monitors = snapshot.get("kmon_states")
         step = snapshot.get("step", 0)
+        if monitors and any(isinstance(state, dict) and "coclock_window_config" in state
+                            for state in snapshot.get("kmon_global_states") or ()):
+            if ("step" not in snapshot or isinstance(step, bool)
+                    or not isinstance(step, (int, np.integer)) or not 0 <= step <= np.iinfo(np.uint64).max):
+                raise ValueError("C++ co-clock global complete windows require an integer snapshot master tick in range")
         if isinstance(saved_local_monitors, list) and any(
                 isinstance(state, dict) and "local_window_config" in state
                 for per_subnet in saved_local_monitors if isinstance(per_subnet, list)
@@ -1894,6 +1961,7 @@ class CppHybridBackend:
         return_snapshot=False,
         complete_window_istep=None,
         local_window=False,
+        coclock_window=False,
     ):
         """Build a C++ ``kmon<W>`` spec dict for monitor *m*."""
         import copy
@@ -1926,17 +1994,22 @@ class CppHybridBackend:
             if isinstance(m, _REGIONAL_PROJECTION_MONITORS):
                 spec.update(self._regional_projection_spec(m, n_src_v, n_space))
                 return spec
+            if coclock_window:
+                voi = m.variables_of_interest
+                if voi is not None and (voi.ndim != 1 or voi.dtype.kind not in "iu"
+                                        or np.any(voi < 0) or np.any(voi >= n_src_v)):
+                    raise ValueError("C++ co-clock global complete windows require valid observed VOI indices")
             spec["voi"] = self._monitor_voi_list(m)
             if isinstance(m, SpatialAverage):
                 weights = getattr(m, "spatial_mean", None)
-                if local_window and weights is not None and np.asarray(weights).dtype.kind not in "fiu":
-                    raise ValueError("C++ Recorder SpatialAverage requires real spatial_mean weights")
+                scope = "Recorder" if local_window else "co-clock global" if coclock_window else "regional"
+                if (local_window or coclock_window) and weights is not None and np.asarray(weights).dtype.kind not in "fiu":
+                    raise ValueError(f"C++ {scope} SpatialAverage requires real spatial_mean weights")
                 if weights is not None:
                     with np.errstate(over="ignore"):
                         weights = np.asarray(weights, dtype=np.float32, order="C")
                 if (weights is None or weights.ndim != 2 or not weights.shape[0]
                         or weights.shape[1] != n_space or not np.isfinite(weights).all()):
-                    scope = "Recorder" if local_window else "regional"
                     raise ValueError(
                         f"C++ {scope} SpatialAverage complete windows require finite "
                         "preconfigured spatial_mean weights with one column per source node"
@@ -2272,7 +2345,7 @@ class CppHybridBackend:
         kernel_collect=None, _skip_init=False, _step_offset=0,
         kernel_persn=None, kernel_global=None, sn_kernel_monitors=None,
         complete_window_isteps=None, balloon_windkessel_specs=None,
-        local_window_specs=None,
+        local_window_specs=None, coclock_gather=None,
         explicit_chunk_size=None, need_tavg=True, need_ctavg=True,
         _return_snapshot=False, rng_mode="numpy",
         _pending_kmon_states=None, _pending_kmon_global_states=None,
@@ -2299,7 +2372,8 @@ class CppHybridBackend:
         elif balloon_windkessel_specs and _pending_kmon_global_states is None:
             raise ValueError("BalloonWindkessel resume requires global monitor snapshot state")
         elif complete_window_isteps and _pending_kmon_global_states is None:
-            raise ValueError("C++ regional complete windows require global monitor snapshot state")
+            scope = "co-clock global" if coclock_gather else "regional"
+            raise ValueError(f"C++ {scope} complete windows require global monitor snapshot state")
 
         # 1. Arm per-subnet monitors (global persn monitors + Recorder monitors)
         persn_counts = [0] * n_sn
@@ -2335,23 +2409,27 @@ class CppHybridBackend:
         # 2. Arm multi-subnet / single-subnet global monitors
         bw_projection_identities = {}
         if kernel_global:
-            gather_specs = []
-            total_nodes = (
-                max(int(sn.node_indices.max()) for sn in analysis.subnets) + 1
-                if should_merge
-                else analysis.subnets[0].n_nodes
-            )
-            for sn in analysis.subnets:
-                gather_specs.append({
-                    "n_voi": len(sn.voi) // 3,
-                    "n_node": int(sn.n_nodes),
-                    "voi_offset": 0,
-                    "node_offset": 0,
-                    "node_indices": (
-                        sn.node_indices.astype(np.int32).tolist()
-                        if should_merge else None
-                    ),
-                })
+            if coclock_gather:
+                gather_specs = coclock_gather
+                total_nodes = sum(sn.n_nodes for sn in analysis.subnets)
+            else:
+                gather_specs = []
+                total_nodes = (
+                    max(int(sn.node_indices.max()) for sn in analysis.subnets) + 1
+                    if should_merge
+                    else analysis.subnets[0].n_nodes
+                )
+                for sn in analysis.subnets:
+                    gather_specs.append({
+                        "n_voi": len(sn.voi) // 3,
+                        "n_node": int(sn.n_nodes),
+                        "voi_offset": 0,
+                        "node_offset": 0,
+                        "node_indices": (
+                            sn.node_indices.astype(np.int32).tolist()
+                            if should_merge else None
+                        ),
+                    })
             n_voi_g = len(analysis.subnets[0].voi) // 3
             g_atts = [
                 (balloon_windkessel_specs or {}).get(mi) or self._monitor_attach_spec(
@@ -2362,6 +2440,7 @@ class CppHybridBackend:
                     is_resuming=_skip_init,
                     return_snapshot=_return_snapshot,
                     complete_window_istep=(complete_window_isteps or {}).get(mi),
+                    coclock_window=bool(coclock_gather and mi in (complete_window_isteps or {})),
                 )
                 for mi, m in kernel_global
             ]

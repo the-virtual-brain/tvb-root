@@ -1692,7 +1692,7 @@ static void configure_window_projection(kmon<W> &m, const nb::dict &d, int n_nod
 static constexpr const char *local_window_label = "Recorder complete window: ";
 static constexpr int recorder_slot_base = 10000;  // Python _RECORDER_SLOT_BASE
 
-static bool local_window_kind(int kind) {
+static bool average_window_kind(int kind) {
   return kind == KMON_TAVG || kind == KMON_GLOBAL_AVG || kind == KMON_SPATIAL_AVG;
 }
 
@@ -1701,13 +1701,19 @@ static bool valid_recorder_clock(double clock, float native) {
          native > 0.0f && (float)clock == native;
 }
 
+static bool checked_python_equal(PyObject *actual, PyObject *expected) {
+  const int equal = PyObject_RichCompareBool(actual, expected, Py_EQ);
+  if (equal < 0) throw nb::python_error();
+  return equal != 0;
+}
+
 // Walk the exported schema and compare only exact built-in scalar leaves.
-static bool equal_local_window_config(PyObject *actual, PyObject *expected) {
+static bool equal_checked_window_config(PyObject *actual, PyObject *expected) {
   if (PyTuple_CheckExact(expected)) {
     if (!PyTuple_CheckExact(actual) || PyTuple_Size(actual) != PyTuple_Size(expected))
       return false;
     for (Py_ssize_t i = 0, n = PyTuple_Size(expected); i < n; ++i)
-      if (!equal_local_window_config(PyTuple_GetItem(actual, i), PyTuple_GetItem(expected, i)))
+      if (!equal_checked_window_config(PyTuple_GetItem(actual, i), PyTuple_GetItem(expected, i)))
         return false;
     return true;
   }
@@ -1715,7 +1721,7 @@ static bool equal_local_window_config(PyObject *actual, PyObject *expected) {
     if (!PyList_CheckExact(actual) || PyList_Size(actual) != PyList_Size(expected))
       return false;
     for (Py_ssize_t i = 0, n = PyList_Size(expected); i < n; ++i)
-      if (!equal_local_window_config(PyList_GetItem(actual, i), PyList_GetItem(expected, i)))
+      if (!equal_checked_window_config(PyList_GetItem(actual, i), PyList_GetItem(expected, i)))
         return false;
     return true;
   }
@@ -1723,22 +1729,55 @@ static bool equal_local_window_config(PyObject *actual, PyObject *expected) {
         (PyFloat_CheckExact(expected) && PyFloat_CheckExact(actual)) ||
         (PyUnicode_CheckExact(expected) && PyUnicode_CheckExact(actual))))
     return false;
-  const int equal = PyObject_RichCompareBool(actual, expected, Py_EQ);
-  if (equal < 0) throw nb::python_error();
-  return equal != 0;
+  return checked_python_equal(actual, expected);
 }
 
-static KMonState dict_to_local_window_state(const nb::dict &d, size_t extent) {
+static KMonState dict_to_checked_window_state(const nb::dict &d, size_t extent,
+                                               const char *label) {
   for (const char *key : {"slot", "kind", "width", "n_out_v", "n_out_space", "n_out_modes",
                           "m_step", "run_start", "accum_count"}) {
     if (!d.contains(key) || !PyLong_CheckExact(d[key].ptr()))
-      throw std::runtime_error("Recorder complete window: invalid snapshot integer field");
+      throw std::runtime_error(std::string(label) + "invalid snapshot integer field");
   }
   using Accumulator = nb::ndarray<nb::numpy, const double, nb::ndim<1>, nb::c_contig>;
   Accumulator acc;
   if (!d.contains("accum") || !nb::try_cast(d["accum"], acc, false) || acc.size() != extent)
-    throw std::runtime_error("Recorder complete window: invalid snapshot accumulator extent or dtype");
-  return dict_to_staged_state(d, false, local_window_label);
+    throw std::runtime_error(std::string(label) + "invalid snapshot accumulator extent or dtype");
+  return dict_to_staged_state(d, false, label);
+}
+
+static constexpr const char *coclock_window_label = "global co-clock complete window: ";
+
+template <int W>
+static void configure_coclock_window(const nb::dict &d, int n_voi, int n_node,
+                                     double clock, kmon<W> &m) {
+  const int kind = nb::cast<int>(d["kind"]);
+  const int period = dict_get_or<int>(d, "istep", 0);
+  if (!average_window_kind(kind) || period < 1 || !d.contains("dt") ||
+      nb::cast<double>(d["dt"]) != clock || dict_get_or<uint32_t>(d, "cadence_K", 1u) != 1)
+    throw std::runtime_error("global co-clock complete window: invalid period, kind or clock");
+  const auto voi = d.contains("voi") ? to_checked_indices(d["voi"], (size_t)n_voi,
+                                     "global co-clock complete window", "observed VOI")
+                                    : std::vector<int>{};
+  const size_t max_space = std::min(m.accum.max_size(), m.d_out.max_size()) /
+                           (voi.empty() ? (size_t)n_voi : voi.size());
+  if (kind == KMON_SPATIAL_AVG) {
+    using SpatialMean = nb::ndarray<nb::numpy, const float, nb::ndim<2>, nb::c_contig>;
+    SpatialMean weights;
+    if (!d.contains("spatial_mean") || !nb::try_cast(d["spatial_mean"], weights, false) ||
+        weights.shape(0) == 0 || weights.shape(1) != (size_t)n_node ||
+        weights.shape(0) > max_space || weights.shape(0) > std::numeric_limits<int>::max() / (size_t)n_node)
+      throw std::runtime_error("global co-clock complete window: invalid spatial_mean extent or dtype");
+    if (std::any_of(weights.data(), weights.data() + weights.size(),
+                    [](float w) { return !std::isfinite(w); }))
+      throw std::runtime_error("global co-clock complete window: nonfinite spatial_mean");
+    m.set_spatial_mean(weights.data(), (int)weights.shape(0), n_node);
+  } else if ((kind == KMON_GLOBAL_AVG ? 1u : (size_t)n_node) > max_space) {
+    throw std::runtime_error("global co-clock complete window: output extent out of range");
+  }
+  m.complete_window = true;
+  m.coclock_window = true;
+  m.configure_basic(nb::cast<int>(d["slot"]), kind, period, clock, n_voi, n_node, 1, voi, 1u);
 }
 
 template <int W>
@@ -1975,7 +2014,7 @@ template <int W> struct simw {
     if (W != 1 || sub.n_modes != 1 || sub.n_node < 1 ||
         source.empty() || source.size() > max_int ||
         source.size() > obs_row[si].max_size() / (size_t)sub.n_node ||
-        slot < recorder_slot_base || !local_window_kind(kind) || period < 1 || cadence == 0 ||
+        slot < recorder_slot_base || !average_window_kind(kind) || period < 1 || cadence == 0 ||
         dict_get_or<bool>(d, "complete_window", false))
       throw std::runtime_error("Recorder complete window: invalid attachment geometry, kind or period");
     // Match the existing NetworkSet cadence tolerance, and check both stored native clocks.
@@ -2072,11 +2111,25 @@ template <int W> struct simw {
       validate_single_source_observations(projection_label);
     }
     const bool staged = has_window || has_bw_stream;
+    const bool coclock = has_window && sn.size() > 1;
+    int64_t source_nodes = 0;
+    if (coclock) {
+      if (W != 1)
+        throw std::runtime_error("global co-clock complete window requires width 1");
+      for (const auto &sub : sn) {
+        source_nodes += sub.n_node;
+        if (sub.n_node <= 0 || source_nodes > std::numeric_limits<int>::max())
+          throw std::runtime_error("global co-clock complete window: gather extent out of range");
+      }
+    }
     std::vector<GlobalGatherSubnet> gather;
     gather.reserve(gather_specs.size());
     int tot_v = 0;
     int tot_n = 0;
     const auto parse_node_indices = [&](nb::handle h) {
+      if (coclock)
+        return to_checked_indices(h, (size_t)source_nodes,
+                                  "global co-clock complete window", "node gather index");
       return has_bw_stream || has_projection_window
           ? to_checked_indices(h, (size_t)sn[0].n_node,
                                has_bw_stream ? "global BW stream" : projection_label,
@@ -2093,7 +2146,17 @@ template <int W> struct simw {
         gs.node_offset = dict_get_or<int>(d, "node_offset", 0);
         if (d.contains("node_indices") && !d["node_indices"].is_none())
           gs.node_indices = parse_node_indices(d["node_indices"]);
+        if (coclock) {
+          for (const char *key : {"source_name", "source_dt", "observed_terms"})
+            if (!d.contains(key))
+              throw std::runtime_error("global co-clock complete window: incomplete source declaration");
+          gs.source_name = nb::cast<std::string>(d["source_name"]);
+          gs.source_dt = nb::cast<double>(d["source_dt"]);
+          gs.observed_terms = nb::cast<std::vector<std::string>>(d["observed_terms"]);
+        }
       } else {
+        if (coclock)
+          throw std::runtime_error("global co-clock complete window requires explicit source declarations");
         nb::tuple t = nb::cast<nb::tuple>(item);
         gs.n_voi = nb::cast<int>(t[0]);
         gs.n_node = nb::cast<int>(t[1]);
@@ -2115,7 +2178,7 @@ template <int W> struct simw {
       gather.push_back(std::move(gs));
     }
     if (staged) {
-      const auto [n_voi, n_node] = validate_window_gather(gather);
+      const auto [n_voi, n_node] = validate_window_gather(gather, coclock);
       tot_v = n_voi;
       tot_n = n_node;
     }
@@ -2131,8 +2194,15 @@ template <int W> struct simw {
     const double def_dt = (double)dt;
     for (auto item : mon_specs) {
       kmon<W> m;
-      parse_kmon_spec<W>(item, tot_v, tot_n, tot_v, 1, def_dt, global_mons, m,
-                         true);
+      if (coclock && nb::isinstance<nb::dict>(item) &&
+          dict_get_or<bool>(nb::cast<nb::dict>(item), "complete_window", false)) {
+        const auto spec = nb::cast<nb::dict>(item);
+        if (dict_get_or<bool>(spec, "local_window", false))
+          throw std::runtime_error("global co-clock complete window requires a global attachment");
+        configure_coclock_window(spec, tot_v, tot_n, gather.front().source_dt, m);
+      } else {
+        parse_kmon_spec<W>(item, tot_v, tot_n, tot_v, 1, def_dt, global_mons, m, true);
+      }
       if (m.bw_stream()) m.bw_source_voi = voi_specs[0][(size_t)m.voi[0]];
       if (m.staged_global()) m.begin_run(t_abs);
       next.push_back(std::move(m));
@@ -2157,37 +2227,57 @@ template <int W> struct simw {
   }
 
   std::pair<int, int> validate_window_gather(
-      const std::vector<GlobalGatherSubnet> &gather) const {
+      const std::vector<GlobalGatherSubnet> &gather, bool coclock) const {
+    const std::string label = coclock ? coclock_window_label : "global complete window: ";
     const size_t n_voi = voi_specs.empty() ? 0 : voi_specs.front().size();
     constexpr int max_extent = std::numeric_limits<int>::max();
     if (gather.empty() || n_voi == 0 || n_voi > (size_t)max_extent)
-      throw std::runtime_error("global complete window: incompatible gather shape");
+      throw std::runtime_error(label + "incompatible gather shape");
     // Derive the allocation extents from the sources, never from offsets.
     int64_t n_node = 0;
     for (size_t i = 0; i < gather.size(); ++i) {
       const auto &g = gather[i];
       const auto &sub = sn[i];
       if (sub.K != 1 || sub.dt != dt || sub.n_modes != 1)
-        throw std::runtime_error("global complete window requires one regional clock and mode");
+        throw std::runtime_error(coclock ? "global co-clock complete window requires one source clock and mode"
+                                         : "global complete window requires one regional clock and mode");
       if (g.n_node != sub.n_node || sub.n_node <= 0 || g.n_voi != (int)n_voi ||
           voi_specs[i].size() != n_voi || g.voi_offset != 0 ||
           (!g.node_indices.empty() && g.node_indices.size() != (size_t)sub.n_node))
-        throw std::runtime_error("global complete window: incompatible gather shape");
+        throw std::runtime_error(label + "incompatible gather shape");
+      if (coclock) {
+        const auto &first = gather.front();
+        if (g.node_indices.empty() || g.node_offset != 0)
+          throw std::runtime_error("global co-clock complete window requires explicit node_indices");
+        if (!valid_recorder_clock(g.source_dt, dt) || g.source_dt != first.source_dt)
+          throw std::runtime_error("global co-clock complete window requires a common declared clock");
+        if (g.observed_terms.size() != n_voi || g.observed_terms != first.observed_terms)
+          throw std::runtime_error("global co-clock complete window requires homogeneous observed VOIs");
+        for (size_t v = 0; v < n_voi; ++v) {
+          const auto &row = voi_specs[i][v];
+          const auto &ref = voi_specs[0][v];
+          if (row.kind < 0 || row.kind > 1 || row.a < 0 || row.a >= sub.n_svar ||
+              row.b < 0 || row.b >= sub.n_svar || row.kind != ref.kind ||
+              row.a != ref.a || row.b != ref.b)
+            throw std::runtime_error("global co-clock complete window: incompatible observed VOI source");
+        }
+      }
       n_node += sub.n_node;
       if (n_node > max_extent)
-        throw std::runtime_error("global complete window: gather extent out of range");
+        throw std::runtime_error(label + "gather extent out of range");
     }
     const size_t max_elems = std::min(global_obs_row.max_size(),
                                      std::vector<double>().max_size());
     if (n_voi > max_elems / (size_t)W / (size_t)n_node)
-      throw std::runtime_error("global complete window: gather extent out of range");
+      throw std::runtime_error(label + "gather extent out of range");
     std::vector<bool> seen((size_t)n_node, false);
     for (const auto &g : gather) {
       for (int j = 0; j < g.n_node; ++j) {
         const int64_t node = g.node_indices.empty() ? (int64_t)g.node_offset + j
                                                     : g.node_indices[j];
         if (node < 0 || node >= n_node || seen[(size_t)node])
-          throw std::runtime_error("global complete window requires a complete, disjoint node gather");
+          throw std::runtime_error(coclock ? "global co-clock complete window requires a complete, disjoint node gather"
+                                           : "global complete window requires a complete, disjoint node gather");
         seen[(size_t)node] = true;
       }
     }
@@ -2199,6 +2289,11 @@ template <int W> struct simw {
                        [](const auto &m) { return m.projection_window(); });
   }
 
+  bool coclock_window_armed() const {
+    return std::any_of(global_mons.begin(), global_mons.end(),
+                       [](const auto &m) { return m.coclock_window; });
+  }
+
   void set_observed_rows(int si, std::vector<voispec> rows) {
     auto &current = voi_specs[si];
     if (!std::equal(current.begin(), current.end(), rows.begin(), rows.end(),
@@ -2207,6 +2302,8 @@ template <int W> struct simw {
                     })) {
       if (projection_window_armed())
         throw std::runtime_error("global complete window projection: detach before changing observed rows");
+      if (coclock_window_armed())
+        throw std::runtime_error("global co-clock complete window: detach before changing observed rows");
       if (std::any_of(mons[si].begin(), mons[si].end(), [](const auto &m) { return m.local_window; }))
         throw std::runtime_error("Recorder complete window: detach before changing observed rows");
     }
@@ -2254,6 +2351,17 @@ template <int W> struct simw {
     return nb::make_tuple(m.istep, m.dt, m.voi, sources, m.spatial_compact,
                           m.spatial_area_idx, m.spatial_scale, m.sm_row_ptr,
                           m.sm_col_idx, m.sm_val);
+  }
+
+  nb::tuple coclock_window_config(const kmon<W> &m) const {
+    nb::list declared_sources;
+    for (size_t i = 0; i < global_gather.size(); ++i) {
+      const auto &g = global_gather[i];
+      declared_sources.append(nb::make_tuple(g.source_name, g.source_dt, g.observed_terms,
+                                           sn[i].K, sn[i].n_svar, sn[i].n_modes));
+    }
+    return nb::make_tuple(1, m.slot, m.kind, m.istep, m.dt, m.voi, declared_sources,
+                          window_source_config(), m.sm_row_ptr, m.sm_col_idx, m.sm_val);
   }
 
   nb::tuple bw_stream_config(const kmon<W> &m) const {
@@ -2338,7 +2446,7 @@ template <int W> struct simw {
         if (!window) {
           // The reserved Recorder slots distinguish historical local windows from global
           // monitors routed through the legacy per-subnet collector.
-          if (d.contains("local_window_phase") || (slot >= recorder_slot_base && local_window_kind(kind)))
+          if (d.contains("local_window_phase") || (slot >= recorder_slot_base && average_window_kind(kind)))
             throw std::runtime_error("Recorder complete window: historical snapshot monitor");
           if (!strict) continue;
         }
@@ -2353,12 +2461,12 @@ template <int W> struct simw {
           throw std::runtime_error("Recorder complete window: duplicate snapshot monitor");
         if (window) {
           validate_local_window_source(si, *it);
-          if (!equal_local_window_config(d["local_window_config"].ptr(), local_window_config(si, *it).ptr()))
+          if (!equal_checked_window_config(d["local_window_config"].ptr(), local_window_config(si, *it).ptr()))
             throw std::runtime_error("Recorder complete window: incompatible snapshot configuration");
           if (!d.contains("local_window_phase") || !PyLong_CheckExact(d["local_window_phase"].ptr()) ||
               nb::cast<uint32_t>(d["local_window_phase"]) != t_abs % it->cadence_K)
             throw std::runtime_error("Recorder complete window: invalid snapshot master cadence phase");
-          KMonState st = dict_to_local_window_state(d, it->accum.size());
+          KMonState st = dict_to_checked_window_state(d, it->accum.size(), local_window_label);
           it->validate_local_window_state(st, t_abs);
           staged.emplace_back(&*it, std::move(st));
         } else {
@@ -2406,7 +2514,10 @@ template <int W> struct simw {
     for (const auto &gm : global_mons) {
       const auto st = gm.export_state();
       nb::dict state = kmon_state_to_dict(st);
-      if (gm.complete_window) {
+      if (gm.coclock_window) {
+        gm.validate_window_state(st, t_abs);
+        state["coclock_window_config"] = coclock_window_config(gm);
+      } else if (gm.complete_window) {
         state["window_config"] = window_config(gm, window_source_config());
       } else if (gm.bw_stream()) {
         validate_bw_live_config(gm);
@@ -2426,7 +2537,9 @@ template <int W> struct simw {
     for (auto item : states) {
       nb::dict d = nb::cast<nb::dict>(item);
       const bool bw = d.contains("bw_stream_config");
-      if (!bw && !d.contains("window_config")) {
+      const bool coclock = d.contains("coclock_window_config");
+      const bool regional = d.contains("window_config");
+      if (!bw && !coclock && !regional) {
         if (has_projection_window && dict_get_or<int>(d, "kind", 0) == KMON_PROJECTION) {
           const int slot = dict_get_or<int>(d, "slot", -1);
           if (std::any_of(global_mons.begin(), global_mons.end(), [&](const auto &m) {
@@ -2436,26 +2549,34 @@ template <int W> struct simw {
         }
         continue;
       }
-      const char *label = bw ? "global BW stream: " : "global complete window: ";
-      if (bw && d.contains("window_config"))
-        throw std::runtime_error("global BW stream: ambiguous snapshot identity");
-      KMonState st = dict_to_staged_state(d, bw, label);
+      const char *label = bw ? "global BW stream: " : coclock ? coclock_window_label
+                                                             : "global complete window: ";
+      if ((int)bw + (int)coclock + (int)regional != 1)
+        throw std::runtime_error(std::string(label) + "ambiguous snapshot identity");
+      KMonState st;
+      if (!coclock) st = dict_to_staged_state(d, bw, label);
+      // Co-clock entries never match the previous regional or legacy formats.
+      const int slot = coclock ? dict_get_or<int>(d, "slot", -1) : st.slot;
+      const int kind = coclock ? dict_get_or<int>(d, "kind", 0) : st.kind;
       auto it = std::find_if(global_mons.begin(), global_mons.end(),
                              [&](const auto &m) {
-                               return (bw ? m.bw_stream() : m.complete_window) &&
-                                      m.slot == st.slot && m.kind == st.kind;
+                               return (bw ? m.bw_stream() : coclock ? m.coclock_window
+                                             : (m.complete_window && !m.coclock_window)) &&
+                                      m.slot == slot && m.kind == kind;
                              });
       if (it == global_mons.end())
         throw std::runtime_error(std::string(label) + "unmatched snapshot monitor");
       const size_t i = (size_t)(it - global_mons.begin());
       if (bw) validate_bw_live_config(*it);
       const nb::tuple config = bw ? bw_stream_config(*it)
-                                  : window_config(*it, window_source_config());
-      const int equal = PyObject_RichCompareBool(
-          d[bw ? "bw_stream_config" : "window_config"].ptr(), config.ptr(), Py_EQ);
-      if (equal < 0) throw nb::python_error();
+                                  : coclock ? coclock_window_config(*it)
+                                            : window_config(*it, window_source_config());
+      const bool equal = coclock
+          ? equal_checked_window_config(d["coclock_window_config"].ptr(), config.ptr())
+          : checked_python_equal(d[bw ? "bw_stream_config" : "window_config"].ptr(), config.ptr());
       if (restored[i] || !equal)
         throw std::runtime_error(std::string(label) + "incompatible snapshot configuration");
+      if (coclock) st = dict_to_checked_window_state(d, it->accum.size(), label);
       if (bw) {
         parse_bw_stream_state(st, d, (size_t)it->n_out_space);
         it->validate_bw_stream_state(st, t_abs);
@@ -2470,17 +2591,22 @@ template <int W> struct simw {
       if (!global_mons[i].staged_global() || restored[i]) continue;
       throw std::runtime_error(global_mons[i].bw_stream()
           ? "global BW stream: missing compatible snapshot monitor"
-          : "global complete window: missing compatible snapshot monitor");
+          : global_mons[i].coclock_window
+              ? "global co-clock complete window: missing compatible snapshot monitor"
+              : "global complete window: missing compatible snapshot monitor");
     }
 
-    // With BW or staged Projection, the checkpoint must cover the entire attached set exactly once.
+    // A checked gather's checkpoint must cover the entire attached global set exactly once.
     // Keep strict matching, validation, and output clearing out of the historical restore path.
-    const bool strict_siblings = has_bw_stream || has_projection_window;
+    const bool has_coclock_window = coclock_window_armed();
+    const bool strict_siblings = has_bw_stream || has_projection_window || has_coclock_window;
     const char *sibling_label = has_bw_stream ? "global BW stream: "
-                                             : "global complete window projection: ";
+                               : has_coclock_window ? coclock_window_label
+                                                    : "global complete window projection: ";
     for (size_t mi = 0; mi < states.size(); mi++) {
       nb::dict d = nb::cast<nb::dict>(states[mi]);
-      if (d.contains("window_config") || d.contains("bw_stream_config")) continue;
+      if (d.contains("window_config") || d.contains("bw_stream_config") ||
+          d.contains("coclock_window_config")) continue;
       if (strict_siblings) {
         for (const char *key : {"slot", "kind", "width", "n_out_v", "n_out_space", "n_out_modes"})
           if (!d.contains(key) || d[key].is_none())
@@ -2673,6 +2799,8 @@ template <int W> struct simw {
   }
 
   void monitor_begin_run() {
+    if (t_abs != 0 && coclock_window_armed())
+      throw std::runtime_error("global co-clock complete window: fresh origin must be zero");
     for (auto &mons_s : mons)
       for (auto &m : mons_s) m.begin_run(t_abs);
     for (auto &gm : global_mons) gm.begin_run(t_abs);
@@ -2694,6 +2822,8 @@ template <int W> struct simw {
     for (const auto &gm : global_mons) {
       if (!gm.staged_global()) continue;
       if (gm.bw_stream()) validate_bw_live_config(gm);
+      if (gm.coclock_window && (gm.run_start != 0 || gm.accum_count != t_abs % (uint64_t)gm.istep || nstep < 0))
+        throw std::runtime_error("global co-clock complete window: reset or restore at the simulator clock before run");
       if (gm.m_step != t_abs)
         throw std::runtime_error(gm.bw_stream()
             ? "global BW stream: reset or restore at the simulator clock before run"
@@ -3018,6 +3148,8 @@ struct sim {
     dispatch([&](auto &sw) {
       if (sw.projection_window_armed())
         throw std::runtime_error("global complete window projection: detach before adding a subnet");
+      if (sw.coclock_window_armed())
+        throw std::runtime_error("global co-clock complete window: detach before adding a subnet");
       constexpr int W = std::remove_reference_t<decltype(sw)>::W_CONST;
       subnet<W> s;
       s.alloc(n_node, n_svar, n_parm, n_cvar, model_id, H, n_modes);
@@ -3281,6 +3413,8 @@ struct sim {
     dispatch([&](auto &s) {
       if (s.projection_window_armed() && s.dt != dt)
         throw std::runtime_error("global complete window projection: detach before changing the clock");
+      if (s.coclock_window_armed() && s.dt != dt)
+        throw std::runtime_error("global co-clock complete window: detach before changing the clock");
       s.integ_id = integ_id;
       s.dt = dt;
       s.tavg_period = tavg_period;

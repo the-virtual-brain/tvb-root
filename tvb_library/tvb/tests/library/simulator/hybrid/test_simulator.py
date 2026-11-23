@@ -782,7 +782,7 @@ class TestSimulator(BaseHybridTest):
             np.testing.assert_allclose(d_cpp, d_nb, rtol=1e-3, atol=1e-4)
 
     def test_cpp_simulator_monitors_and_deco_balanced_parity(self):
-        """DecoBalancedExcInh + Bold/TemporalAverage/GlobalAverage/SpatialAverage parity."""
+        """DecoBalancedExcInh monitor value parity, with native midpoint timing."""
         if not _has_cpp_hybrid():
             pytest.skip("_cpp_hybrid extension is not available")
 
@@ -819,9 +819,8 @@ class TestSimulator(BaseHybridTest):
             np.array([[[0.12], [0.18]], [[0.04], [0.07]]], dtype=np.float64),
         ]
 
-        # GlobalAverage and SpatialAverage in compiled backends (numba, cpp)
-        # follow nb_hybrid temporal-averaged semantics (midpoint timestamps),
-        # whereas TemporalAverage and Bold match pure-Python monitors directly.
+        # Compare the compiled temporal and BOLD streams to the Python route.
+        # Global and spatial values below are compared between compiled routes.
         def _make_py_monitors():
             return [TemporalAverage(period=1.0), Bold(period=1.0)]
 
@@ -864,11 +863,13 @@ class TestSimulator(BaseHybridTest):
                 np.testing.assert_allclose(t_be, t_py, rtol=1e-5, atol=1e-6)
                 np.testing.assert_allclose(y_be, y_py, rtol=1e-3, atol=1e-4)
 
-        # All 4 monitors (incl. GlobalAverage & SpatialAverage) match numba <-> cpp
         nb_out = outputs["numba"]
         cpp_out = outputs["cpp"]
         assert len(cpp_out) == len(nb_out)
-        for (t_cpp, y_cpp), (t_nb, y_nb) in zip(cpp_out, nb_out):
+        for idx, ((t_cpp, y_cpp), (t_nb, y_nb)) in enumerate(zip(cpp_out, nb_out)):
             assert np.all(np.isfinite(y_cpp))
-            np.testing.assert_allclose(t_cpp, t_nb, rtol=1e-5, atol=1e-6)
+            # Global/Spatial use complete-window midpoints in C++, not the
+            # historical Numba centre of sampled post-update ticks.
+            reference = 0.5 + np.arange(6) if idx in (1, 2) else t_nb
+            np.testing.assert_allclose(t_cpp, reference, rtol=1e-5, atol=1e-6)
             np.testing.assert_allclose(y_cpp, y_nb, rtol=1e-3, atol=1e-4)

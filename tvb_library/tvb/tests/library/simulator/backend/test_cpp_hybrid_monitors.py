@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Monitor parity tests: each monitor supported by the hybrid path must
-produce identical sample streams from CppHybridBackend and NbHybridBackend.
-"""
+"""Hybrid monitor value parity, with native window topology and timing checked separately."""
 
 import numpy as np
 import pytest
@@ -71,6 +69,13 @@ def _assert_streams(nb_out, cpp_out, tag):
                 err_msg=f"{tag} monitor#{mi} subnet#{si}")
 
 
+def _gather_temporal_reference(nb_streams):
+    times, data = zip(*nb_streams)
+    # The fixture has contiguous source indices. Numba serves separate streams;
+    # the native global TemporalAverage now gathers before reducing.
+    return [(times[0], np.concatenate(data, axis=2))]
+
+
 def test_raw():
     from tvb.simulator.monitors import Raw
     nb, cpp = _run_pair([Raw()])
@@ -80,7 +85,7 @@ def test_raw():
 def test_temporal_average():
     from tvb.simulator.monitors import TemporalAverage
     nb, cpp = _run_pair([TemporalAverage(period=0.5)])
-    _assert_streams(nb, cpp, "TemporalAverage")
+    _assert_streams([_gather_temporal_reference(nb[0])], cpp, "TemporalAverage")
 
 
 def test_subsample():
@@ -332,6 +337,7 @@ def test_chunk_size_gt1_all_kernel_monitors():
     assert seen["cs"] == 5
     assert seen["need_tavg"] is False
     assert seen["need_ctavg"] is False
+    nb_out = [_gather_temporal_reference(nb_out[0]), *nb_out[1:]]
     _assert_streams(nb_out, cpp_out, "chunk_size=5 all kmon")
 
 
@@ -357,6 +363,8 @@ def test_voi_subset_selection_all_monitors():
         ("ctavg", _run_pair([AfferentCouplingTemporalAverage(period=0.5, variables_of_interest=voi)])),
     ]
     for label, (nb_out, cpp_out) in pairs:
+        if label == "cs1":
+            nb_out = [*nb_out[:2], _gather_temporal_reference(nb_out[2]), nb_out[3]]
         assert len(nb_out) == len(cpp_out), label
         for mi, (per_nb, per_cpp) in enumerate(zip(nb_out, cpp_out)):
             assert len(per_nb) == len(per_cpp), (label, mi)
@@ -370,7 +378,7 @@ def test_voi_subset_selection_all_monitors():
 
 
 def test_multisubnet_global_and_spatial_average_monitors_cpp():
-    """Multi-subnet regional averages still use the legacy route."""
+    """Eligible native global windows retain values and use interval midpoints."""
     from tvb.simulator.monitors import GlobalAverage, SpatialAverage
 
     sa = SpatialAverage(period=0.5)
@@ -394,10 +402,12 @@ def test_multisubnet_global_and_spatial_average_monitors_cpp():
 
     assert seen["need_tavg"] is False
     _assert_streams(nb_out, cpp_out, "multi-subnet Global/Spatial")
+    for ((times, _),) in cpp_out:
+        np.testing.assert_array_equal(times, (np.arange(5, NSTEP + 1, 5) - 2.5) * DT)
 
 
 def test_bold_and_tavg_mid_period_snapshot_resume_in_cpp():
-    """Mid-period snapshot/resume for Bold & TemporalAverage stays in C++ kmon_states."""
+    """Native resume restores per-source Bold and gathered TemporalAverage independently."""
     from tvb.simulator.monitors import Bold, SpatialAverage, TemporalAverage
 
     sa = SpatialAverage(period=1.0)
@@ -412,7 +422,7 @@ def test_bold_and_tavg_mid_period_snapshot_resume_in_cpp():
     sim = CppHybridBackend().compile(_network())
     p1, snap = sim.run(25, chunk_size=5, monitors=mons, return_snapshot=True)
     assert snap.get("kmon_states") is not None
-    assert snap.get("kmon_global_states") is not None
+    assert "coclock_window_config" in snap["kmon_global_states"][0]
     assert not snap.get("monitor_states"), "C++ kmon should not populate Python _bold_states"
 
     p2 = sim.resume(snap, NSTEP - 25, chunk_size=5, monitors=mons)
