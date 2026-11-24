@@ -61,6 +61,27 @@ from tvb.simulator.backend.nb_hybrid import _STIM_LAZY_THRESHOLD_MB
 
 DT = 0.01
 
+# Set only on the private copy loaded by test_cpp_hybrid_battery.
+_CPP_BATTERY = False
+
+
+def _cpp_window_eeg(gain, dt, period_steps):
+    from tvb.simulator.monitors import EEG
+
+    eeg = EEG(period=period_steps * dt, obsnoise=None)
+    eeg.gain = gain
+    return eeg
+
+
+def _assert_cpp_eeg_windows(stream, raw, gain, dt, period_steps, *, rtol=1e-6, atol=1e-7):
+    times, data = stream
+    ends = np.arange(period_steps, len(raw) + 1, period_steps)
+    windows = raw[:ends[-1]].reshape(len(ends), period_steps, *raw.shape[1:]).mean(axis=1)
+    expected = np.einsum('ij,tkj->tki', gain, windows.sum(axis=-1))[..., np.newaxis]
+    np.testing.assert_allclose(times, (ends - period_steps / 2) * dt, rtol=0, atol=1e-15)
+    assert data.shape == expected.shape
+    np.testing.assert_allclose(data, expected, rtol=rtol, atol=atol)
+
 
 def _mpr_subnetwork(
     name: str, n_nodes: int, integrator_cls=HeunDeterministic
@@ -3712,6 +3733,13 @@ class TestNbHybridMonitorsIntegrative(unittest.TestCase):
         rng = np.random.RandomState(42)
         gain = rng.randn(n_sensors, self.N).astype(np.float64)
 
+        if _CPP_BATTERY:
+            period_steps = 4
+            eeg = _cpp_window_eeg(gain, DT, period_steps)
+            stream = self._numba_monitor(ns, [x0_list[0].copy()], self.NSTEP, eeg)
+            _assert_cpp_eeg_windows(stream, py_raw, gain, DT, period_steps, rtol=1e-2, atol=1e-2)
+            return
+
         eeg = EEG(period=1.0)
         eeg._gain = gain
 
@@ -3838,8 +3866,12 @@ class TestJITMonitorPrecomputation(unittest.TestCase):
         n_sensors = 3
         rng = np.random.RandomState(42)
         gain = rng.randn(n_sensors, self.N).astype(np.float64)
-        eeg = EEG(period=1.0)
-        eeg._gain = gain
+        if _CPP_BATTERY:
+            period_steps = 3
+            eeg = _cpp_window_eeg(gain, self.DT, period_steps)
+        else:
+            eeg = EEG(period=1.0)
+            eeg._gain = gain
 
         # Run with JIT monitor
         results = backend.run_network(
@@ -3852,6 +3884,10 @@ class TestJITMonitorPrecomputation(unittest.TestCase):
             nets, nstep=20, chunk_size=1, initial_states=[ic[0].copy()],
         )
         _, raw_data, _ = raw[0]
+        if _CPP_BATTERY:
+            _assert_cpp_eeg_windows(results[0][0], raw_data, gain, self.DT, period_steps)
+            return
+
         data_2d = raw_data.sum(axis=-1)
         expected = np.einsum('ij,tkj->tki', gain, data_2d)[..., np.newaxis]
 
@@ -3877,8 +3913,12 @@ class TestJITMonitorPrecomputation(unittest.TestCase):
         n_sensors = 3
         rng = np.random.RandomState(42)
         gain = rng.randn(n_sensors, self.N).astype(np.float64)
-        eeg = EEG(period=1.0)
-        eeg._gain = gain
+        if _CPP_BATTERY:
+            period_steps = 3
+            eeg = _cpp_window_eeg(gain, self.DT, period_steps)
+        else:
+            eeg = EEG(period=1.0)
+            eeg._gain = gain
 
         # Run with both monitors
         results = backend.run_network(
@@ -3886,6 +3926,17 @@ class TestJITMonitorPrecomputation(unittest.TestCase):
         )
         # results = [[sa_subnet0], [eeg_subnet0]]
         self.assertEqual(len(results), 2)
+
+        if _CPP_BATTERY:
+            [(_, raw, _)] = backend.run_network(
+                nets, nstep=20, chunk_size=1, initial_states=[ic[0].copy()],
+            )
+            sa_times, sa_data = results[0][0]
+            np.testing.assert_allclose(sa_times, (np.arange(1, 21) - 0.5) * self.DT, rtol=0, atol=1e-15)
+            np.testing.assert_allclose(sa_data, np.einsum('ij,tkjm->tkim', spatial_mean, raw),
+                                       rtol=1e-6, atol=1e-7)
+            _assert_cpp_eeg_windows(results[1][0], raw, gain, self.DT, period_steps)
+            return
 
         # SpatialAverage
         _, sa_data = results[0][0]
@@ -4285,8 +4336,20 @@ class TestMonitorPeriodAggregation(unittest.TestCase):
         ic = self._make_ic(self.N)
         backend = NbHybridBackend()
 
+        gain = np.random.RandomState(42).randn(3, self.N).astype(np.float64)
+        if _CPP_BATTERY:
+            period_steps = 10
+            eeg = _cpp_window_eeg(gain, self.DT, period_steps)
+            # Windows cross chunk boundaries; the last three ticks are not emitted.
+            [[stream]] = backend.run_network(
+                nets, nstep=43, chunk_size=6, monitors=[eeg], initial_states=[ic[0].copy()],
+            )
+            [(_, raw, _)] = backend.run_network(nets, nstep=43, chunk_size=1, initial_states=ic)
+            _assert_cpp_eeg_windows(stream, raw, gain, self.DT, period_steps)
+            return
+
         eeg = EEG(period=0.1)  # istep = 10
-        eeg._gain = np.random.RandomState(42).randn(3, self.N).astype(np.float64)
+        eeg._gain = gain
 
         # Use chunk_size=5 (half the period), run 40 steps = 4 periods
         results = backend.run_network(
@@ -4488,6 +4551,23 @@ class TestMergedMode(unittest.TestCase):
 
         # 2 sensors, 4 connectome nodes total
         gain = rng.randn(2, 4).astype(np.float64)
+        if _CPP_BATTERY:
+            backend = NbHybridBackend()
+            eeg = _cpp_window_eeg(gain, DT, 1)
+            with pytest.raises(NotImplementedError, match="require one regional subnetwork"):
+                backend.run_network(ns, nstep=5, chunk_size=1, monitors=[eeg], initial_states=ics)
+
+            # Same model and sensor operator in the supported single regional layout.
+            single = Subnetwork(name='regions', model=m, scheme=HeunDeterministic(dt=DT), nnodes=4)
+            regional = NetworkSet(subnets=[single]).configure()
+            ic = np.concatenate(ics, axis=1)[:, [0, 2, 1, 3], :]
+            [[stream]] = backend.run_network(
+                regional, nstep=5, chunk_size=1, monitors=[eeg], initial_states=[ic.copy()],
+            )
+            [(_, raw, _)] = backend.run_network(regional, nstep=5, chunk_size=1, initial_states=[ic])
+            _assert_cpp_eeg_windows(stream, raw, gain, DT, 1)
+            return
+
         eeg = EEG(period=DT)
         eeg._gain = gain
 
@@ -4641,9 +4721,9 @@ def test_pre_sigmoidal_global_threshold_empty_csr(multimode, projection_kind):
     net = build(True)
     backend = NbHybridBackend()
     analysis = backend._analyse(net)
-    projections = analysis.inter_projections + analysis.intra_projections
-    assert len(projections) == 1
-    assert projections[0].weights_data.size == 0  # Structural zeros are stripped.
+    [projection] = analysis.all_projections
+    weights = projection.w if _CPP_BATTERY else projection.weights_data
+    assert weights.size == 0  # Structural zeros are stripped.
     rng = np.random.RandomState(18)
     initial = [rng.uniform(0.01, 0.1, (sn.model.nvar, sn.nnodes,
                                      sn.model.number_of_modes))

@@ -8,7 +8,9 @@ under a private name (instead of patching the shared module and importing
 the canonical path) makes the substitution order-independent: whichever of
 the two modules a pytest session collects first, the canonical
 ``test_nb_hybrid`` module is always imported afterwards with the untouched
-Numba backend, and this battery always runs against C++.
+Numba backend, and this battery always runs against C++. The private copy
+uses explicit C++ assertions where regional EEG or CSR representation differs
+from the Numba contract.
 """
 
 import importlib.util
@@ -29,6 +31,8 @@ try:
     _spec.loader.exec_module(_canonical)
 finally:
     _nbh.NbHybridBackend = _nb_real_backend
+
+_canonical._CPP_BATTERY = True
 
 # re-export the canonical tests from the isolated copy (import-* semantics)
 for _name, _obj in list(vars(_canonical).items()):

@@ -44,6 +44,7 @@ jobs:
                             tvb/tests/library/simulator/backend/test_cpp_hybrid_sugar.py \
                             tvb/tests/library/simulator/backend/test_cpp_hybrid_multi_dt.py \
                             tvb/tests/library/simulator/backend/test_cpp_hybrid_monitors.py \
+                            tvb/tests/library/simulator/backend/test_cpp_hybrid_public_projection.py \
                             tvb/tests/library/simulator/backend/test_cpp_hybrid_coupling.py \
                             tvb/tests/library/simulator/backend/test_cpp_hybrid_models.py \
                             tvb/tests/library/simulator/backend/test_cpp_hybrid_stimuli.py \
