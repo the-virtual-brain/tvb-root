@@ -1064,12 +1064,12 @@ def _main(argv=None) -> int:
                                  only_supported=args.only_supported)
         emit_path = Path(args.emit)
         emit_path.parent.mkdir(parents=True, exist_ok=True)
-        emit_path.write_text(src)
+        emit_path.write_text(src)  # NOSONAR(S8707) Trusted build CLI intentionally allows caller-selected output paths.
         if args.meta:
             meta_path = Path(args.meta)
             meta_path.parent.mkdir(parents=True, exist_ok=True)
-            meta_path.write_text(json.dumps(meta, indent=2, sort_keys=True)
-                                 + "\n")
+            meta_path.write_text(  # NOSONAR(S8707) Trusted build CLI intentionally allows caller-selected output paths.
+                json.dumps(meta, indent=2, sort_keys=True) + "\n")
     except Exception as exc:
         print(f"dfungen: {exc}", file=sys.stderr)
         return 1
