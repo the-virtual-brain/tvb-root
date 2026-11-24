@@ -39,11 +39,12 @@ def _case(target):
         named_param = "unit.intra.a"
         descriptor = {"type": "cfun", "projection": "intra", "param_idx": 0}
 
-    projection = SimpleNamespace(name=None, cfun=cfun)
+    scheme = EulerDeterministic(dt=0.1)
+    projection = SimpleNamespace(name=None, cfun=cfun, dt=scheme.dt)
     subnet = SimpleNamespace(
         name="unit",
         model=model,
-        scheme=EulerDeterministic(dt=0.1),
+        scheme=scheme,
         projections=[projection],
     )
     network = SimpleNamespace(subnets=[subnet], projections=[])

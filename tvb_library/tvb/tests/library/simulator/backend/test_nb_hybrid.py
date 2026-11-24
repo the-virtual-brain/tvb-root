@@ -567,14 +567,15 @@ class TestNbHybridChunkSizeEquivalence(unittest.TestCase):
 
     def _intra(self, sn, n, length, weight_seed=1):
         w = _sparse_weights(n, n, seed=weight_seed)
-        lengths = sp.csr_matrix(w.toarray() * length)
+        lengths = w.copy()
+        lengths.data.fill(length)
         proj = IntraProjection(
             source_cvar=np.array([0], dtype=np.int_),
             target_cvar=np.array([0], dtype=np.int_),
             weights=w,
             lengths=lengths,
             cv=1.0,
-            dt=DT,
+            dt=sn.scheme.dt,
             scale=1.0,
             cfun=Linear(),
         )
@@ -642,6 +643,7 @@ class TestNbHybridChunkSizeEquivalence(unittest.TestCase):
         sn.configure()
         nets = NetworkSet(subnets=[sn], projections=[])
         nets.configure()
+        self.assertEqual(sn.projections[0].max_delay, 25)
 
         rng = np.random.RandomState(5)
         ic = [np.abs(rng.uniform(0.0, 0.2, (m.nvar, 3, 1))).astype(np.float64)]
