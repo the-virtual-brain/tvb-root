@@ -263,6 +263,10 @@ enum KMonKind {
   KMON_BOLD_BW_STREAM = 10  // staged global-only stream, not the endpoint monitor
 };
 
+inline bool average_window_kind(int kind) {
+  return kind == KMON_TAVG || kind == KMON_GLOBAL_AVG || kind == KMON_SPATIAL_AVG;
+}
+
 struct BwStreamRegion {
   double drive_sum = 0.0;
   double bold_sum = 0.0;
@@ -1166,6 +1170,24 @@ struct kmon {
     if (st.accum.size() != accum.size() || st.interim.size() != interim.size() ||
         st.stock.size() != stock.size() || st.bw_state.size() != bw_state.size())
       throw std::runtime_error(std::string(label) + "incompatible sibling snapshot buffers");
+
+    // Legacy monitors advance their own clocks, and legacy averages close on
+    // absolute monitor ticks, not on the staged monitor's window origin.
+    const bool averages = average_window_kind(kind) || kind == KMON_PROJECTION ||
+                          (kind == KMON_CTAVG && (istep > 1 || midpoint_time));
+    const uint64_t expected_count = averages ? st.m_step % (uint64_t)istep : 0;
+    uint64_t expected_interim = 0;
+    uint64_t expected_stock = 0;
+    if (kind == KMON_BOLD) {
+      const auto interim_period = (uint64_t)interim_istep;
+      const auto stock_rows = (uint64_t)stock_steps;
+      if (st.m_step != 0) expected_interim = (st.m_step - 1) % interim_period + 1;
+      const uint64_t interim_closes = st.m_step / interim_period;
+      if (interim_closes != 0) expected_stock = (interim_closes - 1) % stock_rows;
+    }
+    if (st.run_start > st.m_step || st.accum_count != expected_count ||
+        st.interim_count != expected_interim || st.stock_pos != expected_stock)
+      throw std::runtime_error(std::string(label) + "incompatible sibling snapshot counter phase");
   }
 
   // Commit without allocating. Pending rows are not checkpoint data.

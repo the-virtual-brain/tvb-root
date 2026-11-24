@@ -1562,6 +1562,14 @@ static KMonState dict_to_kmon_state(const nb::dict &d) {
   return st;
 }
 
+static KMonState dict_to_legacy_sibling_state(const nb::dict &d, const char *label) {
+  for (const char *key : {"m_step", "run_start", "accum_count", "interim_count", "stock_pos"}) {
+    if (!d.contains(key) || !PyLong_CheckExact(d[key].ptr()))
+      throw std::runtime_error(std::string(label) + "invalid sibling snapshot counter: " + key);
+  }
+  return dict_to_kmon_state(d);
+}
+
 static KMonState dict_to_staged_state(const nb::dict &d, bool bw,
                                       const std::string &label) {
   for (const char *key : {"slot", "kind", "width", "n_out_v", "n_out_space",
@@ -1691,10 +1699,6 @@ static void configure_window_projection(kmon<W> &m, const nb::dict &d, int n_nod
 
 static constexpr const char *local_window_label = "Recorder complete window: ";
 static constexpr int recorder_slot_base = 10000;  // Python _RECORDER_SLOT_BASE
-
-static bool average_window_kind(int kind) {
-  return kind == KMON_TAVG || kind == KMON_GLOBAL_AVG || kind == KMON_SPATIAL_AVG;
-}
 
 static bool matches_native_clock(double clock, float native) {
   return std::isfinite(clock) && clock > 0.0 && clock <= std::numeric_limits<float>::max() &&
@@ -1846,8 +1850,9 @@ static void parse_kmon_spec(nb::handle item, int n_src_v, int n_space,
     const bool window_projection = complete_window && kind == KMON_PROJECTION;
     std::vector<int> voi;
     if (d.contains("voi") && !d["voi"].is_none())
-      voi = window_projection
-          ? to_checked_indices(d["voi"], (size_t)n_src_v, projection_label, "observed VOI")
+      voi = complete_window
+          ? to_checked_indices(d["voi"], (size_t)n_src_v,
+                               window_projection ? projection_label : "global complete window", "observed VOI")
           : to_int_vec(d["voi"]);
 
     if (complete_window &&
@@ -2132,9 +2137,10 @@ template <int W> struct simw {
       if (gathered_window)
         return to_checked_indices(h, (size_t)source_nodes,
                                   "global gathered complete window", "node gather index");
-      return has_bw_stream || has_projection_window
+      return staged
           ? to_checked_indices(h, (size_t)sn[0].n_node,
-                               has_bw_stream ? "global BW stream" : projection_label,
+                               has_bw_stream ? "global BW stream" : has_projection_window
+                                   ? projection_label : "global complete window",
                                "node gather index")
           : to_int_vec(h);
     };
@@ -2320,6 +2326,12 @@ template <int W> struct simw {
                        [](const auto &m) { return m.gathered_window; });
   }
 
+  bool regional_average_window_armed() const {
+    return std::any_of(global_mons.begin(), global_mons.end(), [](const auto &m) {
+      return m.complete_window && !m.gathered_window && average_window_kind(m.kind);
+    });
+  }
+
   void set_observed_rows(int si, std::vector<voispec> rows) {
     auto &current = voi_specs[si];
     if (!std::equal(current.begin(), current.end(), rows.begin(), rows.end(),
@@ -2330,6 +2342,8 @@ template <int W> struct simw {
         throw std::runtime_error("global complete window projection: detach before changing observed rows");
       if (gathered_window_armed())
         throw std::runtime_error("global gathered complete window: detach before changing observed rows");
+      if (regional_average_window_armed())
+        throw std::runtime_error("global complete window: detach before changing observed rows");
       if (std::any_of(mons[si].begin(), mons[si].end(), [](const auto &m) { return m.local_window; }))
         throw std::runtime_error("Recorder complete window: detach before changing observed rows");
     }
@@ -2496,7 +2510,7 @@ template <int W> struct simw {
           it->validate_local_window_state(st, t_abs);
           staged.emplace_back(&*it, std::move(st));
         } else {
-          KMonState st = dict_to_kmon_state(d);
+          KMonState st = dict_to_legacy_sibling_state(d, local_window_label);
           it->validate_legacy_sibling_state(st, local_window_label);
           staged.emplace_back(&*it, std::move(st));
         }
@@ -2623,13 +2637,14 @@ template <int W> struct simw {
               : "global complete window: missing compatible snapshot monitor");
     }
 
-    // A checked gather's checkpoint must cover the entire attached global set exactly once.
+    // With any staged attachment, validate the entire set before committing any state.
     // Keep strict matching, validation, and output clearing out of the historical restore path.
-    const bool has_gathered_window = gathered_window_armed();
-    const bool strict_siblings = has_bw_stream || has_projection_window || has_gathered_window;
+    const bool strict_siblings = std::any_of(global_mons.begin(), global_mons.end(),
+                                             [](const auto &m) { return m.staged_global(); });
     const char *sibling_label = has_bw_stream ? "global BW stream: "
-                               : has_gathered_window ? gathered_window_label
-                                                    : "global complete window projection: ";
+                               : gathered_window_armed() ? gathered_window_label
+                               : has_projection_window ? "global complete window projection: "
+                                                       : "global complete window: ";
     for (size_t mi = 0; mi < states.size(); mi++) {
       nb::dict d = nb::cast<nb::dict>(states[mi]);
       if (d.contains("window_config") || d.contains("bw_stream_config") ||
@@ -2639,7 +2654,8 @@ template <int W> struct simw {
           if (!d.contains(key) || d[key].is_none())
             throw std::runtime_error(std::string(sibling_label) + "incomplete sibling snapshot identity or geometry");
       }
-      KMonState st = dict_to_kmon_state(d);
+      KMonState st = strict_siblings ? dict_to_legacy_sibling_state(d, sibling_label)
+                                     : dict_to_kmon_state(d);
       const auto matches = [&](const auto &m) {
         return !m.staged_global() && m.slot == st.slot && m.kind == st.kind;
       };
@@ -3178,6 +3194,8 @@ struct sim {
         throw std::runtime_error("global complete window projection: detach before adding a subnet");
       if (sw.gathered_window_armed())
         throw std::runtime_error("global gathered complete window: detach before adding a subnet");
+      if (sw.regional_average_window_armed())
+        throw std::runtime_error("global complete window: detach before adding a subnet");
       constexpr int W = std::remove_reference_t<decltype(sw)>::W_CONST;
       subnet<W> s;
       s.alloc(n_node, n_svar, n_parm, n_cvar, model_id, H, n_modes);
@@ -3443,6 +3461,8 @@ struct sim {
         throw std::runtime_error("global complete window projection: detach before changing the clock");
       if (s.gathered_window_armed() && s.dt != dt)
         throw std::runtime_error("global gathered complete window: detach before changing the clock");
+      if (s.regional_average_window_armed() && s.dt != dt)
+        throw std::runtime_error("global complete window: detach before changing the clock");
       s.integ_id = integ_id;
       s.dt = dt;
       s.tavg_period = tavg_period;

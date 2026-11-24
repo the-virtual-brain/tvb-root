@@ -423,7 +423,7 @@ def test_public_cpp_global_and_recorder_clocks_differ_for_slow_subnet(route, mon
         return
 
     [(times, data)] = sim.run(initial_conditions=[INITIAL.copy(), INITIAL.copy()])
-    assert sorted(lowered) == ["GlobalAverage", "GlobalAverage", "TemporalAverage", "TemporalAverage"]
+    assert sorted(lowered) == ["GlobalAverage", "GlobalAverage", "TemporalAverage"]
     np.testing.assert_array_equal(times, DT * np.array([2, 6]))
     # The global monitor sees held slow states on master ticks 1, 2, 3, 4:
     # integrated elapsed steps 0, 2, 2, 4. A local Recorder sees only 2, 4.

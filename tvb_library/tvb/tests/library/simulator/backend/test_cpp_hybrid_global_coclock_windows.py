@@ -187,6 +187,24 @@ def test_coclock_global_projection_rearms_changed_gain_and_resumes_open_window(c
     assert set(snapshot["coclock_projection_identities"]) == {1}
     assert "bw_projection_identities" not in snapshot
 
+    native = compiled._sim
+    before = native.get_global_monitor_states()
+    for field, value, error in (
+        ("accum_count", None, "invalid sibling snapshot counter: accum_count"),
+        ("accum_count", 3.0, "invalid sibling snapshot counter: accum_count"),
+        ("run_start", False, "invalid sibling snapshot counter: run_start"),
+        ("accum_count", 2, "incompatible sibling snapshot counter phase"),
+    ):
+        candidate = native.get_global_monitor_states()
+        candidate[0]["accum"] += 1.0  # valid, but must not commit on sibling rejection
+        if value is None:
+            candidate[1].pop(field)
+        else:
+            candidate[1][field] = value
+        with pytest.raises(RuntimeError, match=f"global gathered complete window: {error}"):
+            native.set_global_monitor_states(candidate)
+        np.testing.assert_equal(native.get_global_monitor_states(), before)
+
     requested[1].gain *= -2
     fresh = compiled.run(11, monitors=requested, initial_states=INITIAL)
     _assert_streams(_unpack_global(fresh), _mixed_oracle(11, gain=-2 * PROJECTION_GAIN))
@@ -199,6 +217,24 @@ def test_coclock_global_projection_rearms_changed_gain_and_resumes_open_window(c
     assert "coclock_projection_identities" not in neural
     for i, state in enumerate(neural["states"]):
         np.testing.assert_allclose(state, _post_update(i, 11), rtol=0, atol=1e-6)
+
+
+@pytest.mark.parametrize("resuming", [False, True], ids=["fresh", "resume"])
+def test_coclock_global_projection_companion_rejects_observation_noise(cpp, resuming):
+    be, net = cpp.CppHybridBackend(), _network()
+    requested = _mixed_windows()
+    if resuming:
+        _, snapshot = be.compile(net).run(7, monitors=requested, initial_states=INITIAL,
+                                          return_snapshot=True)
+    requested[1].obsnoise = noise.Additive(nsig=np.array([0.25]))
+    target = be.compile(net)
+    with pytest.raises(NotImplementedError, match="Projection companions require obsnoise=None"):
+        if resuming:
+            target.resume(snapshot, 4, monitors=requested)
+        else:
+            target.run(11, monitors=requested, initial_states=INITIAL)
+    assert target._sim.t_abs() == (7 if resuming else 0)
+    assert target._sim.get_global_monitor_states() == []
 
 
 @pytest.mark.parametrize("change", ["gain", "reference", "period", "voi-order", "missing-sidecar", "mapping"])

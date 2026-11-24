@@ -206,9 +206,31 @@ def test_bw_projection_sidecar_only_fingerprints_unstaged_companion(cpp):
         be.compile(net).resume(snapshot, 9, monitors=mons)
 
 
-def test_legacy_projection_resume_still_accepts_snapshot_without_bw_identity(cpp):
+@pytest.mark.parametrize("resuming", [False, True], ids=["fresh", "resume"])
+def test_bw_global_projection_companion_rejects_observation_noise(cpp, resuming):
+    be, net = cpp.CppHybridBackend(), _network(indices=None)
+    projection = _projection(monitors.Projection)
+    requested = [_monitor(), projection]
+    if resuming:
+        _, snapshot = be.compile(net).run(7, monitors=requested, initial_states=[INITIAL],
+                                          return_snapshot=True)
+    projection.obsnoise = noise.Additive(nsig=np.array([0.25]))
+    target = be.compile(net)
+    with pytest.raises(NotImplementedError, match="Projection companions require obsnoise=None"):
+        if resuming:
+            target.resume(snapshot, 9, monitors=requested)
+        else:
+            target.run(16, monitors=requested, initial_states=[INITIAL])
+    assert target._sim.t_abs() == (7 if resuming else 0)
+    assert target._sim.get_global_monitor_states() == []
+
+
+@pytest.mark.parametrize("noisy", [False, True], ids=["noise-none", "noise-nonzero"])
+def test_legacy_projection_resume_still_accepts_snapshot_without_bw_identity(cpp, noisy):
     # Bare Projection still uses the legacy route; EEG/MEG/iEEG do not.
     be, net, projection = cpp.CppHybridBackend(), _network(), _projection(monitors.Projection)
+    if noisy:
+        projection.obsnoise = noise.Additive(nsig=np.array([0.25]))
     _, snapshot = be.compile(net).run(7, monitors=[projection],
                                       initial_states=[INITIAL], return_snapshot=True)
     assert "bw_projection_identities" not in snapshot

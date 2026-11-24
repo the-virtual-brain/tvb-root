@@ -152,6 +152,7 @@ def test_native_complete_window_restore_rejects_incompatible_state(change):
     elif change == "count":
         states[1]["accum_count"] = 1
     elif change == "source_voi":
+        target.set_global_monitors(GATHER, [])
         target.set_voi_specs(0, [1, 0, 0, 0, 0, 0])
         target.set_global_monitors(GATHER, _specs())
     with pytest.raises(RuntimeError, match="global complete window:"):
@@ -192,6 +193,49 @@ def test_native_complete_window_validates_gather_before_monitor_configuration(ch
     np.testing.assert_equal(sim.get_global_monitor_states(), before)
     _assert_streams(sim.take_global_monitor_outputs(), _window_reference(5, 4))
     _assert_streams(_run(sim, 3), _window_reference(4, 4, INITIAL + 4 * DELTA, origin=4))
+
+
+def test_native_regional_windows_guard_source_clock_and_topology_until_detached():
+    sim = _armed()
+    with pytest.raises(RuntimeError, match="global complete window: detach before changing observed rows"):
+        sim.set_voi(0, [0])  # reject a shrink before the observed buffer is allocated
+    _run_pending(sim, 5)
+    before = sim.get_global_monitor_states()
+    with pytest.raises(RuntimeError, match="global complete window: detach before changing observed rows"):
+        sim.set_voi_specs(0, [1, 0, 0, 0, 0, 0])  # same extent, different identity
+    with pytest.raises(RuntimeError, match="global complete window: detach before changing the clock"):
+        sim.set_opts(0, 2 * DT, 1)
+    with pytest.raises(RuntimeError, match="global complete window: detach before adding a subnet"):
+        sim.add_subnet(3, 1, 1, 1, 4, 0, 1, dt=DT)
+    sim.set_voi_specs(0, [0, 0, 0, 1, 0, 0])  # identical rows and clock remain valid
+    sim.set_opts(0, DT, 3)
+    np.testing.assert_equal(sim.get_global_monitor_states(), before)
+    _assert_streams(sim.take_global_monitor_outputs(), _window_reference(5, 4))
+
+    sim.set_global_monitors(GATHER, [])
+    sim.set_voi(0, [0])
+    gather = [dict(n_voi=1, n_node=3)]
+    sim.set_global_monitors(gather, [dict(_specs()[0], voi=[0])])
+    times, values = _run(sim, 4)[0]
+    np.testing.assert_array_equal(times, [7 * DT])
+    np.testing.assert_array_equal(values[0, 0, :, 0], INITIAL + 7.5 * DELTA)
+    sim.set_global_monitors(gather, [])
+    sim.set_opts(0, 2 * DT, 1)
+    sim.add_subnet(3, 1, 1, 1, 4, 0, 1, dt=2 * DT)
+
+
+def test_native_regional_window_checks_indices_before_narrowing():
+    sim = _sim()
+    spec = _specs()[0]
+    with pytest.raises(RuntimeError, match="invalid observed VOI"):
+        sim.set_global_monitors(GATHER, [dict(spec, voi=np.array([2**32], dtype=np.int64))])
+    with pytest.raises(RuntimeError, match="invalid node gather index"):
+        sim.set_global_monitors([dict(GATHER[0], node_indices=np.array([2**32, 1, 2], dtype=np.int64))],
+                                [spec])
+    gather = [dict(GATHER[0], node_indices=np.array([2, 0, 1], dtype=np.int64))]
+    sim.set_global_monitors(gather, [dict(spec, voi=np.array([1, 0], dtype=np.int64))])
+    times, values = _window_reference(4, 4)[0]
+    _assert_streams(_run(sim, 4), [(times, values[:, :, [1, 2, 0], :])])
 
 
 def test_native_complete_window_rejects_tick_wrap_before_integration_or_output_clear():
@@ -357,6 +401,44 @@ def test_native_projection_window_rejected_sibling_preserves_state_and_pending_r
     np.testing.assert_equal(target.get_global_monitor_states(), before)
     assert all(times.size for times, _ in expected)
     _assert_streams(target.take_global_monitor_outputs(), expected)
+
+
+@pytest.mark.parametrize("field, value", [("width", 2), ("n_out_space", 1)], ids=["width", "space"])
+def test_native_regional_window_restore_is_transactional_with_point_siblings(field, value):
+    specs = [_specs()[0], dict(slot=1, kind=2, istep=2, dt=DT, voi=[0]),
+             dict(slot=2, kind=2, istep=3, dt=DT, voi=[0])]
+    sim = _armed(specs)
+    _run_pending(sim, 6)
+    before = sim.get_global_monitor_states()
+    candidate = sim.get_global_monitor_states()
+    candidate[0]["accum"] += 1.0
+    candidate[1]["run_start"] += 1  # valid legacy change before the malformed record
+    candidate[2][field] = value
+    with pytest.raises(RuntimeError, match="global complete window: incompatible sibling snapshot geometry"):
+        sim.set_global_monitor_states(candidate)
+    # Assert rejection and unchanged geometry before any drain.
+    np.testing.assert_equal(sim.get_global_monitor_states(), before)
+    expected = _run(_armed(specs), 6)
+    assert all(times.size for times, _ in expected)
+    _assert_streams(sim.take_global_monitor_outputs(), expected)
+
+    _run_pending(sim, 6)  # requeue at least one output for every attachment
+    valid = sim.get_global_monitor_states()
+    valid[1]["run_start"] += 1
+    sim.set_global_monitor_states(valid[::-1])
+    np.testing.assert_equal(sim.get_global_monitor_states(), valid)
+    assert all(times.size == values.size == 0 for times, values in sim.take_global_monitor_outputs())
+
+
+def test_native_legacy_only_global_restore_retains_counter_defaults():
+    sim = _armed([dict(slot=0, kind=2, istep=3, dt=DT, voi=[0])])
+    _run_pending(sim, 4)
+    states = sim.get_global_monitor_states()
+    assert states[0]["m_step"] == 4
+    for field in ("m_step", "run_start", "accum_count", "interim_count", "stock_pos"):
+        states[0].pop(field)
+    sim.set_global_monitor_states(states)
+    assert sim.get_global_monitor_states()[0]["m_step"] == 0
 
 
 def test_native_projection_window_restores_reordered_subsamples_and_continues():

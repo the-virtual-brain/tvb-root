@@ -129,6 +129,20 @@ def test_run_network_windows_independent_of_chunks(backend, chunk, window):
 
 
 @pytest.mark.parametrize("kind", KINDS)
+def test_regional_complete_window_checks_voi_before_narrowing(backend, kind):
+    be, net = backend.CppHybridBackend(), _network()
+    mon = _monitor(kind)
+    mon.variables_of_interest = np.array([2**32], dtype=np.int64)
+    with pytest.raises(ValueError, match="regional complete windows require valid observed VOI indices"):
+        be.run_network(net, 8, monitors=[mon], initial_states=[INITIAL])
+
+    mon.variables_of_interest = np.array([1, 0], dtype=np.int64)
+    [[(times, data)]] = be.run_network(net, 8, monitors=[mon], initial_states=[INITIAL])
+    np.testing.assert_array_equal(times, DT * np.array([2, 6]))
+    _assert_values(data, _oracle(kind, _trajectory(8), 4))
+
+
+@pytest.mark.parametrize("kind", KINDS)
 @pytest.mark.parametrize("period", [0.0, 0.4375, 4 * DT + 1e-10, np.inf])
 def test_run_network_rejects_invalid_window_period(backend, kind, period):
     with pytest.raises(ValueError, match=r"commensurate with source dt.*positive integer"):

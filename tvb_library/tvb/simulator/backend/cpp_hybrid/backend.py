@@ -901,10 +901,6 @@ class CompiledCppSim:
                 "C++ Recorder complete windows require native collection, width 1 and one source mode"
             )
         n_voi = len(sn.voi) // 3
-        voi = monitor.variables_of_interest
-        if voi is not None and (voi.ndim != 1 or voi.dtype.kind not in "iu"
-                                or np.any(voi < 0) or np.any(voi >= n_voi)):
-            raise ValueError("C++ Recorder complete windows require valid observed VOI indices")
         period = self._backend._complete_window_istep(monitor, float(sn.dt), scope="Recorder")
         spec = self._backend._monitor_attach_spec(
             _RECORDER_SLOT_BASE + index, monitor, n_voi, sn.n_nodes, float(sn.dt),
@@ -1882,6 +1878,16 @@ class CppHybridBackend:
         return arr.tolist() if arr.size > 0 else []
 
     @staticmethod
+    def _checked_monitor_voi_list(m, n_src_v, scope):
+        voi = m.variables_of_interest
+        if voi is None:
+            return []
+        if (voi.ndim != 1 or voi.dtype.kind not in "iu"
+                or np.any(voi < 0) or np.any(voi >= n_src_v)):
+            raise ValueError(f"C++ {scope} require valid observed VOI indices")
+        return voi.tolist()
+
+    @staticmethod
     def _complete_window_istep(m, dt, scope="regional", clock_name="source"):
         ticks = float(m.period) / dt
         if np.isfinite(ticks):
@@ -1901,10 +1907,7 @@ class CppHybridBackend:
         if m.obsnoise is not None:
             raise NotImplementedError("C++ EEG/MEG/iEEG require obsnoise=None")
 
-        voi = m.variables_of_interest
-        if voi is not None and (voi.ndim != 1 or voi.dtype.kind not in "iu"
-                                or np.any(voi < 0) or np.any(voi >= n_src_v)):
-            raise ValueError("C++ EEG/MEG/iEEG require valid observed VOI indices")
+        voi = CppHybridBackend._checked_monitor_voi_list(m, n_src_v, "EEG/MEG/iEEG")
 
         # A lazy file cache can look regional by shape alone. Require the
         # caller to supply gain in local-region order through the setter.
@@ -1947,7 +1950,7 @@ class CppHybridBackend:
             if usable is not None:
                 ref_vec[~usable] = 0.0
 
-        return dict(kind=8, cadence_K=1, voi=[] if voi is None else voi.tolist(),
+        return dict(kind=8, cadence_K=1, voi=voi,
                     gain=gain, ref_vec=ref_vec)
 
     def _monitor_attach_spec(
@@ -1997,15 +2000,10 @@ class CppHybridBackend:
             if isinstance(m, _REGIONAL_PROJECTION_MONITORS):
                 spec.update(self._regional_projection_spec(m, n_src_v, n_space))
                 return spec
-            if gathered_window:
-                voi = m.variables_of_interest
-                if voi is not None and (voi.ndim != 1 or voi.dtype.kind not in "iu"
-                                        or np.any(voi < 0) or np.any(voi >= n_src_v)):
-                    raise ValueError("C++ gathered global complete windows require valid observed VOI indices")
-            spec["voi"] = self._monitor_voi_list(m)
+            scope = "Recorder" if local_window else "gathered global" if gathered_window else "regional"
+            spec["voi"] = self._checked_monitor_voi_list(m, n_src_v, f"{scope} complete windows")
             if isinstance(m, SpatialAverage):
                 weights = getattr(m, "spatial_mean", None)
-                scope = "Recorder" if local_window else "gathered global" if gathered_window else "regional"
                 if (local_window or gathered_window) and weights is not None and np.asarray(weights).dtype.kind not in "fiu":
                     raise ValueError(f"C++ {scope} SpatialAverage requires real spatial_mean weights")
                 if weights is not None:
@@ -2368,6 +2366,15 @@ class CppHybridBackend:
         n_sn = len(analysis.subnets)
         should_merge = (n_sn > 1) and _can_merge_subnets(analysis.subnets)
 
+        checked_projection_companions = bool(balloon_windkessel_specs or (gathered_window_sources and should_merge))
+        if checked_projection_companions:
+            from tvb.simulator.monitors import Projection
+
+            for _, m in kernel_global:
+                if (isinstance(m, Projection) and not isinstance(m, _REGIONAL_PROJECTION_MONITORS)
+                        and m.obsnoise is not None):
+                    raise NotImplementedError("C++ checked global Projection companions require obsnoise=None")
+
         if not _skip_init:
             # set_subnet_state resets the simulator tick. Arm/reset staged
             # monitors only after the fresh clock and state are initialized.
@@ -2447,7 +2454,7 @@ class CppHybridBackend:
                 )
                 for mi, m in kernel_global
             ]
-            if balloon_windkessel_specs or (gathered_window_sources and should_merge):
+            if checked_projection_companions:
                 projections = [spec for spec in g_atts
                                if spec["kind"] == 8 and not spec.get("complete_window")]
                 if projections and (_skip_init or _return_snapshot):

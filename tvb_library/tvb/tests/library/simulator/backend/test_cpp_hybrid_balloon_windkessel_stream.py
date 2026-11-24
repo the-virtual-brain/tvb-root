@@ -364,40 +364,51 @@ def test_native_bw_stream_accepts_a_binary32_representation_of_a_10ms_divisor():
 
 def test_native_bw_stream_coexists_with_complete_window_hrf_and_endpoint_bw():
     companions = [dict(kind=4, slot=1, complete_window=True, istep=4, dt=DT, voi=[1]),
-                  dict(kind=3, slot=2, istep=4, interim_istep=4, stock_steps=1,
-                       hrf=[1], dt=DT, voi=[1]),
+                  dict(kind=3, slot=2, istep=4, interim_istep=4, stock_steps=3,
+                       hrf=[1, 0.25, 0.5], dt=DT, voi=[1]),
                   dict(kind=9, slot=3, istep=4, bw_dt=0.0025, dt=DT, voi=[0])]
     sim = _armed(extra=companions)
-    obs = _neural_fixture(2)
+    obs = _neural_fixture(5, tail=0)
     delta = _increments(obs)
     _run(sim, delta[:7], drain=False)
-    first = sim.take_global_monitor_outputs()
-    states = sim.get_global_monitor_states()
-    resumed = _armed(extra=companions)
-    _run(resumed, np.zeros_like(delta[:7]), drain=False)
-    resumed.set_subnet_state(0, sim.get_subnet_state(0))
-    resumed.set_subnet_buf(0, sim.get_subnet_buf(0))
-    resumed.set_t_abs(sim.t_abs())
-    # Reversed record order, nontrivial sibling state, and pending output in
-    # every target monitor. Successful restore adopts only checkpoint state.
-    resumed.set_global_monitor_states(states[::-1])
-    np.testing.assert_equal(resumed.get_global_monitor_states(), states)
-    for times, values in resumed.take_global_monitor_outputs():
-        assert times.size == values.size == 0
-    for target in (sim, resumed):
-        _run(target, delta[7:8], drain=False)
-    second = resumed.take_global_monitor_outputs()
-    for actual, expected in zip(second, sim.take_global_monitor_outputs()):
-        _assert_stream(actual, expected)
-    bw, average, hrf, endpoint = [tuple(np.concatenate(parts) for parts in zip(a, b))
-                                  for a, b in zip(first, second)]
+    parts = [sim.take_global_monitor_outputs()]
+    # Restore with an open interim bin, exactly at a close on row 1,
+    # and exactly at the first wrapped close on row 0.
+    for split, stop, interim_count, stock_pos in [(7, 8, 3, 0), (8, 16, 4, 1), (16, 20, 4, 0)]:
+        states = sim.get_global_monitor_states()
+        hrf_state = states[2]
+        assert (hrf_state["m_step"], hrf_state["interim_count"], hrf_state["stock_pos"]) == (
+            split, interim_count, stock_pos,
+        )
+        resumed = _armed(extra=companions)
+        _run(resumed, np.zeros_like(delta[:split]), drain=False)
+        resumed.set_subnet_state(0, sim.get_subnet_state(0))
+        resumed.set_subnet_buf(0, sim.get_subnet_buf(0))
+        resumed.set_t_abs(sim.t_abs())
+        # Reversed records and pending output in every target monitor.
+        resumed.set_global_monitor_states(states[::-1])
+        np.testing.assert_equal(resumed.get_global_monitor_states(), states)
+        for times, values in resumed.take_global_monitor_outputs():
+            assert times.size == values.size == 0
+        for target in (sim, resumed):
+            _run(target, delta[split:stop], drain=False)
+        parts.append(resumed.take_global_monitor_outputs())
+        for actual, expected in zip(parts[-1], sim.take_global_monitor_outputs()):
+            _assert_stream(actual, expected)
+        np.testing.assert_equal(resumed.get_global_monitor_states(), sim.get_global_monitor_states())
+
+    bw, average, hrf, endpoint = [tuple(np.concatenate(rows) for rows in zip(*streams))
+                                  for streams in zip(*parts)]
     _assert_oracle(bw, _oracle(obs), 10)
-    np.testing.assert_array_equal(average[0], [5, 15])
-    np.testing.assert_array_equal(hrf[0], [10, 20])
-    np.testing.assert_array_equal(endpoint[0], [10, 20])
-    expected = obs[:8, [1, 2, 0]].reshape(2, 4, 3).mean(axis=1)[:, None, :, None]
+    np.testing.assert_array_equal(average[0], [5, 15, 25, 35, 45])
+    np.testing.assert_array_equal(hrf[0], [10, 20, 30, 40, 50])
+    np.testing.assert_array_equal(endpoint[0], hrf[0])
+    expected = obs[:, [1, 2, 0]].reshape(5, 4, 3).mean(axis=1)[:, None, :, None]
+    expected_hrf = expected.copy()
+    expected_hrf[1:] += 0.5 * expected[:-1]
+    expected_hrf[2:] += 0.25 * expected[:-2]
     np.testing.assert_array_equal(average[1], expected)
-    np.testing.assert_array_equal(hrf[1], expected)
+    np.testing.assert_array_equal(hrf[1], expected_hrf)
     np.testing.assert_array_equal(endpoint[1], np.zeros_like(expected))
 
 

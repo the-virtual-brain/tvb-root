@@ -5,9 +5,12 @@ from copy import deepcopy
 import numpy as np
 import pytest
 
+from tvb.datatypes.equations import Linear
+from tvb.datatypes.patterns import StimuliRegion
 from tvb.simulator import integrators, models, monitors, noise
 from tvb.simulator.hybrid import NetworkSet, Simulator, Subnetwork
 from tvb.simulator.hybrid.recorder import Recorder
+from tvb.simulator.hybrid.stimulus import Stim
 
 
 DT = 0.125
@@ -263,6 +266,10 @@ def test_recorder_window_native_restore_validates_all_before_commit(cpp):
     ("slot", "unmatched or ambiguous snapshot monitor"),
     ("duplicate", "duplicate snapshot monitor"),
     ("missing", "missing compatible snapshot monitor"),
+    pytest.param("missing-step", "invalid sibling snapshot counter: m_step", id="missing-step"),
+    pytest.param("float-step", "invalid sibling snapshot counter: m_step", id="float-step"),
+    pytest.param("bool-origin", "invalid sibling snapshot counter: run_start", id="bool-origin"),
+    pytest.param("late-origin", "incompatible sibling snapshot counter phase", id="late-origin"),
 ])
 def test_recorder_window_native_restore_rejects_bad_legacy_sibling_without_committing(cpp, change, error):
     sim = cpp.CppHybridBackend().compile(_network())
@@ -286,6 +293,14 @@ def test_recorder_window_native_restore_rejects_bad_legacy_sibling_without_commi
         slow.append(deepcopy(slow[-1]))
     elif change == "missing":
         slow.pop()
+    elif change == "missing-step":
+        slow[-1].pop("m_step")
+    elif change == "float-step":
+        slow[-1]["m_step"] = float(slow[-1]["m_step"])
+    elif change == "bool-origin":
+        slow[-1]["run_start"] = False
+    elif change == "late-origin":
+        slow[-1]["run_start"] = slow[-1]["m_step"] + 1
     with pytest.raises(RuntimeError, match=error):
         sim._sim.set_monitor_states(corrupted)
     np.testing.assert_equal(sim._sim.get_monitor_states(), state)
@@ -397,6 +412,45 @@ def test_recorder_windows_ineligible_requests_do_not_fall_back(cpp, monkeypatch,
     with pytest.raises((ValueError, NotImplementedError), match=message):
         be.compile(_network()).run(7, initial_states=INITIAL, subnet_monitors=specs)
     assert calls == []
+
+
+@pytest.mark.parametrize("period, midpoint", [(1, False), (1, True), (2, True)],
+                         ids=["direct-point", "period-one-midpoint", "multi-tick-average"])
+def test_recorder_strict_restore_continues_legacy_ctavg(cpp, period, midpoint):
+    be, net = cpp.CppHybridBackend(), _network()
+    slow = net.subnets[1]
+    source_dt = slow.scheme.dt
+    spatial = np.array([1.0, 2.0, 4.0])
+    # Make the open accumulator observable after restore: coupling ramps on
+    # the master grid, and this Recorder's CTAVG sees only slow source ticks.
+    pattern = StimuliRegion.from_weights(spatial, Linear(parameters={"a": 1.0, "b": 0.0}))
+    slow.stimuli = [Stim(target=slow, stimulus=pattern, target_cvar=np.array([0]))]
+    coupling = (monitors.AfferentCouplingTemporalAverage(period=period * source_dt)
+                if midpoint else monitors.AfferentCoupling())
+    requested = {slow.name: [monitors.TemporalAverage(period=2 * source_dt), coupling]}
+    split, stop = 7, 13
+    _, snap, head = be.compile(net).run(split, initial_states=INITIAL, subnet_monitors=requested,
+                                        return_snapshot=True)
+    window, state = snap["kmon_states"][1]
+    assert window["accum_count"] == 1 and "local_window_config" in window
+    assert state["kind"] == 5 and "local_window_config" not in state
+    assert (state["m_step"], state["run_start"], state["accum_count"]) == (3, 0, 3 % period)
+    if period > 1:
+        np.testing.assert_array_equal(state["accum"], 3 * source_dt * spatial)
+
+    snap["kmon_states"][1].reverse()
+    _, tail = be.compile(net).resume(snap, stop - split, subnet_monitors=requested)
+    _, whole = be.compile(net).run(stop, initial_states=INITIAL, subnet_monitors=requested)
+    for (tail_t, tail_x), (head_t, _), (whole_t, whole_x) in zip(
+            tail[slow.name], head[slow.name], whole[slow.name]):
+        np.testing.assert_array_equal(tail_t, whole_t[head_t.size:])
+        np.testing.assert_array_equal(tail_x, whole_x[head_t.size:])
+
+    closes = np.arange(4, 7, period)
+    times, values = tail[slow.name][1]
+    np.testing.assert_array_equal(times, (closes - (period / 2 if midpoint else 0)) * source_dt)
+    mean_coupling = (closes - (period - 1) / 2)[:, None] * source_dt * spatial
+    np.testing.assert_array_equal(values, mean_coupling[:, None, :, None])
 
 
 def test_recorder_legacy_coupling_average_and_neural_only_resume_are_unchanged(cpp):
