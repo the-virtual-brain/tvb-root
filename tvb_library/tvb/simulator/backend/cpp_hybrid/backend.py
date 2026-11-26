@@ -1127,7 +1127,7 @@ class CppHybridBackend:
                         "CppHybridBackend only supports Additive noise."
                     )
             model_local_coupling = getattr(sn.scheme, "model_local_coupling", 0.0)
-            if np.any(np.asarray(model_local_coupling) != 0.0):
+            if np.any(np.asarray(model_local_coupling) != 0.0):  # NOSONAR(S1244) exact zero allowed; nonzero rejected.
                 raise NotImplementedError(
                     "CppHybridBackend does not support nonzero local_coupling."
                 )
