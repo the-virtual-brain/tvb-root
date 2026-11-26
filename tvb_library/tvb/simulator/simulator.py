@@ -287,6 +287,18 @@ class Simulator(HasTraits):
             coupling = coupling[:, self.surface.region_mapping]
         return coupling
 
+    #adding my new function
+
+    def _loop_compute_node_coupling_stages(self, step, stage_offsets=(0, 1)):
+        """Compute delayed node coupling values for multiple integration stages."""
+        current_stages, delayed_stages = self.history.query_stages(step, stage_offsets)
+        # If coupling functor supports batched stages, evaluate across stage dimension
+        # Otherwise evaluate per stage:
+        couplings = [self.coupling(step + offset, self.history) for offset in stage_offsets]
+        if self.surface is not None:
+            couplings = [c[:, self.surface.region_mapping] for c in couplings]
+        return numpy.array(couplings)
+
     def _prepare_stimulus(self):
         if self.stimulus is None:
             stimulus = 0.0
@@ -353,14 +365,33 @@ class Simulator(HasTraits):
             if not numpy.issubdtype(type(n_steps), numpy.integer):
                 raise TypeError("Incorrect type for n_steps: %s, expected integer" % type(n_steps))
 
+
+        if getattr(self.integrator, "n_dx", 1) > 1 or isinstance(self.integrator, (integrators.HeunDeterministic,
+                                                                                   integrators.HeunStochastic)):
+            node_coupling = self._loop_compute_node_coupling_stages(start_step, (0, 1))
+        else:
+            node_coupling = self._loop_compute_node_coupling(start_step)
+
+        # Initial coupling calculation before the loop
+        if getattr(self.integrator, "stages", 1) > 1:
+                node_coupling = self._loop_compute_node_coupling_stages(start_step, (0, 1))
+        else:
+                node_coupling = self._loop_compute_node_coupling(start_step)
+
         for step in range(start_step, start_step + n_steps):
-            self._loop_update_stimulus(step, stimulus)
-            state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, stimulus)
-            self._loop_update_history(step, state)
-            node_coupling = self._loop_compute_node_coupling(step + 1)
-            output = self._loop_monitor_output(step, state, node_coupling)
-            if output is not None:
-                yield output
+                self._loop_update_stimulus(step, stimulus)
+                state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, stimulus)
+                self._loop_update_history(step, state)
+
+                # Coupling update inside the simulation loop
+                if getattr(self.integrator, "stages", 1) > 1:
+                    node_coupling = self._loop_compute_node_coupling_stages(step + 1, (0, 1))
+                else:
+                    node_coupling = self._loop_compute_node_coupling(step + 1)
+
+                output = self._loop_monitor_output(step, state, node_coupling)
+                if output is not None:
+                    yield output
 
         self.current_state = state
         self.current_step = self.current_step + n_steps
@@ -384,7 +415,7 @@ class Simulator(HasTraits):
             3) (number_of_state_variables or number_of_integrated_state_variables, number_of_nodes).
 
         """
-        # Noise has to have a shape corresponding to only the integrated state variables!
+        # Noise has to have a shape corresponding to only the integrated state variables
         good_history_shape = list(self.good_history_shape[1:])
         good_history_shape[0] = self.model.nintvar
         if self.integrator.noise.ntau > 0.0:
