@@ -45,7 +45,7 @@
 //        KMON_SPATIAL_AVG = 7,   // SpatialAverage (dense/CSR or compact + istep temporal avg)
 //        KMON_PROJECTION = 8,    // Projection / EEG / MEG / iEEG (gain @ x - ref_vec + istep avg)
 //        KMON_BOLD_BW = 9,       // SIMD Balloon-Windkessel ODE [s, f, v, q] across W lanes
-//        KMON_BOLD_BW_STREAM = 10,  // global held-drive stream (width 1, master clock)
+//        KMON_BOLD_BW_STREAM = 10,  // global held-drive stream (per region/lane, master clock)
 //        KMON_BOLD_BW_LOCAL = 11    // local Recorder held-drive window, per region and lane
 //      };
 //
@@ -465,7 +465,7 @@ struct kmon {
     const uint64_t endpoints = (uint64_t)(period / drive_steps) * bw_substeps;
     if (endpoints > std::numeric_limits<uint32_t>::max())
       throw std::runtime_error("global BW stream: output endpoint count out of range");
-    if (n_node < 1 || (size_t)n_node > bw_stream_regions.max_size() ||
+    if (n_node < 1 || (size_t)n_node > bw_stream_regions.max_size() / (size_t)W ||
         !std::isfinite(baseline) || !std::isfinite(scale) ||
         !balloon_windkessel::detail::valid_parameters(params))
       throw std::runtime_error("global BW stream: invalid region extent, calibration or parameters");
@@ -481,8 +481,8 @@ struct kmon {
     bw_drive_baseline = baseline;
     bw_drive_scale = scale;
     bw_stream_params = params;
-    bw_stream_regions.resize((size_t)n_node);
-    bw_stream_next.resize((size_t)n_node);
+    bw_stream_regions.resize((size_t)n_node * (size_t)W);
+    bw_stream_next.resize((size_t)n_node * (size_t)W);
   }
 
   void reset_bw_local_state(int n_node) {
@@ -768,10 +768,12 @@ struct kmon {
     if (bw_stream()) {
       const uint64_t phase = (m_step - run_start) % (uint64_t)istep;
       const size_t rows = (size_t)((phase + (uint64_t)nstep) / (uint64_t)istep);
-      if (rows > t_out.max_size() || rows > d_out.max_size() / (size_t)n_out_space)
+      const size_t stride = (size_t)n_out_space * (size_t)W;
+      if (rows > t_out.max_size() - t_out.size() ||
+          rows > (d_out.max_size() - d_out.size()) / stride)
         throw std::runtime_error("global BW stream: output extent out of range");
-      t_out.reserve(rows);
-      d_out.reserve(rows * (size_t)n_out_space);
+      t_out.reserve(t_out.size() + rows);
+      d_out.reserve(d_out.size() + rows * stride);
       return;
     }
     if (projection_window() || gathered_window) {
@@ -812,7 +814,7 @@ struct kmon {
   void step_one(const float *src, int n_src_v, int n_node, int n_modes = 1,
                 uint64_t t_abs = 0) {
     if (bw_stream()) {
-      step_bw_stream(src + (size_t)voi[0] * (size_t)n_node);
+      step_bw_stream(src + (size_t)voi[0] * (size_t)n_node * (size_t)W);
       return;
     }
     if (cadence_K > 1u && ((t_abs + 1u) % (uint64_t)cadence_K) != 0u) {

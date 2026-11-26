@@ -369,20 +369,25 @@ def test_bw_rejects_invalid_regional_node_indices(cpp, indices):
         cpp.CppHybridBackend().run_network(_network(indices=indices), 1, monitors=[_monitor()])
 
 
-def test_bw_rejects_multiple_subnets_multimode_and_wide_lanes(cpp):
-    be, bw = cpp.CppHybridBackend(), _monitor()
-    net = _network()
-    other = _network().subnets[0]
+@pytest.mark.parametrize("indices,error", [
+    (None, "compatible regional sources"),
+    ((2, 0, 1), "complete, disjoint node_indices"),
+], ids=["unmapped", "overlapping"])
+def test_bw_rejects_invalid_multi_source_mappings(cpp, indices, error):
+    net = _network(indices=indices)
+    other = _network(indices=indices).subnets[0]
     other.name = "other_regions"
     two = NetworkSet(subnets=[net.subnets[0], other]).configure()
-    with pytest.raises(NotImplementedError, match="one regional subnetwork"):
-        be.run_network(two, 1, monitors=[bw])
+    with pytest.raises(ValueError, match=error):
+        cpp.CppHybridBackend().run_network(two, 1, monitors=[_monitor()])
+
+
+def test_bw_rejects_multimode(cpp):
+    net = _network()
     net.subnets[0].model = models.ReducedSetFitzHughNagumo()
     net.configure()
-    with pytest.raises(NotImplementedError, match="one source clock and mode"):
-        be.run_network(net, 1, monitors=[bw])
-    with pytest.raises(NotImplementedError, match="width 1"):
-        be.compile(_network(), width=4).run(1, monitors=[bw])
+    with pytest.raises(NotImplementedError, match="one source mode"):
+        cpp.CppHybridBackend().run_network(net, 1, monitors=[_monitor()])
 
 
 def test_bw_rejects_native_monitor_disable_for_global_and_local_routes(cpp):

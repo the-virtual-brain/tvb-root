@@ -163,16 +163,20 @@ class Monitor(HasTraits):
 class BalloonWindkessel(Monitor):
     """Fractional BOLD change (ΔS/S), not HRF convolution.
 
-    Use as a global monitor on the explicit C++ hybrid backend, with one
-    regional subnetwork, one neural clock and mode, and SIMD width one, or as a
-    per-subnetwork :class:`~tvb.simulator.hybrid.recorder.Recorder` monitor on
-    the same backend at SIMD widths 1, 4, 8 and 16. A local Recorder accumulates
-    only its own subnetwork's eligible source updates (``sn.k`` cadence) on that
-    subnetwork's physical clock, with independent per-region and per-lane
-    hemodynamic state. ``variables_of_interest`` must contain one index into the
-    model's configured observed VOI ordering, not its raw state variables or
-    coupling channels. Output data have axes (time, 1, region, lanes), in
-    subnetwork-local region order even when ``node_indices`` is a permutation.
+    Use as a global monitor or per-subnetwork
+    :class:`~tvb.simulator.hybrid.recorder.Recorder` on the explicit C++ hybrid
+    backend at SIMD widths 1, 4, 8 and 16, with one source mode. Multiple
+    global regional sources require compatible ordered observations and explicit,
+    complete disjoint ``node_indices``; their output is in canonical node order.
+    A single source retains local order even for permuted indices. Global BW
+    samples every master tick after eligible updates, holding slower sources'
+    initial or most recent values. The master clock must divide 10 ms; a slower
+    source need only have a valid integral cadence. Local Recorders instead use
+    eligible source updates on their own physical clock, which must divide 10 ms.
+    Both maintain independent per-region and per-lane hemodynamic state.
+    ``variables_of_interest`` contains one index into the configured observed
+    VOI ordering, not raw state variables or coupling channels. Output axes are
+    (time, 1, region, lanes); local Recorders use subnetwork-local region order.
     Times are window midpoints in ms.
 
     Each complete 10 ms window averages post-step observations independently

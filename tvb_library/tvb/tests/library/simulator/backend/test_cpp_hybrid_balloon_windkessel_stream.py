@@ -261,7 +261,7 @@ def test_native_bw_stream_rejected_sibling_preserves_global_monitors_and_pending
     ({"bw_drive_baseline": np.nan}, "calibration"), ({"bw_drive_scale": np.inf}, "calibration"),
     ({"bw_stream_params": {}}, "parameter set"),
     ({"bw_stream_params": dict(asdict(NOMINAL_PARAMETERS), resting_blood_volume=1.0)}, "parameters"),
-    ({"cadence_K": 2}, "global width 1"), ({"complete_window": True}, "global width 1"),
+    ({"cadence_K": 2}, "global attachment"), ({"complete_window": True}, "global attachment"),
 ])
 def test_native_bw_stream_rejects_invalid_spec(changes, error):
     sim = _sim()
@@ -270,9 +270,9 @@ def test_native_bw_stream_rejects_invalid_spec(changes, error):
     assert sim.get_global_monitor_states() == []
 
 
-@pytest.mark.parametrize("geometry,error", [({"width": 4}, "width 1"), ({"k": 2}, "clock"),
+@pytest.mark.parametrize("geometry,error", [({"k": 2}, "clock"),
     ({"dt": 3}, "divide 10"), ({"dt": 1e-10}, "divide 10"), ({"dt": 5e-7}, "divide 10"),
-    ({"subnet_dt": 0.1}, "clock"), ({"modes": 2}, "mode"), ({"subnet_count": 2}, "one regional subnet")])
+    ({"subnet_dt": 0.1}, "clock"), ({"modes": 2}, "mode"), ({"subnet_count": 2}, "source declaration")])
 def test_native_bw_stream_rejects_unsupported_geometry(geometry, error):
     sim = _sim(**geometry)
     with pytest.raises(RuntimeError, match=error):
@@ -282,7 +282,7 @@ def test_native_bw_stream_rejects_unsupported_geometry(geometry, error):
 
 def test_native_bw_stream_explicit_attachment_and_checked_live_vois():
     sim = _sim()
-    with pytest.raises(RuntimeError, match="global width 1"):
+    with pytest.raises(RuntimeError, match="global attachment"):
         sim.set_monitors(0, [_spec()])
     with pytest.raises(RuntimeError, match="explicit native dictionary"):
         sim.set_global_monitors([GATHER], [(0, 10, 4, 1, 1, 1, False, [1], [], DT)])
@@ -294,9 +294,8 @@ def test_native_bw_stream_explicit_attachment_and_checked_live_vois():
     with pytest.raises(RuntimeError, match="invalid observed VOI source"):
         sim.set_global_monitors([GATHER], [_spec()])
     sim = _armed()
-    sim.set_voi_specs(0, [1, 0, 0, 1, 0, 0])
-    with pytest.raises(RuntimeError, match="changed selected observation"):
-        _run(sim, np.zeros((1, 3), np.float32))
+    with pytest.raises(RuntimeError, match="detach before changing observed rows"):
+        sim.set_voi_specs(0, [1, 0, 0, 1, 0, 0])
     assert sim.t_abs() == 0
 
 

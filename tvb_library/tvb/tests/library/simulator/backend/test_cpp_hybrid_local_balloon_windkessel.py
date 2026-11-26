@@ -19,16 +19,15 @@ The contract under test:
   starts from hemodynamic rest.
 * With matching drive rows and clocks the local Recorder reproduces the existing
   global ``BalloonWindkessel`` monitor exactly. Genuinely different mixed-rate
-  sampling semantics are not claimed to agree and the global mixed-rate route
-  keeps its guard.
+  sampling semantics are not claimed to agree.
 * A compatible compiled snapshot restores the partially accumulated drive window
   and the partially accumulated BOLD output window plus the regional ODE state.
   Incompatible recorder sets are rejected before any state is committed, and a
   rejected all-region/all-lane window close commits nothing. These are native
   recorder-set and window-close atomicity statements, not whole-simulator
   rollback: neural state, delays and RNG may already have advanced.
-* Classic Simulator execution, the Numba backend, global multi-subnetwork BW,
-  SIMD-wide global BW and BW sweeps keep their explicit rejection.
+* Classic Simulator execution, the Numba backend and BW sweeps keep their
+  explicit rejection.
 
 ``NOMINAL_PARAMETERS`` is the shared nominal hemodynamic set, not a fitted
 population estimate. Oracle values come from the independent float64 reference
@@ -274,8 +273,8 @@ def test_local_bw_supports_independent_physical_source_clocks(cpp):
     np.testing.assert_array_equal(streams["fast"][0][0], streams["slow"][0][0])
     assert streams["fast"][0][1].shape == streams["slow"][0][1].shape
     assert not np.array_equal(streams["fast"][0][1], streams["slow"][0][1])
-    # Global BW keeps refusing this genuinely mixed-rate layout (a later phase).
-    with pytest.raises(NotImplementedError, match="one regional subnetwork"):
+    # This layout has no canonical global node mapping and remains unsupported.
+    with pytest.raises(ValueError, match="compatible regional sources"):
         be.run_network(net, nstep, monitors=[_monitor()], initial_states=_two_subnet_ics())
 
 
@@ -749,11 +748,9 @@ def test_local_bw_recorder_construction_is_supported_but_classic_bw_is_not():
 def test_local_bw_keeps_global_sweep_and_topology_guards(cpp):
     be, bw = cpp.CppHybridBackend(), _monitor()
     two = _network(_subnet(node_indices=(0, 1, 2)),
-                   _subnet("other", node_indices=(3, 4, 5)))
-    with pytest.raises(NotImplementedError, match="one regional subnetwork"):
+                   _subnet("other", node_indices=(2, 4, 5)))
+    with pytest.raises(ValueError, match="disjoint"):
         be.run_network(two, 1, monitors=[bw])
-    with pytest.raises(NotImplementedError, match="width 1"):
-        be.compile(_network(), width=4).run(1, monitors=[bw])
     with pytest.raises(NotImplementedError, match="not supported in sweeps"):
         be.sweep(_network(), params={}, monitor=bw)
     with pytest.raises(NotImplementedError, match="not supported in sweeps"):

@@ -335,6 +335,16 @@ These windows do not consume local Recorder streams, which count only eligible
 source ticks. Companion point samplers keep their endpoint behavior and
 existing chunk restrictions.
 
+Global `BalloonWindkessel` also supports compatible regional multi-source gathers
+at widths 1, 4, 8 and 16. Sources must have the same ordered observations, one
+mode, valid integral cadences and explicit complete/disjoint canonical node
+indices. It samples the gathered post-update rows each master tick, including
+initial or held slower-source values; the master clock must divide 10 ms, but a
+slower source clock need not. Single-source output keeps local node order.
+Local BW Recorders instead count eligible source updates and require their own
+clock to divide 10 ms. Matching global/local traces require matching effective
+drives. BW sweeps remain unsupported; `bold` continues to mean HRF Bold.
+
 A generic global `Projection` sharing a checked **co-clock** gather or
 `BalloonWindkessel` must set `obsnoise=None` for both fresh runs and resume.
 Compiled/public runs attach the current operator instead of reusing the previous
@@ -348,11 +358,11 @@ requested. Bare native checkpoint calls do not check the legacy Projection
 operator's identity, and standalone generic Projection eligibility and resume
 are unchanged.
 
-Missing-index, heterogeneous-observation, wider and multimode layouts, host
-collection and unprepared `SpatialAverage` remain on their preexisting routes,
-not this complete-window policy. Only the three checked window types share the
-mixed-rate gather; neither the generic merge rules nor the BW or projection
-placement rules are changed.
+For the three checked average-window types, missing-index, heterogeneous-
+observation, wider and multimode layouts, host collection and unprepared
+`SpatialAverage` remain on their preexisting routes, not this complete-window
+policy. Their gather extension does not change generic merge or projection
+placement rules. BW follows its separate explicit profile above.
 
 ## Tests
 

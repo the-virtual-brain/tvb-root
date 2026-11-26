@@ -498,6 +498,11 @@ class CompiledCppSim:
         if monitors is not None:
             for mi, m in enumerate(monitors):
                 if isinstance(m, BalloonWindkessel):
+                    if n_sn > 1:
+                        if gathered_window_sources is None:
+                            gathered_window_sources = self._gathered_window_sources(dt)
+                        if not gathered_window_sources:
+                            raise ValueError("BalloonWindkessel requires compatible regional sources and explicit node_indices")
                     balloon_windkessel_specs[mi] = self._balloon_windkessel_spec(mi, m, dt)
                     kernel_global_specs.append((mi, m))
                     kernel_mon_indices.add(mi)
@@ -963,16 +968,17 @@ class CompiledCppSim:
     def _balloon_windkessel_spec(self, slot, monitor, dt):
         if not self._backend.enable_kernel_monitors:
             raise NotImplementedError("BalloonWindkessel requires native monitor collection")
-        if len(self._analysis.subnets) != 1:
-            raise NotImplementedError("BalloonWindkessel requires one regional subnetwork")
         sn = self._analysis.subnets[0]
-        if self._width != 1 or sn.k != 1 or sn.n_modes != 1 or sn.dt != dt:
-            raise NotImplementedError("BalloonWindkessel requires width 1 and one source clock and mode")
-        indices = self._network_set.subnets[0].node_indices
-        if sn.n_nodes < 1 or (indices is not None and (
-                indices.shape != (sn.n_nodes,)
-                or not np.array_equal(np.sort(indices), np.arange(sn.n_nodes)))):
-            raise ValueError("BalloonWindkessel requires a full regional node permutation when node_indices are supplied")
+        if self._width not in (1, 4, 8, 16) or any(s.n_modes != 1 for s in self._analysis.subnets):
+            raise NotImplementedError("BalloonWindkessel requires a supported SIMD width and one source mode")
+        if len(self._analysis.subnets) == 1:
+            if sn.k != 1 or sn.dt != dt:
+                raise NotImplementedError("BalloonWindkessel requires one source clock")
+            indices = self._network_set.subnets[0].node_indices
+            if sn.n_nodes < 1 or (indices is not None and (
+                    indices.shape != (sn.n_nodes,)
+                    or not np.array_equal(np.sort(indices), np.arange(sn.n_nodes)))):
+                raise ValueError("BalloonWindkessel requires a full regional node permutation when node_indices are supplied")
         voi = getattr(monitor, "variables_of_interest", None)
         if voi is None or voi.shape != (1,) or not 0 <= int(voi[0]) < len(sn.voi) // 3:
             raise ValueError("BalloonWindkessel requires exactly one valid observed VOI index")
@@ -2702,10 +2708,8 @@ class CppHybridBackend:
         if monitors is not None and any(isinstance(m, BalloonWindkessel) for m in monitors):
             # Reject unsupported topology before compiling a model that might
             # itself be unsupported. Compiled runs also check native geometry.
-            if len(network_set.subnets) != 1:
-                raise NotImplementedError("BalloonWindkessel requires one regional subnetwork")
-            if network_set.subnets[0].model.number_of_modes != 1:
-                raise NotImplementedError("BalloonWindkessel requires width 1 and one source clock and mode")
+            if any(sn.model.number_of_modes != 1 for sn in network_set.subnets):
+                raise NotImplementedError("BalloonWindkessel requires one source mode")
         cn = self.compile(network_set, print_source=print_source)
         return cn.run(
             nstep, chunk_size, initial_states, monitors,

@@ -1648,8 +1648,9 @@ static void export_bw_stream_state(nb::dict &state, const KMonState &st) {
 }
 
 static void parse_bw_stream_state(KMonState &st, const nb::dict &d, size_t n_node) {
-  if (!d.contains("bw_stream_regions") || !d.contains("bw_drive_count"))
-    throw std::runtime_error("global BW stream: incomplete snapshot state");
+  if (!d.contains("bw_stream_regions") || !d.contains("bw_drive_count") ||
+      !PyLong_CheckExact(d["bw_drive_count"].ptr()))
+    throw std::runtime_error("global BW stream: incomplete or invalid snapshot state");
   auto regions = nb::cast<nb::ndarray<nb::numpy, const double, nb::ndim<2>, nb::c_contig>>(
       d["bw_stream_regions"], false);
   if (regions.shape(0) != n_node || regions.shape(1) != 6)
@@ -1817,9 +1818,8 @@ static void parse_kmon_spec(nb::handle item, int n_src_v, int n_space,
       throw std::runtime_error("Recorder complete window requires a local attachment");
     const bool complete_window = dict_get_or<bool>(d, "complete_window", false);
     if (kind == KMON_BOLD_BW_STREAM) {
-      if (!global || W != 1 || complete_window ||
-          dict_get_or<uint32_t>(d, "cadence_K", 1u) != 1)
-        throw std::runtime_error("global BW stream requires a global width 1 attachment");
+      if (!global || complete_window || dict_get_or<uint32_t>(d, "cadence_K", 1u) != 1)
+        throw std::runtime_error("global BW stream requires a global attachment");
       for (const char *key : {"istep", "dt", "voi", "bw_drive_baseline", "bw_drive_scale",
                               "bw_stream_params"})
         if (!d.contains(key))
@@ -2138,9 +2138,9 @@ template <int W> struct simw {
       has_projection_window |= complete && kind == KMON_PROJECTION;
       has_bw_stream |= kind == KMON_BOLD_BW_STREAM;
     }
-    if (has_bw_stream) {
-      if (W != 1 || sn.size() != 1 || sn[0].K != 1 || sn[0].dt != dt || sn[0].n_modes != 1)
-        throw std::runtime_error("global BW stream requires width 1, one regional subnet, clock and mode");
+    if (has_bw_stream && sn.size() == 1) {
+      if (sn[0].K != 1 || sn[0].dt != dt || sn[0].n_modes != 1)
+        throw std::runtime_error("global BW stream requires one regional clock and mode");
       validate_single_source_observations("global BW stream");
     }
     if (has_projection_window) {
@@ -2151,12 +2151,12 @@ template <int W> struct simw {
       validate_single_source_observations(projection_label);
     }
     const bool staged = has_window || has_bw_stream;
-    const bool gathered_window = has_window && sn.size() > 1;
+    const bool gathered_window = (has_window || has_bw_stream) && sn.size() > 1;
     const bool mixed_rate = gathered_window && std::any_of(sn.begin(), sn.end(),
         [](const auto &sub) { return sub.K > 1; });
     int64_t source_nodes = 0;
     if (gathered_window) {
-      if (W != 1)
+      if (has_window && W != 1)
         throw std::runtime_error("global gathered complete window requires width 1");
       for (const auto &sub : sn) {
         source_nodes += sub.n_node;
@@ -2256,7 +2256,8 @@ template <int W> struct simw {
           throw std::runtime_error("global gathered complete window requires a global attachment");
         configure_gathered_window(spec, tot_v, tot_n, master_clock, m);
       } else {
-        if (mixed_rate)
+        if (mixed_rate && !(nb::isinstance<nb::dict>(item) &&
+            dict_get_or<int>(nb::cast<nb::dict>(item), "kind", 0) == KMON_BOLD_BW_STREAM))
           throw std::runtime_error("global gathered complete window: mixed-rate gather requires complete-window monitors");
         parse_kmon_spec<W>(item, tot_v, tot_n, tot_v, 1, def_dt, global_mons, m, true);
       }
@@ -2361,6 +2362,11 @@ template <int W> struct simw {
                        [](const auto &m) { return m.gathered_window; });
   }
 
+  bool bw_stream_armed() const {
+    return std::any_of(global_mons.begin(), global_mons.end(),
+                       [](const auto &m) { return m.bw_stream(); });
+  }
+
   bool regional_average_window_armed() const {
     return std::any_of(global_mons.begin(), global_mons.end(), [](const auto &m) {
       return m.complete_window && !m.gathered_window && average_window_kind(m.kind);
@@ -2373,6 +2379,8 @@ template <int W> struct simw {
                     [](const auto &a, const auto &b) {
                       return a.kind == b.kind && a.a == b.a && a.b == b.b;
                     })) {
+      if (bw_stream_armed())
+        throw std::runtime_error("global BW stream: detach before changing observed rows");
       if (projection_window_armed())
         throw std::runtime_error("global complete window projection: detach before changing observed rows");
       if (gathered_window_armed())
@@ -2394,10 +2402,13 @@ template <int W> struct simw {
   }
 
   void validate_bw_live_config(const kmon<W> &m) const {
-    if (sn.size() != 1 || sn[0].K != 1 || sn[0].n_modes != 1 ||
-        sn[0].dt != dt || dt != (float)m.dt || sn[0].n_node != m.n_out_space ||
-        voi_specs[0].size() != (size_t)global_total_vois)
+    if (sn.empty() || dt != (float)m.dt || voi_specs[0].size() != (size_t)global_total_vois)
       throw std::runtime_error("global BW stream: changed simulator geometry or clock; reattach monitor");
+    const bool multi = sn.size() > 1;
+    const bool mixed = multi && std::any_of(sn.begin(), sn.end(), [](const auto &sub) { return sub.K > 1; });
+    const auto shape = validate_window_gather(global_gather, multi, mixed, m.dt);
+    if (shape.second != m.n_out_space || shape.first != global_total_vois)
+      throw std::runtime_error("global BW stream: changed simulator geometry; reattach monitor");
     const auto &v = voi_specs[0][(size_t)m.voi[0]];
     if (v.kind != m.bw_source_voi.kind || v.a != m.bw_source_voi.a || v.b != m.bw_source_voi.b)
       throw std::runtime_error("global BW stream: changed selected observation; reattach monitor");
@@ -2443,9 +2454,19 @@ template <int W> struct simw {
     nb::list params;
     for (const auto &field : bw_parameter_fields)
       params.append(m.bw_stream_params.*field.second);
-    return nb::make_tuple(m.istep, m.dt, m.bw_drive_steps, m.bw_drive_ms, m.bw_substeps,
-                          m.voi, window_source_config(), m.bw_drive_baseline, m.bw_drive_scale,
-                          params);
+    if (sn.size() == 1 && W == 1)
+      return nb::make_tuple(m.istep, m.dt, m.bw_drive_steps, m.bw_drive_ms, m.bw_substeps,
+                            m.voi, window_source_config(), m.bw_drive_baseline, m.bw_drive_scale,
+                            params);
+    nb::list declarations;
+    for (size_t i = 0; i < global_gather.size(); ++i) {
+      const auto &g = global_gather[i];
+      declarations.append(nb::make_tuple(g.source_name, g.source_dt, g.observed_terms,
+                                         sn[i].K, sn[i].dt, sn[i].n_svar, sn[i].n_modes));
+    }
+    return nb::make_tuple(2, W, m.slot, m.istep, m.dt, m.bw_drive_steps, m.bw_drive_ms,
+                          m.bw_substeps, m.voi, window_source_config(), declarations,
+                          m.bw_drive_baseline, m.bw_drive_scale, params);
   }
 
   nb::list take_global_monitor_outputs() {
@@ -2705,7 +2726,8 @@ template <int W> struct simw {
         throw std::runtime_error(std::string(label) + "incompatible snapshot configuration");
       if (gathered_window) st = dict_to_checked_window_state(d, it->accum.size(), label);
       if (bw) {
-        parse_bw_stream_state(st, d, (size_t)it->n_out_space);
+        st = dict_to_checked_window_state(d, 0, label);
+        parse_bw_stream_state(st, d, (size_t)it->n_out_space * (size_t)W);
         it->validate_bw_stream_state(st, t_abs);
         has_bw_stream = true;
       } else {
@@ -3280,6 +3302,8 @@ struct sim {
     while (H < (uint32_t)(horizon + 2)) H <<= 1;
     ensure_sim();
     dispatch([&](auto &sw) {
+      if (sw.bw_stream_armed())
+        throw std::runtime_error("global BW stream: detach before adding a subnet");
       if (sw.projection_window_armed())
         throw std::runtime_error("global complete window projection: detach before adding a subnet");
       if (sw.gathered_window_armed())
@@ -3547,6 +3571,8 @@ struct sim {
   void set_opts(int integ_id, float dt, int tavg_period) {
     ensure_sim();
     dispatch([&](auto &s) {
+      if (s.bw_stream_armed() && s.dt != dt)
+        throw std::runtime_error("global BW stream: detach before changing the clock");
       if (s.projection_window_armed() && s.dt != dt)
         throw std::runtime_error("global complete window projection: detach before changing the clock");
       if (s.gathered_window_armed() && s.dt != dt)

@@ -14,6 +14,38 @@ review before the workflow advances. Reuse the same phase child for corrections
 where possible rather than creating extra workers/reviewers. Never equate a
 child's success claim, a job ID, or a green subset of CI with acceptance.
 
+## Current iteration policy — operator update (supersedes historical CI holds)
+
+The operator explicitly stopped per-increment CI blocking. Iterate using relevant
+`tvb_library` tests in a suitable dedicated local environment or a bounded Slurm
+job. Passing local/installed-native tests plus supervisor diff/evidence review
+are sufficient to accept a phase and start the next; pending hosted CI is NOT a
+sequencing gate. Keep CI enabled in the background, inspect it at meaningful
+phase/delivery checkpoints, and require final-plan qualification without turning
+that into repeated `gh --watch` waits during development. Investigate actual CI
+failures when reported; do not confuse pending checks with failures or claim they
+passed. Earlier progress entries and child prompts requiring all CI green before
+advancing are historical and superseded by this policy.
+
+- Use focused affected library tests for the inner loop, then relevant broader
+  library/backend regressions at phase boundaries. Reuse completed evidence for
+  unchanged inputs; no redundant jobs just to occupy a CI wait.
+- Prefer the already working Slurm native setup when no suitable local installed
+  extension exists; local execution is now explicitly allowed by the operator.
+  Keep environment/source provenance, scientific tests and numerical tolerances.
+- Preserve one active implementation child per phase, supervisor review/publication
+  ownership, and concrete Slurm resource approval. No CI watcher tasks/loops.
+- Operator-approved timeout fallback: if Blablador times out, use Terra 6.1,
+  exact registry model `openai/gpt-6.1-terra`. This now authorizes replacing the
+  failed, zero-tool Phase 4 worker. If Terra stalls or cannot deliver, the operator
+  also authorizes restarting its native worker as `openai/gpt-6.1-sol`. Stop the
+  old writer first and preserve its candidate/evidence. No external CLI or other
+  model fallback. Use Terra while it is responsive, not repeated provider probes.
+- Phase 3 is accepted from reviewed published code, job 5216533's 546 passing
+  installed-native cases and successful demo. Phase 4 is now accepted from
+  independently verified job5216536 (568 passes + demo); parent publication is
+  in progress. Phase5 starts only after that publication and Phase4 closeout.
+
 ## Recovery checkpoint
 
 - Initial code baseline: `bb819dc35f31029064b1e8200587aee57569d0cc`.
@@ -39,9 +71,9 @@ child's success claim, a job ID, or a green subset of CI with acceptance.
 |---|---|---|---|
 | 1 | Close existing installed-native investigation | Complete; accepted; report errata finalized | Existing job 5216500; hashes and key raw records independently checked |
 | 2 | Green tvbkh baseline, permanent coverage, current-capability demo | Complete; published and accepted at ef1d60b8d | Seven workflows + both Sonar checks pass; dedicated suites/demo and Windows notebook pass |
-| 3 | Public local BW Recorders, including independent SIMD lanes | Installed-native qualification passed; publication/exact-SHA CI pending | Job 5216533: 546 passes + demo; sole child held before final acceptance |
-| 4 | Compatible multi-subnetwork global BW and shared placement semantics | Pending | Wait for Phase 3 acceptance |
-| 5 | Explicit BW parameter sweeps through backend and notebook APIs | Pending | Wait for Phase 4 acceptance |
+| 3 | Public local BW Recorders, including independent SIMD lanes | Complete; published bae00b766; accepted under updated iteration policy | Job 5216533: 546 passes + demo; CI no longer blocks advancement |
+| 4 | Compatible multi-subnetwork global BW and shared placement semantics | Complete; independently accepted; parent publication in progress | 5216536:568 clean passes +40s demo; two failed fixtures preserved |
+| 5 | Explicit BW parameter sweeps through backend and notebook APIs | Authorized after Phase4 publication/closeout; startup contract next | No CI wait; same one-worker/local-or-Slurm test gates |
 | 6 | Integrated demos and exact-candidate qualification | Pending | Wait for Phase 5 acceptance |
 
 Current workflow/child IDs and report paths are recorded in the progress log
@@ -200,7 +232,11 @@ with interpretable results and no native-internals workaround.
 
 **Owner:** one phase child; supervisor reviews exact integrated source/evidence.
 
-Add or extend focused paired notebooks to show:
+Deliver a user-friendly executable notebook in **tvb_documentation/demos/**,
+with its paired script and clear setup, configuration, axis/time/units explanations
+and meaningful plots. The operator explicitly requires a combined demonstration
+of **mixed timescales, genuine SIMD lanes and BW**, not just tests or broadcast
+lanes. Add or extend focused paired notebooks to show:
 
 1. Global and local BW in one hybrid network.
 2. Different source clocks with accurate timing explanations.
@@ -233,15 +269,20 @@ limits are explicit. No automatic merge or release.
   the supervisor with changes/evidence/blockers. The parent reviews and updates
   PLAN.md while the child is explicitly quiescent, then accepts or requests fixes.
 - Tests are developed first, but failing intermediate states stay local. Publish
-  reviewed, locally qualified increments only to `tvbkh`; inspect their exact-SHA
-  CI and fix failures before advancing. No force, merge, remote rewrite or auto-merge.
+  reviewed, locally qualified increments only to `tvbkh`. Passing relevant local
+  or Slurm `tvb_library` tests and parent review permit phase advancement without
+  waiting on hosted CI. Inspect CI at delivery checkpoints and address actual
+  failures; no force, merge, remote rewrite or auto-merge.
 - Any approved push uses explicit `git@github.com:the-virtual-brain/tvb-root.git`
   and `HEAD:refs/heads/tvbkh`, with fresh ref/ancestry/diff and dry-run checks.
 - Do not stage local handoffs, raw receipts, machine settings, credentials or
   generated benchmark outputs. Keep operational evidence outside the source tree.
-- Heavy builds/tests only on Slurm via `inslurm-proxy`, private exact-source
-  inputs, node-local builds and fresh installed environments with verified imports.
-  One explicit submission at a time; supervisor approves a concrete job request.
+- Run library tests locally in a suitable dedicated environment or on Slurm via
+  `inslurm-proxy`; the operator now explicitly permits both. For Slurm use private
+  exact-source inputs, node-local builds and fresh installed environments with
+  verified imports. One explicit submission at a time; supervisor approves a
+  concrete job request. Do not rebuild locally merely to duplicate passed native
+  evidence when the existing Slurm setup is faster.
 - No new job is authorized for Phase 1. Later jobs require a bounded case/test
   matrix and resource request approved by the supervisor before submission.
 - Verify actual completed tests, selectors and expected skips, not collection
@@ -806,3 +847,432 @@ limits are explicit. No automatic merge or release.
 - Stage only the nine reviewed functional files plus this plan; preserve both
   untracked handoffs and all private metadata-bearing receipts outside Git.
   No merge/release or Phase 4 work is authorized before exact-SHA CI acceptance.
+
+### Phase 3 — reviewed increment published; exact-SHA CI underway
+
+- Parent committed exactly the nine reviewed functional files and PLAN.md as
+  `bae00b76645648d82753a2173dd3f37fc515f020`, parent ef1d60b8d:
+  `Support local Balloon-Windkessel Recorders on the C++ hybrid backend`.
+  Both untracked handoffs remain untracked; no private evidence was staged.
+- Fresh remote check showed ef1d60b8d, ancestry/parent checks passed, tracked
+  worktree/index were clean, explicit push dry-run passed, then parent pushed
+  `HEAD:refs/heads/tvbkh` to the authoritative GitHub URL without force. Live ref
+  independently confirms bae00b766; origin/remotes were not changed.
+- Parent discovered seven in-progress workflows at the exact published SHA:
+  cpp-hybrid 45883418359; Test Py 45883418686; Test Notebooks 45883418412;
+  Test PG 45883418372; Test Win 45883418451; Check tvb-contrib 45883418497;
+  Wheels 45883426216. PR #801 is still open/draft and points to this SHA.
+- Same sole Phase 3 child is authorized to watch these checks read-only, record
+  matrix/explicit local-BW gate/demo outcomes and the two applicable Sonar checks,
+  and pause again. No CI rerun, source edit or acceptance return preapproved.
+- Exact-SHA CI remains the final acceptance gate. Phase 4 stays blocked until
+  parent independently verifies all applicable outcomes and explicitly advances.
+  Operational log edits after publication remain local for the next functional
+  increment, avoiding an unnecessary documentation-only CI restart.
+- Watch attention at about four minutes was inspected, not treated as failure:
+  active command is `gh pr checks 801 --watch --fail-fast`, with trailing output
+  buffered by tail. Parent independently queried exact SHA bae00b766: Wheels
+  and Check tvb-contrib have succeeded, including Linux/macOS/Windows wheel
+  jobs; release-upload is deliberately skipped. Five other workflows remain in
+  progress, with no failure observed. PR remains open/draft at the same SHA.
+  No supervisor request is pending; no interrupt, rerun, replacement worker or
+  Phase 4 advancement is justified. Revisit on native child completion/request.
+- Subsequent attention also concerns the expected watch. Its prior 1500 s tool
+  timeout did not cancel/rerun CI; the child inspected statuses and continued
+  read-only watching. Parent independently confirms cpp-hybrid 45883418359 has
+  now completed successfully at bae00b766, including all wheel/sdist jobs,
+  reference/backend/buildgen/battery checks, **524 passes** in the dedicated
+  eight-suite BW/window step, and the 40-row public BW demo. Wheels and contrib
+  remain successful; Test Py, Test PG, Test Win and Test Notebooks still run.
+  No check failure or pending supervisor decision was found; continue the
+  existing watch without interrupt/retry or Phase 4 advancement.
+- Later watch attention: parent independently confirms Test PG, Test Win and
+  now Test Notebooks succeeded at bae00b766 (six of seven workflows successful).
+  Test Py's 3.13 job also succeeded; 3.11 and 3.12 are still running framework
+  tests. No failures are posted; Sonar check runs have not appeared yet and are
+  not assumed satisfied. The expected gh watch remains active, not stuck or
+  waiting for a supervisor decision. Keep waiting for remaining exact-SHA gates,
+  with no intervention, duplicate watch, CI rerun or premature advancement.
+
+### Operator correction — stop CI blocking; Phase 3 accepted, Phase 4 authorized
+
+- Operator explicitly requires fast iteration on local/Slurm `tvb_library` test
+  results rather than repeated hosted-CI watches. This supersedes the preceding
+  historical Phase 3 holds and CI-before-advancement instructions.
+- Parent queued the new policy to the existing Phase 3 child and terminated only
+  its verified local gh-watch process (PID 45567). Hosted CI jobs were NOT
+  cancelled, and no test/job was rerun. Do not restart a watch.
+- **Phase 3 accepted now**, from the independently reviewed source/diff, published
+  bae00b766, all 546 installed-native tests passing in job 5216533, and the passed
+  demo. Existing dedicated hosted gate also passed 524 tests; no new validation
+  is required just to close this phase. Remaining hosted results are not claimed
+  green and no longer block Phase 4.
+- Same Phase 3 child should finalize its report with this acceptance basis and
+  return accepted. Existing sequential workflow may launch its sole Phase 4
+  child from bae00b766. No extra child, fresh Phase 3 run or CI watcher.
+- Phase 4 follows its existing scientific scope: compatible global regional
+  gather on master ticks with held slower sources, complete/disjoint mappings,
+  independent regions/lanes, continuation and public coexistence. Agree a concise
+  tests/clock/gather contract, then implement/test; do not repeat broad audits or
+  solver/performance investigations. Use local/Slurm library suites as the work
+  gate; inspect CI at milestones without blocking implementation on pending jobs.
+- PLAN.md operational changes remain local until the next functional increment;
+  no documentation-only publication or CI restart is needed for this policy.
+
+### Workflow timeout recovery — accepted work preserved; continue at Phase 4
+
+- Original workflow `f65dea8b-85fd-424d-a5a1-5d143b64ec48` is now terminal
+  failed. Phase 3 child `cdca7fa2-7605-4ab2-b004-042160ea351b` timed out and
+  did not emit its required structured closeout. Preserve that operational
+  failure and missing structured result honestly; do not fabricate a child
+  acceptance object or overwrite the failed receipt.
+- Parent inspected the workflow receipt/status, saved partial output and durable
+  Phase 3 evidence report. The report is intact, with corrected wheel hash and
+  all 546 native passes/demo. Product Phase 3 remains **accepted by parent** as
+  recorded above; worker finalization failure is not a failed scientific test.
+- Checkout remains bae00b766 with only parent PLAN.md changes and the two
+  untracked handoffs; no gh-watch process remains. No source loss, active writer
+  or partial Phase 4 implementation was found.
+- Do not revive a long-running finished phase merely to manufacture its missing
+  JSON closeout, and do not rerun Phases 1–3, tests or CI. Continue the already
+  authorized remaining Phases 4–6 in a fresh native sequential workflow, one
+  worker per phase, same explicit worker model, no provider/CLI/model fallback.
+  Parent remains the sole reviewer and publication owner at phase gates.
+- New phase tasks must read the current top-of-plan iteration policy. Focused
+  local/Slurm library tests gate iteration and acceptance; pending hosted CI
+  never blocks the next implementation phase. Report actual failures promptly.
+- Native follow-up workflow launched asynchronously:
+  `b4c301f4-2e42-4ba2-8165-e6dc6ca50bc2`, attached to the existing mission
+  `3e979de0-5354-4b3c-9820-f2d3df354bb6`. Only stable keys cpp-phase-4, -5,
+  -6 are scheduled, serially, same worker/model. Each must obtain parent review
+  and explicit acceptance before the next child starts; no CI-watching child.
+- Outputs are bound to managed `cpp-delivery/phase-4.md` through phase-6.md
+  under the new workflow artifact root. Child IDs arrive with startup updates.
+  Old reports/receipts remain provenance; their failed run state is not rewritten.
+- New child contracts explicitly forbid rerunning finished phases, publication,
+  PLAN edits, model fallback and CI waits. They carry the current local/Slurm
+  testing policy and a checkpoint before their run deadline.
+
+### Phase 4 startup provider failure — stopped for routing decision
+
+- Follow-up workflow `b4c301f4-2e42-4ba2-8165-e6dc6ca50bc2` failed in its first
+  child, `e99bd0bd-078d-457a-a5bc-75c570c58372` (cpp-phase-4), with
+  `Request timed out` and no required structured output. Phases 5–6 never ran.
+- Parent read failed-child status/transcript/output and event records: **zero
+  tool-execution events**, six failed model turns with built-in provider retry
+  events. The configured blablador/deepseek-v4.1-flash-at-hzdr worker did not
+  reach its initial reads or startup contract. This is a provider/runtime
+  failure, not a native test failure or incomplete source implementation.
+- Parent verified HEAD remains bae00b766 and only its PLAN.md updates are
+  tracked changes; both handoffs remain untracked. No active gh-watch, source
+  write, test execution, Slurm submission or partial Phase 4 change was found.
+- Preserve failed native records; do not launch repeated automatic replacements
+  against the same timed-out provider or silently change models/CLI/ownership.
+  Phase 3 stays accepted. Phase 4 is authorized but technically blocked pending
+  operator decision: approve a replacement worker on another available model,
+  or explicitly retry the existing provider. No fallback had been selected at
+  that checkpoint; the operator's authorization below resolves the decision.
+
+### Operator-approved timeout fallback — Terra 6.1
+
+- Operator: "if blablador provider times out, use terra 6.1". The condition is
+  met by the documented Phase 3 closeout and fresh Phase 4 startup timeouts.
+- Parent queried the native model registry and resolved the exact permitted
+  model as **openai/gpt-6.1-terra**. Continue with the native worker protocol,
+  not an external CLI, and preserve one active implementation child per phase.
+- Replace the failed Phase 4 startup (zero tools/edits) with a fresh Terra worker;
+  continue remaining phases serially on this authorized fallback rather than
+  repeatedly probing the failed provider. No rerun of Phases 1–3 or CI watching.
+- Keep the same scope, local/Slurm validation and parent checkpoints/publication
+  ownership. This changes routing, not scientific equations, acceptance evidence
+  or the tests.
+- Native async workflow launched: `783dd1e9-dcce-4a1f-a4df-a9611627351f`, same
+  mission `3e979de0-5354-4b3c-9820-f2d3df354bb6`. Phases 4–6 are serial,
+  worker model `openai/gpt-6.1-terra:high`, one active worker, parent acceptance
+  before each next phase. Output reports are managed cpp-delivery/phase-4.md
+  through phase-6.md under this workflow's artifact directory. The two failed
+  workflows and their records remain preserved; no completed tests were rerun.
+
+### Phase 4 — startup contract approved; implementation authorized
+
+- Active sole worker `abd84257-e724-4231-8afa-64ca989e143e`, Terra 6.1,
+  workflow 783dd1e9…, starts from bae00b766. Parent confirms no source edits
+  yet; only PLAN changes and preserved handoffs. Startup contract is in scope.
+- Approve serial tests/native/public changes in backend.py, _core.cpp and
+  cph_monitors.hpp, with focused tests and supported-profile documentation.
+  Preserve the solver and accepted single-source ordering/API. Multi-source
+  mappings must be explicit, complete/disjoint canonical 0..N-1; compatibility
+  means ordered observation definitions, not merely matching counts.
+- Use established gathered-global return nesting with one gathered stream per
+  global monitor, shape (n,1,N,W), float64 times / float32 samples. Local Recorder
+  output stays source-local. Do not silently canonicalize existing single-source
+  BW ordering or loosen average-monitor width/merge rules.
+- Global BW uses the master clock, which must divide 10 ms under the existing
+  binary32 clock rule. A slower source needs valid integral cadence, not its own
+  10 ms divisor unless a local BW is also attached there. Include cadence-3
+  (2.5 ms master / 7.5 ms source) initial/held-drive and window-crossing tests;
+  assert actual compiled clocks instead of trusting fixture labels.
+- Extend wide state/reservation and snapshot identity over every source, mapping,
+  clock/cadence, ordered VOI, width, calibration and hemodynamic configuration.
+  Stage all regions/lanes before close commits; reject late corrupt state or
+  sibling without partial monitor-set commits. Preserve both partial windows;
+  no neural/whole-simulator rollback claim or cross-binary snapshot guarantee.
+- Qualify matching-drive global/local parity, mixed-rate held-drive reference,
+  source/node/lane permutations, supported widths, chunk/reset/continuation and
+  siblings. Update old unsupported-route assertions only for genuinely supported
+  profiles, retaining invalid mappings/modes/native-disable/classic/Numba/sweep
+  guards. Distinct native-lane plus public broadcast proof remains acceptable
+  until Phase 5 public sweeps; use contiguous float32 native inputs.
+- Proposed ten-suite gate (new Phase 4 suite plus prior nine) and unchanged demo
+  approved in principle: run/one task/eight CPUs/16 GB/30 min/no pin. Local
+  library test iterations are allowed in a suitable existing environment.
+  Present exact frozen inputs/runner readiness before one Slurm submission;
+  no job or retry approved by this contract decision alone.
+- Native/local test evidence + parent review gate this phase. No hosted-CI watch,
+  prior-phase rerun, numerical pilot or future-phase API expansion is authorized.
+
+### Phase 4 — first frozen readiness review; corrections before submission
+
+- Worker paused with no installed-native tests or submitted jobs. Static compile,
+  diff whitespace and runner syntax checks passed. Parent reviewed all native /
+  Python changes, new tests and runner. Frozen readiness package preserved at
+  ../recovery/verify/monitor-phase4-global-bw-9cmVDO (never submitted).
+- Parent verified four indexed input hashes and index digest
+  6f80397b7e8843c279ea69595e67caab5f98950b8e6f7d6ce3f0c1a6cea62cd8.
+  Archive 7268e796f5b76666bf7e3e5adbc8443f6bfccfe2cc8b2c8e379e846b75cf8343
+  is 5,017,600 bytes, 328 regular allowlisted source files, no metadata/cache /
+  build/link/path hazards; every payload equals checkout, no tracked source
+  omitted. Patch 45acc221e5182744cb14e086f05c8233cd2161bc8d5497b0ffe74187624518f0
+  equals functional checkout diff including the new untracked suite; demo bytes
+  match. Runner 8fcb31d2e3b8efbf97677b1fac8c7682102bb8770920bc622539792c458c521f
+  correctly uses installed origins and dynamic per-suite outcomes/aggregate.
+- Do not submit this package. Strengthen the mixed-clock reference assertion:
+  <50 ms plus atol=2e-7 has not established sensitivity to missing BW response or
+  wrong hold/update semantics. Use a bounded resolved response and assert that
+  zero/pre-update/always-update controls fail the existing suitable reference
+  tolerance; no solver/tolerance relaxation or numerical investigation.
+- Native distinct-lane proof currently uses one source and identical region
+  increments, while multi-source proof only broadcasts lanes. Add combined
+  multi-source/mixed-clock asymmetric source/region/lane controls vs scalar
+  runs, plus wide late-lane close atomicity and mixed global/local continuation.
+  Exercise new native multi-source identity mismatches, not just public metadata.
+- Global BW reserve now includes W but still reserves only new rows, ignoring
+  retained pending output. Fix this touched branch with checked old-size +
+  additional rows/elements and a continued-call regression; no unrelated reserve
+  refactor. Update stale public BW supported-profile documentation.
+- Operator reiterates Phase 6 user-friendly mixed-timescale/SIMD/BW notebook and
+  permits Sol 6.1 restart if Terra fails delivery. Terra is responsive at its
+  first review; corrections are normal review, not a provider failure. No model
+  restart yet. Preserve one active worker. A corrected frozen readiness review
+  and concrete parent job approval are still required.
+
+### Phase 4 — corrected candidate reviewed; one job approved
+
+- Parent reviewed corrected tests/docs/reservation branch and independently
+  verified ../recovery/verify/monitor-phase4-global-bw-6AbUOh. Four indexed
+  hashes pass; index d1e5d191ccc0d05d5777305514304fbb207765909e25cf788fba86de404999ac.
+- Archive bc6ae39b64d792642d0ef768e1c5d590a886187c690b5c0ab59aa424050e0411,
+  5,027,840 bytes, exactly 328 regular source payloads; every payload equals
+  checkout and no tracked source is omitted. No links, traversal, AppleDouble,
+  cache/build products. Functional patch including new suite equals checkout:
+  4eab07a61ae819cc700a456f35f4fc6738210758807fda6f870f7398c7678ba9.
+  Demo unchanged. Runner byte-identical to reviewed predecessor, SHA
+  8fcb31d2e3b8efbf97677b1fac8c7682102bb8770920bc622539792c458c521f;
+  bash syntax and git diff whitespace checks pass.
+- Changes from first readiness limited to BW header reservation, monitor docstring,
+  README and new global test module. Global reservation now checks remaining
+  limits and adds current pending-output sizes. New reference uses 203 ticks,
+  strict existing 1e-7/1e-10 envelope and zero/pre-update/always-update controls.
+  Combined native mixed-clock source/region/lane controls, permutations, wide
+  domain-close atomicity, native identity/sibling mismatches, global/local/average
+  continuation and pending-output rejected-restore checks are present.
+- Approve EXACTLY ONE submission of these immutable inputs: run partition,
+  one task, eight CPUs, 16 GB, 30 min, no node pin; transfer/hash verification,
+  allocation-only build/install/test/demo, status and receipt fetch for that job.
+  Ten independently gated installed suites; counts derived from actual JUnit.
+  Stop/preserve/report first failure; no retry, selector/tolerance change,
+  source edit, extra allocation, login-node scientific work or CI watching.
+- This is submission readiness, not Phase 4 acceptance. No installed-native test
+  has run yet. Caveat: new pending-output test checks rejected-restore retention;
+  it does not directly exercise appending another output with an undrained buffer
+  or expose vector capacity. Do not overstate that proof; reservation arithmetic
+  is independently code-reviewed. Raw outcomes and parent final review remain
+  required before acceptance/publication/Phase 5.
+
+### Phase 4 — job 5216534 first failure preserved; bounded test correction
+
+- FAILED 1:0, 52 s, vep4, run partition/eight CPUs/requested 16 GB;
+  batch MaxRSS 975484K. Fresh build/install and installed provenance succeeded.
+  Parent read scheduler/exit/raw failure, independently verified all four suite
+  selectors/statuses/origins/JUnit cases: reference 53, BW stream 78, local BW84
+  pass; global BW20 pass/one fail. Total235 passes/one failure, zero skips/errors.
+  Six later selectors/demo/aggregate/DONE did not run; no full gate claimed.
+- Only failure: test_native_global_wide_last_lane_close_is_atomic expected a
+  RuntimeError from a huge positive observation with positive drive_scale=0.25.
+  No exception occurred. Unlike the accepted local fixture's negative scale,
+  this does not establish a negative-inflow intermediate or invalid domain.
+  Do not change production to reject arbitrary large finite positive drives.
+- Parent verified all328 pre-build source-manifest payload hashes against the
+  frozen archive and patch/index copies. Wheel SHA
+  466801356e727bb1972a33823b0bd19c3a28605c20fa25c3c3ade2aa829003da;
+  native wheel member equals asserted installed hash
+  9e2c435db32e0a9e49ec4d169d324f4a88bb93277cf4d58ba79f90aaec413803.
+  Packaged source members checked against archive where present.
+- Raw receipt-5216534 and original inputs remain unchanged. Runner writes its
+  receipt index only on success, so this failed receipt has NO job-generated
+  receipt index. Parent independently indexed41 fetched files in the external
+  parent-fetched-receipt-5216534.sha256 (not inside the raw receipt), SHA
+  7678a798b1d324168ee6310648fdd6893d9a87f07e1e2486362b47ae2e99f6db.
+  Do not mislabel that local fetch manifest as a job-generated receipt.
+- Authorize test-only correction in the global suite: deliberately negative
+  finite calibrated drive in the final canonical region/lane, after a successful
+  output and with the next drive window open; require the real RK4 domain error,
+  unchanged monitor set/tick and preserved pending output vs untouched control.
+  Negative drive at this magnitude makes the first RK4 inflow stage nonpositive.
+- Also close the existing pending-append coverage caveat by extending the
+  rejected-restore/pending-output case across another output close WITHOUT first
+  draining its pending row, and compare both rows with untouched control.
+  Preserve production, solver, tolerances, remaining tests and runner byte-for-
+  byte. New exact-source package/readiness required before any retry approval.
+- Terra is responsive and stopped correctly on first failure. This is one
+  bounded fixture correction, not a provider timeout or grounds to discard the
+  productive candidate. Sol6.1 fallback remains available if delivery stalls.
+  No retry job, source/selector relaxation, CI watch or Phase5 advancement yet.
+
+### Phase 4 — lifecycle clarification; preserve per-call output semantics
+
+- Worker correctly identified an error in the parent's correction direction:
+  simw::run calls monitor_begin_call before reservation/integration, and BW
+  begin_call swaps out t_out/d_out. Native output buffers are PER CALL, not
+  undrained streams retained across calls. Parent read and confirmed both paths.
+- WITHDRAW the requested cross-call two-row assertion. Do not change begin_call,
+  output lifecycle or public API. Earlier parent language calling additive reserve
+  a demonstrated pending-output bug was incorrect: old sizes are zero on this
+  normal Sim.run path. The submitted additive formula is harmless defensive
+  arithmetic, not proof of a reachable data-retention fix. Do not overclaim it.
+- Authorize a test-only, single-call atomicity proof: identical fresh candidate
+  and untouched prefix-control, same 12-tick inputs, final canonical region/lane
+  receives large negative increments only at ticks9–12. Control runs11 ticks;
+  candidate runs12 in ONE CALL and fails on its last close. Compare candidate
+  monitor snapshots/tick to prefix-control after11; both should retain the
+  earlier tick8 output, produced within the same call. Compare nonempty buffered
+  outputs byte-for-byte. No neural rollback or partial-state retry claim.
+- Keep rejected-restore pending-output test unchanged: restore itself does not
+  start another run and its current proof is valid. Only the domain-fixture
+  function needs correction. Preserve production/runner/tolerances and failed
+  evidence; new frozen identities still required before retry submission.
+- Terra's prompt detection of this contract conflict is appropriate supervision,
+  not stalled delivery or a reason to switch models.
+
+### Phase 4 — corrected fixture frozen; one concrete retry approved
+
+- Parent reviewed exact failed-vs-retry diff: ONLY the failed domain atomicity
+  function changed in test_cpp_hybrid_global_balloon_windkessel.py. It now uses
+  negative finite drive at the final canonical region/lane in one12-tick call,
+  compares the entire monitor set/tick to an untouched11-tick prefix, and checks
+  their nonempty earlier tick8 outputs. Existing rejected-restore case unchanged.
+- Retry package ../recovery/verify/monitor-phase4-global-bw-tWquiK:
+  archive e284df08b0381173aaa72eb6005e27dab916a8ae397e73e709e7b1307daee75a,
+  5,027,840 bytes; patch42ad8af7a75d7b727a6fa376138978a08289189f7fe8c4acdc43cf12cddd70f3;
+  index c6dbf4f22c49aa72e924fef81905f82092389ab1c2a7afafe7527f503bca896e.
+  Parent verified all input hashes, archive safety/328 payloads/exact checkout,
+  functional patch equality and that only this test payload differs from6AbUOh.
+  Every production source byte, runner and demo match first failed submission.
+  Reviewed runner SHA remains8fcb31d2e3b8efbf97677b1fac8c7682102bb8770920bc622539792c458c521f.
+  Whitespace/runner syntax checks pass.
+- Approve EXACTLY ONE retry with these frozen inputs and unchanged ten-suite+
+  demo outcome gates/resources: run partition/one task/eight CPUs/16GB/30min,
+  no pin. Fresh installed-native envs/provenance; hash-verified transfer and
+  receipt/accounting fetch. No source edits, selector/tolerance relaxation,
+  automatic extra retry, CI watching or future-phase work. Stop/report failure.
+  This is job authorization, not Phase4 acceptance; raw results remain pending.
+
+### Phase 4 — job 5216535: scientific/global suites pass; public guard correction
+
+- FAILED1:0 at selector8,71s,vep4,run/eight CPUs/requested16GB,
+  batch MaxRSS961700K. No edits/retry. Parent inspected raw failure/accounting,
+  exact source manifest328, all eight selectors/statuses/origins/JUnit records.
+  Seven suites clean: reference53,stream78,localBW84,globalBW21,complete86,
+  co-clock64,native monitors22. PublicBW56 pass/one fail. Total464 passes/one
+  failure, no skips/errors. Last two suites and demo/DONE absent.
+- The corrected wide atomicity case and all21 new global tests passed. Only
+  failure is a negative public geometry fixture: both sources explicitly map
+  onto the SAME permutation(2,0,1), but its name/regex call them unmapped.
+  Actual precise rejection is complete/disjoint node_indices, not the missing-
+  declaration message. Production rejects the invalid geometry correctly.
+- Parent verified frozen manifest/patch/index and wheel source members; wheel
+  SHA57f774366e5441aa7b3a35ec90d6469ae4b2ca5a2373f242c133a45ad39b11ce.
+  Native member AND asserted installed hash9e2c435db32e0a9e49ec4d169d324f4a88bb93277cf4d58ba79f90aaec413803,
+  byte-identical native module to first job. First failed receipt untouched.
+- This failed runner again produced no job receipt index. Parent-generated
+  external local fetch manifest parent-fetched-receipt-5216535.sha256 covers65
+  files, SHA f2177e34282e25d462d8cfbe00b2ede28afb627ac5b9b196d5e7e662131e1595.
+- Authorize bounded TEST-ONLY correction in public BW module: separate absent-
+  mapping and overlapping-mapping cases with actual explicit fixtures and precise
+  corresponding messages; isolate multimode rejection so an earlier mapping
+  assertion cannot mask it. Use _network(indices=None) for missing declarations,
+  default(2,0,1) on both for overlap. No broad alternative regex, weakened
+  geometry/numerical assertions, production/runner/solver changes or CI watching.
+- New frozen test-only diff/input review required for one further job approval.
+  No job authorized by this correction decision alone. This is meaningful native
+  progress, not a provider failure; continue sole Terra worker, keep Sol fallback
+  available if delivery stalls. Phase4 not yet accepted, Phase5 not started.
+
+### Phase 4 — public guard correction reviewed; one further job approved
+
+- Frozen ../recovery/verify/monitor-phase4-global-bw-PJ8Rn0 independently
+  verified: all indexed hashes pass; index
+  452500bebd0a94c5d1d48c6ee759b5ad153eb99a69efde6dd6f3c8892a223cca.
+  Archive fa770cfea2520bd60e9e3db583f3b5ebb013632db21c8843e6ad158f5949a4cf
+  is5,027,840 bytes,328 safe regular payloads exactly equal checkout with no
+  tracked-source omissions. Functional patch equals checkout:
+  ac07dc967b77ee96200c5e0bac7498334f2590132d4e67bfe343015fc1e8d405.
+- Only the public test module differs from tWquiK: absent and overlapping
+  mappings are distinct parameterized cases with precise errors; multimode is
+  independent. No weakened assertions. All production, global suite, runner and
+  demo byte-identical. Runner remains8fcb31d2e3b8efbf97677b1fac8c7682102bb8770920bc622539792c458c521f.
+  Static whitespace/runner syntax checks pass.
+- Approve EXACTLY ONE submission of PJ8Rn0 with unchanged10-selector+demo gate,
+  run/one task/eight CPUs/16GB/30min/no pin. Verify transfer and fresh installed
+  provenance, derive actual counts, fetch raw receipts/accounting. Preserve both
+  prior failed inputs/receipts/local fetch indices. No source edits, automatic
+  retry, CI watch, selector/tolerance relaxation or Phase5 until parent review.
+  This is submission approval only; full native outcomes remain pending.
+
+### Phase 4 accepted — job 5216536 independently verified
+
+- COMPLETED0:0,81s,vep4,run/eight CPUs/requested16GB; batch MaxRSS836976K.
+  Parent verified all79 job-indexed payloads, index
+  b60bd43512660e836a16453b15a291d727f7f0097c08b00ef0b96b9c91066bc4;
+  81 fetched files including index/exit. Exit0/DONE and exact328 source-manifest
+  payloads, frozen patch/index and checkout all match before final prose edit.
+- Ten independently checked installed selector/origin/status/JUnit gates:
+  reference53,stream78,localBW84,globalBW21,complete86,co-clock64,native22,
+  publicBW59,public windows42,Recorder59 = **568 passed,0 failed/errors/skips**.
+  Counts are actual completed cases, not collection or a guessed constant.
+- Existing unchanged demo passes its40s/40row response, midpoint and dropped-tail
+  checks and exact-zero zero-drive assertion. Meaningful response peak0.0079029.
+  Wheel SHA8645717637cde76aa89734ce1b90f3ea2b8e40048eb46db6ef39c792cc2d49fe;
+  native wheel member AND fresh installed extension SHA
+  9e2c435db32e0a9e49ec4d169d324f4a88bb93277cf4d58ba79f90aaec413803.
+  Native binary also matches both failed jobs; only tests changed on retries.
+- Parent final diff/evidence review accepts compatible multi-source global BW
+  and widths1/4/8/16, master-held slower observations including cadence3, canonical
+  mappings, independent lanes, strict staged continuation, global/local/average
+  coexistence and unchanged legacy guards. Solver/precision/HRF/sweeps unchanged.
+  Atomicity claims are monitor-set restore/all-region-lane close, not neural
+  rollback; native outputs remain per-call. Both failed jobs stay private/intact.
+- ONE post-qualification README-only clarification scopes the old average-gather
+  paragraph correctly; it previously contradicted the newly documented BW
+  profile. Entire executable/test/native candidate remains byte-identical to
+  the qualified archive. This prose edit was manually reviewed, not claimed to
+  be part of the frozen wheel; no redundant scientific test job for prose.
+- At this delivery checkpoint, single non-watching GitHub query confirms all
+  Phase3 bae00b766 workflows and BOTH Sonar checks completed successfully;
+  release upload intentionally skipped. Live tvbkh/PR801 head still bae00b766,
+  PR open/draft. No hosted-CI waiting or requalification of accepted Phase3.
+- Parent will stage only ten functional files plus PLAN, commit/push explicit
+  GitHub tvbkh with fresh ancestry/ref/dry-run checks. Phase4 accepted on local
+  native evidence; Phase5 authorized following publication/worker closeout.
+  Phase6 retains the operator-required user-friendly mixed-timescale/genuine-
+  SIMD/BW notebook in tvb_documentation/demos. No merge/release authority.
