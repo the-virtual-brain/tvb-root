@@ -38,8 +38,8 @@ child's success claim, a job ID, or a green subset of CI with acceptance.
 | Phase | Deliverable | State | Evidence / acceptance |
 |---|---|---|---|
 | 1 | Close existing installed-native investigation | Complete; accepted; report errata finalized | Existing job 5216500; hashes and key raw records independently checked |
-| 2 | Green tvbkh baseline, permanent coverage, current-capability demo | Local diff/evidence reviewed; publication approved; exact-SHA CI pending | 440 suite passes in 5216502; demo/notebook pass in 5216503 |
-| 3 | Public local BW Recorders, including independent SIMD lanes | Pending | Wait for Phase 2 acceptance |
+| 2 | Green tvbkh baseline, permanent coverage, current-capability demo | Complete; published and accepted at ef1d60b8d | Seven workflows + both Sonar checks pass; dedicated suites/demo and Windows notebook pass |
+| 3 | Public local BW Recorders, including independent SIMD lanes | Installed-native qualification passed; publication/exact-SHA CI pending | Job 5216533: 546 passes + demo; sole child held before final acceptance |
 | 4 | Compatible multi-subnetwork global BW and shared placement semantics | Pending | Wait for Phase 3 acceptance |
 | 5 | Explicit BW parameter sweeps through backend and notebook APIs | Pending | Wait for Phase 4 acceptance |
 | 6 | Integrated demos and exact-candidate qualification | Pending | Wait for Phase 5 acceptance |
@@ -484,3 +484,325 @@ limits are explicit. No automatic merge or release.
 - Phase 2 remains gated on the resulting exact commit's applicable hosted CI.
   Child stays quiescent except report-only errata. No Phase 3 advancement, new
   Slurm submission, merge or release is authorized until this gate is resolved.
+
+### Phase 2 — published; hosted CI in progress
+
+- Parent committed and pushed the four reviewed files as
+  `ef1d60b8d3d21f74b723023d17820bcabd98185d`
+  (parent `bb819dc35f31029064b1e8200587aee57569d0cc`),
+  "Demonstrate regional Balloon-Windkessel and name its CI gates".
+- Publication used explicit GitHub URL and HEAD:refs/heads/tvbkh after fresh
+  remote identity/ancestry checks and successful dry run. Live GitHub tip was
+  verified equal to the new commit. No force, merge, remote edit or handoff staging.
+- Exact-SHA Actions runs observed in progress:
+  cpp-hybrid `45863926002`, Test Py `45863926025`, Test Notebooks `45863926353`,
+  Test PG `45863926213`, Test Win `45863925843`, contrib `45863926024`,
+  Wheels `45863937226`. Hosted/Sonar acceptance remains pending.
+- Phase 2 child remains the sole phase worker and may monitor these existing
+  checks read-only; no new jobs/source changes or Phase 3 advancement. On a
+  failure, inspect exact-SHA failing logs and report before proposing fixes or
+  reruns. Parent independently dispositions final results before acceptance.
+- Attention reviews: the child is intentionally running `gh pr checks --watch
+  --fail-fast`, not stuck in a build or source write. The first 2400 s watch
+  timed out while CI was still running; this is not a hosted check failure.
+  Latest parent exact-SHA check: Wheels, contrib, cpp-hybrid, Test PG and
+  Test Win succeeded. In Test Py, Python 3.13 has passed; Python 3.11/3.12
+  remain in progress. Test Notebooks is running its notebook-execution step.
+  Dedicated C++ logs show the new seven-suite step (440 passes) and BW demo
+  step passed. Subsequent watch attention reviewed: still an intentional CI
+  watch, no failed check observed; no source intervention, CI rerun or new worker.
+- These log updates are local operational progress after the published commit;
+  they do not change the tested workflow or demo bytes.
+
+### Phase 2 — exact-SHA acceptance; Phase 3 authorized
+
+- Parent read the saved Phase 2 report and independently queried exact commit
+  `ef1d60b8d3d21f74b723023d17820bcabd98185d`: all seven workflows above are
+  completed/success. SonarCloud check `140098397352` and SonarCloud Code
+  Analysis check `140112711734` are completed/success. Release-upload job is
+  deliberately skipped, not a missing required qualification.
+- Parent independently verified both added dedicated C++ steps succeeded and
+  found the new notebook's successful execution line in Windows run 45863926353.
+  The dedicated suite recorded 440 passes with three existing warnings; all
+  three broad Python matrix jobs also succeeded.
+- Live GitHub tvbkh and PR #801 head still match the exact reviewed commit.
+  PR remains open and draft; acceptance does not authorize merge/release.
+- **Phase 2 fully accepted.** Existing failures and manifest caveat stay on
+  record; no test/CI rerun or evidence relabeling was needed for acceptance.
+- Sole Phase 2 child may finalize its saved report and return accepted. The
+  existing sequential workflow is authorized to start its sole Phase 3 child.
+- Phase 3 starts from the accepted published commit. Before broad implementation
+  the child must present local Recorder tests/clock semantics, per-region/lane
+  isolation, Python/native seams, continuation identity and bounded validation
+  matrix for parent review. No Slurm job or future-phase API expansion is
+  preapproved. Keep RK4/double arithmetic fixed; no new precision investigation.
+- Local PLAN.md progress remains the only tracked uncommitted change at this
+  gate. Include reviewed progress with the next functional delivery instead of
+  creating a documentation-only push that needlessly restarts the full CI suite.
+
+### Phase 3 — tests-first contract reviewed; implementation authorization
+
+- Sole child `cdca7fa2-7605-4ab2-b004-042160ea351b`, key `cpp-phase-3`, starts
+  from accepted ef1d60b8d. Initial changes are the new local BW test module and
+  scoped updates to prior public BW guard tests; no production code/job yet.
+- Supervisor read the startup report, new tests and existing clock/restore
+  seams. Approve public C++ local Recorder support, source-eligible observations,
+  10 ms physical drive windows, shipped two-step RK4/double arithmetic, complete
+  output windows, independent regions/lanes and compatible monitor-set restore.
+- Kind 11 local BW and a BW-specific version-2 continuation identity are in
+  scope. Reuse the current BW engine/state structure where practical; do not
+  introduce a second solver. Preserve version-1 identities and existing width
+  restrictions for local average monitors; do not loosen global/sweep guards.
+- Distinct-lane proof through native Sim plus broadcast-lane public runs is an
+  acceptable Phase 3 gate. Label that scope honestly; public distinct-parameter
+  sweep routing and independent-run parity remain Phase 5 deliverables.
+- Adding the new module to the dedicated CI step is approved (seven -> eight).
+- Parent identified mandatory corrections in the initial tests, not production
+  behavior changes to satisfy erroneous expectations:
+  * Same physical duration and same 20 ms output period yield the same output
+    count on fast/slow sources when both source clocks divide the drive window.
+    Slow sources contribute fewer eligible observations, not half as many rows.
+  * Master dt is min(subnet dt). A lone slow subnet has cadence one. Use a fast
+    companion to establish a nontrivial source cadence, including restore tests.
+  * Compute the global parity reference before installing the tracing wrapper
+    that deliberately forbids global-output draining; trace local work only.
+  * At dt=2.5 ms, 13 steps span 32.5 ms and emit one 20 ms row, not zero.
+    Six native steps span 15 ms and cannot emit three 20 ms rows; use 24 steps
+    (six drive windows) for that lane test, with integer step counts.
+  * At seven source updates, the second drive window has three pending samples;
+    its drive sum is nonzero. Assert the actual partial sum rather than zero.
+    Calls with return_snapshot and subnet_monitors return three values, not two.
+- Strengthen all-set restore coverage with multiple monitors and a valid changed
+  earlier state followed by an invalid later state; use a wide-lane corruption
+  case. Add a late-region/lane close failure check showing no partial BW close
+  commits, without promising neural-state or whole-simulator rollback.
+- Resources/scope approved in principle: one run-partition job, one task,
+  eight CPUs, 16 GB, 30 min, no node pin, exact-source installed wheel/fresh venv.
+  Include proposed eight modules, existing global co-clock window regressions,
+  and the current demo script. No rerun of Phase 1 benchmarks.
+- **Submission still gated:** implement serially after correcting test logic;
+  present corrected test/implementation diff and frozen runner inputs for parent
+  readiness review before the single submission. Use pytest exit status and
+  per-test outcome evidence; do not hardcode a guessed count from wrapped logs.
+  Preserve failures; no retry or tolerance/selector relaxation preapproved.
+
+### Phase 3 — first readiness review; submission withheld
+
+- Child reports implementation complete, scientific engine unchanged, all six
+  startup corrections addressed, and local syntax/header-level checks passing.
+  These header-level checks are not installed-native qualification or acceptance.
+- Parent read the actual production diff, all new tests, managed readiness
+  report and full runner. `git diff --check` passes; HEAD remains ef1d60b8d.
+  No Slurm submission, native package build or test replay by parent.
+- Frozen first package is preserved at
+  `../recovery/verify/monitor-phase3-local-bw-ErAJgc/`. Parent independently
+  matched reported hashes for archive, demo, runner and candidate patch:
+  archive `e398e52e796076ca4709d227fb42ea37d333c3889fa03ba6669bec8566b2a4ad`,
+  runner `0c39e4f877277d6c7bd0edd9c08af66063e231c3a8e22e146c7847a91d7872f0`,
+  patch `d91a954c690fd7ab5f73d524e2e0d34a17cee0f65727705497aec08792a4b97f`.
+  These are reviewed candidate inputs, not a qualified or committed revision.
+- **Do not submit this package.** Parent found concrete remaining blockers:
+  * BW output reservation omits pending `bw_drive_count`. From a seven-update
+    state at dt=2.5 ms / period=20 ms, one eligible update emits a row but reserves
+    zero rows. Include pending drive observations so output allocation cannot
+    first happen after clock/state commit; add a bounded capacity assertion.
+  * BW restore bypasses `dict_to_checked_window_state` and therefore weakens
+    exact-integer/float64 accumulator checks of local Recorder snapshots. Reuse
+    strict validation (empty extent for BW) plus its BW-specific state checks;
+    add malformed type/empty-accumulator regression cases.
+  * Fresh-rearm test reads its supposed 13-step warm state after the second,
+    nine-step run, then asserts 13. Capture warm state before the second run.
+  * Two tests expect `requires native monitor collection`, while the new local
+    error says `Recorders require native monitor collection`. Keep the existing
+    diagnostic substring consistently; no guard or selector relaxation.
+- Also require integer restore step counts and accurate physical-duration
+  comments (48 master steps are 120 ms, not 300 ms). Keep intended coverage,
+  independently sampled clocks and unchanged numerical tolerances.
+- Runner matrix/resources are suitable. Strengthen provenance before re-freeze:
+  verify installed extension resides in the fresh test environment and hashes
+  exactly to its wheel member; include/check candidate.patch in frozen inputs
+  instead of only logging its expected hash from an environment variable.
+- Authorize only these bounded fixes and a fresh frozen package. Preserve the
+  first package unchanged; re-present corrected diff/hashes before submission.
+  No new investigation, broad refactor, retry, job, publication or next phase.
+
+### Phase 3 — corrected frozen job approved once
+
+- Same sole child presented corrections and paused before submission. Parent
+  reviewed correction.patch, full corrected runner and managed report; checked
+  working-tree status, unchanged HEAD and `git diff --check`, plus `bash -n`.
+  No build/test/oracle replay was performed by parent.
+- Pending-observation reservation is corrected; saved capacity logs show the old
+  header reserves zero rows and the corrected header reserves one row / three
+  values for the seven-update/one-more-tick case. Strict local snapshot parsing
+  now uses the existing checked helper before parsing BW state. Five malformed
+  snapshot-type cases were added. Warm state is captured before the second run;
+  disable diagnostic, integer horizons and duration comments are corrected.
+- Runner now verifies the installed extension's fresh-venv location and exact
+  wheel-member hash. Candidate patch is in the frozen index and separately
+  checked against the supplied patch identity. Nine-suite JUnit/outcome gate,
+  zero skips and existing demo remain unchanged.
+- Fresh private package:
+  `../recovery/verify/monitor-phase3-local-bw-qXlR3a/`.
+  Parent independently verified all four indexed inputs and correction hash:
+  * archive `2436fb1c161f365b4271ca558d0578bbdb2e74c3392b194b4e9e9f7342be0fa4`
+    (5,339,648 bytes);
+  * unchanged demo `5870d0779254e7cbd5f1c16aa94006839b7e208425f6e151383613c985ce5443`;
+  * runner `e4b4e9e75998768bcdf6dcc58e1e401f38e2ac5f1410bfadce2b992c755123cd`;
+  * candidate patch `c4e27648c006906f44875a2392097d5ed99c1a7500a05e8d606e5a43a18e9b74`;
+  * input index `71ad80130e11926dbe6d2948f297de848e2c0e13d73630660ac219abcdeb02f0`;
+  * correction `eae5383a510df815d2ad28ccfe40d8d0ee655127b8ec6e2f8abbc1186eee5635`.
+- Parent compared every archive source payload byte with the checkout: all 326
+  tracked library files plus the approved new test match, no missing/unexpected
+  source payload. Recomputed tracked/new-test diffs concatenate exactly to the
+  frozen candidate.patch. Old package archive/runner/patch hashes are unchanged.
+- File-count clarification: the archive contains **327 source payloads plus
+  327 generated AppleDouble metadata entries**, 654 regular entries total.
+  Parent checked the metadata magic; these are tar-generated metadata, not
+  extra scientific source. Keep private frozen inputs unchanged and report
+  actual extracted manifest counts; do not describe 327 as total archive files
+  or publish these metadata-bearing private artifacts.
+- **Approve exactly one submission** of the above frozen job via inslurm-proxy:
+  run partition, one task, eight CPUs, 16 GB, 30 min, no pinned node. Verify the
+  approved identities remotely before submission; freeze functional source.
+  Report job ID and receipt path, preserve all evidence, stop/report first
+  failure with no automatic retry, gate relaxation or harness/source mutation.
+- This is validation authorization only: no Phase 3 acceptance, commit/push,
+  future phase, extra local numerical checks or additional job is authorized.
+  Parent reviews installed-native receipts and final diff before publication.
+
+### Phase 3 — first installed-native failure; corrections-only authorization
+
+- Approved job `5216532` ran once, node vep4, reported FAILED 1:0 after 58 s.
+  Receipt: `../recovery/verify/monitor-phase3-local-bw-qXlR3a/receipt-5216532/`;
+  remote `inslurm-proxy:~/verify/monitor-phase3-local-bw-qXlR3a/local-bw-5216532/`.
+  Child stopped without edits/retry. No demo execution or Phase 3 acceptance.
+- Parent read saved report, failure log, outcome/provenance/input records and
+  verified all 21 local receipt-index entries. Index SHA-256:
+  `02e721e36e562bd1c079764c43655f3765436facd68138d7448d7c96209b8ba0`.
+  Source manifest `d618afc7c45f277a511e6ee5cf0dedb15a042139f36ab3e29e6d8eab11679f01`
+  has 654 entries, with the metadata distinction recorded above.
+- Build/install/provenance succeeded. Wheel SHA-256:
+  `e0db5b8ef969612ae527df0556f482ac63cb4391709f11a8307cd5f060a43352`.
+  Parent independently extracted native wheel-member hash
+  `a549b8d578329fd26f43e5ab57a541d379569a3c8ce1abbd934109678c190ffd`,
+  matching recorded installed hash. All nine selected wheel test files match
+  checkout bytes. No simulator/test execution was repeated by parent.
+- Actual result: **537 passed, 7 failed, zero skipped**. JUnit has empty
+  classnames, so the intended per-module gate cannot attribute its cases.
+  Parent instead mapped case base names to AST definitions in the exact wheel
+  source: every case has a unique owner, no ambiguity. Existing modules passed:
+  reference 53, BW stream 79, complete windows 86, global co-clock 64, native
+  monitors 22, public BW 57, public windows 42, Recorder windows 59. New local
+  BW module has 75 passes / 7 failures (82 cases). This is forensic attribution,
+  not acceptance of the broken classname-based runner gate.
+- Logs/source support the child's fixture diagnosis: parity and mixed-sibling
+  comparisons use one too few global-output nesting levels; three distinct-lane
+  controls pass strided slices into a flat-buffer native API; NaN is rejected
+  by traits at construction rather than at the intended runtime assertion; a
+  multi-mode model fixture hits an earlier dfun fingerprint guard and prevents
+  its combined native-disable assertion from running. Those seven intended
+  behaviors remain unqualified until corrected tests pass.
+- Authorize test-only corrections: correct global nesting, use/assert contiguous
+  float32 lane inputs with unchanged exact comparisons, use trait-accepted
+  nonfinite calibration for the runtime guard, and test the Python multi-mode
+  spec seam explicitly without claiming this substitutes for public integration.
+  Also add a direct native non-one-mode attachment rejection and split disabled
+  collection into its own test so it always runs. Do not touch production code,
+  numerical tolerances or existing suite selectors for these fixture fixes.
+- Replace fragile classname attribution with nine separate invocations in the
+  same job, each explicitly labeled by its selector and own log/JUnit/status.
+  Verify each selector resolves to installed test-venv code, each has completed
+  cases and zero skips/failures/errors; stop at the first failed invocation.
+  Preserve the nine-suite matrix and final demo; no guessed test count or
+  reliance on name-only attribution as the permanent runner gate.
+- Pre-existing hazard recorded, not silently dismissed: native resolve_per_sn
+  accepts strided noise then uses flat-buffer indexing. Deferred outside this
+  Phase 3 correction; revisit contiguity validation before Phase 5 public lane
+  sweep qualification. The corrected lane tests must explicitly use contiguous
+  buffers; their evidence will not establish support for strided native inputs.
+- **No resubmission yet.** Preserve failed receipt and frozen packages; prepare
+  fresh exact-source inputs, compact test/runner diff, hashes and static checks
+  for readiness review. Same resources remain suitable. One concrete retry may
+  be approved after review; no automatic rebuild/job/retry or future phase.
+
+### Phase 3 — test/harness correction package; one retry approved
+
+- Same child implemented the approved fixture corrections, split the disabled
+  collection test, added both Python-spec and native multi-mode rejection tests,
+  and paused before submission. Parent read the compact diff, full runner and
+  saved report. Exact parity/lane/permutation/sibling comparisons are retained;
+  production finite/geometry guards and numerical tolerances are unchanged.
+- Parent verified all indexed inputs and correction hash, `git diff --check`
+  and runner `bash -n`. Compared every archive source payload to the checkout,
+  checked the approved allowlist and recomputed the full candidate patch. Against
+  qXlR3a, the **only changed source payload is the new local BW test module**;
+  all production code and eight earlier suites remain byte-identical.
+- Retry inputs: `../recovery/verify/monitor-phase3-local-bw-QNKBhL/`:
+  * archive `fc4311ff8cea872b4d86e53e83a7870bd8006107223a79c59b52df85b6f578d8`
+    (5,342,208 bytes; 327 source payloads + 327 AppleDouble metadata entries);
+  * unchanged demo `5870d0779254e7cbd5f1c16aa94006839b7e208425f6e151383613c985ce5443`;
+  * runner `214bd783090d875721053fab5c47a1edc7c1c1cd7154a72cb4e7152e6e83c4d6`;
+  * patch `793c613dc68687ef4c7e3dd24ef31f6c35fff1c4a111adefa2f4665ec51cbe8c`;
+  * index `d39169b3a21761e11dcfb84cb8ae2b8ac670499b8f7c791a3e5168cfa343a818`;
+  * correction `b65f0f0ebd1ffd803824804757ce980cfd867ece87b0d0df98117101275df860`.
+- Runner uses nine explicit serial module invocations, each with installed-origin
+  verification, own selector/log/JUnit/status and zero-failure/error/skip gate.
+  Any unclean invocation stops the job; only nine clean invocations reach the
+  aggregate gate and unchanged demo. No guessed test count or JUnit classname
+  attribution. Fresh exact-source wheel build/test environments remain required.
+- **Approve exactly one retry submission** of these frozen bytes via
+  inslurm-proxy, run/one task/eight CPUs/16 GB/30 min/no pin. Verify identities
+  remotely, freeze source, report job ID/receipt promptly, fetch full evidence
+  and pause for parent review. No automatic follow-on retry or source changes.
+- Prior failed receipts/packages stay intact. No installed-native replay by
+  parent, acceptance, publication, next phase or new precision work authorized.
+  This will be the second Phase 3 job, not a relabeling of the failed first job.
+
+### Phase 3 — installed-native qualification passed; publication gate
+
+- Retry `5216533` COMPLETED 0:0, node vep4, 73 s, eight CPUs / requested 16 GB,
+  batch MaxRSS 532,796 K. Scheduler accounting is preserved beside the receipt.
+  No additional job/retry occurred and the first failure remains intact.
+- Parent read the saved phase report, raw outcome/provenance/demo records and
+  scheduler accounting. Independently verified all **73 receipt-index entries**:
+  `../recovery/verify/monitor-phase3-local-bw-QNKBhL/receipt-5216533/`;
+  index SHA-256 `1b6533d34293e53a9833d02732e4a48b05477a1f370c4c380383a1f4a089b729`.
+  The index intentionally excludes itself and the final exit.txt; parent also
+  separately read exit.txt (exit=0). Index entries are not total fetched files.
+- All four frozen inputs verify. Extracted source manifest SHA-256
+  `00e86d2a9bad24f23c0acf559e774d5a182caea9271a8a13e7b76d3a5d1acb72`
+  has 654 entries with the source/AppleDouble distinction retained.
+- Actual retry wheel SHA-256:
+  `8fe0e0ca550b8bf3fe8f18e044ecea337cfa26e5fae361e4652c1da87c841766`.
+  Parent extracted native member SHA-256
+  `a549b8d578329fd26f43e5ab57a541d379569a3c8ce1abbd934109678c190ffd`,
+  matching the installed fresh-venv import record. All nine wheel test modules
+  and changed Python production files match the checkout; all archive source
+  payloads and the tested candidate.patch also match the checkout exactly.
+  The child's initial report accidentally reused the first attempt's wheel hash;
+  report-only correction requested. Raw artifacts are correct and unchanged.
+- Parent independently parsed all nine JUnit files and checked selector/status/
+  installed-origin records: **546 passed, zero failures/errors/skips**. Counts:
+  reference 53, BW stream 79, local BW 84, complete windows 86, global co-clock
+  64, native monitors 22, public BW 57, public windows 42, Recorder windows 59.
+  No solver, test or oracle execution was repeated by the parent.
+- Exact array parity tests now pass for matching-drive global/local output,
+  per-region controls, distinct native lane controls/permutation at widths
+  1/4/8/16, and sibling coexistence. Public broadcast lanes, independent clocks,
+  chunking/tails, fresh reset, both partial-window continuation, strict/atomic
+  restore and failure guards are qualified by the 84-case local suite.
+- Existing demo ran after all nine suites and passed: forty 1 s BOLD rows over
+  40 s, midpoint grid, incomplete-tail checks and exactly zero zero-drive BOLD.
+  Experimental/geodesic warnings and the existing pytest deprecation remain
+  visible; no suppression or gate relaxation occurred.
+- **Native qualification accepted for publication**, not final Phase 3/workflow
+  advancement. Parent owns the reviewed functional commit/push and exact-SHA
+  hosted CI review; child remains held before returning accepted. A fresh remote
+  query still shows tvbkh at ef1d60b8d; no competing upstream change detected.
+- Keep native-only distinct-lane proof scoped honestly until public Phase 5
+  sweeps. Strided native input hazard and public multimode fingerprint issue
+  remain explicitly deferred. Global multi-source BW/sweeps remain guarded.
+- Stage only the nine reviewed functional files plus this plan; preserve both
+  untracked handoffs and all private metadata-bearing receipts outside Git.
+  No merge/release or Phase 4 work is authorized before exact-SHA CI acceptance.

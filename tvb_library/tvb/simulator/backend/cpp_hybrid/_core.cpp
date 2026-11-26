@@ -1619,6 +1619,22 @@ static constexpr std::pair<const char *, double BwParameters::*> bw_parameter_fi
     {"resting_blood_volume", &BwParameters::resting_blood_volume},
 };
 
+// One explicit, complete scalar hemodynamic parameter set (no defaults).
+static BwParameters parse_bw_parameters(const nb::dict &d, const char *label) {
+  if (!d.contains("bw_stream_params"))
+    throw std::runtime_error(std::string(label) + ": incomplete parameter set");
+  const auto parameters = nb::cast<nb::dict>(d["bw_stream_params"]);
+  BwParameters p;
+  if (parameters.size() != std::size(bw_parameter_fields))
+    throw std::runtime_error(std::string(label) + ": expected one explicit scalar parameter set");
+  for (const auto &[name, member] : bw_parameter_fields) {
+    if (!parameters.contains(name))
+      throw std::runtime_error(std::string(label) + ": incomplete parameter set");
+    p.*member = nb::cast<double>(parameters[name]);
+  }
+  return p;
+}
+
 static void export_bw_stream_state(nb::dict &state, const KMonState &st) {
   auto regions = make_owned_array<double>({st.bw_stream_regions.size(), 6});
   double *row = regions.data();
@@ -1797,6 +1813,8 @@ static void parse_kmon_spec(nb::handle item, int n_src_v, int n_space,
     kind = nb::cast<int>(d["kind"]);
     if (dict_get_or<bool>(d, "local_window", false))
       throw std::runtime_error("Recorder complete window requires a local attachment");
+    if (kind == KMON_BOLD_BW_LOCAL)
+      throw std::runtime_error("Recorder complete window requires a local attachment");
     const bool complete_window = dict_get_or<bool>(d, "complete_window", false);
     if (kind == KMON_BOLD_BW_STREAM) {
       if (!global || W != 1 || complete_window ||
@@ -1814,15 +1832,7 @@ static void parse_kmon_spec(nb::handle item, int n_src_v, int n_space,
                                           "observed VOI");
       if (voi.size() != 1)
         throw std::runtime_error("global BW stream: exactly one valid observed VOI is required");
-      const auto parameters = nb::cast<nb::dict>(d["bw_stream_params"]);
-      BwParameters p;
-      if (parameters.size() != std::size(bw_parameter_fields))
-        throw std::runtime_error("global BW stream: expected one explicit scalar parameter set");
-      for (const auto &[name, member] : bw_parameter_fields) {
-        if (!parameters.contains(name))
-          throw std::runtime_error("global BW stream: incomplete parameter set");
-        p.*member = nb::cast<double>(parameters[name]);
-      }
+      BwParameters p = parse_bw_parameters(d, "global BW stream");
       out.configure_bw_stream(slot, nb::cast<int>(d["istep"]), default_dt, n_space, voi[0],
                               nb::cast<double>(d["bw_drive_baseline"]),
                               nb::cast<double>(d["bw_drive_scale"]), p);
@@ -1944,6 +1954,8 @@ static void parse_kmon_spec(nb::handle item, int n_src_v, int n_space,
   kind = nb::cast<int>(a[1]);
   if (kind == KMON_BOLD_BW_STREAM)
     throw std::runtime_error("global BW stream requires an explicit native dictionary");
+  if (kind == KMON_BOLD_BW_LOCAL)
+    throw std::runtime_error("Recorder complete window requires a local attachment");
   auto it = std::find_if(prev.begin(), prev.end(), [&](const kmon<W> &e) {
     return !e.staged_global() && !e.local_window && e.slot == slot && e.kind == kind;
   });
@@ -2016,10 +2028,14 @@ template <int W> struct simw {
     const double master_clock = nb::cast<double>(d["master_dt"]);
     const double scheduled_dt = cadence * master_clock;
     const size_t max_int = (size_t)std::numeric_limits<int>::max();
-    if (W != 1 || sub.n_modes != 1 || sub.n_node < 1 ||
+    const bool bw_local = (kind == KMON_BOLD_BW_LOCAL);
+    // Average windows stay width-1 only; the local BW window carries independent
+    // per-region, per-lane state and supports every instantiated SIMD width.
+    if ((!bw_local && W != 1) || sub.n_modes != 1 || sub.n_node < 1 ||
         source.empty() || source.size() > max_int ||
         source.size() > obs_row[si].max_size() / (size_t)sub.n_node ||
-        slot < recorder_slot_base || !average_window_kind(kind) || period < 1 || cadence == 0 ||
+        slot < recorder_slot_base || (!average_window_kind(kind) && !bw_local) ||
+        period < 1 || cadence == 0 ||
         dict_get_or<bool>(d, "complete_window", false))
       throw std::runtime_error("Recorder complete window: invalid attachment geometry, kind or period");
     // Match the existing NetworkSet cadence tolerance, and check both stored native clocks.
@@ -2034,6 +2050,25 @@ template <int W> struct simw {
     }
     const auto voi = to_checked_indices(d["voi"], source.size(), "Recorder complete window", "observed VOI");
     const size_t n_voi = voi.empty() ? source.size() : voi.size();
+    if (bw_local) {
+      for (const char *key : {"bw_stream_params", "bw_drive_baseline", "bw_drive_scale",
+                              "source_name", "node_indices"})
+        if (!d.contains(key))
+          throw std::runtime_error("Recorder complete window: incomplete BW attachment specification");
+      if (voi.size() != 1)
+        throw std::runtime_error("Recorder complete window: exactly one valid observed VOI is required");
+      m.local_window = true;
+      m.local_master_dt = master_clock;
+      m.local_source_name = nb::cast<std::string>(d["source_name"]);
+      m.local_node_indices = nb::cast<std::vector<int64_t>>(d["node_indices"]);
+      if (!m.local_node_indices.empty() && m.local_node_indices.size() != (size_t)sub.n_node)
+        throw std::runtime_error("Recorder complete window: incompatible node order extent");
+      m.configure_bw_local(slot, period, clock, sub.n_node, voi[0],
+                           nb::cast<double>(d["bw_drive_baseline"]),
+                           nb::cast<double>(d["bw_drive_scale"]),
+                           parse_bw_parameters(d, "Recorder complete window"), cadence);
+      return;
+    }
     const size_t max_space = std::min(m.accum.max_size(), m.d_out.max_size()) / n_voi;
     m.local_window = true;
     m.local_master_dt = master_clock;
@@ -2438,10 +2473,50 @@ template <int W> struct simw {
     for (const auto &v : voi_specs[si])
       observations.append(nb::make_tuple(v.kind, v.a, v.b));
     const auto &sub = sn[si];
+    if (m.bw_local()) {
+      // Version 2 appends the held-drive window geometry, the calibration and
+      // the whole explicit hemodynamic set to the shared local-window identity.
+      nb::list params;
+      for (const auto &field : bw_parameter_fields)
+        params.append(m.bw_stream_params.*field.second);
+      return nb::make_tuple(2, si, m.slot, m.kind, m.local_source_name, m.dt, m.local_master_dt,
+                            m.cadence_K, m.istep, m.voi, observations,
+                            sub.n_svar, sub.n_node, sub.n_modes, m.local_node_indices,
+                            m.sm_row_ptr, m.sm_col_idx, m.sm_val,
+                            m.bw_drive_steps, m.bw_output_endpoints, m.bw_drive_baseline,
+                            m.bw_drive_scale, params);
+    }
     return nb::make_tuple(1, si, m.slot, m.kind, m.local_source_name, m.dt, m.local_master_dt,
                           m.cadence_K, m.istep, m.voi, observations,
                           sub.n_svar, sub.n_node, sub.n_modes, m.local_node_indices,
                           m.sm_row_ptr, m.sm_col_idx, m.sm_val);
+  }
+
+  // Export the two open local BW windows per region and lane. The keys are
+  // specific to this kind; the legacy scalar fields stay empty in the dict.
+  void append_bw_local_state(nb::dict &d, const KMonState &st, const kmon<W> &m) const {
+    const size_t n_node = (size_t)m.n_out_space;
+    auto regions = make_owned_array<double>({n_node, (size_t)W, (size_t)6});
+    if (!st.bw_local_state.empty())
+      std::memcpy(regions.data(), st.bw_local_state.data(),
+                  st.bw_local_state.size() * sizeof(double));
+    d["bw_local_regions"] = regions;
+    d["bw_drive_count"] = st.bw_drive_count;
+  }
+
+  void parse_bw_local_state(KMonState &st, const nb::dict &d, const kmon<W> &m,
+                            const char *label) const {
+    if (!d.contains("bw_local_regions") || !d.contains("bw_drive_count") ||
+        !PyLong_CheckExact(d["bw_drive_count"].ptr()))
+      throw std::runtime_error(std::string(label) + "invalid snapshot regional state");
+    using BwLocal = nb::ndarray<nb::numpy, const double, nb::ndim<3>, nb::c_contig>;
+    BwLocal regions;
+    if (!nb::try_cast(d["bw_local_regions"], regions, false) ||
+        regions.shape(0) != (size_t)m.n_out_space ||
+        regions.shape(1) != (size_t)W || regions.shape(2) != 6)
+      throw std::runtime_error(std::string(label) + "invalid snapshot regional extent or dtype");
+    st.bw_drive_count = nb::cast<uint32_t>(d["bw_drive_count"]);
+    st.bw_local_state.assign(regions.data(), regions.data() + regions.size());
   }
 
   nb::list get_monitor_states() const {
@@ -2457,6 +2532,7 @@ template <int W> struct simw {
             m.validate_local_window_state(st, t_abs);
             d["local_window_config"] = local_window_config(si, m);
             d["local_window_phase"] = t_abs % m.cadence_K;
+            if (m.bw_local()) append_bw_local_state(d, st, m);
           }
           ms.append(d);
         }
@@ -2486,7 +2562,8 @@ template <int W> struct simw {
         if (!window) {
           // The reserved Recorder slots distinguish historical local windows from global
           // monitors routed through the legacy per-subnet collector.
-          if (d.contains("local_window_phase") || (slot >= recorder_slot_base && average_window_kind(kind)))
+          if (d.contains("local_window_phase") || (slot >= recorder_slot_base &&
+              (average_window_kind(kind) || kind == KMON_BOLD_BW_LOCAL)))
             throw std::runtime_error("Recorder complete window: historical snapshot monitor");
           if (!strict) continue;
         }
@@ -2506,7 +2583,16 @@ template <int W> struct simw {
           if (!d.contains("local_window_phase") || !PyLong_CheckExact(d["local_window_phase"].ptr()) ||
               nb::cast<uint32_t>(d["local_window_phase"]) != t_abs % it->cadence_K)
             throw std::runtime_error("Recorder complete window: invalid snapshot master cadence phase");
-          KMonState st = dict_to_checked_window_state(d, it->accum.size(), local_window_label);
+          KMonState st;
+          if (it->bw_local()) {
+            // Keep the strict local Recorder state checks (exact integer
+            // identity fields, one-dimensional float64 accumulator) and parse
+            // the BW windows afterwards; the accumulator extent is zero here.
+            st = dict_to_checked_window_state(d, 0, local_window_label);
+            parse_bw_local_state(st, d, *it, local_window_label);
+          } else {
+            st = dict_to_checked_window_state(d, it->accum.size(), local_window_label);
+          }
           it->validate_local_window_state(st, t_abs);
           staged.emplace_back(&*it, std::move(st));
         } else {
@@ -2879,8 +2965,12 @@ template <int W> struct simw {
       for (const auto &m : mons[si]) {
         if (!m.local_window) continue;
         validate_local_window_source(si, m);
+        const uint64_t expected_count = m.bw_local()
+            ? m.m_step % (uint64_t)m.istep / (uint64_t)m.bw_drive_steps * (uint64_t)m.bw_substeps
+            : m.m_step % (uint64_t)m.istep;
         if (m.run_start != 0 || m.m_step != t_abs / m.cadence_K ||
-            m.accum_count != m.m_step % (uint64_t)m.istep)
+            m.accum_count != expected_count ||
+            (m.bw_local() && m.bw_drive_count != m.m_step % (uint64_t)m.bw_drive_steps))
           throw std::runtime_error("Recorder complete window: reset or restore at the simulator clock before run");
         if (nstep < 0 || (uint64_t)nstep > std::numeric_limits<uint64_t>::max() - t_abs)
           throw std::runtime_error("Recorder complete window: run exceeds tick range");

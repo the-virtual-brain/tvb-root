@@ -454,9 +454,6 @@ class CompiledCppSim:
         sn_mons_map = None
         if subnet_monitors is not None:
             local_lists = subnet_monitors.values() if isinstance(subnet_monitors, dict) else subnet_monitors
-            if any(isinstance(getattr(m, "monitor", m), BalloonWindkessel)
-                   for ms in local_lists for m in ms):
-                raise NotImplementedError("BalloonWindkessel cannot be a local or Recorder monitor")
             if any(isinstance(getattr(m, "monitor", m), _REGIONAL_PROJECTION_MONITORS)
                    for ms in local_lists for m in ms):
                 raise NotImplementedError("C++ EEG/MEG/iEEG cannot be local or Recorder monitors")
@@ -643,7 +640,10 @@ class CompiledCppSim:
         if sn_mons_map is not None:
             for sn in self._analysis.subnets:
                 for ri, rm in enumerate(sn_mons_map.get(sn.name, ())):
-                    if (isinstance(rm, (TemporalAverage, GlobalAverage, SpatialAverage))
+                    if isinstance(rm, BalloonWindkessel):
+                        local_window_specs[sn.name, ri] = self._recorder_window_spec(sn, ri, rm)
+                        sn_kernel_specs[sn.name].append((ri, rm))
+                    elif (isinstance(rm, (TemporalAverage, GlobalAverage, SpatialAverage))
                             and not isinstance(rm, AfferentCouplingTemporalAverage)):
                         local_window_specs[sn.name, ri] = self._recorder_window_spec(sn, ri, rm)
                         sn_kernel_specs[sn.name].append((ri, rm))
@@ -895,7 +895,57 @@ class CompiledCppSim:
             raise ValueError("C++ gathered global complete windows require complete, disjoint node_indices")
         return gather
 
+    def _local_balloon_windkessel_spec(self, sn, index, monitor):
+        """Local Recorder BW window on this subnetwork's own physical clock."""
+        if not self._backend.enable_kernel_monitors:
+            raise NotImplementedError(
+                "BalloonWindkessel requires native monitor collection for local Recorders"
+            )
+        if self._width not in (1, 4, 8, 16):
+            raise NotImplementedError(
+                "BalloonWindkessel local Recorders require one of the SIMD widths 1, 4, 8 or 16"
+            )
+        if sn.n_modes != 1:
+            raise NotImplementedError(
+                "BalloonWindkessel local Recorders require one source mode"
+            )
+        if (sn.n_nodes < 1 or sn.n_nodes > np.iinfo(np.int32).max
+                or sn.n_nodes * self._width > np.iinfo(np.int32).max):
+            raise ValueError(
+                "BalloonWindkessel local Recorders require a positive in-range region "
+                "and region-by-lane extent"
+            )
+        # Reuses the monitor's native binary32 clock and 10 ms period validation.
+        period = monitor._output_ticks(float(sn.dt))
+        voi = getattr(monitor, "variables_of_interest", None)
+        n_voi = len(sn.voi) // 3
+        if (voi is None or np.shape(voi) != (1,) or np.asarray(voi).dtype.kind not in "iu"
+                or not 0 <= int(voi[0]) < n_voi):
+            raise ValueError(
+                "BalloonWindkessel local Recorders require exactly one valid observed "
+                "VOI index"
+            )
+        baseline = getattr(monitor, "drive_baseline", None)
+        scale = getattr(monitor, "drive_scale", None)
+        if (baseline is None or scale is None
+                or not np.isfinite(baseline) or not np.isfinite(scale)):
+            raise ValueError(
+                "BalloonWindkessel local Recorders require explicit finite "
+                "drive_baseline and drive_scale"
+            )
+        return dict(
+            local_window=True, slot=_RECORDER_SLOT_BASE + index, kind=11,
+            istep=period, dt=float(sn.dt), master_dt=float(self._analysis.dt),
+            cadence_K=sn.k, source_name=sn.name,
+            node_indices=[] if sn.node_indices is None else sn.node_indices.tolist(),
+            voi=[int(voi[0])],
+            bw_drive_baseline=float(baseline), bw_drive_scale=float(scale),
+            bw_stream_params=dict(_BALLOON_WINDKESSEL_NOMINAL),
+        )
+
     def _recorder_window_spec(self, sn, index, monitor):
+        if isinstance(monitor, BalloonWindkessel):
+            return self._local_balloon_windkessel_spec(sn, index, monitor)
         if not self._backend.enable_kernel_monitors or self._width != 1 or sn.n_modes != 1:
             raise NotImplementedError(
                 "C++ Recorder complete windows require native collection, width 1 and one source mode"

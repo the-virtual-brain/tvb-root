@@ -44,7 +44,9 @@
 //        KMON_GLOBAL_AVG = 6,    // GlobalAverage (node mean + istep temporal avg)
 //        KMON_SPATIAL_AVG = 7,   // SpatialAverage (dense/CSR or compact + istep temporal avg)
 //        KMON_PROJECTION = 8,    // Projection / EEG / MEG / iEEG (gain @ x - ref_vec + istep avg)
-//        KMON_BOLD_BW = 9        // SIMD Balloon-Windkessel ODE [s, f, v, q] across W lanes
+//        KMON_BOLD_BW = 9,       // SIMD Balloon-Windkessel ODE [s, f, v, q] across W lanes
+//        KMON_BOLD_BW_STREAM = 10,  // global held-drive stream (width 1, master clock)
+//        KMON_BOLD_BW_LOCAL = 11    // local Recorder held-drive window, per region and lane
 //      };
 //
 // 4. Per-Monitor Engine (template <int W> struct kmon):
@@ -55,6 +57,11 @@
 //                       first_order, dt, n_src_v, n_node, voi, hrf, cadence_K=1)
 //        configure_bold_bw(slot, istep, dt, n_src_v, n_node, voi={},
 //                          bw_dt=0.0f, bw_params_10=nullptr, cadence_K=1)
+//        configure_bw_local(slot, istep, dt, n_node, observed_voi,
+//                          baseline, scale, params, cadence_K=1)
+//                          // local Recorder window: one observed VOI, a
+//                          // per-region per-lane held-drive RK4 state and
+//                          // the existing 10 ms / two 5 ms substep engine
 //        set_spatial_mean(sm, n_areas, n_nodes)           // dense -> CSR
 //        set_spatial_compact(area_idx, scale, n_nodes, n_areas)
 //        set_projection(gain, n_sensors, n_nodes, ref_vec=nullptr, ref_len=0)
@@ -260,7 +267,8 @@ enum KMonKind {
   KMON_SPATIAL_AVG = 7,
   KMON_PROJECTION = 8,
   KMON_BOLD_BW = 9,
-  KMON_BOLD_BW_STREAM = 10  // staged global-only stream, not the endpoint monitor
+  KMON_BOLD_BW_STREAM = 10,  // staged global-only stream, not the endpoint monitor
+  KMON_BOLD_BW_LOCAL = 11    // local Recorder window, per region and per lane
 };
 
 inline bool average_window_kind(int kind) {
@@ -290,6 +298,7 @@ struct KMonState {
   uint32_t stock_pos = 0;
   std::vector<float> bw_state;
   std::vector<BwStreamRegion> bw_stream_regions;
+  std::vector<double> bw_local_state;  // (n_out_space * W, 6) local BW lanes
   uint32_t bw_drive_count = 0;
 };
 
@@ -345,6 +354,12 @@ struct kmon {
   };
   std::vector<float> bw_state;  // (n_out_v, 4, n_node, W): [s, f, v, q]
 
+  // KMON_BOLD_BW_LOCAL persistent state: one held-drive window and one BOLD
+  // output window per region and per lane. Layout rows are (region, lane) with
+  // the six values [drive_sum, bold_sum, s, f, v, q] in double precision.
+  std::vector<double> bw_local_state;  // ((n_out_space * W) * 6)
+  std::vector<double> bw_local_next;   // bounded staging for one window close
+
   static constexpr int bw_drive_ms = 10;
   static constexpr int bw_substeps = 2;
   int bw_drive_steps = 0;
@@ -358,6 +373,7 @@ struct kmon {
   uint32_t bw_drive_count = 0;
 
   bool bw_stream() const { return kind == KMON_BOLD_BW_STREAM; }
+  bool bw_local() const { return kind == KMON_BOLD_BW_LOCAL; }
   bool projection_window() const { return kind == KMON_PROJECTION && complete_window; }
   bool staged_global() const { return complete_window || bw_stream(); }
 
@@ -405,6 +421,10 @@ struct kmon {
       m_step = 0;
       std::fill(accum.begin(), accum.end(), 0.0);
       accum_count = 0;
+      if (bw_local()) {
+        bw_drive_count = 0;
+        reset_bw_local_state(n_out_space);
+      }
       begin_call();
     }
     run_start = m_step;
@@ -421,21 +441,25 @@ struct kmon {
     }
   }
 
-  void configure_bw_stream(int slot_, int period, double neural_dt, int n_node,
-                           int observed_voi, double baseline, double scale,
-                           const balloon_windkessel::Parameters &params) {
-    // The simulator stores its clock in binary32. Require the correctly rounded
-    // representation of a 10 ms divisor with an unambiguous integer tick count.
+  // The simulator stores its clock in binary32. Require the correctly rounded
+  // representation of a 10 ms divisor with an unambiguous integer tick count.
+  static int drive_steps_for(double neural_dt, const char *label) {
     if (!std::isfinite(neural_dt) || neural_dt <= 0)
-      throw std::runtime_error("global BW stream: invalid neural clock");
+      throw std::runtime_error(std::string(label) + ": invalid neural clock");
     const double ticks = std::round(bw_drive_ms / neural_dt);
     if (ticks < 1 ||
         ticks > std::numeric_limits<int>::max() ||
         (float)(bw_drive_ms / ticks) != (float)neural_dt ||
         (float)(bw_drive_ms / (ticks + 1)) == (float)neural_dt ||
         (ticks > 1 && (float)(bw_drive_ms / (ticks - 1)) == (float)neural_dt))
-      throw std::runtime_error("global BW stream: neural clock must divide 10 ms");
-    const int drive_steps = (int)ticks;
+      throw std::runtime_error(std::string(label) + ": neural clock must divide 10 ms");
+    return (int)ticks;
+  }
+
+  void configure_bw_stream(int slot_, int period, double neural_dt, int n_node,
+                           int observed_voi, double baseline, double scale,
+                           const balloon_windkessel::Parameters &params) {
+    const int drive_steps = drive_steps_for(neural_dt, "global BW stream");
     if (period <= 0 || period % drive_steps != 0)
       throw std::runtime_error("global BW stream: output period must be whole 10 ms windows");
     const uint64_t endpoints = (uint64_t)(period / drive_steps) * bw_substeps;
@@ -459,6 +483,64 @@ struct kmon {
     bw_stream_params = params;
     bw_stream_regions.resize((size_t)n_node);
     bw_stream_next.resize((size_t)n_node);
+  }
+
+  void reset_bw_local_state(int n_node) {
+    const size_t lanes = (size_t)std::max(0, n_node) * (size_t)W;
+    bw_local_state.assign(lanes * 6u, 0.0);
+    for (size_t k = 0; k < lanes; ++k) {
+      double *slot_state = bw_local_state.data() + k * 6u;
+      slot_state[3] = 1.0;  // f
+      slot_state[4] = 1.0;  // v
+      slot_state[5] = 1.0;  // q
+    }
+  }
+
+  // Local Recorder BW window: one observed VOI per source subnetwork, the
+  // existing 10 ms held-drive window with two 5 ms RK4 substeps, and one
+  // independent [drive_sum, bold_sum, s, f, v, q] row per region and lane.
+  void configure_bw_local(int slot_, int period, double neural_dt, int n_node,
+                          int observed_voi, double baseline, double scale,
+                          const balloon_windkessel::Parameters &params,
+                          uint32_t cadence_K_) {
+    const char *label = "Recorder complete window";
+    const int drive_steps = drive_steps_for(neural_dt, label);
+    if (n_node < 1)
+      throw std::runtime_error(std::string(label) + ": invalid region extent");
+    if (period < drive_steps || period % drive_steps != 0)
+      throw std::runtime_error(std::string(label) + ": output period must be whole 10 ms windows");
+    const uint64_t endpoints =
+        (uint64_t)(period / drive_steps) * (uint64_t)bw_substeps;
+    if (endpoints > std::numeric_limits<uint32_t>::max())
+      throw std::runtime_error(std::string(label) + ": output endpoint count out of range");
+    if (!std::isfinite(baseline) || !std::isfinite(scale) ||
+        !balloon_windkessel::detail::valid_parameters(params))
+      throw std::runtime_error(std::string(label) + ": invalid calibration or parameters");
+    const size_t lanes = (size_t)n_node * (size_t)W;
+    const size_t entries = lanes * 6u;
+    if (entries / 6u != lanes || entries > bw_local_state.max_size() ||
+        entries > bw_local_next.max_size() ||
+        endpoints > t_out.max_size() || endpoints > d_out.max_size() / lanes)
+      throw std::runtime_error(std::string(label) + ": regional and lane extent out of range");
+    slot = slot_;
+    kind = KMON_BOLD_BW_LOCAL;
+    local_window = true;
+    istep = period;
+    cadence_K = std::max<uint32_t>(1u, cadence_K_);
+    dt = neural_dt;
+    n_out_v = 1;
+    n_out_space = n_node;
+    n_out_modes = 1;
+    voi = {observed_voi};
+    bw_drive_steps = drive_steps;
+    bw_output_endpoints = (uint32_t)endpoints;
+    bw_drive_baseline = baseline;
+    bw_drive_scale = scale;
+    bw_stream_params = params;
+    bw_drive_count = 0;
+    accum_count = 0;
+    accum.clear();
+    reset_bw_local_state(n_node);
   }
 
   void init_default_bw_params() {
@@ -655,6 +737,22 @@ struct kmon {
 
   void reserve_local_window(uint64_t tick, uint64_t end_tick) {
     const uint64_t eligible = end_tick / cadence_K - tick / cadence_K;
+    if (bw_local()) {
+      // Pending observations of the open 10 ms window still complete windows
+      // inside this call, so they must be counted before the first close can
+      // emit; otherwise the output grows only after m_step advanced.
+      const uint64_t completed =
+          ((uint64_t)bw_drive_count + eligible) / (uint64_t)bw_drive_steps;
+      const uint64_t endpoints =
+          (uint64_t)accum_count + completed * (uint64_t)bw_substeps;
+      const uint64_t rows = endpoints / (uint64_t)bw_output_endpoints;
+      const size_t stride = (size_t)n_out_v * (size_t)n_out_space * (size_t)W;
+      if (rows > t_out.max_size() || rows > d_out.max_size() / stride)
+        throw std::runtime_error("Recorder complete window: output extent out of range");
+      t_out.reserve((size_t)rows);
+      d_out.reserve((size_t)rows * stride);
+      return;
+    }
     const uint64_t rows = ((uint64_t)accum_count + eligible) / (uint64_t)istep;
     const size_t stride = accum.size();
     if (rows > t_out.max_size() || rows > d_out.max_size() / stride)
@@ -720,7 +818,9 @@ struct kmon {
     if (cadence_K > 1u && ((t_abs + 1u) % (uint64_t)cadence_K) != 0u) {
       return;
     }
-    m_step++;
+    // The local BW window advances its clock only after a fully successful step,
+    // so a rejected drive close commits no clock, counter or state change.
+    if (!bw_local()) m_step++;
     const uint64_t within = m_step - run_start;
     const bool all_voi = voi.empty();
     const int L = all_voi ? n_src_v : (int)voi.size();
@@ -1018,6 +1118,12 @@ struct kmon {
         }
         return;
       }
+      case KMON_BOLD_BW_LOCAL: {
+        n_out_space = n_node;
+        n_out_modes = 1;
+        step_bw_local(src + (size_t)voi[0] * (size_t)n_node * (size_t)W, n_node);
+        return;
+      }
       case KMON_BOLD_BW: {
         n_out_space = n_node;
         n_out_modes = 1;
@@ -1111,6 +1217,7 @@ struct kmon {
     st.stock_pos = stock_pos;
     st.bw_state = bw_state;
     st.bw_stream_regions = bw_stream_regions;
+    st.bw_local_state = bw_local_state;
     st.bw_drive_count = bw_drive_count;
     return st;
   }
@@ -1133,8 +1240,32 @@ struct kmon {
     if (st.slot != slot || st.kind != kind || st.width != W ||
         st.n_out_v != n_out_v || st.n_out_space != n_out_space ||
         st.n_out_modes != n_out_modes || st.accum.size() != accum.size() ||
-        st.m_step != tick / cadence_K || st.run_start != 0 ||
-        st.accum_count != st.m_step % (uint64_t)istep ||
+        st.m_step != tick / cadence_K || st.run_start != 0)
+      throw std::runtime_error("Recorder complete window: invalid snapshot state or clock");
+    if (bw_local()) {
+      // Both open windows: the pending 10 ms observations and the endpoints
+      // already counted inside the current output window.
+      const uint64_t expected_endpoints =
+          st.m_step % (uint64_t)istep / (uint64_t)bw_drive_steps * (uint64_t)bw_substeps;
+      if (!st.accum.empty() || st.bw_local_state.size() != bw_local_state.size() ||
+          st.bw_drive_count != st.m_step % (uint64_t)bw_drive_steps ||
+          st.accum_count != expected_endpoints)
+        throw std::runtime_error("Recorder complete window: invalid snapshot state or clock");
+      const size_t lanes = (size_t)n_out_space * (size_t)W;
+      for (size_t k = 0; k < lanes; ++k) {
+        const double *row = st.bw_local_state.data() + k * 6u;
+        const balloon_windkessel::State ode{row[2], row[3], row[4], row[5]};
+        if (!std::isfinite(row[0]) || !std::isfinite(row[1]) ||
+            std::abs(row[0]) > (double)st.bw_drive_count * std::numeric_limits<float>::max() ||
+            (st.accum_count == 0 && row[1] != 0.0) ||
+            !balloon_windkessel::detail::valid_state(ode) ||
+            (st.m_step < (uint64_t)bw_drive_steps &&
+             (ode.signal != 0 || ode.inflow != 1 || ode.volume != 1 || ode.deoxy != 1)))
+          throw std::runtime_error("Recorder complete window: invalid snapshot regional state");
+      }
+      return;
+    }
+    if (st.accum_count != st.m_step % (uint64_t)istep ||
         std::any_of(st.accum.begin(), st.accum.end(), [count = st.accum_count](double x) {
           return !std::isfinite(x) || (count == 0 && x != 0.0);
         }))
@@ -1202,6 +1333,7 @@ struct kmon {
     stock_pos = st.stock_pos;
     bw_state.swap(st.bw_state);
     bw_stream_regions.swap(st.bw_stream_regions);
+    bw_local_state.swap(st.bw_local_state);
     bw_drive_count = st.bw_drive_count;
     begin_call();
   }
@@ -1219,6 +1351,8 @@ struct kmon {
       throw std::runtime_error("kmon::import_state: stock size mismatch");
     if (!bw_state.empty() && st.bw_state.size() != bw_state.size())
       throw std::runtime_error("kmon::import_state: bw_state size mismatch");
+    if (!bw_local_state.empty() && st.bw_local_state.size() != bw_local_state.size())
+      throw std::runtime_error("kmon::import_state: bw_local_state size mismatch");
 
     n_out_v = st.n_out_v;
     n_out_space = st.n_out_space;
@@ -1232,9 +1366,72 @@ struct kmon {
     stock = st.stock;
     stock_pos = st.stock_pos;
     bw_state = st.bw_state;
+    bw_local_state = st.bw_local_state;
   }
 
  private:
+  // One eligible source update of a local Recorder BW window. Observations of
+  // the current 10 ms window accumulate until the closing update, which stages
+  // the whole all-region/all-lane close and commits it only if every lane and
+  // region stays inside its physical domain. m_step advances only on commit.
+  void step_bw_local(const float *observed, int n_node) {
+    const char *label = "Recorder complete window";
+    const size_t lanes = (size_t)n_node * (size_t)W;
+    for (size_t k = 0; k < lanes; ++k)
+      if (!std::isfinite(observed[k]))
+        throw std::runtime_error(std::string(label) + ": nonfinite observed drive");
+    const uint32_t drive_count = bw_drive_count + 1u;
+    if (drive_count < (uint32_t)bw_drive_steps) {
+      for (size_t k = 0; k < lanes; ++k)
+        bw_local_state[k * 6u] += (double)observed[k];
+      bw_drive_count = drive_count;
+      ++m_step;
+      return;
+    }
+    const uint32_t endpoints = accum_count + (uint32_t)bw_substeps;
+    const bool ready = endpoints == bw_output_endpoints;
+    bw_local_next.assign(bw_local_state.begin(), bw_local_state.end());
+    for (size_t k = 0; k < lanes; ++k) {
+      double *row = bw_local_next.data() + k * 6u;
+      const double mean = (row[0] + (double)observed[k]) / (double)drive_count;
+      const double drive = (mean - bw_drive_baseline) * bw_drive_scale;
+      balloon_windkessel::State ode{row[2], row[3], row[4], row[5]};
+      double bold = row[1];
+      if (balloon_windkessel::advance_10ms(ode, bw_stream_params, drive, bw_substeps,
+                                          bold) != balloon_windkessel::AdvanceResult::ok)
+        throw std::runtime_error(
+            std::string(label) + ": invalid calibrated drive or RK4 domain failure");
+      row[0] = 0.0;
+      row[1] = bold;
+      row[2] = ode.signal;
+      row[3] = ode.inflow;
+      row[4] = ode.volume;
+      row[5] = ode.deoxy;
+    }
+    if (ready) {
+      const double inv = 1.0 / (double)endpoints;
+      for (size_t k = 0; k < lanes; ++k)
+        if (std::abs(bw_local_next[k * 6u + 1] * inv) >
+            (double)std::numeric_limits<float>::max())
+          throw std::runtime_error(std::string(label) + ": BOLD output exceeds float range");
+    }
+    ++m_step;
+    if (ready) {
+      const uint64_t closed = (m_step - run_start) / (uint64_t)bw_drive_steps;
+      t_out.push_back(((double)closed - 0.5 * (istep / bw_drive_steps)) *
+                      (double)bw_drive_ms);
+      for (size_t k = 0; k < lanes; ++k) {
+        d_out.push_back((float)(bw_local_next[k * 6u + 1] / (double)endpoints));
+        bw_local_next[k * 6u + 1] = 0.0;
+      }
+      accum_count = 0;
+    } else {
+      accum_count = endpoints;
+    }
+    bw_local_state.swap(bw_local_next);
+    bw_drive_count = 0;
+  }
+
   void step_bw_stream(const float *observed) {
     const size_t n = bw_stream_regions.size();
     for (size_t r = 0; r < n; ++r)

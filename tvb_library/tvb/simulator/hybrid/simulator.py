@@ -167,9 +167,13 @@ class Simulator(t.HasTraits):
                 monitor.voi = slice(None)  # all vars
 
     def _validate_monitor_placement(self):
-        if any(isinstance(rec.monitor, BalloonWindkessel)
-               for sn in self.nets.subnets for rec in sn.monitors):
-            raise NotImplementedError("BalloonWindkessel cannot be a local or Recorder monitor")
+        if self.backend != "cpp" and any(
+                isinstance(rec.monitor, BalloonWindkessel)
+                for sn in self.nets.subnets for rec in sn.monitors):
+            raise NotImplementedError(
+                "BalloonWindkessel local Recorders require the explicit C++ hybrid "
+                "backend (backend='cpp')"
+            )
         if self.backend != "cpp" and any(isinstance(m, BalloonWindkessel) for m in self.monitors):
             raise NotImplementedError("BalloonWindkessel requires the explicit C++ hybrid backend (backend='cpp')")
 

@@ -385,13 +385,13 @@ def test_bw_rejects_multiple_subnets_multimode_and_wide_lanes(cpp):
         be.compile(_network(), width=4).run(1, monitors=[bw])
 
 
-def test_bw_rejects_native_monitor_disable_and_local_cpp(cpp):
+def test_bw_rejects_native_monitor_disable_for_global_and_local_routes(cpp):
     be, net, bw = cpp.CppHybridBackend(), _network(), _monitor()
-    with pytest.raises(NotImplementedError, match="local or Recorder"):
-        be.run_network(net, 1, subnet_monitors={"regions": [bw]})
     be.enable_kernel_monitors = False
     with pytest.raises(NotImplementedError, match="requires native monitor collection"):
         be.run_network(net, 1, monitors=[bw])
+    with pytest.raises(NotImplementedError, match="requires native monitor collection"):
+        be.run_network(net, 1, subnet_monitors={"regions": [bw]})
 
 
 @pytest.mark.parametrize("backend", ["python", "numba"])
@@ -400,17 +400,18 @@ def test_bw_rejects_non_cpp_hybrid_simulator(backend):
         Simulator(nets=_network(), backend=backend, simulation_length=20, monitors=[_monitor()])
 
 
-def test_bw_rejects_classic_and_recorder_attach():
+def test_bw_rejects_classic_attach():
     from tvb.simulator.simulator import Simulator as ClassicSimulator
 
     bw = _monitor()
     assert not isinstance(bw, monitors.Bold)
     with pytest.raises(NotImplementedError, match="global monitor on the explicit C\\+\\+ hybrid backend"):
         bw.config_for_sim(ClassicSimulator())
-    with pytest.raises(NotImplementedError, match="local or Recorder"):
-        _network().subnets[0].add_monitor(bw)
-    with pytest.raises(NotImplementedError, match="local or Recorder"):
-        Recorder(monitor=bw)
+    # Local attachment is supported on the C++ hybrid backend only; the
+    # Recorder route and its non-C++ rejection are covered by
+    # test_cpp_hybrid_local_balloon_windkessel.py.
+    _network().subnets[0].add_monitor(bw)
+    assert isinstance(Recorder(monitor=bw), Recorder)
 
 
 def test_classic_bw_preflights_before_configuring_ordered_companion(monkeypatch):
