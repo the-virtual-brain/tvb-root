@@ -47,8 +47,10 @@ width: 40%;
 }
 
 #main .view-column.matrix-controller {
+float: none;
 margin-right: 0;
-width: 59%;
+overflow-x: hidden;
+width: auto;
 }
 
 /* !-------------------------------------------- */
@@ -276,6 +278,7 @@ color: #fff;
 /* !-------------------------------------------- */
 
 .ss-connectivity .matrix-control {
+margin-bottom: 5px;
 }
 
 .ss-connectivity .matrix-control > li {
@@ -358,76 +361,11 @@ width: 100%;
 /* !MATRIX COMPONENT: Weight & Tracts matrices (the BIG-ASS TABLES) */
 /* !-------------------------------------------- */
 
-.ss-connectivity .matrix-table table {
-border-collapse: separate;
-font-size: 9px;
+/* -- The matrix is drawn on a canvas; labels, colors and selection are painted by matrixScript.js */
+.ss-connectivity .matrix-canvas {
+display: block;
 width: 100%;
-}
-
-/* -- Column/row headers */
-.ss-connectivity .matrix-table th {
-background: rgba(250, 247, 228, 0.2);
-padding: 3px 2px 3px 2px;
-vertical-align: bottom;
-height: 80px;
-cursor:pointer;
-}
-
-.ss-connectivity .matrix-table td.identifier {
-background: rgba(250, 247, 228, 0.2);
-font-weight: bold;
-padding: 2px 5px 2px 2px;
-white-space: nowrap;
-}
-
-.ss-connectivity .matrix-table th[scope="col"] a {
--moz-transform: rotate(-90deg);
--webkit-transform: rotate(-90deg);
-width: 14px;
-white-space: nowrap;
-}
-
-.ss-connectivity .matrix-table th[scope="col"] a,
-.ss-connectivity .matrix-table th[scope="col"] a:hover,
-.ss-connectivity .matrix-table td.identifier a,
-.ss-connectivity .matrix-table td.identifier a:hover {
-color: #7e7b66;
-letter-spacing: 1px;
-}
-
-.ss-connectivity .matrix-table th[scope="col"].selected a,
-.ss-connectivity .matrix-table th[scope="col"].selected a:hover,
-
-.ss-connectivity .matrix-table td.identifier.selected{
-border: none;
-}
-.ss-connectivity .matrix-table td.identifier.selected a,
-.ss-connectivity .matrix-table td.identifier.selected a:hover {
-color: #2E2D26;
-}
-
-/* Currently, colors are set within the app on-the-fly so some settings here will be overridden! */
-.ss-connectivity .matrix-table td {
-background: rgba(250, 247, 228, 0.2);
-/* This looks a little bit too heavy...
-border-right: 1px solid rgb(250, 247, 228);
-border-bottom: 1px solid rgb(250, 247, 228);
-border-top: 1px solid rgb(50, 50, 50);
-border-left: 1px solid rgb(50, 50, 50);
-*/
-}
-
-/* -- Selected state for headers and nodes */
-.ss-connectivity .matrix-table th[scope="col"].selected,
-.ss-connectivity .matrix-table td.identifier.selected {
-background: rgba(250, 247, 228, 0.5);
-}
-
-.ss-connectivity .matrix-table td.selected {
-border-top: 1px solid rgb(250, 247, 228);
-border-left: 1px solid rgb(250, 247, 228);
-border-right: 1px solid rgb(50, 50, 50);
-border-bottom: 1px solid rgb(50, 50, 50);
+cursor: pointer;
 }
 
 /* -- Arranging the "legendary" color strip with labels and the matrix */
@@ -462,18 +400,13 @@ height: 100%;
 /* !MATRIX COMPONENT: Quadrant selector */
 /* !-------------------------------------------- */
 
-.ss-connectivity .matrix thead th:first-child {
-background: none;
-font-size: 12px;
-position: relative;
-}
-
 .ss-connectivity .matrix .quadrant-selector .extension {
 left: 0;
 right: auto;
 }
 
 .ss-connectivity .matrix .quadrant-selector .dropdown-pane {
+text-align: center;
 width: 214px;
 }
 
@@ -496,16 +429,21 @@ background-color: #706E68;
 -moz-transition: background-color .5s ease;
 }
 
-.ss-connectivity .matrix .quadrant-selector li.active a, 
-.ss-connectivity .matrix .quadrant-selector li a:hover {
+.ss-connectivity .matrix .quadrant-selector li.active button,
+.ss-connectivity .matrix .quadrant-selector li button:hover {
 color: #FAF7E4;
 -webkit-transition: color .5s ease;
 -moz-transition: color .5s ease;
 }
 
-.ss-connectivity .matrix .quadrant-selector li a {
+.ss-connectivity .matrix .quadrant-selector li button {
+background: none;
+border: none;
 color: #2E2D26;
+cursor: pointer;
+font: inherit;
 height: 100%;
+padding: 0;
 width: 100%;
 -webkit-transition: color .5s ease;
 -moz-transition: color .5s ease;
@@ -519,10 +457,6 @@ width: 100%;
 /* -- Context placement */
 .ss-connectivity td aside {
 display: none;
-}
-
-.ss-connectivity .matrix td.edited {
-border: 2px solid #0047a4;
 }
 
 /* -- Dropdown styling */
@@ -539,8 +473,8 @@ z-index: 200;
 -moz-box-shadow: 2px 2px 10px 0 rgba(0, 0, 0, 0.7);
 box-shadow: 2px 2px 10px 0 rgba(0, 0, 0, 0.7);
 
-left: -210px; /* this value isn't seriously used, right? */
-top: 0; /* this value isn't seriously used, right? */
+left: 0;
+top: 0;
 }
 
 .ss-connectivity aside.menu-cell mark {

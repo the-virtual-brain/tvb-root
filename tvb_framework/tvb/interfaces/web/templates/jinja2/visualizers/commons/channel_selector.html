@@ -21,7 +21,11 @@
     {% for groupName, options in groupedOptions %}
         {% set sectionWidth = 100 / (groupedOptions | length ) %}
         <section class="submatrix" style="width:{{ sectionWidth }}%">
-            <h6>{{ groupName }}</h6>
+            {% if groupName and not radio %}
+                <h6><button type="button" class="action action-hemisphere" title="Select or clear all {{ groupName }} nodes">{{ groupName }}</button></h6>
+            {% else %}
+                <h6>{{ groupName }}</h6>
+            {% endif %}
             {% for value, label in options %}
                 {% set selected = value in initialSelection %}
 
