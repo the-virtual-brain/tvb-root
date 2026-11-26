@@ -101,6 +101,7 @@ def sweep(
     initial_states: list = None,
     features=None,
     grid: bool = False,
+    bw: dict = None,
     **sweeps,
 ) -> SweepResult:
     """Run a multithreaded SIMD parameter sweep on *network_set*.
@@ -138,6 +139,11 @@ def sweep(
         fastest (equivalent to ``meshgrid(..., indexing="ij")`` flattened in
         C order). Each row of ``result.sweep_values`` aligns with the same
         sweep axis in monitor outputs and feature tables.
+    bw : dict, optional
+        Explicit BW placements forwarded to the backend: ``global`` is a
+        BalloonWindkessel monitor and ``local`` maps subnetwork names to such
+        monitors. Each result has its own midpoint grid in ``bw_global`` or
+        ``bw_local``. BW is fractional BOLD change, not HRF ``monitor='bold'``.
     **sweeps : dict[str, array-like]
         Each key names a parameter to sweep and its value the 1-D values.
         Valid key forms (see :func:`available_sweep_params`):
@@ -179,6 +185,8 @@ def sweep(
         chunk_size=chunk_size,
         initial_states=initial_states,
     )
+    if bw is not None:
+        sweep_kwargs["bw"] = bw
     if features is not None:
         sweep_kwargs["features"] = features
     try:

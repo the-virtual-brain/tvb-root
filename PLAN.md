@@ -43,11 +43,19 @@ advancing are historical and superseded by this policy.
   model fallback. Use Terra while it is responsive, not repeated provider probes.
 - Phase 3 is accepted from reviewed published code, job 5216533's 546 passing
   installed-native cases and successful demo. Phase 4 is now accepted from
-  independently verified job5216536 (568 passes + demo); parent publication is
-  in progress. Phase5 starts only after that publication and Phase4 closeout.
+  independently verified job5216536 (568 passes + demo), published as
+  **a7002dc74ed813e72fe6c3d7bf9a781dbf885df6**. Phase5 is authorized next,
+  with the same local/Slurm gates and no CI waiting. Phase5 is also accepted
+  from independently verified job5216538 (628 clean passes + demo); parent
+  publication is in progress. Phase6 follows publication/worker closeout.
 
 ## Recovery checkpoint
 
+- **Current published HEAD / Phase5 starting baseline:**
+  `a7002dc74ed813e72fe6c3d7bf9a781dbf885df6` on local and GitHub `tvbkh`.
+  Phases1–4 accepted. This live checkpoint supersedes the continuation task's
+  original bae00b766 starting-baseline wording. Next: Phase5 startup contract;
+  do not redo Phase4 or wait for its hosted checks. PLAN is parent-owned.
 - Initial code baseline: `bb819dc35f31029064b1e8200587aee57569d0cc`.
 - Initial root tree: `eb90a95bb118de55307b9b331df1f2d8a8c91e25`.
 - Initial local branch: `recovery/monitor-complete-windows`.
@@ -72,9 +80,9 @@ advancing are historical and superseded by this policy.
 | 1 | Close existing installed-native investigation | Complete; accepted; report errata finalized | Existing job 5216500; hashes and key raw records independently checked |
 | 2 | Green tvbkh baseline, permanent coverage, current-capability demo | Complete; published and accepted at ef1d60b8d | Seven workflows + both Sonar checks pass; dedicated suites/demo and Windows notebook pass |
 | 3 | Public local BW Recorders, including independent SIMD lanes | Complete; published bae00b766; accepted under updated iteration policy | Job 5216533: 546 passes + demo; CI no longer blocks advancement |
-| 4 | Compatible multi-subnetwork global BW and shared placement semantics | Complete; independently accepted; parent publication in progress | 5216536:568 clean passes +40s demo; two failed fixtures preserved |
-| 5 | Explicit BW parameter sweeps through backend and notebook APIs | Authorized after Phase4 publication/closeout; startup contract next | No CI wait; same one-worker/local-or-Slurm test gates |
-| 6 | Integrated demos and exact-candidate qualification | Pending | Wait for Phase 5 acceptance |
+| 4 | Compatible multi-subnetwork global BW and shared placement semantics | Complete; accepted and published a7002dc74 | 5216536:568 clean passes +40s demo; two failed fixtures preserved |
+| 5 | Explicit BW parameter sweeps through backend and notebook APIs | Complete; independently accepted; parent publication in progress | 5216538:628 clean passes +40s demo; failed5216537 preserved |
+| 6 | Integrated demos and exact-candidate qualification | Authorized after Phase5 publication/closeout; startup contract next | User-friendly demos notebook: mixed clocks/genuine SIMD/BW |
 
 Current workflow/child IDs and report paths are recorded in the progress log
 when available. On recovery, inspect those runs and pending supervisor requests
@@ -1276,3 +1284,246 @@ limits are explicit. No automatic merge or release.
   native evidence; Phase5 authorized following publication/worker closeout.
   Phase6 retains the operator-required user-friendly mixed-timescale/genuine-
   SIMD/BW notebook in tvb_documentation/demos. No merge/release authority.
+
+### Phase 4 published; Phase 5 authorized
+
+- Commit **a7002dc74ed813e72fe6c3d7bf9a781dbf885df6**, parent bae00b766,
+  Support multi-source and SIMD global Balloon-Windkessel monitoring.
+  Exactly ten functional files + PLAN staged/committed; handoffs/private inputs,
+  receipts, raw failures and environment artifacts excluded.
+- Parent rechecked full stage allowlist and staged=checkout; only manually
+  reviewed README prose differs from qualified PJ8Rn0 source. Native production,
+  tests, solver and tolerances match the568-pass/demo candidate exactly.
+- Fresh explicit GitHub live ref matched bae00b766 before publication; ancestry,
+  diff and dry-run passed; normal no-force HEAD:refs/heads/tvbkh push succeeded.
+  Fresh live ref and PR801 head both match a7002dc74; PR remains OPEN/draft.
+  No remote configuration changes, merge, release or readiness transition.
+- One immediate post-push CI checkpoint query found no new-head checks attached
+  yet. Not a failure or green claim; no waiting/polling/watch. Phase5 proceeds
+  from local-native acceptance; revisit actual hosted outcomes at a meaningful
+  next checkpoint. Phase3 prior-head workflows and both Sonar checks are green.
+- Worktree after push had only the two preserved untracked handoffs. These
+  parent PLAN updates record the live baseline for the next worker and will be
+  included in the next reviewed increment. Phase4 worker should now return its
+  accepted structured closeout immediately; workflow then starts sole Phase5
+  worker. Phase5 must propose additive BW sweep API/configuration/order contract
+  before cross-layer writes; keep HRF monitor="bold" unchanged. Phase6 must
+  deliver the requested user-friendly mixed-timescale/genuine-SIMD/BW notebook
+  under tvb_documentation/demos. Terra routing, conditional Sol fallback and
+  parent resource/acceptance/publication ownership remain unchanged.
+
+### Phase 4 worker closed; Phase 5 startup contract approved
+
+- Parent read saved cpp-delivery/phase-4.md under workflow783dd1e9…; accepted
+  closeout accurately records568 passes/demo, publication a7002dc74, two preserved
+  failures, per-call output semantics and README-only qualification exception.
+  Native child abd84257… completed; no rerun or missing-output recovery needed.
+- Sole Phase5 child a1e98ccf-b05b-43b2-a8a0-1a7178cb1408 (Terra6.1) confirms
+  live baseline a7002dc74 and no source writes/jobs yet. Approve tests-first
+  serial implementation of additive keyword bw on backend.sweep/notebook.sweep:
+  None disables BW; explicit mapping global:BalloonWindkessel|None and
+  local:{source_name:BalloonWindkessel}; require at least one placement.
+  Reject unknown keys/sources/types/empty request and unsupported combinations.
+- Append SweepResult fields without changing existing positional field meanings:
+  bw_global=None or(times,data), bw_local={} or{name:(times,data)}. Every BW
+  times array is1D float64; data float32(sweep,time,1,node,1), exact sweep_values
+  row order, exclude padding, preserve shaped empty complete-window output.
+  Global MULTI-source nodes canonical; SINGLE-source global/local remain local
+  order exactly as public run, including permuted node_indices.
+- Preserve legacy monitor modes/fields/times and HRF monitor="bold"/bold_period.
+  Existing monitor=None/"none" is supported for BW-only runs, avoiding neural
+  trace retention; BW times come from dedicated placements, not legacy times.
+  State supported active-BW coexistence explicitly and reject unsupported
+  combinations before batches, never silently disable legacy outputs/features.
+  Preserve legacy run_sweep and direct-BW-in-monitor guards outside new bw API.
+- Reuse public Phase3/4 validators/specs/gather/state machinery, solver unchanged.
+  Config fixed per placement; sweep axes remain existing neural/coupling params,
+  no per-lane hemodynamic fitting or geometry/clock sweep expansion. Scalar BW
+  nominal parameters/calibration rule and source/master clocks unchanged.
+- Important batch hazards: padding must DUPLICATE valid real-row configuration
+  rather than zero potentially invalid tau/etc; keep padded initial/RNG drive
+  valid as needed and real-row seed/counter identity invariant to width/workers.
+  Local BW only on selected sources makes native monitor-output offsets variable;
+  separate/extract tagged BW streams or compute per-source offsets correctly,
+  preserving old raw/HRF outputs. Per-call buffers must be consumed/stiched once.
+- Tests: real distinct neural and actual projection/coupling axes vs independently
+  configured public scalar runs; widths1/4/8/16, tail groups/positive-required
+  parameters, row/node/lane order, workers/repetition, paired/Cartesian ordering,
+  mixed global/local clocks and different placement periods, empty output,
+  strict invalid requests and legacy behavior. Prove response/axis discrimination,
+  not merely equal zeros/broadcast; no tolerance relaxation. No strided native
+  input claim; ensure new materialized float32 buffers are contiguous.
+- Qualify new BW sweep module, existing test_cpp_hybrid_sweep and notebook_grid
+  modules, prior ten BW/window/Recorder suites and demo, with real per-selector
+  outcomes/provenance. Include pandas in dedicated environment for grid tests;
+  no missing-dependency skips. Proposed run/1task/8CPU/16GB/30min/no-pin approved
+  IN PRINCIPLE only; exact frozen input/runner review and concrete submission
+  approval remain mandatory. Local relevant test iterations allowed, no CI wait.
+- Phase6 user-friendly executable demos notebook remains a separate phase after
+  Phase5 accepted/published. No jobs, future-phase writes, parent PLAN edits,
+  alternate models/CLI, nested reviewers or publication by this worker.
+
+### Phase 5 — first readiness review; bounded corrections before submission
+
+- Candidate adds bw placement validation, appended result fields, existing public
+  spec/gather reuse, deterministic valid-row padding and variable per-source
+  output offsets, notebook forwarding and CI selector. Active BW supports none/
+  tavg and explicitly rejects raw/subsample/HRF/features; legacy modes unchanged
+  when bw=None. No native/header/solver changes and no installed-native tests yet.
+- Parent reviewed full functional diff/new suite and runner diff against approved
+  Phase4 pattern. Hash index921cc94dc331d448fb3de58fdaf58a24262687e7ca9e44a5ebd4e28f7b37d00f
+  and four input hashes verify. syivyH9U archive
+  97bedc8332e1cce3bc28aa668d8ce0a73f66e17c0684d7d99a19fd4133ad8823,
+  5,048,320 bytes,329 safe regular allowlisted payloads exactly equal checkout,
+  no tracked source omitted. Patch30c3e539d3f6362d8a5c72b84610ed7aed45f66ba8aaf89d652244d93f2e615d
+  equals current functional diff+new suite; demo unchanged. Runner
+  9f9a65c82c4ce48f45a94058137610003f7f871a3bda0807a90ed0cc3735d87d
+  changes only phase/base/temp labels, adds pandas and three new/legacy sweep
+  selectors to prior ten. Dynamic per-selector/fresh provenance gates preserved.
+- No submission approved. syivyH9U and earlier22yRDM9N remain unsubmitted.
+  Required correction: BW padding duplicates first real parameter row but RNG
+  padding still uses0/base seed, not that real row's stream. Since BW validates
+  ALL lanes, a different padded stochastic trajectory can invalidate a batch.
+  Duplicate the first real seed/key for padding in both explicit-seed and default
+  branches, preserving all real keys/width/worker identities and bw=None behavior.
+  Initial states are already broadcast; shared scalar noise already duplicates.
+- Add bounded stochastic BW partial-group proof (default/explicit seeds) plus
+  key-capture or equivalent deterministic padding assertion; real output rows
+  width/worker invariant. No stochastic solver/RNG redesign or magnitude search.
+- Missing approved-axis coverage: add actual projection/coupling parameter BW
+  sweeps vs independently configured scalar public runs, require distinct resolved
+  response. Existing linear Generic2d W toy has b=c=0 and does not respond to
+  V-coupling: choose observed V or otherwise physically coupling-responsive row.
+  Use this case with local BW on FIRST source and later source without local BW,
+  checking unchanged tavg per-source output against no-BW/scalar controls, to
+  discriminate variable monitor-output offsets (slow-only local test is last).
+- Correct local spec helper index10000 to index0 (helper itself adds reserved
+  slot base). Update README's now-stale BW-sweeps-unsupported sentence before
+  qualification, documenting explicit bw/none-or-tavg/dedicated-result contract.
+- Freeze corrected exact source for one concrete job approval. Existing13-suite+
+  demo resources remain approved in principle; no new broad work, native changes,
+  CI watching or Phase6 notebook implementation. Terra remains responsive.
+
+### Phase 5 — corrected readiness verified; one native job approved
+
+- Parent independently verified ../recovery/verify/monitor-phase5-sweep-wNQvz1qq:
+  index93bba5f9236db24c12bb4c566b064e2844e6fa372cad1625dad0f83fe65aea78
+  and all four input hashes. Archive
+  47cff1d4c8c53d41861d431e96172a92437a01bfb16c2bbf1ebd7adc9f0411af,
+  5,048,320 bytes,329 safe regular allowlisted payloads, exact checkout with no
+  tracked source omissions. Patchb171d941f9c6c3ad759427e085bc926ee87abfdfa9ffbe9f154d1963b17ed216
+  equals checkout functional diff+new suite. Runner/demo byte-identical to prior
+  reviewed readiness; runner9f9a65c82c4ce48f45a94058137610003f7f871a3bda0807a90ed0cc3735d87d.
+  Static diff/runner syntax checks pass; no native tests run yet.
+- Corrected diff limited to backend.py, new sweep suite and README. BW padding
+  now copies first real seed in both explicit/default paths, real keys and
+  bw=None behavior unchanged; shared-noise scalar already duplicates. Local
+  helper index0 corrected. Stochastic partial-group seed capture and width/worker
+  output parity cases are present. Coupling uses an actual source-to-target
+  projection and observedV (which responds), with first-source localBW, canonical
+  globalBW, later-source tavg/noBW parity and independent public scalar controls.
+  README now documents supported explicit bw/result/grid/coexistence contract.
+- Approve EXACTLY ONE concrete job: run partition/one task/eight CPUs/16GB/
+  30min/no pin; frozen hash-verified transfer, allocation-only fresh build and
+  install/provenance,13 independently selected/gated suites + unchanged demo,
+  actual dynamic JUnit counts, zero unclean outcomes. Fetch receipts/accounting,
+  stop/preserve/report first failure. No automatic retry, selectors/tolerances
+  relaxation, source refreeze during qualification, login compute or CI watching.
+- Earlier syivyH9U and22yRDM9N drafts remain unsubmitted/intact. This is submission
+  authorization, not Phase5 acceptance/publication or Phase6 implementation.
+
+### Phase 5 — job 5216537 first failure verified; coupling fixture diagnosed
+
+- FAILED1:0,43s,g2,run/eight CPUs/requested16GB,batch MaxRSS702572K.
+  Build/install/provenance successful. First BW-sweep selector22 completed:
+  **21 pass/one fail/zero skips or errors**. Later12 selectors/demo/DONE absent;
+  no full qualification claim. Parent read raw JUnit/failure/accounting, verified
+  frozen index/patch/source-manifest329 payloads and installed selector origin.
+- Only failure test_coupling_sweep_first_local_placement_and_global:29/60 values
+  differ, max2.755293e-6 against unchanged1e-6/1e-10 envelope. No clipping,
+  tolerance relaxation, edits or automatic retries. Other tests, including BW
+  stochastic padding, widths, grids and legacy/default-coexistence cases, passed.
+- Static diagnosis: hybrid_common coupling_scale alias resolves to coupling-
+  function attr a (parameter0 for Linear), NOT InterProjection.scale. Fixture
+  base _coupled_network(0) hard-codes projection.scale=0 and Linear.a=1, so
+  every swept lane remains uncoupled regardless of overwritten a. Scalar
+  controls instead vary projection.scale with a=1. These are different setups,
+  not evidence that BW or SIMD coupling routing is wrong. Parent confirms
+  resolver/apply/build paths and Linear defaults; earlier readiness missed it.
+- Authorize TEST-ONLY helper correction: fixed nonzero projection.scale=1 and
+  Linear(a=gain) in every base/scalar configuration, preserving legacy alias.
+  Add explicit configuration/descriptor sanity and alias-versus-named Linear.a
+  BW parity as appropriate; retain independently configured scalar public runs,
+  first-source localBW/later tavg check and distinct-response assertion. No
+  backend/resolver/solver/native/runner/tolerance changes. Phase6 notebook must
+  distinguish the coupling-function gain alias from projection's static scale.
+- Wheel SHAb4b852460f3c39c3df8f8377c07642f9271c7c35d8c2d857314b14110f05a60b;
+  native wheel member/asserted installed SHA
+  87487a5f870e24bbb8b6192e102529934b3d568a7eedfaa67dfca0ff2d2ac55e.
+  Packaged source members match frozen archive. Failed runner has no job index;
+  parent-generated external fetch manifest parent-fetched-receipt-5216537.sha256
+  covers23 files, SHA2dc5868963686b33136942fad59a7b2cd2547fd7d9febe3b4bad153e600ae9b3.
+- Preserve raw input/receipt; freeze test-only correction for separate concrete
+  retry approval. No extra diagnosis job, CI watch, production fix or Phase6 work
+  authorized. If aligned fixture still fails, stop/report rather than assume
+  diagnosis complete or broaden tolerances. Continue responsive sole Terra worker.
+
+### Phase 5 — coupling test-only correction reviewed; one retry approved
+
+- Parent independently verified ../recovery/verify/monitor-phase5-sweep-BTKobAHY:
+  archive3c2a7c2f490195a8c5ffbf24128da8462103ea5faa85e823439188d1b6b45b26,
+  5,048,320 bytes; patch642aedb8593f4ac5aa41541c7b2b1660e60955c55adcf4a0722df5a0e620cae2;
+  indexab6ecadf5a9cbf84f1d8e7a07001a07401ba8653fe14a0cc567e24ab01e289b2.
+  All input hashes pass;329 safe regular payloads exactly equal checkout with
+  no tracked omissions; functional patch matches. Runner/demo unchanged.
+- Exact failed-vs-retry diff changes ONLY the new BW sweep test module: helper
+  now fixes projection.scale=1 and sets Linear.a=gain, aligning alias/scalar
+  configurations. Named source_to_target.a/noBW control exactly checks both
+  source and target tavg against alias+BW; independent scalar BW comparisons,
+  selected-source offsets, distinct response and1e-6/1e-10 tolerance unchanged.
+  Every executable source/solver/native-header/runner byte matches first job.
+- Approve EXACTLY ONE concrete retry of unchanged13-suite+demo gate:
+  run/one task/eight CPUs/16GB/30min/no pin. Same reviewed runner SHA
+  9f9a65c82c4ce48f45a94058137610003f7f871a3bda0807a90ed0cc3735d87d,
+  fresh installed environments/provenance, exact transfer verification and raw
+  receipt/accounting fetch. No source edits, extra jobs/automatic retry, numerical
+  or selector changes, login compute, CI watches or Phase6 source. Preserve
+  failed5216537 and all drafts; actual outcomes pending, Phase5 not accepted.
+
+### Phase 5 accepted — job 5216538 independently verified
+
+- COMPLETED0:0,3m28s,g2,run/eight CPUs/requested16GB,batch MaxRSS679356K.
+  Parent read saved phase-5.md/final diff and raw accounting/demo, verified all97
+  job-indexed payload hashes/index
+  d3171903f8aeaf3c91a2ac99f8d3cdbd86b919b43c5127007b598b317e3be932;
+  99 fetched files including index/exit. Exit0/DONE/source manifest verified.
+- Thirteen exact installed selectors/origins/statuses/outcome records and JUnit
+  independently checked: newBW sweep22,legacy sweep31,notebook grid7,prior ten568
+  = **628 passed,zero failures/errors/skips**. Source archive329 payloads equal
+  manifest/checkout; frozen patch matches final functional diff including new
+  module. No post-qualification code or prose exception for this increment.
+- Wheel SHAe55b8f0d21e5a7575ec9ff6a827f3251d74ab9862d895585489bcbe484fe3d56;
+  wheel native member and fresh installed extension both
+  87487a5f870e24bbb8b6192e102529934b3d568a7eedfaa67dfca0ff2d2ac55e.
+  Packaged source members verified. Demo passes40s/40rows/physical midpoint/tail/
+  exact-zero checks. First failed5216537 preserved with test-only diagnosis and
+  independently indexed fetch; no failure relabeled or tolerance relaxed.
+- Parent accepts explicit bw placement/configuration through backend and notebook
+  sweeps, dedicated result axes/grids/order, valid deterministic/stochastic padding,
+  scalar-coupling and neural controls, mixed local/global collection, partial
+  groups/workers/grids and legacy behavior. Active BW deliberately supports only
+  none/tavg without HRF/features; other combinations explicitly reject. Legacy
+  monitor="bold" remains HRF; direct BW-monitor argument/run_sweep guards unchanged.
+  Native solver/headers/clock/precision/rollback limits unchanged.
+- Single non-watching delivery checkpoint query: Phase4 a7002dc74 cpp-hybrid
+  build/test and all wheels/contrib pass; notebooks/Python3.11–3.13/PG/Win still
+  running, Sonar not attached. No observed failure, no green claim for pending
+  checks and no CI wait before Phase6. Live tvbkh/PR801 stilla7002dc74,OPEN/draft.
+- Parent now publishes exactly five functional files + PLAN with explicit
+  GitHub/ref/ancestry/dry-run checks. After publication Phase5 worker returns
+  accepted structured closeout immediately; sole Phase6 worker starts next.
+  Phase6 user-friendly executable notebook under tvb_documentation/demos must
+  actually combine mixed clocks and DISTINCT SIMD/BW results, explain coupling
+  function gain alias versus static projection.scale, and retain bounded native
+  qualification/no research or CI-watch loop. Resources/benchmark matrix still
+  require an explicit startup proposal and concrete submission approval.

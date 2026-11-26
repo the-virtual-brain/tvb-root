@@ -343,7 +343,15 @@ initial or held slower-source values; the master clock must divide 10 ms, but a
 slower source clock need not. Single-source output keeps local node order.
 Local BW Recorders instead count eligible source updates and require their own
 clock to divide 10 ms. Matching global/local traces require matching effective
-drives. BW sweeps remain unsupported; `bold` continues to mean HRF Bold.
+drives. `CppHybridBackend.sweep` and `notebook.sweep` accept an explicit
+`bw={"global": monitor, "local": {"subnet_name": monitor}}` mapping (either
+placement may be omitted). Each `BalloonWindkessel` supplies one VOI, period,
+and finite baseline/scale. Active BW supports `monitor="none"` or `"tavg"`
+without `bold_period` or features; other combinations are rejected. Results
+are `bw_global` and `bw_local` pairs of midpoint times and float32 data with
+axes `(sweep, time, 1, node, 1)`, in sweep-row and public node order. Each
+placement has its own physical grid, with no incomplete tail. The legacy
+`run_sweep` is unchanged; `monitor="bold"` continues to mean HRF Bold.
 
 A generic global `Projection` sharing a checked **co-clock** gather or
 `BalloonWindkessel` must set `obsnoise=None` for both fresh runs and resume.

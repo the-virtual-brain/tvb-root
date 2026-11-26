@@ -97,6 +97,7 @@ jobs:
                             tvb/tests/library/simulator/backend/test_cpp_hybrid_balloon_windkessel_stream.py \
                             tvb/tests/library/simulator/backend/test_cpp_hybrid_local_balloon_windkessel.py \
                             tvb/tests/library/simulator/backend/test_cpp_hybrid_global_balloon_windkessel.py \
+                            tvb/tests/library/simulator/backend/test_cpp_hybrid_balloon_windkessel_sweep.py \
                             tvb/tests/library/simulator/backend/test_cpp_hybrid_complete_windows.py \
                             tvb/tests/library/simulator/backend/test_cpp_hybrid_global_coclock_windows.py \
                             tvb/tests/library/simulator/backend/test_cpp_hybrid_public_balloon_windkessel.py \

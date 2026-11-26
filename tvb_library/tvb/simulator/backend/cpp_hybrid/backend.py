@@ -286,7 +286,14 @@ class NetworkAnalysis:
 
 @dataclasses.dataclass
 class SweepResult:
-    """Container for parameter-sweep results (mirrors nb_hybrid.SweepResult)."""
+    """Sweep results, including optional fractional BW streams.
+
+    ``bw_global`` and each value of ``bw_local`` are ``(times, data)`` pairs.
+    Times are physical midpoint milliseconds; data axes are sweep row, time,
+    VOI, node, mode. Multi-source global nodes are canonical; single-source
+    global and local nodes retain source order. BW grids are independent of
+    the legacy ``times`` field and incomplete periods are not emitted.
+    """
 
     tavg: dict = dataclasses.field(default_factory=dict)
     merged_tavg: np.ndarray = None
@@ -300,6 +307,8 @@ class SweepResult:
     bold: Optional[dict] = None
     param_keys: Optional[list] = None
     online_features: Optional[dict] = None
+    bw_global: Optional[tuple] = None
+    bw_local: dict = dataclasses.field(default_factory=dict)
 
     # --- notebook sugar --------------------------------------------------
     def squeezed(self, subnet=None):
@@ -2814,6 +2823,7 @@ class CppHybridBackend:
         features: Optional[list] = None,
         noise_seeds: Optional[np.ndarray] = None,
         shared_noise: bool = False,
+        bw: Optional[dict] = None,
     ) -> "SweepResult":
         """Run a parameter sweep as multithreaded SIMD batches.
 
@@ -2823,6 +2833,14 @@ class CppHybridBackend:
         Philox4x32-10), separable stimuli, ``monitor`` in
         ``('tavg', 'raw', 'subsample', 'bold', 'none', 'features')``,
         ``bold_period``, ``chunk_size``, and optional Tier-1 ``features``.
+
+        ``bw`` is an additive mapping with optional ``global`` BW monitor and
+        ``local`` mapping from subnetwork names to BW monitors. Each monitor
+        supplies its VOI, period and explicit finite drive calibration. BW
+        currently coexists with ``monitor='none'`` or ``'tavg'`` only, without
+        ``bold_period`` or features. It does not change HRF ``monitor='bold'``.
+        Each BW result uses its own physical midpoint grid; sweep rows align
+        with ``sweep_values`` and padded SIMD lanes are omitted.
         """
         import time as _time_mod
         from . import notebook as _nb_sugar
@@ -2890,6 +2908,36 @@ class CppHybridBackend:
 
         targets, sweep_values = self._resolve_sweep(network_set, params)
         analysis = self._analyse(network_set)
+        bw_global_spec, bw_local_specs, bw_gather = None, {}, None
+        if bw is not None:
+            if not isinstance(bw, dict) or not bw or set(bw) - {"global", "local"}:
+                raise ValueError("bw must contain global and/or local placements")
+            local = bw.get("local", {})
+            global_monitor = bw.get("global")
+            if not isinstance(local, dict) or (not local and global_monitor is None):
+                raise ValueError("bw requires at least one global or local monitor")
+            names = {sn.name for sn in analysis.subnets}
+            if set(local) - names:
+                raise ValueError("bw local contains unknown subnetwork names")
+            if (global_monitor is not None and not isinstance(global_monitor, BalloonWindkessel)
+                    or any(not isinstance(m, BalloonWindkessel) for m in local.values())):
+                raise TypeError("bw placements require BalloonWindkessel monitors")
+            if monitor not in ("none", "tavg") or bold_period is not None or features:
+                raise ValueError("bw supports only monitor='none' or 'tavg', without bold_period or features")
+            compiled = CompiledCppSim(self, analysis, network_set, None, width)
+            for sn in analysis.subnets:
+                if sn.name in local:
+                    bw_local_specs[sn.name] = compiled._local_balloon_windkessel_spec(sn, 0, local[sn.name])
+            if global_monitor is not None:
+                if len(analysis.subnets) > 1:
+                    bw_gather = compiled._gathered_window_sources(analysis.dt)
+                    if not bw_gather:
+                        raise ValueError("BalloonWindkessel requires compatible regional sources and explicit node_indices")
+                else:
+                    sn = analysis.subnets[0]
+                    bw_gather = [{"n_voi": len(sn.voi) // 3, "n_node": int(sn.n_nodes),
+                                  "voi_offset": 0, "node_offset": 0, "node_indices": None}]
+                bw_global_spec = compiled._balloon_windkessel_spec(0, global_monitor, analysis.dt)
 
         cs = int(chunk_size) if chunk_size is not None else 1
         want_raw_stream = (
@@ -2921,6 +2969,8 @@ class CppHybridBackend:
             online_feat_names=online_feat_names,
             noise_seeds=noise_seeds,
             shared_noise=shared_noise,
+            bw_global_spec=bw_global_spec, bw_local_specs=bw_local_specs,
+            bw_gather=bw_gather,
         )
 
         # Assemble outputs across lane groups
@@ -2939,12 +2989,19 @@ class CppHybridBackend:
             if online_feat_names else None
         )
         bold_times = None
+        bw_global_parts = []
+        bw_local_parts = {name: [] for name in bw_local_specs}
+        bw_global_times = None
+        bw_local_times = {}
 
-        n_extra_per_sn = (1 if want_raw_stream else 0) + (1 if want_bold else 0)
-        for lo, hi, outs, feat_per_sn in results:
+        for lo, hi, outs, feat_per_sn, bw_global_out in results:
             k_lanes = hi - lo
+            if bw_global_spec is not None:
+                bt, bd = bw_global_out[0]
+                bw_global_times = np.asarray(bt, dtype=np.float64)
+                bw_global_parts.append(np.asarray(bd, dtype=np.float32).transpose(3, 0, 1, 2)[:k_lanes, :, :, :, None])
+            base = 0
             for i, sn in enumerate(analysis.subnets):
-                base = i * (2 + 2 * n_extra_per_sn)
                 if need_tavg:
                     arr = np.asarray(outs[base], dtype=np.float32)
                     tavg[sn.name].append(
@@ -2967,6 +3024,12 @@ class CppHybridBackend:
                     if bold_times is None:
                         bold_times = b_t
                     pos += 2
+                if sn.name in bw_local_specs:
+                    bw_local_times[sn.name] = np.asarray(outs[pos], dtype=np.float64)
+                    bd = np.asarray(outs[pos + 1], dtype=np.float32)
+                    bw_local_parts[sn.name].append(bd.transpose(3, 0, 1, 2)[:k_lanes, :, :, :, None])
+                    pos += 2
+                base = pos
                 if online_out is not None:
                     fdict = feat_per_sn[i]
                     for fn in online_feat_names:
@@ -3059,6 +3122,10 @@ class CppHybridBackend:
             param_keys=(list(params.keys()) if isinstance(params, dict)
                         else None),
             online_features=online_out,
+            bw_global=((bw_global_times, np.concatenate(bw_global_parts, axis=0))
+                       if bw_global_spec is not None else None),
+            bw_local={name: (bw_local_times[name], np.concatenate(parts, axis=0))
+                      for name, parts in bw_local_parts.items()},
         )
 
     def _sweep_impl(
@@ -3067,6 +3134,7 @@ class CppHybridBackend:
         progress=False, chunk_size=1, need_tavg=True, need_ctavg=True,
         want_raw_kind=0, monitor_period=1, want_bold=False, bold_period=2000.0,
         online_feat_names=(), noise_seeds=None, shared_noise=False,
+        bw_global_spec=None, bw_local_specs=None, bw_gather=None,
     ):
         n_sweeps = sweep_values.shape[0]
         n_groups = (n_sweeps + width - 1) // width
@@ -3103,6 +3171,8 @@ class CppHybridBackend:
             hi = min(lo + width, n_sweeps)
             group_vals = np.zeros((width, sweep_values.shape[1]), np.float32)
             group_vals[: hi - lo] = sweep_values[lo:hi]
+            if (bw_global_spec is not None or bw_local_specs) and hi - lo < width:
+                group_vals[hi - lo:] = group_vals[0]
             sim = Sim(width)
             self._build_sim(sim, analysis, network_set, width)
             self._apply_sweep_group(sim, analysis, targets, group_vals, width)
@@ -3121,7 +3191,9 @@ class CppHybridBackend:
                     if noise_seeds is not None:
                         lk = [
                             (int(noise_seeds[lo + w]) & 0xFFFFFFFFFFFFFFFF)
-                            if (lo + w) < hi else 0
+                            if (lo + w) < hi else
+                            ((int(noise_seeds[lo]) & 0xFFFFFFFFFFFFFFFF)
+                             if bw_global_spec is not None or bw_local_specs else 0)
                             for w in range(width)
                         ]
                     elif shared_noise:
@@ -3130,14 +3202,16 @@ class CppHybridBackend:
                         base_seed = int(sn.noise_seed) & 0xFFFFFFFFFFFFFFFF
                         lk = [
                             ((base_seed + lo + w) & 0xFFFFFFFFFFFFFFFF)
-                            if (lo + w) < hi else base_seed
+                            if (lo + w) < hi else
+                            (((base_seed + lo) & 0xFFFFFFFFFFFFFFFF)
+                             if bw_global_spec is not None or bw_local_specs else base_seed)
                             for w in range(width)
                         ]
                     sim.set_subnet_rng(
                         si, lk, gfun, ntau=float(sn.noise_ntau))
 
             # Optional per-subnet monitor engines (raw/subsample/bold)
-            if want_raw_kind or want_bold:
+            if want_raw_kind or want_bold or bw_local_specs or bw_global_spec is not None:
                 for si, sn in enumerate(analysis.subnets):
                     atts = []
                     if want_raw_kind == 1:
@@ -3155,7 +3229,11 @@ class CppHybridBackend:
                         })
                     if want_bold:
                         atts.append(bold_specs_by_sn[si])
+                    if sn.name in (bw_local_specs or {}):
+                        atts.append(bw_local_specs[sn.name])
                     sim.set_monitors(si, atts)
+                if bw_global_spec is not None:
+                    sim.set_global_monitors(bw_gather, [bw_global_spec])
                 sim.monitor_begin_run()
 
             # Optional Tier-1 online streaming features
@@ -3173,7 +3251,9 @@ class CppHybridBackend:
                     sim.take_online_features(si, list(online_feat_names), order=4)
                     for si in range(len(analysis.subnets))
                 ]
-            return lo, hi, outs, feat_per_sn
+            bw_global_out = (sim.take_global_monitor_outputs()
+                             if bw_global_spec is not None else None)
+            return lo, hi, outs, feat_per_sn, bw_global_out
 
         if sys.platform == "emscripten":
             workers = 1
@@ -3271,7 +3351,7 @@ class CppHybridBackend:
         for tid in range(n_sweeps):
             gi = tid // width
             lane = tid % width
-            lo, hi, outs, _ = results[gi]
+            lo, hi, outs, _, _ = results[gi]
             per_sn = []
             for i, sn in enumerate(analysis.subnets):
                 arr = np.asarray(outs[2 * i], dtype=np.float32)
