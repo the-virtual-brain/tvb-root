@@ -1,586 +1,486 @@
-# Hybrid Simulator GUI – Implementation Plan
-
-## Goal
-
-Expose Hybrid Simulation in TVB Web as a separate simulator workflow.
-
-The first version should allow a user to:
-
-1. select a Connectivity;
-2. divide its regions into Subnetworks;
-3. configure a Model and Integrator for each Subnetwork;
-4. create the required IntraProjections and InterProjections;
-5. configure basic global simulation parameters;
-6. launch one Hybrid simulation.
-
-Keep the first implementation small and validate each step before moving to the next one.
-
----
-
-## Phase 0 – Understand the existing Simulator workflow
-
-Before implementing new UI:
-
-* inspect the current Simulator Cockpit controller, forms, adapters, templates, and JavaScript;
-* inspect the existing Setup Region Model functionality;
-* identify which components can be reused;
-* trace how Simulator Cockpit configuration reaches `tvb_library`;
-* identify how simulation configuration is persisted.
-
-### Result
-
-Document the relevant files/classes and decide where the Hybrid Simulator entry point and controller should live.
-
-### Validation
-
-No functional changes.
-
-Discuss the proposed architecture before starting Phase 1.
-
----
-
-## Phase 1 – Hybrid Simulator entry and base layout
-
-Add **Hybrid Simulator** as a separate option next to the existing
-Simulator Cockpit / Phase Plane entry points.
-
-Reuse the existing Simulator Cockpit three-column layout:
-
-- left: Simulation History;
-- center: Hybrid Simulator configuration;
-- right: Simulation Results.
-
-Only the center configuration area should initially differ from the
-classic Simulator Cockpit.
-
-For the first version of the center panel, expose:
-
-- Connectivity selection;
-- a way to continue to Subnetwork configuration.
-
-Do not add simulation logic yet.
-
-### Investigation
-
-Before implementation, determine whether the existing three-column
-layout/history/results components can be reused directly or should be
-extracted into shared components.
-
-### Tests
-
-- Hybrid Simulator entry is accessible;
-- existing three-column layout is rendered correctly;
-- Simulation History remains functional;
-- Connectivity selection works;
-- invalid or missing Connectivity is handled correctly;
-- classic Simulator Cockpit behavior is unchanged.
-
-### Checkpoint
-
-Review the reused layout, navigation, and initial Hybrid configuration
-panel before implementing Subnetwork configuration.
-
----
-
-## Phase 2 – Configure Subnetworks
-
-Implement the UI for dividing the selected Connectivity regions into Subnetworks.
-
-After selecting a Connectivity, the Hybrid Simulator configuration should provide a **Configure Subnetworks** action that opens the Subnetwork configuration step.
-
-### Initial behaviour
-
-When Subnetwork configuration is opened:
-
-* create one default Subnetwork, initially named **Subnetwork A**;
-* assign all Connectivity regions to Subnetwork A;
-* allow the user to rename a Subnetwork;
-* allow the user to create additional empty Subnetworks;
-* allow the user to remove a Subnetwork when this does not leave the configuration in an invalid state.
-
-Example initial state:
-
-```text
-Subnetwork A
-  Region 1
-  Region 2
-  Region 3
-  Region 4
-  ...
-```
-
-After creating another Subnetwork:
-
-```text
-Subnetwork A              Subnetwork B
-  Region 1
-  Region 2
-  Region 3
-  Region 4
-```
-
-### Region assignment
-
-Implement a simple visual way of moving Connectivity regions between Subnetworks.
-
-Preferred interaction:
-
-* drag and drop regions from one Subnetwork to another;
-* support selecting multiple regions and moving them together, since Connectivities can contain many nodes;
-* clearly indicate the selected regions and the destination Subnetwork;
-* preserve the original Connectivity node indices internally.
-
-Every Connectivity region must belong to **exactly one Subnetwork**.
-
-A region must never:
-
-* belong to multiple Subnetworks;
-* disappear from all Subnetworks;
-* change its original Connectivity index.
-
-The UI representation can use region names, but the stored configuration should rely on the original Connectivity node indices.
-
-### UI technology investigation
-
-Before implementing drag and drop:
-
-1. inspect existing TVB Web JavaScript/components for reusable region-selection or list-management behaviour;
-2. inspect **Setup Region Model** in particular;
-3. determine whether native HTML5 drag-and-drop and the existing TVB frontend stack are sufficient;
-4. avoid introducing a new frontend dependency unless it provides a clear benefit, especially for multi-selection and drag-and-drop.
-
-If a new dependency appears necessary, document:
-
-* why existing TVB functionality is insufficient;
-* which dependency is proposed;
-* where it would be integrated;
-* whether it introduces additional build/runtime dependencies.
-
-Discuss this before adding the dependency.
-
-### Large Connectivities
-
-The interaction should remain usable for Connectivities with many regions.
-
-At minimum, investigate:
-
-* multiple region selection;
-* moving all selected regions at once;
-* scrolling within Subnetwork region lists.
-
-Do not implement advanced filtering/search unless it becomes necessary for usability.
-
-### State
-
-Store enough information in the Hybrid Simulator configuration to reconstruct the Subnetwork assignments, for example conceptually:
-
-```text
-Subnetwork A
-    name
-    node_indices = [0, 1, 4, 7, ...]
-
-Subnetwork B
-    name
-    node_indices = [2, 3, 5, 6, ...]
-```
-
-Do not create `tvb.simulator.hybrid.Subnetwork` objects yet. That mapping will be handled in the next phases.
-
-### Tests
-
-Test that:
-
-* all Connectivity regions initially appear in Subnetwork A;
-* a Subnetwork can be created;
-* a Subnetwork can be renamed;
-* regions can be moved between Subnetworks;
-* multiple selected regions can be moved together;
-* region assignments preserve their original Connectivity indices;
-* one region cannot belong to multiple Subnetworks;
-* no region can remain unassigned;
-* invalid Subnetwork removal is prevented or handled correctly;
-* configuration survives navigation between the Hybrid Simulator steps;
-* classic Simulator Cockpit behaviour remains unchanged.
-
-### Checkpoint
-
-Stop after the Subnetwork grouping UI is functional.
-
-Review:
-
-* the drag-and-drop interaction;
-* multiple selection;
-* behaviour with a large Connectivity;
-* how Subnetwork assignments are stored;
-* whether a 3D visualization would improve usability.
-
-Do not start Model or Integrator configuration yet.
-
----
-
-## Phase 2 – Implementation Summary
-
-### Where the configuration lives
-
-Subnetworks are stored as `HybridSubnetworkViewModel` (`name`, `node_indices`) on
-`HybridSimulatorAdapterModel.subnetworks`, kept in the CherryPy session.
-
-* `node_indices` are the **original Connectivity indices**, never renumbered, so the grouping can be
-  sliced straight out of `weights`/`tract_lengths` in Phase 4.
-* Nothing is written to the database or H5 yet. This matches the classic Simulator Cockpit, which
-  also keeps the in-progress configuration in session until launch. Persistence belongs with the
-  operation in Phase 6.
-* Deliberately *not* `tvb.simulator.hybrid.Subnetwork`: the UI only needs a name and a set of nodes,
-  and building library objects would drag in Model/Integrator before Phase 3.
-
-### The server owns the state
-
-Two request shapes, distinguished by the controller decorator:
-
-| decorator | used for | returns |
-|---|---|---|
-| `@expose_fragment` | moving between wizard steps | rendered HTML |
-| `@expose_json` | editing the grouping | the **complete** new state |
-
-Every edit (add / rename / remove / move) round-trips to the server, which validates it through
-`HybridSimulatorService` and answers with the whole configuration — not a delta. The browser discards
-its copy and redraws. A rejected change returns the *unchanged* state plus an error message, so the
-screen can never show a grouping the server does not hold.
-
-### Layering
-
-* `HybridSimulatorService` — all grouping rules and invariants; no web concepts.
-* `HybridSimulatorController` — thin; every mutation funnels through one `_change_subnetworks` helper.
-* `hybrid_subnetworks.js` — rendering and interaction only; it decides nothing.
-
-### Invariants enforced by the service
-
-Every Connectivity node belongs to exactly one Subnetwork; at least one Subnetwork always exists;
-names are non-empty and unique. `prepare_subnetworks` re-creates the default grouping whenever the
-stored one is not an exact partition of the current Connectivity, which is what makes a Connectivity
-change self-heal instead of corrupting the configuration.
-
-Removing a non-empty Subnetwork moves its regions into the first remaining one rather than refusing,
-so no region can be orphaned. Empty Subnetworks are allowed *on the board* (they are the drop target
-being prepared) and discarded when the grouping is saved.
-
-### UI structure
-
-Connectivity and Subnetworks are cockpit wizard steps. The grouping board lives in the third column, as
-the configuration belonging to the Subnetworks step — see the refinement summary below. The wizard
-accumulates steps read-only, mirroring `wizzard_submit` / `previousWizzardStep` in `bursts.js`.
-
-### No new frontend dependency
-
-Native HTML5 drag-and-drop plus the existing jQuery / `doAjaxCall` / `displayMessage` stack.
-`TVBUI.RegionSelectComponent` (used by Setup Region Model) was evaluated and not reused: it models one
-selection over one flat checkbox grid whose DOM order *implies* the node index, which does not carry
-over to N containers owning disjoint region sets. Its interaction idiom — click / Ctrl-click /
-Shift-range, then apply — was reused instead.
-
-### Styling
-
-The hybrid step reuses TVB's own `fieldset` / `fieldset dt` rules rather than styling from a blank
-slate; overriding them is what produced mismatched insets, separators and text colours. Two traps
-worth remembering: the configuration column is a near-transparent cream over a **light** page (light
-text is invisible), and `base.css` styles the bare `<header>` element as the site's fixed top nav, so
-an in-box title bar must not be a `<header>`.
-
-### Tests
-
-Service and controller are covered by Python tests (partition invariants asserted after every
-operation). There is no JavaScript test infrastructure in this repository, so the client is verified
-out of tree.
-
-
----
-
-## Phase 2 – Refine Subnetwork Configuration
-
-Refactor the Phase 2 UI so Subnetwork configuration remains on the main **Hybrid Simulator** page.
-
-Remove the separate Subnetwork configuration page and reuse the current third column, which is reserved for Results / Visualization.
-
-Workflow:
-
-* user selects a Connectivity in the main Hybrid Simulator configuration;
-* after pressing **Next**, show the existing Subnetwork configuration UI in the third column;
-* keep the current Subnetwork operations and drag-and-drop behaviour unchanged where possible;
-* remove the **Configure Subnetworks** button, since navigation to a separate page is no longer needed;
-* add a **Save Configuration** action for the Subnetwork configuration;
-* update the Subnetwork summary in the main simulator column only after the configuration is saved;
-* when the user presses **Next** to continue to the following Hybrid configuration step, clear the third column.
-
-The third column should become the contextual configuration area for the current Hybrid Simulator step.
-
-Future phases can reuse the same area for Model / Integrator configuration, Projections, and other Hybrid settings.
-
-### Tests
-
-* Subnetwork configuration is displayed in the third column;
-* existing drag-and-drop and multi-selection behaviour still works;
-* saved Subnetwork configuration updates the summary correctly;
-* navigating between Hybrid configuration steps preserves the expected state;
-* the separate Subnetwork configuration page and navigation are removed;
-* classic Simulator Cockpit behaviour remains unchanged.
-
-### Checkpoint
-
-Review the new single-page Hybrid Simulator workflow before continuing with Phase 3.
-
----
-
-## Phase 2 Refinement – Implementation Summary
-
-### The third column is now step-contextual
-
-Every wizard fragment declares the configuration it wants in the third column:
-
-```html
-<form ... data-hybrid-context-url="/burst/hybrid/configure_subnetworks"
-          data-hybrid-context-title="Subnetworks">
-```
-
-After any wizard render, `_afterHybridRender` in `hybrid_simulator.js` reads that attribute off the
-**last** form in the stack (the step being configured) and either loads it into
-`#hybrid-context-column`, hiding `#hybrid-results-view`, or empties the column and hands it back to the
-Results view. The Connectivity step declares nothing, which is what clears the column when stepping
-back; a Phase 3 step gets the same behavior for free by declaring its own url, or none.
-
-The full-width detour is gone with it: `colscheme-1` swapping, `resetLayout`,
-`hybridBackToSimulator`, `hybridLoadFragment`, the *Configure Subnetworks* button and the
-`is_subnetwork_fragment` branch were all removed.
-
-### Save Configuration, and why a draft was needed
-
-The summary must change only on save, but every grouping edit still has to round-trip so the server can
-validate it. So the board edits a **draft** held in its own session slot
-(`HybridSimulatorContext.KEY_SUBNETWORKS_DRAFT`); `save_subnetworks` is the only writer of
-`HybridSimulatorAdapterModel.subnetworks`.
-
-| where | holds | changed by |
-|---|---|---|
-| `hybrid_simulator.subnetworks` | what the wizard step lists | `save_subnetworks` only |
-| session draft | what the board shows | add / rename / remove / move |
-
-Drag-and-drop, multi-selection and every `HybridSimulatorService` rule are untouched — only the list
-they are applied to changed. `copy_subnetworks` keeps the two apart: the grouping operations mutate
-`HybridSubnetworkViewModel` instances in place, so sharing them would let a drag silently rewrite the
-summary.
-
-The draft survives stepping away and back (unsaved work is not thrown away), and is dropped together
-with the grouping when the Connectivity changes or the configuration is reset. Empty Subnetworks stay
-on the board as drop targets and are discarded on save.
-
-Each answer carries `is_modified`, computed against `discard_empty_subnetworks(draft)` so that an empty
-Subnetwork prepared as a drop target is not reported as a pending change. The board shows it as
-*Unsaved changes* / *Configuration saved*, which is what stops the board and the summary next to it
-from disagreeing silently.
-
-### Fixed in passing
-
-`main_hybrid_simulator.html` called `displayBurstTree`, which lives in `bursts.js` and is not loaded on
-this page — the Results tab raised a `ReferenceError`. Replaced by a local `displayHybridResultsTree`
-built on `updateTree` from `projectTree.js`, which the page does load.
-
-### Tests
-
-Python: 29 controller tests and 25 service tests, asserting the partition invariants after every
-operation plus the new draft/save split — that editing leaves the saved grouping alone, that saving
-updates the summary and discards empty Subnetworks, and that both saved and unsaved groupings survive
-navigation. The classic Simulator Cockpit suite (41 tests) still passes untouched.
-
-Client: there is no JavaScript test infrastructure in this repository, so the board was driven out of
-tree in jsdom against the **real** `hybrid_simulator.js` / `hybrid_subnetworks.js`, the **real**
-Jinja-rendered fragments and TVB's own jQuery — covering multi-selection (click / Ctrl / Shift / Select
-all), dragging a multi-region selection between Subnetworks, save refreshing the summary, and the third
-column filling and clearing as steps change. Worth adding to the repository if a JS test dependency is
-acceptable.
-
----
-
----
-
-## Phase 3 – Configure each Subnetwork
-
-For each Subnetwork allow selection of:
-
-* Model;
-* Integrator.
-
-Start with default parameters supplied by the selected Model and Integrator.
-
-Do not expose all model parameters initially.
-
-All Integrators must currently use a compatible/common `dt` required by the Hybrid Simulator.
-
-### Tests
-
-* Model selection is stored per Subnetwork;
-* Integrator selection is stored per Subnetwork;
-* defaults are correctly created;
-* changing one Subnetwork does not affect another;
-* invalid combinations are rejected.
-
-### Checkpoint
-
-Verify that the UI configuration can be translated cleanly into `tvb.simulator.hybrid.Subnetwork` objects.
-
-Only after this works consider exposing Model/Integrator parameter editing.
-
----
-
-## Phase 4 – Generate Projections
-
-Generate IntraProjections and InterProjections from the selected Connectivity and Subnetwork assignments.
-
-For the first implementation:
-
-* slice Connectivity `weights` and `tract_lengths` according to Subnetwork node indices;
-* automatically create the necessary IntraProjections;
-* automatically create the necessary InterProjections;
-* use safe/default coupling-variable selections where possible.
-
-The initial version should avoid requiring users to manually edit projection matrices.
-
-### Projection configuration
-
-Consider:
-
-* `source_cvar`;
-* `target_cvar`;
-* `cfun`;
-* `scale`;
-* `cv`;
-* `dt`.
-
-Initially, expose only parameters that cannot be safely derived.
-
-### Tests
-
-Given known Subnetwork node indices:
-
-* verify IntraProjection weights/lengths;
-* verify InterProjection weights/lengths;
-* verify source/target Subnetworks;
-* verify coupling-variable selection;
-* compare generated projections with the hybrid demo notebooks.
-
-### Checkpoint
-
-Inspect the generated `NetworkSet` before exposing projection editing.
-
----
-
-## Phase 5 – Global Hybrid Simulator configuration
-
-Add the remaining simulation-level configuration.
-
-Initial scope:
-
-* simulation length;
-* Monitors;
-* backend if appropriate;
-* other required global Hybrid Simulator parameters.
-
-Reuse existing Simulator Cockpit components where possible.
-
-### Tests
-
-* configuration reaches the Hybrid Simulator correctly;
-* monitors are configured correctly;
-* simulation length is respected;
-* invalid configuration produces useful validation messages.
-
----
-
-## Phase 6 – Launch one Hybrid simulation
-
-Construct:
-
-```text
-Connectivity
-    ↓
-Subnetworks
-    ↓
-Projections
-    ↓
-NetworkSet
-    ↓
-Hybrid Simulator
-```
-
-Launch a single simulation using the `tvb_library` Hybrid Simulator API.
-
-Persist the operation/results through the normal TVB framework mechanisms where possible.
-
-### Tests
-
-Use a small deterministic simulation.
-
-Verify:
-
-* simulation launches;
-* operation completes;
-* expected monitor output is produced;
-* output node ordering remains consistent with the original Connectivity;
-* failures are reported through the normal TVB operation mechanism.
-
-Compare at least one GUI-created simulation against the equivalent Python hybrid demo.
-
----
-
-# Follow-up features
-
-These should be implemented only after the basic workflow is stable.
-
-## Projection editing
-
-Allow users to:
-
-* enable/disable individual projections;
-* change `source_cvar`;
-* change `target_cvar`;
-* change coupling function;
-* change scaling;
-* optionally provide custom weights/lengths.
-
-Support configurations where some Subnetworks are intentionally not connected.
-
-## Subnetwork parameter editing
-
-Allow editing Model and Integrator parameters for each Subnetwork.
-
-Investigate whether existing Simulator Cockpit forms and Setup Region Model components can be reused.
-
-## Stimuli
-
-Allow Stimuli to be configured for individual Subnetworks and their appropriate coupling/state variables.
-
-Follow the hybrid stimulus demo as a reference.
-
-## Parameter Space Exploration
-
-Add Hybrid PSE only after single Hybrid simulations are stable.
-
-Potential sweep targets include:
-
-* Model parameters;
-* Projection parameters;
-* Subnetwork parameters;
-* global simulation parameters.
-
-Reuse the existing TVB PSE infrastructure where possible.
-
----
-
-# Implementation principles
-
-* Implement and review one phase at a time.
-* Do not implement future phases while working on the current phase.
-* Prefer reusing existing TVB framework components.
-* Keep scientific Hybrid Simulator behaviour inside `tvb_library`.
-* Keep UI/configuration/persistence logic inside `tvb_framework`.
-* Add focused tests with every phase.
-* Preserve the classic Simulator Cockpit behaviour.
-* Do not commit or push changes; all changes must be reviewed manually first.
+# C++ backend delivery plan
+
+## Purpose and operator direction
+
+Replace the previous GUI plan with this recovery-ready plan for the C++ hybrid
+backend. Close the existing BW investigation, deliver usable improvements on
+`tvbkh`, then support global and local Balloon–Windkessel (BW) monitors and
+parameter sweeps, with unit tests and executable demo notebooks.
+
+Execute one phase at a time with **one subagent per phase**, no child delegation
+and no concurrent writers. The supervisor owns review, acceptance, this progress
+log, and publication. A child must stop at a phase gate and request supervisor
+review before the workflow advances. Reuse the same phase child for corrections
+where possible rather than creating extra workers/reviewers. Never equate a
+child's success claim, a job ID, or a green subset of CI with acceptance.
+
+## Recovery checkpoint
+
+- Initial code baseline: `bb819dc35f31029064b1e8200587aee57569d0cc`.
+- Initial root tree: `eb90a95bb118de55307b9b331df1f2d8a8c91e25`.
+- Initial local branch: `recovery/monitor-complete-windows`.
+- Live GitHub `tvbkh` was verified at that same commit; no unpublished code divergence.
+- PR #801 (`tvbkh` -> `master`) was verified open, draft and mergeable; this is not
+  publication/release approval or authority to merge.
+- `origin` is a stale recovery remote with pushing disabled. Do not change its
+  URLs or use its stale `origin/tvbkh` reference as GitHub truth.
+- Initial worktree had only untracked `HANDOFF-monitor-windows.md` and
+  `cpp-handoff.md`; this plan is now the intended tracked change.
+- `cpp-handoff.md` remains the detailed historical evidence inventory. Its
+  broad operating/research agenda is superseded by this delivery plan.
+- Outstanding Slurm job `5216500` has now been observed **COMPLETED, 0:0**,
+  elapsed 00:04:04, node g2. Remote receipt index and both record hashes verify;
+  installed provenance reports the expected baseline. Phase 1 has now been
+  independently reviewed and accepted with the scoped findings recorded below.
+
+### Phase board
+
+| Phase | Deliverable | State | Evidence / acceptance |
+|---|---|---|---|
+| 1 | Close existing installed-native investigation | Complete; accepted; report errata finalized | Existing job 5216500; hashes and key raw records independently checked |
+| 2 | Green tvbkh baseline, permanent coverage, current-capability demo | Local diff/evidence reviewed; publication approved; exact-SHA CI pending | 440 suite passes in 5216502; demo/notebook pass in 5216503 |
+| 3 | Public local BW Recorders, including independent SIMD lanes | Pending | Wait for Phase 2 acceptance |
+| 4 | Compatible multi-subnetwork global BW and shared placement semantics | Pending | Wait for Phase 3 acceptance |
+| 5 | Explicit BW parameter sweeps through backend and notebook APIs | Pending | Wait for Phase 4 acceptance |
+| 6 | Integrated demos and exact-candidate qualification | Pending | Wait for Phase 5 acceptance |
+
+Current workflow/child IDs and report paths are recorded in the progress log
+when available. On recovery, inspect those runs and pending supervisor requests
+before launching anything; do not duplicate an active child or Slurm job.
+
+## Fixed scientific and product scope
+
+- Reuse the shipped BW equations, 10 ms held-drive windows and two 5 ms RK4
+  steps. Keep current double-precision reductions and hemodynamic arithmetic.
+- BW is fractional BOLD change, not the HRF convolution `Bold` monitor.
+  Existing `monitor="bold"` sweep behavior must not silently change.
+- Regional, single-source-mode BW initially; independent per-region/per-lane
+  state with SIMD widths 1, 4, 8 and 16. Width one is not a product limit.
+- Explicit finite drive baseline and signed scale; existing nominal shared
+  hemodynamic parameter set. Per-region parameter fitting/lowering is deferred.
+- Complete windows only, midpoint timestamps, release at the closing boundary,
+  no incomplete-tail flush, chunk-independent phase, fresh-run reset.
+- Local BW counts eligible source updates on its physical clock. Global BW
+  gathers on the master clock and holds slower sources between updates.
+  Compare global/local traces only when their effective drives match.
+- Preserve public output ordering and established result conventions; make any
+  additive output/API contract explicit and test it before implementation.
+- Preserve partial drive/BOLD windows and hemodynamic state in compatible
+  compiled checkpoint/restore. No new public append/resume API or cross-binary
+  snapshot guarantee; no claim of whole-simulator rollback after a failed run.
+- Native Linux venv qualification is the development target. Keep existing
+  hosted CI enabled. Separate browser/WASM experimentation remains deferred.
+- No solver replacement, precision campaign, CUDA work, noisy/surface projection
+  expansion, unrelated refactoring or automatic PR readiness/merge decision.
+
+## Phase 1 — Close the existing investigation
+
+**Owner:** one evidence-review child; no production edits and no new jobs.
+
+1. Read the applicable instructions, handoff and r3 launch report.
+2. Fetch job 5216500's existing receipt into a new private local evidence
+   directory outside the checkout. Preserve originals; verify input/archive,
+   receipt and raw-record indexes from their documented working directories.
+3. Confirm job identity/terminal status, installed wheel/extension provenance,
+   exact-source identity, two completed cases and their lane audits.
+4. Inspect reference agreement, midpoint/release grids, repeats, public versus
+   compiled equality and chunk independence. Corroborate summary values against
+   raw records; inspect harness interpretation rather than trusting its labels.
+5. Summarize whole-entry timings and repeat dispersion. Separate source-derived
+   memory scaling from process-wide allocator/RSS observations. Do not turn
+   BW-minus-TemporalAverage into a kernel ablation or a copy-cost measurement.
+6. Conclude: retain RK4 and double precision; proceed with monitor functionality
+   unless a concrete correctness failure blocks it. Record unresolved questions
+   as deferred, not as automatic follow-up experiments.
+
+**Exit:** supervisor accepts a concise final disposition and evidence reference,
+or records the exact first failure/blocker. No automatic rerun, tolerance
+relaxation, fixture rewrite or benchmark redesign.
+
+## Phase 2 — Establish the next green tvbkh baseline
+
+**Owner:** one phase child for CI/test/demo changes; supervisor handles Git.
+
+1. Align the local branch with the live GitHub `tvbkh` tip without rewriting
+   history; preserve recovery references and handoffs. Inspect fresh exact-tip CI.
+2. Audit actual collection of the dedicated complete-window/BW suites. Several
+   are absent from the explicit list in `.github/workflows/cpp-hybrid.yml`;
+   establish where they run, then add missing permanent gates without duplicating
+   expensive work unnecessarily or reducing existing coverage.
+3. Add/update a small paired `.py`/`.ipynb` demo of existing public regional BW,
+   alongside TemporalAverage, explicit calibration, midpoint times and incomplete
+   tails. Explain the difference from HRF `Bold`.
+4. Execute the demo through public APIs and make a bounded CI smoke check.
+
+**Exit:** current functionality is demonstrated, relevant regression suites are
+permanent CI gates, and the supervisor has reviewed the exact diff and evidence.
+Keep this increment separate from local BW implementation.
+
+## Phase 3 — Implement local BW Recorders, tests first
+
+**Owner:** one phase child, serial test/native/public seams with supervisor gates;
+no overlapping component writers. The clock/continuation contract ties these
+seams together. Agree the test contract before broad implementation.
+
+Implement `Recorder(monitor=BalloonWindkessel(...))` on C++ subnetworks using the
+existing native BW engine. C++ owns accumulation, held-drive advancement, BOLD
+reduction and release; Python owns configuration, validation and packaging.
+Remove blanket local rejection only as the corresponding route becomes supported.
+
+Required tests:
+
+- Public Simulator/Recorder attachment and single-subnetwork local/global
+  agreement with matching drives/clocks.
+- Nontrivial source cadence; no observations or drive advances on ineligible
+  source ticks; independent physical source clocks.
+- Chunks crossing drive/output boundaries and no incomplete-tail emission.
+- Independent regions and lanes, widths 1/4/8/16, distinct inputs, permutation
+  control, independent W=1 comparisons and finite/geometry validation.
+- Fresh-run rearm; checkpoint/restore with both partial windows; identity and
+  incompatible-state rejection; validate participating Recorder sets before commit.
+- Legacy/native siblings and existing global monitors coexist.
+- Preserve explicit classic/Numba rejection for unsupported BW execution.
+
+Relevant seams: `hybrid/recorder.py`, `hybrid/simulator.py`, `monitors.py`,
+`cpp_hybrid/backend.py`, `_core.cpp`, `cph_monitors.hpp` and existing BW reference
+and Recorder tests. Check allocation scaling/overflow across region and lane count.
+
+**Exit:** public local BW works with documented supported profiles, not merely
+through a native test hook; focused installed-native tests pass.
+
+## Phase 4 — Complete global BW placement and shared semantics
+
+**Owner:** one phase child, serial gather/native/public validation seams.
+
+Extend the global route to compatible regional multi-subnetwork layouts using
+established gather machinery, not a general relaxation of merge rules.
+
+- Require complete/disjoint canonical node mappings and compatible ordered
+  observations, clocks and valid cadence. Reject unsupported geometry explicitly.
+- Global observations are gathered on every master tick after eligible updates;
+  slower sources contribute initial/held state. Local eligibility is unchanged.
+- Keep independent regional hemodynamics: do not average neural regions first
+  and then treat BW of that average as equivalent to regional BW.
+- Support wide independent lanes in this bounded profile.
+- Test node/source permutations, mixed cadences, global/local coexistence,
+  chunk independence, fresh reset, checkpoint identity and continuation.
+- Require global/local parity under matching effective drives; use separate
+  oracles for genuinely different mixed-rate sampling semantics.
+
+**Exit:** global and local placements have coherent, tested contracts; supported
+profiles and deliberate restrictions are documented without false equivalence.
+
+## Phase 5 — Add BW parameter sweeps end to end
+
+**Owner:** one phase child; get supervisor approval of the additive API contract
+before implementing it across backend, result assembly and notebook wrapper.
+
+Today's sweep uses string monitor modes and special BOLD options; merely deleting
+BW guards is not support. Define explicit BW configuration (VOI, period,
+calibration), global/per-subnetwork selection, output axes/time grids/node order,
+and sweep-row ordering. Preserve existing HRF `bold` behavior.
+
+Wire the supported contract through `CppHybridBackend.sweep` and
+`cpp_hybrid/notebook.py`. Preserve legacy `run_sweep` behavior unless explicitly
+extended; unsupported requests must fail rather than be silently ignored.
+
+Required tests:
+
+- Widths 1/4/8/16 versus independent non-sweep runs.
+- Partial final lane groups, padded-lane exclusion, lane/parameter permutations,
+  worker-count independence and repeated calls.
+- Paired and Cartesian grids retain parameter/result order.
+- Local BW across different source clocks and compatible global BW output.
+- Explicit configuration errors and unchanged raw/tavg/HRF sweep behavior.
+
+**Exit:** BW sweeps are usable from public APIs, including the notebook wrapper,
+with interpretable results and no native-internals workaround.
+
+## Phase 6 — Integrated demos and qualification
+
+**Owner:** one phase child; supervisor reviews exact integrated source/evidence.
+
+Add or extend focused paired notebooks to show:
+
+1. Global and local BW in one hybrid network.
+2. Different source clocks with accurate timing explanations.
+3. A small neural/coupling parameter sweep with genuinely distinct drives.
+4. Selected sweep members checked against independent runs.
+
+Use small deterministic fixtures, no external downloads, explicit calibration,
+shape/time/finite-value assertions and scientifically meaningful plotted duration.
+Keep executable smoke tests bounded; avoid unsupported performance claims.
+
+Qualify the exact candidate in fresh installed-native venvs on Slurm, including
+reference traces, cadence, lanes, lifecycle, invalid state, relevant backend/hybrid
+regressions and notebook execution. Make one bounded baseline/candidate time and
+memory comparison with repeats; do not reopen allocation/copy attribution research.
+
+**Exit:** supervisor accepts the integrated diff and exact-candidate evidence;
+exact-SHA hosted CI is green for the published increment, and residual platform
+limits are explicit. No automatic merge or release.
+
+## Execution, evidence and publication rules
+
+- Read applicable `AGENTS.md` before edits. The operator's current direction is
+  incremental delivery to `tvbkh`; children may not commit, push, merge, rebase,
+  change remotes, publish comments, or weaken gates. Supervisor retains Git
+  authority and checks any conflict with repository policy before publication.
+- Keep one active phase child, no nested delegation and no silent model/CLI
+  fallback. Parent review is the independent phase gate; do not add reviewer
+  agents contrary to the one-child-per-phase instruction.
+- Children do not edit PLAN.md. At a checkpoint they stop writing and contact
+  the supervisor with changes/evidence/blockers. The parent reviews and updates
+  PLAN.md while the child is explicitly quiescent, then accepts or requests fixes.
+- Tests are developed first, but failing intermediate states stay local. Publish
+  reviewed, locally qualified increments only to `tvbkh`; inspect their exact-SHA
+  CI and fix failures before advancing. No force, merge, remote rewrite or auto-merge.
+- Any approved push uses explicit `git@github.com:the-virtual-brain/tvb-root.git`
+  and `HEAD:refs/heads/tvbkh`, with fresh ref/ancestry/diff and dry-run checks.
+- Do not stage local handoffs, raw receipts, machine settings, credentials or
+  generated benchmark outputs. Keep operational evidence outside the source tree.
+- Heavy builds/tests only on Slurm via `inslurm-proxy`, private exact-source
+  inputs, node-local builds and fresh installed environments with verified imports.
+  One explicit submission at a time; supervisor approves a concrete job request.
+- No new job is authorized for Phase 1. Later jobs require a bounded case/test
+  matrix and resource request approved by the supervisor before submission.
+- Verify actual completed tests, selectors and expected skips, not collection
+  counts. Keep raw bytes before reduction; diagnose failures before any retry.
+- Async child completion wakes the supervisor. Yield rather than sleep/poll.
+  Stop and report launch/runtime failures; preserve partial changes and evidence.
+
+## Progress log
+
+### Plan established
+
+- Operator explicitly requested overwriting PLAN.md, one subagent per phase,
+  supervisor review and ongoing progress updates.
+- Previous GUI plan replaced; it remains recoverable from Git history.
+- No production code changed and no additional Slurm job submitted.
+- Sequential async workflow launched: `f65dea8b-85fd-424d-a5a1-5d143b64ec48`;
+  mission `3e979de0-5354-4b3c-9820-f2d3df354bb6`.
+- Stable child keys: `cpp-phase-1` through `cpp-phase-6`. Reports are bound to
+  managed workflow artifacts `cpp-delivery/phase-N.md`, not the source tree.
+- Child model: `blablador/deepseek-v4.1-flash-at-hzdr:medium`, matching the
+  handoff's worker routing. No fallback is authorized.
+- Each phase pauses for a blocking supervisor review before returning accepted;
+  the workflow stops on failure/blocked status. Children cannot edit this plan
+  or publish. Supervisor updates the board at each gate before advancement.
+- Phase 1 review and Phase 2 authorization are recorded in the next entry.
+
+### Phase 1 — supervisor acceptance and investigation closure
+
+- Child run: `5e39cb94-dc18-49cd-aef4-659b75d8d5a7` (workflow key `cpp-phase-1`).
+- Candidate report: managed workflow artifact `cpp-delivery/phase-1.md`.
+- Evidence: `../recovery/verify/monitor-phase2-native-installed-bb819dc-r3/receipt-5216500-20261126T162115Z/`.
+- Parent independently verified all **31 receipt-index entries** and both raw
+  record hashes; receipt index SHA-256
+  `1d3f60d041c3e225b07a3e65622102daae2e3a51cf5b693013d32af35375bcfb`,
+  records index `1c371e919076e66615eb530c10994f462c1d83332f372ce7d441b7300b21ffe7`.
+- Parent read the raw reference/chunk/entry records and recomputed timing medians
+  and contrasts from raw timings. No simulator/oracle replay or new job.
+- Scoped accuracy finding: 8 regions, 60 simulated seconds, 6000 drive windows,
+  30 BOLD rows; maximum difference from the recorded float64 DOP853 reference
+  `4.5598143143255054e-10`, maximum `0.499206949` float32 ulp. All 240 values
+  match the reference's float32 casts. This is agreement with that numerical
+  reference on this fixture, not a general exact-solution rounding guarantee.
+- Midpoint/release grids agree; public/compiled output digests agree; default,
+  1000-step and 7-step chunk outputs agree. End-state partial-window diagnostic
+  was unavailable due to harness ordering, so it supplies no continuation proof.
+- Compiled BW median `29.619563 ms` versus matched TemporalAverage `11.252251 ms`;
+  difference `18.367312 ms` for this whole entry, not isolated monitor/kernel cost.
+  Public BW median `29.898517 ms`. No copy-cost or per-emitted-row attribution.
+- Decision: **investigation closed; retain shipped RK4 and double precision**.
+  No blocking product finding or new experiment is required before feature work.
+  Phase 3 must test partial-window continuation directly.
+- Report-only errata requested: receipt count is 31, not 29; error is below but
+  near half an ulp, not far below; scope cast agreement to the numerical oracle;
+  qualify cost-scaling observations rather than asserting causal attribution;
+  do not infer simulator throughput from a job dominated by build/reference work.
+- While the phase child was quiescent, supervisor created local `tvbkh` at the
+  unchanged baseline commit, preserving the recovery branch and all handoffs.
+  No commit, stage, push, remote change or history rewrite occurred.
+- Fresh GitHub check: live `tvbkh` still `bb819dc35`; all reported applicable PR
+  checks pass (release upload intentionally skipped). The child must inspect
+  exact-SHA CI collection, not treat a green list as exhaustive test coverage.
+- Phase 1 child finalized the requested report-only errata and returned accepted.
+  Supervisor read the amended saved result; no rerun was needed.
+
+### Phase 2 — startup contract and bounded validation authorization
+
+- Sole phase child: `623cdd9a-1924-49f0-81e8-6b9ddc83a673`, key `cpp-phase-2`.
+- Confirmed base is local/live `tvbkh` at `bb819dc35`; no branch or publication
+  prerequisite remains before source edits. Publication stays supervisor-owned.
+- Audit finding: seven BW/window suites already run in the broad Python workflow
+  on supported Python versions. This is dedicated-gate visibility/durability work,
+  not a claim of previously absent coverage. Python <3.12 deliberately ignores
+  the native test glob; the reference-only suite still runs there.
+- Approved CI changes: correct stale cpp-hybrid workflow header; add a separate
+  named step with the seven explicit reference/BW/window module paths; preserve
+  all existing selectors; add matplotlib and a bounded demo-script smoke step.
+  Prefer explicit selectors over a widening glob for this increment.
+- Approved new paired demo: `tvb_documentation/demos/cpp_hybrid_balloon_windkessel.py`
+  and `.ipynb`. Public C++ regional BW plus TemporalAverage, finite explicit
+  calibration, deterministic three-region input and no downloads/noise. Explain
+  BW versus HRF Bold and show calibration from 10 ms means.
+- Supervisor adjustment: the main plot must span a meaningful 30–60 simulated
+  seconds with a sensible 1–2 s BOLD period and bounded drive, not just the
+  proposed 200 ms initial transient. Keep short exact-grid/tail/zero-scale checks
+  separately (including the 195 ms incomplete-tail case). Do not add a precision
+  oracle or performance experiment to this demo.
+- No extra pytest module required for identical smoke coverage: existing suites
+  plus executable notebook/script assertions cover this phase. The Windows
+  notebook runner automatically executes this new top-level notebook as well.
+- Approved **one** Slurm submission after the edits and lightweight static
+  checks: partition run, one task, eight CPUs, 16 GB, 30 min, no pinned node;
+  node-local fresh build/test venvs and a noneditable wheel. Run the seven named
+  installed-package suites, demo script and notebook, capture completed outcomes,
+  actual allocation, package versions and installed binary/source provenance.
+- Archive actual candidate bytes using an explicit allowlist and hashes; include
+  tracked package sources plus the approved new demo pair and necessary runner
+  inputs. Exclude handoffs, ignored build products, credentials and arbitrary
+  untracked files. Bind provenance to baseline + candidate diff/file manifest,
+  not a falsely claimed committed Git tree. Freeze functional inputs during job.
+- Test working directory/sys.path and notebook kernel must resolve the installed
+  test-venv package, not the extracted source or another/global Python kernel.
+  Use a bounded notebook execution timeout and record kernel/import provenance.
+- Fetch-back of one executed notebook is approved for review, provided source
+  cells match the tested input, `.py`/`.ipynb` cell pairing remains exact and
+  outputs/metadata contain no private paths or credentials. Record input/output
+  hashes separately; output-only changes do not claim identical whole-file bytes.
+- Stop/report the first build/test/runtime failure; no automatic retry, skip,
+  gate/tolerance relaxation or second submission. No commit/push authorized to
+  the child. The first submitted job failed during setup; see the recovery entry
+  below. Final diff and exact receipt review are still required for Phase 2.
+
+### Phase 2 — first validation failure and correction gate
+
+- Exactly one Phase 2 job submitted so far: `5216501`, node g2, exit 127 at
+  `cmake --version`. Build dependencies include cmake 4.4.5 and ninja 1.13.2,
+  but the harness omitted exporting the build-venv bin directory onto PATH.
+  No wheel build, install, selected suite, demo or notebook execution occurred.
+- Failed receipt preserved as-is:
+  `../recovery/verify/monitor-phase2-demo-bb819dc-r1/failed-5216501/`.
+  Supervisor independently checked its 12-entry preserved-files index and all
+  five frozen input hashes; submitted input-index SHA-256 is
+  `852ad354c536413ecdfaf944e6d693d60eaf4bc878ec8b4932166dfa92d600e8`.
+- Library archive/source identity remains the baseline; new demo source and
+  notebook still match the submitted copies. This failure is harness setup,
+  not evidence of a product/test failure or a successful validation.
+- Parent found a deterministic next-stage conflict before retry: demo prints
+  its absolute installed path, while the executed-notebook text scan rejects
+  private /tmp or home paths. Imported warning text can also contain paths.
+  Keep actual interpreter/import provenance in private receipts; make published
+  notebook output safe without hiding warning messages or execution errors.
+- Parent also found demo wording that incorrectly calls ten emitted 20 ms rows
+  over 200 ms ten drive windows: there are twenty 10 ms drive windows. Correct
+  that explanation before re-freezing the candidate.
+- Authorized correction preparation only: restore build-venv PATH, resolve
+  notebook path-output/privacy conflict, and fix drive-window versus row wording.
+  Preserve original failed harness/inputs and receipt; use a fresh r2 directory.
+- **No second submission authorized yet.** Same phase child must present the
+  compact correction diff and lightweight static/pairing/privacy checks before
+  supervisor approves one corrected job. Do not repeat broad scouting, alter
+  solver/precision, weaken numerical tests, blanket-suppress warnings, relax the
+  privacy requirement or automatically retry. Report changed input hashes
+  honestly; the retry will not have byte-identical demo inputs after these fixes.
+
+### Phase 2 — corrected r2 submission approved
+
+- Supervisor read r2 job script, notebook provenance helper and demo correction
+  diff; independently verified all six r2 frozen inputs, all five original r1
+  inputs and the preserved r1 failed-receipt hashes. No simulator/test replay.
+- Corrected input-index SHA-256:
+  `0700d02ab951b66d8cff64b383e75a2591093115d8bc9e73806c8d91038f801e`.
+  Library archive remains unchanged. Demo source SHA-256:
+  `5870d0779254e7cbd5f1c16aa94006839b7e208425f6e151383613c985ce5443`;
+  source-only notebook `fded0c9449e4dc4cfe4637140c7c17ffeb80b28f503d460a67bb4744bc547d43`;
+  job script `21d6137fc988a1fbb13d3c6a63bb2a8f3cc0272c0eb286760cf6b22ecade1e8a`.
+- PATH defect corrected; public path print removed; drive-window/row explanation
+  corrected. Runtime matplotlib cache stays node-local. Notebook kernel is the
+  test-venv interpreter with a portable python3 kernelspec.
+- Raw executed notebook is preserved separately. Publication normalization only
+  replaces declared scratch/receipt/home prefixes in text outputs; tested sources
+  must stay unchanged. Published output scan has no prefix allowances. This
+  helper checks specific text/metadata fields, not a general privacy guarantee;
+  supervisor will inspect final notebook metadata and outputs at acceptance.
+- Authorized exactly one corrected r2 staging/submission in a fresh private
+  remote directory after verifying the above hashes remotely: same partition,
+  task/CPU/memory/time request and unchanged seven-suite/demo/notebook scope.
+  This is the second Phase 2 submission, not authorization for further retries.
+- Child must report the new job ID and receipt path (or first failure), preserve
+  r1 unchanged, and present final diff/receipts before Phase 2 acceptance. No
+  tolerance/selector changes, no publication, no Phase 3 advancement yet.
+
+### Phase 2 — r2 suite success, harness count failure, bounded continuation
+
+- Second Phase 2 job `5216502` ended FAILED 1:0, elapsed 49 s, node g2.
+  Supervisor read remote accounting, run/input/provenance records, wheel hash
+  and suites log. Build, installed import and selected suites succeeded:
+  **440 passed, 3 warnings in 9.16 s**, with no reported skips/fails/errors.
+- The harness then rejected that result because its earlier hosted-log audit
+  had incorrectly set EXPECTED_TESTS=387. Wrapped log IDs were miscounted; the
+  correct selected-suite baseline count is 440. This is a harness-count error,
+  not a product failure; do not change tests/selectors/tolerances to match 387.
+- No demo script or notebook ran; no DONE marker exists. Preserve original job
+  failure and receipt as-is. Do not relabel the whole job successful.
+- Wheel artifact:
+  `tvb_library-3.0.0a1-cp312-abi3-linux_x86_64.whl`, SHA-256
+  `8b313a54f014586c28a486c09bb4fd6db723d4f8639037a34f277716fea465aa`.
+  Embedded extension SHA-256 matches earlier qualified baseline binary:
+  `9e7a6532c6d5098ab4b091e9a6cf0a47844c740054aea83f49c1efd5e877c3ee`.
+  Suites log SHA-256:
+  `6288cde391e7eaecef56bd96c5ad9d64b1f0700c41699705122662a5fe4cefc7`.
+- Supervisor rejects a full rebuild/test replay solely to fix the count.
+  Authorize one **continuation-only** third job for the unexecuted demo script,
+  notebook, source pairing and publication hygiene checks. Install the exact
+  preserved wheel into a fresh node-local test venv; no source build, selected
+  suite replay, collect-only campaign, solver work or benchmark expansion.
+- Because the saved wheel uses -march=native from g2, this artifact-continuation
+  job may explicitly request **g2** (a documented change from prior unpinned
+  jobs, not a portability/performance qualification). Other resource limits
+  remain run / one task / eight CPUs / 16 GB / 30 min. No alternate-node fallback.
+- Freeze/hash the exact saved wheel, unchanged r2 demo pair and pairing/privacy
+  tools, and minimal continuation runner. Keep r2 receipt/input binding and the
+  new receipt linked by hashes, not by a rewritten success marker. Use recorded
+  dependency versions where practical and report actual resolved environment.
+- Fetch/preserve the partial r2 receipt outside the source tree before treating
+  its suite evidence as the accepted component of the final phase gate. Final
+  acceptance combines r2's existing 440 passes with continuation results; it
+  must explicitly say these came from separate jobs/environments.
+- If the continuation fails, stop/report it; no further submission is preapproved.
+  Phase 2 was not yet accepted at this checkpoint; see the publication gate below.
+
+### Phase 2 — local acceptance and publication gate
+
+- Continuation job `5216503`: COMPLETED 0:0, 18 s on requested g2. Same saved
+  wheel installed into a fresh venv; installed ELF hash equals wheel entry;
+  recorded dependency comparison is empty. Demo and notebook completed.
+- Supervisor inspected workflow/source diff and full notebook text/metadata;
+  pairing is exact (14 cells, source hash
+  `7905e0601c057c6b19d5ced43d8f693a3051cb5e60950c87f0553ec6320283db`).
+  All 23 continuation receipt-index entries verify. No errors in cell outputs,
+  no private paths in publication text/metadata, portable python3 kernel.
+- Publication notebook SHA-256:
+  `72098edce87f7d4304e134043068618cf0c00f6dd5c6dfd607a1e05a59d8a271`;
+  byte-identical to reviewed saved publication artifact. Observed 40 s fixture
+  peak absolute fractional BOLD `0.00790291465818882`; exact midpoint/tail/rest
+  assertions pass. No additional oracle claim is needed or accepted here.
+- Evidence directories:
+  `../recovery/verify/monitor-phase2-demo-bb819dc-r2-receipt-5216502/` and
+  `../recovery/verify/monitor-phase2-demo-bb819dc-r3-receipt-5216503/`.
+- Fetch-index defect recorded, not hidden: r2's local
+  `remote-receipt-files.sha256` has 18 payload entries that match, plus an invalid
+  stale self-hash entry. The original index is preserved; a blanket successful
+  shasum verification is NOT claimed. Parent independently checked suite/wheel
+  hashes against remote originals; this does not invalidate those payloads or
+  justify a test replay. r3's 23-entry in-job index fully verifies.
+- Accounting independently confirmed: 5216501 FAILED 127:0 / 4 s (PATH);
+  5216502 FAILED 1:0 / 49 s (count gate after 440 passes);
+  5216503 COMPLETED 0:0 / 18 s (remaining demo/notebook). Do not conflate them.
+- Local source/evidence accepted for publication under the operator's direction
+  to keep delivering to tvbkh. Parent publishes only PLAN.md, the workflow and
+  paired demo; no handoffs, receipts, harnesses or production source changes.
+- Phase 2 remains gated on the resulting exact commit's applicable hosted CI.
+  Child stays quiescent except report-only errata. No Phase 3 advancement, new
+  Slurm submission, merge or release is authorized until this gate is resolved.

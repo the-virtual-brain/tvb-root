@@ -1,8 +1,10 @@
 name: cpp-hybrid
 
 # Branch-specific CI for the tvbkh development branch: build and test the
-# nanobind C++ hybrid simulator extension. All other workflows are guarded
-# with `if: github.ref_name != 'tvbkh'` while this branch is in development.
+# nanobind C++ hybrid simulator extension. Every workflow is enabled on tvbkh:
+# the full-tree "Test Py" run (build.yml) and the demo-notebook sweep
+# (notebooks.yml) also run here, and this job is the dedicated, attributable
+# C++ gate.
 
 on:
   push:
@@ -25,7 +27,8 @@ jobs:
           python-version: '3.12'
 
       - name: Install build toolchain and test fixtures
-        run: pip install nanobind scikit-build-core numpy scipy numba six pytest cmake ninja tvb-data
+        # matplotlib runs the demo-notebook smoke step below
+        run: pip install nanobind scikit-build-core numpy scipy numba six pytest cmake ninja tvb-data matplotlib
 
       - name: Editable install of tvb-library (builds the extension)
         working-directory: tvb_library
@@ -80,6 +83,31 @@ jobs:
         run: |
           python -m pytest tvb/tests/library/simulator/backend/test_cpp_hybrid_buildgen.py \
                             -q -p no:cacheprovider
+
+      # The dedicated complete-window and Balloon-Windkessel suites. The broad
+      # "Test Py" workflow (build.yml) also runs them: it collects the whole
+      # tvb_library tree on 3.11/3.12/3.13 with only the battery file ignored,
+      # and the cpp modules are collection-ignored below 3.12. That coverage is
+      # incidental to a full-tree sweep, so name the modules explicitly here
+      # where the C++ monitor surfaces are gated.
+      - name: Run the complete-window and Balloon-Windkessel suites
+        working-directory: tvb_library
+        run: |
+          python -m pytest tvb/tests/library/simulator/backend/test_balloon_windkessel_reference.py \
+                            tvb/tests/library/simulator/backend/test_cpp_hybrid_balloon_windkessel_stream.py \
+                            tvb/tests/library/simulator/backend/test_cpp_hybrid_complete_windows.py \
+                            tvb/tests/library/simulator/backend/test_cpp_hybrid_global_coclock_windows.py \
+                            tvb/tests/library/simulator/backend/test_cpp_hybrid_public_balloon_windkessel.py \
+                            tvb/tests/library/simulator/backend/test_cpp_hybrid_public_windows.py \
+                            tvb/tests/library/simulator/backend/test_cpp_hybrid_recorder_windows.py \
+                            -q -p no:cacheprovider
+
+      # Bounded smoke check of the public regional BW demo. The script is the
+      # jupytext source of the paired notebook and carries its own assertions
+      # (midpoint grids, complete windows, no incomplete tail, zero-drive rest,
+      # finite regional response), so running it is the check.
+      - name: Run the public regional Balloon-Windkessel demo
+        run: python tvb_documentation/demos/cpp_hybrid_balloon_windkessel.py
 
       - name: Auto-rebuild smoke test (touch _core.cpp, fresh import)
         working-directory: tvb_library
