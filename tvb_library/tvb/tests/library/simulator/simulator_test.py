@@ -336,3 +336,30 @@ class TestSimulator(BaseTestCase):
         assert numpy.allclose(stimulus[test_simulator.sim.model.stvar, test_simulator.stim_nodes, :],
                               test_simulator.stim_value,
                               1.0 / numpy.finfo("single").max)
+
+    def test_simulator_autotune(self):
+        """
+        Test the autotune method of the simulator.
+        """
+        test_simulator = Simulator()
+        test_simulator.configure()
+
+        target_value = 13
+        
+        def tune_coupling(simulator: Simulator, value):
+            simulator.coupling.a = simulator.coupling.a + value
+        
+        def average_firing_rate_delta(run_output):
+            (_, y),*kwargs = run_output
+            return target_value - numpy.mean(numpy.nan_to_num(y[:, 0, :, 0], nan=0))
+
+        coupling_strength_before = test_simulator.sim.coupling.a
+        print("Coupling strength before autotune: ", coupling_strength_before)
+        print("Delta before tuning: ", average_firing_rate_delta(test_simulator.sim.run(simulation_length=1)))
+        final_output = test_simulator.sim.autotune(
+            tuner=tune_coupling,
+            delta=average_firing_rate_delta
+        )
+        print("Coupling strength after autotune: ", test_simulator.sim.coupling.a)
+        print("Delta after tuning: ", average_firing_rate_delta(final_output))
+        assert numpy.abs(average_firing_rate_delta(final_output)) < 1
