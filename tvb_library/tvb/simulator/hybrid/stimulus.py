@@ -185,8 +185,11 @@ class Stim(t.HasTraits):
             Coupling contribution to add to the target subnetwork's coupling
             buffer.  ``n_cvar`` equals ``len(self.target_cvar)``.
         """
-        # Get current time
-        t = step * self.dt
+        # Get current time (informational only: the pattern is evaluated
+        # by ``temporal_indices`` below, so this value is not used.
+        # ``dt`` is set by :meth:`configure`; an unconfigured stimulus
+        # evaluates by index all the same, so a missing dt must not crash.)
+        t = step * self.dt if self.dt is not None else 0.0
 
         # Evaluate temporal pattern at current time
         # Stimulus(temporal_indices=step) returns spatial pattern at that time

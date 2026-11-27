@@ -37,6 +37,8 @@ simulation and the method for running the simulation.
 
 import math
 import time
+from collections.abc import Sequence
+
 import numpy
 
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float
@@ -201,8 +203,19 @@ class Simulator(HasTraits):
         else:
             self.integrate_next_step = self.integrator.integrate
 
+    def _reject_balloon_windkessel(self):
+        requested = self.monitors
+        if not isinstance(requested, Sequence):
+            requested = (requested,)
+        if any(isinstance(monitor, monitors.BalloonWindkessel) for monitor in requested):
+            raise NotImplementedError(
+                "BalloonWindkessel requires the explicit C++ hybrid backend "
+                "(as a global monitor or local Recorder); classic Simulator execution is not supported"
+            )
+
     def preconfigure(self):
         """Configure just the basic fields, so that memory can be estimated."""
+        self._reject_balloon_windkessel()
         self.connectivity.configure()
         if self.surface:
             self.surface.configure()
@@ -331,6 +344,7 @@ class Simulator(HasTraits):
         :return: Iterator over monitor outputs.
         """
 
+        self._reject_balloon_windkessel()
         self.calls += 1
         if simulation_length is not None:
             self.simulation_length = float(simulation_length)
@@ -425,6 +439,7 @@ class Simulator(HasTraits):
 
     def _configure_monitors(self):
         """ Configure the requested Monitors for this Simulator """
+        self._reject_balloon_windkessel()
         # Coerce to list if required
         if not isinstance(self.monitors, (list, tuple)):
             self.monitors = [self.monitors]

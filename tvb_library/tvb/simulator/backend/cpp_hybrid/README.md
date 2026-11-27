@@ -1,0 +1,410 @@
+# `cpp_hybrid` — C++ hybrid simulator backend (nanobind)
+
+This is the compiled C++ backend for the TVB hybrid simulator. It lowers the
+Python/NumPy hybrid implementation into tight, SIMD-enabled C++ with the
+simulation control flow in C++ (no monolithic static codegen). Python keeps
+control; data arrays stay NumPy `float32`. Parameter sweeps run multithreaded
+and vectorized across the width-8 SIMD lane dimension.
+
+The extension is built with **nanobind + scikit-build-core** (a `cp312-abi3`
+stable-ABI module). The build lives at the **`tvb_library` project level**
+(`tvb_library/pyproject.toml` + `tvb_library/CMakeLists.txt`), so a single
+`pip install tvb-library` — editable or from a wheel — compiles and installs
+the extension into this package directory. Nothing here needs to be built
+separately.
+
+## Layout
+
+| File | Role |
+|---|---|
+| `_core.cpp` | Single C++ LTO translation unit: `simw<W>` runtime loop, width-erasing `Sim`, and nanobind module bindings (includes the internal `cph_*.hpp` headers). |
+| `cph_dfuns.hpp`, `cph_coupling.hpp` | Pure C++17 internal headers: 13 hand-written SIMD dfuns, `dfun_dispatch`/`clamp_dispatch`, `subnet<W>`, coupling functions, and `proj<W>`. |
+| `cph_monitors.hpp`, `cph_balloon_windkessel.hpp`, `cph_monitor_bindings.hpp` | Kernel monitor engine (`kmon<W>`), Balloon-Windkessel RK4 solver, and nanobind spec/state marshaling helpers. |
+| `cph_stim.hpp`, `cph_rng.hpp`, `cph_features.hpp` | Pure C++17 internal headers: separable stimulus evaluator, Philox4x32-10 RNG / OU noise, and Tier-1/Tier-2 feature kernels. |
+| `backend.py` | `CppHybridBackend` — mirrors `nb_hybrid.NbHybridBackend`, imported via `from ._cpp_hybrid import Sim, enable_generic_dfuns`. |
+| `_monitor_plan.py` | Monitor routing/partitioning, attach-spec lowering, projection identity fingerprinting, and output reassembly helpers for `backend.py`. |
+| `notebook.py` | `sweep()` sugar for multithreaded SIMD parameter sweeps, tqdm, `SweepResult.to_dataframe()`. |
+| `features.py` | Vendored Apache-2.0 feature module (VBI subset). |
+| `dfungen.py` | Translates each model's `state_variable_dfuns` expressions into C++ dfun kernels (`emit_sources`, also a CLI), plus the runtime g++/ctypes fallback (`generate_lib`) for models the build did not compile. |
+| `README.md` | This file. |
+
+Build config lives one level up: `tvb_library/pyproject.toml`
+(`[tool.scikit-build]`) and `tvb_library/CMakeLists.txt`
+(`nanobind_add_module(_cpp_hybrid STABLE_ABI NB_STATIC LTO NOMINSIZE _core.cpp)`).
+
+## Building for development (editable install)
+
+From the `tvb_library` root:
+
+```bash
+uv pip install -e .            # or: python -m pip install -e . --no-build-isolation -Ceditable.rebuild=true
+```
+
+That single command installs the whole `tvb` package **and** compiles the C++
+extension in-place into `tvb/simulator/backend/cpp_hybrid/_cpp_hybrid.abi3.so`.
+`rebuild = true` (the default here) means the extension is **recompiled
+automatically on import** whenever `_core.cpp` changes — you see
+`[1/2] Building ... _core.cpp.o → [2/2] Linking ... _cpp_hybrid.abi3.so` on the
+next import.
+
+> Do **not** delete the in-source CMake build tree (`CMakeCache.txt`,
+> `build.ninja`, `editable_rebuild.lock`, …). It's what makes rebuild-on-import
+> work, and it is git-ignored.
+
+The same build config drives the CI wheels (`.github/workflows/wheels.yml`
+builds `tvb_library` sdists + 3-OS cibuildwheel wheels, each containing the
+compiled extension), so published wheels carry a prebuilt backend — no
+compiler needed by end users installing from PyPI.
+
+## Using the backend
+
+```python
+import tvb.simulator.backend.cpp_hybrid as cph        # builds/imports the extension
+from tvb.simulator.backend.cpp_hybrid._cpp_hybrid import Sim, enable_generic_dfuns
+
+s = Sim(8)                         # width-8 SIMD batch (W = 8)
+s.add_subnet(n_node, n_svar, n_parm, n_cvar, model_id, horizon, n_modes)
+# ... then drive it exactly like the nb_hybrid backend's CppHybridBackend
+```
+
+For a higher-level entry point, use `backend.CppHybridBackend` or the notebook
+`notebook.sweep(...)` helpers. A worked example lives at
+`tvb_documentation/demos/cpp_hybrid_sweep.ipynb`.
+
+## Compiler flags & numerical parity
+
+GNU/Clang flags (see `tvb_library/CMakeLists.txt`):
+
+```
+-O3 -march=native -funroll-loops -fopenmp-simd -ffp-contract=off
+```
+
+We deliberately keep **`-ffp-contract=off`** and do **not** use `-ffast-math`:
+float32 bit-exactness parity with the numba reference hybrid backend depends on
+no fast-math / fast-FP contraction. `-fopenmp-simd` (no runtime libgomp
+dependency) enables the SIMD vectorization across the batch lane (`-march=native`
+is omitted when cross-compiling or building multi-arch macOS wheels, and
+Emscripten builds use `-msimd128`).
+
+## Support matrix & wheel policy (decision: keep the cp312 stable-ABI pin)
+
+Recorded 2026-09 (tvbkh handoff item 7). **Decision: do not widen the wheel
+matrix — keep `CIBW_BUILD: 'cp312-*'`** in both
+`.github/workflows/cpp-hybrid.yml` (tvbkh dev branch) and
+`.github/workflows/wheels.yml` (release pipeline; publishes to PyPI on tagged
+releases).
+
+| Dimension | Support |
+|---|---|
+| CPython | **≥ 3.12** — wheels are `cp312-abi3` (stable ABI): one wheel serves 3.12/3.13/3.14+; the module cannot load on < 3.12 by construction, whether installed from a wheel or built from the sdist |
+| Hybrid code syntax floor | ≥ 3.10 (PEP 604 unions) — the syntax is *not* the binding constraint; the compiled extension is |
+| OS / arch | Linux x86_64 (`ubuntu-latest`), macOS arm64 (`macos-14`), Windows x86_64 (`windows-latest`) |
+| Distributions | wheels + sdist (`pipx run build --sdist tvb_library`), from the CI workflows |
+
+Why not cp310/cp311: with the static `py-api = "cp312"`, cibuildwheel builds
+for 3.10/3.11 would **still** emit `cp312-abi3` wheels (the wheel tag follows
+the ABI compile target, not the build interpreter), so widening really means
+dropping the single-ABI pin, adding per-version `py-api` configuration and two
+extra C++ compile passes × 3 OSes — while CPython 3.10 reaches EOL in Oct 2026
+and 3.11 in Oct 2027. **Reopen if** a PyPI release needs 3.11 users, or 3.11
+demand appears before its Oct 2027 EOL (3.10 is EOL as of Oct 2026).
+
+**Portability caveat (predates this work):** every compiled artifact — the
+extension in wheels and editable builds, and the runtime g++ fallback
+(`dfungen.generate_lib`) — is compiled with `-march=native` (GNU flags in
+`tvb_library/CMakeLists.txt`, and `dfungen.py` for the fallback). CI wheels
+are therefore tuned to the build runner's CPU: x86_64 wheels assume the
+`ubuntu-latest` (AVX2-class) baseline, and older x86_64 CPUs may not be able
+to run them (SIGILL on unsupported instructions). This caveat predates the
+2026 cp312 wheel work.
+
+## Build-time generation of the generic dfuns
+
+Models whose derivatives are declared as Python expression strings
+(`state_variable_dfuns`, plus optional `dfun_intermediates`, `dfun_helpers`,
+`dfun_constants`) do not need a hand-written kernel. `dfungen.py` translates
+each expression into a small per-model C++ function — this is **not**
+monolithic codegen: only the derivative functions are generated, all control
+flow (integration, coupling, monitors, sweeps) stays in the hand-written core.
+
+`tvb_library/CMakeLists.txt` runs, as part of every build:
+
+```bash
+python tvb/simulator/backend/cpp_hybrid/dfungen.py \
+       --emit <build>/generated/models_gen.cpp \
+       --meta <build>/generated/models_gen.json \
+       --entry-name cph_builtin_dfun --strict --only-supported
+```
+
+and compiles the emitted translation unit **into `_cpp_hybrid`** with
+`CPH_HAVE_BUILTIN_GEN=1`. What the emitted TU contains:
+
+* one `dfun_gen_<id>` kernel per model, in the same SIMD-lane layout
+  (`(n_svar, n_node, n_modes, W)`, `parr[k * W + i]`) as the hand-written ones;
+* a dispatch array `_dfuns` indexed by `id - 100` behind an `extern "C"` entry
+  `cph_builtin_dfun(...)` that returns **1** when it handled the id and **0**
+  when it did not — which is what lets `dfun_dispatch` in `_core.cpp` fall back
+  to the runtime library for ids the build does not own;
+* a metadata table `cph_gen_entry` (name, id, `n_parm`, `n_cvar`, `n_svar`,
+  ordered parameter names) read out through `cph_builtin_count` /
+  `cph_builtin_entry` and exposed to Python as
+  `_cpp_hybrid.generic_model_table()`. That table — not a Python-side
+  re-derivation — is what `backend.py` uses to pick the model id, the buffer
+  shapes and the parameter packing order, so Python and the kernels cannot
+  disagree.
+
+`--strict` makes any model module that cannot be imported, any
+`state_variable_dfuns` model that cannot be configured, and any model that
+cannot be emitted a **build failure** listing every offender, instead of a
+silent shrink of the generated model set.
+
+`--only-supported` scopes discovery *and* the strict expectation to the
+model set the hybrid backends actually support (the 29 classes of
+`nb_hybrid._get_supported_models_classes`, covering all 30 `ModelsEnum` models,
+mirrored by `dfungen._SUPPORTED_MODEL_CLASSES`/`_SUPPORTED_MODEL_MODULES`): the
+emitted table is exactly the kernels the extension ships (27 expression-driven
+ones; the two numba-only supported models have hand-written kernels 0..12).
+Modules outside that set are neither imported nor emitted, so unsupported
+model code in the tree cannot break or slow the build — while a supported
+model that cannot be generated still fails the build loudly.  Out-of-set /
+user-defined dfun models are still runnable: the runtime fallback keeps full
+discovery and compiles them on first use.  (Handoff item 6, option 2; the
+runtime path intentionally defaults to full discovery so user-defined models
+keep working.)
+
+### Why compile it into the extension
+
+The generated kernels get the *same* compile flags as the hand-written ones:
+`-O3 -march=native -funroll-loops -fopenmp-simd -ffp-contract=off`. The runtime
+fallback (`dfungen.generate_lib`, `$CXX`/`g++`/`clang++` + ctypes) compiles
+with `-O3 -std=c++17 -fPIC -shared -ffp-contract=off -Wno-unknown-pragmas`
+(plus `-march=native` and `-fopenmp-simd` when supported) and omits
+`-funroll-loops`. Compiling at build time also
+removes a compiler call and a `models_gen.cpp`/`models_gen.so` pair from every
+first run: a stock generic model needs no compiler at runtime at all
+(`test_cpp_hybrid_buildgen.py` proves it by making `generate_lib` raise).
+
+Turn the whole thing off with:
+
+```bash
+cmake -DTVB_CPP_GENERATE_MODELS=OFF
+# through scikit-build-core:
+pip install -Ccmake.args=-DTVB_CPP_GENERATE_MODELS=OFF
+```
+
+Then no TU is emitted, `generic_model_table()` is empty, and the backend falls
+back to the runtime g++/ctypes path for every generic model — the behaviour
+from before this feature, including the original 100-based id range.
+
+### Why the build needs numpy, scipy, numba and six
+
+`dfungen` emits the supported models' kernels by importing their modules
+(`--only-supported` scopes discovery to exactly those; in this tree every
+module under `tvb/simulator/models` holds at least one supported model, so
+the imported set is the same — the scoping is what keeps the build
+decoupled from unsupported model code) and instantiating each class, so those
+imports must work before the package's own dependencies are installed. The
+verified minimal set (omitting any one makes `dfungen --strict` fail with a
+`ModuleNotFoundError` naming it, or silently drop models):
+`numpy` (dfungen itself + every model module), `six` (`tvb.basic.neotraits._core`),
+`scipy` (neotraits `NArray`, `stefanescu_jirsa`, `cerebellar_mf`), `numba` (the
+numba-dfun model modules — without them those models are simply absent from the
+table). See `tvb_library/pyproject.toml` `[build-system] requires`.
+
+### Build cost of generation (handoff item 6)
+
+Measured on this machine (clean `pip install . --no-deps -q`, warm pip
+cache; 2026-09-30):
+
+| | wall | generation delta |
+|---|---|---|
+| generation ON (default) | ~22.6 s | — |
+| `-DTVB_CPP_GENERATE_MODELS=OFF` | ~17.2 s | ~5.4 s |
+
+Of the ~5.4 s delta, ~4.5 s is `dfungen` emission (model imports +
+instantiation/configure + expression translation) and ~1.4 s is the generated
+TU compile (`g++ -O3 -march=native`, measured standalone); the OFF switch is
+the documented escape hatch above.  The handoff's larger machine-specific
+deltas (pip ~47 s vs ~10 s; wheel ~20 s vs ~10 s) were recorded on the
+origin machine — same shape, different scale.
+
+The built-in table is the full supported set (29 classes covering all 30
+`ModelsEnum` models, including `DecoBalancedExcInh`; 27 expression-driven
+generic kernels, ids 100..126), so the build no longer imports/emits
+unsupported model code.  Incremental per-model emission (option 3, keyed by
+the Item-1 dfun fingerprint) was not taken: with `-flto` the link phase
+re-processes every TU anyway, so per-model caching would only skip the ~1.4 s
+front-end compile and the emission half of a *rebuild* — no clean-build gain
+for a moderate CMake rework; the `CONFIGURE_DEPENDS` glob + deps-manifest
+triggers already keep unchanged builds at zero regeneration cost.
+
+### Model id ranges
+
+| Range | Owner | Lookup |
+|---|---|---|
+| **0..12** | hand-written kernels in `_core.cpp` (MPR, Generic2dOscillator, Kuramoto, SupHopf, Linear, ReducedWongWang, WilsonCowan, JansenRit, Epileptor, Epileptor2D, Zerlaut 1st/2nd order, CerebellarMF) | `_MODEL_IDS`, checked first, so these take precedence over a generated kernel for the same model |
+| **100..126** | the 27 built-in generic kernels compiled in at build time (the supported model set, incl. `DecoBalancedExcInh`) | `generic_model_table()`, ids assigned in sorted class-name order |
+| **127+** | runtime-compiled fallback library (`models_gen.so`) for models the build did not cover (user-defined / out-of-set dfun models) | emitted at `max(built-in id) + 1`, dispatch table gap-padded with `nullptr` over `100..126` |
+
+The gap padding matters: ids are positional over sorted class names, so a user
+model sorting before every stock name (`AaaProbe`) would otherwise take id 100
+and shift all the stock ids — and since `_core.cpp` serves the built-in range
+first, that model would silently run a stock kernel. With disjoint ranges that
+is structurally impossible, and a gap id returns 0 from the fallback entry so
+nothing calls a null slot.
+
+### Residual caveat: models are looked up by class **name**
+
+`_model_key` resolves a model by `type(model).__name__`. Consequences:
+
+* A user class that **shadows a stock model name** (e.g. their own
+  `class JansenRit(...)`) resolves to the stock kernel, not to theirs. It is
+  not detected as "a model the build does not know about".
+* What *is* caught: a parameter-count or parameter-name mismatch against the
+  table the kernel was generated from. Packing `parr` positionally would
+  otherwise read past the end of the array or land values in the wrong slots,
+  so `_packing_parm_names` raises a `ValueError` naming the model and showing
+  both lists.
+* What is **not** caught: a shadowing class with the *same* state variables,
+  coupling terms and parameters but **different equations**. Same buffer
+  shapes, same packing — so it runs the stock equations silently. Avoid it by
+  not reusing stock model names; a distinct class name lands in the 127+ range
+  and gets its own generated kernel.
+
+## Feature coverage and scoped parity with nb_hybrid
+
+Full audit: `parity_audit.md`. The tests below cover historical parity where
+applicable and current native monitor contracts. C++ complete windows can
+intentionally differ in output topology and timestamps.
+
+| Feature | Coverage | Test coverage |
+|---|---|---|
+| **Models** (29 supported classes / all 30 `ModelsEnum`) | 13 hand-written dfuns (ids 0–12, incl. CerebellarMF) + generic expression-generated route (ids ≥ 100): 27 supported generic kernels compiled in at build time (incl. `DecoBalancedExcInh`, including WASM); user-defined / out-of-set dfun models are runtime-compiled on first use | `test_cpp_hybrid_models.py` (29 classes + CerebellarMF flag variants + Zerlaut 2nd-order check) |
+| **Coupling functions** | Linear, Scaling, Sigmoidal, Difference, Kuramoto, HyperbolicTangent, SigmoidalJansenRit (classic **and** legacy), PreSigmoidal (static **and** dynamic, incl. `globalT`) | `test_cpp_hybrid_coupling.py` (11 items) |
+| **Monitors** | Raw, RawVoi, TemporalAverage, SubSample, GlobalAverage, AfferentCoupling (+TemporalAverage), SpatialAverage, bare `Projection`, Bold. Bold's HRF convolution and Raw/SubSample collection run as **kernel monitor engines** inside the C++ step loop; the shared Python path remains the parity reference/fallback (`enable_kernel_monitors`) | `test_cpp_hybrid_monitors.py` (18 items) |
+| **EEG / MEG / iEEG** | Native-only global monitors on one regional subnet (width 1, one source clock and mode, absent or identity `node_indices`); no local/Recorder or sweep support. Assign a finite, prepared sensor-by-local-region matrix with `monitor.gain = ...` and set `obsnoise=None`. Reading a file gain or configuring a classic monitor is not a substitute for this assignment. Complete post-step windows (period an integer number of source ticks) are stamped at interval midpoints. Unusable sensor rows are retained and zeroed before EEG rereferencing, which uses current ordered sensor metadata. | `test_cpp_hybrid_public_projection.py` |
+| **Stimuli** | constant / pulse / sinusoid patterns (single-node and all-node spatial), **multiple subnetworks with stimuli simultaneously** | `test_cpp_hybrid_stimuli.py` (6 items) |
+| **Stochastic noise** | Additive noise, HeunStochastic/EulerStochastic, per-subnet RNG streams, **multiple stochastic subnetworks** | `test_cpp_hybrid_stimuli.py::test_stochastic_noise_parity`, `test_multi_subnet_stimuli_and_noise` |
+
+Not supported by either backend (rejected identically): nonzero
+`model_local_coupling`.
+
+### Native local Recorder windows
+
+Width-1 C++ runs with one source mode per subnet support local
+`TemporalAverage`, `GlobalAverage` (mean over that subnet's nodes), and
+`SpatialAverage` with a finite, prepared `spatial_mean` matrix in the subnet's
+local node order. The period must be a positive integer number of that subnet's
+integration steps, independent of the master timestep and caller chunk size.
+These Recorder windows do not fall back to the host collector. For cadence
+`K`, a window of `m` post-update samples closing at local tick `j` is released
+at master tick `j*K` with timestamp `(j - m/2)*subnet.dt`.
+Continue open windows across native calls, but do not emit incomplete tails.
+Raw and subsampled point times are unchanged; this local profile does not include
+`AfferentCouplingTemporalAverage`.
+
+Start each fresh run at origin zero. For `CompiledCppSim.resume` with local
+`Recorder` monitors (`subnet_monitors`), supply a checkpoint with the same local
+window Recorder slots and effective source and monitor definitions; historical
+local-window checkpoints are not compatible. A neural-only `CompiledCppSim.resume`
+can omit `subnet_monitors` (matching gathered global windows), continuing the
+neural state without restoring or arming local Recorder windows.
+The public façade replaces Recorder buffers on each run. It does not append or
+resume runs, and a Recorder with no completed window has zero recorded rows
+and no allocated arrays.
+
+### Native gathered global complete windows
+
+Simulator-level `TemporalAverage`, `GlobalAverage` and prepared `SpatialAverage`
+use a native gather across multiple subnetworks at width 1 and one source
+mode. Sources may share a clock or run at valid integer multiples `K` of the
+declared master timestep. They must have compatible observed VOI definitions in
+the same order and provide explicit `node_indices` forming a complete,
+disjoint permutation of `0..total_nodes-1`. `TemporalAverage` retains that
+canonical node axis;
+`GlobalAverage` averages over all nodes, not over subnet averages;
+`SpatialAverage` takes a prepared finite `spatial_mean` matrix with columns in
+canonical node order. Output VOIs follow the order requested by the monitor.
+
+A period of `m` integer master ticks consumes one row on **every** master tick,
+after the sources eligible on that tick have updated. A slower source
+contributes its initial state until its first update, then repeats its most
+recent state on ineligible ticks. Output is released at closing tick `j` and
+stamped `(j - m/2)*dt`, with `dt` the declared master timestep. Native chunks
+do not change window phase, and incomplete tails are not emitted. Fresh runs
+start at tick zero. Resume with the same requested global set requires a
+checkpoint matching the gather, source clocks and cadences, observations,
+period, VOI order, and spatial operator. The co-clock checkpoint key
+(`coclock_window_config`) and fields were retained. Continuation was tested
+within the same candidate; cross-binary restore was not qualified. A neural-only
+resume can omit global monitors as before.
+These windows do not consume local Recorder streams, which count only eligible
+source ticks. Companion point samplers keep their endpoint behavior and
+existing chunk restrictions.
+
+Global `BalloonWindkessel` also supports compatible regional multi-source gathers
+at widths 1, 4, 8 and 16. Sources must have the same ordered observations, one
+mode, valid integral cadences and explicit complete/disjoint canonical node
+indices. It samples the gathered post-update rows each master tick, including
+initial or held slower-source values; the master clock must divide 10 ms, but a
+slower source clock need not. Single-source output keeps local node order.
+Local BW Recorders instead count eligible source updates and require their own
+clock to divide 10 ms. Matching global/local traces require matching effective
+drives. `CppHybridBackend.sweep` and `notebook.sweep` accept an explicit
+`bw={"global": monitor, "local": {"subnet_name": monitor}}` mapping (either
+placement may be omitted). Each `BalloonWindkessel` supplies one VOI, period,
+and finite baseline/scale. Active BW supports `monitor="none"` or `"tavg"`
+without `bold_period` or features; other combinations are rejected. Results
+are `bw_global` and `bw_local` pairs of midpoint times and float32 data with
+axes `(sweep, time, 1, node, 1)`, in sweep-row and public node order. Each
+placement has its own physical grid, with no incomplete tail. The legacy
+`run_sweep` is unchanged; `monitor="bold"` continues to mean HRF Bold.
+
+A generic global `Projection` sharing a checked **co-clock** gather or
+`BalloonWindkessel` must set `obsnoise=None` for both fresh runs and resume.
+Compiled/public runs attach the current operator instead of reusing the previous
+slot's attachment.
+`CompiledCppSim.resume` also requires the mixed checkpoint's Projection
+sidecar to match the effective gain, reference vector, tick period, clock,
+cadence and ordered VOIs. For co-clock gathers the staged checkpoint also
+checks the shared gather identity before committing global monitor state.
+Older mixed checkpoints without the sidecar cannot resume with these monitors
+requested. Bare native checkpoint calls do not check the legacy Projection
+operator's identity, and standalone generic Projection eligibility and resume
+are unchanged.
+
+For the three checked average-window types, missing-index, heterogeneous-
+observation, wider and multimode layouts, host collection and unprepared
+`SpatialAverage` remain on their preexisting routes, not this complete-window
+policy. Their gather extension does not change generic merge or projection
+placement rules. BW follows its separate explicit profile above.
+
+## Tests
+
+From `tvb_library` root:
+
+```bash
+python -m pytest tvb/tests/library/simulator/backend/test_cpp_hybrid_core.py \
+                 tvb/tests/library/simulator/backend/test_cpp_hybrid_models.py \
+                 tvb/tests/library/simulator/backend/test_cpp_hybrid_coupling.py \
+                 tvb/tests/library/simulator/backend/test_cpp_hybrid_monitors.py \
+                 tvb/tests/library/simulator/backend/test_cpp_hybrid_global_coclock_windows.py \
+                 tvb/tests/library/simulator/backend/test_cpp_hybrid_stimuli.py \
+                 tvb/tests/library/simulator/backend/test_cpp_hybrid_parity.py \
+                 tvb/tests/library/simulator/backend/test_cpp_hybrid_sweep.py \
+                 tvb/tests/library/simulator/backend/test_cpp_hybrid_sugar.py \
+                 tvb/tests/library/simulator/backend/test_cpp_hybrid_buildgen.py \
+                 -q -p no:cacheprovider
+```
+
+`test_cpp_hybrid_buildgen.py` is the permanent guard on the generated-kernel
+feature: stock generic models running with `generate_lib` unable to run, the
+extension table agreeing with `emit_sources` metadata, disjoint built-in /
+user-model id ranges, `start_id` gap padding, the empty-table fallback range,
+packing-mismatch errors, and fallback-vs-numba parity.
+
+(The full 222-item battery mono-process run crashes at *interpreter shutdown*
+due to numba/llvmlite teardown — run `test_cpp_hybrid_battery.py` class by
+class in fresh processes if you need a single clean tally; see the test files
+for the collected classes.)
+

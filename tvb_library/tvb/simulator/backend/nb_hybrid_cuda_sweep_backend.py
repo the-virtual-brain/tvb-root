@@ -52,6 +52,7 @@ from tvb.simulator.backend.nb_hybrid import (
     _cvar_mapping_mode,
 )
 from tvb.simulator.backend.templates import MakoUtilMix
+from tvb.simulator.monitors import _reject_balloon_windkessel_sweep
 
 
 # ---------------------------------------------------------------------------
@@ -304,6 +305,7 @@ class NbHybridCUDASweepBackend(MakoUtilMix):
         **kwargs,
     ):
         """Convenience: compile + run in one call."""
+        _reject_balloon_windkessel_sweep(bold_period, kwargs.get("monitors"))
         compiled = self.compile_sweep(network_set, sweep_descriptor=sweep_descriptor, print_source=print_source)
         return compiled.run(
             nstep=nstep,
@@ -757,6 +759,8 @@ class CompiledCUDASweepKernel:
             'elapsed': float — GPU kernel wall-clock seconds
             'snapshot': dict — final states, srcbufs, step_offset, bold_states
         """
+        _reject_balloon_windkessel_sweep(bold_period, monitors)
+
         def _positive_integer(value, name, allow_none=False):
             if allow_none and value is None:
                 return None

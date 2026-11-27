@@ -117,8 +117,9 @@ thal = Subnetwork(name="thalamus", model=jr_thal,
 thal.configure()
 
 # -- Inter-projection: cortex → thalamus --
-w_inter = _slice_conn((0, N_CORTEX), (N_CORTEX, N_TOTAL))
-tl_inter = _slice_lengths((0, N_CORTEX), (N_CORTEX, N_TOTAL))
+# Weights matrix shape is (n_target_nodes, n_source_nodes) = (8, 68).
+w_inter = _slice_conn((N_CORTEX, N_TOTAL), (0, N_CORTEX))
+tl_inter = _slice_lengths((N_CORTEX, N_TOTAL), (0, N_CORTEX))
 c2t = InterProjection(
     source=ctx, target=thal,
     source_cvar=1,        # JR y1
@@ -183,10 +184,10 @@ for name, arr in result.tavg.items():
 # per subnetwork as a function of coupling strength.
 
 # %%
-ctx_tavg = result.tavg["cortex"]    # (n_sweeps, n_voi, N_cortex, modes)
-thal_tavg = result.tavg["thalamus"] # (n_sweeps, n_voi, N_thalamus, modes)
+ctx_tavg = result.tavg["cortex"]    # (n_sweeps, nstep, n_voi, N_cortex, modes)
+thal_tavg = result.tavg["thalamus"] # (n_sweeps, nstep, n_voi, N_thalamus, modes)
 
-# Average over time (chunks, axis=1) and nodes (axis=3), squeeze modes (axis=4)
+# Average over time (axis 1) and nodes (axis 3), squeeze modes
 ctx_mean = ctx_tavg.mean(axis=(1, 3)).squeeze(-1)   # (n_sweeps, n_voi)
 thal_mean = thal_tavg.mean(axis=(1, 3)).squeeze(-1) # (n_sweeps, n_voi)
 
@@ -236,29 +237,28 @@ plt.tight_layout()
 plt.show()
 
 # %% [markdown]
-# ## 6. Multi-core CPU sweep: sequential vs prange
+# ## 6. Multi-core CPU sweep: `cpu-seq` vs `cpu-prange`
 #
 # The `sweep()` API supports multi-core parallelism via the `n_workers`
-# argument.  When `n_workers > 1`, the backend compiles a
-# `@nb.njit(parallel=True)` kernel that wraps the existing
-# `network_chunk` time-stepper inside `nb.prange(n_sweeps)`.  Each
-# OpenMP thread gets its own slice of the per-sweep arrays, so there is
-# no shared mutable state and no race conditions.
+# argument.  When `n_workers > 1` (for coupling-parameter sweeps), the backend
+# compiles a `@nb.njit(parallel=True)` kernel (`cpu-prange`) that wraps the
+# `network_chunk` time-stepper inside `nb.prange(n_sweeps)`.  Each OpenMP
+# thread gets its own slice of the per-sweep arrays, so there is no shared
+# mutable state and no race conditions.
 #
-# **Important distinction:**  `n_workers=1` is **not** a fair single-core
-# baseline — it runs a Python `for` loop that calls the compiled kernel
-# once per sweep point (with Python-side parameter mutation between
-# calls).  The prange kernel eliminates this loop entirely, so the
-# speedup is a mix of (a) removing per-sweep Python overhead and
-# (b) actual multi-core parallelism.
+# By contrast, `n_workers=1` (`cpu-seq`) runs a Python loop that invokes the
+# compiled single-simulation kernel once per sweep point (with Python-side
+# parameter updates between calls).  Comparing `cpu-seq` against `cpu-prange`
+# therefore reflects both (a) eliminating per-sweep Python call overhead and
+# (b) multi-core OpenMP parallelism across sweeps.
 #
-# We show three numbers:
-#   - **Python loop** (`n_workers=1`): 100 Python calls, 1 core each
-#   - **Single-call sequential** (`n_workers=1` on prange kernel):
-#     1 compiled call, sequential loop inside (no Python overhead)
-#   - **Single-call prange** (`n_workers=4`): 1 compiled call, 4 cores
+# **Key property:** `cpu-prange` is **bit-exact** with `cpu-seq` — every
+# sweep point produces identical floating-point output because the parallel
+# loop has no inter-thread dependencies.
 #
-# Throughput is in **kiter/s** (thousand integration steps per second).
+# We benchmark with 100 sweep points × 500 steps, after a warmup to trigger
+# Numba JIT compilation.  Throughput is in **kiter/s** (thousand integration
+# steps per second, summed across sweeps).
 
 # %%
 N_SWEEP = 100
@@ -271,35 +271,32 @@ backend.sweep(ns, params={"coupling_scale": np.linspace(0.001, 0.01, 3).astype(n
               nstep=10, backend="cpu", n_workers=1)
 backend.sweep(ns, params={"coupling_scale": np.linspace(0.001, 0.01, 3).astype(np.float32)},
               nstep=10, backend="cpu", n_workers=4)
-backend.sweep(ns, params={"coupling_scale": np.linspace(0.001, 0.01, 3).astype(np.float32)},
-              nstep=10, backend="cpu", n_workers=1)   # also warms single-call seq path
 print("Warmup done (Numba JIT compiled)")
 
 # --- JR+JR two-subnet benchmark ---
 print(f"\nJR+JR two-subnet (68+8=76 nodes), "
       f"{N_SWEEP} sweeps × {BENCH_NSTEP} steps:")
 
-# Python loop (n_workers=1) — calls compiled kernel once per sweep point
-print("\n  [A] Python loop — calls compiled kernel 100×")
+# cpu-seq (n_workers=1) — calls compiled single-sim kernel once per sweep point
+print("\n  [A] cpu-seq (n_workers=1) — 100 Python calls to compiled kernel")
 t0 = time.perf_counter()
 backend.sweep(ns, params={"coupling_scale": bench_vals},
               nstep=BENCH_NSTEP, backend="cpu", n_workers=1)
 t_loop = time.perf_counter() - t0
 kis_loop = N_SWEEP * BENCH_NSTEP / t_loop / 1000
-print(f"      {t_loop:.2f}s → {kis_loop:.0f} kiter/s")
+print(f"      {t_loop:.2f}s → {kis_loop:.1f} kiter/s")
 
-# Prange (4 cores) — compiled kernel with internal parallel loop
-print("\n  [B] Single-call prange — 1 compiled call, 4 cores")
+# cpu-prange (n_workers=4) — single compiled call with internal prange loop
+print("\n  [B] cpu-prange (n_workers=4) — 1 compiled call, multi-threaded")
 t0 = time.perf_counter()
 result_par = backend.sweep(ns, params={"coupling_scale": bench_vals},
               nstep=BENCH_NSTEP, backend="cpu", n_workers=4)
 t_p4 = time.perf_counter() - t0
 kis_p4 = N_SWEEP * BENCH_NSTEP / t_p4 / 1000
-print(f"      {t_p4:.2f}s → {kis_p4:.0f} kiter/s")
+print(f"      {t_p4:.2f}s → {kis_p4:.1f} kiter/s")
 
-print(f"\n  Speedup:  {kis_p4/kis_loop:.1f}×")
-print(f"  (Most of this comes from eliminating the per-sweep Python loop,")
-print(f"   not from 4-core parallelism. Amdahl limit on 4 cores is ~4×.)")
+print(f"\n  Speedup (cpu-prange / cpu-seq): {kis_p4/kis_loop:.1f}×")
+print("  (Reflects eliminating per-sweep Python call overhead plus parallel execution.)")
 
 # %% [markdown]
 # ## 7. Correctness: prange is bit-exact with sequential
@@ -321,45 +318,45 @@ result_par = backend.sweep(ns, params={"coupling_scale": sweep_vals},
 
 all_exact = True
 for name in result_seq.tavg:
-    # Sequential has chunk dim (n_chunks), prange is already time-averaged.
-    # Collapse sequential chunk dim for comparison.
-    seq_collapsed = result_seq.tavg[name].mean(axis=1)
-    diff = np.abs(seq_collapsed - result_par.tavg[name]).max()
-    match = np.allclose(seq_collapsed, result_par.tavg[name], atol=1e-4)
+    diff = np.abs(result_seq.tavg[name] - result_par.tavg[name]).max()
+    match = np.array_equal(result_seq.tavg[name], result_par.tavg[name])
     all_exact = all_exact and match
     print(f"  {name}: max diff = {diff:.2e}, bit-exact = {match}")
 
+assert all_exact, "Expected bit-exact match between cpu-seq and cpu-prange!"
 print(f"\n✓ Both backends produce bit-exact identical results: {all_exact}")
 
 # %% [markdown]
 # ## 8. Summary
 #
-# ### Benchmarks (8-core AMD, after JIT warmup)
+# ### `cpu-seq` vs `cpu-prange` behavior (100 sweeps × 500 steps, 76 nodes, after JIT warmup)
 #
-# | Mode | Nodes | Backend | kiter/s | Notes |
-# |------|-------|---------|---------|-------|
-# | JR+JR | 76 | Python loop (1c) | ~11 | 100 Python calls to compiled kernel |
-# | JR+JR | 76 | Single-call prange 4c | ~320 | 1 compiled call, 4 cores |
-# | JR+JR | 76 | Single-call prange 8c | ~350 | 1 compiled call, 8 cores |
+# On our Slurm `c4` benchmark node (`100` sweeps × `500` steps = `50,000`
+# integration steps total):
 #
-# **Most of the speedup comes from eliminating the per-sweep Python loop**
-# (calling `run_network()` 100× with parameter mutation between calls).
-# The prange kernel compiles everything into a single call, so the loop
-# happens inside compiled code.  The actual multi-core parallelism adds
-# only ~3–4× on top of that.  For single-subnet models the effect is
-# even larger because the per-call overhead is proportionally higher.
+# | Mode | Nodes | Backend label | Measured time | Throughput | Notes |
+# |------|-------|---------------|---------------|------------|-------|
+# | JR+JR | 76 | `cpu-seq` (`n_workers=1`) | ~17.4 s | ~2.9 kiter/s | 100 Python calls to single-sim kernel |
+# | JR+JR | 76 | `cpu-prange` (`n_workers=4`) | ~0.8–0.9 s | ~56–62 kiter/s | Single compiled call with `nb.prange` |
+#
+# **Why `cpu-prange` outperforms `cpu-seq`:** in `cpu-seq`, Python calls the
+# single-simulation kernel once per sweep point (`100×`), incurring per-call
+# array setup and dispatch overhead on every point.  In `cpu-prange`, the
+# entire sweep runs inside a single `@nb.njit(parallel=True)` call using
+# `nb.prange`, eliminating that Python loop overhead while also parallelizing
+# across threads.  For long runs per sweep point (like the `20 × 5000` run in
+# Section 3) where Python call overhead is small relative to integration work,
+# `cpu-seq` and `cpu-prange` spend most of their time inside Numba integration.
 #
 # ### Key takeaways
 #
-# 1. **Prange sweeps are bit-exact** — every sweep point produces
-#    identical floating-point output compared to the Python-loop path.
-# 2. **Most speedup is from eliminating Python overhead**, not raw
-#    parallelism.  The prange kernel replaces 100 Python function calls
-#    with one compiled call.
-# 3. **No fork-safety issues** — prange uses OpenMP threads within a
-#    single process, so there is no `multiprocessing` fork overhead.
-# 4. **Unified API** — `sweep(backend="cpu", n_workers=4)` automatically
-#    compiles and uses the prange kernel on first call; subsequent calls
-#    are cached and instant.
+# 1. **`cpu-prange` sweeps are bit-exact** — every sweep point produces
+#    identical floating-point output (`np.array_equal`) compared to `cpu-seq`.
+# 2. **Combined overhead + threading gain** — `cpu-prange` replaces `N`
+#    Python kernel launches with one compiled parallel loop.
+# 3. **No fork-safety issues** — `cpu-prange` uses OpenMP threads within a
+#    single process, avoiding `multiprocessing` fork overhead.
+# 4. **Unified API** — `sweep(backend="cpu", n_workers=4)` compiles and caches
+#    the `cpu-prange` kernel on first call; subsequent calls reuse the cache.
 # 5. **GPU also available** — pass `backend="cuda"` to dispatch to a
 #    CUDA kernel (requires NVIDIA GPU).

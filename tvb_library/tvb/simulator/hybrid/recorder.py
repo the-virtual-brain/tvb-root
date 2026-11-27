@@ -78,6 +78,7 @@ class Recorder(t.HasTraits):
         self.samples = None
         self._current_idx = 0
         self.num_samples = None
+        self._empty_sample_shape = None
         super().__init__(**kwargs)
 
     def configure(self, simulation_length):
@@ -96,6 +97,7 @@ class Recorder(t.HasTraits):
         # Calculate expected number of samples
         self.num_samples = int(math.ceil(simulation_length / self.monitor.period))
         self._current_idx = 0
+        self._empty_sample_shape = None
 
     def _allocate_arrays(self, sample_shape):
         """Allocate arrays based on first sample shape.
@@ -166,4 +168,9 @@ class Recorder(t.HasTraits):
         samples : ndarray of float32, shape (n, ...)
             Corresponding state samples from the monitor.
         """
+        if self.times is None or self.samples is None:
+            return (
+                np.zeros(0, dtype=np.float32),
+                np.zeros((0,) + (self._empty_sample_shape or ()), dtype=np.float32),
+            )
         return self.times[: self._current_idx], self.samples[: self._current_idx]
