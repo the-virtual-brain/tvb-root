@@ -280,3 +280,44 @@ def test_rejected_global_restore_keeps_pending_outputs():
     output, expected = sim.take_global_monitor_outputs(), control.take_global_monitor_outputs()
     assert output[0][0].size
     np.testing.assert_equal(output, expected)
+
+
+@pytest.mark.parametrize("dt,ticks,split", [
+    (0.1, 450, 313),
+    (float(np.float32(0.1)), 450, 313),
+    (10.0 / 3.0, 17, 10),
+], ids=["decimal-0.1", "binary32-0.1", "third-10"])
+@pytest.mark.parametrize("cadence", [1, 3], ids=["co-clock", "mixed-rate"])
+def test_global_gather_binary32_rounded_dt_snapshots_and_resume(cpp, dt, ticks, split, cadence):
+    def make_net():
+        return _network(_subnet("fast", master_dt=dt, regions=(2, 0), node_indices=(2, 0)),
+                        _subnet("slow", cadence=cadence, master_dt=dt, regions=(1,), node_indices=(1,)))
+
+    be = cpp.CppHybridBackend()
+    compiled = be.compile(make_net())
+    whole = compiled.run(ticks, chunk_size=3, monitors=[_monitor()], initial_states=_initials())
+    t, x = whole[0][0]
+    assert t.size == 2 and x.shape == (2, 1, 3, 1)
+
+    head, snap = compiled.run(split, monitors=[_monitor()], initial_states=_initials(), return_snapshot=True)
+    tail = be.compile(make_net()).resume(snap, ticks - split, monitors=[_monitor()])
+    np.testing.assert_array_equal(np.concatenate((head[0][0][0], tail[0][0][0])), t)
+    np.testing.assert_array_equal(np.concatenate((head[0][0][1], tail[0][0][1])), x)
+
+    # Verify against float64 hemodynamic oracle driven by the float32 neural trajectory.
+    neural_dt = 10.0 / round(10.0 / dt)
+    state = INITIAL[1, :, 0].astype(np.float32).copy()
+    step_fast = np.float32(dt) * SLOPE[1, :, 0].astype(np.float32)
+    step_slow = np.float32(cadence * dt) * SLOPE[1, :, 0].astype(np.float32)
+    rows = np.empty((ticks, 3), dtype=np.float64)
+    for k in range(ticks):
+        state[[0, 2]] += step_fast[[0, 2]]
+        if (k + 1) % cadence == 0:
+            state[1] += step_slow[1]
+        rows[k] = state
+    ref_t, _, ref_x = solve_averaged_drive(
+        rows, neural_dt_ms=neural_dt, hemo_dt_ms=5.0,
+        baseline=BASELINE, gain_per_s2_per_observation=SCALE,
+    ).windowed_bold(20.0)
+    np.testing.assert_array_equal(t, ref_t)
+    np.testing.assert_allclose(x[:, 0, :, 0], ref_x, rtol=1e-7, atol=1e-10)

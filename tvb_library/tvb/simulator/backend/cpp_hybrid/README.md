@@ -17,8 +17,12 @@ separately.
 
 | File | Role |
 |---|---|
-| `_core.cpp` | Single C++ translation unit: nanobind bindings + SIMD kernels. |
+| `_core.cpp` | Single C++ LTO translation unit: `simw<W>` runtime loop, width-erasing `Sim`, and nanobind module bindings (includes the internal `cph_*.hpp` headers). |
+| `cph_dfuns.hpp`, `cph_coupling.hpp` | Pure C++17 internal headers: 13 hand-written SIMD dfuns, `dfun_dispatch`/`clamp_dispatch`, `subnet<W>`, coupling functions, and `proj<W>`. |
+| `cph_monitors.hpp`, `cph_balloon_windkessel.hpp`, `cph_monitor_bindings.hpp` | Kernel monitor engine (`kmon<W>`), Balloon-Windkessel RK4 solver, and nanobind spec/state marshaling helpers. |
+| `cph_stim.hpp`, `cph_rng.hpp`, `cph_features.hpp` | Pure C++17 internal headers: separable stimulus evaluator, Philox4x32-10 RNG / OU noise, and Tier-1/Tier-2 feature kernels. |
 | `backend.py` | `CppHybridBackend` — mirrors `nb_hybrid.NbHybridBackend`, imported via `from ._cpp_hybrid import Sim, enable_generic_dfuns`. |
+| `_monitor_plan.py` | Monitor routing/partitioning, attach-spec lowering, projection identity fingerprinting, and output reassembly helpers for `backend.py`. |
 | `notebook.py` | `sweep()` sugar for multithreaded SIMD parameter sweeps, tqdm, `SweepResult.to_dataframe()`. |
 | `features.py` | Vendored Apache-2.0 feature module (VBI subset). |
 | `dfungen.py` | Translates each model's `state_variable_dfuns` expressions into C++ dfun kernels (`emit_sources`, also a CLI), plus the runtime g++/ctypes fallback (`generate_lib`) for models the build did not compile. |
@@ -299,9 +303,12 @@ Continue open windows across native calls, but do not emit incomplete tails.
 Raw and subsampled point times are unchanged; this local profile does not include
 `AfferentCouplingTemporalAverage`.
 
-Start each fresh run at origin zero. For `CompiledCppSim.resume`, supply a
-checkpoint with the same local window Recorder slots and effective source and
-monitor definitions; historical local-window checkpoints are not compatible.
+Start each fresh run at origin zero. For `CompiledCppSim.resume` with local
+`Recorder` monitors (`subnet_monitors`), supply a checkpoint with the same local
+window Recorder slots and effective source and monitor definitions; historical
+local-window checkpoints are not compatible. A neural-only `CompiledCppSim.resume`
+can omit `subnet_monitors` (matching gathered global windows), continuing the
+neural state without restoring or arming local Recorder windows.
 The public façade replaces Recorder buffers on each run. It does not append or
 resume runs, and a Recorder with no completed window has zero recorded rows
 and no allocated arrays.

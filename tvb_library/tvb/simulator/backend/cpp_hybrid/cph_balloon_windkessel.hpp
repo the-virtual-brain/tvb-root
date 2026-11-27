@@ -17,6 +17,10 @@ struct Parameters {
   double resting_blood_volume{};
 };
 
+inline constexpr Parameters kNominalParameters{
+    0.65, 0.41, 0.98, 0.32, 0.4, 0.5, 40.3, 25.0, 0.04, 0.04,
+};
+
 struct State {
   double signal = 0.0;  // s^-1
   double inflow = 1.0;

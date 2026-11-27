@@ -169,6 +169,10 @@ set_target_properties(_cpp_hybrid PROPERTIES
 set(_tvb_cph_headers)
 foreach(_cph_hdr
   tvb/simulator/backend/cpp_hybrid/cph_monitors.hpp
+  tvb/simulator/backend/cpp_hybrid/cph_balloon_windkessel.hpp
+  tvb/simulator/backend/cpp_hybrid/cph_coupling.hpp
+  tvb/simulator/backend/cpp_hybrid/cph_dfuns.hpp
+  tvb/simulator/backend/cpp_hybrid/cph_monitor_bindings.hpp
   tvb/simulator/backend/cpp_hybrid/cph_stim.hpp
   tvb/simulator/backend/cpp_hybrid/cph_rng.hpp
   tvb/simulator/backend/cpp_hybrid/cph_features.hpp

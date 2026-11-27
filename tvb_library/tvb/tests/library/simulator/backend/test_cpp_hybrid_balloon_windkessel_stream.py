@@ -494,3 +494,80 @@ def test_native_projection_before_bw_stream_recovers_from_full_checkpoint_after_
     for actual, expected in zip(sim.take_global_monitor_outputs(), control.take_global_monitor_outputs()):
         assert expected[0].size == 1
         _assert_stream(actual, expected)
+
+
+@pytest.mark.parametrize("change", [
+    "bool-slot", "bool-width", "bool-accum-count", "bool-interim-count",
+    "bool-stock-pos", "bool-drive-count", "float32-accum", "list-accum",
+    "config-bool", "config-float32", "scalar-eq", "container-eq",
+])
+def test_native_bw_stream_restore_requires_strict_schema(change):
+    from copy import deepcopy
+
+    sim = _armed()
+    obs = _neural_fixture(2)[:4]
+    _run(sim, _increments(obs), drain=False)
+    before = sim.get_global_monitor_states()
+    candidate = deepcopy(before)
+    state = candidate[0]
+    assert state["slot"] == 0 and state["accum_count"] == 0 and state["bw_drive_count"] == 0
+    comparisons = []
+
+    class EqualScalar(int):
+        def __eq__(self, other):
+            comparisons.append(other)
+            return True
+
+    class EqualContainer(tuple):
+        def __eq__(self, other):
+            comparisons.append(other)
+            return True
+
+    if change == "bool-slot":
+        state["slot"] = False
+    elif change == "bool-width":
+        state["width"] = True
+    elif change == "bool-accum-count":
+        state["accum_count"] = False
+    elif change == "bool-interim-count":
+        state["interim_count"] = False
+    elif change == "bool-stock-pos":
+        state["stock_pos"] = False
+    elif change == "bool-drive-count":
+        state["bw_drive_count"] = False
+    elif change == "float32-accum":
+        state["accum"] = np.empty(0, dtype=np.float32)
+    elif change == "list-accum":
+        state["accum"] = []
+    elif change == "config-bool":
+        cfg = list(state["bw_stream_config"])
+        cfg[5] = [True]  # voi=[1] must reject bool True
+        state["bw_stream_config"] = tuple(cfg)
+    elif change == "config-float32":
+        cfg = list(state["bw_stream_config"])
+        cfg[7] = np.float32(cfg[7])  # float baseline must be Python float
+        state["bw_stream_config"] = tuple(cfg)
+    elif change == "scalar-eq":
+        cfg = list(state["bw_stream_config"])
+        cfg[0] = EqualScalar(cfg[0])
+        state["bw_stream_config"] = tuple(cfg)
+    elif change == "container-eq":
+        state["bw_stream_config"] = EqualContainer(state["bw_stream_config"])
+
+    with pytest.raises(RuntimeError, match="global BW stream:"):
+        sim.set_global_monitor_states(candidate)
+    assert not comparisons
+    np.testing.assert_equal(sim.get_global_monitor_states(), before)
+    _assert_oracle(sim.take_global_monitor_outputs()[0], _oracle(obs), 10)
+
+
+def test_native_bw_stream_rejects_negative_nstep():
+    sim = _armed()
+    obs = _neural_fixture(2)[:7]
+    _run(sim, _increments(obs), drain=False)
+    before = sim.get_global_monitor_states()
+    with pytest.raises(ValueError, match="nstep must be non-negative"):
+        sim.run(-1, 1, None, None, need_tavg=False, need_ctavg=False)
+    assert sim.t_abs() == 7
+    np.testing.assert_equal(sim.get_global_monitor_states(), before)
+    _assert_oracle(sim.take_global_monitor_outputs()[0], _oracle(obs), 10)

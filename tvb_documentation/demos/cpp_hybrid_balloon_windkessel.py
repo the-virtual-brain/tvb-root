@@ -23,12 +23,14 @@
 # classic TVB, see `simulate_hybrid_stochastic_and_bold`; `monitor="bold"` and
 # every existing HRF `Bold` code path are unchanged by anything shown here.
 #
-# Supported profile at this baseline: one regional subnetwork, one neural
-# clock and mode, SIMD width one, and a **global** monitor (local BW Recorders
-# are not available yet). The hemodynamics stay independent per region; the
-# one shared nominal parameter set is applied to every region's own state.
-# `backend="cpp"` raises ImportError when the environment has no compiled
-# extension, so no separate availability check is needed here.
+# This walkthrough uses a single regional subnetwork (one neural clock and mode,
+# SIMD width 1) with a **global** `BalloonWindkessel` monitor; multi-source
+# global gathers, local `Recorder(monitor=BalloonWindkessel(...))`, and SIMD
+# parameter sweeps via `sweep(..., bw=...)` are also supported on
+# `backend="cpp"`. The hemodynamics stay independent per region; the one shared
+# nominal parameter set is applied to every region's own state. `backend="cpp"`
+# raises ImportError when the environment has no compiled extension, so no
+# separate availability check is needed here.
 #
 # **What you'll learn**
 #
@@ -237,9 +239,11 @@ plt.show()
 #   are no fitted population parameters and no per-region parameter lowering.
 # - Complete windows only: the last incomplete drive window, and any partial
 #   output period, are dropped instead of being flushed.
-# - This is a global monitor on one width-one regional subnetwork. Local
-#   `Recorder`-based BW monitors are not implemented at this baseline, and BW
-#   is not available in parameter sweeps.
+# - This walkthrough shows a global monitor on a single width-one regional
+#   subnetwork. Multi-source global gathers, local
+#   `Recorder(monitor=BalloonWindkessel(...))`, and SIMD `sweep(..., bw=...)`
+#   are supported on the C++ hybrid backend (passing `BalloonWindkessel` via
+#   `monitor=`/`monitors=` in a sweep is rejected).
 # - Resume is supported only from compatible compiled snapshots that keep the
 #   partial drive and BOLD windows; a failed run is not a whole-simulator
 #   rollback.

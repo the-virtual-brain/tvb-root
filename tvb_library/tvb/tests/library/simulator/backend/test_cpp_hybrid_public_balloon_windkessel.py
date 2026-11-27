@@ -369,6 +369,31 @@ def test_bw_rejects_invalid_regional_node_indices(cpp, indices):
         cpp.CppHybridBackend().run_network(_network(indices=indices), 1, monitors=[_monitor()])
 
 
+@pytest.mark.parametrize("bad_dtype", [bool, float])
+def test_bw_rejects_non_integer_node_indices_and_voi_dtypes(cpp, monkeypatch, bad_dtype):
+    params = dict.fromkeys(("alpha", "beta", "b", "c", "e", "f", "g"), [0.0])
+    params.update(d=[1.0], tau=[1.0], gamma=[1.0], I=[0.0, 0.0], a=[0.0, 0.0])
+    model = models.Generic2dOscillator(
+        variables_of_interest=("W", "V"), **{k: np.array(v) for k, v in params.items()},
+    )
+    net = NetworkSet(subnets=[Subnetwork(
+        name="regions", model=model, scheme=integrators.EulerDeterministic(dt=DT),
+        nnodes=2, node_indices=np.array([0, 1], dtype=np.int64),
+    )]).configure()
+    monkeypatch.setitem(
+        net.subnets[0].__dict__, "node_indices", np.array([0, 1], dtype=bad_dtype),
+    )
+    with pytest.raises(ValueError, match="full regional node permutation"):
+        cpp.CppHybridBackend().run_network(net, 1, monitors=[_monitor()])
+
+    bw = _monitor()
+    monkeypatch.setitem(
+        bw.__dict__, "variables_of_interest", np.array([0], dtype=bad_dtype),
+    )
+    with pytest.raises(ValueError, match="exactly one valid observed VOI index"):
+        cpp.CppHybridBackend().run_network(_network(), 1, monitors=[bw])
+
+
 @pytest.mark.parametrize("indices,error", [
     (None, "compatible regional sources"),
     ((2, 0, 1), "complete, disjoint node_indices"),
@@ -410,7 +435,7 @@ def test_bw_rejects_classic_attach():
 
     bw = _monitor()
     assert not isinstance(bw, monitors.Bold)
-    with pytest.raises(NotImplementedError, match="global monitor on the explicit C\\+\\+ hybrid backend"):
+    with pytest.raises(NotImplementedError, match="explicit C\\+\\+ hybrid backend \\(as a global monitor or local Recorder\\); classic Simulator execution is not supported"):
         bw.config_for_sim(ClassicSimulator())
     # Local attachment is supported on the C++ hybrid backend only; the
     # Recorder route and its non-C++ rejection are covered by
@@ -424,7 +449,7 @@ def test_classic_bw_preflights_before_configuring_ordered_companion(monkeypatch)
 
     companion = monitors.TemporalAverage(period=4 * DT)
     sim = ClassicSimulator(monitors=[companion, _monitor()])
-    expected = "global monitor on the explicit C\\+\\+ hybrid backend"
+    expected = "explicit C\\+\\+ hybrid backend \\(as a global monitor or local Recorder\\); classic Simulator execution is not supported"
     monkeypatch.setattr(companion, "configure", lambda: pytest.fail("companion configured"))
     with pytest.raises(NotImplementedError, match=expected):
         sim.preconfigure()
@@ -445,7 +470,7 @@ def test_classic_bw_preflights_before_recording_ordered_companion(monitor_list):
                            monitors=[companion]).configure()
     stock, calls = companion._stock.copy(), sim.calls
     sim.monitors = monitor_list([companion, _monitor()])
-    with pytest.raises(NotImplementedError, match="global monitor on the explicit C\\+\\+ hybrid backend"):
+    with pytest.raises(NotImplementedError, match="explicit C\\+\\+ hybrid backend \\(as a global monitor or local Recorder\\); classic Simulator execution is not supported"):
         next(sim(n_steps=1))
     assert sim.calls == calls
     np.testing.assert_array_equal(companion._stock, stock)

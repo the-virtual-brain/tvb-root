@@ -184,7 +184,7 @@ def test_recorder_windows_same_slot_rebuild_origin_and_one_tick_midpoints(cpp):
 
 
 @pytest.mark.parametrize("change", ["period", "voi", "weights", "source", "node-order", "missing",
-                                    "duplicates", "without-recorders", "point-instead", "historical",
+                                    "duplicates", "point-instead", "historical",
                                     "phase", "count", "origin", "nan", "extent", "rank", "extra-subnet",
                                     "missing-container"])
 def test_recorder_window_resume_requires_exact_valid_window_set(cpp, monkeypatch, change):
@@ -207,8 +207,6 @@ def test_recorder_window_resume_requires_exact_valid_window_set(cpp, monkeypatch
         slow.pop()
     elif change == "duplicates":
         slow.append(deepcopy(slow[-1]))
-    elif change == "without-recorders":
-        specs = None
     elif change == "point-instead":
         specs["slow"][0] = monitors.Raw()
     elif change == "historical":
@@ -474,13 +472,109 @@ def test_facade_recorder_windows_replace_buffers_and_collect_in_one_pass(cpp, mo
     sim = Simulator(nets=net, backend="cpp", simulation_length=10.5 * DT)
     assert sim.run(initial_conditions=list(INITIAL)) == []
     assert calls == [11]
+    expected_sample_shapes = {}
     for i, sn in enumerate(net.subnets):
         streams = [rec.to_arrays() for rec in sn.monitors]
         _assert_streams(streams, _oracle(i, 11))
         assert all(times.dtype == np.float32 for times, _ in streams)
+        expected_sample_shapes[sn.name] = [data.shape[1:] for _, data in streams]
     sim.simulation_length = DT
     assert sim.run(initial_conditions=list(INITIAL)) == []
     assert calls == [11, 1]
     for sn in net.subnets:
-        for rec in sn.monitors:
+        for rec, sample_shape in zip(sn.monitors, expected_sample_shapes[sn.name]):
             assert rec._current_idx == 0 and rec.times is None and rec.samples is None
+            assert rec.shape is None
+            empty_t, empty_d = rec.to_arrays()
+            assert empty_t.shape == (0,) and empty_t.dtype == np.float32
+            assert empty_d.shape == (0,) + sample_shape and empty_d.dtype == np.float32
+            assert rec.times is None and rec.samples is None and rec.shape is None
+
+
+@pytest.mark.parametrize("kind", ["average-windows", "local-bw"])
+def test_recorder_windows_allow_neural_only_resume_and_clear_kmon_states(cpp, kind):
+    be, net = cpp.CppHybridBackend(), _network()
+    if kind == "average-windows":
+        specs = _specs(points=True)
+    else:
+        bw = monitors.BalloonWindkessel(
+            period=10.0, variables_of_interest=np.array([0]),
+            drive_baseline=0.0, drive_scale=0.25,
+        )
+        specs = {"fast": [bw], "slow": [deepcopy(bw)]}
+
+    _, snap, _ = be.compile(net).run(
+        7, initial_states=INITIAL, subnet_monitors=specs, return_snapshot=True,
+    )
+    assert any("local_window_config" in s for per_sn in snap["kmon_states"] for s in per_sn)
+
+    res_out, res_snap = be.compile(net).resume(snap, 4, return_snapshot=True)
+    full_out, full_snap = be.compile(net).run(11, initial_states=INITIAL, return_snapshot=True)
+    assert res_snap["step"] == 11
+    assert res_snap["kmon_states"] == [[], []]
+    np.testing.assert_equal(res_snap["states"], full_snap["states"])
+    np.testing.assert_equal(res_snap["buffers"], full_snap["buffers"])
+    # Neural continuation output matches resuming from a neural-only snapshot.
+    _, neural_snap = be.compile(net).run(7, initial_states=INITIAL, return_snapshot=True)
+    neural_res_out = be.compile(net).resume(neural_snap, 4)
+    for (t_got, d_got, c_got), (t_exp, d_exp, c_exp) in zip(res_out, neural_res_out):
+        np.testing.assert_array_equal(t_got, t_exp)
+        np.testing.assert_array_equal(d_got, d_exp)
+        np.testing.assert_array_equal(c_got, c_exp)
+    assert len(full_out) == 2
+
+
+@pytest.mark.parametrize("failure,error,match", [
+    ("bad-step", ValueError, "integer snapshot master tick"),
+    ("bad-rng-mode", ValueError, "Unsupported rng_mode"),
+    ("negative-nstep", ValueError, "non-negative integer"),
+    ("bool-nstep", ValueError, "non-negative integer"),
+    ("missing-bw-monitors", ValueError, "BalloonWindkessel resume requires"),
+])
+def test_resume_preflight_failures_leave_reused_sim_untouched(cpp, failure, error, match):
+    be = cpp.CppHybridBackend()
+    net = _network(stochastic=True)
+    bw = monitors.BalloonWindkessel(
+        period=10.0, variables_of_interest=np.array([0]),
+        drive_baseline=0.0, drive_scale=0.25,
+    )
+    specs = _specs(points=True)
+
+    target = be.compile(net)
+    target.run(5, initial_states=INITIAL, monitors=[bw], subnet_monitors=specs, rng_mode="philox")
+    states_before = [np.asarray(target._sim.get_subnet_state(i)).copy() for i in range(2)]
+    bufs_before = [np.asarray(target._sim.get_subnet_buf(i)).copy() for i in range(2)]
+    t_before = target._sim.t_abs()
+    kmon_before = deepcopy(target._sim.get_monitor_states())
+    kmon_global_before = deepcopy(target._sim.get_global_monitor_states())
+    cpp_rng_before = deepcopy(target._sim.get_rng_states())
+    py_rng_before = deepcopy(be._get_rng_states(target._analysis, target._network_set))
+
+    _, snap, _ = be.compile(net).run(
+        7, initial_states=INITIAL, monitors=[bw], subnet_monitors=specs,
+        return_snapshot=True, rng_mode="philox",
+    )
+    kwargs = dict(monitors=[bw], subnet_monitors=specs, rng_mode="philox")
+    nstep = 4
+    if failure == "bad-step":
+        snap["step"] = 1.5
+    elif failure == "bad-rng-mode":
+        kwargs["rng_mode"] = "invalid"
+    elif failure == "negative-nstep":
+        nstep = -1
+    elif failure == "bool-nstep":
+        nstep = False
+    elif failure == "missing-bw-monitors":
+        kwargs["monitors"] = None
+
+    with pytest.raises(error, match=match):
+        target.resume(snap, nstep, **kwargs)
+
+    assert target._sim.t_abs() == t_before == 5
+    for i in range(2):
+        np.testing.assert_array_equal(target._sim.get_subnet_state(i), states_before[i])
+        np.testing.assert_array_equal(target._sim.get_subnet_buf(i), bufs_before[i])
+    np.testing.assert_equal(target._sim.get_monitor_states(), kmon_before)
+    np.testing.assert_equal(target._sim.get_global_monitor_states(), kmon_global_before)
+    np.testing.assert_equal(target._sim.get_rng_states(), cpp_rng_before)
+    np.testing.assert_equal(be._get_rng_states(target._analysis, target._network_set), py_rng_before)

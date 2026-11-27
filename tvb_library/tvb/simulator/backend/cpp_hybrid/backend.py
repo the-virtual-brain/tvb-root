@@ -17,6 +17,7 @@ from typing import List, Optional
 
 import numpy as np
 
+from . import _cpp_hybrid, _monitor_plan
 from ._cpp_hybrid import Sim
 
 # generic (expression-generated) model ids start at 100 (see _core.cpp)
@@ -58,11 +59,17 @@ _REGIONAL_PROJECTION_MONITORS = (EEG, MEG, iEEG)
 _RECORDER_SLOT_BASE = 10000
 
 # Scalars shared by all regions; lower region-specific parameters here once supported.
-_BALLOON_WINDKESSEL_NOMINAL = dict(
+_BALLOON_WINDKESSEL_NOMINAL_FALLBACK = dict(
     signal_decay_s=0.65, flow_feedback_s2=0.41, transit_time_s=0.98,
     grubb_exponent=0.32, resting_extraction=0.4, intravascular_ratio=0.5,
     frequency_offset_hz=40.3, relaxation_rate_per_s=25.0, echo_time_s=0.04,
     resting_blood_volume=0.04,
+)
+_bw_nominal_getter = getattr(_cpp_hybrid, "balloon_windkessel_nominal_params", None)
+_BALLOON_WINDKESSEL_NOMINAL = (
+    dict(_bw_nominal_getter())
+    if _bw_nominal_getter is not None
+    else dict(_BALLOON_WINDKESSEL_NOMINAL_FALLBACK)
 )
 
 __all__ = [
@@ -459,254 +466,39 @@ class CompiledCppSim:
         if kwargs.get("_monitor_states") is not None:
             self._bold_states = _copy_monitor_states(kwargs["_monitor_states"])
 
-        # Normalize optional per-subnet monitors (e.g. hybrid Recorder monitors)
-        sn_mons_map = None
-        if subnet_monitors is not None:
-            local_lists = subnet_monitors.values() if isinstance(subnet_monitors, dict) else subnet_monitors
-            if any(isinstance(getattr(m, "monitor", m), _REGIONAL_PROJECTION_MONITORS)
-                   for ms in local_lists for m in ms):
-                raise NotImplementedError("C++ EEG/MEG/iEEG cannot be local or Recorder monitors")
-            if isinstance(subnet_monitors, dict):
-                sn_mons_map = {
-                    sn.name: [getattr(m, "monitor", m)
-                              for m in subnet_monitors.get(sn.name, ())]
-                    for sn in self._analysis.subnets
-                }
-            else:
-                sn_mons_map = {
-                    sn.name: [getattr(m, "monitor", m)
-                              for m in (subnet_monitors[si]
-                                        if si < len(subnet_monitors) else ())]
-                    for si, sn in enumerate(self._analysis.subnets)
-                }
-
-        from tvb.simulator.monitors import (
-            AfferentCoupling,
-            AfferentCouplingTemporalAverage,
-            Bold,
-            GlobalAverage,
-            Projection,
-            Raw,
-            SpatialAverage,
-            SubSample,
-            TemporalAverage,
+        plan = _monitor_plan.plan_monitors(
+            self,
+            nstep=nstep,
+            chunk_size=chunk_size,
+            monitors=monitors,
+            subnet_monitors=subnet_monitors,
+            dt=dt,
+            kwargs=kwargs,
+            can_merge_subnets_fn=_can_merge_subnets,
+            compute_chunk_size_fn=_compute_chunk_size,
         )
-
-        n_sn = len(self._analysis.subnets)
-        should_merge = (n_sn > 1) and _can_merge_subnets(self._analysis.subnets)
-        kernel_global_specs = []   # (mi, m) attached via set_global_monitors
-        complete_window_isteps: dict[int, int] = {}
-        gathered_window_sources = None
-        balloon_windkessel_specs = {}
-        kernel_persn_specs = []    # (mi, m) attached via set_monitors(si, ...)
-        py_global_indices = set()
-        kernel_mon_indices = set()
-        has_py_bold = False
-        has_py_tavg = False
-
-        if monitors is not None:
-            for mi, m in enumerate(monitors):
-                if isinstance(m, BalloonWindkessel):
-                    if n_sn > 1:
-                        if gathered_window_sources is None:
-                            gathered_window_sources = self._gathered_window_sources(dt)
-                        if not gathered_window_sources:
-                            raise ValueError("BalloonWindkessel requires compatible regional sources and explicit node_indices")
-                    balloon_windkessel_specs[mi] = self._balloon_windkessel_spec(mi, m, dt)
-                    kernel_global_specs.append((mi, m))
-                    kernel_mon_indices.add(mi)
-                    continue
-                if isinstance(m, _REGIONAL_PROJECTION_MONITORS):
-                    if not self._backend.enable_kernel_monitors:
-                        raise NotImplementedError("C++ EEG/MEG/iEEG require native monitor collection")
-                    if n_sn != 1:
-                        raise NotImplementedError("C++ EEG/MEG/iEEG require one regional subnetwork")
-                    sn = self._analysis.subnets[0]
-                    if (self._width != 1 or kwargs.get("width", 1) != 1
-                            or sn.k != 1 or sn.n_modes != 1 or sn.dt != dt):
-                        raise NotImplementedError("C++ EEG/MEG/iEEG require width 1 and one source clock and mode")
-                    indices = self._network_set.subnets[0].node_indices
-                    if indices is not None and not np.array_equal(indices, np.arange(sn.n_nodes)):
-                        raise ValueError("C++ EEG/MEG/iEEG require absent or identity node_indices")
-                    complete_window_isteps[mi] = self._backend._complete_window_istep(m, dt)
-                    kernel_global_specs.append((mi, m))
-                    kernel_mon_indices.add(mi)
-                    continue
-                if (n_sn > 1 and self._backend.enable_kernel_monitors
-                        and self._width == kwargs.get("width", 1) == 1
-                        and isinstance(m, (TemporalAverage, GlobalAverage, SpatialAverage))
-                        and not isinstance(m, AfferentCouplingTemporalAverage)
-                        and (not isinstance(m, SpatialAverage)
-                             or getattr(m, "spatial_mean", None) is not None)
-                        and not (isinstance(m, TemporalAverage) and self._bold_states and any(
-                            k[0] == "temporal_average" and k[1] == mi for k in self._bold_states))):
-                    if gathered_window_sources is None:
-                        gathered_window_sources = self._gathered_window_sources(dt)
-                    if gathered_window_sources:
-                        complete_window_isteps[mi] = self._backend._complete_window_istep(
-                            m, dt, scope="gathered global", clock_name="master")
-                        kernel_global_specs.append((mi, m))
-                        kernel_mon_indices.add(mi)
-                        continue
-                if (n_sn == 1
-                        and isinstance(m, (TemporalAverage, GlobalAverage, SpatialAverage))
-                        and not isinstance(m, AfferentCouplingTemporalAverage)):
-                    sn = self._analysis.subnets[0]
-                    if not self._backend.enable_kernel_monitors:
-                        raise NotImplementedError(
-                            "C++ regional complete windows require native monitor collection"
-                        )
-                    if self._width != 1 or sn.k != 1 or sn.n_modes != 1 or sn.dt != dt:
-                        raise NotImplementedError(
-                            "C++ regional complete windows require width 1 and one source clock and mode"
-                        )
-                    complete_window_isteps[mi] = self._backend._complete_window_istep(m, dt)
-                    kernel_global_specs.append((mi, m))
-                    kernel_mon_indices.add(mi)
-                    continue
-                if isinstance(m, Projection):
-                    if (getattr(m, "_gain", None) is None
-                            and getattr(m, "projection", None) is None):
-                        raise ValueError(
-                            f"Projection monitor {type(m).__name__} has no gain matrix "
-                            "configured. Set the gain matrix before running (e.g. via "
-                            "config_for_sim or by setting m._gain directly)."
-                        )
-                can_kernel = (
-                    self._backend.enable_kernel_monitors
-                    and self._backend._kernel_collectable(m)
-                )
-                if can_kernel and self._bold_states is not None:
-                    # Respect externally supplied Python monitor state dicts
-                    if isinstance(m, Bold) and any(
-                        k[0] == "bold" and k[1] == mi for k in self._bold_states
-                    ):
-                        can_kernel = False
-                    elif isinstance(m, TemporalAverage) and not isinstance(
-                        m, AfferentCouplingTemporalAverage
-                    ) and any(
-                        k[0] == "temporal_average" and k[1] == mi
-                        for k in self._bold_states
-                    ):
-                        can_kernel = False
-
-                if can_kernel and isinstance(m, (GlobalAverage, SpatialAverage, Projection)):
-                    if should_merge or n_sn == 1:
-                        total_nodes = (
-                            max(int(sn.node_indices.max())
-                                for sn in self._analysis.subnets) + 1
-                            if should_merge
-                            else self._analysis.subnets[0].n_nodes
-                        )
-                        if isinstance(m, SpatialAverage) and getattr(m, "spatial_mean", None) is not None:
-                            if np.asarray(m.spatial_mean).shape[1] != total_nodes:
-                                can_kernel = False
-                        if isinstance(m, Projection):
-                            if np.asarray(m.gain).shape[1] != total_nodes:
-                                can_kernel = False
-                        if can_kernel:
-                            kernel_global_specs.append((mi, m))
-                            kernel_mon_indices.add(mi)
-                            continue
-                    else:
-                        # Unmerged multi-subnet: per-subnet if shapes match each subnet
-                        if isinstance(m, SpatialAverage) and getattr(m, "spatial_mean", None) is not None:
-                            sm_cols = np.asarray(m.spatial_mean).shape[1]
-                            if not all(sn.n_nodes == sm_cols for sn in self._analysis.subnets):
-                                can_kernel = False
-                        if isinstance(m, Projection):
-                            g_cols = np.asarray(m.gain).shape[1]
-                            if not all(sn.n_nodes == g_cols for sn in self._analysis.subnets):
-                                can_kernel = False
-                        if can_kernel:
-                            kernel_persn_specs.append((mi, m))
-                            kernel_mon_indices.add(mi)
-                            continue
-
-                if can_kernel:
-                    kernel_persn_specs.append((mi, m))
-                    kernel_mon_indices.add(mi)
-                else:
-                    py_global_indices.add(mi)
-                    if isinstance(m, Bold):
-                        has_py_bold = True
-                    if isinstance(m, TemporalAverage):
-                        has_py_tavg = True
-
-        if chunk_size is None:
-            if balloon_windkessel_specs:
-                # A native BW window does not depend on chunk boundaries.
-                # Leave companion monitor chunk inference unchanged.
-                companions = [m for m in monitors if not isinstance(m, BalloonWindkessel)]
-                chunk_size = (_compute_chunk_size(companions, dt) if companions else
-                              min(nstep or 1, *(s["istep"] for s in balloon_windkessel_specs.values())))
-            else:
-                chunk_size = _compute_chunk_size(monitors, dt) if monitors is not None else 1
-        if monitors is not None:
-            self._backend._validate_monitors(monitors, chunk_size)
-
-        # Partition per-subnet monitors (Recorder monitors)
-        sn_kernel_specs = {sn.name: [] for sn in self._analysis.subnets}
-        sn_py_fallbacks = {sn.name: [] for sn in self._analysis.subnets}
-        local_window_specs = {}
-        need_py_sn_tavg = False
-        need_py_sn_ctavg = False
-        if sn_mons_map is not None:
-            for sn in self._analysis.subnets:
-                for ri, rm in enumerate(sn_mons_map.get(sn.name, ())):
-                    if isinstance(rm, BalloonWindkessel):
-                        local_window_specs[sn.name, ri] = self._recorder_window_spec(sn, ri, rm)
-                        sn_kernel_specs[sn.name].append((ri, rm))
-                    elif (isinstance(rm, (TemporalAverage, GlobalAverage, SpatialAverage))
-                            and not isinstance(rm, AfferentCouplingTemporalAverage)):
-                        local_window_specs[sn.name, ri] = self._recorder_window_spec(sn, ri, rm)
-                        sn_kernel_specs[sn.name].append((ri, rm))
-                    elif (self._backend.enable_kernel_monitors
-                          and self._backend._kernel_collectable(rm)):
-                        sn_kernel_specs[sn.name].append((ri, rm))
-                    else:
-                        sn_py_fallbacks[sn.name].append((ri, rm))
-                        need_py_sn_tavg = True
-                        if isinstance(rm, AfferentCoupling):
-                            need_py_sn_ctavg = True
-
-        need_tavg = (
-            (monitors is None and subnet_monitors is None)
-            or bool(py_global_indices)
-            or need_py_sn_tavg
-        )
-        need_ctavg = (
-            (monitors is None and subnet_monitors is None)
-            or bool(py_global_indices)
-            or need_py_sn_ctavg
-        )
-
-        execution_chunk_size = chunk_size
-        if has_py_bold or has_py_tavg or need_py_sn_tavg:
-            # Python fallback stateful monitors / Recorders consume every step.
-            execution_chunk_size = 1
-            if self._bold_states is None:
-                self._bold_states = {}
+        if (plan.has_py_bold or plan.has_py_tavg or plan.need_py_sn_tavg) and self._bold_states is None:
+            self._bold_states = {}
 
         self._kmon_armed_keys = {
-            (mi, type(monitors[mi]).__name__) for mi in kernel_mon_indices
+            (mi, type(monitors[mi]).__name__) for mi in plan.kernel_mon_indices
         }
 
         outputs, kernel_streams, subnet_streams, projection_sidecars = self._backend._run_compiled(
             self._sim, self._analysis, self._network_set,
-            nstep=nstep, chunk_size=execution_chunk_size,
+            nstep=nstep, chunk_size=plan.execution_chunk_size,
             initial_states=initial_states, monitors=monitors,
             width=self._width,
-            kernel_persn=kernel_persn_specs,
-            kernel_global=kernel_global_specs,
-            complete_window_isteps=complete_window_isteps,
-            gathered_window_sources=gathered_window_sources,
-            local_window_specs=local_window_specs,
-            balloon_windkessel_specs=balloon_windkessel_specs,
-            sn_kernel_monitors=sn_kernel_specs if sn_mons_map is not None else None,
+            kernel_persn=plan.kernel_persn_specs,
+            kernel_global=plan.kernel_global_specs,
+            complete_window_isteps=plan.complete_window_isteps,
+            gathered_window_sources=plan.gathered_window_sources,
+            local_window_specs=plan.local_window_specs,
+            balloon_windkessel_specs=plan.balloon_windkessel_specs,
+            sn_kernel_monitors=plan.sn_kernel_specs if plan.sn_mons_map is not None else None,
             explicit_chunk_size=explicit_chunk_size,
-            need_tavg=need_tavg,
-            need_ctavg=need_ctavg,
+            need_tavg=plan.need_tavg,
+            need_ctavg=plan.need_ctavg,
             _skip_init=_resuming,
             _step_offset=_step_offset,
             _return_snapshot=return_snapshot,
@@ -717,126 +509,25 @@ class CompiledCppSim:
             _pending_cpp_rng_states=self._pending_cpp_rng_states,
         )
 
-        # Assemble per-subnet Recorder results if requested
-        subnet_results = None
-        if sn_mons_map is not None:
-            subnet_results = {}
-            for si, sn in enumerate(self._analysis.subnets):
-                total_r = len(sn_mons_map.get(sn.name, ()))
-                res_list = [None] * total_r
-                for ri, stream in subnet_streams.get(sn.name, ()):
-                    res_list[ri] = stream
-                if sn_py_fallbacks[sn.name]:
-                    import copy as _copy
-                    _, tavg_s, ctavg_s = outputs[si]
-                    k_j = sn.k
-                    for ri, rm in sn_py_fallbacks[sn.name]:
-                        mon_inst = _copy.deepcopy(rm)
-                        if hasattr(mon_inst, "_config_dt"):
-                            mon_inst._config_dt(float(sn.dt))
-                        if hasattr(mon_inst, "compute_hrf"):
-                            mon_inst.compute_hrf()
-                        src_arr = (
-                            ctavg_s if isinstance(mon_inst, AfferentCoupling)
-                            else tavg_s
-                        )
-                        if hasattr(mon_inst, "_config_stock"):
-                            if (getattr(mon_inst, "variables_of_interest", None) is None
-                                    or mon_inst.variables_of_interest.size == 0):
-                                mon_inst.voi = np.arange(src_arr.shape[1], dtype=int)
-                            else:
-                                mon_inst.voi = np.asarray(
-                                    mon_inst.variables_of_interest, dtype=int)
-                            mon_inst._config_stock(*src_arr.shape[1:])
-                        elif getattr(mon_inst, "voi", None) is None:
-                            voi_a = getattr(mon_inst, "variables_of_interest", None)
-                            mon_inst.voi = (
-                                np.asarray(voi_a, dtype=int)
-                                if voi_a is not None and np.asarray(voi_a).size > 0
-                                else np.arange(src_arr.shape[1], dtype=int)
-                            )
-                        ts_l, ds_l = [], []
-                        for step1 in range(1, nstep + 1):
-                            if step1 % k_j != 0:
-                                continue
-                            sn_step = step1 // k_j
-                            ty = mon_inst.sample(sn_step, src_arr[step1 - 1])
-                            if ty is not None:
-                                ts_l.append(ty[0])
-                                ds_l.append(ty[1])
-                        if ts_l:
-                            res_list[ri] = (
-                                np.asarray(ts_l, dtype=np.float64),
-                                np.stack(ds_l).astype(np.float32),
-                            )
-                        else:
-                            res_list[ri] = (
-                                np.zeros(0, dtype=np.float64),
-                                np.empty((0,) + src_arr.shape[1:], dtype=np.float32),
-                            )
-                subnet_results[sn.name] = res_list
-
-        # Assemble global monitor outputs
-        if monitors is not None:
-            if len(monitors) == 0:
-                outputs = []
-            elif not py_global_indices:
-                # All monitors served by C++ kmon engines!
-                # Keep _apply_monitors call when all are legacy-shortcut types
-                # (Raw/SubSample/Bold) so kernel-stream spy tests stay intact.
-                all_shortcut = all(
-                    isinstance(m, (Raw, SubSample, Bold))
-                    and not isinstance(m, AfferentCoupling)
-                    for m in monitors
-                )
-                if all_shortcut:
-                    dummy_raw = [
-                        (np.empty(0, dtype=np.float64),
-                         np.empty((0,), dtype=np.float32),
-                         np.empty((0,), dtype=np.float32))
-                        for _ in self._analysis.subnets
-                    ]
-                    outputs = _apply_monitors(
-                        dummy_raw, monitors, dt, chunk_size=chunk_size,
-                        monitor_data=None,
-                        subnet_infos=self._analysis.subnetworks,
-                        bold_states=self._bold_states,
-                        kernel_streams=kernel_streams or None,
-                    )
-                else:
-                    outputs = [kernel_streams[mi] for mi in range(len(monitors))]
-            else:
-                bold_raw_outputs = outputs if has_py_bold else None
-                temporal_raw_outputs = outputs if has_py_tavg else None
-                if has_py_bold or has_py_tavg or need_py_sn_tavg:
-                    outputs = _aggregate_raw_outputs(outputs, chunk_size)
-                # Substitute Raw() placeholder for kernel-handled monitors not in
-                # nb_hybrid's kernel_streams shortcut, then overwrite from kernel_streams.
-                proxy_mons = [
-                    (Raw() if (mi in kernel_streams and not (
-                        isinstance(m, (Raw, SubSample, Bold))
-                        and not isinstance(m, AfferentCoupling)
-                    )) else m)
-                    for mi, m in enumerate(monitors)
-                ]
-                host_shortcuts = kernel_streams
-                if gathered_window_sources:
-                    # Already-gathered streams cannot be indexed per source by Raw.
-                    global_slots = {slot for slot, _ in kernel_global_specs}
-                    host_shortcuts = {mi: stream for mi, stream in kernel_streams.items()
-                                      if mi not in global_slots}
-                outputs = _apply_monitors(
-                    outputs, proxy_mons, dt, chunk_size=chunk_size,
-                    monitor_data=None, subnet_infos=self._analysis.subnetworks,
-                    bold_states=self._bold_states,
-                    bold_raw_outputs=bold_raw_outputs,
-                    temporal_raw_outputs=temporal_raw_outputs,
-                    kernel_streams=host_shortcuts or None,
-                )
-                for mi, stream in kernel_streams.items():
-                    outputs[mi] = stream
-        elif subnet_monitors is not None:
-            outputs = []
+        subnet_results = _monitor_plan.assemble_subnet_results(
+            self._analysis,
+            plan.sn_mons_map,
+            plan.sn_py_fallbacks,
+            subnet_streams,
+            outputs,
+            nstep,
+        )
+        outputs = _monitor_plan.assemble_global_monitor_outputs(
+            self._analysis,
+            monitors,
+            plan,
+            kernel_streams,
+            outputs,
+            dt,
+            self._bold_states,
+            apply_monitors_fn=_apply_monitors,
+            aggregate_raw_outputs_fn=_aggregate_raw_outputs,
+        )
 
         if not return_snapshot:
             if subnet_monitors is not None:
@@ -869,135 +560,42 @@ class CompiledCppSim:
         return outputs, snap
 
     def _gathered_window_sources(self, dt):
-        sources = self._analysis.subnets
-        declared = self._network_set.subnets
-        indices = [sn.node_indices for sn in declared]
-        if (dt != self._analysis.dt or any(ix is None for ix in indices)
-                or any(float(sn.scheme.dt) != source.dt for sn, source in zip(declared, sources))
-                or any(sn.n_modes != 1 for sn in sources)
-                or (all(sn.k == 1 for sn in sources) and any(sn.dt != dt for sn in sources))):
-            return []
-
-        # Native observation triples must agree, and so must the names of the
-        # state components they refer to (equal offsets alone do not suffice).
-        def observation_terms(sn):
-            names = tuple(map(str, sn.model.state_variables))
-            return [names[a] if kind == 0 else f"{names[a]}-{names[b]}"
-                    for kind, a, b in zip(sn.voi[::3], sn.voi[1::3], sn.voi[2::3])]
-
-        first = sources[0]
-        observed_terms = observation_terms(first)
-        if not observed_terms or any(sn.voi != first.voi or observation_terms(sn) != observed_terms
-                                     for sn in sources[1:]):
-            return []
-
-        total_nodes = sum(sn.n_nodes for sn in sources)
-        if total_nodes > np.iinfo(np.int32).max:
-            raise ValueError("C++ gathered global complete windows: node gather extent out of range")
-        gather = []
-        seen = set()
-        for sn, ix in zip(sources, indices):
-            ix = np.asarray(ix)
-            if (sn.n_nodes < 1 or ix.shape != (sn.n_nodes,) or ix.dtype.kind not in "iu"
-                    or np.any(ix < 0) or np.any(ix >= total_nodes)):
-                raise ValueError("C++ gathered global complete windows: invalid node_indices")
-            nodes = ix.tolist()
-            seen.update(nodes)
-            gather.append(dict(n_voi=len(observed_terms), n_node=sn.n_nodes, node_indices=nodes,
-                               source_name=sn.name, source_dt=sn.dt, observed_terms=observed_terms))
-        if len(seen) != total_nodes:
-            raise ValueError("C++ gathered global complete windows require complete, disjoint node_indices")
-        return gather
+        return _monitor_plan.gathered_window_sources(
+            self._analysis, self._network_set, dt
+        )
 
     def _local_balloon_windkessel_spec(self, sn, index, monitor):
         """Local Recorder BW window on this subnetwork's own physical clock."""
-        if not self._backend.enable_kernel_monitors:
-            raise NotImplementedError(
-                "BalloonWindkessel requires native monitor collection for local Recorders"
-            )
-        if self._width not in (1, 4, 8, 16):
-            raise NotImplementedError(
-                "BalloonWindkessel local Recorders require one of the SIMD widths 1, 4, 8 or 16"
-            )
-        if sn.n_modes != 1:
-            raise NotImplementedError(
-                "BalloonWindkessel local Recorders require one source mode"
-            )
-        if (sn.n_nodes < 1 or sn.n_nodes > np.iinfo(np.int32).max
-                or sn.n_nodes * self._width > np.iinfo(np.int32).max):
-            raise ValueError(
-                "BalloonWindkessel local Recorders require a positive in-range region "
-                "and region-by-lane extent"
-            )
-        # Reuses the monitor's native binary32 clock and 10 ms period validation.
-        period = monitor._output_ticks(float(sn.dt))
-        voi = getattr(monitor, "variables_of_interest", None)
-        n_voi = len(sn.voi) // 3
-        if (voi is None or np.shape(voi) != (1,) or np.asarray(voi).dtype.kind not in "iu"
-                or not 0 <= int(voi[0]) < n_voi):
-            raise ValueError(
-                "BalloonWindkessel local Recorders require exactly one valid observed "
-                "VOI index"
-            )
-        baseline = getattr(monitor, "drive_baseline", None)
-        scale = getattr(monitor, "drive_scale", None)
-        if (baseline is None or scale is None
-                or not np.isfinite(baseline) or not np.isfinite(scale)):
-            raise ValueError(
-                "BalloonWindkessel local Recorders require explicit finite "
-                "drive_baseline and drive_scale"
-            )
-        return dict(
-            local_window=True, slot=_RECORDER_SLOT_BASE + index, kind=11,
-            istep=period, dt=float(sn.dt), master_dt=float(self._analysis.dt),
-            cadence_K=sn.k, source_name=sn.name,
-            node_indices=[] if sn.node_indices is None else sn.node_indices.tolist(),
-            voi=[int(voi[0])],
-            bw_drive_baseline=float(baseline), bw_drive_scale=float(scale),
-            bw_stream_params=dict(_BALLOON_WINDKESSEL_NOMINAL),
+        return _monitor_plan.local_balloon_windkessel_spec(
+            self._backend,
+            self._analysis,
+            self._width,
+            sn,
+            index,
+            monitor,
+            bw_nominal=_BALLOON_WINDKESSEL_NOMINAL,
         )
 
     def _recorder_window_spec(self, sn, index, monitor):
-        if isinstance(monitor, BalloonWindkessel):
-            return self._local_balloon_windkessel_spec(sn, index, monitor)
-        if not self._backend.enable_kernel_monitors or self._width != 1 or sn.n_modes != 1:
-            raise NotImplementedError(
-                "C++ Recorder complete windows require native collection, width 1 and one source mode"
-            )
-        n_voi = len(sn.voi) // 3
-        period = self._backend._complete_window_istep(monitor, float(sn.dt), scope="Recorder")
-        spec = self._backend._monitor_attach_spec(
-            _RECORDER_SLOT_BASE + index, monitor, n_voi, sn.n_nodes, float(sn.dt),
-            cadence_K=sn.k, complete_window_istep=period, local_window=True,
+        return _monitor_plan.recorder_window_spec(
+            self,
+            sn,
+            index,
+            monitor,
+            bw_nominal=_BALLOON_WINDKESSEL_NOMINAL,
         )
-        spec.update(master_dt=self._analysis.dt, source_name=sn.name,
-                    node_indices=[] if sn.node_indices is None else sn.node_indices.tolist())
-        return spec
 
     def _balloon_windkessel_spec(self, slot, monitor, dt):
-        if not self._backend.enable_kernel_monitors:
-            raise NotImplementedError("BalloonWindkessel requires native monitor collection")
-        sn = self._analysis.subnets[0]
-        if self._width not in (1, 4, 8, 16) or any(s.n_modes != 1 for s in self._analysis.subnets):
-            raise NotImplementedError("BalloonWindkessel requires a supported SIMD width and one source mode")
-        if len(self._analysis.subnets) == 1:
-            if sn.k != 1 or sn.dt != dt:
-                raise NotImplementedError("BalloonWindkessel requires one source clock")
-            indices = self._network_set.subnets[0].node_indices
-            if sn.n_nodes < 1 or (indices is not None and (
-                    indices.shape != (sn.n_nodes,)
-                    or not np.array_equal(np.sort(indices), np.arange(sn.n_nodes)))):
-                raise ValueError("BalloonWindkessel requires a full regional node permutation when node_indices are supplied")
-        voi = getattr(monitor, "variables_of_interest", None)
-        if voi is None or voi.shape != (1,) or not 0 <= int(voi[0]) < len(sn.voi) // 3:
-            raise ValueError("BalloonWindkessel requires exactly one valid observed VOI index")
-        baseline = getattr(monitor, "drive_baseline", None)
-        scale = getattr(monitor, "drive_scale", None)
-        if baseline is None or scale is None or not np.isfinite(baseline) or not np.isfinite(scale):
-            raise ValueError("BalloonWindkessel requires explicit finite drive_baseline and drive_scale")
-        return dict(slot=slot, kind=10, dt=dt, istep=monitor._output_ticks(dt),
-                    voi=[int(voi[0])], bw_drive_baseline=baseline, bw_drive_scale=scale,
-                    bw_stream_params=dict(_BALLOON_WINDKESSEL_NOMINAL))
+        return _monitor_plan.balloon_windkessel_spec(
+            self._backend,
+            self._analysis,
+            self._network_set,
+            self._width,
+            slot,
+            monitor,
+            dt,
+            bw_nominal=_BALLOON_WINDKESSEL_NOMINAL,
+        )
 
     def resume(
         self,
@@ -1010,6 +608,14 @@ class CompiledCppSim:
         subnet_monitors: Optional[dict] = None,
     ):
         """Resume from a snapshot returned by :meth:`run`."""
+        if rng_mode not in ("numpy", "philox"):
+            raise ValueError(
+                f"Unsupported rng_mode {rng_mode!r}; expected 'numpy' or 'philox'."
+            )
+        if (isinstance(nstep, (bool, np.bool_))
+                or not isinstance(nstep, (int, np.integer))
+                or nstep < 0):
+            raise ValueError("nstep must be a non-negative integer")
         if not monitors and any(
                 "bw_stream_config" in state for state in snapshot.get("kmon_global_states") or ()):
             raise ValueError("BalloonWindkessel resume requires the compatible global monitors")
@@ -1020,7 +626,10 @@ class CompiledCppSim:
             if ("step" not in snapshot or isinstance(step, bool)
                     or not isinstance(step, (int, np.integer)) or not 0 <= step <= np.iinfo(np.uint64).max):
                 raise ValueError("C++ gathered global complete windows require an integer snapshot master tick in range")
-        if isinstance(saved_local_monitors, list) and any(
+        has_requested_recorders = bool(subnet_monitors) and any(
+            subnet_monitors.values() if isinstance(subnet_monitors, dict) else subnet_monitors
+        )
+        if has_requested_recorders and isinstance(saved_local_monitors, list) and any(
                 isinstance(state, dict) and "local_window_config" in state
                 for per_subnet in saved_local_monitors if isinstance(per_subnet, list)
                 for state in per_subnet):
@@ -1053,7 +662,7 @@ class CompiledCppSim:
         if snapshot.get("monitor_states") is not None:
             self._bold_states = _copy_monitor_states(
                 snapshot.get("monitor_states"))
-        self._pending_kmon_states = saved_local_monitors
+        self._pending_kmon_states = saved_local_monitors if has_requested_recorders else None
         # Do not restore saved global streams unless global monitors were requested.
         self._pending_kmon_global_states = (
             snapshot.get("kmon_global_states") if monitors else None
@@ -1905,118 +1514,25 @@ class CppHybridBackend:
     @staticmethod
     def _kernel_collectable(m):
         """True when *m* is handled by the C++ ``kmon<W>`` monitor engines."""
-        from tvb.simulator.monitors import (
-            Raw,
-            SubSample,
-            Bold,
-            BoldRegionROI,
-            TemporalAverage,
-            AfferentCoupling,
-            GlobalAverage,
-            SpatialAverage,
-            Projection,
-        )
-        if isinstance(m, BoldRegionROI):
-            return False
-        if isinstance(m, Projection):
-            return (getattr(m, "_gain", None) is not None
-                    or getattr(m, "projection", None) is not None)
-        return isinstance(
-            m,
-            (
-                Bold,
-                SubSample,
-                TemporalAverage,
-                AfferentCoupling,
-                GlobalAverage,
-                SpatialAverage,
-                Raw,
-            ),
-        )
+        return _monitor_plan.kernel_collectable(m)
 
     @staticmethod
     def _monitor_voi_list(m):
-        voi = getattr(m, "variables_of_interest", None)
-        if voi is None:
-            return []
-        arr = np.asarray(voi, dtype=np.int32).ravel()
-        return arr.tolist() if arr.size > 0 else []
+        return _monitor_plan.monitor_voi_list(m)
 
     @staticmethod
     def _checked_monitor_voi_list(m, n_src_v, scope):
-        voi = m.variables_of_interest
-        if voi is None:
-            return []
-        if (voi.ndim != 1 or voi.dtype.kind not in "iu"
-                or np.any(voi < 0) or np.any(voi >= n_src_v)):
-            raise ValueError(f"C++ {scope} require valid observed VOI indices")
-        return voi.tolist()
+        return _monitor_plan.checked_monitor_voi_list(m, n_src_v, scope)
 
     @staticmethod
     def _complete_window_istep(m, dt, scope="regional", clock_name="source"):
-        ticks = float(m.period) / dt
-        if np.isfinite(ticks):
-            nearest = round(ticks)
-            # Allow a few binary64 rounding steps from period construction and
-            # division, not a relative fraction of a source tick.
-            if (1 <= nearest <= np.iinfo(np.int32).max
-                    and abs(ticks - nearest) <= 8 * np.spacing(float(nearest))):
-                return nearest
-        raise ValueError(
-            f"C++ {scope} {type(m).__name__} period {m.period!r} must be "
-            f"commensurate with {clock_name} dt {dt!r} (a positive integer number of ticks)"
+        return _monitor_plan.complete_window_istep(
+            m, dt, scope=scope, clock_name=clock_name
         )
 
     @staticmethod
     def _regional_projection_spec(m, n_src_v, n_space):
-        if m.obsnoise is not None:
-            raise NotImplementedError("C++ EEG/MEG/iEEG require obsnoise=None")
-
-        voi = CppHybridBackend._checked_monitor_voi_list(m, n_src_v, "EEG/MEG/iEEG")
-
-        # A lazy file cache can look regional by shape alone. Require the
-        # caller to supply gain in local-region order through the setter.
-        gain = np.asarray(m._gain if m._gain_is_explicit else None)
-        if (gain.dtype.kind not in "fiu" or gain.ndim != 2
-                or not gain.shape[0] or gain.shape[1] != n_space):
-            raise ValueError("C++ EEG/MEG/iEEG require a finite preconfigured sensor-by-local-region gain")
-        with np.errstate(over="ignore"):
-            gain = np.array(gain, dtype=np.float32, order="C", copy=True)
-        if not np.isfinite(gain).all():
-            raise ValueError("C++ EEG/MEG/iEEG require a finite preconfigured sensor-by-local-region gain")
-
-        n_sensors = gain.shape[0]
-        sensors = getattr(m, "sensors", None)
-        labels = usable = None
-        if sensors is not None:
-            labels = getattr(sensors, "labels", None)
-            usable = sensors.usable
-            if labels is None or labels.shape != (n_sensors,):
-                raise ValueError("C++ projection sensor labels must align with gain rows")
-            if usable is not None:
-                if usable.shape != (n_sensors,):
-                    raise ValueError("C++ projection usable sensor mask must align with gain rows")
-                gain[~usable] = 0.0
-
-        ref_vec = None
-        if isinstance(m, EEG) and m.reference:
-            if labels is None:
-                raise ValueError("C++ EEG reference requires ordered sensor labels")
-            if m.reference.lower() == "average":
-                # Unusable channels contribute zero but still count in the
-                # classic average denominator and remain on the output axis.
-                ref_vec = np.full(n_sensors, 1.0 / n_sensors, dtype=np.float32)
-            else:
-                matches = np.flatnonzero(labels == m.reference)
-                if matches.size != 1:
-                    raise ValueError(f"C++ EEG reference {m.reference!r} must name one sensor")
-                ref_vec = np.zeros(n_sensors, dtype=np.float32)
-                ref_vec[matches[0]] = 1.0
-            if usable is not None:
-                ref_vec[~usable] = 0.0
-
-        return dict(kind=8, cadence_K=1, voi=voi,
-                    gain=gain, ref_vec=ref_vec)
+        return _monitor_plan.regional_projection_spec(m, n_src_v, n_space)
 
     def _monitor_attach_spec(
         self,
@@ -2035,210 +1551,21 @@ class CppHybridBackend:
         gathered_window=False,
     ):
         """Build a C++ ``kmon<W>`` spec dict for monitor *m*."""
-        import copy
-        from tvb.datatypes import equations
-        from tvb.simulator.monitors import (
-            AfferentCoupling,
-            AfferentCouplingTemporalAverage,
-            Bold,
-            GlobalAverage,
-            Projection,
-            Raw,
-            RawVoi,
-            SpatialAverage,
-            SubSample,
-            TemporalAverage,
+        return _monitor_plan.monitor_attach_spec(
+            slot,
+            m,
+            n_src_v,
+            n_space,
+            dt,
+            cadence_K=cadence_K,
+            explicit_chunk_size=explicit_chunk_size,
+            nstep=nstep,
+            is_resuming=is_resuming,
+            return_snapshot=return_snapshot,
+            complete_window_istep=complete_window_istep,
+            local_window=local_window,
+            gathered_window=gathered_window,
         )
-
-        eff_dt = float(dt)
-        ck = int(max(1, cadence_K))
-        if complete_window_istep is not None:
-            spec = {
-                "slot": int(slot),
-                "istep": complete_window_istep,
-                "dt": eff_dt,
-            }
-            if local_window:
-                spec.update(local_window=True, cadence_K=cadence_K)
-            else:
-                spec["complete_window"] = True
-            if isinstance(m, _REGIONAL_PROJECTION_MONITORS):
-                spec.update(self._regional_projection_spec(m, n_src_v, n_space))
-                return spec
-            scope = "Recorder" if local_window else "gathered global" if gathered_window else "regional"
-            spec["voi"] = self._checked_monitor_voi_list(m, n_src_v, f"{scope} complete windows")
-            if isinstance(m, SpatialAverage):
-                weights = getattr(m, "spatial_mean", None)
-                if (local_window or gathered_window) and weights is not None and np.asarray(weights).dtype.kind not in "fiu":
-                    raise ValueError(f"C++ {scope} SpatialAverage requires real spatial_mean weights")
-                if weights is not None:
-                    with np.errstate(over="ignore"):
-                        weights = np.asarray(weights, dtype=np.float32, order="C")
-                if (weights is None or weights.ndim != 2 or not weights.shape[0]
-                        or weights.shape[1] != n_space or not np.isfinite(weights).all()):
-                    raise ValueError(
-                        f"C++ {scope} SpatialAverage complete windows require finite "
-                        "preconfigured spatial_mean weights with one column per source node"
-                    )
-                spec.update(kind=7, spatial_mean=weights)
-            elif isinstance(m, GlobalAverage):
-                spec["kind"] = 6
-            else:  # TemporalAverage (not AfferentCouplingTemporalAverage)
-                spec["kind"] = 4
-            return spec
-        if isinstance(m, AfferentCouplingTemporalAverage):
-            istep = max(1, int(round(float(m.period) / eff_dt)))
-            return {
-                "slot": int(slot),
-                "kind": 5,  # KMON_CTAVG
-                "istep": istep,
-                "cadence_K": ck,
-                "dt": eff_dt,
-                "midpoint_time": True,
-                "voi": self._monitor_voi_list(m),
-            }
-        if isinstance(m, AfferentCoupling):
-            return {
-                "slot": int(slot),
-                "kind": 5,  # KMON_CTAVG
-                "istep": 1,
-                "cadence_K": ck,
-                "dt": eff_dt,
-                "midpoint_time": False,
-                "voi": self._monitor_voi_list(m),
-            }
-        if isinstance(m, TemporalAverage):
-            istep = max(1, int(round(float(m.period) / eff_dt)))
-            return {
-                "slot": int(slot),
-                "kind": 4,  # KMON_TAVG
-                "istep": istep,
-                "cadence_K": ck,
-                "dt": eff_dt,
-                "voi": self._monitor_voi_list(m),
-            }
-        if isinstance(m, Bold):
-            voi = self._monitor_voi_list(m)
-            tmp = copy.deepcopy(m)
-            tmp._config_dt(eff_dt)
-            tmp.compute_hrf()
-            first_order = isinstance(
-                m.hrf_kernel, equations.FirstOrderVolterra)
-            k1v0 = (float(m.hrf_kernel.parameters["k_1"]
-                          * m.hrf_kernel.parameters["V_0"])
-                    if first_order else 1.0)
-            hrf = np.asarray(tmp.hemodynamic_response_function,
-                             dtype=np.float64).ravel()
-            return {
-                "slot": int(slot),
-                "kind": 3,  # KMON_BOLD
-                "istep": max(1, int(tmp.istep)),
-                "cadence_K": ck,
-                "dt": eff_dt,
-                "interim_istep": max(1, int(tmp._interim_istep)),
-                "stock_steps": max(1, int(tmp._stock_steps)),
-                "k1v0": k1v0,
-                "first_order": bool(first_order),
-                "voi": voi,
-                "hrf": hrf,
-            }
-        if isinstance(m, SubSample):
-            istep = max(1, int(round(float(m.period) / eff_dt)))
-            return {
-                "slot": int(slot),
-                "kind": 2,  # KMON_SUBSAMPLE
-                "istep": istep,
-                "cadence_K": ck,
-                "dt": eff_dt,
-                "voi": self._monitor_voi_list(m),
-            }
-        if isinstance(m, GlobalAverage):
-            if explicit_chunk_size is not None and ck == 1:
-                istep = max(1, int(explicit_chunk_size))
-            else:
-                istep = max(1, int(round(float(m.period) / eff_dt)))
-            return {
-                "slot": int(slot),
-                "kind": 6,  # KMON_GLOBAL_AVG
-                "istep": istep,
-                "cadence_K": ck,
-                "dt": eff_dt,
-                "voi": self._monitor_voi_list(m),
-            }
-        if isinstance(m, SpatialAverage):
-            istep = (max(1, int(round(float(m.period) / eff_dt)))
-                     if getattr(m, "period", None) else 1)
-            if explicit_chunk_size is not None and ck == 1:
-                cs_i = max(1, int(explicit_chunk_size))
-                if cs_i >= istep or (
-                    nstep > 0 and nstep < istep
-                    and not is_resuming and not return_snapshot
-                ):
-                    istep = cs_i
-            sm = getattr(m, "spatial_mean", None)
-            if sm is None:
-                sm_arr = np.eye(max(1, int(n_space)), dtype=np.float32)
-            else:
-                sm_arr = np.ascontiguousarray(sm, dtype=np.float32)
-            return {
-                "slot": int(slot),
-                "kind": 7,  # KMON_SPATIAL_AVG
-                "istep": istep,
-                "cadence_K": ck,
-                "dt": eff_dt,
-                "voi": self._monitor_voi_list(m),
-                "spatial_mean": sm_arr,
-            }
-        if isinstance(m, Projection):
-            istep = (max(1, int(round(float(m.period) / eff_dt)))
-                     if getattr(m, "period", None) else 1)
-            if explicit_chunk_size is not None and ck == 1:
-                cs_i = max(1, int(explicit_chunk_size))
-                if cs_i >= istep or (
-                    nstep > 0 and nstep < istep
-                    and not is_resuming and not return_snapshot
-                ):
-                    istep = cs_i
-            gain_arr = np.ascontiguousarray(m.gain, dtype=np.float32)
-            ref_vec = None
-            rv = getattr(m, "_ref_vec", None)
-            if rv is not None:
-                rv_mask = getattr(m, "_ref_vec_mask", None)
-                if rv_mask is not None:
-                    ref_vec = np.zeros(gain_arr.shape[0], dtype=np.float32)
-                    ref_vec[np.asarray(rv_mask, dtype=bool)] = np.asarray(
-                        rv, dtype=np.float32)
-                else:
-                    ref_vec = np.ascontiguousarray(
-                        rv, dtype=np.float32).ravel()
-            return {
-                "slot": int(slot),
-                "kind": 8,  # KMON_PROJECTION
-                "istep": istep,
-                "cadence_K": ck,
-                "dt": eff_dt,
-                "voi": self._monitor_voi_list(m),
-                "gain": gain_arr,
-                "ref_vec": ref_vec,
-            }
-        if isinstance(m, RawVoi):
-            return {
-                "slot": int(slot),
-                "kind": 1,  # KMON_RAW
-                "istep": 1,
-                "cadence_K": ck,
-                "dt": eff_dt,
-                "voi": self._monitor_voi_list(m),
-            }
-        # Raw: collect every observed VOI row
-        return {
-            "slot": int(slot),
-            "kind": 1,  # KMON_RAW
-            "istep": 1,
-            "cadence_K": ck,
-            "dt": eff_dt,
-            "voi": [],
-        }
 
     @staticmethod
     def _lower_subnet_stimuli(sn_info, dt0, total_steps):
@@ -2395,15 +1722,7 @@ class CppHybridBackend:
 
     @staticmethod
     def _projection_attachment_identity(spec, n_voi):
-        def array_identity(values):
-            if values is None or not values.size:
-                return None
-            array = np.asarray(values, dtype="<f4", order="C")
-            return array.shape, hashlib.sha256(array).hexdigest()
-
-        return (spec["istep"], spec["cadence_K"], spec["dt"],
-                tuple(spec["voi"] or range(n_voi)), array_identity(spec["gain"]),
-                array_identity(spec["ref_vec"]))
+        return _monitor_plan.projection_attachment_identity(spec, n_voi)
 
     def _run_compiled(
         self, sim, analysis, network_set, nstep=100, chunk_size=None,
@@ -2533,10 +1852,6 @@ class CppHybridBackend:
                     if _skip_init and identities != (_pending_projection_sidecars or {}).get(key):
                         raise ValueError(f"{scope} resume requires matching Projection snapshot identities")
                     projection_sidecars[key] = identities
-                if projections:
-                    # Force native legacy attachments to consume the current specs,
-                    # rather than reusing the previous gain by slot and kind.
-                    sim.set_global_monitors(gather_specs, [])
             sim.set_global_monitors(gather_specs, g_atts)
         else:
             sim.set_global_monitors(

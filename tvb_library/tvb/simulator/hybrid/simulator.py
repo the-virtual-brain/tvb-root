@@ -391,6 +391,7 @@ class Simulator(t.HasTraits):
                     rec.times = None
                     rec.samples = None
                     rec._current_idx = 0
+                    rec._empty_sample_shape = d_arr.shape[1:]
                     continue
                 if rec.num_samples is None or n_emitted > rec.num_samples:
                     rec.num_samples = n_emitted

@@ -534,3 +534,61 @@ def test_native_projection_window_guards_live_source_and_clock_until_detached():
     _assert_streams(_run(sim, 3), _projection_oracle(4, origin=4))
     sim.set_global_monitors(GATHER, [])
     sim.set_voi(0, [0, 0])
+
+
+@pytest.mark.parametrize("compact", [False, True], ids=["dense", "compact"])
+@pytest.mark.parametrize("change", [
+    "bool-slot", "bool-width", "bool-accum-count", "bool-interim-count",
+    "bool-stock-pos", "bool-spatial-compact", "float32-accum", "list-accum",
+    "scalar-eq", "container-eq",
+])
+def test_native_regional_window_restore_requires_strict_schema(compact, change):
+    from copy import deepcopy
+
+    sim = _armed(_specs(compact=compact))
+    _run_pending(sim, 5)
+    before = sim.get_global_monitor_states()
+    candidate = deepcopy(before)
+    spatial_state = candidate[2]
+    comparisons = []
+
+    class EqualScalar(int):
+        def __eq__(self, other):
+            comparisons.append(other)
+            return True
+
+    class EqualContainer(tuple):
+        def __eq__(self, other):
+            comparisons.append(other)
+            return True
+
+    if change == "bool-slot":
+        candidate[0]["slot"] = False  # False == 0 in Python
+    elif change == "bool-width":
+        spatial_state["width"] = True  # True == 1 in Python
+    elif change == "bool-accum-count":
+        spatial_state["accum_count"] = True  # 5 % 4 == 1
+    elif change == "bool-interim-count":
+        spatial_state["interim_count"] = False
+    elif change == "bool-stock-pos":
+        spatial_state["stock_pos"] = False
+    elif change == "bool-spatial-compact":
+        cfg = list(spatial_state["window_config"])
+        cfg[4] = int(cfg[4])  # bool spatial_compact must not accept int 0/1
+        spatial_state["window_config"] = tuple(cfg)
+    elif change == "float32-accum":
+        spatial_state["accum"] = spatial_state["accum"].astype(np.float32)
+    elif change == "list-accum":
+        spatial_state["accum"] = spatial_state["accum"].tolist()
+    elif change == "scalar-eq":
+        cfg = list(spatial_state["window_config"])
+        cfg[0] = EqualScalar(cfg[0])
+        spatial_state["window_config"] = tuple(cfg)
+    elif change == "container-eq":
+        spatial_state["window_config"] = EqualContainer(spatial_state["window_config"])
+
+    with pytest.raises(RuntimeError, match="global complete window:"):
+        sim.set_global_monitor_states(candidate)
+    assert not comparisons
+    np.testing.assert_equal(sim.get_global_monitor_states(), before)
+    _assert_streams(sim.take_global_monitor_outputs(), _window_reference(5, 4))

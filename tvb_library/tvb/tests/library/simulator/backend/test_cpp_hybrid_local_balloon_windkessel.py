@@ -741,7 +741,7 @@ def test_local_bw_recorder_construction_is_supported_but_classic_bw_is_not():
     assert isinstance(rec.monitor, monitors.BalloonWindkessel)
     assert not isinstance(rec.monitor, monitors.Bold)
     with pytest.raises(NotImplementedError,
-                       match="global monitor on the explicit C\\+\\+ hybrid backend"):
+                       match="explicit C\\+\\+ hybrid backend \\(as a global monitor or local Recorder\\); classic Simulator execution is not supported"):
         rec.monitor.config_for_sim(ClassicSimulator())
 
 

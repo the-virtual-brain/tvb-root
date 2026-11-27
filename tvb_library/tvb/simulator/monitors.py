@@ -235,17 +235,26 @@ class BalloonWindkessel(Monitor):
         raise ValueError("BalloonWindkessel period must be a positive multiple of 10 ms within the native tick range")
 
     def config_for_sim(self, simulator):
-        raise NotImplementedError("BalloonWindkessel requires a global monitor on the explicit C++ hybrid backend")
+        raise NotImplementedError(
+            "BalloonWindkessel requires the explicit C++ hybrid backend "
+            "(as a global monitor or local Recorder); classic Simulator execution is not supported"
+        )
 
     def sample(self, step, state):
-        raise NotImplementedError("BalloonWindkessel requires a global monitor on the explicit C++ hybrid backend")
+        raise NotImplementedError(
+            "BalloonWindkessel requires the explicit C++ hybrid backend "
+            "(as a global monitor or local Recorder); classic Simulator execution is not supported"
+        )
 
 
 def _reject_balloon_windkessel_sweep(*options):
     for option in options:
         values = option if isinstance(option, (list, tuple)) else (option,)
         if any(isinstance(m, BalloonWindkessel) for m in values):
-            raise NotImplementedError("BalloonWindkessel is not supported in sweeps")
+            raise NotImplementedError(
+                "BalloonWindkessel is not supported in sweeps via monitor/monitors; "
+                "on CppHybridBackend.sweep pass bw={'global': ..., 'local': ...}"
+            )
 
 
 class Raw(Monitor):

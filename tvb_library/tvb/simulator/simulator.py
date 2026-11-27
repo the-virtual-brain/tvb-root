@@ -208,7 +208,10 @@ class Simulator(HasTraits):
         if not isinstance(requested, Sequence):
             requested = (requested,)
         if any(isinstance(monitor, monitors.BalloonWindkessel) for monitor in requested):
-            raise NotImplementedError("BalloonWindkessel requires a global monitor on the explicit C++ hybrid backend")
+            raise NotImplementedError(
+                "BalloonWindkessel requires the explicit C++ hybrid backend "
+                "(as a global monitor or local Recorder); classic Simulator execution is not supported"
+            )
 
     def preconfigure(self):
         """Configure just the basic fields, so that memory can be estimated."""

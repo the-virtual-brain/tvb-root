@@ -434,3 +434,69 @@ def test_bold_and_tavg_mid_period_snapshot_resume_in_cpp():
             d_m = np.concatenate([p1[mi][si][1], p2[mi][si][1]], axis=0)
             np.testing.assert_allclose(t_m, t_c, rtol=0, atol=0, err_msg=f"mon#{mi} sn#{si} t")
             np.testing.assert_allclose(d_m, d_c, rtol=1e-5, atol=1e-6, err_msg=f"mon#{mi} sn#{si} d")
+
+
+def _unmerged_network():
+    def mk(name):
+        model = MontbrioPazoRoxin()
+        model.configure()
+        sn = Subnetwork(name=name, model=model,
+                        scheme=HeunDeterministic(dt=DT), nnodes=3)
+        sn.configure()
+        return sn
+    A, B = mk("A"), mk("B")
+    ns = NetworkSet(subnets=[A, B], projections=[])
+    ns.configure()
+    return ns
+
+
+def test_reused_compiled_sim_reconfigures_modified_legacy_monitors_and_keeps_bold_stock():
+    """Modifying istep, voi, gain, or spatial_mean on a reused CompiledCppSim takes effect,
+    while consecutive identical Bold runs continue stock state."""
+    from tvb.simulator.monitors import Bold, Projection, RawVoi, SpatialAverage, SubSample
+
+    be = CppHybridBackend()
+
+    # 1. istep (SubSample period change on reused sim)
+    sim = be.compile(_network())
+    sim.run(NSTEP, monitors=[SubSample(period=0.5)])
+    got_istep = sim.run(NSTEP, monitors=[SubSample(period=1.0)])
+    exp_istep = be.compile(_network()).run(NSTEP, monitors=[SubSample(period=1.0)])
+    _assert_streams(exp_istep, got_istep, "reused istep")
+
+    # 2. voi (RawVoi variables_of_interest change on reused sim)
+    sim = be.compile(_network())
+    sim.run(NSTEP, monitors=[RawVoi(variables_of_interest=np.array([0], dtype=int))])
+    got_voi = sim.run(NSTEP, monitors=[RawVoi(variables_of_interest=np.array([1], dtype=int))])
+    exp_voi = be.compile(_network()).run(
+        NSTEP, monitors=[RawVoi(variables_of_interest=np.array([1], dtype=int))],
+    )
+    _assert_streams(exp_voi, got_voi, "reused voi")
+
+    # 3. gain (legacy global Projection gain change on reused sim)
+    n_node = sum(sn.nnodes for sn in _network().subnets)
+    p1 = Projection(period=0.5)
+    p1.gain = np.ones((2, n_node), dtype=np.float32)
+    p2 = Projection(period=0.5)
+    p2.gain = np.arange(1, 2 * n_node + 1, dtype=np.float32).reshape(2, n_node)
+    sim = be.compile(_network())
+    sim.run(NSTEP, monitors=[p1])
+    got_gain = sim.run(NSTEP, monitors=[p2])
+    exp_gain = be.compile(_network()).run(NSTEP, monitors=[p2])
+    _assert_streams(exp_gain, got_gain, "reused gain")
+
+    # 4. spatial_mean (legacy per-subnet SpatialAverage weight change on reused sim)
+    sa1 = SpatialAverage(period=0.5)
+    sa1.spatial_mean = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=np.float32)
+    sa2 = SpatialAverage(period=0.5)
+    sa2.spatial_mean = np.array([[0.0, 0.0, 1.0], [0.5, 0.5, 0.0]], dtype=np.float32)
+    sim_sm = be.compile(_unmerged_network())
+    sim_sm.run(NSTEP, monitors=[sa1])
+    got_sm = sim_sm.run(NSTEP, monitors=[sa2])
+    exp_sm = be.compile(_unmerged_network()).run(NSTEP, monitors=[sa2])
+    _assert_streams(exp_sm, got_sm, "reused spatial_mean")
+
+    # 5. Identical consecutive Bold runs continue stock state
+    bold_eng = _run_cpp(be, [Bold(period=BOLD_PERIOD)], BOLD_ISTEP, repeat=2)
+    bold_ref = _run_cpp(_cpp_reference(), [Bold(period=BOLD_PERIOD)], BOLD_ISTEP, repeat=2)
+    _assert_close("reused identical Bold stock", bold_eng, bold_ref)

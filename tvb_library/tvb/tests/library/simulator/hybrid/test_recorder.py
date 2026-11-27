@@ -229,6 +229,23 @@ class TestRecorder(BaseHybridTest):
         recorder.record(0, None)
         assert recorder.shape == (5, 4, 10, 1)
 
+    def test_to_arrays_empty_when_no_samples_emitted(self):
+        """``to_arrays()`` returns empty float32 arrays when zero samples were emitted."""
+        monitor = MockMonitor()
+        recorder = Recorder(monitor=monitor)
+        recorder.configure(simulation_length=5.0)
+        recorder.record(1, None)  # odd step emits None
+        assert recorder.times is None
+        assert recorder.samples is None
+        assert recorder.shape is None
+
+        times, samples = recorder.to_arrays()
+        assert times.shape == (0,) and times.dtype == np.float32
+        assert samples.shape == (0,) and samples.dtype == np.float32
+        assert recorder.times is None
+        assert recorder.samples is None
+        assert recorder.shape is None
+
     def _create_hybrid_simulator(self):
         """
         Build a minimal single-subnetwork hybrid simulator for recorder tests.

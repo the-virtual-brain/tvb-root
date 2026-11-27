@@ -262,3 +262,16 @@ def test_state_persists_across_runs():
         np.asarray(s.run(20, 0, None, None)[0]),
         np.asarray(s.run(40, 0, None, None)[0])], axis=0)
     np.testing.assert_allclose(part, whole, rtol=1e-3, atol=1e-4)
+
+
+def test_negative_nstep_raises_before_mutation():
+    sim = Sim(1)
+    sim.add_subnet(2, 2, MPR_PARM, 1, 0, 3, 1, dt=DT)
+    sim.set_opts(1, DT, 1)
+    x0 = np.zeros((2, 2, 1, 1), np.float32)
+    x0[0, :, 0, :] = 0.25
+    sim.set_subnet_state(0, x0)
+    with pytest.raises(ValueError, match="nstep must be non-negative"):
+        sim.run(-1, 1, None, None)
+    assert sim.t_abs() == 0
+    np.testing.assert_array_equal(sim.get_subnet_state(0), x0)

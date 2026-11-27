@@ -238,3 +238,16 @@ def test_stochastic_partial_group_seed_padding_and_real_lane_parity(monkeypatch,
     np.testing.assert_array_equal(wide.bw_local["regions"][0], scalar.bw_local["regions"][0])
     np.testing.assert_allclose(wide.bw_local["regions"][1], scalar.bw_local["regions"][1],
                                rtol=1e-6, atol=1e-10)
+
+
+def test_notebook_sweep_narrows_parameter_hints():
+    from tvb.simulator.backend.cpp_hybrid import notebook
+
+    with pytest.raises(ValueError) as exc_info:
+        notebook.sweep(_network(), nstep=8, width=1, workers=1,
+                       bw={"other": 1}, **{"regions.tau": [1.0]})
+    assert "Try one of: coupling" not in str(exc_info.value)
+
+    with pytest.raises(ValueError, match="Try one of:"):
+        notebook.sweep(_network(), nstep=8, width=1, workers=1,
+                       **{"unknown_param": [1.0]})

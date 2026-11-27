@@ -189,14 +189,16 @@ def sweep(
         sweep_kwargs["bw"] = bw
     if features is not None:
         sweep_kwargs["features"] = features
-    try:
-        return CppHybridBackend().sweep(
-            network_set, params, **sweep_kwargs,
-        )
-    except ValueError as e:
-        opts = available_sweep_params(network_set)
-        raise ValueError(
-            f"{e}\nTry one of: coupling {opts['coupling']}; "
-            f"model {opts['model'][:12]}...; "
-            f"projection attrs e.g. {opts['projection'][:6]}"
-        ) from e
+    if network_set is not None:
+        try:
+            CppHybridBackend._resolve_sweep(network_set, params)
+        except ValueError as e:
+            opts = available_sweep_params(network_set)
+            raise ValueError(
+                f"{e}\nTry one of: coupling {opts['coupling']}; "
+                f"model {opts['model'][:12]}...; "
+                f"projection attrs e.g. {opts['projection'][:6]}"
+            ) from e
+    return CppHybridBackend().sweep(
+        network_set, params, **sweep_kwargs,
+    )
